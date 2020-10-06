@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>ffui</id>
+    <description>ffui</description>
+    <authors>ffui</authors>
+    <owners>ffui</owners>
+    <version>3.0.6</version>
+    <license type="file">content\LICENSE.txt</license>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <copyright>Copyright 2020</copyright>
+  </metadata>
+  <files>
+    <file src="ffui\**\*.*" target="content" />
+  </files>
+</package>

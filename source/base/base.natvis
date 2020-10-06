@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="ff::vector&lt;*&gt;">
+    <DisplayString>{{size={item_size}}}</DisplayString>
+    <Expand>
+      <Item Name="[size]">item_size</Item>
+      <Item Name="[capacity]">item_cap</Item>
+      <ArrayItems>
+        <Size>item_size</Size>
+        <ValuePointer>item_data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

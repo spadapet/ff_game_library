@@ -1,0 +1,16 @@
+[submodule "vendor/zlib"]
+	path = vendor/zlib
+	url = https://github.com/madler/zlib.git
+	branch = master
+[submodule "vendor/directxtex"]
+	path = vendor/directxtex
+	url = https://github.com/microsoft/DirectXTex.git
+	branch = master
+[submodule "vendor/libpng"]
+	path = vendor/libpng
+	url = https://github.com/glennrp/libpng.git
+	branch = libpng16
+[submodule "vendor/entt"]
+	path = vendor/entt
+	url = https://github.com/spadapet/entt.git
+	branch = user/spadapet

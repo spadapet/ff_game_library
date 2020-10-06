@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties">
+  <ItemType Name="ResJson" DisplayName="JSON Assets" />
+  <ContentType Name="ResJson" ItemType="ResJson" DisplayName="JSON Assets" />
+  <FileExtension Name=".res.json" ContentType="ResJson" />
+</ProjectSchemaDefinitions>
