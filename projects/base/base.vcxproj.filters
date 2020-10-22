@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Natvis Include="base.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\mutex.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vector.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="public_api.h" />
+    <ClInclude Include="source\constants.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\math.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\mutex.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\pool_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{ec0f5c81-595a-4513-9098-42048a51ef19}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

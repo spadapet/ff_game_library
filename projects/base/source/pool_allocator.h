@@ -1,7 +1,7 @@
 #pragma once
 
-#include "math2.h"
-#include "mutex2.h"
+#include "math.h"
+#include "mutex.h"
 
 namespace ff::internal
 {

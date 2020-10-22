@@ -99,6 +99,9 @@ namespace base_test
             Assert::AreEqual<size_t>(6, v1.size());
             Assert::AreEqual<size_t>(0, v1.capacity());
             Assert::AreEqual(&data[0], &*v1.cbegin());
+
+            v1[2] = 7;
+            Assert::AreNotEqual(&data[0], &*v1.cbegin());
         }
     };
 }

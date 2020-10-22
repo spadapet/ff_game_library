@@ -22,25 +22,25 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.noesis_interactiv
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.zlib", "vendor\zlib_uwp.vcxproj", "{81322AD5-41D2-429D-B8A7-BB1E1A66AFEF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "source\ui\ui_uwp.vcxproj", "{279176CB-1DB1-40EA-AA60-1A0469E8A6D8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "projects\ui\ui_uwp.vcxproj", "{279176CB-1DB1-40EA-AA60-1A0469E8A6D8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.application", "source\application\application_uwp.vcxproj", "{513B0EBC-4A6B-455F-B190-7864F3092778}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.application", "projects\application\application_uwp.vcxproj", "{513B0EBC-4A6B-455F-B190-7864F3092778}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.audio", "source\audio\audio_uwp.vcxproj", "{E3BF3073-8DA5-4D8A-954B-9CE0BFC04A16}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.audio", "projects\audio\audio_uwp.vcxproj", "{E3BF3073-8DA5-4D8A-954B-9CE0BFC04A16}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "source\base\base_uwp.vcxproj", "{EA1C6536-053D-4947-89AD-CE4FCE4671C2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "projects\base\base_uwp.vcxproj", "{EA1C6536-053D-4947-89AD-CE4FCE4671C2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.data", "source\data\data_uwp.vcxproj", "{D8B24569-074B-41E2-9F23-094D2CC61FA4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.data", "projects\data\data_uwp.vcxproj", "{D8B24569-074B-41E2-9F23-094D2CC61FA4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.graphics", "source\graphics\graphics_uwp.vcxproj", "{EABBDAC6-970E-403E-A7C9-ECC410B2A040}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.graphics", "projects\graphics\graphics_uwp.vcxproj", "{EABBDAC6-970E-403E-A7C9-ECC410B2A040}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.input", "source\input\input_uwp.vcxproj", "{F3F87D0D-69B7-4187-95B0-BFC0DD83E311}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.input", "projects\input\input_uwp.vcxproj", "{F3F87D0D-69B7-4187-95B0-BFC0DD83E311}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.os", "source\os\os_uwp.vcxproj", "{F4F445D6-C368-4961-8C4C-A61560A6D299}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.os", "projects\os\os_uwp.vcxproj", "{F4F445D6-C368-4961-8C4C-A61560A6D299}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource", "source\resource\resource_uwp.vcxproj", "{39F34EDC-EE2D-4410-BA7E-FC212303DE58}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource", "projects\resource\resource_uwp.vcxproj", "{39F34EDC-EE2D-4410-BA7E-FC212303DE58}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.thread", "source\thread\thread_uwp.vcxproj", "{43179E65-3961-48BE-BBEC-414B5E64D39C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.thread", "projects\thread\thread_uwp.vcxproj", "{43179E65-3961-48BE-BBEC-414B5E64D39C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{07CD83C7-2D93-4751-9564-26D1626577B3}"
 	ProjectSection(SolutionItems) = preProject
@@ -50,20 +50,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{07CD83
 		Doxyfile = Doxyfile
 		LICENSE = LICENSE
 		README.md = README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{8AAA44BA-0B41-4A59-A257-B638BE6D6117}"
-	ProjectSection(SolutionItems) = preProject
-		include\ff\application.h = include\ff\application.h
-		include\ff\audio.h = include\ff\audio.h
-		include\ff\base.h = include\ff\base.h
-		include\ff\data.h = include\ff\data.h
-		include\ff\graphics.h = include\ff\graphics.h
-		include\ff\input.h = include\ff\input.h
-		include\ff\os.h = include\ff\os.h
-		include\ff\resource.h = include\ff\resource.h
-		include\ff\thread.h = include\ff\thread.h
-		include\ff\ui.h = include\ff\ui.h
 	EndProjectSection
 EndProject
 Global

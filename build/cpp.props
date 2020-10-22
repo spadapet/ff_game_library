@@ -134,7 +134,7 @@
   <ItemDefinitionGroup>
     <!-- Compiler options -->
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)projects</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
