@@ -20,31 +20,31 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.zlib", "vendor\zl
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vendor", "vendor", "{52A574D0-F4AE-4047-8541-6A966540969A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "projects\ui\ui.vcxproj", "{8147A742-08AC-49FD-8C51-3956E1A65E16}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "projects\ff\ui\ui.vcxproj", "{8147A742-08AC-49FD-8C51-3956E1A65E16}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "source", "source", "{E6221A0E-B343-4514-99B8-746425C6D617}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{E6221A0E-B343-4514-99B8-746425C6D617}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{6C0FBA16-C7F0-403D-90A2-D12F9AC0196F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.test.unit", "test\unit\unit.vcxproj", "{3CDC3451-F711-4EC0-96EA-1767804B2DF0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.application", "projects\application\application.vcxproj", "{376073E9-EA4D-4513-941C-906CA968C6C3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.application", "projects\ff\application\application.vcxproj", "{376073E9-EA4D-4513-941C-906CA968C6C3}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.audio", "projects\audio\audio.vcxproj", "{7B04EB5D-8AC9-47CC-80CB-5192CB41057A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.audio", "projects\ff\audio\audio.vcxproj", "{7B04EB5D-8AC9-47CC-80CB-5192CB41057A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "projects\base\base.vcxproj", "{DFDBD2C1-61CB-4606-8E52-85B65C9AAEF2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "projects\ff\base\base.vcxproj", "{DFDBD2C1-61CB-4606-8E52-85B65C9AAEF2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.data", "projects\data\data.vcxproj", "{76418CAD-574E-4D62-81BD-41321411FD63}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.data", "projects\ff\data\data.vcxproj", "{76418CAD-574E-4D62-81BD-41321411FD63}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.graphics", "projects\graphics\graphics.vcxproj", "{2464CDE6-763F-48FC-A587-4BB84B4B5D64}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.graphics", "projects\ff\graphics\graphics.vcxproj", "{2464CDE6-763F-48FC-A587-4BB84B4B5D64}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.input", "projects\input\input.vcxproj", "{475230FD-C110-4B27-9C6A-8EF1C11B5A2E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.input", "projects\ff\input\input.vcxproj", "{475230FD-C110-4B27-9C6A-8EF1C11B5A2E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.os", "projects\os\os.vcxproj", "{68D9F62B-88DF-4A07-859F-CB72062FBF9F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.os", "projects\ff\os\os.vcxproj", "{68D9F62B-88DF-4A07-859F-CB72062FBF9F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource", "projects\resource\resource.vcxproj", "{E76FC2CF-8E4B-4FEA-A89F-97AE4C639A5F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource", "projects\ff\resource\resource.vcxproj", "{E76FC2CF-8E4B-4FEA-A89F-97AE4C639A5F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.thread", "projects\thread\thread.vcxproj", "{4E0AEE4E-7CA0-44B2-9BE4-B11EBC4E4386}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.thread", "projects\ff\thread\thread.vcxproj", "{4E0AEE4E-7CA0-44B2-9BE4-B11EBC4E4386}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{D8BAD08B-F4F2-48A1-959C-6E14BCDA76EF}"
 	ProjectSection(SolutionItems) = preProject

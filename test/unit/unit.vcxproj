@@ -27,7 +27,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\projects\base\base.vcxproj">
+    <ProjectReference Include="..\..\projects\ff\base\base.vcxproj">
       <Project>{dfdbd2c1-61cb-4606-8e52-85b65c9aaef2}</Project>
     </ProjectReference>
   </ItemGroup>

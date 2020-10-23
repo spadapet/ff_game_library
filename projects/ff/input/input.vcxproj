@@ -1,17 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
-    <AppType>UWP</AppType>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.data</ProjectName>
-    <ProjectGuid>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</ProjectGuid>
+    <ProjectName>ff.input</ProjectName>
+    <ProjectGuid>{475230fd-c110-4b27-9c6a-8ef1c11b5a2e}</ProjectGuid>
   </PropertyGroup>
-  <Import Project="..\..\build\cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>	
+  <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

@@ -3,15 +3,10 @@
   <PropertyGroup Label="Globals">
     <AppType>UWP</AppType>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.thread</ProjectName>
-    <ProjectGuid>{43179e65-3961-48be-bbec-414b5e64d39c}</ProjectGuid>
+    <ProjectName>ff.audio</ProjectName>
+    <ProjectGuid>{e3bf3073-8da5-4d8a-954b-9ce0bfc04a16}</ProjectGuid>
   </PropertyGroup>
-  <Import Project="..\..\build\cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>	
+  <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

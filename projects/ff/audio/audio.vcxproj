@@ -1,17 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
-    <AppType>UWP</AppType>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.application</ProjectName>
-    <ProjectGuid>{513b0ebc-4a6b-455f-b190-7864f3092778}</ProjectGuid>
+    <ProjectName>ff.audio</ProjectName>
+    <ProjectGuid>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</ProjectGuid>
   </PropertyGroup>
-  <Import Project="..\..\build\cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>	
+  <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

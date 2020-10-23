@@ -3,15 +3,10 @@
   <PropertyGroup Label="Globals">
     <AppType>UWP</AppType>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.graphics</ProjectName>
-    <ProjectGuid>{eabbdac6-970e-403e-a7c9-ecc410b2a040}</ProjectGuid>
+    <ProjectName>ff.input</ProjectName>
+    <ProjectGuid>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</ProjectGuid>
   </PropertyGroup>
-  <Import Project="..\..\build\cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>	
+  <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

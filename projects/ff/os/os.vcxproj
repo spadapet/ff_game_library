@@ -2,15 +2,10 @@
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.graphics</ProjectName>
-    <ProjectGuid>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</ProjectGuid>
+    <ProjectName>ff.os</ProjectName>
+    <ProjectGuid>{68d9f62b-88df-4a07-859f-cb72062fbf9f}</ProjectGuid>
   </PropertyGroup>
-  <Import Project="..\..\build\cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
+  <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
