@@ -40,7 +40,6 @@ namespace ff::internal
         template<class T>
         static typename std::enable_if_t<std::is_trivially_constructible<T>::value> construct_item(T* data)
         {
-            // No constructor
         }
 
         template<class T>
@@ -55,7 +54,6 @@ namespace ff::internal
         template<class T>
         static typename std::enable_if_t<std::is_trivially_default_constructible<T>::value> default_construct_items(T* data, size_t count)
         {
-            // No constructor
         }
 
         template<class T>
@@ -119,7 +117,6 @@ namespace ff::internal
         template<class T>
         static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_item(T* data)
         {
-            // Cannot destruct
         }
 
         template<class T>
@@ -134,183 +131,7 @@ namespace ff::internal
         template<class T>
         static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_items(T* data, size_t count)
         {
-            // No destructor
         }
-    };
-
-    class vector_allocator_base
-    {
-    protected:
-        static void* new_bytes(size_t size_requested, size_t alignment, size_t& size_allocated);
-        static void delete_bytes(void* data, size_t size_requested_or_allocated);
-    };
-
-    template<class T>
-    class vector_allocator : private vector_allocator_base
-    {
-    public:
-        using value_type = T;
-        using size_type = size_t;
-        using difference_type = ptrdiff_t;
-        using propagate_on_container_move_assignment = std::true_type;
-        using is_always_equal = std::true_type;
-        using allow_static_vector = std::is_trivially_move_constructible<T>;
-
-        constexpr vector_allocator() noexcept = default;
-        constexpr vector_allocator(const vector_allocator&) noexcept = default;
-        template<class OtherT> constexpr vector_allocator(const vector_allocator<OtherT>&) noexcept {}
-
-        static void deallocate(T* const ptr, const size_type count)
-        {
-            vector_allocator_base::delete_bytes(ptr, sizeof(T) * count);
-        }
-
-        static T* allocate(const size_type count, size_type& count_allocated)
-        {
-            size_type size_allocated;
-            T* data = static_cast<T*>(vector_allocator_base::new_bytes(sizeof(T) * count, alignof(T), size_allocated));
-            count_allocated = size_allocated / sizeof(T);
-            return data;
-        }
-    };
-
-    template<class T>
-    class vector_iterator
-    {
-    public:
-        using iterator = vector_iterator<T>;
-        using iterator_category = std::random_access_iterator_tag;
-        using value_type = T;
-        using difference_type = ptrdiff_t;
-        using pointer = T*;
-        using reference = T&;
-
-        vector_iterator(pointer data)
-            : data(data)
-        {
-        }
-
-        vector_iterator(const iterator& rhs)
-            : data(rhs.data)
-        {
-        }
-
-        // Convert non-const iterator to const iterator
-        template<typename = std::enable_if_t<std::is_const_v<T>>>
-        vector_iterator(const vector_iterator<std::remove_const_t<T>>& rhs)
-            : data(&*rhs)
-        {
-        }
-
-        reference operator*() const
-        {
-            return *this->data;
-        }
-
-        pointer operator->() const
-        {
-            return this->data;
-        }
-
-        iterator& operator++()
-        {
-            this->data++;
-            return *this;
-        }
-
-        iterator operator++(int)
-        {
-            iterator pre = *this;
-            this->data++;
-            return pre;
-        }
-
-        iterator& operator--()
-        {
-            this->data--;
-            return *this;
-        }
-
-        iterator operator--(int)
-        {
-            iterator pre = *this;
-            this->data--;
-            return pre;
-        }
-
-        bool operator==(const iterator& rhs) const
-        {
-            return this->data == rhs.data;
-        }
-
-        bool operator!=(const iterator& rhs) const
-        {
-            return this->data != rhs.data;
-        }
-
-        bool operator<(const iterator& rhs) const
-        {
-            return this->data < rhs.data;
-        }
-
-        bool operator<=(const iterator& rhs) const
-        {
-            return this->data <= rhs.data;
-        }
-
-        bool operator>(const iterator& rhs) const
-        {
-            return this->data > rhs.data;
-        }
-
-        bool operator>=(const iterator& rhs) const
-        {
-            return this->data >= rhs.data;
-        }
-
-        iterator operator+(difference_type count) const
-        {
-            iterator iter = *this;
-            iter += count;
-            return iter;
-        }
-
-        iterator operator-(difference_type count) const
-        {
-            iterator iter = *this;
-            iter -= count;
-            return iter;
-        }
-
-        difference_type operator-(const iterator& rhs) const
-        {
-            return this->data - rhs.data;
-        }
-
-        iterator& operator+=(difference_type count)
-        {
-            this->data += count;
-            return *this;
-        }
-
-        iterator& operator-=(difference_type count)
-        {
-            this->data -= count;
-            return *this;
-        }
-
-        const reference operator[](difference_type pos) const
-        {
-            return this->data[pos];
-        }
-
-        reference operator[](difference_type pos)
-        {
-            return this->data[pos];
-        }
-
-    private:
-        pointer data;
     };
 
     template<class T>
@@ -323,24 +144,16 @@ namespace ff
     /// Replacement class for std::vector
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::vector class.
-    /// Possible differences from the standard class are:
-    /// 
-    /// - The default allocator uses an efficient lock-free pool that reuses memory to avoid calling "new".
-    /// - Stack memory is supported by default, it will be filled up before any pool memory is allocated.
-    /// - No memory is allocated on construction, the capacity matches the stack memory, which is zero by default.
-    /// - Initial static memory is allowed on construction, the vector will use that static memory until changes are made.
-    /// - The Allocator type is not standard because the allocate() method has an out parameter for the actual size allocated.
-    /// 
-    /// If that sounds good, use this class, otherwise stick with std::vector.
+    /// This is a drop-in replacement for the std::vector class, but it allows stack storage.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="StackSize">Initial buffer size on the stack</typeparam>
     /// <typeparam name="Allocator">Used to allocate internal storage</typeparam>
-    template<class T, size_t StackSize = 0, class Allocator = ff::internal::vector_allocator<T>>
+    template<class T, size_t StackSize = 0, class Allocator = std::allocator<T>>
     class vector
         : private ff::internal::vector_stack_storage<T, StackSize>
         , private ff::internal::vector_type_helper
+        , private Allocator
     {
     public:
         using vector_type = vector<T, StackSize, Allocator>;
@@ -352,8 +165,8 @@ namespace ff
         using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
         using size_type = typename std::allocator_traits<allocator_type>::size_type;
         using difference_type = typename std::allocator_traits<allocator_type>::difference_type;
-        using iterator = ff::internal::vector_iterator<T>;
-        using const_iterator = ff::internal::vector_iterator<const T>;
+        using iterator = typename pointer;
+        using const_iterator = typename const_pointer;
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
@@ -416,26 +229,6 @@ namespace ff
             : vector(alloc)
         {
             this->assign(init);
-        }
-
-        /// <summary>
-        /// Static plain old data, it will be copied if any modifications are made
-        /// </summary>
-        template<typename = std::enable_if_t<Allocator::allow_static_vector::value>>
-        vector(const T* item_data, size_type count)
-            : item_data(const_cast<T*>(item_data))
-            , item_cap(0)
-            , item_size(count)
-        {
-        }
-
-        /// <summary>
-        /// Static plain old data, it will be copied if any modifications are made
-        /// </summary>
-        template<size_t ItemSize, typename = std::enable_if_t<Allocator::allow_static_vector::value>>
-        explicit vector(const T(&item_data)[ItemSize])
-            : vector(item_data, ItemSize)
-        {
         }
 
         ~vector()
@@ -520,7 +313,6 @@ namespace ff
         reference at(size_type pos)
         {
             assert(pos < this->item_size);
-            this->ensure_editable();
             return this->item_data[pos];
         }
 
@@ -537,7 +329,6 @@ namespace ff
         reference front()
         {
             assert(this->item_size);
-            this->ensure_editable();
             return this->item_data[0];
         }
 
@@ -550,7 +341,6 @@ namespace ff
         reference back()
         {
             assert(this->item_size);
-            this->ensure_editable();
             return this->item_data[this->item_size - 1];
         }
 
@@ -562,7 +352,6 @@ namespace ff
 
         T* data() noexcept
         {
-            this->ensure_editable();
             return this->item_data;
         }
 
@@ -573,7 +362,6 @@ namespace ff
 
         iterator begin() noexcept
         {
-            this->ensure_editable();
             return iterator(this->item_data);
         }
 
@@ -589,7 +377,6 @@ namespace ff
 
         iterator end() noexcept
         {
-            this->ensure_editable();
             return iterator(this->item_data + this->item_size);
         }
 
@@ -670,7 +457,7 @@ namespace ff
                 {
                     size_type new_size = this->item_size;
                     size_type new_cap = StackSize;
-                    T* new_data = (new_size <= new_cap) ? this->get_stack_items() : Allocator::allocate(this->item_size, new_cap);
+                    T* new_data = (new_size <= new_cap) ? this->get_stack_items() : this->allocate_item_data(this->item_size, new_cap);
                     ff::internal::vector_type_helper::shift_items(new_data, this->item_data, this->item_size);
                     this->deallocate_item_data();
 
@@ -841,17 +628,6 @@ namespace ff
             return iter;
         }
 
-        void ensure_editable()
-        {
-            if constexpr (Allocator::allow_static_vector::value)
-            {
-                if (!this->item_cap)
-                {
-                    this->reserve_item_data(this->cbegin(), 0, 1);
-                }
-            }
-        }
-
         iterator reserve_item_data(const_iterator pos, size_type count, size_type new_cap = 0)
         {
             difference_type pos_index = pos - this->cbegin();
@@ -862,7 +638,7 @@ namespace ff
 
             if (new_cap > this->item_cap)
             {
-                T* new_data = Allocator::allocate(new_cap, new_cap);
+                T* new_data = this->allocate_item_data(new_cap, new_cap);
                 ff::internal::vector_type_helper::shift_items(new_data, this->item_data, pos_index);
                 ff::internal::vector_type_helper::shift_items(new_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
                 this->deallocate_item_data();
@@ -878,6 +654,12 @@ namespace ff
             this->item_size = new_size;
 
             return iterator(this->item_data + pos_index);
+        }
+
+        T* allocate_item_data(size_type capacity_requested, size_type &capacity)
+        {
+            capacity = std::max<size_t>(ff::math::nearest_power_of_two(capacity_requested), 16);
+            return Allocator::allocate(capacity);
         }
 
         void deallocate_item_data()

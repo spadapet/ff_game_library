@@ -5,32 +5,15 @@
 namespace ff
 {
     /// <summary>
-    /// Replacement class for std::basic_string
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::basic_string class and all specializations of that class.
-    /// Possible differences from the standard class are:
-    /// 
-    /// - The string memory is reference counted and shared among all basic_string objects until they are modified.
-    /// - The default allocator uses an efficient lock-free pool that reuses memory to avoid calling "new".
-    /// - The small string stack memory is customizable and allows small strings to avoid asking the allocator for memory.
-    /// - The string can be constructed with a static string and not make any copies unless it's modified.
-    /// - The size of this class is guaranteed to be the size of one pointer.
-    /// - The Allocator type is not standard because the allocate() method has an out parameter for the actual size allocated.
-    /// 
-    /// Those properties allow basic_string to be used as map keys very nicely. The same key can be used in many different
-    /// maps with only one string buffer allocated, or the string could point to a static key name. This beats std::string_view
-    /// since the underlying memory is referenced by each copy of the basic_string and it cannot go out of scope.
-    /// If that doesn't matter to you, then just use std::basic_string and its specializations.
     /// </remarks>
     /// <typeparam name="CharT">Character type</typeparam>
-    /// <typeparam name="StackSize">Buffer size</typeparam>
-    /// <typeparam name="Traits">Specifies the operations on the character type</typeparam>
-    /// <typeparam name="Allocator">Used to allocate internal storage</typeparam>
-    template<class CharT, size_t StackSize, class Traits = std::char_traits<CharT>, class Allocator = ff::internal::vector_allocator<CharT>>
-    class basic_string
+    template<class CharT>
+    class basic_const_string
     {
     public:
+#if 0
         using string_type = basic_string<CharT, StackSize, Traits, Allocator>;
         using vector_type = ff::vector<CharT, StackSize, Allocator>;
         using allocator_type = typename vector_type::allocator_type;
@@ -531,6 +514,7 @@ namespace ff
         }
 
         string_data* string_data_ref;
+#endif
     };
 
     //extern template class ff::basic_string<char, 16>;
@@ -538,55 +522,17 @@ namespace ff
     //extern template class ff::basic_string<char16_t, 8>;
     //extern template class ff::basic_string<char32_t, 8>;
 
-    using string = ff::basic_string<char, 16>;
-    using wstring = ff::basic_string<wchar_t, 8>;
-    using u16string = ff::basic_string<char16_t, 8>;
-    using u32string = ff::basic_string<char32_t, 8>;
-
-    int stoi(const ff::string& str, std::size_t* pos = 0, int base = 10);
-    int stoi(const ff::wstring& str, std::size_t* pos = 0, int base = 10);
-    long stol(const ff::string& str, std::size_t* pos = 0, int base = 10);
-    long stol(const ff::wstring& str, std::size_t* pos = 0, int base = 10);
-    long long stoll(const ff::string& str, std::size_t* pos = 0, int base = 10);
-    long long stoll(const ff::wstring& str, std::size_t* pos = 0, int base = 10);
-
-    unsigned long stoul(const ff::string& str, std::size_t* pos = 0, int base = 10);
-    unsigned long stoul(const ff::wstring& str, std::size_t* pos = 0, int base = 10);
-    unsigned long long stoull(const ff::string& str, std::size_t* pos = 0, int base = 10);
-    unsigned long long stoull(const ff::wstring& str, std::size_t* pos = 0, int base = 10);
-
-    float stof(const ff::string& str, std::size_t* pos = 0);
-    float stof(const ff::wstring& str, std::size_t* pos = 0);
-    double stod(const ff::string& str, std::size_t* pos = 0);
-    double stod(const ff::wstring& str, std::size_t* pos = 0);
-    long double stold(const ff::string& str, std::size_t* pos = 0);
-    long double stold(const ff::wstring& str, std::size_t* pos = 0);
-
-    ff::string to_string(int value);
-    ff::string to_string(long value);
-    ff::string to_string(long long value);
-    ff::string to_string(unsigned value);
-    ff::string to_string(unsigned long value);
-    ff::string to_string(unsigned long long value);
-    ff::string to_string(float value);
-    ff::string to_string(double value);
-    ff::string to_string(long double value);
-
-    ff::wstring to_wstring(int value);
-    ff::wstring to_wstring(long value);
-    ff::wstring to_wstring(long long value);
-    ff::wstring to_wstring(unsigned value);
-    ff::wstring to_wstring(unsigned long value);
-    ff::wstring to_wstring(unsigned long long value);
-    ff::wstring to_wstring(float value);
-    ff::wstring to_wstring(double value);
-    ff::wstring to_wstring(long double value);
+    //using string = ff::basic_string<char, 16>;
+    //using wstring = ff::basic_string<wchar_t, 8>;
+    //using u16string = ff::basic_string<char16_t, 8>;
+    //using u32string = ff::basic_string<char32_t, 8>;
 }
 
+#if 0
 namespace std
 {
-    template<class CharT, size_t StackSize, class Traits, class Alloc>
-    void swap(ff::basic_string<CharT, StackSize, Traits, Alloc>& lhs, ff::basic_string<CharT, StackSize, Traits, Alloc>& rhs) noexcept(noexcept(lhs.swap(rhs)));
+    template<class CharT>
+    void swap(ff::basic_const_string<CharT>& lhs, ff::basic_const_string<CharT>& rhs) noexcept(noexcept(lhs.swap(rhs)));
 
     template<>
     struct hash<ff::string>;
@@ -600,7 +546,9 @@ namespace std
     template<>
     struct hash<ff::u32string>;
 }
+#endif
 
+#if 0
 template<class CharT, size_t StackSize, class Traits, class Alloc>
 ff::basic_string<CharT, StackSize, Traits, Alloc> operator+(const ff::basic_string<CharT, StackSize, Traits, Alloc>& lhs, const ff::basic_string<CharT, StackSize, Traits, Alloc>& rhs);
 
@@ -696,8 +644,11 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
 
 template<class CharT, size_t StackSize, class Traits, class Alloc>
 std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, ff::basic_string<CharT, StackSize, Traits, Alloc>& str);
+#endif
 
+#if 0
 ff::string operator""s(const char* str, std::size_t len);
 ff::u16string operator""s(const char16_t* str, std::size_t len);
 ff::u32string operator""s(const char32_t* str, std::size_t len);
 ff::wstring operator""s(const wchar_t* str, std::size_t len);
+#endif

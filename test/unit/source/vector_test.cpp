@@ -90,18 +90,5 @@ namespace base_test
             v1.shrink_to_fit();
             Assert::AreEqual<size_t>(6, v1.capacity());
         }
-
-        TEST_METHOD(static_data)
-        {
-            const int data[6] = { 1, 2, 3, 4, 5, 6 };
-            ff::vector<int> v1(data);
-
-            Assert::AreEqual<size_t>(6, v1.size());
-            Assert::AreEqual<size_t>(0, v1.capacity());
-            Assert::AreEqual(&data[0], &*v1.cbegin());
-
-            v1[2] = 7;
-            Assert::AreNotEqual(&data[0], &*v1.cbegin());
-        }
     };
 }

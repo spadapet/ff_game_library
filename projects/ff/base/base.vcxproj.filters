@@ -11,9 +11,6 @@
     <ClCompile Include="source\string.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\vector.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

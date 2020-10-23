@@ -12,7 +12,6 @@
     </ClCompile>
     <ClCompile Include="source\mutex.cpp" />
     <ClCompile Include="source\string.cpp" />
-    <ClCompile Include="source\vector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
