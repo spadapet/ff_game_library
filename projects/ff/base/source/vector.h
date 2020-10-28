@@ -1,5 +1,7 @@
 #pragma once
 
+#include "type_helper.h"
+
 namespace ff::internal
 {
     template<class T, size_t StackSize, class Enabled = void>
@@ -27,115 +29,6 @@ namespace ff::internal
             return nullptr;
         }
     };
-
-    class vector_type_helper
-    {
-    protected:
-        template<class T, class... Args>
-        static typename std::enable_if_t<!std::is_trivially_constructible<T, Args...>::value> construct_item(T* data, Args&&... args)
-        {
-            ::new(data) T(std::forward<Args>(args)...);
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_constructible<T>::value> construct_item(T* data)
-        {
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_default_constructible<T>::value> default_construct_items(T* data, size_t count)
-        {
-            for (T* endData = data + count; data != endData; data++)
-            {
-                ff::internal::vector_type_helper::construct_item(data);
-            }
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_default_constructible<T>::value> default_construct_items(T* data, size_t count)
-        {
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_copy_constructible<T>::value> copy_construct_item(T* data, const T& source)
-        {
-            ff::internal::vector_type_helper::construct_item(data, source);
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_copy_constructible<T>::value> copy_construct_item(T* data, const T& source)
-        {
-            std::memcpy(data, &source, sizeof(T));
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_move_constructible<T>::value> move_construct_item(T* data, T&& source)
-        {
-            ff::internal::vector_type_helper::construct_item(data, std::move(source));
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_move_constructible<T>::value> move_construct_item(T* data, T&& source)
-        {
-            std::memcpy(data, &source, sizeof(T));
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_move_constructible<T>::value> shift_items(T* destData, T* sourceData, size_t count)
-        {
-            if (destData < sourceData)
-            {
-                for (T* endDestData = destData + count; destData != endDestData; destData++, sourceData++)
-                {
-                    ff::internal::vector_type_helper::move_construct_item(destData, std::move(*sourceData));
-                    ff::internal::vector_type_helper::destruct_item(sourceData);
-                }
-            }
-            else if (destData > sourceData)
-            {
-                for (T* endDestData = destData, *curDestData = destData + count, *curSourceData = sourceData + count;
-                    curDestData != endDestData; curDestData--, curSourceData--)
-                {
-                    ff::internal::vector_type_helper::move_construct_item(curDestData - 1, std::move(curSourceData[-1]));
-                    ff::internal::vector_type_helper::destruct_item(curSourceData - 1);
-                }
-            }
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_move_constructible<T>::value> shift_items(T* destData, T* sourceData, size_t count)
-        {
-            std::memmove(destData, sourceData, count * sizeof(T));
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_destructible<T>::value> destruct_item(T* data)
-        {
-            data->~T();
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_item(T* data)
-        {
-        }
-
-        template<class T>
-        static typename std::enable_if_t<!std::is_trivially_destructible<T>::value> destruct_items(T* data, size_t count)
-        {
-            for (T* endData = data + count; data != endData; data++)
-            {
-                ff::internal::vector_type_helper::destruct_item(data);
-            }
-        }
-
-        template<class T>
-        static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_items(T* data, size_t count)
-        {
-        }
-    };
-
-    template<class T>
-    constexpr bool is_iterator_t = std::_Is_iterator_v<T>;
 }
 
 namespace ff
@@ -144,7 +37,8 @@ namespace ff
     /// Replacement class for std::vector
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::vector class, but it allows stack storage.
+    /// This is a drop-in replacement for the std::vector class, but it allows stack storage
+    /// before memory is allocated. Also, no memory is ever allocated until the first insertion.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="StackSize">Initial buffer size on the stack</typeparam>
@@ -152,11 +46,11 @@ namespace ff
     template<class T, size_t StackSize = 0, class Allocator = std::allocator<T>>
     class vector
         : private ff::internal::vector_stack_storage<T, StackSize>
-        , private ff::internal::vector_type_helper
+        , private ff::internal::type_helper
         , private Allocator
     {
     public:
-        using vector_type = vector<T, StackSize, Allocator>;
+        using this_type = vector<T, StackSize, Allocator>;
         using value_type = T;
         using reference = T&;
         using const_reference = const T&;
@@ -201,25 +95,25 @@ namespace ff
             this->assign(first, last);
         }
 
-        vector(const vector_type& other)
+        vector(const this_type& other)
             : vector(other.get_allocator())
         {
             this->assign(other.cbegin(), other.cend());
         }
 
-        vector(const vector_type& other, const Allocator& alloc)
+        vector(const this_type& other, const Allocator& alloc)
             : vector(alloc)
         {
             this->assign(other.cbegin(), other.cend());
         }
 
-        vector(vector_type&& other) noexcept
+        vector(this_type&& other) noexcept
             : vector(other.get_allocator())
         {
             *this = std::move(other);
         }
 
-        vector(vector_type&& other, const Allocator& alloc)
+        vector(this_type&& other, const Allocator& alloc)
             : vector(alloc)
         {
             *this = std::move(other);
@@ -237,7 +131,7 @@ namespace ff
             this->deallocate_item_data();
         }
 
-        vector_type& operator=(const vector_type& other)
+        this_type& operator=(const this_type& other)
         {
             if (this != &other)
             {
@@ -247,7 +141,7 @@ namespace ff
             return *this;
         }
 
-        vector_type& operator=(vector_type&& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value || std::allocator_traits<Allocator>::is_always_equal::value)
+        this_type& operator=(this_type&& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value || std::allocator_traits<Allocator>::is_always_equal::value)
         {
             if (this != &other)
             {
@@ -256,7 +150,7 @@ namespace ff
 
                 if (other.item_data == other.get_stack_items())
                 {
-                    ff::internal::vector_type_helper::shift_items(this->item_data, other.item_data, other.item_size);
+                    ff::internal::type_helper::shift_items(this->item_data, other.item_data, other.item_size);
                 }
                 else
                 {
@@ -274,7 +168,7 @@ namespace ff
             return *this;
         }
 
-        vector_type& operator=(std::initializer_list<T> ilist)
+        this_type& operator=(std::initializer_list<T> ilist)
         {
             this->assign(ilist);
             return *this;
@@ -301,7 +195,7 @@ namespace ff
 
         allocator_type get_allocator() const noexcept
         {
-            return Allocator();
+            return allocator_type();
         }
 
         const_reference at(size_type pos) const
@@ -458,7 +352,7 @@ namespace ff
                     size_type new_size = this->item_size;
                     size_type new_cap = StackSize;
                     T* new_data = (new_size <= new_cap) ? this->get_stack_items() : this->allocate_item_data(this->item_size, new_cap);
-                    ff::internal::vector_type_helper::shift_items(new_data, this->item_data, this->item_size);
+                    ff::internal::type_helper::shift_items(new_data, this->item_data, this->item_size);
                     this->deallocate_item_data();
 
                     this->item_data = new_data;
@@ -476,14 +370,14 @@ namespace ff
         iterator insert(const_iterator pos, const T& value)
         {
             iterator iter = this->reserve_item_data(pos, 1);
-            ff::internal::vector_type_helper::copy_construct_item(&*iter, value);
+            ff::internal::type_helper::copy_construct_item(&*iter, value);
             return iter;
         }
 
         iterator insert(const_iterator pos, T&& value)
         {
             iterator iter = this->reserve_item_data(pos, 1);
-            ff::internal::vector_type_helper::move_construct_item(&*iter, std::move(value));
+            ff::internal::type_helper::move_construct_item(&*iter, std::move(value));
             return iter;
         }
 
@@ -492,7 +386,7 @@ namespace ff
             iterator iter = this->reserve_item_data(pos, count);
             for (size_type i = 0; i < count; i++)
             {
-                ff::internal::vector_type_helper::copy_construct_item(&iter[i], value);
+                ff::internal::type_helper::copy_construct_item(&iter[i], value);
             }
 
             return iter;
@@ -513,7 +407,7 @@ namespace ff
         iterator emplace(const_iterator pos, Args&&... args)
         {
             iterator iter = this->reserve_item_data(pos, 1);
-            ff::internal::vector_type_helper::construct_item(&*iter, std::forward<Args>(args)...);
+            ff::internal::type_helper::construct_item(&*iter, std::forward<Args>(args)...);
             return iter;
         }
 
@@ -528,15 +422,8 @@ namespace ff
 
             size_type i = first - this->cbegin();
             size_type count = last - first;
-
-            if (count < this->item_size && this->item_cap == 0)
-            {
-                // Copy read-only static data before erasing
-                this->reserve_item_data(this->cbegin(), 0);
-            }
-
-            ff::internal::vector_type_helper::destruct_items(this->item_data + i, count);
-            ff::internal::vector_type_helper::shift_items(this->item_data + i, this->item_data + i + count, this->item_size - i - count);
+            ff::internal::type_helper::destruct_items(this->item_data + i, count);
+            ff::internal::type_helper::shift_items(this->item_data + i, this->item_data + i + count, this->item_size - i - count);
             this->item_size -= count;
 
             return iterator(this->item_data + i);
@@ -574,7 +461,7 @@ namespace ff
             {
                 size_type new_count = count - this->item_size;
                 iterator i = this->reserve_item_data(this->cend(), new_count);
-                ff::internal::vector_type_helper::default_construct_items(&*i, new_count);
+                ff::internal::type_helper::default_construct_items(&*i, new_count);
             }
         }
 
@@ -590,9 +477,9 @@ namespace ff
             }
         }
 
-        void swap(vector_type& other)
+        void swap(this_type& other)
         {
-            vector_type temp = std::move(other);
+            this_type temp = std::move(other);
             other = std::move(*this);
             *this = std::move(temp);
         }
@@ -601,7 +488,7 @@ namespace ff
         template<class InputIt>
         iterator insert_range(const_iterator pos, InputIt first, InputIt last, std::input_iterator_tag)
         {
-            vector_type temp;
+            this_type temp;
             for (; first != last; ++first)
             {
                 temp.push_back(*first);
@@ -610,7 +497,7 @@ namespace ff
             iterator iter = this->reserve_item_data(pos, temp.size());
             for (size_type i = 0; i < temp.size(); i++)
             {
-                ff::internal::vector_type_helper::move_construct_item(&iter[i], std::move(temp[i]));
+                ff::internal::type_helper::move_construct_item(&iter[i], std::move(temp[i]));
             }
 
             return iter;
@@ -622,7 +509,7 @@ namespace ff
             iterator iter = this->reserve_item_data(pos, std::distance(first, last));
             for (; first != last; ++first, ++iter)
             {
-                ff::internal::vector_type_helper::copy_construct_item(&*iter, *first);
+                ff::internal::type_helper::copy_construct_item(&*iter, *first);
             }
 
             return iter;
@@ -639,8 +526,8 @@ namespace ff
             if (new_cap > this->item_cap)
             {
                 T* new_data = this->allocate_item_data(new_cap, new_cap);
-                ff::internal::vector_type_helper::shift_items(new_data, this->item_data, pos_index);
-                ff::internal::vector_type_helper::shift_items(new_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
+                ff::internal::type_helper::shift_items(new_data, this->item_data, pos_index);
+                ff::internal::type_helper::shift_items(new_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
                 this->deallocate_item_data();
 
                 this->item_data = new_data;
@@ -648,7 +535,7 @@ namespace ff
             }
             else if (static_cast<size_type>(pos_index) < this->item_size)
             {
-                ff::internal::vector_type_helper::shift_items(this->item_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
+                ff::internal::type_helper::shift_items(this->item_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
             }
 
             this->item_size = new_size;
@@ -658,7 +545,7 @@ namespace ff
 
         T* allocate_item_data(size_type capacity_requested, size_type &capacity)
         {
-            capacity = std::max<size_t>(ff::math::nearest_power_of_two(capacity_requested), 16);
+            capacity = std::max<size_type>(ff::math::nearest_power_of_two(capacity_requested), 16);
             return Allocator::allocate(capacity);
         }
 
@@ -666,11 +553,7 @@ namespace ff
         {
             if (this->item_data != this->get_stack_items())
             {
-                if (this->item_cap)
-                {
-                    Allocator::deallocate(this->item_data, this->item_cap);
-                }
-
+                Allocator::deallocate(this->item_data, this->item_cap);
                 this->item_data = this->get_stack_items();
             }
 

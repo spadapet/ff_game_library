@@ -13,4 +13,15 @@
     </Expand>
   </Type>
 
+  <Type Name="ff::forward_list&lt;*&gt;">
+    <DisplayString>{{ff::forward_list}}</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>head_node</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

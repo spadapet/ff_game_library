@@ -1,7 +1,6 @@
 #pragma once
 
 #include "math.h"
-#include "mutex.h"
 
 namespace ff::internal
 {
@@ -57,22 +56,23 @@ namespace ff
     template<size_t ByteSize, size_t ByteAlign, bool ThreadSafe = true>
     class byte_pool_allocator
     {
-        typedef ff::internal::byte_pool<ByteSize, ByteAlign> pool_type;
-
     public:
+        using this_type = typename byte_pool_allocator<ByteSize, ByteAlign, ThreadSafe>;
+        using pool_type = typename ff::internal::byte_pool<ByteSize, ByteAlign>;
+
         byte_pool_allocator()
             : size(0)
         {
             ::InitializeSListHead(&this->free_list);
         }
 
-        byte_pool_allocator(byte_pool_allocator&& rhs)
-            : pool_list(std::move(rhs.pool_list))
-            , free_list(rhs.free_list)
-            , size(rhs.size.load())
+        byte_pool_allocator(this_type&& other)
+            : pool_list(std::move(other.pool_list))
+            , free_list(other.free_list)
+            , size(other.size.load())
         {
-            ::InitializeSListHead(&rhs.free_list);
-            rhs.size = 0;
+            ::InitializeSListHead(&other.free_list);
+            other.size = 0;
         }
 
         ~byte_pool_allocator()
@@ -81,12 +81,32 @@ namespace ff
             ::InterlockedFlushSList(&this->free_list);
         }
 
+        this_type& operator=(this_type&& other)
+        {
+            if (this != &other)
+            {
+                assert(!this->size);
+
+                std::scoped_lock lock(this->mutex, other.mutex);
+
+                this->pool_list = std::move(other.pool_list);
+                this->free_list = other.free_list;
+                this->size = other.size;
+
+                ::InitializeSListHead(&other.free_list);
+                other.size = 0;
+            }
+
+
+            return *this;
+        }
+
         void* new_bytes()
         {
             ::PSLIST_ENTRY free_entry = nullptr;
             while (!free_entry && !(free_entry = ::InterlockedPopEntrySList(&this->free_list)))
             {
-                ff::lock_guard lock(mutex);
+                std::lock_guard lock(this->mutex);
 
                 if (!(free_entry = ::InterlockedPopEntrySList(&this->free_list)))
                 {
@@ -119,7 +139,7 @@ namespace ff
         {
             if (!this->size)
             {
-                ff::lock_guard lock(mutex);
+                std::lock_guard lock(this->mutex);
                 if (!this->size)
                 {
                     ::InterlockedFlushSList(&this->free_list);
@@ -128,52 +148,78 @@ namespace ff
             }
         }
 
-        void get_stats(size_t& size, size_t& allocated)
+        void get_stats(size_t* size, size_t* allocated) const
         {
-            ff::lock_guard lock(mutex);
-            size = this->size;
-            allocated = 0;
+            std::lock_guard lock(this->mutex);
 
-            for (std::unique_ptr<pool_type>* i = &this->pool_list; *i; i = &(*i)->next_pool)
+            if (size)
             {
-                allocated += (*i)->size;
+                *size = this->size;
+            }
+
+            if (allocated)
+            {
+                *allocated = 0;
+
+                for (std::unique_ptr<pool_type>* i = &this->pool_list; *i; i = &(*i)->next_pool)
+                {
+                    *allocated += (*i)->size;
+                }
             }
         }
 
     private:
-        byte_pool_allocator(const byte_pool_allocator& rhs) = delete;
-        byte_pool_allocator& operator=(const byte_pool_allocator& rhs) = delete;
+        byte_pool_allocator(const this_type& other) = delete;
+        byte_pool_allocator& operator=(const this_type& other) = delete;
 
-        ff::recursive_mutex mutex;
+        std::mutex mutex;
         std::unique_ptr<pool_type> pool_list;
-        ::SLIST_HEADER free_list;
         std::atomic_size_t size;
+        ::SLIST_HEADER free_list;
     };
 
     template<size_t ByteSize, size_t ByteAlign>
     class byte_pool_allocator<ByteSize, ByteAlign, false>
     {
-        typedef ff::internal::byte_pool<ByteSize, ByteAlign> pool_type;
-
     public:
+        using this_type = typename byte_pool_allocator<ByteSize, ByteAlign, false>;
+        using pool_type = typename ff::internal::byte_pool<ByteSize, ByteAlign>;
+
         byte_pool_allocator()
             : first_free(nullptr)
             , size(0)
         {
         }
 
-        byte_pool_allocator(byte_pool_allocator&& rhs)
-            : pool_list(std::move(rhs.pool_list))
-            , first_free(rhs.first_free)
-            , size(rhs.size)
+        byte_pool_allocator(byte_pool_allocator&& other)
+            : pool_list(std::move(other.pool_list))
+            , first_free(other.first_free)
+            , size(other.size)
         {
-            rhs.first_free = nullptr;
-            rhs.size = 0;
+            other.first_free = nullptr;
+            other.size = 0;
         }
 
         ~byte_pool_allocator()
         {
             assert(!this->size);
+        }
+
+        this_type& operator=(this_type&& other)
+        {
+            if (this != &other)
+            {
+                assert(!this->size);
+
+                this->pool_list = std::move(other.pool_list);
+                this->first_free = other.first_free;
+                this->size = other.size;
+
+                other.first_free = nullptr;
+                other.size = 0;
+            }
+
+            return *this;
         }
 
         void* new_bytes()
@@ -213,20 +259,27 @@ namespace ff
             }
         }
 
-        void get_stats(size_t& size, size_t& allocated)
+        void get_stats(size_t* size, size_t* allocated) const
         {
-            size = this->size;
-            allocated = 0;
-
-            for (std::unique_ptr<pool_type>* i = &this->pool_list; *i; i = &(*i)->next_pool)
+            if (size)
             {
-                allocated += (*i)->size;
+                *size = this->size;
+            }
+
+            if (allocated)
+            {
+                *allocated = 0;
+
+                for (const std::unique_ptr<pool_type>* i = &this->pool_list; *i; i = &(*i)->next_pool)
+                {
+                    *allocated += (*i)->size;
+                }
             }
         }
 
     private:
-        byte_pool_allocator(const byte_pool_allocator& rhs) = delete;
-        byte_pool_allocator& operator=(const byte_pool_allocator& rhs) = delete;
+        byte_pool_allocator(const byte_pool_allocator& other) = delete;
+        byte_pool_allocator& operator=(const byte_pool_allocator& other) = delete;
 
         std::unique_ptr<pool_type> pool_list;
         ::PSLIST_ENTRY first_free;
@@ -247,13 +300,15 @@ namespace ff
     class pool_allocator
     {
     public:
-        pool_allocator()
-        {
-        }
+        using this_type = typename pool_allocator<T, ThreadSafe>;
 
-        pool_allocator(pool_allocator&& rhs)
-            : byte_allocator(std::move(rhs.byte_allocator))
+        pool_allocator() = default;
+        pool_allocator(this_type&& other) = default;
+
+        this_type& operator=(this_type&& other)
         {
+            this->byte_allocator = std::move(other.byte_allocator);
+            return *this;
         }
 
         template<class... Args> T* new_obj(Args&&... args)
@@ -275,15 +330,41 @@ namespace ff
             this->byte_allocator.reduce_if_empty();
         }
 
-        void get_stats(size_t& size, size_t& allocated)
+        void get_stats(size_t* size, size_t* allocated) const
         {
             this->byte_allocator.get_stats(size, allocated);
         }
 
     private:
-        pool_allocator(const pool_allocator& rhs) = delete;
-        pool_allocator& operator=(const pool_allocator& rhs) = delete;
+        pool_allocator(const this_type& other) = delete;
+        pool_allocator& operator=(const this_type& other) = delete;
 
         byte_pool_allocator<sizeof(T), alignof(T), ThreadSafe> byte_allocator;
     };
 }
+
+namespace std
+{
+    template<class T, bool TS>
+    void swap(ff::pool_allocator<T, TS>& lhs, ff::pool_allocator<T, TS>& other)
+    {
+        if (&lhs != &other)
+        {
+            ff::pool_allocator<T, TS> temp = std::move(lhs);
+            lhs = std::move(other);
+            other = std::move(temp);
+        }
+    }
+
+    template<size_t BS, size_t BA, bool TS>
+    void swap(ff::byte_pool_allocator<BS, BA, TS>& lhs, ff::byte_pool_allocator<BS, BA, TS>& other)
+    {
+        if (&lhs != &other)
+        {
+            ff::byte_pool_allocator<BS, BA, TS> temp = std::move(lhs);
+            lhs = std::move(other);
+            other = std::move(temp);
+        }
+    }
+}
+

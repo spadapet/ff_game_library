@@ -9,7 +9,7 @@ static void pool_allocator_test()
     all.reserve(256);
 
     size_t size, allocated;
-    pool.get_stats(size, allocated);
+    pool.get_stats(&size, &allocated);
     Assert::AreEqual<size_t>(size, 0);
     Assert::AreEqual<size_t>(allocated, 0);
 
@@ -28,7 +28,7 @@ static void pool_allocator_test()
             Assert::AreEqual(std::get<1>(*all[i]), static_cast<float>(i));
         }
 
-        pool.get_stats(size, allocated);
+        pool.get_stats(&size, &allocated);
         Assert::AreEqual<size_t>(size, 256);
         Assert::AreEqual<size_t>(allocated, 504);
 
@@ -39,13 +39,13 @@ static void pool_allocator_test()
 
         all.clear();
 
-        pool.get_stats(size, allocated);
+        pool.get_stats(&size, &allocated);
         Assert::AreEqual<size_t>(size, 0);
         Assert::AreEqual<size_t>(allocated, 504);
 
         pool.reduce_if_empty();
 
-        pool.get_stats(size, allocated);
+        pool.get_stats(&size, &allocated);
         Assert::AreEqual<size_t>(size, 0);
         Assert::AreEqual<size_t>(allocated, 0);
     }

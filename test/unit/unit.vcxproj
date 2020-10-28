@@ -20,7 +20,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\pool_allocator_test.cpp" />
-    <ClCompile Include="source\string_test.cpp" />
+    <ClCompile Include="source\forward_list_test.cpp" />
     <ClCompile Include="source\vector_test.cpp" />
   </ItemGroup>
   <ItemGroup>

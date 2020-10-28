@@ -5,15 +5,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\mutex.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\string.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\vector.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -24,16 +15,16 @@
     <ClInclude Include="source\math.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\mutex.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\pool_allocator.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\string.h">
+    <ClInclude Include="source\vector.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\vector.h">
+    <ClInclude Include="source\forward_list.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type_helper.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

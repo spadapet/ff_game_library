@@ -5,10 +5,10 @@
     <ClCompile Include="source\pool_allocator_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\string_test.cpp">
+    <ClCompile Include="source\vector_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\vector_test.cpp">
+    <ClCompile Include="source\forward_list_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>

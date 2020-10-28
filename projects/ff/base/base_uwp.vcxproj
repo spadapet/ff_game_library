@@ -11,18 +11,15 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\mutex.cpp" />
-    <ClCompile Include="source\string.cpp" />
-    <ClCompile Include="source\vector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="public_api.h" />
     <ClInclude Include="source\constants.h" />
+    <ClInclude Include="source\forward_list.h" />
     <ClInclude Include="source\math.h" />
-    <ClInclude Include="source\mutex.h" />
     <ClInclude Include="source\pool_allocator.h" />
-    <ClInclude Include="source\string.h" />
+    <ClInclude Include="source\type_helper.h" />
     <ClInclude Include="source\vector.h" />
   </ItemGroup>
   <ItemGroup>
