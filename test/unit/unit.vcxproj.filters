@@ -11,6 +11,9 @@
     <ClCompile Include="source\forward_list_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\list_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

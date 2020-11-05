@@ -27,6 +27,9 @@
     <ClInclude Include="source\type_helper.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\list.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

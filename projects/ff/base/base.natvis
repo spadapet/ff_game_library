@@ -24,4 +24,15 @@
     </Expand>
   </Type>
 
+  <Type Name="ff::list&lt;*&gt;">
+    <DisplayString>{{ff::list}}</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>head_node</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

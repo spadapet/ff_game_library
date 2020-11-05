@@ -17,6 +17,7 @@
     <ClInclude Include="public_api.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\forward_list.h" />
+    <ClInclude Include="source\list.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\type_helper.h" />

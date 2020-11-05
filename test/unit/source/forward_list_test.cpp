@@ -81,6 +81,23 @@ namespace base_test
             Assert::IsTrue(list.empty());
         }
 
+        TEST_METHOD(swap)
+        {
+            ff::forward_list<int> list1{ 1, 2, 3 };
+            ff::forward_list<int> list2{ 2, 4 };
+
+            std::swap(list1, list2);
+            Assert::IsTrue(list1 == ff::forward_list<int>{ 2, 4 });
+            Assert::IsTrue(list2 == ff::forward_list<int>{ 1, 2, 3 });
+
+            std::swap(list1, list2);
+            Assert::IsTrue(list1 == ff::forward_list<int>{ 1, 2, 3 });
+            Assert::IsTrue(list2 == ff::forward_list<int>{ 2, 4 });
+
+            std::swap(list1, ff::forward_list<int>());
+            Assert::IsTrue(list1.empty());
+        }
+
         TEST_METHOD(splice)
         {
             this->splice_test<false>();

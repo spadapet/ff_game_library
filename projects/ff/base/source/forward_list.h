@@ -139,6 +139,7 @@ namespace ff
     /// This is a drop-in replacement for the std::forward_list class, but it always uses a memory pool for items
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
+    /// <typeparam name="SharedNodePool">True to share the node pool among all lists of same type</typeparam>
     /// <typeparam name="Allocator">Not actually used to allocate memory since a pool is used</typeparam>
     template<class T, bool SharedNodePool = false, class Allocator = std::allocator<T>>
     class forward_list : private ff::internal::forward_list_node_pool<T, SharedNodePool>
@@ -235,8 +236,7 @@ namespace ff
             {
                 this->clear();
                 this->get_node_pool() = std::move(other.get_node_pool());
-                this->head_node = other.head_node;
-                other.head_node = nullptr;
+                std::swap(this->head_node, other.head_node);
             }
 
             return *this;
@@ -342,15 +342,7 @@ namespace ff
 
         void clear() noexcept
         {
-            node_type* node = this->head_node;
-            this->head_node = nullptr;
-
-            while (node)
-            {
-                node_type* next = node->next;
-                this->get_node_pool().delete_obj(node);
-                node = next;
-            }
+            this->erase_after(this->cbefore_begin(), this->cend());
         }
 
         void resize(size_type count)
@@ -425,7 +417,6 @@ namespace ff
 
         iterator erase_after(const_iterator pos)
         {
-            assert(!this->empty());
             const_iterator after = pos++;
             if (pos.internal_node())
             {
@@ -437,7 +428,7 @@ namespace ff
 
         iterator erase_after(const_iterator first, const_iterator last)
         {
-            assert(!this->empty() && first != last);
+            assert(first != last);
             node_type* node = first.internal_node()->next;
             first.internal_node()->next = last.internal_node();
 
@@ -471,7 +462,7 @@ namespace ff
         {
             if (this != &other)
             {
-                std::swap(this->node_pool, other.node_pool);
+                std::swap(this->get_node_pool(), other.get_node_pool());
                 std::swap(this->head_node, other.head_node);
             }
         }
