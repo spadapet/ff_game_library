@@ -7,4 +7,5 @@
 #include "source/math.h"
 #include "source/pool_allocator.h"
 #include "source/type_helper.h"
+#include "source/unordered_multiset.h"
 #include "source/vector.h"

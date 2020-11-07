@@ -5,6 +5,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\vector.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -28,6 +31,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\list.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_multiset.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

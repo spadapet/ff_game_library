@@ -1,4 +1,5 @@
 #pragma once
+
 #include "pool_allocator.h"
 #include "type_helper.h"
 
@@ -136,81 +137,64 @@ namespace ff
     /// Replacement class for std::forward_list
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::forward_list class, but it always uses a memory pool for items
+    /// This is a replacement for the std::forward_list class, but it always uses a memory pool for items.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="SharedNodePool">True to share the node pool among all lists of same type</typeparam>
-    /// <typeparam name="Allocator">Not actually used to allocate memory since a pool is used</typeparam>
-    template<class T, bool SharedNodePool = false, class Allocator = std::allocator<T>>
+    template<class T, bool SharedNodePool = false>
     class forward_list : private ff::internal::forward_list_node_pool<T, SharedNodePool>
     {
     public:
-        using this_type = typename forward_list<T, SharedNodePool, Allocator>;
+        using this_type = typename forward_list<T, SharedNodePool>;
         using node_type = typename ff::internal::forward_list_node<T>;
         using value_type = typename T;
-        using allocator_type = typename Allocator;
-        using size_type = typename std::allocator_traits<allocator_type>::size_type;
-        using difference_type = typename std::allocator_traits<allocator_type>::difference_type;
+        using size_type = typename size_t;
+        using difference_type = typename ptrdiff_t;
         using reference = typename value_type&;
-        using const_reference = const value_type&;
-        using pointer = typename std::allocator_traits<allocator_type>::pointer;
-        using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
+        using const_reference = typename const value_type&;
+        using pointer = typename T*;
+        using const_pointer = typename const T*;
         using iterator = typename ff::internal::forward_list_iterator<T>;
         using const_iterator = typename ff::internal::forward_list_iterator<const T>;
 
-        explicit forward_list(const Allocator& alloc)
+        explicit forward_list()
             : head_node(nullptr)
         {
         }
 
-        forward_list()
-            : forward_list(Allocator())
-        {
-        }
-
-        forward_list(size_type count, const T& value, const Allocator& alloc = Allocator())
-            : forward_list(alloc)
+        forward_list(size_type count, const T& value)
+            : forward_list()
         {
             this->resize(count, value);
         }
 
-        explicit forward_list(size_type count, const Allocator& alloc = Allocator())
-            : forward_list(alloc)
+        explicit forward_list(size_type count)
+            : forward_list()
         {
             this->resize(count);
         }
 
         template<class InputIt, std::enable_if_t<ff::internal::is_iterator_t<InputIt>, int> = 0>
-        forward_list(InputIt first, InputIt last, const Allocator& alloc = Allocator())
-            : forward_list(alloc)
+        forward_list(InputIt first, InputIt last)
+            : forward_list()
         {
             this->assign(first, last);
         }
 
         forward_list(const this_type& other)
-            : forward_list(other, other.get_allocator())
-        {
-        }
-
-        forward_list(const this_type& other, const Allocator& alloc)
-            : forward_list(alloc)
+            : forward_list()
         {
             *this = other;
         }
 
         forward_list(this_type&& other)
-            : forward_list(std::move(other), other.get_allocator())
-        {
-        }
-
-        forward_list(this_type&& other, const Allocator& alloc)
-            : forward_list(alloc)
+            : forward_list()
         {
             *this = std::move(other);
         }
 
-        forward_list(std::initializer_list<T> init, const Allocator& alloc = Allocator())
-            : forward_list(alloc)
+        forward_list(std::initializer_list<T> init)
+            : forward_list()
         {
             this->assign(init);
         }
@@ -230,7 +214,7 @@ namespace ff
             return *this;
         }
 
-        forward_list& operator=(this_type&& other) noexcept(std::allocator_traits<Allocator>::is_always_equal::value)
+        forward_list& operator=(this_type&& other) noexcept
         {
             if (this != &other)
             {
@@ -267,10 +251,7 @@ namespace ff
             this->insert_after(this->cbefore_begin(), ilist);
         }
 
-        allocator_type get_allocator() const noexcept
-        {
-            return allocator_type();
-        }
+        // allocator_type get_allocator() const noexcept
 
         reference front()
         {
@@ -458,7 +439,7 @@ namespace ff
             this->erase_after(this->cbefore_begin());
         }
 
-        void swap(this_type& other) noexcept(std::allocator_traits<Allocator>::is_always_equal::value)
+        void swap(this_type& other) noexcept
         {
             if (this != &other)
             {
@@ -597,46 +578,46 @@ namespace ff
     };
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator==(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator==(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return std::equal(lhs.cbegin(), lhs.cend(), other.cbegin(), other.cend());
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator!=(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator!=(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return !(lhs == other);
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator<(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator<(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return std::lexicographical_compare(lhs.cbegin(), lhs.cend(), other.cbegin(), other.cend());
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator<=(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator<=(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return !(other < lhs);
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator>(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator>(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return other < lhs;
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator>=(const ff::forward_list<T, SharedNodePool, Allocator>& lhs, const ff::forward_list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator>=(const ff::forward_list<T, SharedNodePool>& lhs, const ff::forward_list<T, SharedNodePool>& other)
 {
     return !(lhs < other);
 }
 
 namespace std
 {
-    template<class T, bool SharedNodePool, class Allocator>
-    void swap(ff::forward_list<T, SharedNodePool, Allocator>& lhs, ff::forward_list<T, SharedNodePool, Allocator>& other) noexcept(noexcept(lhs.swap(other)))
+    template<class T, bool SharedNodePool>
+    void swap(ff::forward_list<T, SharedNodePool>& lhs, ff::forward_list<T, SharedNodePool>& other) noexcept(noexcept(lhs.swap(other)))
     {
         lhs.swap(other);
     }

@@ -29,6 +29,31 @@ namespace ff::internal
             return nullptr;
         }
     };
+
+    class vector_allocator_base
+    {
+    protected:
+        static void* new_bytes(size_t size_requested, size_t alignment, size_t& size_allocated);
+        static void delete_bytes(void* data, size_t size_requested_or_allocated);
+    };
+
+    template<class T>
+    class vector_allocator : private vector_allocator_base
+    {
+    protected:
+        static void deallocate(T* const ptr, const size_t count)
+        {
+            vector_allocator_base::delete_bytes(ptr, sizeof(T) * count);
+        }
+
+        static T* allocate(const size_t count, size_t& count_allocated)
+        {
+            size_t size_allocated;
+            T* data = static_cast<T*>(vector_allocator_base::new_bytes(sizeof(T) * count, alignof(T), size_allocated));
+            count_allocated = size_allocated / sizeof(T);
+            return data;
+        }
+    };
 }
 
 namespace ff
@@ -37,90 +62,72 @@ namespace ff
     /// Replacement class for std::vector
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::vector class, but it allows stack storage
+    /// This is a replacement for the std::vector class, but it allows stack storage
     /// before memory is allocated. Also, no memory is ever allocated until the first insertion.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="StackSize">Initial buffer size on the stack</typeparam>
-    /// <typeparam name="Allocator">Used to allocate internal storage</typeparam>
-    template<class T, size_t StackSize = 0, class Allocator = std::allocator<T>>
+    template<class T, size_t StackSize = 0>
     class vector
         : private ff::internal::vector_stack_storage<T, StackSize>
+        , private ff::internal::vector_allocator<T>
         , private ff::internal::type_helper
-        , private Allocator
     {
     public:
-        using this_type = vector<T, StackSize, Allocator>;
-        using value_type = T;
-        using reference = T&;
-        using const_reference = const T&;
-        using allocator_type = typename Allocator;
-        using pointer = typename std::allocator_traits<allocator_type>::pointer;
-        using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
-        using size_type = typename std::allocator_traits<allocator_type>::size_type;
-        using difference_type = typename std::allocator_traits<allocator_type>::difference_type;
+        using this_type = typename vector<T, StackSize>;
+        using value_type = typename T;
+        using reference = typename T&;
+        using const_reference = typename const T&;
+        using allocator_type = typename ff::internal::vector_allocator<T>;
+        using pointer = typename T*;
+        using const_pointer = typename const T*;
+        using size_type = typename size_t;
+        using difference_type = typename ptrdiff_t;
         using iterator = typename pointer;
         using const_iterator = typename const_pointer;
-        using reverse_iterator = std::reverse_iterator<iterator>;
-        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+        using reverse_iterator = typename std::reverse_iterator<iterator>;
+        using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
 
-        explicit vector(const Allocator& alloc) noexcept
+        vector() noexcept
             : item_data(this->get_stack_items())
             , item_cap(StackSize)
             , item_size(0)
         {
         }
 
-        vector() noexcept
-            : vector(Allocator())
-        {
-        }
-
-        vector(size_type count, const T& value, const Allocator& alloc = Allocator())
-            : vector(alloc)
+        vector(size_type count, const T& value)
+            : vector()
         {
             this->assign(count, value);
         }
 
-        explicit vector(size_type count, const Allocator& alloc = Allocator())
-            : vector(alloc)
+        explicit vector(size_type count)
+            : vector()
         {
             this->resize(count);
         }
 
         template<class InputIt, std::enable_if_t<ff::internal::is_iterator_t<InputIt>, int> = 0>
-        vector(InputIt first, InputIt last, const Allocator& alloc = Allocator())
-            : vector(alloc)
+        vector(InputIt first, InputIt last)
+            : vector()
         {
             this->assign(first, last);
         }
 
         vector(const this_type& other)
-            : vector(other.get_allocator())
-        {
-            this->assign(other.cbegin(), other.cend());
-        }
-
-        vector(const this_type& other, const Allocator& alloc)
-            : vector(alloc)
+            : vector()
         {
             this->assign(other.cbegin(), other.cend());
         }
 
         vector(this_type&& other) noexcept
-            : vector(other.get_allocator())
+            : vector()
         {
             *this = std::move(other);
         }
 
-        vector(this_type&& other, const Allocator& alloc)
-            : vector(alloc)
-        {
-            *this = std::move(other);
-        }
-
-        vector(std::initializer_list<T> init, const Allocator& alloc = Allocator())
-            : vector(alloc)
+        vector(std::initializer_list<T> init)
+            : vector()
         {
             this->assign(init);
         }
@@ -141,7 +148,7 @@ namespace ff
             return *this;
         }
 
-        this_type& operator=(this_type&& other) noexcept(std::allocator_traits<Allocator>::propagate_on_container_move_assignment::value || std::allocator_traits<Allocator>::is_always_equal::value)
+        this_type& operator=(this_type&& other) noexcept
         {
             if (this != &other)
             {
@@ -545,15 +552,14 @@ namespace ff
 
         T* allocate_item_data(size_type capacity_requested, size_type &capacity)
         {
-            capacity = std::max<size_type>(ff::math::nearest_power_of_two(capacity_requested), 16);
-            return Allocator::allocate(capacity);
+            return allocator_type::allocate(capacity_requested, capacity);
         }
 
         void deallocate_item_data()
         {
             if (this->item_data != this->get_stack_items())
             {
-                Allocator::deallocate(this->item_data, this->item_cap);
+                allocator_type::deallocate(this->item_data, this->item_cap);
                 this->item_data = this->get_stack_items();
             }
 
@@ -567,46 +573,46 @@ namespace ff
     };
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator==(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator==(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return lhs.size() == rhs.size() && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator!=(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator!=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return !(lhs == rhs);
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator<(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator<(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return std::lexicographical_compare(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator<=(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator<=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return !(rhs < lhs);
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator>(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator>(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return rhs < lhs;
 }
 
-template<class T, size_t StackSize, class Allocator>
-bool operator>=(const ff::vector<T, StackSize, Allocator>& lhs, const ff::vector<T, StackSize, Allocator>& rhs)
+template<class T, size_t StackSize>
+bool operator>=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
 {
     return !(lhs < rhs);
 }
 
 namespace std
 {
-    template<class T, size_t StackSize, class Allocator>
-    void swap(ff::vector<T, StackSize, Allocator>& lhs, ff::vector<T, StackSize, Allocator>& rhs) noexcept(noexcept(lhs.swap(rhs)))
+    template<class T, size_t StackSize>
+    void swap(ff::vector<T, StackSize>& lhs, ff::vector<T, StackSize>& rhs) noexcept(noexcept(lhs.swap(rhs)))
     {
         lhs.swap(rhs);
     }

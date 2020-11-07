@@ -1,4 +1,5 @@
 #pragma once
+
 #include "pool_allocator.h"
 #include "type_helper.h"
 
@@ -187,84 +188,67 @@ namespace ff
     /// Replacement class for std::list
     /// </summary>
     /// <remarks>
-    /// This is a drop-in replacement for the std::list class, but it always uses a memory pool for items
+    /// This is a replacement for the std::list class, but it always uses a memory pool for items.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="SharedNodePool">True to share the node pool among all lists of same type</typeparam>
-    /// <typeparam name="Allocator">Not actually used to allocate memory since a pool is used</typeparam>
-    template<class T, bool SharedNodePool = false, class Allocator = std::allocator<T>>
+    template<class T, bool SharedNodePool = false>
     class list : private ff::internal::list_node_pool<T, SharedNodePool>
     {
     public:
-        using this_type = typename list<T, SharedNodePool, Allocator>;
+        using this_type = typename list<T, SharedNodePool>;
         using node_type = typename ff::internal::list_node<T>;
         using value_type = typename T;
-        using allocator_type = typename Allocator;
-        using size_type = typename std::allocator_traits<allocator_type>::size_type;
-        using difference_type = typename std::allocator_traits<allocator_type>::difference_type;
+        using size_type = typename size_t;
+        using difference_type = typename ptrdiff_t;
         using reference = typename value_type&;
-        using const_reference = const value_type&;
-        using pointer = typename std::allocator_traits<allocator_type>::pointer;
-        using const_pointer = typename std::allocator_traits<allocator_type>::const_pointer;
+        using const_reference = typename const value_type&;
+        using pointer = typename T*;
+        using const_pointer = typename const T*;
         using iterator = typename ff::internal::list_iterator<T>;
         using const_iterator = typename ff::internal::list_iterator<const T>;
         using reverse_iterator = typename std::reverse_iterator<iterator>;
         using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
 
-        explicit list(const Allocator& alloc)
+        list()
             : head_node(nullptr)
             , tail_node(nullptr)
         {
         }
 
-        list()
-            : list(Allocator())
-        {
-        }
-
-        list(size_type count, const T& value, const Allocator& alloc = Allocator())
-            : list(alloc)
+        list(size_type count, const T& value)
+            : list()
         {
             this->resize(count, value);
         }
 
-        explicit list(size_type count, const Allocator& alloc = Allocator())
-            : list(alloc)
+        explicit list(size_type count)
+            : list()
         {
             this->resize(count);
         }
 
         template<class InputIt, std::enable_if_t<ff::internal::is_iterator_t<InputIt>, int> = 0>
-        list(InputIt first, InputIt last, const Allocator& alloc = Allocator())
-            : list(alloc)
+        list(InputIt first, InputIt last)
+            : list()
         {
             this->assign(first, last);
         }
 
         list(const this_type& other)
-            : list(other, other.get_allocator())
-        {
-        }
-
-        list(const this_type& other, const Allocator& alloc)
-            : list(alloc)
+            : list()
         {
             *this = other;
         }
 
         list(this_type&& other)
-            : list(std::move(other), other.get_allocator())
-        {
-        }
-
-        list(this_type&& other, const Allocator& alloc)
-            : list(alloc)
+            : list()
         {
             *this = std::move(other);
         }
 
-        list(std::initializer_list<T> init, const Allocator& alloc = Allocator())
-            : list(alloc)
+        list(std::initializer_list<T> init)
+            : list()
         {
             this->assign(init);
         }
@@ -284,7 +268,7 @@ namespace ff
             return *this;
         }
 
-        list& operator=(this_type&& other) noexcept(std::allocator_traits<Allocator>::is_always_equal::value)
+        list& operator=(this_type&& other) noexcept
         {
             if (this != &other)
             {
@@ -323,10 +307,7 @@ namespace ff
             this->insert(this->cend(), ilist);
         }
 
-        allocator_type get_allocator() const noexcept
-        {
-            return allocator_type();
-        }
+        // allocator_type get_allocator() const noexcept
 
         reference front()
         {
@@ -595,7 +576,7 @@ namespace ff
             }
         }
 
-        void swap(this_type& other) noexcept(std::allocator_traits<Allocator>::is_always_equal::value)
+        void swap(this_type& other) noexcept
         {
             if (this != &other)
             {
@@ -747,46 +728,46 @@ namespace ff
     };
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator==(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator==(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return lhs.size() == other.size() && std::equal(lhs.cbegin(), lhs.cend(), other.cbegin(), other.cend());
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator!=(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator!=(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return !(lhs == other);
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator<(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator<(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return std::lexicographical_compare(lhs.cbegin(), lhs.cend(), other.cbegin(), other.cend());
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator<=(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator<=(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return !(other < lhs);
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator>(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator>(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return other < lhs;
 }
 
-template<class T, bool SharedNodePool, class Allocator>
-bool operator>=(const ff::list<T, SharedNodePool, Allocator>& lhs, const ff::list<T, SharedNodePool, Allocator>& other)
+template<class T, bool SharedNodePool>
+bool operator>=(const ff::list<T, SharedNodePool>& lhs, const ff::list<T, SharedNodePool>& other)
 {
     return !(lhs < other);
 }
 
 namespace std
 {
-    template<class T, bool SharedNodePool, class Allocator>
-    void swap(ff::list<T, SharedNodePool, Allocator>& lhs, ff::list<T, SharedNodePool, Allocator>& other) noexcept(noexcept(lhs.swap(other)))
+    template<class T, bool SharedNodePool>
+    void swap(ff::list<T, SharedNodePool>& lhs, ff::list<T, SharedNodePool>& other) noexcept(noexcept(lhs.swap(other)))
     {
         lhs.swap(other);
     }
