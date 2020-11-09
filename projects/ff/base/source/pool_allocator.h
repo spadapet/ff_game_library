@@ -4,13 +4,13 @@
 
 namespace ff::internal
 {
-    template<size_t ByteSize, size_t ByteAlign>
+    template<class T>
     struct byte_pool
     {
-        union alignas(::SLIST_ENTRY) alignas(ByteAlign) node_type
+        union alignas(::SLIST_ENTRY) alignas(T) alignas(std::max_align_t) node_type
         {
             ::SLIST_ENTRY entry;
-            std::array<uint8_t, ByteSize> item;
+            std::array<uint8_t, sizeof(T)> item;
         };
 
         byte_pool(size_t size, ::PSLIST_ENTRY& first_entry, ::PSLIST_ENTRY& last_entry)
@@ -28,7 +28,7 @@ namespace ff::internal
             last_entry = &this->nodes[this->size - 1].entry;
         }
 
-        std::unique_ptr<byte_pool<ByteSize, ByteAlign>>& last_pool(size_t& previous_size)
+        std::unique_ptr<byte_pool<T>>& last_pool(size_t& previous_size)
         {
             previous_size = this->size;
             return !this->next_pool ? this->next_pool : this->next_pool->last_pool(previous_size);
@@ -36,7 +36,7 @@ namespace ff::internal
 
         size_t size;
         std::unique_ptr<node_type[]> nodes;
-        std::unique_ptr<byte_pool<ByteSize, ByteAlign>> next_pool;
+        std::unique_ptr<byte_pool<T>> next_pool;
     };
 }
 
@@ -50,15 +50,14 @@ namespace ff
     /// normal calls to new_bytes and delete_bytes. Only when new_bytes needs to allocate more pool memory
     /// is a lock briefly taken. Generally you should use the ff::pool_allocator class instead.
     /// </remarks>
-    /// <typeparam name="ByteSize">Size of the byte buffers</typeparam>
-    /// <typeparam name="ByteAlign">Alignment of the byte buffers</typeparam>
+    /// <typeparam name="T">Buffer size and alignment are based on the size of this type</typeparam>
     /// <typeparam name="ThreadSafe">true if calls into this pool need to be thread safe</typeparam>
-    template<size_t ByteSize, size_t ByteAlign, bool ThreadSafe = true>
+    template<class T, bool ThreadSafe = true>
     class byte_pool_allocator
     {
     public:
-        using this_type = typename byte_pool_allocator<ByteSize, ByteAlign, ThreadSafe>;
-        using pool_type = typename ff::internal::byte_pool<ByteSize, ByteAlign>;
+        using this_type = typename byte_pool_allocator<T, ThreadSafe>;
+        using pool_type = typename ff::internal::byte_pool<T>;
 
         byte_pool_allocator()
             : size(0)
@@ -178,12 +177,12 @@ namespace ff
         ::SLIST_HEADER free_list;
     };
 
-    template<size_t ByteSize, size_t ByteAlign>
-    class byte_pool_allocator<ByteSize, ByteAlign, false>
+    template<class T>
+    class byte_pool_allocator<T, false>
     {
     public:
-        using this_type = typename byte_pool_allocator<ByteSize, ByteAlign, false>;
-        using pool_type = typename ff::internal::byte_pool<ByteSize, ByteAlign>;
+        using this_type = typename byte_pool_allocator<T, false>;
+        using pool_type = typename ff::internal::byte_pool<T>;
 
         byte_pool_allocator()
             : first_free(nullptr)
@@ -339,7 +338,7 @@ namespace ff
         pool_allocator(const this_type& other) = delete;
         pool_allocator& operator=(const this_type& other) = delete;
 
-        byte_pool_allocator<sizeof(T), alignof(T), ThreadSafe> byte_allocator;
+        byte_pool_allocator<T, ThreadSafe> byte_allocator;
     };
 }
 
@@ -356,12 +355,12 @@ namespace std
         }
     }
 
-    template<size_t BS, size_t BA, bool TS>
-    void swap(ff::byte_pool_allocator<BS, BA, TS>& lhs, ff::byte_pool_allocator<BS, BA, TS>& other)
+    template<class T, bool TS>
+    void swap(ff::byte_pool_allocator<T, TS>& lhs, ff::byte_pool_allocator<T, TS>& other)
     {
         if (&lhs != &other)
         {
-            ff::byte_pool_allocator<BS, BA, TS> temp = std::move(lhs);
+            ff::byte_pool_allocator<T, TS> temp = std::move(lhs);
             lhs = std::move(other);
             other = std::move(temp);
         }

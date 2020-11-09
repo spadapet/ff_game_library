@@ -331,6 +331,11 @@ namespace ff
             return this->item_size;
         }
 
+        size_type byte_size() const noexcept
+        {
+            return this->item_size * sizeof(T);
+        }
+
         size_type max_size() const noexcept
         {
             return std::numeric_limits<size_type>::max();

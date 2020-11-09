@@ -4,9 +4,9 @@
 #include "vector.h"
 
 template<size_t ByteSize>
-static ff::byte_pool_allocator<ByteSize, alignof(std::max_align_t)>& get_byte_pool()
+static ff::byte_pool_allocator<std::array<uint8_t, ByteSize>>& get_byte_pool()
 {
-    static ff::byte_pool_allocator<ByteSize, alignof(std::max_align_t)> pool;
+    static ff::byte_pool_allocator<std::array<uint8_t, ByteSize>> pool;
     return pool;
 }
 

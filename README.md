@@ -1,6 +1,8 @@
 # Ferret Face Game Library
 This is a set of utility libraries for writing C++ Windows 10 games. Visual Studio 2019 is required for building these projects.
 
+git clone --recursive https://github.com/spadapet/ff_game_library.git
+
 ## Documentation
 * [Doxygen](https://www.doxygen.nl/download.html) is used to build the documentation. A link will be added here if a built copy is hosted on the web.
 

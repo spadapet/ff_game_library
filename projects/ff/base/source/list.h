@@ -103,6 +103,11 @@ namespace ff::internal
         using pointer = typename T*;
         using reference = typename T&;
 
+        list_iterator()
+            : node(nullptr)
+        {
+        }
+
         list_iterator(node_type* node)
             : node(node)
         {
