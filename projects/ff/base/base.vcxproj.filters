@@ -42,6 +42,18 @@
     <ClInclude Include="source\hash_set.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\unordered_set.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_multiset.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_map.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_multimap.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

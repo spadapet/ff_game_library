@@ -9,4 +9,8 @@
 #include "source/math.h"
 #include "source/pool_allocator.h"
 #include "source/type_helper.h"
+#include "source/unordered_map.h"
+#include "source/unordered_multimap.h"
+#include "source/unordered_multiset.h"
+#include "source/unordered_set.h"
 #include "source/vector.h"

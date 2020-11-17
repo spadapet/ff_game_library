@@ -103,6 +103,11 @@ namespace ff::internal
             return this->iter;
         }
 
+        size_t internal_hash() const
+        {
+            return this->iter->hash_key;
+        }
+
         reference operator*() const
         {
             return this->iter->node_key;
@@ -139,11 +144,11 @@ namespace ff::internal
     private:
         void advance()
         {
-            if constexpr (IteratorType == hash_set_iterator_type::nodes)
+            if constexpr (IteratorType == hash_set_iterator_type::nodes || (!AllowDupes && IteratorType == hash_set_iterator_type::dupes))
             {
                 ++this->iter;
             }
-            else if constexpr (IteratorType == hash_set_iterator_type::dupes)
+            else if constexpr (AllowDupes && IteratorType == hash_set_iterator_type::dupes)
             {
                 this->iter = this->iter->next_dupe;
             }
@@ -330,15 +335,19 @@ namespace ff::internal
             this->empty_buckets();
         }
 
-        std::pair<iterator, bool> insert(const value_type& value)
+        std::pair<iterator, bool> insert(const value_type& value, size_t hash = 0)
         {
             if constexpr (AllowDupes)
             {
-                return this->emplace(value);
+                return this->emplace(hash, value);
             }
             else
             {
-                size_t hash = hasher()(value);
+                if (!hash)
+                {
+                    hash = hasher()(value);
+                }
+
                 const_iterator i = this->find(value, hash);
                 if (i == this->cend())
                 {
@@ -354,15 +363,19 @@ namespace ff::internal
             }
         }
 
-        std::pair<iterator, bool> insert(value_type&& value)
+        std::pair<iterator, bool> insert(value_type&& value, size_t hash = 0)
         {
             if constexpr (AllowDupes)
             {
-                return this->emplace(std::move(value));
+                return this->emplace(hash, std::move(value));
             }
             else
             {
-                size_t hash = hasher()(value);
+                if (!hash)
+                {
+                    hash = hasher()(value);
+                }
+
                 const_iterator i = this->find(value, hash);
                 if (i == this->cend())
                 {
@@ -403,10 +416,10 @@ namespace ff::internal
         }
 
         template<class... Args>
-        std::pair<iterator, bool> emplace(Args&&... args)
+        std::pair<iterator, bool> emplace(size_t hash, Args&&... args)
         {
             list_iterator node = this->nodes.emplace(this->nodes.cend(), std::forward<Args>(args)...);
-            node->hash_key = hasher()(node->node_key);
+            node->hash_key = !hash ? hasher()(node->node_key) : hash;
 
             if constexpr (AllowDupes)
             {
@@ -432,7 +445,7 @@ namespace ff::internal
         template<class... Args>
         std::pair<iterator, bool> emplace_hint(const_iterator hint, Args&&... args)
         {
-            return this->emplace(std::forward<Args>(args)...);
+            return this->emplace(0, std::forward<Args>(args)...);
         }
 
         template<class IterT>
@@ -536,7 +549,15 @@ namespace ff::internal
 
         std::pair<const_dupe_iterator, const_dupe_iterator> equal_range(const Key& key) const
         {
-            return std::make_pair<const_dupe_iterator, const_dupe_iterator>(this->find(key), this->cend());
+            if constexpr (AllowDupes)
+            {
+                return std::make_pair<const_dupe_iterator, const_dupe_iterator>(this->find(key), this->cend());
+            }
+            else
+            {
+                const_iterator i = this->find(key);
+                return std::make_pair<const_dupe_iterator, const_dupe_iterator>(i, (i == this->cend()) ? i : std::next(i));
+            }
         }
 
         size_type bucket_count() const

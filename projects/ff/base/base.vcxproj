@@ -24,6 +24,10 @@
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\type_helper.h" />
     <ClInclude Include="source\hash_set.h" />
+    <ClInclude Include="source\unordered_map.h" />
+    <ClInclude Include="source\unordered_multimap.h" />
+    <ClInclude Include="source\unordered_multiset.h" />
+    <ClInclude Include="source\unordered_set.h" />
     <ClInclude Include="source\vector.h" />
   </ItemGroup>
   <ItemGroup>

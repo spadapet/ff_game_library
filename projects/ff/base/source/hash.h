@@ -64,3 +64,24 @@ namespace ff
         }
     };
 }
+
+namespace ff::internal
+{
+    template<class Hash, class Key, class T>
+    struct pair_key_hash
+    {
+        size_t operator()(const std::pair<const Key, T>& pair) const noexcept
+        {
+            return Hash()(pair.first);
+        }
+    };
+
+    template<class Compare, class Key, class T>
+    struct pair_key_compare
+    {
+        size_t operator()(const std::pair<const Key, T>& first, const std::pair<const Key, T>& second) const noexcept
+        {
+            return Compare()(first.first, second.first);
+        }
+    };
+}
