@@ -56,19 +56,119 @@ namespace ff::internal
         bucket,
     };
 
-    template<class Key, bool AllowDupes, hash_set_iterator_type IteratorType>
+    template<class Key, bool AllowDupes, hash_set_iterator_type IteratorType, bool ConstKey>
     class hash_set_iterator
     {
     public:
-        using this_type = typename hash_set_iterator<Key, AllowDupes, IteratorType>;
+        using this_type = typename hash_set_iterator<Key, AllowDupes, IteratorType, ConstKey>;
+        using node_type = typename hash_set_node<Key, AllowDupes>;
+        using list_iterator = typename node_type::list_iterator;
+        using const_list_iterator = typename node_type::const_list_iterator;
+        using iterator_category = typename std::forward_iterator_tag;
+        using value_type = typename Key;
+        using difference_type = typename ptrdiff_t;
+        using pointer = typename value_type*;
+        using reference = typename value_type&;
+
+        hash_set_iterator(list_iterator iter)
+            : iter(iter)
+        {
+        }
+
+        template<hash_set_iterator_type IteratorType2>
+        hash_set_iterator(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
+            : iter(other.internal_iter())
+        {
+        }
+
+        template<hash_set_iterator_type IteratorType2>
+        bool operator==(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
+        {
+            return this->iter == other.internal_iter();
+        }
+
+        template<hash_set_iterator_type IteratorType2>
+        bool operator!=(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
+        {
+            return this->iter != other.internal_iter();
+        }
+
+        const_list_iterator internal_iter() const
+        {
+            return this->iter;
+        }
+
+        size_t internal_hash() const
+        {
+            return this->iter->hash_key;
+        }
+
+        reference operator*() const
+        {
+            return this->iter->node_key;
+        }
+
+        pointer operator->() const
+        {
+            return &this->iter->node_key;
+        }
+
+        this_type& operator++()
+        {
+            this->advance();
+            return *this;
+        }
+
+        this_type operator++(int)
+        {
+            this_type pre = *this;
+            this->advance();
+            return pre;
+        }
+
+        bool operator==(const this_type& other) const
+        {
+            return this->iter == other.iter;
+        }
+
+        bool operator!=(const this_type& other) const
+        {
+            return this->iter != other.iter;
+        }
+
+    private:
+        void advance()
+        {
+            if constexpr (IteratorType == hash_set_iterator_type::nodes || (!AllowDupes && IteratorType == hash_set_iterator_type::dupes))
+            {
+                ++this->iter;
+            }
+            else if constexpr (AllowDupes && IteratorType == hash_set_iterator_type::dupes)
+            {
+                this->iter = this->iter->next_dupe;
+            }
+            else if constexpr (IteratorType == hash_set_iterator_type::bucket)
+            {
+                this->iter = this->iter->next_node;
+            }
+        }
+
+        list_iterator iter;
+    };
+
+    template<class Key, bool AllowDupes, hash_set_iterator_type IteratorType>
+    class hash_set_iterator<Key, AllowDupes, IteratorType, true>
+    {
+    public:
+        using this_type = typename hash_set_iterator<Key, AllowDupes, IteratorType, true>;
         using node_type = typename hash_set_node<Key, AllowDupes>;
         using list_iterator = typename node_type::list_iterator;
         using const_list_iterator = typename node_type::const_list_iterator;
         using iterator_category = typename std::forward_iterator_tag;
         using value_type = typename const Key;
         using difference_type = typename ptrdiff_t;
-        using pointer = typename const Key*;
-        using reference = typename const Key&;
+        using pointer = typename value_type*;
+        using reference = typename value_type&;
 
         hash_set_iterator(list_iterator iter)
             : iter(iter)
@@ -80,20 +180,20 @@ namespace ff::internal
         {
         }
 
-        template<hash_set_iterator_type IteratorType2>
-        hash_set_iterator(const hash_set_iterator<Key, AllowDupes, IteratorType2>& other)
+        template<hash_set_iterator_type IteratorType2, bool ConstKey>
+        hash_set_iterator(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
             : iter(other.internal_iter())
         {
         }
 
-        template<hash_set_iterator_type IteratorType2>
-        bool operator==(const hash_set_iterator<Key, AllowDupes, IteratorType2>& other)
+        template<hash_set_iterator_type IteratorType2, bool ConstKey>
+        bool operator==(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
         {
             return this->iter == other.internal_iter();
         }
 
-        template<hash_set_iterator_type IteratorType2>
-        bool operator!=(const hash_set_iterator<Key, AllowDupes, IteratorType2>& other)
+        template<hash_set_iterator_type IteratorType2, bool ConstKey>
+        bool operator!=(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
         {
             return this->iter != other.internal_iter();
         }
@@ -161,11 +261,11 @@ namespace ff::internal
         const_list_iterator iter;
     };
 
-    template<class Key, class Hash, class KeyEqual, bool AllowDupes>
+    template<class Key, class Hash, class KeyEqual, bool AllowDupes, bool ConstKey>
     class hash_set
     {
     public:
-        using this_type = typename hash_set<Key, Hash, KeyEqual, AllowDupes>;
+        using this_type = typename hash_set<Key, Hash, KeyEqual, AllowDupes, ConstKey>;
         using node_type = typename hash_set_node<Key, AllowDupes>;
         using list_iterator = typename node_type::list_iterator;
         using const_list_iterator = typename node_type::const_list_iterator;
@@ -179,12 +279,12 @@ namespace ff::internal
         using const_reference = typename const value_type&;
         using pointer = typename value_type*;
         using const_pointer = typename const value_type*;
-        using const_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::nodes>;
-        using iterator = typename const_iterator;
-        using const_dupe_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::dupes>;
-        using dupe_iterator = typename const_iterator;
-        using const_local_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::bucket>;
-        using local_iterator = typename const_local_iterator;
+        using const_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::nodes, true>;
+        using iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::nodes, ConstKey>;
+        using const_dupe_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::dupes, true>;
+        using dupe_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::dupes, ConstKey>;
+        using const_local_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::bucket, true>;
+        using local_iterator = typename hash_set_iterator<Key, AllowDupes, hash_set_iterator_type::bucket, ConstKey>;
 
         hash_set()
             : hash_set(0)
@@ -354,7 +454,7 @@ namespace ff::internal
                     list_iterator node = this->nodes.emplace(this->nodes.cend(), value);
                     node->hash_key = hash;
                     this->add_node_to_bucket(node, true);
-                    return std::make_pair<iterator, bool>(node, true);
+                    return std::make_pair<iterator, bool>(std::move(node), true);
                 }
                 else
                 {
@@ -428,8 +528,8 @@ namespace ff::internal
             }
             else
             {
-                const_iterator i = this->find(node->node_key, node->hash_key);
-                if (i == this->cend())
+                iterator i = this->find(node->node_key, node->hash_key);
+                if (i == this->end())
                 {
                     this->add_node_to_bucket(node, true);
                     return std::make_pair<iterator, bool>(node, true);
@@ -437,7 +537,7 @@ namespace ff::internal
                 else
                 {
                     this->nodes.erase(node);
-                    return std::make_pair<iterator, bool>(i.internal_iter(), false);
+                    return std::make_pair<iterator, bool>(std::move(i), false);
                 }
             }
         }
@@ -495,15 +595,10 @@ namespace ff::internal
 
         iterator find(const Key& key)
         {
-            return static_cast<const this_type*>(this)->find(key);
-        }
-
-        const_iterator find(const Key& key) const
-        {
             if (!this->empty())
             {
                 size_t hash = hasher()(key);
-                for (const_list_iterator i = this->get_bucket_for_hash_const(hash); i != this->bad_node_const(); i = i->next_node)
+                for (list_iterator i = this->get_bucket_for_hash(hash); i != this->bad_node(); i = i->next_node)
                 {
                     if (key_equal()(i->node_key, key))
                     {
@@ -512,15 +607,15 @@ namespace ff::internal
                 }
             }
 
-            return this->cend();
+            return this->end();
         }
 
-        const_iterator find(const Key& key, size_t hash) const
+        iterator find(const Key& key, size_t hash)
         {
             if (!this->buckets.empty())
             {
-                const_list_iterator dupe = this->get_bucket_for_hash_const(hash);
-                for (; dupe != this->bad_node_const(); dupe = dupe->next_node)
+                list_iterator dupe = this->get_bucket_for_hash(hash);
+                for (; dupe != this->bad_node(); dupe = dupe->next_node)
                 {
                     if (dupe->hash_key == hash && key_equal()(dupe->node_key, key))
                     {
@@ -529,7 +624,17 @@ namespace ff::internal
                 }
             }
 
-            return this->bad_node_const();
+            return this->end();
+        }
+
+        const_iterator find(const Key& key) const
+        {
+            return const_cast<this_type*>(this)->find(key);
+        }
+
+        const_iterator find(const Key& key, size_t hash) const
+        {
+            return const_cast<this_type*>(this)->find(key, hash);
         }
 
         bool contains(const Key& key) const
@@ -544,7 +649,15 @@ namespace ff::internal
 
         std::pair<dupe_iterator, dupe_iterator> equal_range(const Key& key)
         {
-            return static_cast<const this_type*>(this)->equal_range(key);
+            if constexpr (AllowDupes)
+            {
+                return std::make_pair<dupe_iterator, dupe_iterator>(this->find(key), this->end());
+            }
+            else
+            {
+                iterator i = this->find(key);
+                return std::make_pair<dupe_iterator, dupe_iterator>(i, (i == this->end()) ? i : std::next(i));
+            }
         }
 
         std::pair<const_dupe_iterator, const_dupe_iterator> equal_range(const Key& key) const

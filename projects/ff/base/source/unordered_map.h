@@ -12,7 +12,7 @@ namespace ff
         using key_type = typename Key;
         using mapped_type = typename T;
         using value_type = typename std::pair<const Key, T>;
-        using internal_type = typename ff::internal::hash_set<value_type, ff::internal::pair_key_hash<Hash, Key, T>, ff::internal::pair_key_compare<std::equal_to<Key>, Key, T>, false>;
+        using internal_type = typename ff::internal::hash_set<value_type, ff::internal::pair_key_hash<Hash, Key, T>, ff::internal::pair_key_compare<std::equal_to<Key>, Key, T>, false, false>;
         using size_type = typename size_t;
         using difference_type = typename ptrdiff_t;
         using hasher = typename Hash;
@@ -22,11 +22,11 @@ namespace ff
         using pointer = typename value_type*;
         using const_pointer = typename const value_type*;
         using const_iterator = typename internal_type::const_iterator;
-        using iterator = typename const_iterator;
+        using iterator = typename internal_type::iterator;
         using const_dupe_iterator = typename internal_type::const_dupe_iterator;
-        using dupe_iterator = typename const_iterator;
+        using dupe_iterator = typename internal_type::dupe_iterator;
         using const_local_iterator = typename internal_type::const_local_iterator;
-        using local_iterator = typename const_local_iterator;
+        using local_iterator = typename internal_type::local_iterator;
 
         unordered_map()
         {
@@ -202,7 +202,7 @@ namespace ff
             if (i != this->data.end())
             {
                 i->second = std::forward<M>(obj);
-                return std::make_pair<iterator, bool>(i, false);
+                return std::make_pair<iterator, bool>(std::move(i), false);
             }
 
             return this->data.emplace(hash, k, std::forward<M>(obj));
@@ -217,7 +217,7 @@ namespace ff
             if (i != this->data.end())
             {
                 i->second = std::forward<M>(obj);
-                return std::make_pair<iterator, bool>(i, false);
+                return std::make_pair<iterator, bool>(std::move(i), false);
             }
 
             return this->data.emplace(hash, std::move(k), std::forward<M>(obj));
@@ -255,7 +255,7 @@ namespace ff
 
             if (i != this->data.end())
             {
-                return std::make_pair<iterator, bool>(i, false);
+                return std::make_pair<iterator, bool>(std::move(i), false);
             }
 
             return this->data.emplace(hash, value_type(std::piecewise_construct, std::forward_as_tuple(k), std::forward_as_tuple(std::forward<Args>(args)...)));
@@ -269,7 +269,7 @@ namespace ff
 
             if (i != this->data.end())
             {
-                return std::make_pair<iterator, bool>(i, false);
+                return std::make_pair<iterator, bool>(std::move(i), false);
             }
 
             return this->data.emplace(hash, value_type(std::piecewise_construct, std::forward_as_tuple(std::move(k)), std::forward_as_tuple(std::forward<Args>(args)...)));
@@ -330,7 +330,7 @@ namespace ff
 
         T& operator[](Key&& key)
         {
-            return return this->try_emplace(std::move(key)).first->second;
+            return this->try_emplace(std::move(key)).first->second;
         }
 
         size_type count(const Key& key) const

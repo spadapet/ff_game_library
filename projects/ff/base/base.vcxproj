@@ -11,6 +11,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\hash.cpp" />
+    <ClCompile Include="source\timer.cpp" />
     <ClCompile Include="source\vector.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -22,6 +23,7 @@
     <ClInclude Include="source\list.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\pool_allocator.h" />
+    <ClInclude Include="source\timer.h" />
     <ClInclude Include="source\type_helper.h" />
     <ClInclude Include="source\hash_set.h" />
     <ClInclude Include="source\unordered_map.h" />

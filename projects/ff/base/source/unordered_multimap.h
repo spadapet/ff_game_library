@@ -12,7 +12,7 @@ namespace ff
         using key_type = typename Key;
         using mapped_type = typename T;
         using value_type = typename std::pair<const Key, T>;
-        using internal_type = typename ff::internal::hash_set<value_type, ff::internal::pair_key_hash<Hash, Key, T>, ff::internal::pair_key_compare<std::equal_to<Key>, Key, T>, true>;
+        using internal_type = typename ff::internal::hash_set<value_type, ff::internal::pair_key_hash<Hash, Key, T>, ff::internal::pair_key_compare<std::equal_to<Key>, Key, T>, true, false>;
         using size_type = typename size_t;
         using difference_type = typename ptrdiff_t;
         using hasher = typename Hash;
@@ -22,11 +22,11 @@ namespace ff
         using pointer = typename value_type*;
         using const_pointer = typename const value_type*;
         using const_iterator = typename internal_type::const_iterator;
-        using iterator = typename const_iterator;
+        using iterator = typename internal_type::iterator;
         using const_dupe_iterator = typename internal_type::const_dupe_iterator;
-        using dupe_iterator = typename const_iterator;
+        using dupe_iterator = typename internal_type::dupe_iterator;
         using const_local_iterator = typename internal_type::const_local_iterator;
-        using local_iterator = typename const_local_iterator;
+        using local_iterator = typename internal_type::local_iterator;
 
         unordered_multimap()
         {

@@ -9,7 +9,7 @@ namespace ff
     {
     public:
         using this_type = typename unordered_multiset<Key, Hash, KeyEqual>;
-        using internal_type = typename ff::internal::hash_set<Key, Hash, KeyEqual, true>;
+        using internal_type = typename ff::internal::hash_set<Key, Hash, KeyEqual, true, true>;
         using key_type = typename Key;
         using value_type = typename Key;
         using size_type = typename size_t;
@@ -21,11 +21,11 @@ namespace ff
         using pointer = typename value_type*;
         using const_pointer = typename const value_type*;
         using const_iterator = typename internal_type::const_iterator;
-        using iterator = typename const_iterator;
+        using iterator = typename internal_type::iterator;
         using const_dupe_iterator = typename internal_type::const_dupe_iterator;
-        using dupe_iterator = typename const_iterator;
+        using dupe_iterator = typename internal_type::dupe_iterator;
         using const_local_iterator = typename internal_type::const_local_iterator;
-        using local_iterator = typename const_local_iterator;
+        using local_iterator = typename internal_type::local_iterator;
 
         unordered_multiset()
         {

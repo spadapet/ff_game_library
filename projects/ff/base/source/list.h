@@ -172,14 +172,24 @@ namespace ff::internal
             return pre;
         }
 
-        bool operator==(const this_type& other) const
+        bool operator==(const list_iterator<typename std::remove_const_t<T>>& other) const
         {
-            return this->node == other.node;
+            return this->node == other.internal_node();
         }
 
-        bool operator!=(const this_type& other) const
+        bool operator==(const list_iterator<typename std::add_const_t<T>>& other) const
         {
-            return this->node != other.node;
+            return this->node == other.internal_node();
+        }
+
+        bool operator!=(const list_iterator<typename std::remove_const_t<T>>& other) const
+        {
+            return this->node != other.internal_node();
+        }
+
+        bool operator!=(const list_iterator<typename std::add_const_t<T>>& other) const
+        {
+            return this->node != other.internal_node();
         }
 
     private:

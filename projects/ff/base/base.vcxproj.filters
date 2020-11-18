@@ -11,6 +11,9 @@
     <ClCompile Include="source\hash.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\timer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -52,6 +55,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\unordered_multimap.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\timer.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

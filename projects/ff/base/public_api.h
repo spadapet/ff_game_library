@@ -8,6 +8,7 @@
 #include "source/list.h"
 #include "source/math.h"
 #include "source/pool_allocator.h"
+#include "source/timer.h"
 #include "source/type_helper.h"
 #include "source/unordered_map.h"
 #include "source/unordered_multimap.h"

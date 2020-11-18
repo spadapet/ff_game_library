@@ -3,7 +3,7 @@
 namespace base_test
 {
     template<bool AllowDupes>
-    using test_hash_set = ff::internal::hash_set<std::string, ff::hash<std::string>, std::equal_to<std::string>, AllowDupes>;
+    using test_hash_set = ff::internal::hash_set<std::string, ff::hash<std::string>, std::equal_to<std::string>, AllowDupes, true>;
 
     template<bool AllowDupes>
     static void empty_test()

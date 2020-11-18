@@ -54,23 +54,23 @@ namespace ff::math
     template<class T>
     constexpr T nearest_power_of_two(T num)
     {
-        num = num ? num - 1 : 0;
+        num -= (num != static_cast<T>(0));
 
         num |= num >> 1;
         num |= num >> 2;
         num |= num >> 4;
 
-        if constexpr (sizeof(T) > 8)
+        if constexpr (sizeof(T) >= 2)
         {
             num |= num >> 8;
         }
 
-        if constexpr (sizeof(T) > 16)
+        if constexpr (sizeof(T) >= 4)
         {
             num |= num >> 16;
         }
 
-        if constexpr (sizeof(T) > 32)
+        if constexpr (sizeof(T) >= 8)
         {
             num |= num >> 32;
         }
