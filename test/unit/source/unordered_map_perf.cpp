@@ -75,8 +75,8 @@ namespace base_test
             std_compare_perf(10);
             std_compare_perf(100);
             std_compare_perf(1000);
-            std_compare_perf(10000);
-            std_compare_perf(100000);
+            //std_compare_perf(10000);
+            //std_compare_perf(100000);
             //std_compare_perf(1000000);
         }
     };

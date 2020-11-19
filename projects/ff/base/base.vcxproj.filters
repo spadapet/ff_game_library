@@ -60,6 +60,15 @@
     <ClInclude Include="source\timer.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\point.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rect.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

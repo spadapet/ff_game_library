@@ -20,6 +20,12 @@
     <ClCompile Include="source\unordered_map_perf.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\fixed_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\point_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
