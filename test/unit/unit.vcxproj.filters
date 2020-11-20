@@ -26,6 +26,9 @@
     <ClCompile Include="source\point_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\rect_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

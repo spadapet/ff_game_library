@@ -19,6 +19,7 @@ namespace base_test
             values.push_back(i);
         }
 
+        ff::memory::start_tracking_allocations();
         ff::timer timer;
 
         for (size_t i = 0; i < 8; i++)
@@ -32,11 +33,14 @@ namespace base_test
 
             for (size_t i = 0; i < entry_count; i++)
             {
-                Assert::AreEqual(values[i], map[keys[i]]);
+                //Assert::AreEqual(values[i], map[keys[i]]);
             }
         }
 
         double my_time = timer.tick();
+        ff::memory::allocation_stats my_mem_stats = ff::memory::stop_tracking_allocations();
+        ff::memory::start_tracking_allocations();
+        timer.tick();
 
         for (size_t i = 0; i < 8; i++)
         {
@@ -49,22 +53,49 @@ namespace base_test
 
             for (size_t i = 0; i < entry_count; i++)
             {
-                Assert::AreEqual(values[i], map[keys[i]]);
+                //Assert::AreEqual(values[i], map[keys[i]]);
             }
         }
 
         double crt_time = timer.tick();
+        ff::memory::allocation_stats crt_mem_stats = ff::memory::stop_tracking_allocations();
 
-        std::stringstream status;
-        status
-            << "Map with "
-            << entry_count
-            << " entries, 8 times: ff::unordered_map:"
-            << my_time
-            << ", std::unordered_map:"
-            << crt_time
-            << "\r\n";
-        Logger::WriteMessage(status.str().c_str());
+        // Perf results
+        {
+            std::stringstream status;
+            status
+                << "Map with "
+                << entry_count
+                << " entries, 8 times: ff::unordered_map:"
+                << my_time
+                << ", std::unordered_map:"
+                << crt_time
+                << ", "
+                << crt_time / my_time
+                << "X"
+                << "\r\n";
+            Logger::WriteMessage(status.str().c_str());
+        }
+
+        // Mem results
+        {
+            std::stringstream status;
+            status
+                << "ff::unordered_map memory:Total:"
+                << my_mem_stats.total
+                << ",Max:"
+                << my_mem_stats.maximum
+                << ",Count:"
+                << my_mem_stats.count
+                << ". std::unordered_map memory:Total:"
+                << crt_mem_stats.total
+                << ",Max:"
+                << crt_mem_stats.maximum
+                << ",Count:"
+                << crt_mem_stats.count
+                << "\r\n";
+            Logger::WriteMessage(status.str().c_str());
+        }
     }
 
     TEST_CLASS(unordered_map_perf)
@@ -75,9 +106,11 @@ namespace base_test
             std_compare_perf(10);
             std_compare_perf(100);
             std_compare_perf(1000);
-            //std_compare_perf(10000);
-            //std_compare_perf(100000);
-            //std_compare_perf(1000000);
+            std_compare_perf(10000);
+            std_compare_perf(100000);
+#ifndef _DEBUG
+            std_compare_perf(1000000);
+#endif
         }
     };
 }

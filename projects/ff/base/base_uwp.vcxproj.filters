@@ -5,6 +5,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\hash.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\memory.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\timer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vector.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -28,6 +40,39 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\list.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hash.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\hash_set.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\memory.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\point.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rect.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\timer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_map.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_multimap.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_multiset.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\unordered_set.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,6 +14,9 @@
     <ClCompile Include="source\timer.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\memory.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -67,6 +70,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\fixed.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\memory.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

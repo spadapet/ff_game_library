@@ -8,6 +8,7 @@
 #include "source/hash_set.h"
 #include "source/list.h"
 #include "source/math.h"
+#include "source/memory.h"
 #include "source/point.h"
 #include "source/pool_allocator.h"
 #include "source/rect.h"
