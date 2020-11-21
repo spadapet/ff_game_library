@@ -75,7 +75,7 @@ static void std_compare_perf(size_t entry_count)
     std::cout << status.str() << std::endl;
 }
 
-void main()
+int main()
 {
     ::std_compare_perf(10);
     ::std_compare_perf(100);
@@ -83,4 +83,6 @@ void main()
     ::std_compare_perf(10000);
     ::std_compare_perf(100000);
     ::std_compare_perf(1000000);
+
+    return 0;
 }

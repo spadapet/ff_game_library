@@ -415,8 +415,8 @@ namespace ff
 
         this_type center(const point_type& point) const
         {
-            T left2 = point.x - this->width() this_type::value_two;
-            T top2 = point.y - this->height() this_type::value_two;
+            T left2 = point.x - this->width() / this_type::value_two;
+            T top2 = point.y - this->height() / this_type::value_two;
 
             return this_type(left2, top2, left2 + this->width(), top2 + this->height());
         }

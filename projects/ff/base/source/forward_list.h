@@ -277,7 +277,8 @@ namespace ff
 
         const_iterator cbefore_begin() const noexcept
         {
-            node_type* before_begin_node = node_type::get_before_begin(const_cast<node_type*>(this->head_node));
+            node_type*& head_node = const_cast<node_type*&>(this->head_node);
+            node_type* before_begin_node = node_type::get_before_begin(head_node);
             return const_iterator(before_begin_node);
         }
 

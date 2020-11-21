@@ -5,7 +5,9 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <mutex>
 #include <string>

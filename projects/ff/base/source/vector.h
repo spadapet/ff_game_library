@@ -407,7 +407,7 @@ namespace ff
         template<class InputIt, std::enable_if_t<ff::internal::is_iterator_t<InputIt>, int> = 0>
         iterator insert(const_iterator pos, InputIt first, InputIt last)
         {
-            return this->insert_range(pos, first, last, std::iterator_traits<InputIt>::iterator_category{});
+            return this->insert_range(pos, first, last, typename std::iterator_traits<InputIt>::iterator_category{});
         }
 
         iterator insert(const_iterator pos, std::initializer_list<T> ilist)

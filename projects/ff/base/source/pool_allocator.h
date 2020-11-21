@@ -128,7 +128,7 @@ namespace ff
             {
                 assert(this->size);
 
-                pool_type::node_type* node = reinterpret_cast<pool_type::node_type*>(obj);
+                typename pool_type::node_type* node = reinterpret_cast<typename pool_type::node_type*>(obj);
                 ::InterlockedPushEntrySList(&this->free_list, &node->entry);
                 this->size.fetch_sub(1);
             }
@@ -190,7 +190,7 @@ namespace ff
         {
         }
 
-        byte_pool_allocator(byte_pool_allocator&& other)
+        byte_pool_allocator(byte_pool_allocator&& other) noexcept
             : pool_list(std::move(other.pool_list))
             , first_free(other.first_free)
             , size(other.size)
@@ -204,7 +204,7 @@ namespace ff
             assert(!this->size);
         }
 
-        this_type& operator=(this_type&& other)
+        this_type& operator=(this_type&& other) noexcept
         {
             if (this != &other)
             {
@@ -242,7 +242,7 @@ namespace ff
         {
             if (obj)
             {
-                pool_type::node_type* node = reinterpret_cast<pool_type::node_type*>(obj);
+                typename pool_type::node_type* node = reinterpret_cast<typename pool_type::node_type*>(obj);
                 node->entry.Next = this->first_free;
                 this->first_free = &node->entry;
                 this->size--;
@@ -302,9 +302,9 @@ namespace ff
         using this_type = typename pool_allocator<T, ThreadSafe>;
 
         pool_allocator() = default;
-        pool_allocator(this_type&& other) = default;
+        pool_allocator(this_type&& other) noexcept = default;
 
-        this_type& operator=(this_type&& other)
+        this_type& operator=(this_type&& other) noexcept
         {
             this->byte_allocator = std::move(other.byte_allocator);
             return *this;
@@ -345,7 +345,7 @@ namespace ff
 namespace std
 {
     template<class T, bool TS>
-    void swap(ff::pool_allocator<T, TS>& lhs, ff::pool_allocator<T, TS>& other)
+    void swap(ff::pool_allocator<T, TS>& lhs, ff::pool_allocator<T, TS>& other) noexcept
     {
         if (&lhs != &other)
         {

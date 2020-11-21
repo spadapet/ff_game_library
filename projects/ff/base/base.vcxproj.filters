@@ -17,6 +17,9 @@
     <ClCompile Include="source\memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\log.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -73,6 +76,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\memory.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\log.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

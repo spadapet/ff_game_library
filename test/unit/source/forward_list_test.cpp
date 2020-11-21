@@ -94,7 +94,8 @@ namespace base_test
             Assert::IsTrue(list1 == ff::forward_list<int>{ 1, 2, 3 });
             Assert::IsTrue(list2 == ff::forward_list<int>{ 2, 4 });
 
-            std::swap(list1, ff::forward_list<int>());
+            ff::forward_list<int> default_list;
+            std::swap(list1, default_list);
             Assert::IsTrue(list1.empty());
         }
 
