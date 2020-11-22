@@ -136,15 +136,10 @@
     <ClCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)projects</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition=" '$(Configuration)' == 'Debug' ">EnableFastChecks</BasicRuntimeChecks>
-      <BufferSecurityCheck Condition=" '$(Configuration)' != 'Debug' ">false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <FunctionLevelLinking Condition=" '$(Configuration)' != 'Debug' ">true</FunctionLevelLinking>
-      <IntrinsicFunctions Condition=" '$(Configuration)' != 'Debug' ">true</IntrinsicFunctions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <Optimization Condition=" '$(Configuration)' != 'Debug' ">Full</Optimization>
       <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;DISABLE_XAML_GENERATED_MAIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -153,11 +148,21 @@
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDOWS;_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINDOWS;_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Debug' ">DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(Configuration)' != 'Debug' ">NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SDLCheck Condition=" '$(Configuration)' != 'Debug' "></SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+    <ClCompile Condition=" '$(Configuration)' != 'Debug' ">
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>Full</Optimization>
+      <PreprocessorDefinitions>NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!--<RuntimeLibrary>MultiThreaded</RuntimeLibrary>-->
+      <SDLCheck></SDLCheck>
+    </ClCompile>
+    <ClCompile Condition=" '$(Configuration)' == 'Debug' ">
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <PreprocessorDefinitions>DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <!-- Shader compiler options -->
     <FXC>

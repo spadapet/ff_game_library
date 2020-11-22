@@ -29,6 +29,12 @@
     <ClCompile Include="source\rect_test.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\string_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\uuid_test.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

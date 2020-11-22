@@ -26,7 +26,9 @@
     <ClCompile Include="source\pool_allocator_test.cpp" />
     <ClCompile Include="source\forward_list_test.cpp" />
     <ClCompile Include="source\rect_test.cpp" />
+    <ClCompile Include="source\string_test.cpp" />
     <ClCompile Include="source\unordered_map_perf.cpp" />
+    <ClCompile Include="source\uuid_test.cpp" />
     <ClCompile Include="source\vector_test.cpp" />
   </ItemGroup>
   <ItemGroup>

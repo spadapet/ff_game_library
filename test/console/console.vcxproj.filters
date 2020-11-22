@@ -14,4 +14,7 @@
       <UniqueIdentifier>{5443884b-66b0-474b-ac6c-7b99d92bc657}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
 </Project>

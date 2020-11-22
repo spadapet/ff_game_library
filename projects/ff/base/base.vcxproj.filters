@@ -17,7 +17,10 @@
     <ClCompile Include="source\memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\log.cpp">
+    <ClCompile Include="source\uuid.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -78,7 +81,10 @@
     <ClInclude Include="source\memory.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\log.h">
+    <ClInclude Include="source\uuid.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

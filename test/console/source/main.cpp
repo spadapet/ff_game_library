@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 static void std_compare_perf(size_t entry_count)
 {
@@ -75,7 +75,7 @@ static void std_compare_perf(size_t entry_count)
     std::cout << status.str() << std::endl;
 }
 
-int main()
+static void run_hash_table_perf()
 {
     ::std_compare_perf(10);
     ::std_compare_perf(100);
@@ -83,6 +83,39 @@ int main()
     ::std_compare_perf(10000);
     ::std_compare_perf(100000);
     ::std_compare_perf(1000000);
+}
+
+static void run_unicode_file_name()
+{
+    std::ofstream file(u8"👌.txt");
+    file.write("Hello world!\r\n", 14);
+    file.close();
+
+    std::error_code ec;
+    std::filesystem::remove(u8"👌.txt", ec);
+}
+
+int main()
+{
+    std::locale::global(std::locale(".UTF8"));
+
+    std::cout << "Choose:" << std::endl
+        << "1) Hash table perf" << std::endl
+        << "2) Unicode file names" << std::endl;
+
+    int choice = 0;
+    std::cin >> choice;
+
+    switch (choice)
+    {
+        case 1:
+            run_hash_table_perf();
+            break;
+
+        case 2:
+            run_unicode_file_name();
+            break;
+    }
 
     return 0;
 }

@@ -11,9 +11,10 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\hash.cpp" />
-    <ClCompile Include="source\log.cpp" />
     <ClCompile Include="source\memory.cpp" />
+    <ClCompile Include="source\string.cpp" />
     <ClCompile Include="source\timer.cpp" />
+    <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -24,12 +25,12 @@
     <ClInclude Include="source\forward_list.h" />
     <ClInclude Include="source\hash.h" />
     <ClInclude Include="source\list.h" />
-    <ClInclude Include="source\log.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\memory.h" />
     <ClInclude Include="source\point.h" />
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\rect.h" />
+    <ClInclude Include="source\string.h" />
     <ClInclude Include="source\timer.h" />
     <ClInclude Include="source\type_helper.h" />
     <ClInclude Include="source\hash_set.h" />
@@ -37,6 +38,7 @@
     <ClInclude Include="source\unordered_multimap.h" />
     <ClInclude Include="source\unordered_multiset.h" />
     <ClInclude Include="source\unordered_set.h" />
+    <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\vector.h" />
   </ItemGroup>
   <ItemGroup>

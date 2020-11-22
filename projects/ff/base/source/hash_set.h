@@ -40,6 +40,7 @@ namespace ff::internal
         template<class... Args>
         hash_set_node(Args&&... args)
             : node_key(std::forward<Args>(args)...)
+            , hash_key(0)
         {
         }
 
@@ -836,25 +837,29 @@ namespace ff::internal
                 }
             }
 
-            if ((bucket && !allow_bucket_resize) || !this->reserve(this->load_size + 1))
+            if (!allow_bucket_resize || !this->reserve(this->load_size + 1))
             {
-                if (bucket && *bucket != this->bad_node())
+                assert(bucket);
+                if (bucket)
                 {
-                    (*bucket)->prev_node = node;
+                    if (*bucket != this->bad_node())
+                    {
+                        (*bucket)->prev_node = node;
+                    }
+
+                    node->next_node = *bucket;
+                    node->prev_node = this->bad_node();
+
+                    if constexpr (AllowDupes)
+                    {
+                        node->next_dupe = this->bad_node();
+                        node->prev_dupe = this->bad_node();
+                    }
+
+                    *bucket = node;
+
+                    this->load_size++;
                 }
-
-                node->next_node = *bucket;
-                node->prev_node = this->bad_node();
-
-                if constexpr (AllowDupes)
-                {
-                    node->next_dupe = this->bad_node();
-                    node->prev_dupe = this->bad_node();
-                }
-
-                *bucket = node;
-
-                this->load_size++;
             }
         }
 
