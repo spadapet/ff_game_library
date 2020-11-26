@@ -87,18 +87,16 @@ static void run_hash_table_perf()
 
 static void run_unicode_file_name()
 {
-    std::ofstream file(u8"👌.txt");
+    std::ofstream file("👌.txt");
     file.write("Hello world!\r\n", 14);
     file.close();
 
     std::error_code ec;
-    std::filesystem::remove(u8"👌.txt", ec);
+    std::filesystem::remove("👌.txt", ec);
 }
 
 int main()
 {
-    std::locale::global(std::locale(".UTF8"));
-
     std::cout << "Choose:" << std::endl
         << "1) Hash table perf" << std::endl
         << "2) Unicode file names" << std::endl;

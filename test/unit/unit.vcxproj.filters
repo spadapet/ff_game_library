@@ -2,38 +2,41 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\pool_allocator_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\fixed_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\vector_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\forward_list_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\forward_list_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\hash_set_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\list_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\list_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\hash_set_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\point_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\unordered_map_perf.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\pool_allocator_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\fixed_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\rect_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\point_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\string_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\rect_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\unordered_map_perf.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\string_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\uuid_test.cpp">
+      <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\uuid_test.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="source\base\vector_test.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\file_test.cpp">
+      <Filter>source\data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +45,12 @@
   <ItemGroup>
     <Filter Include="source">
       <UniqueIdentifier>{0ffe958e-6078-414e-9825-107c5af26444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\base">
+      <UniqueIdentifier>{61ba3123-d669-4913-b682-a62ceb12074b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\data">
+      <UniqueIdentifier>{b18b94e7-5f61-4526-b534-a4f7c58423f3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

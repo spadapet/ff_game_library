@@ -1,0 +1,100 @@
+#pragma once
+
+namespace ff::data::internal
+{
+    class file_base
+    {
+    public:
+        size_t size() const;
+        size_t pos() const;
+        size_t pos(size_t new_pos);
+        HANDLE handle() const;
+
+    protected:
+        file_base();
+        file_base(file_base&& other);
+        file_base(const file_base& other) = delete;
+        ~file_base();
+
+        operator bool() const;
+        bool operator!() const;
+        file_base& operator=(file_base&& other);
+        file_base& operator=(const file_base& other) = delete;
+        void swap(file_base& other);
+        void handle(HANDLE handle_data);
+
+    private:
+        HANDLE handle_data;
+    };
+}
+
+namespace ff::data
+{
+    class file_read : public ff::data::internal::file_base
+    {
+    public:
+        file_read(std::string_view path);
+        file_read(file_read&& other);
+        file_read(const file_read& other) = delete;
+        file_read() = delete;
+
+        operator bool() const;
+        bool operator!() const;
+        file_read& operator=(file_read&& other);
+        file_read& operator=(const file_read& other) = delete;
+        void swap(file_read& other);
+
+        size_t read(void* data, size_t size);
+    };
+
+    class file_write : public ff::data::internal::file_base
+    {
+    public:
+        file_write(std::string_view path, bool append = false);
+        file_write(file_write&& other);
+        file_write(const file_write& other) = delete;
+        file_write() = delete;
+
+        operator bool() const;
+        bool operator!() const;
+        file_write& operator=(file_write&& other);
+        file_write& operator=(const file_write& other) = delete;
+        void swap(file_write& other);
+
+        size_t write(const void* data, size_t size);
+    };
+
+    class file_mem_mapped
+    {
+    public:
+        file_mem_mapped(file_read&& file);
+        file_mem_mapped(file_mem_mapped&& other);
+        file_mem_mapped(const file_mem_mapped& other) = delete;
+        file_mem_mapped() = delete;
+        ~file_mem_mapped();
+
+        operator bool() const;
+        bool operator!() const;
+        file_mem_mapped& operator=(file_mem_mapped&& other);
+        file_mem_mapped& operator=(const file_mem_mapped& other) = delete;
+        void swap(file_mem_mapped& other);
+
+        size_t size() const;
+        const uint8_t* data() const;
+
+    private:
+        void close();
+
+        file_read file;
+        HANDLE mapping_handle;
+        size_t mapping_size;
+        const uint8_t* mapping_data;
+    };
+}
+
+namespace std
+{
+    void swap(ff::data::file_read& value1, ff::data::file_read& value2);
+    void swap(ff::data::file_write& value1, ff::data::file_write& value2);
+    void swap(ff::data::file_mem_mapped& value1, ff::data::file_mem_mapped& value2);
+}
