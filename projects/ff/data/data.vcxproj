@@ -10,11 +10,13 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\data.cpp" />
     <ClCompile Include="source\file.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="public_api.h" />
+    <ClInclude Include="source\data.h" />
     <ClInclude Include="source\file.h" />
   </ItemGroup>
   <ItemGroup>

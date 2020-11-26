@@ -5,6 +5,9 @@
     <ClCompile Include="source\file.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -12,6 +15,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="public_api.h" />
+    <ClInclude Include="source\data.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

@@ -3,6 +3,7 @@
 // C++
 #include <cassert>
 #include <string_view>
+#include <vector>
 
 // Windows
 #define NOMINMAX
