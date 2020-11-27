@@ -49,7 +49,7 @@ ff::data::internal::file_base::file_base()
 {
 }
 
-ff::data::internal::file_base::file_base(file_base&& other)
+ff::data::internal::file_base::file_base(file_base&& other) noexcept
     : file_base()
 {
     *this = std::move(other);
@@ -70,7 +70,7 @@ bool ff::data::internal::file_base::operator!() const
     return this->handle_data == INVALID_HANDLE_VALUE;
 }
 
-ff::data::internal::file_base& ff::data::internal::file_base::operator=(file_base&& other)
+ff::data::internal::file_base& ff::data::internal::file_base::operator=(file_base&& other) noexcept
 {
     if (this != &other)
     {
@@ -108,17 +108,43 @@ ff::data::file_read::file_read(std::string_view path)
     this->handle(handle_data);
 }
 
-ff::data::file_read::file_read(file_read&& other)
+ff::data::file_read::file_read(file_read&& other) noexcept
 {
     *this = std::move(other);
 }
 
-ff::data::file_read& ff::data::file_read::operator=(file_read&& other)
+ff::data::file_read::file_read(const file_read& other)
+{
+    *this = other;
+}
+
+ff::data::file_read& ff::data::file_read::operator=(file_read&& other) noexcept
 {
     if (this != &other)
     {
         this->handle(INVALID_HANDLE_VALUE);
         this->swap(other);
+    }
+
+    return *this;
+}
+
+ff::data::file_read& ff::data::file_read::operator=(const file_read& other)
+{
+    if (this != &other)
+    {
+        this->handle(INVALID_HANDLE_VALUE);
+
+        if (other)
+        {
+            HANDLE handle_data = INVALID_HANDLE_VALUE;
+            if (::DuplicateHandle(::GetCurrentProcess(), other.handle(), ::GetCurrentProcess(), &handle_data, 0, FALSE, DUPLICATE_SAME_ACCESS))
+            {
+                this->handle(handle_data);
+            }
+
+            assert(handle_data != INVALID_HANDLE_VALUE);
+        }
     }
 
     return *this;
@@ -162,12 +188,12 @@ ff::data::file_write::file_write(std::string_view path, bool append)
     }
 }
 
-ff::data::file_write::file_write(file_write&& other)
+ff::data::file_write::file_write(file_write&& other) noexcept
 {
     *this = std::move(other);
 }
 
-ff::data::file_write& ff::data::file_write::operator=(file_write&& other)
+ff::data::file_write& ff::data::file_write::operator=(file_write&& other) noexcept
 {
     if (this != &other)
     {
@@ -204,36 +230,17 @@ size_t ff::data::file_write::write(const void* data, size_t size)
     return 0;
 }
 
-ff::data::file_mem_mapped::file_mem_mapped(file_read&& file)
-    : file(std::move(file))
+ff::data::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept
+    : mapping_file(std::move(file))
     , mapping_handle(nullptr)
     , mapping_size(0)
     , mapping_data(nullptr)
 {
-    if (this->file.size())
-    {
-#if METRO_APP
-        this->mapping_handle = ::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr);
-#else
-        this->mapping_handle = ::CreateFileMapping(this->file.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr);
-#endif
-        assert(this->mapping_handle);
-
-        if (this->mapping_handle)
-        {
-            this->mapping_size = this->file.size();
-#if METRO_APP
-            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->mapping_handle, FILE_MAP_READ, 0, _size));
-#else
-            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFile(this->mapping_handle, FILE_MAP_READ, 0, 0, this->mapping_size));
-#endif
-            assert(this->mapping_data);
-        }
-    }
+    this->open();
 }
 
-ff::data::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other)
-    : file(std::move(other.file))
+ff::data::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other) noexcept
+    : mapping_file(std::move(other.mapping_file))
     , mapping_handle(other.mapping_handle)
     , mapping_size(other.mapping_size)
     , mapping_data(other.mapping_data)
@@ -243,12 +250,22 @@ ff::data::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other)
     other.mapping_data = nullptr;
 }
 
+ff::data::file_mem_mapped::file_mem_mapped(const file_read& file)
+    : file_mem_mapped(file_read(file))
+{
+}
+
+ff::data::file_mem_mapped::file_mem_mapped(const file_mem_mapped& other)
+    : file_mem_mapped(other.mapping_file)
+{
+}
+
 ff::data::file_mem_mapped::~file_mem_mapped()
 {
     this->close();
 }
 
-ff::data::file_mem_mapped& ff::data::file_mem_mapped::operator=(file_mem_mapped&& other)
+ff::data::file_mem_mapped& ff::data::file_mem_mapped::operator=(file_mem_mapped&& other) noexcept
 {
     if (this != &other)
     {
@@ -259,11 +276,23 @@ ff::data::file_mem_mapped& ff::data::file_mem_mapped::operator=(file_mem_mapped&
     return *this;
 }
 
+ff::data::file_mem_mapped& ff::data::file_mem_mapped::operator=(const file_mem_mapped& other)
+{
+    if (this != &other)
+    {
+        this->close();
+        this->mapping_file = other.mapping_file;
+        this->open();
+    }
+
+    return *this;
+}
+
 void ff::data::file_mem_mapped::swap(file_mem_mapped& other)
 {
     if (this != &other)
     {
-        std::swap(this->file, other.file);
+        std::swap(this->mapping_file, other.mapping_file);
         std::swap(this->mapping_handle, other.mapping_handle);
         std::swap(this->mapping_size, other.mapping_size);
         std::swap(this->mapping_data, other.mapping_data);
@@ -290,6 +319,32 @@ bool ff::data::file_mem_mapped::operator!() const
     return !this->mapping_handle || !this->mapping_data;
 }
 
+void ff::data::file_mem_mapped::open()
+{
+    this->close();
+
+    if (this->mapping_file && this->mapping_file.size())
+    {
+#if METRO_APP
+        this->mapping_handle = ::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr);
+#else
+        this->mapping_handle = ::CreateFileMapping(this->mapping_file.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr);
+#endif
+        assert(this->mapping_handle);
+
+        if (this->mapping_handle)
+        {
+            this->mapping_size = this->mapping_file.size();
+#if METRO_APP
+            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->mapping_handle, FILE_MAP_READ, 0, _size));
+#else
+            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFile(this->mapping_handle, FILE_MAP_READ, 0, 0, this->mapping_size));
+#endif
+            assert(this->mapping_data);
+        }
+    }
+}
+
 void ff::data::file_mem_mapped::close()
 {
     if (this->mapping_data)
@@ -304,6 +359,11 @@ void ff::data::file_mem_mapped::close()
         ::CloseHandle(this->mapping_handle);
         this->mapping_handle = nullptr;
     }
+}
+
+const ff::data::file_read& ff::data::file_mem_mapped::file() const
+{
+    return this->mapping_file;
 }
 
 void std::swap(ff::data::file_read& value1, ff::data::file_read& value2)

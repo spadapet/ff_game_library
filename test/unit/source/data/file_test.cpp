@@ -27,6 +27,11 @@ namespace base_test
                 Assert::IsTrue(fr);
                 fr.read(&i, sizeof(i));
                 Assert::AreEqual(-128, i);
+
+                ff::data::file_read fr2 = fr;
+                Assert::IsTrue(fr2);
+                Assert::AreEqual(fr.size(), fr2.size());
+                Assert::AreEqual(fr.pos(), fr2.pos());
             }
 
             // mem map
@@ -37,6 +42,11 @@ namespace base_test
                 Assert::AreEqual(sizeof(int), fm.size());
                 const int* i = reinterpret_cast<const int*>(fm.data());
                 Assert::AreEqual(-128, *i);
+
+                ff::data::file_mem_mapped fm2 = fm;
+                Assert::AreEqual(fm.size(), fm2.size());
+                const int* i2 = reinterpret_cast<const int*>(fm2.data());
+                Assert::AreEqual(-128, *i2);
             }
 
             std::filesystem::remove(path);
