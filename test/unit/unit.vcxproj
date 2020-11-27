@@ -30,6 +30,7 @@
     <ClCompile Include="source\base\unordered_map_perf.cpp" />
     <ClCompile Include="source\base\uuid_test.cpp" />
     <ClCompile Include="source\base\vector_test.cpp" />
+    <ClCompile Include="source\data\data_test.cpp" />
     <ClCompile Include="source\data\file_test.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@ namespace base_test
     TEST_CLASS(file_test)
     {
     public:
-        TEST_METHOD(temp_test)
+        TEST_METHOD(read_write_temp_file)
         {
             std::filesystem::path path = std::filesystem::temp_directory_path();
             path /= "ff_game_engine";
