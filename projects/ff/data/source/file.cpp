@@ -102,6 +102,7 @@ void ff::data::internal::file_base::handle(HANDLE handle_data)
 }
 
 ff::data::file_read::file_read(std::string_view path)
+    : file_path(path)
 {
     HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr);
     assert(handle_data != INVALID_HANDLE_VALUE);
@@ -134,6 +135,7 @@ ff::data::file_read& ff::data::file_read::operator=(const file_read& other)
     if (this != &other)
     {
         this->handle(INVALID_HANDLE_VALUE);
+        this->file_path = other.file_path;
 
         if (other)
         {
@@ -152,6 +154,7 @@ ff::data::file_read& ff::data::file_read::operator=(const file_read& other)
 
 void ff::data::file_read::swap(file_read& other)
 {
+    std::swap(this->file_path, other.file_path);
     this->file_base::swap(other);
 }
 
@@ -176,7 +179,13 @@ size_t ff::data::file_read::read(void* data, size_t size)
     return 0;
 }
 
+const std::filesystem::path& ff::data::file_read::path() const
+{
+    return this->file_path;
+}
+
 ff::data::file_write::file_write(std::string_view path, bool append)
+    : file_path(path)
 {
     HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path).c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr);
     assert(handle_data != INVALID_HANDLE_VALUE);
@@ -206,6 +215,7 @@ ff::data::file_write& ff::data::file_write::operator=(file_write&& other) noexce
 
 void ff::data::file_write::swap(file_write& other)
 {
+    std::swap(this->file_path, other.file_path);
     this->file_base::swap(other);
 }
 
@@ -217,6 +227,11 @@ ff::data::file_write::operator bool() const
 bool ff::data::file_write::operator!() const
 {
     return this->file_base::operator!();
+}
+
+const std::filesystem::path& ff::data::file_write::path() const
+{
+    return this->file_path;
 }
 
 size_t ff::data::file_write::write(const void* data, size_t size)
@@ -359,6 +374,11 @@ void ff::data::file_mem_mapped::close()
         ::CloseHandle(this->mapping_handle);
         this->mapping_handle = nullptr;
     }
+}
+
+const std::filesystem::path& ff::data::file_mem_mapped::path() const
+{
+    return this->mapping_file.path();
 }
 
 const ff::data::file_read& ff::data::file_mem_mapped::file() const

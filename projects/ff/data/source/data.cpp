@@ -41,18 +41,18 @@ const uint8_t* ff::data::data_static::data() const
     return this->static_data;
 }
 
-std::unique_ptr<ff::data::data_base> ff::data::data_static::subdata(size_t offset, size_t size) const
+std::shared_ptr<ff::data::data_base> ff::data::data_static::subdata(size_t offset, size_t size) const
 {
     assert(offset + size <= this->data_size);
-    return std::make_unique<ff::data::data_static>(this->static_data + offset, size);
+    return std::make_shared<ff::data::data_static>(this->static_data + offset, size);
 }
 
-ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<ff::data::file_mem_mapped>& file)
+ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file)
     : data_mem_mapped(file, 0, file->size())
 {
 }
 
-ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<ff::data::file_mem_mapped>& file, size_t offset, size_t size)
+ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file, size_t offset, size_t size)
     : shared_file(file)
     , data_offset(offset)
     , data_size(size)
@@ -131,10 +131,10 @@ const uint8_t* ff::data::data_mem_mapped::data() const
     return this->shared_file->data() + this->data_offset;
 }
 
-std::unique_ptr<ff::data::data_base> ff::data::data_mem_mapped::subdata(size_t offset, size_t size) const
+std::shared_ptr<ff::data::data_base> ff::data::data_mem_mapped::subdata(size_t offset, size_t size) const
 {
     assert(this->data_offset + offset + size <= this->shared_file->size());
-    return std::make_unique<data_mem_mapped>(this->shared_file, this->data_offset + offset, size);
+    return std::make_shared<data_mem_mapped>(this->shared_file, this->data_offset + offset, size);
 }
 
 ff::data::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8_t>>& vector)
@@ -146,6 +146,16 @@ ff::data::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8
     : shared_vector(vector)
     , data_offset(offset)
     , data_size(size)
+{
+}
+
+ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector)
+    : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)))
+{
+}
+
+ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector, size_t offset, size_t size)
+    : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)), offset, size)
 {
 }
 
@@ -222,10 +232,10 @@ const uint8_t* ff::data::data_vector::data() const
     return this->shared_vector->data() + this->data_offset;
 }
 
-std::unique_ptr<ff::data::data_base> ff::data::data_vector::subdata(size_t offset, size_t size) const
+std::shared_ptr<ff::data::data_base> ff::data::data_vector::subdata(size_t offset, size_t size) const
 {
     assert(this->data_offset + offset + size <= this->shared_vector->size());
-    return std::make_unique<data_vector>(this->shared_vector, this->data_offset + offset, size);
+    return std::make_shared<data_vector>(this->shared_vector, this->data_offset + offset, size);
 }
 
 void std::swap(ff::data::data_static& value1, ff::data::data_static& value2)

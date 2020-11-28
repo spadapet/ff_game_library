@@ -13,7 +13,7 @@ namespace base_test
             Assert::AreEqual(bytes.data(), data.data());
             Assert::AreEqual<size_t>(8, data.size());
 
-            std::unique_ptr<ff::data::data_base> data2 = data.subdata(4, 4);
+            std::shared_ptr<ff::data::data_base> data2 = data.subdata(4, 4);
             Assert::AreEqual(bytes.data() + 4, data2->data());
             Assert::AreEqual<size_t>(4, data2->size());
         }

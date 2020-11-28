@@ -8,6 +8,15 @@
     <ClCompile Include="source\data.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\saved_data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stream.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\compression.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -16,6 +25,15 @@
     </ClInclude>
     <ClInclude Include="public_api.h" />
     <ClInclude Include="source\data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\saved_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stream.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\compression.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -43,8 +43,12 @@ namespace ff::data
         file_read& operator=(file_read&& other) noexcept;
         file_read& operator=(const file_read& other);
         void swap(file_read& other);
+        const std::filesystem::path& path() const;
 
         size_t read(void* data, size_t size);
+
+    private:
+        std::filesystem::path file_path;
     };
 
     class file_write : public ff::data::internal::file_base
@@ -60,8 +64,12 @@ namespace ff::data
         file_write& operator=(file_write&& other) noexcept;
         file_write& operator=(const file_write& other) = delete;
         void swap(file_write& other);
+        const std::filesystem::path& path() const;
 
         size_t write(const void* data, size_t size);
+
+    private:
+        std::filesystem::path file_path;
     };
 
     class file_mem_mapped
@@ -83,6 +91,7 @@ namespace ff::data
         const file_read& file() const;
         size_t size() const;
         const uint8_t* data() const;
+        const std::filesystem::path& path() const;
 
     private:
         void open();
