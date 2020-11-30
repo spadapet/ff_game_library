@@ -102,11 +102,20 @@ void ff::data::internal::file_base::handle(HANDLE handle_data)
 }
 
 ff::data::file_read::file_read(std::string_view path)
+    : file_read(std::filesystem::path(path))
+{
+}
+
+ff::data::file_read::file_read(const std::filesystem::path& path)
     : file_path(path)
 {
-    HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr);
+    HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path.string()).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr);
     assert(handle_data != INVALID_HANDLE_VALUE);
     this->handle(handle_data);
+}
+
+ff::data::file_read::file_read(file_read&& other)
+{
 }
 
 ff::data::file_read::file_read(file_read&& other) noexcept
@@ -185,9 +194,14 @@ const std::filesystem::path& ff::data::file_read::path() const
 }
 
 ff::data::file_write::file_write(std::string_view path, bool append)
+    : file_write(std::filesystem::path(path))
+{
+}
+
+ff::data::file_write::file_write(const std::filesystem::path& path, bool append)
     : file_path(path)
 {
-    HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path).c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr);
+    HANDLE handle_data = ::CreateFile2(ff::string::to_wstring(path.string()).c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr);
     assert(handle_data != INVALID_HANDLE_VALUE);
     this->handle(handle_data);
 
@@ -243,6 +257,16 @@ size_t ff::data::file_write::write(const void* data, size_t size)
     }
 
     return 0;
+}
+
+ff::data::file_mem_mapped::file_mem_mapped(std::string_view path)
+    : file_mem_mapped(file_read(path))
+{
+}
+
+ff::data::file_mem_mapped::file_mem_mapped(const std::filesystem::path& path)
+    : file_mem_mapped(file_read(path))
+{
 }
 
 ff::data::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept

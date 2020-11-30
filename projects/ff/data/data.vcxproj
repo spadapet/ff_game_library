@@ -6,6 +6,11 @@
     <ProjectGuid>{76418cad-574e-4d62-81bd-41321411fd63}</ProjectGuid>
   </PropertyGroup>
   <Import Project="..\..\..\build\cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)vendor</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -26,6 +31,9 @@
     <ClInclude Include="source\stream.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\vendor\zlib.vcxproj">
+      <Project>{d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\base\base.vcxproj">
       <Project>{dfdbd2c1-61cb-4606-8e52-85b65c9aaef2}</Project>
     </ProjectReference>

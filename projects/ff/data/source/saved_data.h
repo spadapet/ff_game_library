@@ -17,9 +17,9 @@ namespace ff::data
         virtual ~saved_data_base() = 0;
 
         virtual std::shared_ptr<reader_base> saved_reader() const = 0;
-        virtual std::shared_ptr<reader_base> loaded_reader() const = 0;
+        virtual std::shared_ptr<reader_base> loaded_reader() const;
         virtual std::shared_ptr<data_base> saved_data() const = 0;
-        virtual std::shared_ptr<data_base> loaded_data() const = 0;
+        virtual std::shared_ptr<data_base> loaded_data() const;
 
         virtual size_t saved_size() const = 0;
         virtual size_t loaded_size() const = 0;
@@ -34,13 +34,11 @@ namespace ff::data
         saved_data_static(saved_data_static&& other) noexcept;
 
         saved_data_static& operator=(const saved_data_static& other);
-        saved_data_static& operator=(saved_data_static&& other);
+        saved_data_static& operator=(saved_data_static&& other) noexcept;
         void swap(saved_data_static& other);
 
         virtual std::shared_ptr<reader_base> saved_reader() const override;
-        virtual std::shared_ptr<reader_base> loaded_reader() const override;
         virtual std::shared_ptr<data_base> saved_data() const override;
-        virtual std::shared_ptr<data_base> loaded_data() const override;
 
         virtual size_t saved_size() const  override;
         virtual size_t loaded_size() const  override;
@@ -60,13 +58,11 @@ namespace ff::data
         saved_data_file(saved_data_file&& other) noexcept;
 
         saved_data_file& operator=(const saved_data_file& other);
-        saved_data_file& operator=(saved_data_file&& other);
+        saved_data_file& operator=(saved_data_file&& other) noexcept;
         void swap(saved_data_file& other);
 
         virtual std::shared_ptr<reader_base> saved_reader() const override;
-        virtual std::shared_ptr<reader_base> loaded_reader() const override;
         virtual std::shared_ptr<data_base> saved_data() const override;
-        virtual std::shared_ptr<data_base> loaded_data() const override;
 
         virtual size_t saved_size() const  override;
         virtual size_t loaded_size() const  override;
@@ -83,6 +79,6 @@ namespace ff::data
 
 namespace std
 {
-    void swap(const ff::data::saved_data_static& value1, const ff::data::saved_data_static& value2);
-    void swap(const ff::data::saved_data_file& value1, const ff::data::saved_data_file& value2);
+    void swap(ff::data::saved_data_static& value1, ff::data::saved_data_static& value2);
+    void swap(ff::data::saved_data_file& value1, ff::data::saved_data_file& value2);
 }

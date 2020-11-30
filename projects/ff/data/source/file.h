@@ -34,6 +34,7 @@ namespace ff::data
     {
     public:
         file_read(std::string_view path);
+        file_read(const std::filesystem::path& path);
         file_read(file_read&& other) noexcept;
         file_read(const file_read& other);
         file_read() = delete;
@@ -55,6 +56,7 @@ namespace ff::data
     {
     public:
         file_write(std::string_view path, bool append = false);
+        file_write(const std::filesystem::path& path, bool append = false);
         file_write(file_write&& other) noexcept;
         file_write(const file_write& other) = delete;
         file_write() = delete;
@@ -75,6 +77,8 @@ namespace ff::data
     class file_mem_mapped
     {
     public:
+        file_mem_mapped(std::string_view path);
+        file_mem_mapped(const std::filesystem::path& path);
         file_mem_mapped(const file_read& file);
         file_mem_mapped(const file_mem_mapped& other);
         file_mem_mapped(file_read&& file) noexcept;

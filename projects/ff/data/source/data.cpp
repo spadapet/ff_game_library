@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "data.h"
 #include "file.h"
+#include "stream.h"
 
 ff::data::data_base::~data_base()
 {
@@ -72,6 +73,11 @@ ff::data::data_mem_mapped::data_mem_mapped(data_mem_mapped&& other) noexcept
 {
     other.data_offset = 0;
     other.data_size = 0;
+}
+
+ff::data::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file) noexcept
+    : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)))
+{
 }
 
 ff::data::data_mem_mapped& ff::data::data_mem_mapped::operator=(const data_mem_mapped& other)

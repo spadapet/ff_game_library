@@ -41,6 +41,9 @@
     <ClCompile Include="source\data\data_test.cpp">
       <Filter>source\data</Filter>
     </ClCompile>
+    <ClCompile Include="source\data\compression_test.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -39,6 +39,7 @@ namespace ff::data
         data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file, size_t offset, size_t size);
         data_mem_mapped(const data_mem_mapped& other);
         data_mem_mapped(data_mem_mapped&& other) noexcept;
+        data_mem_mapped(file_mem_mapped&& file) noexcept;
 
         data_mem_mapped& operator=(const data_mem_mapped& other);
         data_mem_mapped& operator=(data_mem_mapped&& other) noexcept;
