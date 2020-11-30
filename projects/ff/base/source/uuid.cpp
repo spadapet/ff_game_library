@@ -91,13 +91,6 @@ ff::uuid::operator GUID() const
     return this->data;
 }
 
-void ff::uuid::swap(uuid& other)
-{
-    uuid temp = other;
-    other = *this;
-    *this = temp;
-}
-
 std::string ff::uuid::to_string() const
 {
     const size_t size_plus_null = 39;
@@ -119,11 +112,6 @@ GUID ff::uuid::data_from_sting(std::string_view str)
     GUID data;
     std::wstring wstr = ff::string::to_wstring(str);
     return SUCCEEDED(::IIDFromString(wstr.data(), &data)) ? data : GUID_NULL;
-}
-
-void std::swap(ff::uuid& left, ff::uuid& right)
-{
-    left.swap(right);
 }
 
 std::string std::to_string(const ff::uuid& value)

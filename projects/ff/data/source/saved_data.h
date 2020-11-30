@@ -17,8 +17,8 @@ namespace ff::data
         virtual ~saved_data_base() = 0;
 
         virtual std::shared_ptr<reader_base> saved_reader() const = 0;
-        virtual std::shared_ptr<reader_base> loaded_reader() const;
         virtual std::shared_ptr<data_base> saved_data() const = 0;
+        virtual std::shared_ptr<reader_base> loaded_reader() const;
         virtual std::shared_ptr<data_base> loaded_data() const;
 
         virtual size_t saved_size() const = 0;
@@ -30,12 +30,11 @@ namespace ff::data
     {
     public:
         saved_data_static(const std::shared_ptr<data_base>& data, size_t loaded_size, saved_data_type type);
-        saved_data_static(const saved_data_static& other);
-        saved_data_static(saved_data_static&& other) noexcept;
+        saved_data_static(const saved_data_static& other) = default;
+        saved_data_static(saved_data_static&& other) noexcept = default;
 
-        saved_data_static& operator=(const saved_data_static& other);
-        saved_data_static& operator=(saved_data_static&& other) noexcept;
-        void swap(saved_data_static& other);
+        saved_data_static& operator=(const saved_data_static& other) = default;
+        saved_data_static& operator=(saved_data_static&& other) noexcept = default;
 
         virtual std::shared_ptr<reader_base> saved_reader() const override;
         virtual std::shared_ptr<data_base> saved_data() const override;
@@ -54,12 +53,11 @@ namespace ff::data
     {
     public:
         saved_data_file(const std::filesystem::path& path, size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type);
-        saved_data_file(const saved_data_file& other);
-        saved_data_file(saved_data_file&& other) noexcept;
+        saved_data_file(const saved_data_file& other) = default;
+        saved_data_file(saved_data_file&& other) noexcept = default;
 
-        saved_data_file& operator=(const saved_data_file& other);
-        saved_data_file& operator=(saved_data_file&& other) noexcept;
-        void swap(saved_data_file& other);
+        saved_data_file& operator=(const saved_data_file& other) = default;
+        saved_data_file& operator=(saved_data_file&& other) noexcept = default;
 
         virtual std::shared_ptr<reader_base> saved_reader() const override;
         virtual std::shared_ptr<data_base> saved_data() const override;
@@ -75,10 +73,4 @@ namespace ff::data
         size_t data_loaded_size;
         saved_data_type data_type;
     };
-}
-
-namespace std
-{
-    void swap(ff::data::saved_data_static& value1, ff::data::saved_data_static& value2);
-    void swap(ff::data::saved_data_file& value1, ff::data::saved_data_file& value2);
 }

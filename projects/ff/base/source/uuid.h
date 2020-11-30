@@ -31,7 +31,6 @@ namespace ff
         operator bool() const;
         operator GUID() const;
 
-        void swap(uuid& other);
         std::string to_string() const;
 
     private:
@@ -43,6 +42,5 @@ namespace ff
 
 namespace std
 {
-    void swap(ff::uuid& left, ff::uuid& right);
     std::string to_string(const ff::uuid& value);
 }

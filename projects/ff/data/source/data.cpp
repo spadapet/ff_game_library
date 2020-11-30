@@ -13,25 +13,6 @@ ff::data::data_static::data_static(const void* data, size_t size)
 {
 }
 
-ff::data::data_static::data_static(const data_static& other)
-    : static_data(other.static_data)
-    , data_size(other.data_size)
-{
-}
-
-ff::data::data_static& ff::data::data_static::operator=(const data_static& other)
-{
-    this->static_data = other.static_data;
-    this->data_size = other.data_size;
-    return *this;
-}
-
-void ff::data::data_static::swap(data_static& other)
-{
-    std::swap(this->static_data, other.static_data);
-    std::swap(this->data_size, other.data_size);
-}
-
 size_t ff::data::data_static::size() const
 {
     return this->data_size;
@@ -61,60 +42,14 @@ ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped
     assert(*file && offset + size <= file->size());
 }
 
-ff::data::data_mem_mapped::data_mem_mapped(const data_mem_mapped& other)
-    : data_mem_mapped(other.shared_file, other.data_offset, other.data_size)
-{
-}
-
-ff::data::data_mem_mapped::data_mem_mapped(data_mem_mapped&& other) noexcept
-    : shared_file(std::move(other.shared_file))
-    , data_offset(other.data_offset)
-    , data_size(other.data_size)
-{
-    other.data_offset = 0;
-    other.data_size = 0;
-}
-
 ff::data::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file) noexcept
     : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)))
 {
 }
 
-ff::data::data_mem_mapped& ff::data::data_mem_mapped::operator=(const data_mem_mapped& other)
+ff::data::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file, size_t offset, size_t size) noexcept
+    : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)), offset, size)
 {
-    if (this != &other)
-    {
-        this->shared_file = other.shared_file;
-        this->data_offset = other.data_offset;
-        this->data_size = other.data_size;
-    }
-
-    return *this;
-}
-
-ff::data::data_mem_mapped& ff::data::data_mem_mapped::operator=(data_mem_mapped&& other) noexcept
-{
-    if (this != &other)
-    {
-        this->shared_file = std::move(other.shared_file);
-        this->data_offset = other.data_offset;
-        this->data_size = other.data_size;
-
-        other.data_offset = 0;
-        other.data_size = 0;
-    }
-
-    return *this;
-}
-
-void ff::data::data_mem_mapped::swap(data_mem_mapped& other)
-{
-    if (this != &other)
-    {
-        std::swap(this->shared_file, other.shared_file);
-        std::swap(this->data_offset, other.data_offset);
-        std::swap(this->data_size, other.data_size);
-    }
 }
 
 const std::shared_ptr<ff::data::file_mem_mapped>& ff::data::data_mem_mapped::file() const
@@ -155,67 +90,14 @@ ff::data::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8
 {
 }
 
-ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector)
+ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector) noexcept
     : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)))
 {
 }
 
-ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector, size_t offset, size_t size)
+ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector, size_t offset, size_t size) noexcept
     : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)), offset, size)
 {
-}
-
-ff::data::data_vector::data_vector(const data_vector& other)
-    : shared_vector(other.shared_vector)
-    , data_offset(other.data_offset)
-    , data_size(other.data_size)
-{
-}
-
-ff::data::data_vector::data_vector(data_vector&& other) noexcept
-    : shared_vector(std::move(other.shared_vector))
-    , data_offset(other.data_offset)
-    , data_size(other.data_size)
-{
-    other.data_offset = 0;
-    other.data_size = 0;
-}
-
-ff::data::data_vector& ff::data::data_vector::operator=(const data_vector& other)
-{
-    if (this != &other)
-    {
-        this->shared_vector = other.shared_vector;
-        this->data_offset = other.data_offset;
-        this->data_size = other.data_size;
-    }
-
-    return *this;
-}
-
-ff::data::data_vector& ff::data::data_vector::operator=(data_vector&& other) noexcept
-{
-    if (this != &other)
-    {
-        this->shared_vector = std::move(other.shared_vector);
-        this->data_offset = other.data_offset;
-        this->data_size = other.data_size;
-
-        other.data_offset = 0;
-        other.data_size = 0;
-    }
-
-    return *this;
-}
-
-void ff::data::data_vector::swap(data_vector& other)
-{
-    if (this != &other)
-    {
-        std::swap(this->shared_vector, other.shared_vector);
-        std::swap(this->data_offset, other.data_offset);
-        std::swap(this->data_size, other.data_size);
-    }
 }
 
 const std::shared_ptr<const std::vector<uint8_t>>& ff::data::data_vector::vector() const
@@ -242,19 +124,4 @@ std::shared_ptr<ff::data::data_base> ff::data::data_vector::subdata(size_t offse
 {
     assert(this->data_offset + offset + size <= this->shared_vector->size());
     return std::make_shared<data_vector>(this->shared_vector, this->data_offset + offset, size);
-}
-
-void std::swap(ff::data::data_static& value1, ff::data::data_static& value2)
-{
-    value1.swap(value2);
-}
-
-void std::swap(ff::data::data_mem_mapped& value1, ff::data::data_mem_mapped& value2)
-{
-    value1.swap(value2);
-}
-
-void std::swap(ff::data::data_vector& value1, ff::data::data_vector& value2)
-{
-    value1.swap(value2);
 }

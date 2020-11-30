@@ -12,21 +12,16 @@ static size_t get_chunk_size_for_data_size(size_t data_size)
 
 bool ff::data::compression::compress(reader_base& reader, size_t full_size, writer_base& writer)
 {
-    // Init zlib's buffer
     z_stream zlib_data{};
     deflateInit(&zlib_data, Z_BEST_COMPRESSION);
 
-    // Init my output buffer
     const size_t chunk_size = ::get_chunk_size_for_data_size(full_size);
     std::vector<uint8_t> output_chunk(chunk_size);
     std::vector<uint8_t> input_chunk(chunk_size);
     bool status = true;
-    //size_t progress = 0;
 
     for (size_t pos = 0; status && pos < full_size; pos += chunk_size)
     {
-        // Read a chunk of input and get ready to pass it to zlib
-
         size_t read_size = std::min(full_size - pos, chunk_size);
         size_t actually_read_size = reader.read(input_chunk.data(), read_size);
         bool last_chunk = pos + chunk_size >= full_size;
@@ -46,17 +41,6 @@ bool ff::data::compression::compress(reader_base& reader, size_t full_size, writ
                 if (write_size)
                 {
                     status = writer.write(output_chunk.data(), write_size);
-
-                    //if (status && listener)
-                    //{
-                    //    progress += read_size;
-                    //
-                    //    if (!listener->OnChunk(read_size, progress, full_size))
-                    //    {
-                    //        status = false;
-                    //        break;
-                    //    }
-                    //}
                 }
             }
             while (status && !zlib_data.avail_out);
@@ -70,20 +54,6 @@ bool ff::data::compression::compress(reader_base& reader, size_t full_size, writ
     }
 
     deflateEnd(&zlib_data);
-
-    //if (listener)
-    //{
-    //    if (status)
-    //    {
-    //        assert(progress == full_size);
-    //        listener->OnChunkSuccess(full_size);
-    //    }
-    //    else
-    //    {
-    //        listener->OnChunkFailure(progress, full_size);
-    //    }
-    //}
-
     return status;
 }
 
@@ -94,18 +64,15 @@ bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, w
         return true;
     }
 
-    // Init zlib's buffer
     z_stream zlib_data{};
     inflateInit(&zlib_data);
 
-    // Init my output buffer
     const size_t chunk_size = ::get_chunk_size_for_data_size(saved_size);
     std::vector<uint8_t> output_chunk(::get_chunk_size_for_data_size(saved_size * 2));
     std::vector<uint8_t> input_chunk(chunk_size);
     bool status = true;
     int inflate_status = Z_OK;
     size_t pos = 0;
-    //size_t progress = 0;
 
     for (; status && pos < saved_size; pos = std::min(pos + chunk_size, saved_size))
     {
@@ -133,17 +100,6 @@ bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, w
                 if (write_size)
                 {
                     status = writer.write(output_chunk.data(), write_size);
-
-                    //if (status && listener)
-                    //{
-                    //    progress += read_size;
-                    //
-                    //    if (!listener->OnChunk(read_size, progress, saved_size))
-                    //    {
-                    //        status = false;
-                    //        break;
-                    //    }
-                    //}
                 }
             }
             while (status && !zlib_data.avail_out);
@@ -157,23 +113,9 @@ bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, w
     }
 
     status = (pos == saved_size && inflate_status == Z_STREAM_END);
+    assert(status);
 
     inflateEnd(&zlib_data);
-
-    //if (listener)
-    //{
-    //    if (status)
-    //    {
-    //        assert(progress == saved_size);
-    //        listener->OnChunkSuccess(saved_size);
-    //    }
-    //    else
-    //    {
-    //        listener->OnChunkFailure(progress, saved_size);
-    //    }
-    //}
-
-    assert(status);
     return status;
 }
 

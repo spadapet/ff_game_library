@@ -341,29 +341,3 @@ namespace ff
         byte_pool_allocator<T, ThreadSafe> byte_allocator;
     };
 }
-
-namespace std
-{
-    template<class T, bool TS>
-    void swap(ff::pool_allocator<T, TS>& lhs, ff::pool_allocator<T, TS>& other) noexcept
-    {
-        if (&lhs != &other)
-        {
-            ff::pool_allocator<T, TS> temp = std::move(lhs);
-            lhs = std::move(other);
-            other = std::move(temp);
-        }
-    }
-
-    template<class T, bool TS>
-    void swap(ff::byte_pool_allocator<T, TS>& lhs, ff::byte_pool_allocator<T, TS>& other)
-    {
-        if (&lhs != &other)
-        {
-            ff::byte_pool_allocator<T, TS> temp = std::move(lhs);
-            lhs = std::move(other);
-            other = std::move(temp);
-        }
-    }
-}
-

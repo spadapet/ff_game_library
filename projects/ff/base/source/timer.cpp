@@ -23,10 +23,6 @@ ff::timer::timer()
     this->frequency_double = static_cast<double>(this->frequency);
 }
 
-ff::timer::~timer()
-{
-}
-
 double ff::timer::tick(double forcedOffset)
 {
     double oldTime = this->seconds;

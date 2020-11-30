@@ -12,7 +12,6 @@ namespace ff
     {
     public:
         timer();
-        ~timer();
 
         double tick(double forcedOffset = -1.0); // Update the time
         void reset(); // Start counting seconds from zero
