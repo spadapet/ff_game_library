@@ -16,7 +16,7 @@ namespace ff::data
         virtual size_t size() const = 0;
         virtual size_t pos() const = 0;
         virtual size_t pos(size_t new_pos) = 0;
-        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t full_size, saved_data_type type) const = 0;
+        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type) const = 0;
     };
 
     class reader_base : public stream_base
@@ -66,7 +66,7 @@ namespace ff::data
         virtual size_t size() const override;
         virtual size_t pos() const override;
         virtual size_t pos(size_t new_pos) override;
-        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t full_size, saved_data_type type) const override;
+        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type) const override;
 
     private:
         file_read file;
@@ -76,6 +76,7 @@ namespace ff::data
     {
     public:
         data_writer(const std::shared_ptr<std::vector<uint8_t>>& data);
+        data_writer(const std::shared_ptr<std::vector<uint8_t>>& data, size_t pos);
         data_writer(data_writer&& other) noexcept = default;
         data_writer(const data_writer& other) = delete;
 
@@ -86,10 +87,11 @@ namespace ff::data
         virtual size_t size() const override;
         virtual size_t pos() const override;
         virtual size_t pos(size_t new_pos) override;
-        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t full_size, saved_data_type type) const override;
+        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type) const override;
 
     private:
         std::shared_ptr<std::vector<uint8_t>> data;
+        size_t data_pos;
     };
 
     class file_writer : public writer_base
@@ -106,7 +108,7 @@ namespace ff::data
         virtual size_t size() const override;
         virtual size_t pos() const override;
         virtual size_t pos(size_t new_pos) override;
-        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t full_size, saved_data_type type) const override;
+        virtual std::shared_ptr<saved_data_base> saved_data(size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type) const override;
 
     private:
         file_write file;

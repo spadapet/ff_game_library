@@ -40,7 +40,7 @@ bool ff::data::compression::compress(reader_base& reader, size_t full_size, writ
                 size_t write_size = output_chunk.size() - zlib_data.avail_out;
                 if (write_size)
                 {
-                    status = writer.write(output_chunk.data(), write_size);
+                    status = (writer.write(output_chunk.data(), write_size) == write_size);
                 }
             }
             while (status && !zlib_data.avail_out);
@@ -68,8 +68,8 @@ bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, w
     inflateInit(&zlib_data);
 
     const size_t chunk_size = ::get_chunk_size_for_data_size(saved_size);
-    std::vector<uint8_t> output_chunk(::get_chunk_size_for_data_size(saved_size * 2));
     std::vector<uint8_t> input_chunk(chunk_size);
+    std::vector<uint8_t> output_chunk(chunk_size * 2);
     bool status = true;
     int inflate_status = Z_OK;
     size_t pos = 0;
@@ -91,15 +91,14 @@ bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, w
                 zlib_data.next_out = output_chunk.data();
                 inflate_status = inflate(&zlib_data, Z_NO_FLUSH);
 
-                status =
-                    inflate_status != Z_NEED_DICT &&
-                    inflate_status != Z_DATA_ERROR &&
-                    inflate_status != Z_MEM_ERROR;
-
-                size_t write_size = output_chunk.size() - zlib_data.avail_out;
-                if (write_size)
+                status = inflate_status != Z_NEED_DICT && inflate_status != Z_DATA_ERROR && inflate_status != Z_MEM_ERROR;
+                if (status)
                 {
-                    status = writer.write(output_chunk.data(), write_size);
+                    size_t write_size = output_chunk.size() - zlib_data.avail_out;
+                    if (write_size)
+                    {
+                        status = (writer.write(output_chunk.data(), write_size) == write_size);
+                    }
                 }
             }
             while (status && !zlib_data.avail_out);

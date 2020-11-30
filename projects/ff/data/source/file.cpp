@@ -72,6 +72,11 @@ HANDLE ff::data::file_base::handle() const
     return this->file_handle;
 }
 
+const std::filesystem::path& ff::data::file_base::path() const
+{
+    return this->file_path;
+}
+
 ff::data::file_base::operator bool() const
 {
     return this->file_handle != INVALID_HANDLE_VALUE;

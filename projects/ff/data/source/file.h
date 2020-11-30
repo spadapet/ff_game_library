@@ -41,7 +41,6 @@ namespace ff::data
 
         file_read& operator=(file_read&& other) noexcept;
         file_read& operator=(const file_read& other);
-        const std::filesystem::path& path() const;
 
         size_t read(void* data, size_t size);
     };
