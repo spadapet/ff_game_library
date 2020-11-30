@@ -7,13 +7,37 @@
     <ProjectGuid>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</ProjectGuid>
   </PropertyGroup>
   <Import Project="..\..\..\build\cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)vendor</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\compression.cpp" />
+    <ClCompile Include="source\data.cpp" />
+    <ClCompile Include="source\file.cpp" />
+    <ClCompile Include="source\saved_data.cpp" />
+    <ClCompile Include="source\stream.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="public_api.h" />
+    <ClInclude Include="source\compression.h" />
+    <ClInclude Include="source\data.h" />
+    <ClInclude Include="source\file.h" />
+    <ClInclude Include="source\saved_data.h" />
+    <ClInclude Include="source\stream.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\vendor\zlib_uwp.vcxproj">
+      <Project>{81322ad5-41d2-429d-b8a7-bb1e1a66afef}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\base\base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

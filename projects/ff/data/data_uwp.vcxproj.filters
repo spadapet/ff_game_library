@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\compression.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\file.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\saved_data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stream.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="public_api.h" />
+    <ClInclude Include="source\compression.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\file.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\saved_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stream.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{4ce9ffc1-627d-480b-85e6-66f6ed663657}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
