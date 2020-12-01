@@ -17,6 +17,9 @@
     <ClCompile Include="source\compression.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\persist.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -34,6 +37,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\compression.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\persist.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

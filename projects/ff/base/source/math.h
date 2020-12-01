@@ -77,4 +77,10 @@ namespace ff::math
 
         return num + 1;
     }
+
+    template<class T>
+    constexpr size_t round_up(T value, T multiple)
+    {
+        return (value + multiple - static_cast<T>(1)) / multiple * multiple;
+    }
 }

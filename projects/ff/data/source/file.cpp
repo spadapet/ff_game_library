@@ -167,7 +167,7 @@ ff::data::file_read& ff::data::file_read::operator=(const file_read& other)
 size_t ff::data::file_read::read(void* data, size_t size)
 {
     DWORD read = 0;
-    if (data && size && ::ReadFile(this->handle(), data, static_cast<DWORD>(size), &read, nullptr))
+    if (size && ::ReadFile(this->handle(), data, static_cast<DWORD>(size), &read, nullptr))
     {
         return static_cast<size_t>(read);
     }
@@ -203,7 +203,7 @@ ff::data::file_write& ff::data::file_write::operator=(file_write&& other) noexce
 size_t ff::data::file_write::write(const void* data, size_t size)
 {
     DWORD written = 0;
-    if (data && size && ::WriteFile(this->handle(), data, static_cast<DWORD>(size), &written, nullptr))
+    if (size && ::WriteFile(this->handle(), data, static_cast<DWORD>(size), &written, nullptr))
     {
         return static_cast<size_t>(written);
     }

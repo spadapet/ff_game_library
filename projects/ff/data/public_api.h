@@ -4,5 +4,6 @@
 #include "source/compression.h"
 #include "source/data.h"
 #include "source/file.h"
+#include "source/persist.h"
 #include "source/saved_data.h"
 #include "source/stream.h"

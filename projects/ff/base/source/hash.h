@@ -3,12 +3,6 @@
 namespace ff::internal
 {
     size_t hash_bytes(const void* data, size_t size) noexcept;
-
-    template<class T>
-    inline size_t hash_value(const T& value) noexcept
-    {
-        return ff::internal::hash_bytes(&value, sizeof(T));
-    }
 }
 
 namespace ff
@@ -21,7 +15,7 @@ namespace ff
     {
         size_t operator()(const T& value) const noexcept
         {
-            return ff::internal::hash_value<T>(value);
+            return ff::internal::hash_bytes(&value, sizeof(T));
         }
     };
 

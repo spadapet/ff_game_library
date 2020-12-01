@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 // Windows
