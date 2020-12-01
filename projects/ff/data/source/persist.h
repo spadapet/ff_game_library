@@ -50,7 +50,7 @@ namespace ff::data
         static bool load(reader_base& reader, size_t& data)
         {
             uint64_t data64;
-            if (ff::data::load(reader, data64))
+            if (ff::data::load_bytes(reader, &data64, sizeof(data64)))
             {
                 data = static_cast<size_t>(data64);
                 return true;
@@ -62,7 +62,7 @@ namespace ff::data
         static bool save(writer_base& writer, const size_t& data)
         {
             uint64_t data64 = static_cast<uint64_t>(data);
-            return ff::data::save(writer, data64);
+            return ff::data::save_bytes(writer, &data64, sizeof(data64));
         }
     };
 
@@ -74,17 +74,17 @@ namespace ff::data
             size_t length;
             if (ff::data::load(reader, length))
             {
-                size_t byte_size = length * sizeof(Elem);
                 data.resize(length);
-                return ff::data::load(reader, data.data(), byte_size);
+                return ff::data::load_bytes(reader, data.data(), length * sizeof(Elem));
             }
+
+            return false;
         }
 
         static bool save(writer_base& writer, const std::basic_string<Elem, Traits, Alloc>& data)
         {
             size_t length = data.length();
-            size_t byte_size = length * sizeof(Elem);
-            return ff::data::save(writer, length) && ff::data::save(writer, data.data(), byte_size);
+            return ff::data::save(writer, length) && ff::data::save_bytes(writer, data.data(), length * sizeof(Elem));
         }
     };
 }

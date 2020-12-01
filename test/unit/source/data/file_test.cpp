@@ -1,6 +1,6 @@
 #include "pch.h"
 
-namespace base_test
+namespace data_test
 {
     TEST_CLASS(file_test)
     {
