@@ -6,6 +6,7 @@
 #include "source/forward_list.h"
 #include "source/hash.h"
 #include "source/hash_set.h"
+#include "source/intrusive_ptr.h"
 #include "source/list.h"
 #include "source/math.h"
 #include "source/memory.h"

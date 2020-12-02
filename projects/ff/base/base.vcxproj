@@ -24,6 +24,7 @@
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\forward_list.h" />
     <ClInclude Include="source\hash.h" />
+    <ClInclude Include="source\intrusive_ptr.h" />
     <ClInclude Include="source\list.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\memory.h" />

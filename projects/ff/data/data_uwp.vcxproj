@@ -19,6 +19,7 @@
     <ClCompile Include="source\compression.cpp" />
     <ClCompile Include="source\data.cpp" />
     <ClCompile Include="source\file.cpp" />
+    <ClCompile Include="source\persist.cpp" />
     <ClCompile Include="source\saved_data.cpp" />
     <ClCompile Include="source\stream.cpp" />
   </ItemGroup>
@@ -28,6 +29,7 @@
     <ClInclude Include="source\compression.h" />
     <ClInclude Include="source\data.h" />
     <ClInclude Include="source\file.h" />
+    <ClInclude Include="source\persist.h" />
     <ClInclude Include="source\saved_data.h" />
     <ClInclude Include="source\stream.h" />
   </ItemGroup>

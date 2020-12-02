@@ -87,6 +87,9 @@
     <ClInclude Include="source\string.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\intrusive_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
