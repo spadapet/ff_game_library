@@ -23,33 +23,33 @@ void* ff::internal::vector_allocator_base::new_bytes(size_t size_requested, size
 
     switch (size)
     {
-    case 16:
-        size_allocated = 16;
-        return ::get_byte_pool<16>().new_bytes();
+        case 16:
+            size_allocated = 16;
+            return ::get_byte_pool<16>().new_bytes();
 
-    case 32:
-        size_allocated = 32;
-        return ::get_byte_pool<32>().new_bytes();
+        case 32:
+            size_allocated = 32;
+            return ::get_byte_pool<32>().new_bytes();
 
-    case 64:
-        size_allocated = 64;
-        return ::get_byte_pool<64>().new_bytes();
+        case 64:
+            size_allocated = 64;
+            return ::get_byte_pool<64>().new_bytes();
 
-    case 128:
-        size_allocated = 128;
-        return ::get_byte_pool<128>().new_bytes();
+        case 128:
+            size_allocated = 128;
+            return ::get_byte_pool<128>().new_bytes();
 
-    case 256:
-        size_allocated = 256;
-        return ::get_byte_pool<256>().new_bytes();
+        case 256:
+            size_allocated = 256;
+            return ::get_byte_pool<256>().new_bytes();
 
-    case 512:
-        size_allocated = 512;
-        return ::get_byte_pool<512>().new_bytes();
+        case 512:
+            size_allocated = 512;
+            return ::get_byte_pool<512>().new_bytes();
 
-    default:
-        size_allocated = size_requested;
-        return ::_aligned_malloc(size_requested, alignment);
+        default:
+            size_allocated = size_requested;
+            return ::_aligned_malloc(size_requested, alignment);
     }
 }
 
@@ -59,32 +59,32 @@ void ff::internal::vector_allocator_base::delete_bytes(void* data, size_t size_r
 
     switch (size)
     {
-    case 16:
-        ::get_byte_pool<16>().delete_bytes(data);
-        break;
+        case 16:
+            ::get_byte_pool<16>().delete_bytes(data);
+            break;
 
-    case 32:
-        ::get_byte_pool<32>().delete_bytes(data);
-        break;
+        case 32:
+            ::get_byte_pool<32>().delete_bytes(data);
+            break;
 
-    case 64:
-        ::get_byte_pool<64>().delete_bytes(data);
-        break;
+        case 64:
+            ::get_byte_pool<64>().delete_bytes(data);
+            break;
 
-    case 128:
-        ::get_byte_pool<128>().delete_bytes(data);
-        break;
+        case 128:
+            ::get_byte_pool<128>().delete_bytes(data);
+            break;
 
-    case 256:
-        ::get_byte_pool<256>().delete_bytes(data);
-        break;
+        case 256:
+            ::get_byte_pool<256>().delete_bytes(data);
+            break;
 
-    case 512:
-        ::get_byte_pool<512>().delete_bytes(data);
-        break;
+        case 512:
+            ::get_byte_pool<512>().delete_bytes(data);
+            break;
 
-    default:
-        ::_aligned_free(data);
-        break;
+        default:
+            ::_aligned_free(data);
+            break;
     }
 }

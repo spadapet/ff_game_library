@@ -11,8 +11,7 @@ namespace ff
 
         intrusive_ptr()
             : value(nullptr)
-        {
-        }
+        {}
 
         intrusive_ptr(const this_type& other)
             : intrusive_ptr()
@@ -20,42 +19,109 @@ namespace ff
             *this = other;
         }
 
-        intrusive_ptr(this_type&& other)
-            : value(other.value)
+        intrusive_ptr(T* value)
+            : intrusive_ptr()
         {
-            other.value = nullptr;
+            this->reset(value);
         }
 
-        intrusive_ptr(T* value)
-            : value(nullptr)
+        intrusive_ptr(this_type&& other)
+            : intrusive_ptr()
         {
-            *this = value;
+            *this = std::move(other);
         }
 
         ~intrusive_ptr()
         {
-            *this = nullptr;
+            this->reset();
         }
 
-        this_type& operator=(const this_type& other);
-        this_type& operator=(this_type&& other);
-        this_type& operator=(T* value);
+        this_type& operator=(const this_type& other)
+        {
+            this->reset(other.value);
+            return *this;
+        }
 
-        bool operator==(const this_type& other) const;
-        bool operator!=(const thsi_type& other) const;
-        bool operator==(T* value) const;
-        bool operator!=(T* value) const;
-        bool operator==(std::nullptr_t valure) const;
-        bool operator!=(std::nullptr_t valure) const;
+        this_type& operator=(this_type&& other)
+        {
+            std::swap(this->value, other.value);
+            return *this;
+        }
+
+        bool operator==(const this_type& other) const
+        {
+            return this->value == other.value;
+        }
+
+        bool operator!=(const this_type& other) const
+        {
+            return this->value != other.value;
+        }
+
+        bool operator==(T* value) const
+        {
+            return this->value == value;
+        }
+
+        bool operator!=(T* value) const
+        {
+            return this->value != value;
+        }
+
+        bool operator==(std::nullptr_t value) const
+        {
+            return this->value == nullptr;
+        }
+
+        bool operator!=(std::nullptr_t value) const
+        {
+            return this->value != nullptr;
+        }
+
+        void reset()
+        {
+            this->reset(nullptr);
+        }
+
+        void reset(T* value)
+        {
+            if (this->value != value)
+            {
+                if (value)
+                {
+                    value->add_ref();
+                }
+
+                if (this->value)
+                {
+                    this->value->release_ref();
+                }
+
+                this->value = value;
+            }
+        }
 
         T* get() const
         {
             return this->value;
         }
 
-        operator T* () const;
-        T& operator*() const;
-        T* operator->() const;
+        operator T* () const
+        {
+            return this->value;
+        }
+
+        T& operator*() const
+        {
+            assert(this->value);
+            return *this->value;
+        }
+
+        T* operator->() const
+        {
+            assert(this->value);
+            return this->value;
+        }
 
         operator bool() const
         {

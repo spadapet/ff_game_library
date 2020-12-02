@@ -92,8 +92,7 @@ namespace ff
             : item_data(this->get_stack_items())
             , item_cap(StackSize)
             , item_size(0)
-        {
-        }
+        {}
 
         vector(size_type count, const T& value)
             : vector()
@@ -555,7 +554,7 @@ namespace ff
             return iterator(this->item_data + pos_index);
         }
 
-        T* allocate_item_data(size_type capacity_requested, size_type &capacity)
+        T* allocate_item_data(size_type capacity_requested, size_type& capacity)
         {
             return allocator_type::allocate(capacity_requested, capacity);
         }

@@ -22,23 +22,19 @@ namespace ff
 
         fixed_t(int data)
             : data(data << this_type::fixed_count)
-        {
-        }
+        {}
 
         fixed_t(float data)
-            : data(static_cast<T>(data * this_type::fixed_max))
-        {
-        }
+            : data(static_cast<T>(data* this_type::fixed_max))
+        {}
 
         fixed_t(double data)
             : data(static_cast<T>(data* this_type::fixed_max))
-        {
-        }
+        {}
 
         fixed_t(bool data)
             : fixed_t(static_cast<int>(data))
-        {
-        }
+        {}
 
         operator T() const
         {

@@ -70,19 +70,19 @@ size_t ff::internal::hash_bytes(const void* data, size_t size) noexcept
 
         switch (size)
         {
-        case 12: c += key_data[2]; b += key_data[1]; a += key_data[0]; break;
-        case 11: c += key_data[2] & 0xffffff; b += key_data[1]; a += key_data[0]; break;
-        case 10: c += key_data[2] & 0xffff; b += key_data[1]; a += key_data[0]; break;
-        case 9: c += key_data[2] & 0xff; b += key_data[1]; a += key_data[0]; break;
-        case 8: b += key_data[1]; a += key_data[0]; break;
-        case 7: b += key_data[1] & 0xffffff; a += key_data[0]; break;
-        case 6: b += key_data[1] & 0xffff; a += key_data[0]; break;
-        case 5: b += key_data[1] & 0xff; a += key_data[0]; break;
-        case 4: a += key_data[0]; break;
-        case 3: a += key_data[0] & 0xffffff; break;
-        case 2: a += key_data[0] & 0xffff; break;
-        case 1: a += key_data[0] & 0xff; break;
-        case 0: return ::create_hash_result(b, c);
+            case 12: c += key_data[2]; b += key_data[1]; a += key_data[0]; break;
+            case 11: c += key_data[2] & 0xffffff; b += key_data[1]; a += key_data[0]; break;
+            case 10: c += key_data[2] & 0xffff; b += key_data[1]; a += key_data[0]; break;
+            case 9: c += key_data[2] & 0xff; b += key_data[1]; a += key_data[0]; break;
+            case 8: b += key_data[1]; a += key_data[0]; break;
+            case 7: b += key_data[1] & 0xffffff; a += key_data[0]; break;
+            case 6: b += key_data[1] & 0xffff; a += key_data[0]; break;
+            case 5: b += key_data[1] & 0xff; a += key_data[0]; break;
+            case 4: a += key_data[0]; break;
+            case 3: a += key_data[0] & 0xffffff; break;
+            case 2: a += key_data[0] & 0xffff; break;
+            case 1: a += key_data[0] & 0xff; break;
+            case 0: return ::create_hash_result(b, c);
         }
     }
     else if ((reinterpret_cast<size_t>(data) & 0x1) == 0)
@@ -105,62 +105,62 @@ size_t ff::internal::hash_bytes(const void* data, size_t size) noexcept
 
         switch (size)
         {
-        case 12:
-            c += key_data[4] + (static_cast<uint32_t>(key_data[5]) << 16);
-            b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
-            a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
-            break;
+            case 12:
+                c += key_data[4] + (static_cast<uint32_t>(key_data[5]) << 16);
+                b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
+                a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
+                break;
 
-        case 11:
-            c += static_cast<uint32_t>(byte_data[10]) << 16;
-            [[fallthrough]];
+            case 11:
+                c += static_cast<uint32_t>(byte_data[10]) << 16;
+                [[fallthrough]];
 
-        case 10:
-            c += key_data[4];
-            b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
-            a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
-            break;
+            case 10:
+                c += key_data[4];
+                b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
+                a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
+                break;
 
-        case 9:
-            c += byte_data[8];
-            [[fallthrough]];
+            case 9:
+                c += byte_data[8];
+                [[fallthrough]];
 
-        case 8:
-            b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
-            a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
-            break;
+            case 8:
+                b += key_data[2] + (static_cast<uint32_t>(key_data[3]) << 16);
+                a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
+                break;
 
-        case 7:
-            b += static_cast<uint32_t>(byte_data[6]) << 16;
-            [[fallthrough]];
+            case 7:
+                b += static_cast<uint32_t>(byte_data[6]) << 16;
+                [[fallthrough]];
 
-        case 6:
-            b += key_data[2];
-            a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
-            break;
+            case 6:
+                b += key_data[2];
+                a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
+                break;
 
-        case 5:
-            b += byte_data[4];
-            [[fallthrough]];
+            case 5:
+                b += byte_data[4];
+                [[fallthrough]];
 
-        case 4:
-            a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
-            break;
+            case 4:
+                a += key_data[0] + (static_cast<uint32_t>(key_data[1]) << 16);
+                break;
 
-        case 3:
-            a += static_cast<uint32_t>(byte_data[2]) << 16;
-            [[fallthrough]];
+            case 3:
+                a += static_cast<uint32_t>(byte_data[2]) << 16;
+                [[fallthrough]];
 
-        case 2:
-            a += key_data[0];
-            break;
+            case 2:
+                a += key_data[0];
+                break;
 
-        case 1:
-            a += byte_data[0];
-            break;
+            case 1:
+                a += byte_data[0];
+                break;
 
-        case 0:
-            return ::create_hash_result(b, c);
+            case 0:
+                return ::create_hash_result(b, c);
         }
     }
     else
@@ -192,22 +192,22 @@ size_t ff::internal::hash_bytes(const void* data, size_t size) noexcept
 
         switch (size)
         {
-        case 12: c += static_cast<uint32_t>(key_data[11]) << 24; [[fallthrough]];
-        case 11: c += static_cast<uint32_t>(key_data[10]) << 16; [[fallthrough]];
-        case 10: c += static_cast<uint32_t>(key_data[9]) << 8; [[fallthrough]];
-        case 9: c += key_data[8]; [[fallthrough]];
-        case 8: b += static_cast<uint32_t>(key_data[7]) << 24; [[fallthrough]];
-        case 7: b += static_cast<uint32_t>(key_data[6]) << 16; [[fallthrough]];
-        case 6: b += static_cast<uint32_t>(key_data[5]) << 8; [[fallthrough]];
-        case 5: b += key_data[4]; [[fallthrough]];
-        case 4: a += static_cast<uint32_t>(key_data[3]) << 24; [[fallthrough]];
-        case 3: a += static_cast<uint32_t>(key_data[2]) << 16; [[fallthrough]];
-        case 2: a += static_cast<uint32_t>(key_data[1]) << 8; [[fallthrough]];
-        case 1: a += key_data[0];
-            break;
+            case 12: c += static_cast<uint32_t>(key_data[11]) << 24; [[fallthrough]];
+            case 11: c += static_cast<uint32_t>(key_data[10]) << 16; [[fallthrough]];
+            case 10: c += static_cast<uint32_t>(key_data[9]) << 8; [[fallthrough]];
+            case 9: c += key_data[8]; [[fallthrough]];
+            case 8: b += static_cast<uint32_t>(key_data[7]) << 24; [[fallthrough]];
+            case 7: b += static_cast<uint32_t>(key_data[6]) << 16; [[fallthrough]];
+            case 6: b += static_cast<uint32_t>(key_data[5]) << 8; [[fallthrough]];
+            case 5: b += key_data[4]; [[fallthrough]];
+            case 4: a += static_cast<uint32_t>(key_data[3]) << 24; [[fallthrough]];
+            case 3: a += static_cast<uint32_t>(key_data[2]) << 16; [[fallthrough]];
+            case 2: a += static_cast<uint32_t>(key_data[1]) << 8; [[fallthrough]];
+            case 1: a += key_data[0];
+                break;
 
-        case 0:
-            return ::create_hash_result(b, c);
+            case 0:
+                return ::create_hash_result(b, c);
         }
     }
 

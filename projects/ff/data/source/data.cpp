@@ -4,14 +4,12 @@
 #include "stream.h"
 
 ff::data::data_base::~data_base()
-{
-}
+{}
 
 ff::data::data_static::data_static(const void* data, size_t size)
     : static_data(reinterpret_cast<const uint8_t*>(data))
     , data_size(size)
-{
-}
+{}
 
 size_t ff::data::data_static::size() const
 {
@@ -31,8 +29,7 @@ std::shared_ptr<ff::data::data_base> ff::data::data_static::subdata(size_t offse
 
 ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file)
     : data_mem_mapped(file, 0, file->size())
-{
-}
+{}
 
 ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file, size_t offset, size_t size)
     : shared_file(file)
@@ -44,13 +41,11 @@ ff::data::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped
 
 ff::data::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file) noexcept
     : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)))
-{
-}
+{}
 
 ff::data::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file, size_t offset, size_t size) noexcept
     : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)), offset, size)
-{
-}
+{}
 
 const std::shared_ptr<ff::data::file_mem_mapped>& ff::data::data_mem_mapped::file() const
 {
@@ -80,25 +75,21 @@ std::shared_ptr<ff::data::data_base> ff::data::data_mem_mapped::subdata(size_t o
 
 ff::data::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8_t>>& vector)
     : data_vector(vector, 0, vector->size())
-{
-}
+{}
 
 ff::data::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8_t>>& vector, size_t offset, size_t size)
     : shared_vector(vector)
     , data_offset(offset)
     , data_size(size)
-{
-}
+{}
 
 ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector) noexcept
     : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)))
-{
-}
+{}
 
 ff::data::data_vector::data_vector(std::vector<uint8_t>&& vector, size_t offset, size_t size) noexcept
     : data_vector(std::make_shared<const std::vector<uint8_t>>(std::move(vector)), offset, size)
-{
-}
+{}
 
 const std::shared_ptr<const std::vector<uint8_t>>& ff::data::data_vector::vector() const
 {

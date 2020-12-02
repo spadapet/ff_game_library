@@ -21,8 +21,7 @@ namespace ff
 
         point_t(T x, T y)
             : x(x), y(y)
-        {
-        }
+        {}
 
         static this_type zeros()
         {

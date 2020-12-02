@@ -21,6 +21,10 @@ namespace base_test
             Assert::AreEqual<size_t>(8, v2.size());
             Assert::IsTrue(v1.capacity() >= v1.size());
             Assert::IsTrue(v2.capacity() >= v2.size());
+
+            auto foo = typeid(v1).name();
+            auto foo2 = typeid(v1).raw_name();
+            Assert::AreNotEqual(foo, foo2);
         }
 
         TEST_METHOD(count_alloc)

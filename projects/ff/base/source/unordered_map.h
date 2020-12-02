@@ -29,38 +29,31 @@ namespace ff
         using local_iterator = typename internal_type::local_iterator;
 
         unordered_map()
-        {
-        }
+        {}
 
         explicit unordered_map(size_type bucket_count)
             : data(bucket_count)
-        {
-        }
+        {}
 
         template<class InputIt>
         unordered_map(InputIt first, InputIt last, size_type bucket_count = 0)
             : data(first, last, bucket_count)
-        {
-        }
+        {}
 
         unordered_map(std::initializer_list<value_type> init, size_type bucket_count = 0)
             : data(init, bucket_count)
-        {
-        }
+        {}
 
         unordered_map(const this_type& other)
             : data(other.data)
-        {
-        }
+        {}
 
         unordered_map(this_type&& other)
             : data(std::move(other.data))
-        {
-        }
+        {}
 
         ~unordered_map()
-        {
-        }
+        {}
 
         this_type& operator=(const this_type& other)
         {
@@ -197,7 +190,7 @@ namespace ff
         std::pair<iterator, bool> insert_or_assign(const key_type& k, M&& obj)
         {
             size_t hash = hasher()(k);
-            iterator i = this->data.find(this->fake_value(k), hash);
+            iterator i = this->data.find(this_type::fake_value(k), hash);
 
             if (i != this->data.end())
             {
@@ -212,7 +205,7 @@ namespace ff
         std::pair<iterator, bool> insert_or_assign(key_type&& k, M&& obj)
         {
             size_t hash = hasher()(k);
-            iterator i = this->data.find(this->fake_value(k), hash);
+            iterator i = this->data.find(this_type::fake_value(k), hash);
 
             if (i != this->data.end())
             {
@@ -251,7 +244,7 @@ namespace ff
         std::pair<iterator, bool> try_emplace(const key_type& k, Args&&... args)
         {
             size_t hash = hasher()(k);
-            iterator i = this->data.find(this->fake_value(k), hash);
+            iterator i = this->data.find(this_type::fake_value(k), hash);
 
             if (i != this->data.end())
             {
@@ -265,7 +258,7 @@ namespace ff
         std::pair<iterator, bool> try_emplace(key_type&& k, Args&&... args)
         {
             size_t hash = hasher()(k);
-            iterator i = this->data.find(this->fake_value(k), hash);
+            iterator i = this->data.find(this_type::fake_value(k), hash);
 
             if (i != this->data.end())
             {
@@ -301,7 +294,7 @@ namespace ff
 
         size_type erase(const key_type& key)
         {
-            return this->data.erase(this->fake_value(key));
+            return this->data.erase(this_type::fake_value(key));
         }
 
         void swap(this_type& other) noexcept
@@ -311,14 +304,14 @@ namespace ff
 
         T& at(const Key& key)
         {
-            iterator i = this->data.find(this->fake_value(key));
+            iterator i = this->data.find(this_type::fake_value(key));
             assert(i != this->data.end());
             return i->second;
         }
 
         const T& at(const Key& key) const
         {
-            const_iterator i = this->data.find(this->fake_value(key));
+            const_iterator i = this->data.find(this_type::fake_value(key));
             assert(i != this->data.cend());
             return i->second;
         }
@@ -335,32 +328,32 @@ namespace ff
 
         size_type count(const Key& key) const
         {
-            return this->data.count(this->fake_value(key));
+            return this->data.count(this_type::fake_value(key));
         }
 
         iterator find(const Key& key)
         {
-            return this->data.find(this->fake_value(key));
+            return this->data.find(this_type::fake_value(key));
         }
 
         const_iterator find(const Key& key) const
         {
-            return this->data.find(this->fake_value(key));
+            return this->data.find(this_type::fake_value(key));
         }
 
         bool contains(const Key& key) const
         {
-            return this->data.contains(this->fake_value(key));
+            return this->data.contains(this_type::fake_value(key));
         }
 
         std::pair<dupe_iterator, dupe_iterator> equal_range(const Key& key)
         {
-            return this->data.equal_range(this->fake_value(key));
+            return this->data.equal_range(this_type::fake_value(key));
         }
 
         std::pair<const_dupe_iterator, const_dupe_iterator> equal_range(const Key& key) const
         {
-            return this->data.equal_range(this->fake_value(key));
+            return this->data.equal_range(this_type::fake_value(key));
         }
 
         size_type bucket_count() const
@@ -380,7 +373,7 @@ namespace ff
 
         size_type bucket(const Key& key) const
         {
-            return this->data.bucket(this->fake_value(key));
+            return this->data.bucket(this_type::fake_value(key));
         }
 
         float load_factor() const
@@ -419,7 +412,7 @@ namespace ff
         }
 
     private:
-        const value_type& fake_value(const key_type& k)
+        static const value_type& fake_value(const key_type& k)
         {
             return *reinterpret_cast<const value_type*>(&k);
         }

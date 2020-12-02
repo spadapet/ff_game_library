@@ -19,8 +19,7 @@ namespace ff::internal
         template<class... Args>
         hash_set_node(Args&&... args)
             : node_key(std::forward<Args>(args)...)
-        {
-        }
+        {}
 
         Key node_key;
         size_t hash_key;
@@ -41,8 +40,7 @@ namespace ff::internal
         hash_set_node(Args&&... args)
             : node_key(std::forward<Args>(args)...)
             , hash_key(0)
-        {
-        }
+        {}
 
         Key node_key;
         size_t hash_key;
@@ -73,14 +71,12 @@ namespace ff::internal
 
         hash_set_iterator(list_iterator iter)
             : iter(iter)
-        {
-        }
+        {}
 
         template<hash_set_iterator_type IteratorType2>
         hash_set_iterator(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
             : iter(other.internal_iter())
-        {
-        }
+        {}
 
         template<hash_set_iterator_type IteratorType2>
         bool operator==(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
@@ -173,19 +169,16 @@ namespace ff::internal
 
         hash_set_iterator(list_iterator iter)
             : iter(iter)
-        {
-        }
+        {}
 
         hash_set_iterator(const_list_iterator iter)
             : iter(iter)
-        {
-        }
+        {}
 
         template<hash_set_iterator_type IteratorType2, bool ConstKey>
         hash_set_iterator(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
             : iter(other.internal_iter())
-        {
-        }
+        {}
 
         template<hash_set_iterator_type IteratorType2, bool ConstKey>
         bool operator==(const hash_set_iterator<Key, AllowDupes, IteratorType2, ConstKey>& other)
@@ -289,8 +282,7 @@ namespace ff::internal
 
         hash_set()
             : hash_set(0)
-        {
-        }
+        {}
 
         explicit hash_set(size_type bucket_count)
             : load_size(0)

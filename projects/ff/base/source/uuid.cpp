@@ -4,13 +4,11 @@
 
 ff::uuid::uuid(const GUID& other)
     : data(other)
-{
-}
+{}
 
 ff::uuid::uuid(std::string_view str)
     : data(ff::uuid::data_from_sting(str))
-{
-}
+{}
 
 ff::uuid ff::uuid::create()
 {

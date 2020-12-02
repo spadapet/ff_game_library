@@ -28,38 +28,31 @@ namespace ff
         using local_iterator = typename internal_type::local_iterator;
 
         unordered_multiset()
-        {
-        }
+        {}
 
         explicit unordered_multiset(size_type bucket_count)
             : data(bucket_count)
-        {
-        }
+        {}
 
         template<class InputIt>
         unordered_multiset(InputIt first, InputIt last, size_type bucket_count = 0)
             : data(first, last, bucket_count)
-        {
-        }
+        {}
 
         unordered_multiset(std::initializer_list<value_type> init, size_type bucket_count = 0)
             : data(init, bucket_count)
-        {
-        }
+        {}
 
         unordered_multiset(const this_type& other)
             : data(other.data)
-        {
-        }
+        {}
 
         unordered_multiset(this_type&& other)
             : data(std::move(other.data))
-        {
-        }
+        {}
 
         ~unordered_multiset()
-        {
-        }
+        {}
 
         this_type& operator=(const this_type& other)
         {

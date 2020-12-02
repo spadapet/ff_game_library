@@ -4,14 +4,12 @@
 #include "stream.h"
 
 ff::data::stream_base::~stream_base()
-{
-}
+{}
 
 ff::data::data_reader::data_reader(const std::shared_ptr<data_base>& data)
     : data(data)
     , data_pos(0)
-{
-}
+{}
 
 size_t ff::data::data_reader::read(void* data, size_t size)
 {
@@ -47,8 +45,7 @@ std::shared_ptr<ff::data::saved_data_base> ff::data::data_reader::saved_data(siz
 
 ff::data::file_reader::file_reader(file_read&& file)
     : file(std::move(file))
-{
-}
+{}
 
 size_t ff::data::file_reader::read(void* data, size_t size)
 {
@@ -78,14 +75,12 @@ std::shared_ptr<ff::data::saved_data_base> ff::data::file_reader::saved_data(siz
 
 ff::data::data_writer::data_writer(const std::shared_ptr<std::vector<uint8_t>>& data)
     : data_writer(data, data->size())
-{
-}
+{}
 
 ff::data::data_writer::data_writer(const std::shared_ptr<std::vector<uint8_t>>& data, size_t pos)
     : data(data)
     , data_pos(pos)
-{
-}
+{}
 
 size_t ff::data::data_writer::write(const void* data, size_t size)
 {
@@ -135,8 +130,7 @@ std::shared_ptr<ff::data::saved_data_base> ff::data::data_writer::saved_data(siz
 
 ff::data::file_writer::file_writer(file_write&& file)
     : file(std::move(file))
-{
-}
+{}
 
 size_t ff::data::file_writer::write(const void* data, size_t size)
 {

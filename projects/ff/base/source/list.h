@@ -15,8 +15,7 @@ namespace ff::internal
             : value(std::forward<Args>(args)...)
             , prev(prev)
             , next(next)
-        {
-        }
+        {}
 
         T value;
         this_type* prev;
@@ -41,9 +40,9 @@ namespace ff::internal
             return size;
         }
 
-        void add_size(size_t count) const { }
-        void sub_size(size_t count) const { }
-        void swap_size(list_node_pool<T, SharedNodePool>& other) const { }
+        void add_size(size_t count) const {}
+        void sub_size(size_t count) const {}
+        void swap_size(list_node_pool<T, SharedNodePool>& other) const {}
 
     private:
         node_pool_type node_pool;
@@ -57,8 +56,7 @@ namespace ff::internal
 
         list_node_pool()
             : item_size(0)
-        {
-        }
+        {}
 
         static node_pool_type& get_node_pool()
         {
@@ -105,25 +103,21 @@ namespace ff::internal
 
         list_iterator()
             : node(nullptr)
-        {
-        }
+        {}
 
         list_iterator(node_type* node)
             : node(node)
-        {
-        }
+        {}
 
         list_iterator(const this_type& other)
             : node(other.node)
-        {
-        }
+        {}
 
         // Convert non-const iterator to const iterator
         template<typename = std::enable_if_t<std::is_const_v<T>>>
         list_iterator(const list_iterator<std::remove_const_t<T>>& other)
             : node(other.internal_node())
-        {
-        }
+        {}
 
         node_type* internal_node() const
         {
@@ -228,8 +222,7 @@ namespace ff
         list()
             : head_node(nullptr)
             , tail_node(nullptr)
-        {
-        }
+        {}
 
         list(size_type count, const T& value)
             : list()

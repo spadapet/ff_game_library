@@ -187,8 +187,7 @@ namespace ff
         byte_pool_allocator()
             : first_free(nullptr)
             , size(0)
-        {
-        }
+        {}
 
         byte_pool_allocator(byte_pool_allocator&& other) noexcept
             : pool_list(std::move(other.pool_list))

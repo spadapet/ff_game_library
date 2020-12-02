@@ -20,6 +20,15 @@
     <ClCompile Include="source\persist.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\value\value.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_allocator.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_type.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,10 +51,22 @@
     <ClInclude Include="source\persist.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\value\value.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_allocator.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_type.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
       <UniqueIdentifier>{76ec87b9-6627-4ce2-bbbb-8ed3e616fa63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\value">
+      <UniqueIdentifier>{ce2afccf-f074-4a98-b200-8cba71268fcb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

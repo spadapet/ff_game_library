@@ -13,8 +13,7 @@ namespace ff::internal
 
         template<class T>
         static typename std::enable_if_t<std::is_trivially_constructible<T>::value> construct_item(T* data)
-        {
-        }
+        {}
 
         template<class T>
         static typename std::enable_if_t<!std::is_trivially_default_constructible<T>::value> default_construct_items(T* data, size_t count)
@@ -27,8 +26,7 @@ namespace ff::internal
 
         template<class T>
         static typename std::enable_if_t<std::is_trivially_default_constructible<T>::value> default_construct_items(T* data, size_t count)
-        {
-        }
+        {}
 
         template<class T>
         static typename std::enable_if_t<!std::is_trivially_copy_constructible<T>::value> copy_construct_item(T* data, const T& source)
@@ -90,8 +88,7 @@ namespace ff::internal
 
         template<class T>
         static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_item(T* data)
-        {
-        }
+        {}
 
         template<class T>
         static typename std::enable_if_t<!std::is_trivially_destructible<T>::value> destruct_items(T* data, size_t count)
@@ -104,8 +101,7 @@ namespace ff::internal
 
         template<class T>
         static typename std::enable_if_t<std::is_trivially_destructible<T>::value> destruct_items(T* data, size_t count)
-        {
-        }
+        {}
     };
 
     template<class T>

@@ -22,18 +22,15 @@ namespace ff
 
         rect_t(T left, T top, T right, T bottom)
             : left(left), top(top), right(right), bottom(bottom)
-        {
-        }
+        {}
 
         rect_t(const point_type& pt)
             : left(pt.x), top(pt.y), right(pt.x), bottom(pt.y)
-        {
-        }
+        {}
 
         rect_t(const point_type& top_left, const point_type& bottom_right)
             : left(top_left.x), top(top_left.y), right(bottom_right.x), bottom(bottom_right.y)
-        {
-        }
+        {}
 
         static this_type zeros()
         {
@@ -222,7 +219,7 @@ namespace ff
 
         bool contains(const point_type& point) const
         {
-            return point.x >= this->left && point.x < this->right && point.y >= this->top && point.y < this->bottom;
+            return point.x >= this->left && point.x < this->right&& point.y >= this->top && point.y < this->bottom;
         }
 
         bool touches(const point_type& point) const

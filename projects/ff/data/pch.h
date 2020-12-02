@@ -3,8 +3,12 @@
 // C++
 #include <cassert>
 #include <filesystem>
+#include <functional>
 #include <memory>
+#include <ostream>
 #include <string_view>
+#include <typeindex>
+#include <typeinfo>
 #include <type_traits>
 #include <vector>
 

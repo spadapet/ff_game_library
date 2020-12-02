@@ -14,8 +14,7 @@ namespace ff::internal
         forward_list_node(this_type* next, Args&&... args)
             : value(std::forward<Args>(args)...)
             , next(next)
-        {
-        }
+        {}
 
         static this_type* get_before_begin(this_type*& head_node)
         {
@@ -69,20 +68,17 @@ namespace ff::internal
 
         forward_list_iterator(node_type* node)
             : node(node)
-        {
-        }
+        {}
 
         forward_list_iterator(const this_type& other)
             : node(other.node)
-        {
-        }
+        {}
 
         // Convert non-const iterator to const iterator
         template<typename = std::enable_if_t<std::is_const_v<T>>>
         forward_list_iterator(const forward_list_iterator<std::remove_const_t<T>>& other)
             : node(other.internal_node())
-        {
-        }
+        {}
 
         node_type* internal_node() const
         {
@@ -159,8 +155,7 @@ namespace ff
 
         explicit forward_list()
             : head_node(nullptr)
-        {
-        }
+        {}
 
         forward_list(size_type count, const T& value)
             : forward_list()

@@ -21,6 +21,9 @@
     <ClCompile Include="source\persist.cpp" />
     <ClCompile Include="source\saved_data.cpp" />
     <ClCompile Include="source\stream.cpp" />
+    <ClCompile Include="source\value\value.cpp" />
+    <ClCompile Include="source\value\value_allocator.cpp" />
+    <ClCompile Include="source\value\value_type.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -31,6 +34,9 @@
     <ClInclude Include="source\persist.h" />
     <ClInclude Include="source\saved_data.h" />
     <ClInclude Include="source\stream.h" />
+    <ClInclude Include="source\value\value.h" />
+    <ClInclude Include="source\value\value_allocator.h" />
+    <ClInclude Include="source\value\value_type.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\vendor\zlib.vcxproj">

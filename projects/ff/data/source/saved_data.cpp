@@ -6,8 +6,7 @@
 #include "stream.h"
 
 ff::data::saved_data_base::~saved_data_base()
-{
-}
+{}
 
 std::shared_ptr<ff::data::reader_base> ff::data::saved_data_base::loaded_reader() const
 {
@@ -40,8 +39,7 @@ ff::data::saved_data_static::saved_data_static(const std::shared_ptr<data_base>&
     : data(data)
     , data_loaded_size(loaded_size)
     , data_type(type)
-{
-}
+{}
 
 std::shared_ptr<ff::data::reader_base> ff::data::saved_data_static::saved_reader() const
 {
@@ -74,8 +72,7 @@ ff::data::saved_data_file::saved_data_file(const std::filesystem::path& path, si
     , data_saved_size(saved_size)
     , data_loaded_size(loaded_size)
     , data_type(type)
-{
-}
+{}
 
 std::shared_ptr<ff::data::reader_base> ff::data::saved_data_file::saved_reader() const
 {

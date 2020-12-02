@@ -3,14 +3,12 @@
 
 ff::data::file_base::file_base()
     : file_handle(INVALID_HANDLE_VALUE)
-{
-}
+{}
 
 ff::data::file_base::file_base(const std::filesystem::path& path)
     : file_path(path)
     , file_handle(INVALID_HANDLE_VALUE)
-{
-}
+{}
 
 ff::data::file_base::file_base(file_base&& other) noexcept
     : file_path(std::move(other.file_path))
@@ -27,7 +25,7 @@ ff::data::file_base::~file_base()
 size_t ff::data::file_base::size() const
 {
     assert(this->file_handle != INVALID_HANDLE_VALUE);
-    
+
     FILE_STANDARD_INFO info;
     if (!::GetFileInformationByHandleEx(this->file_handle, FileStandardInfo, &info, sizeof(info)))
     {
@@ -41,7 +39,7 @@ size_t ff::data::file_base::size() const
 size_t ff::data::file_base::pos() const
 {
     assert(this->file_handle != INVALID_HANDLE_VALUE);
-    
+
     LARGE_INTEGER cur{}, move{};
     if (!::SetFilePointerEx(this->file_handle, move, &cur, FILE_CURRENT))
     {
@@ -144,8 +142,7 @@ ff::data::file_read::file_read(const std::filesystem::path& path)
 
 ff::data::file_read::file_read(file_read&& other) noexcept
     : file_base(std::move(other))
-{
-}
+{}
 
 ff::data::file_read::file_read(const file_read& other)
 {
@@ -191,8 +188,7 @@ ff::data::file_write::file_write(const std::filesystem::path& path, bool append)
 
 ff::data::file_write::file_write(file_write&& other) noexcept
     : file_base(std::move(other))
-{
-}
+{}
 
 ff::data::file_write& ff::data::file_write::operator=(file_write&& other) noexcept
 {
@@ -213,8 +209,7 @@ size_t ff::data::file_write::write(const void* data, size_t size)
 
 ff::data::file_mem_mapped::file_mem_mapped(const std::filesystem::path& path)
     : file_mem_mapped(file_read(path))
-{
-}
+{}
 
 ff::data::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept
     : mapping_file(std::move(file))
@@ -238,13 +233,11 @@ ff::data::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other) noexcept
 
 ff::data::file_mem_mapped::file_mem_mapped(const file_read& file)
     : file_mem_mapped(file_read(file))
-{
-}
+{}
 
 ff::data::file_mem_mapped::file_mem_mapped(const file_mem_mapped& other)
     : file_mem_mapped(other.mapping_file)
-{
-}
+{}
 
 ff::data::file_mem_mapped::~file_mem_mapped()
 {

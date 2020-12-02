@@ -29,38 +29,31 @@ namespace ff
         using local_iterator = typename internal_type::local_iterator;
 
         unordered_multimap()
-        {
-        }
+        {}
 
         explicit unordered_multimap(size_type bucket_count)
             : data(bucket_count)
-        {
-        }
+        {}
 
         template<class InputIt>
         unordered_multimap(InputIt first, InputIt last, size_type bucket_count = 0)
             : data(first, last, bucket_count)
-        {
-        }
+        {}
 
         unordered_multimap(std::initializer_list<value_type> init, size_type bucket_count = 0)
             : data(init, bucket_count)
-        {
-        }
+        {}
 
         unordered_multimap(const this_type& other)
             : data(other.data)
-        {
-        }
+        {}
 
         unordered_multimap(this_type&& other)
             : data(std::move(other.data))
-        {
-        }
+        {}
 
         ~unordered_multimap()
-        {
-        }
+        {}
 
         this_type& operator=(const this_type& other)
         {
