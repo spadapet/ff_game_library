@@ -18,6 +18,7 @@ namespace ff::data
         virtual size_t size_of() const = 0;
         virtual void destruct(value* obj) const = 0;
         virtual std::type_index type_index() const = 0;
+        virtual std::type_index alternate_type_index() const = 0;
         virtual std::string_view type_name() const = 0;
         virtual uint32_t type_persist_id() const = 0;
         uint32_t type_lookup_id() const;
@@ -74,6 +75,12 @@ namespace ff::data
         virtual std::type_index type_index() const override
         {
             return typeid(T);
+        }
+
+        virtual std::type_index alternate_type_index() const override
+        {
+            using alternate_type = typename std::remove_cv_t<typename std::remove_reference_t<typename std::invoke_result_t<decltype(&T::get), T>>>;
+            return typeid(alternate_type);
         }
 
         virtual std::string_view type_name() const override

@@ -17,31 +17,6 @@ ff::data::value::~value()
     assert(this->data.refs == 0 || this->data.refs == 1);
 }
 
-const ff::data::value_type* ff::data::value::type() const
-{
-    return this->get_type_by_lookup_id(this->data.type_lookup_id);
-}
-
-bool ff::data::value::equals(const value* other) const
-{
-    if (!this)
-    {
-        return !other;
-    }
-
-    if (this == other)
-    {
-        return true;
-    }
-
-    if (!other || this->type()->type_index() != other->type()->type_index())
-    {
-        return false;
-    }
-
-    return this->type()->equals(this, other);
-}
-
 bool ff::data::value::can_have_named_children() const
 {
     return this->type()->can_have_named_children();
@@ -115,6 +90,31 @@ void ff::data::value::debug_print_tree() const
 #endif
 }
 
+const ff::data::value_type* ff::data::value::type() const
+{
+    return this->get_type_by_lookup_id(this->data.type_lookup_id);
+}
+
+bool ff::data::value::equals(const value* other) const
+{
+    if (!this)
+    {
+        return !other;
+    }
+
+    if (this == other)
+    {
+        return true;
+    }
+
+    if (!other || this->type()->type_index() != other->type()->type_index())
+    {
+        return false;
+    }
+
+    return this->type()->equals(this, other);
+}
+
 std::type_index ff::data::value::type_index() const
 {
     return this->type()->type_index();
@@ -159,9 +159,10 @@ bool ff::data::value::register_type(std::unique_ptr<value_type>&& type)
     if (type != nullptr && ::value_type_array_size < ::value_type_array.size() &&
         ::persist_id_to_value_type.find(type->type_persist_id()) == ::persist_id_to_value_type.cend())
     {
-        ::value_type_array[::value_type_array_size++] = std::move(type);
         ::type_index_to_value_type.try_emplace(type->type_index(), type.get());
+        ::type_index_to_value_type.try_emplace(type->alternate_type_index(), type.get());
         ::persist_id_to_value_type.try_emplace(type->type_persist_id(), type.get());
+        ::value_type_array[::value_type_array_size++] = std::move(type);
         return true;
     }
 
@@ -183,13 +184,8 @@ const ff::data::value_type* ff::data::value::get_type(std::type_index type_index
 
 const ff::data::value_type* ff::data::value::get_type_by_lookup_id(uint32_t id)
 {
-    if (id < ::value_type_array_size)
-    {
-        return ::value_type_array[id].get();
-    }
-
-    assert(false);
-    return nullptr;
+    assert(id < ::value_type_array_size);
+    return ::value_type_array[id].get();
 }
 
 const ff::data::value_type* ff::data::value::get_type_by_persist_id(uint32_t id)

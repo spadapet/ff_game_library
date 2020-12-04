@@ -29,6 +29,9 @@
     <ClCompile Include="source\value\value_type.cpp">
       <Filter>source\value</Filter>
     </ClCompile>
+    <ClCompile Include="source\type\string.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -60,6 +63,9 @@
     <ClInclude Include="source\value\value_type.h">
       <Filter>source\value</Filter>
     </ClInclude>
+    <ClInclude Include="source\type\string.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
@@ -67,6 +73,9 @@
     </Filter>
     <Filter Include="source\value">
       <UniqueIdentifier>{ce2afccf-f074-4a98-b200-8cba71268fcb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\type">
+      <UniqueIdentifier>{9f645fe8-ba45-42b4-9d12-2397d4d26562}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

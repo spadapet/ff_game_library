@@ -22,12 +22,14 @@ namespace ff::data
             {
                 val = reinterpret_cast<T*>(ff::data::internal::value_allocator::new_bytes(sizeof(T)));
                 ::new(val) T(std::forward<Args>(args)...);
-                val->refs++;
+                val->data.refs++;
             }
 
-            if (!val->type)
+            if (!val->data.type_lookup_id)
             {
-                val->type = ff::data::value::get_type(typeid(T));
+                value_type* type = ff::data::value::get_type(typeid(T));
+                assert(type);
+                val->data.type_lookup_id = type->type_lookup_id();
             }
 
             return val;
@@ -71,9 +73,6 @@ namespace ff::data
             return val ? val : ff::data::value::create_default();
         }
 
-        const value_type* type() const;
-        bool equals(const value* other) const;
-
         // maps
         bool can_have_named_children() const;
         value_ptr named_child(std::string_view name) const;
@@ -91,6 +90,8 @@ namespace ff::data
         void print_tree(std::ostream& output) const;
         void debug_print_tree() const;
 
+        bool equals(const value* other) const;
+        const value_type* type() const;
         std::type_index type_index() const;
         std::string_view type_name() const;
         uint32_t type_lookup_id() const;

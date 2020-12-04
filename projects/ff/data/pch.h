@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <string_view>
 #include <typeindex>
 #include <typeinfo>
