@@ -47,6 +47,9 @@
     <ClCompile Include="source\data\persist_test.cpp">
       <Filter>source\data</Filter>
     </ClCompile>
+    <ClCompile Include="source\data\value_test.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

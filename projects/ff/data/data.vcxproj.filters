@@ -32,6 +32,12 @@
     <ClCompile Include="source\type\string.cpp">
       <Filter>source\type</Filter>
     </ClCompile>
+    <ClCompile Include="source\type\int32.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_register_default.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -65,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="source\type\string.h">
       <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\int32.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_register_default.h">
+      <Filter>source\value</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

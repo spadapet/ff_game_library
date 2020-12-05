@@ -18,7 +18,6 @@ namespace ff::data
         virtual size_t size_of() const = 0;
         virtual void destruct(value* obj) const = 0;
         virtual std::type_index type_index() const = 0;
-        virtual std::type_index alternate_type_index() const = 0;
         virtual std::string_view type_name() const = 0;
         virtual uint32_t type_persist_id() const = 0;
         uint32_t type_lookup_id() const;
@@ -54,52 +53,34 @@ namespace ff::data
     class value_type_base : public value_type
     {
     public:
-        using value_type = typename T;
+        using value_derived_type = typename T;
         using this_type = typename value_type_base<T>;
-
-        value_type_base()
-            : persist_id(0)
-        {
-        }
 
         virtual size_t size_of() const override
         {
-            return sizeof(T);
+            return sizeof(value_derived_type);
         }
 
         virtual void destruct(value* obj) const override
         {
-            static_cast<T*>(obj)->~T();
+            static_cast<value_derived_type*>(obj)->~value_derived_type();
         }
 
         virtual std::type_index type_index() const override
         {
-            return typeid(T);
-        }
-
-        virtual std::type_index alternate_type_index() const override
-        {
-            using alternate_type = typename std::remove_cv_t<typename std::remove_reference_t<typename std::invoke_result_t<decltype(&T::get), T>>>;
-            return typeid(alternate_type);
+            return typeid(value_derived_type);
         }
 
         virtual std::string_view type_name() const override
         {
-            const char* name = typeid(T).name();
+            const char* name = typeid(value_derived_type).name();
             return std::string_view(name);
         }
 
         virtual uint32_t type_persist_id() const override
         {
-            if (!this->persist_id)
-            {
-                this->persist_id = ff::hash<std::string_view>()(this->type_name());
-            }
-
-            return this->persist_id;
+            size_t id = ff::hash<std::string_view>()(this->type_name());
+            return static_cast<uint32_t>(id);
         }
-
-    private:
-        uint32_t persist_id;
     };
 }

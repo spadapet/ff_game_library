@@ -1,12 +1,14 @@
 #include "pch.h"
 #include "../persist.h"
 #include "value.h"
+#include "value_register_default.h"
 
 static const uint32_t REFS_MASK = 0x00FFFFFF;
 static size_t value_type_array_size = 0;
 static std::array<std::unique_ptr<ff::data::value_type>, 256> value_type_array;
 static std::unordered_map<std::type_index, ff::data::value_type*> type_index_to_value_type;
 static std::unordered_map<uint32_t, ff::data::value_type*, ff::no_hash<uint32_t>> persist_id_to_value_type;
+static ff::data::internal::value_register_default register_defaults;
 
 ff::data::value::value()
     : data{}
@@ -160,7 +162,6 @@ bool ff::data::value::register_type(std::unique_ptr<value_type>&& type)
         ::persist_id_to_value_type.find(type->type_persist_id()) == ::persist_id_to_value_type.cend())
     {
         ::type_index_to_value_type.try_emplace(type->type_index(), type.get());
-        ::type_index_to_value_type.try_emplace(type->alternate_type_index(), type.get());
         ::persist_id_to_value_type.try_emplace(type->type_persist_id(), type.get());
         ::value_type_array[::value_type_array_size++] = std::move(type);
         return true;
