@@ -4,7 +4,7 @@
 #include "saved_data.h"
 #include "stream.h"
 
-bool ff::data::load_bytes(reader_base& reader, void* data, size_t size)
+bool ff::load_bytes(reader_base& reader, void* data, size_t size)
 {
     if (reader.read(data, size))
     {
@@ -16,7 +16,7 @@ bool ff::data::load_bytes(reader_base& reader, void* data, size_t size)
     return false;
 }
 
-bool ff::data::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data)
+bool ff::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data)
 {
     auto saved_data = reader.saved_data(reader.pos(), size, size, saved_data_type::none);
     if (saved_data)
@@ -32,7 +32,7 @@ bool ff::data::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data
     return false;
 }
 
-bool ff::data::save_bytes(writer_base& writer, const void* data, size_t size)
+bool ff::save_bytes(writer_base& writer, const void* data, size_t size)
 {
     if (writer.write(data, size) == size)
     {
@@ -44,7 +44,7 @@ bool ff::data::save_bytes(writer_base& writer, const void* data, size_t size)
     return false;
 }
 
-bool ff::data::save_bytes(writer_base& writer, const data_base& data)
+bool ff::save_bytes(writer_base& writer, const data_base& data)
 {
-    return ff::data::save_bytes(writer, data.data(), data.size());
+    return ff::save_bytes(writer, data.data(), data.size());
 }

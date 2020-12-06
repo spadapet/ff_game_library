@@ -1,13 +1,13 @@
 #pragma once
 
-namespace ff::data
+namespace ff
 {
     class data_base;
     class reader_base;
     class writer_base;
 }
 
-namespace ff::data
+namespace ff
 {
     bool load_bytes(reader_base& reader, void* data, size_t size);
     bool load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data);
@@ -18,13 +18,13 @@ namespace ff::data
     template<class T>
     bool load(reader_base& reader, T& data)
     {
-        return ff::data::persist<T>::load(reader, data);
+        return ff::persist<T>::load(reader, data);
     }
 
     template<class T>
     bool save(writer_base& writer, const T& data)
     {
-        return ff::data::persist<T>::save(writer, data);
+        return ff::persist<T>::save(writer, data);
     }
 
     template<class T, class Enabled = void>
@@ -35,12 +35,12 @@ namespace ff::data
     {
         static bool load(reader_base& reader, T& data)
         {
-            return ff::data::load_bytes(reader, &data, sizeof(T));
+            return ff::load_bytes(reader, &data, sizeof(T));
         }
 
         static bool save(writer_base& writer, const T& data)
         {
-            return ff::data::save_bytes(writer, &data, sizeof(T));
+            return ff::save_bytes(writer, &data, sizeof(T));
         }
     };
 
@@ -50,7 +50,7 @@ namespace ff::data
         static bool load(reader_base& reader, size_t& data)
         {
             uint64_t data64;
-            if (ff::data::load_bytes(reader, &data64, sizeof(data64)))
+            if (ff::load_bytes(reader, &data64, sizeof(data64)))
             {
                 data = static_cast<size_t>(data64);
                 return true;
@@ -62,7 +62,7 @@ namespace ff::data
         static bool save(writer_base& writer, const size_t& data)
         {
             uint64_t data64 = static_cast<uint64_t>(data);
-            return ff::data::save_bytes(writer, &data64, sizeof(data64));
+            return ff::save_bytes(writer, &data64, sizeof(data64));
         }
     };
 
@@ -72,10 +72,10 @@ namespace ff::data
         static bool load(reader_base& reader, std::basic_string<Elem, Traits, Alloc>& data)
         {
             size_t length;
-            if (ff::data::load(reader, length))
+            if (ff::load(reader, length))
             {
                 data.resize(length);
-                return ff::data::load_bytes(reader, data.data(), length * sizeof(Elem));
+                return ff::load_bytes(reader, data.data(), length * sizeof(Elem));
             }
 
             return false;
@@ -84,7 +84,7 @@ namespace ff::data
         static bool save(writer_base& writer, const std::basic_string<Elem, Traits, Alloc>& data)
         {
             size_t length = data.length();
-            return ff::data::save(writer, length) && ff::data::save_bytes(writer, data.data(), length * sizeof(Elem));
+            return ff::save(writer, length) && ff::save_bytes(writer, data.data(), length * sizeof(Elem));
         }
     };
 }

@@ -2,7 +2,7 @@
 
 #include "file.h"
 
-namespace ff::data
+namespace ff
 {
     class data_base;
     class saved_data_base;

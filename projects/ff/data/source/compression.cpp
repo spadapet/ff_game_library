@@ -10,7 +10,7 @@ static size_t get_chunk_size_for_data_size(size_t data_size)
     return std::min<size_t>(data_size, max_chunk_size);
 }
 
-bool ff::data::compression::compress(reader_base& reader, size_t full_size, writer_base& writer)
+bool ff::compression::compress(reader_base& reader, size_t full_size, writer_base& writer)
 {
     z_stream zlib_data{};
     deflateInit(&zlib_data, Z_BEST_COMPRESSION);
@@ -57,7 +57,7 @@ bool ff::data::compression::compress(reader_base& reader, size_t full_size, writ
     return status;
 }
 
-bool ff::data::compression::uncompress(reader_base& reader, size_t saved_size, writer_base& writer)
+bool ff::compression::uncompress(reader_base& reader, size_t saved_size, writer_base& writer)
 {
     if (!saved_size)
     {
@@ -212,7 +212,7 @@ inline static uint8_t char_to_byte(char ch)
     return 0;
 }
 
-std::shared_ptr<ff::data::data_base> ff::data::compression::decode_base64(std::string_view text)
+std::shared_ptr<ff::data_base> ff::compression::decode_base64(std::string_view text)
 {
     // Input string needs to be properly padded
     if (text.size() % 4 != 0)
@@ -253,5 +253,5 @@ std::shared_ptr<ff::data::data_base> ff::data::compression::decode_base64(std::s
         }
     }
 
-    return std::make_shared<ff::data::data_vector>(std::move(out));
+    return std::make_shared<ff::data_vector>(std::move(out));
 }

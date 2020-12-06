@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::data
+namespace ff
 {
     class data_base;
     class reader_base;

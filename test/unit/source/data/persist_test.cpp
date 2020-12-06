@@ -15,23 +15,23 @@ namespace data_test
 
             auto buffer = std::make_shared<std::vector<uint8_t>>();
             {
-                ff::data::data_writer writer(buffer);
-                ff::data::save(writer, str1);
-                ff::data::save(writer, size1);
-                ff::data::save(writer, bool1);
-                ff::data::save(writer, float1);
-                ff::data::save(writer, int1);
+                ff::data_writer writer(buffer);
+                ff::save(writer, str1);
+                ff::save(writer, size1);
+                ff::save(writer, bool1);
+                ff::save(writer, float1);
+                ff::save(writer, int1);
             }
 
             // read it
             {
-                auto shared_data = std::make_shared<ff::data::data_vector>(buffer);
-                ff::data::data_reader reader(shared_data);
-                ff::data::load(reader, str2);
-                ff::data::load(reader, size2);
-                ff::data::load(reader, bool2);
-                ff::data::load(reader, float2);
-                ff::data::load(reader, int2);
+                auto shared_data = std::make_shared<ff::data_vector>(buffer);
+                ff::data_reader reader(shared_data);
+                ff::load(reader, str2);
+                ff::load(reader, size2);
+                ff::load(reader, bool2);
+                ff::load(reader, float2);
+                ff::load(reader, int2);
             }
 
             Assert::AreEqual(str1, str2);

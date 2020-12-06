@@ -5,15 +5,15 @@
 #include "saved_data.h"
 #include "stream.h"
 
-ff::data::saved_data_base::~saved_data_base()
+ff::saved_data_base::~saved_data_base()
 {}
 
-std::shared_ptr<ff::data::reader_base> ff::data::saved_data_base::loaded_reader() const
+std::shared_ptr<ff::reader_base> ff::saved_data_base::loaded_reader() const
 {
     return std::make_shared<data_reader>(this->loaded_data());
 }
 
-std::shared_ptr<ff::data::data_base> ff::data::saved_data_base::loaded_data() const
+std::shared_ptr<ff::data_base> ff::saved_data_base::loaded_data() const
 {
     if (this->type() == saved_data_type::zlib_compressed)
     {
@@ -21,7 +21,7 @@ std::shared_ptr<ff::data::data_base> ff::data::saved_data_base::loaded_data() co
         write_buffer->reserve(this->loaded_size());
         data_writer writer(write_buffer);
 
-        if (ff::data::compression::uncompress(*this->saved_reader(), this->saved_size(), writer))
+        if (ff::compression::uncompress(*this->saved_reader(), this->saved_size(), writer))
         {
             return std::make_shared<data_vector>(write_buffer);
         }
@@ -35,38 +35,38 @@ std::shared_ptr<ff::data::data_base> ff::data::saved_data_base::loaded_data() co
     return this->saved_data();
 }
 
-ff::data::saved_data_static::saved_data_static(const std::shared_ptr<data_base>& data, size_t loaded_size, saved_data_type type)
+ff::saved_data_static::saved_data_static(const std::shared_ptr<data_base>& data, size_t loaded_size, saved_data_type type)
     : data(data)
     , data_loaded_size(loaded_size)
     , data_type(type)
 {}
 
-std::shared_ptr<ff::data::reader_base> ff::data::saved_data_static::saved_reader() const
+std::shared_ptr<ff::reader_base> ff::saved_data_static::saved_reader() const
 {
     return std::make_shared<data_reader>(this->data);
 }
 
-std::shared_ptr<ff::data::data_base> ff::data::saved_data_static::saved_data() const
+std::shared_ptr<ff::data_base> ff::saved_data_static::saved_data() const
 {
     return this->data;
 }
 
-size_t ff::data::saved_data_static::saved_size() const
+size_t ff::saved_data_static::saved_size() const
 {
     return this->data->size();
 }
 
-size_t ff::data::saved_data_static::loaded_size() const
+size_t ff::saved_data_static::loaded_size() const
 {
     return this->data_loaded_size;
 }
 
-ff::data::saved_data_type ff::data::saved_data_static::type() const
+ff::saved_data_type ff::saved_data_static::type() const
 {
     return this->data_type;
 }
 
-ff::data::saved_data_file::saved_data_file(const std::filesystem::path& path, size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type)
+ff::saved_data_file::saved_data_file(const std::filesystem::path& path, size_t offset, size_t saved_size, size_t loaded_size, saved_data_type type)
     : path(path)
     , data_offset(offset)
     , data_saved_size(saved_size)
@@ -74,7 +74,7 @@ ff::data::saved_data_file::saved_data_file(const std::filesystem::path& path, si
     , data_type(type)
 {}
 
-std::shared_ptr<ff::data::reader_base> ff::data::saved_data_file::saved_reader() const
+std::shared_ptr<ff::reader_base> ff::saved_data_file::saved_reader() const
 {
     file_read file(this->path);
     if (file)
@@ -90,7 +90,7 @@ std::shared_ptr<ff::data::reader_base> ff::data::saved_data_file::saved_reader()
     return nullptr;
 }
 
-std::shared_ptr<ff::data::data_base> ff::data::saved_data_file::saved_data() const
+std::shared_ptr<ff::data_base> ff::saved_data_file::saved_data() const
 {
     std::vector<uint8_t> buffer(this->data_saved_size);
     std::shared_ptr<reader_base> reader = this->saved_reader();
@@ -105,17 +105,17 @@ std::shared_ptr<ff::data::data_base> ff::data::saved_data_file::saved_data() con
     return nullptr;
 }
 
-size_t ff::data::saved_data_file::saved_size() const
+size_t ff::saved_data_file::saved_size() const
 {
     return this->data_saved_size;
 }
 
-size_t ff::data::saved_data_file::loaded_size() const
+size_t ff::saved_data_file::loaded_size() const
 {
     return this->data_loaded_size;
 }
 
-ff::data::saved_data_type ff::data::saved_data_file::type() const
+ff::saved_data_type ff::saved_data_file::type() const
 {
     return this->data_type;
 }

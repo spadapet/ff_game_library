@@ -2,7 +2,7 @@
 
 #include "../type/value_traits.h"
 
-namespace ff::data
+namespace ff
 {
     class reader_base;
     class writer_base;

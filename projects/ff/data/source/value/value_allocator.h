@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::data::internal
+namespace ff::internal
 {
     class value_allocator
     {

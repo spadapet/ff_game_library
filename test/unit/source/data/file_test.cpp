@@ -15,7 +15,7 @@ namespace data_test
             // write
             {
                 int i = -128;
-                ff::data::file_write fw(path.string());
+                ff::file_write fw(path.string());
                 Assert::IsTrue(fw);
                 fw.write(&i, sizeof(i));
             }
@@ -23,12 +23,12 @@ namespace data_test
             // read
             {
                 int i = 0;
-                ff::data::file_read fr(path.string());
+                ff::file_read fr(path.string());
                 Assert::IsTrue(fr);
                 fr.read(&i, sizeof(i));
                 Assert::AreEqual(-128, i);
 
-                ff::data::file_read fr2 = fr;
+                ff::file_read fr2 = fr;
                 Assert::IsTrue(fr2);
                 Assert::AreEqual(fr.size(), fr2.size());
                 Assert::AreEqual(fr.pos(), fr2.pos());
@@ -36,14 +36,14 @@ namespace data_test
 
             // mem map
             {
-                ff::data::file_read fr(path.string());
-                ff::data::file_mem_mapped fm(std::move(fr));
+                ff::file_read fr(path.string());
+                ff::file_mem_mapped fm(std::move(fr));
                 Assert::IsTrue(fm);
                 Assert::AreEqual(sizeof(int), fm.size());
                 const int* i = reinterpret_cast<const int*>(fm.data());
                 Assert::AreEqual(-128, *i);
 
-                ff::data::file_mem_mapped fm2 = fm;
+                ff::file_mem_mapped fm2 = fm;
                 Assert::AreEqual(fm.size(), fm2.size());
                 const int* i2 = reinterpret_cast<const int*>(fm2.data());
                 Assert::AreEqual(-128, *i2);

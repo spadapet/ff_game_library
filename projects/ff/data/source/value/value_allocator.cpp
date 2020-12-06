@@ -13,7 +13,7 @@ static constexpr size_t get_pool_size_count(size_t byte_size)
     return (byte_size + sizeof(size_t) - 1) / sizeof(size_t);
 }
 
-void* ff::data::internal::value_allocator::new_bytes(size_t size)
+void* ff::internal::value_allocator::new_bytes(size_t size)
 {
     size_t count = ::get_pool_size_count(size);
 
@@ -54,7 +54,7 @@ void* ff::data::internal::value_allocator::new_bytes(size_t size)
     }
 }
 
-void ff::data::internal::value_allocator::delete_bytes(void* value, size_t size)
+void ff::internal::value_allocator::delete_bytes(void* value, size_t size)
 {
     size_t count = ::get_pool_size_count(size);
 

@@ -8,69 +8,69 @@ static uint32_t next_lookup_id()
     return next.fetch_add(1);
 }
 
-ff::data::value_type::value_type()
+ff::value_type::value_type()
     : lookup_id(::next_lookup_id())
 {}
 
-ff::data::value_type::~value_type()
+ff::value_type::~value_type()
 {}
 
-uint32_t ff::data::value_type::type_lookup_id() const
+uint32_t ff::value_type::type_lookup_id() const
 {
     return this->lookup_id;
 }
 
-bool ff::data::value_type::equals(const value* val1, const value* val2) const
+bool ff::value_type::equals(const value* val1, const value* val2) const
 {
     return false;
 }
 
-ff::data::value_ptr ff::data::value_type::try_convert_to(const value* val, std::type_index type) const
+ff::value_ptr ff::value_type::try_convert_to(const value* val, std::type_index type) const
 {
     return nullptr;
 }
 
-ff::data::value_ptr ff::data::value_type::try_convert_from(const value* other) const
+ff::value_ptr ff::value_type::try_convert_from(const value* other) const
 {
     return nullptr;
 }
 
-bool ff::data::value_type::can_have_named_children() const
+bool ff::value_type::can_have_named_children() const
 {
     return false;
 }
 
-ff::data::value_ptr ff::data::value_type::named_child(const value* val, std::string_view name) const
+ff::value_ptr ff::value_type::named_child(const value* val, std::string_view name) const
 {
     return nullptr;
 }
 
-std::vector<std::string> ff::data::value_type::child_names(const value* val) const
+std::vector<std::string> ff::value_type::child_names(const value* val) const
 {
     return std::vector<std::string>();
 }
 
-bool ff::data::value_type::can_have_indexed_children() const
+bool ff::value_type::can_have_indexed_children() const
 {
     return false;
 }
 
-ff::data::value_ptr ff::data::value_type::index_child(const value* val, size_t index) const
+ff::value_ptr ff::value_type::index_child(const value* val, size_t index) const
 {
     return nullptr;
 }
 
-size_t ff::data::value_type::index_child_count(const value* val) const
+size_t ff::value_type::index_child_count(const value* val) const
 {
     return 0;
 }
 
-ff::data::value_ptr ff::data::value_type::load(reader_base& reader) const
+ff::value_ptr ff::value_type::load(reader_base& reader) const
 {
     return nullptr;
 }
 
-bool ff::data::value_type::save(const value* val, writer_base& writer) const
+bool ff::value_type::save(const value* val, writer_base& writer) const
 {
     return false;
 }
@@ -111,7 +111,7 @@ static void write_sanitized_string(std::string_view str, std::ostream& output)
     }
 }
 
-static void print_tree(std::string_view name, ff::data::value_ptr val, size_t level, std::ostream& output)
+static void print_tree(std::string_view name, ff::value_ptr val, size_t level, std::ostream& output)
 {
     std::string spaces(level * 4, ' ');
 
@@ -144,7 +144,7 @@ static void print_tree(std::string_view name, ff::data::value_ptr val, size_t le
     }
     else
     {
-        ff::data::value_ptr dict_val; // = val->try_convert<ff::dict>();
+        ff::value_ptr dict_val; // = val->try_convert<ff::dict>();
         if (dict_val)
         {
             child_names = dict_val->child_names();
@@ -158,7 +158,7 @@ static void print_tree(std::string_view name, ff::data::value_ptr val, size_t le
     }
 }
 
-void ff::data::value_type::print(const value* val, std::ostream& output) const
+void ff::value_type::print(const value* val, std::ostream& output) const
 {
     value_ptr string_val = val->try_convert<std::string>();
     if (string_val)
@@ -179,5 +179,5 @@ void ff::data::value_type::print(const value* val, std::ostream& output) const
     }
 }
 
-void ff::data::value_type::print_tree(const value* val, std::ostream& output) const
+void ff::value_type::print_tree(const value* val, std::ostream& output) const
 {}

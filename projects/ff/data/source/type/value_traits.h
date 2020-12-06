@@ -1,11 +1,11 @@
 #pragma once
 
-namespace ff::data
+namespace ff
 {
     class value;
 }
 
-namespace ff::data::type
+namespace ff::type
 {
     template<class T, class Enabled = void>
     struct value_traits;
@@ -19,6 +19,6 @@ namespace ff::data::type
     };
 
     template<class T>
-    struct value_traits<T, std::enable_if_t<std::is_base_of_v<ff::data::value, T>>> : public value_derived_traits<T>
+    struct value_traits<T, std::enable_if_t<std::is_base_of_v<ff::value, T>>> : public value_derived_traits<T>
     {};
 }

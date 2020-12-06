@@ -7,12 +7,12 @@ namespace data_test
     public:
         TEST_METHOD(int32_static)
         {
-            ff::data::value_ptr val1 = ff::data::value::create<int32_t>(12);
-            ff::data::value_ptr val2 = ff::data::value::create<int32_t>(12);
-            ff::data::value_ptr val3 = ff::data::value::create<int32_t>(1000);
+            ff::value_ptr val1 = ff::value::create<int32_t>(12);
+            ff::value_ptr val2 = ff::value::create<int32_t>(12);
+            ff::value_ptr val3 = ff::value::create<int32_t>(1000);
 
-            Assert::IsTrue(val1.get() == val2.get());
-            Assert::IsTrue(val1.get() == val3.get());
+            Assert::IsTrue(val1 == val2);
+            Assert::IsTrue(val1 != val3);
             Assert::IsTrue(val1->equals(val2));
             Assert::IsFalse(val1->equals(val3));
 
@@ -22,31 +22,31 @@ namespace data_test
 
         TEST_METHOD(int32_convert_to_string)
         {
-            ff::data::value_ptr val1 = ff::data::value::create<int32_t>(1024);
-            ff::data::value_ptr val2 = val1->try_convert<std::string>();
+            ff::value_ptr val1 = ff::value::create<int32_t>(1024);
+            ff::value_ptr val2 = val1->try_convert<std::string>();
 
             Assert::AreEqual(std::string("1024"), val2->get<std::string>());
         }
 
         TEST_METHOD(basic_persist)
         {
-            ff::data::value_ptr val1 = ff::data::value::create<int32_t>(1024);
-            ff::data::value_ptr val2 = ff::data::value::create<std::string>("Hello!");
+            ff::value_ptr val1 = ff::value::create<int32_t>(1024);
+            ff::value_ptr val2 = ff::value::create<std::string>("Hello!");
 
             auto buffer = std::make_shared<std::vector<uint8_t>>();
             {
-                ff::data::data_writer writer(buffer);
+                ff::data_writer writer(buffer);
                 val1->save_typed(writer);
                 val2->save_typed(writer);
             }
 
             // read it
             {
-                auto shared_data = std::make_shared<ff::data::data_vector>(buffer);
-                ff::data::data_reader reader(shared_data);
+                auto shared_data = std::make_shared<ff::data_vector>(buffer);
+                ff::data_reader reader(shared_data);
 
-                ff::data::value_ptr val1_loaded = ff::data::value::load_typed(reader);
-                ff::data::value_ptr val2_loaded = ff::data::value::load_typed(reader);
+                ff::value_ptr val1_loaded = ff::value::load_typed(reader);
+                ff::value_ptr val2_loaded = ff::value::load_typed(reader);
 
                 Assert::IsNotNull(val1_loaded.get());
                 Assert::IsNotNull(val2_loaded.get());

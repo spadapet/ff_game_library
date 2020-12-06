@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::data
+namespace ff
 {
     class file_mem_mapped;
 

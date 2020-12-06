@@ -4,7 +4,7 @@
 #include "value_type.h"
 #include "../type/value_traits.h"
 
-namespace ff::data
+namespace ff
 {
     class value
     {
@@ -12,22 +12,22 @@ namespace ff::data
         template<class Type>
         static void register_type()
         {
-            ff::data::value::register_type(std::make_unique<Type>());
+            ff::value::register_type(std::make_unique<Type>());
         }
 
         template<typename T, typename... Args>
         static value_ptr create(Args&&... args)
         {
-            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
             value_derived_type* val = static_cast<value_derived_type*>(value_derived_type::get_static_value(std::forward<Args>(args)...));;
             if (!val)
             {
-                val = reinterpret_cast<value_derived_type*>(ff::data::internal::value_allocator::new_bytes(sizeof(value_derived_type)));
+                val = reinterpret_cast<value_derived_type*>(ff::internal::value_allocator::new_bytes(sizeof(value_derived_type)));
                 ::new(val) value_derived_type(std::forward<Args>(args)...);
                 val->data.refs++;
             }
 
-            const value_type* type = ff::data::value::get_type(typeid(value_derived_type));
+            const value_type* type = ff::value::get_type(typeid(value_derived_type));
             val->data.type_lookup_id = type->type_lookup_id();
 
             return val;
@@ -36,20 +36,20 @@ namespace ff::data
         template<typename T>
         static value_ptr create_default()
         {
-            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
             const value* val = value_derived_type::get_static_default_value();
             if (val && !val->type)
             {
-                val->type = ff::data::value::get_type(typeid(value_derived_type));
+                val->type = ff::value::get_type(typeid(value_derived_type));
             }
 
             return val;
         }
 
         template<class T>
-        auto get() const -> typename ff::data::type::value_traits<T>::get_type
+        auto get() const -> typename ff::type::value_traits<T>::get_type
         {
-            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
             const value* val = this->is_type<value_derived_type>() ? this : value_derived_type::get_static_default_value();
             return static_cast<const value_derived_type*>(val)->get();
         }
@@ -57,20 +57,20 @@ namespace ff::data
         template<class T>
         bool is_type() const
         {
-            return this->is_type(typeid(ff::data::type::value_traits<T>::value_derived_type));
+            return this->is_type(typeid(ff::type::value_traits<T>::value_derived_type));
         }
 
         template<class T>
         value_ptr try_convert() const
         {
-            return this->try_convert(typeid(ff::data::type::value_traits<T>::value_derived_type));
+            return this->try_convert(typeid(ff::type::value_traits<T>::value_derived_type));
         }
 
         template<class T>
         value_ptr convert_or_default() const
         {
             value_ptr val = this->try_convert<T>();
-            return val ? val : ff::data::value::create_default();
+            return val ? val : ff::value::create_default();
         }
 
         // maps
