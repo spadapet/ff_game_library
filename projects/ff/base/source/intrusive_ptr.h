@@ -25,7 +25,7 @@ namespace ff
             this->reset(value);
         }
 
-        intrusive_ptr(this_type&& other)
+        intrusive_ptr(this_type&& other) noexcept
             : intrusive_ptr()
         {
             *this = std::move(other);
@@ -42,7 +42,7 @@ namespace ff
             return *this;
         }
 
-        this_type& operator=(this_type&& other)
+        this_type& operator=(this_type&& other) noexcept
         {
             std::swap(this->value, other.value);
             return *this;

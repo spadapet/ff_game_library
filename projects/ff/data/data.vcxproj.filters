@@ -78,6 +78,12 @@
     <ClInclude Include="source\value\value_register_default.h">
       <Filter>source\value</Filter>
     </ClInclude>
+    <ClInclude Include="source\type\value_traits.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_type_base.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

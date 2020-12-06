@@ -1,9 +1,10 @@
 #include "pch.h"
 #include "value.h"
+#include "../type/string.h"
 
 static uint32_t next_lookup_id()
 {
-    static std::atomic_uint32_t next = 0;
+    static std::atomic_uint32_t next = 1;
     return next.fetch_add(1);
 }
 
@@ -74,26 +75,109 @@ bool ff::data::value_type::save(const value* val, writer_base& writer) const
     return false;
 }
 
-void ff::data::value_type::print(std::ostream& output) const
+static void write_sanitized_string(std::string_view str, std::ostream& output)
 {
-    //ff::ValuePtr stringValue = value->Convert<ff::StringValue>();
-    //if (stringValue)
-    //{
-    //    return stringValue->GetValue<ff::StringValue>();
-    //}
-    //
-    //if (value->CanHaveIndexedChildren())
-    //{
-    //    return ff::String::format_new(L"<%s[%lu]>", value->GetTypeName().c_str(), value->GetIndexChildCount());
-    //}
-    //
-    //if (value->CanHaveNamedChildren())
-    //{
-    //    return ff::String::format_new(L"<%s[%lu]>", value->GetTypeName().c_str(), value->GetChildNames().Size());
-    //}
-    //
-    //return ff::String::format_new(L"<%s>", value->GetTypeName().c_str());
+    std::string str_copy;
+    if (str.find_first_of("\r\n") != std::string::npos)
+    {
+        str_copy.reserve(str.size());
+
+        for (char ch : str)
+        {
+            if (ch == '\r')
+            {
+                str_copy += "\\r";
+            }
+            else if (ch == '\n')
+            {
+                str_copy += "\\n";
+            }
+            else
+            {
+                str_copy += ch;
+            }
+        }
+
+        str = str_copy;
+    }
+
+    if (str.size() > 80)
+    {
+        output << str.substr(0, 40) << "..." << str.substr(str.size() - 40, 40);
+    }
+    else
+    {
+        output << str;
+    }
 }
 
-void ff::data::value_type::print_tree(std::ostream& output) const
+static void print_tree(std::string_view name, ff::data::value_ptr val, size_t level, std::ostream& output)
+{
+    std::string spaces(level * 4, ' ');
+
+    if (name.size())
+    {
+        output << spaces << name << ": ";
+    }
+
+    // Write value
+    {
+        std::stringstream val_output;
+        val->print(val_output);
+        ::write_sanitized_string(val_output.str(), output);
+        output << std::endl;
+    }
+
+    std::vector<std::string> child_names;
+
+    if (val->can_have_named_children())
+    {
+        child_names = val->child_names();
+    }
+    else if (val->can_have_indexed_children())
+    {
+        for (size_t i = 0; i < val->index_child_count(); i++)
+        {
+            output << spaces << "    [" << i << "] ";
+            ::print_tree(std::string_view(""), val->index_child(i), level + 2, output);
+        }
+    }
+    else
+    {
+        ff::data::value_ptr dict_val; // = val->try_convert<ff::dict>();
+        if (dict_val)
+        {
+            child_names = dict_val->child_names();
+        }
+    }
+
+    std::sort(child_names.begin(), child_names.end());
+    for (const std::string& child_name : child_names)
+    {
+        ::print_tree(child_name, val->named_child(child_name), level + 1, output);
+    }
+}
+
+void ff::data::value_type::print(const value* val, std::ostream& output) const
+{
+    value_ptr string_val = val->try_convert<std::string>();
+    if (string_val)
+    {
+        output << string_val->get<std::string>();
+    }
+    else if (val->can_have_indexed_children())
+    {
+        output << "<" << val->type_name() << "[" << val->index_child_count() << "]>";
+    }
+    else if (val->can_have_named_children())
+    {
+        output << "<" << val->type_name() << "[" << val->child_names().size() << "]>";
+    }
+    else
+    {
+        output << "<" << val->type_name() << ">";
+    }
+}
+
+void ff::data::value_type::print_tree(const value* val, std::ostream& output) const
 {}

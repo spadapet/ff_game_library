@@ -2,19 +2,10 @@
 
 #include "value_allocator.h"
 #include "value_type.h"
+#include "../type/value_traits.h"
 
 namespace ff::data
 {
-    template<class T, class Enabled = void>
-    struct value_traits;
-
-    template<class T>
-    struct value_traits<T, std::enable_if_t<std::is_base_of_v<ff::data::value, T>>>
-    {
-        using value_derived_type = typename T;
-        using get_type = typename std::invoke_result_t<decltype(&T::get), T>;
-    };
-
     class value
     {
     public:
@@ -27,7 +18,7 @@ namespace ff::data
         template<typename T, typename... Args>
         static value_ptr create(Args&&... args)
         {
-            using value_derived_type = typename value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
             value_derived_type* val = static_cast<value_derived_type*>(value_derived_type::get_static_value(std::forward<Args>(args)...));;
             if (!val)
             {
@@ -36,12 +27,8 @@ namespace ff::data
                 val->data.refs++;
             }
 
-            if (!val->data.type_lookup_id)
-            {
-                const value_type* type = ff::data::value::get_type(typeid(value_derived_type));
-                assert(type);
-                val->data.type_lookup_id = type->type_lookup_id();
-            }
+            const value_type* type = ff::data::value::get_type(typeid(value_derived_type));
+            val->data.type_lookup_id = type->type_lookup_id();
 
             return val;
         }
@@ -49,7 +36,7 @@ namespace ff::data
         template<typename T>
         static value_ptr create_default()
         {
-            using value_derived_type = typename value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
             const value* val = value_derived_type::get_static_default_value();
             if (val && !val->type)
             {
@@ -60,9 +47,9 @@ namespace ff::data
         }
 
         template<class T>
-        auto get() const -> typename value_traits<T>::get_type
+        auto get() const -> typename ff::data::type::value_traits<T>::get_type
         {
-            using value_derived_type = typename value_traits<T>::value_derived_type;
+            using value_derived_type = typename ff::data::type::value_traits<T>::value_derived_type;
             const value* val = this->is_type<value_derived_type>() ? this : value_derived_type::get_static_default_value();
             return static_cast<const value_derived_type*>(val)->get();
         }
@@ -70,13 +57,13 @@ namespace ff::data
         template<class T>
         bool is_type() const
         {
-            return this->is_type(typeid(value_traits<T>::value_derived_type));
+            return this->is_type(typeid(ff::data::type::value_traits<T>::value_derived_type));
         }
 
         template<class T>
         value_ptr try_convert() const
         {
-            return this->try_convert(typeid(value_traits<T>::value_derived_type));
+            return this->try_convert(typeid(ff::data::type::value_traits<T>::value_derived_type));
         }
 
         template<class T>
@@ -98,7 +85,7 @@ namespace ff::data
 
         // persist
         static value_ptr load_typed(reader_base& reader);
-        bool save_typed(writer_base& writer);
+        bool save_typed(writer_base& writer) const;
         void print(std::ostream& output) const;
         void print_tree(std::ostream& output) const;
         void debug_print_tree() const;
@@ -123,8 +110,9 @@ namespace ff::data
         static const value_type* get_type(std::type_index type_index);
         static const value_type* get_type_by_lookup_id(uint32_t id);
         static const value_type* get_type_by_persist_id(uint32_t id);
-        bool is_type(std::type_index type_index);
-        value_ptr try_convert(std::type_index type_index);
+
+        bool is_type(std::type_index type_index) const;
+        value_ptr try_convert(std::type_index type_index) const;
 
         union
         {

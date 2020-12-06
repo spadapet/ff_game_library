@@ -9,6 +9,7 @@
 #include "source/stream.h"
 #include "source/type/int32.h"
 #include "source/type/string.h"
+#include "source/type/value_traits.h"
 #include "source/value/value.h"
 #include "source/value/value_allocator.h"
 #include "source/value/value_type.h"
