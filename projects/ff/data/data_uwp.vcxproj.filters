@@ -20,6 +20,27 @@
     <ClCompile Include="source\persist.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\type\int32.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\string.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\value_vector.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_allocator.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_register_default.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value\value_type.cpp">
+      <Filter>source\value</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,10 +63,49 @@
     <ClInclude Include="source\persist.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\type\int32.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\int32_vector.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\string.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\string_vector.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\value_traits.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\value_vector.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_allocator.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_register_default.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_type.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_type_base.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
       <UniqueIdentifier>{4ce9ffc1-627d-480b-85e6-66f6ed663657}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\type">
+      <UniqueIdentifier>{d6cbdb02-d444-446e-813f-bbd4b6186aa2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\value">
+      <UniqueIdentifier>{5cb2001c-028d-4f53-a50f-d21ab95d23fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

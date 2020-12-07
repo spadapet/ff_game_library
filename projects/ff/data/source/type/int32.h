@@ -20,12 +20,12 @@ namespace ff::type
     };
 
     template<>
-    struct value_traits<int> : public value_derived_traits<ff::type::int32>
+    struct value_traits<int32_t> : public value_derived_traits<ff::type::int32>
     {};
 
-    class int32_type : public ff::value_type_base<ff::type::int32>
+    class int32_type : public ff::value_type_simple<ff::type::int32>
     {
     public:
-        virtual value_ptr try_convert_to(const value* val, std::type_index type) const;
+        virtual value_ptr try_convert_to(const value* val, std::type_index type) const override;
     };
 }

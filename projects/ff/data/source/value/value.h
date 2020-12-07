@@ -29,7 +29,6 @@ namespace ff
 
             const value_type* type = ff::value::get_type(typeid(value_derived_type));
             val->data.type_lookup_id = type->type_lookup_id();
-
             return val;
         }
 
@@ -37,12 +36,10 @@ namespace ff
         static value_ptr create_default()
         {
             using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
-            const value* val = value_derived_type::get_static_default_value();
-            if (val && !val->type)
-            {
-                val->type = ff::value::get_type(typeid(value_derived_type));
-            }
+            const value_type* type = ff::value::get_type(typeid(value_derived_type));
 
+            value* val = value_derived_type::get_static_default_value();
+            val->data.type_lookup_id = type->type_lookup_id();
             return val;
         }
 
@@ -70,7 +67,7 @@ namespace ff
         value_ptr convert_or_default() const
         {
             value_ptr val = this->try_convert<T>();
-            return val ? val : ff::value::create_default();
+            return val ? val : ff::value::create_default<T>();
         }
 
         // maps
@@ -124,5 +121,33 @@ namespace ff
                 uint32_t type_lookup_id : 8;
             };
         } data;
+    };
+
+    template<class T>
+    class value_vector_base : public value
+    {
+    public:
+        value_vector_base(std::vector<T>&& value)
+            : value(std::move(value))
+        {}
+
+        const std::vector<T>& get() const
+        {
+            return this->value;
+        }
+
+        static ff::value* get_static_value(std::vector<T>&& value)
+        {
+            return value.empty() ? get_static_default_value() : nullptr;
+        }
+
+        static ff::value* get_static_default_value()
+        {
+            static value_vector_base<T> empty = std::vector<T>();
+            return &empty;
+        }
+
+    private:
+        std::vector<T> value;
     };
 }

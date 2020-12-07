@@ -24,7 +24,7 @@ namespace ff::type
     struct value_traits<std::string> : public value_derived_traits<ff::type::string>
     {};
 
-    class string_type : public ff::value_type_base<string>
+    class string_type : public ff::value_type_simple<string>
     {
     public:
         //virtual value_ptr try_convert_to(const value* val, std::type_index type) const;

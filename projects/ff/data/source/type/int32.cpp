@@ -5,6 +5,7 @@
 #include "../value/value.h"
 
 ff::type::int32::int32()
+    : value{}
 {}
 
 ff::type::int32::int32(int value)
