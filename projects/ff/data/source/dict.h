@@ -4,6 +4,9 @@
 
 namespace ff
 {
+    class reader_base;
+    class writer_base;
+
     class dict
     {
     public:
@@ -27,8 +30,11 @@ namespace ff
         void set(std::string_view name, const value* value);
         void set(const dict& other, bool merge_child_dicts);
         value_ptr get(std::string_view name) const;
+
         std::vector<std::string_view> child_names() const;
         void load_child_dicts();
+        bool save(writer_base& writer);
+        static bool load(reader_base& reader, dict& data);
 
         iterator begin();
         const_iterator begin() const;
