@@ -28,7 +28,7 @@ ff::value_ptr ff::value::named_child(std::string_view name) const
     return this->type()->named_child(this, name);
 }
 
-std::vector<std::string> ff::value::child_names() const
+std::vector<std::string_view> ff::value::child_names() const
 {
     return this->type()->child_names(this);
 }
@@ -202,7 +202,12 @@ const ff::value_type* ff::value::get_type_by_persist_id(uint32_t id)
 
 bool ff::value::is_type(std::type_index type_index) const
 {
-    return this->type()->type_index() == type_index;
+    return type_index == typeid(ff::value) || this->type()->type_index() == type_index;
+}
+
+const void* ff::value::try_cast(std::type_index type_index) const
+{
+    return this ? this->type()->try_cast(this, type_index) : nullptr;
 }
 
 ff::value_ptr ff::value::try_convert(std::type_index type_index) const

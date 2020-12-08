@@ -1,14 +1,11 @@
 #pragma once
 
-#include "../type/value_traits.h"
+#include "value_ptr.h"
 
 namespace ff
 {
     class reader_base;
     class writer_base;
-
-    class value;
-    using value_ptr = typename ff::intrusive_ptr<const value>;
 
     class value_type
     {
@@ -28,13 +25,14 @@ namespace ff
         virtual bool equals(const value* val1, const value* val2) const;
 
         // convert
+        virtual const void* try_cast(const value* val, std::type_index type) const;
         virtual value_ptr try_convert_to(const value* val, std::type_index type) const;
         virtual value_ptr try_convert_from(const value* other) const;
 
         // maps
         virtual bool can_have_named_children() const;
         virtual value_ptr named_child(const value* val, std::string_view name) const;
-        virtual std::vector<std::string> child_names(const value* val) const;
+        virtual std::vector<std::string_view> child_names(const value* val) const;
 
         // arrays
         virtual bool can_have_indexed_children() const;

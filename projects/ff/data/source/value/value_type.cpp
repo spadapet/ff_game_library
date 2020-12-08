@@ -25,6 +25,11 @@ bool ff::value_type::equals(const value* val1, const value* val2) const
     return false;
 }
 
+const void* ff::value_type::try_cast(const value* val, std::type_index type) const
+{
+    return nullptr;
+}
+
 ff::value_ptr ff::value_type::try_convert_to(const value* val, std::type_index type) const
 {
     return nullptr;
@@ -45,9 +50,9 @@ ff::value_ptr ff::value_type::named_child(const value* val, std::string_view nam
     return nullptr;
 }
 
-std::vector<std::string> ff::value_type::child_names(const value* val) const
+std::vector<std::string_view> ff::value_type::child_names(const value* val) const
 {
-    return std::vector<std::string>();
+    return std::vector<std::string_view>();
 }
 
 bool ff::value_type::can_have_indexed_children() const
@@ -128,7 +133,7 @@ static void print_tree(std::string_view name, ff::value_ptr val, size_t level, s
         output << std::endl;
     }
 
-    std::vector<std::string> child_names;
+    std::vector<std::string_view> child_names;
 
     if (val->can_have_named_children())
     {
@@ -153,7 +158,7 @@ static void print_tree(std::string_view name, ff::value_ptr val, size_t level, s
     }
 
     std::sort(child_names.begin(), child_names.end());
-    for (const std::string& child_name : child_names)
+    for (const std::string_view& child_name : child_names)
     {
         ::print_tree(child_name, val->named_child(child_name), level + 1, output);
     }

@@ -41,6 +41,9 @@
     <ClCompile Include="source\type\value_vector.cpp">
       <Filter>source\type</Filter>
     </ClCompile>
+    <ClCompile Include="source\dict.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -95,6 +98,12 @@
     </ClInclude>
     <ClInclude Include="source\type\value_vector.h">
       <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value\value_ptr.h">
+      <Filter>source\value</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dict.h">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

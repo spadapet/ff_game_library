@@ -58,6 +58,12 @@ namespace ff
         }
 
         template<class T>
+        const T* try_cast() const
+        {
+            return reinterpret_cast<const T*>(this->try_cast(typeid(T)));
+        }
+
+        template<class T>
         value_ptr try_convert() const
         {
             return this->try_convert(typeid(ff::type::value_traits<T>::value_derived_type));
@@ -73,7 +79,7 @@ namespace ff
         // maps
         bool can_have_named_children() const;
         value_ptr named_child(std::string_view name) const;
-        std::vector<std::string> child_names() const;
+        std::vector<std::string_view> child_names() const;
 
         // arrays
         bool can_have_indexed_children() const;
@@ -109,6 +115,7 @@ namespace ff
         static const value_type* get_type_by_persist_id(uint32_t id);
 
         bool is_type(std::type_index type_index) const;
+        const void* try_cast(std::type_index type_index) const;
         value_ptr try_convert(std::type_index type_index) const;
 
         union

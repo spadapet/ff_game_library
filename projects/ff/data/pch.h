@@ -2,6 +2,7 @@
 
 // C++
 #include <cassert>
+#include <charconv>
 #include <filesystem>
 #include <functional>
 #include <memory>
