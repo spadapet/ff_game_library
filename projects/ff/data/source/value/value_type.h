@@ -10,15 +10,14 @@ namespace ff
     class value_type
     {
     public:
-        value_type();
+        value_type(std::string_view name, uint32_t lookup_id);
         virtual ~value_type() = 0;
 
         // types
         virtual size_t size_of() const = 0;
         virtual void destruct(value* obj) const = 0;
         virtual std::type_index type_index() const = 0;
-        virtual std::string_view type_name() const = 0;
-        virtual uint32_t type_persist_id() const = 0;
+        std::string_view type_name() const;
         uint32_t type_lookup_id() const;
 
         // compare
@@ -46,6 +45,7 @@ namespace ff
         virtual void print_tree(const value* val, std::ostream& output) const;
 
     private:
+        std::string name;
         uint32_t lookup_id;
     };
 }

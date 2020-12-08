@@ -90,6 +90,9 @@
     <ClInclude Include="source\intrusive_ptr.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\flags.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

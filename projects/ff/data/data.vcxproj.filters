@@ -29,12 +29,6 @@
     <ClCompile Include="source\value\value_type.cpp">
       <Filter>source\value</Filter>
     </ClCompile>
-    <ClCompile Include="source\type\string.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\int32.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
     <ClCompile Include="source\value\value_register_default.cpp">
       <Filter>source\value</Filter>
     </ClCompile>
@@ -43,6 +37,42 @@
     </ClCompile>
     <ClCompile Include="source\dict.cpp">
       <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\bool_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\data_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\double_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\fixed_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\float_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\int_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\null_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\size_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\string_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\uuid_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\saved_data_v.cpp">
+      <Filter>source\type</Filter>
+    </ClCompile>
+    <ClCompile Include="source\type\dict_v.cpp">
+      <Filter>source\type</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -75,12 +105,6 @@
     <ClInclude Include="source\value\value_type.h">
       <Filter>source\value</Filter>
     </ClInclude>
-    <ClInclude Include="source\type\string.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\int32.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
     <ClInclude Include="source\value\value_register_default.h">
       <Filter>source\value</Filter>
     </ClInclude>
@@ -90,12 +114,6 @@
     <ClInclude Include="source\value\value_type_base.h">
       <Filter>source\value</Filter>
     </ClInclude>
-    <ClInclude Include="source\type\int32_vector.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\string_vector.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
     <ClInclude Include="source\type\value_vector.h">
       <Filter>source\type</Filter>
     </ClInclude>
@@ -104,6 +122,48 @@
     </ClInclude>
     <ClInclude Include="source\dict.h">
       <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\bool_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\data_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\double_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\fixed_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\float_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\int_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\null_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\point_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\rect_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\size_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\string_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\uuid_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\saved_data_v.h">
+      <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type\dict_v.h">
+      <Filter>source\type</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

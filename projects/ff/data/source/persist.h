@@ -11,9 +11,11 @@ namespace ff
 {
     bool load_bytes(reader_base& reader, void* data, size_t size);
     bool load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data);
+    bool load_padding(reader_base& reader, size_t size_read);
 
     bool save_bytes(writer_base& writer, const void* data, size_t size);
     bool save_bytes(writer_base& writer, const data_base& data);
+    bool save_padding(writer_base& writer, size_t size_written);
 
     template<class T>
     bool load(reader_base& reader, T& data)

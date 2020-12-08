@@ -14,6 +14,8 @@ namespace ff::type
     class value_vector_type : public ff::value_type_base<ff::type::value_vector>
     {
     public:
+        using value_type_base::value_type_base;
+
         virtual value_ptr try_convert_from(const value* other) const override;
 
         virtual bool can_have_indexed_children() const override;

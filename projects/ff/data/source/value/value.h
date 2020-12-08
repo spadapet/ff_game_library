@@ -10,9 +10,9 @@ namespace ff
     {
     public:
         template<class Type>
-        static void register_type()
+        static void register_type(std::string_view name, uint32_t lookup_id)
         {
-            ff::value::register_type(std::make_unique<Type>());
+            ff::value::register_type(std::make_unique<Type>(name, lookup_id));
         }
 
         template<typename T, typename... Args>
@@ -94,13 +94,6 @@ namespace ff
         void debug_print_tree() const;
 
         bool equals(const value* other) const;
-        const value_type* type() const;
-        std::type_index type_index() const;
-        std::string_view type_name() const;
-        uint32_t type_lookup_id() const;
-        uint32_t type_persist_id() const;
-
-        // intrusive ref count
         void add_ref() const;
         void release_ref() const;
 
@@ -112,8 +105,8 @@ namespace ff
         static bool register_type(std::unique_ptr<value_type>&& type);
         static const value_type* get_type(std::type_index type_index);
         static const value_type* get_type_by_lookup_id(uint32_t id);
-        static const value_type* get_type_by_persist_id(uint32_t id);
 
+        const value_type* type() const;
         bool is_type(std::type_index type_index) const;
         const void* try_cast(std::type_index type_index) const;
         value_ptr try_convert(std::type_index type_index) const;
@@ -134,6 +127,8 @@ namespace ff
     class value_vector_base : public value
     {
     public:
+        using this_type = value_vector_base<T>;
+
         value_vector_base(std::vector<T>&& value)
             : value(std::move(value))
         {}
@@ -145,7 +140,7 @@ namespace ff
 
         static ff::value* get_static_value(std::vector<T>&& value)
         {
-            return value.empty() ? get_static_default_value() : nullptr;
+            return value.empty() ? this_type::get_static_default_value() : nullptr;
         }
 
         static ff::value* get_static_default_value()

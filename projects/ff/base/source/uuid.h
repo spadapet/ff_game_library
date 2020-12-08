@@ -32,9 +32,10 @@ namespace ff
         operator GUID() const;
 
         std::string to_string() const;
+        static bool from_string(std::string_view str, uuid& value);
 
     private:
-        static GUID data_from_sting(std::string_view str);
+        static bool data_from_sting(std::string_view str, GUID& value);
 
         GUID data;
     };

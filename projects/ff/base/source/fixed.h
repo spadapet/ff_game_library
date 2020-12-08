@@ -20,19 +20,19 @@ namespace ff
 
         fixed_t(const fixed_t& rhs) = default;
 
-        fixed_t(int data)
+        constexpr fixed_t(int data)
             : data(data << this_type::fixed_count)
         {}
 
-        fixed_t(float data)
+        constexpr fixed_t(float data)
             : data(static_cast<T>(data* this_type::fixed_max))
         {}
 
-        fixed_t(double data)
+        constexpr fixed_t(double data)
             : data(static_cast<T>(data* this_type::fixed_max))
         {}
 
-        fixed_t(bool data)
+        constexpr fixed_t(bool data)
             : fixed_t(static_cast<int>(data))
         {}
 
@@ -295,5 +295,18 @@ namespace std
     ff::fixed_t<T, ET, FC> sqrt(const ff::fixed_t<T, ET, FC>& val)
     {
         return std::sqrt(static_cast<double>(val));
+    }
+
+    template<class T, class ET, T FC>
+    std::ostream& operator<<(std::ostream& out, const ff::fixed_t<T, ET, FC>& val)
+    {
+        out << static_cast<double>(val);
+        return out;
+    }
+
+    template<class T, class ET, T FC>
+    std::string to_string(const ff::fixed_t<T, ET, FC>& val)
+    {
+        return std::to_string(static_cast<double>(val));
     }
 }

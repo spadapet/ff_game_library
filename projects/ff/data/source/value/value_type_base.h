@@ -14,6 +14,8 @@ namespace ff
         using raw_type = typename ff::type::value_traits<T>::raw_type;
         using this_type = typename value_type_base<T>;
 
+        using value_type::value_type;
+
         virtual size_t size_of() const override
         {
             return sizeof(value_derived_type);
@@ -29,21 +31,8 @@ namespace ff
             return typeid(value_derived_type);
         }
 
-        virtual std::string_view type_name() const override
-        {
-            const char* name = typeid(value_derived_type).name();
-            return std::string_view(name);
-        }
-
-        virtual uint32_t type_persist_id() const override
-        {
-            size_t id = ff::hash<std::string_view>()(this->type_name());
-            return static_cast<uint32_t>(id);
-        }
-
         virtual bool equals(const value* val1, const value* val2) const
         {
-            assert(val1->type() == val2->type());
             return val1->get<value_derived_type>() == val2->get<value_derived_type>();
         }
     };
@@ -52,6 +41,8 @@ namespace ff
     class value_type_simple : public value_type_base<T>
     {
     public:
+        using value_type_base::value_type_base;
+
         virtual ff::value_ptr load(reader_base& reader) const override
         {
             raw_type data;
@@ -69,6 +60,8 @@ namespace ff
     class value_type_pod_vector : public value_type_base<T>
     {
     public:
+        using value_type_base::value_type_base;
+
         virtual value_ptr try_convert_from(const value* other) const override
         {
             if (other->can_have_indexed_children())
@@ -150,6 +143,8 @@ namespace ff
     class value_type_object_vector : public value_type_pod_vector<T>
     {
     public:
+        using value_type_pod_vector::value_type_pod_vector;
+
         virtual ff::value_ptr load(reader_base& reader) const override
         {
             size_t size;

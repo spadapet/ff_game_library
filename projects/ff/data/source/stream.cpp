@@ -157,3 +157,38 @@ std::shared_ptr<ff::saved_data_base> ff::file_writer::saved_data(size_t offset, 
     assert(offset + saved_size <= this->size());
     return std::make_shared<saved_data_file>(this->file.path(), offset, saved_size, loaded_size, type);
 }
+
+size_t ff::stream_copy(writer_base& writer, reader_base& reader, size_t size, size_t chunk_size)
+{
+    std::vector<uint8_t> buffer;
+    size_t copied = 0;
+
+    if (!chunk_size)
+    {
+        chunk_size = 1024 * 256;
+    }
+
+    for (size_t pos = 0; pos < size; pos += chunk_size)
+    {
+        size_t read_size = std::min(size - pos, chunk_size);
+        buffer.resize(read_size);
+
+        read_size = reader.read(buffer.data(), read_size);
+        if (!read_size)
+        {
+            break;
+        }
+
+        size_t write_size = writer.write(buffer.data(), read_size);
+        copied += write_size;
+
+        if (write_size != read_size)
+        {
+            assert(false);
+            break;
+        }
+    }
+
+    return copied;
+}
+

@@ -2,8 +2,9 @@
 #include "dict.h"
 #include "persist.h"
 #include "stream.h"
+#include "type/dict_v.h"
+#include "type/value_vector.h"
 #include "value/value.h"
-// TODO: Include type/dict_value.h
 
 static const std::string& get_cached_string(std::string_view str)
 {
@@ -32,24 +33,16 @@ bool ff::dict::operator==(const dict& other) const
 {
     if (this->size() == other.size())
     {
-        std::vector<std::string_view> names1 = this->child_names();
-        std::vector<std::string_view> names2 = other.child_names();
-
-        std::sort(names1.begin(), names1.end());
-        std::sort(names2.begin(), names2.end());
-
-        if (names1 == names2)
+        for (const auto& i : *this)
         {
-            for (const std::string_view& name : names1)
+            value_ptr other_val = other.get(i.first);
+            if (!i.second->equals(other_val))
             {
-                if (!this->get(name)->equals(other.get(name)))
-                {
-                    return false;
-                }
+                return false;
             }
-
-            return true;
         }
+
+        return true;
     }
 
     return false;
@@ -89,7 +82,23 @@ void ff::dict::set(std::string_view name, const value* value)
 
 void ff::dict::set(const dict& other, bool merge_child_dicts)
 {
-    // TODO: after saved dicts exist
+    for (const auto& i : other)
+    {
+        value_ptr new_val = i.second;
+        value_ptr new_dict = merge_child_dicts ? new_val->try_convert<dict>() : nullptr;
+        if (new_dict)
+        {
+            value_ptr old_dict = this->get(i.first)->try_convert<dict>();
+            if (old_dict)
+            {
+                dict combined_dict = old_dict->get<dict>();
+                combined_dict.set(new_dict->get<dict>(), merge_child_dicts);
+                new_val = value::create<dict>(std::move(combined_dict));
+            }
+        }
+
+        this->set(i.first, new_val);
+    }
 }
 
 ff::value_ptr ff::dict::get(std::string_view name) const
@@ -119,10 +128,39 @@ std::vector<std::string_view> ff::dict::child_names() const
 
 void ff::dict::load_child_dicts()
 {
-    // TODO: after saved dicts exist
+    for (const auto& i : *this)
+    {
+        value_ptr val = i.second;
+        if (val->is_type<std::vector<value_ptr>>())
+        {
+            std::vector<value_ptr> values = val->get<std::vector<value_ptr>>();
+            for (size_t h = 0; h < values.size(); h++)
+            {
+                value_ptr dict_val = values[h]->try_convert<dict>();
+                if (dict_val)
+                {
+                    dict new_dict = dict_val->get<dict>();
+                    new_dict.load_child_dicts();
+                    values[h] = value::create<dict>(std::move(new_dict));
+                }
+            }
+
+            this->set(i.first, value::create<std::vector<value_ptr>>(std::move(values)));
+        }
+        else
+        {
+            value_ptr dict_val = val->try_convert<dict>();
+            if (dict_val)
+            {
+                dict new_dict = dict_val->get<dict>();
+                new_dict.load_child_dicts();
+                this->set(i.first, value::create<dict>(std::move(new_dict)));
+            }
+        }
+    }
 }
 
-bool ff::dict::save(writer_base& writer)
+bool ff::dict::save(writer_base& writer) const
 {
     size_t size = this->size();
     if (!ff::save(writer, size))
@@ -203,8 +241,7 @@ ff::dict::const_iterator ff::dict::cend() const
 
 void ff::dict::print(std::ostream& output) const
 {
-    // TODO:
-    // ff::value::create<dict>(dict(*this))->print(output);
+    ff::value::create<dict>(dict(*this))->print(output);
 }
 
 void ff::dict::debug_print() const

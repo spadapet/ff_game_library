@@ -132,6 +132,9 @@ namespace data_test
                 Assert::AreEqual<size_t>(2, vec.size());
                 Assert::AreEqual(100, vec[0]->convert_or_default<int32_t>()->get<int32_t>());
                 Assert::AreEqual(std::string("200"), vec[1]->convert_or_default<std::string>()->get<std::string>());
+
+                std::stringstream ss;
+                val_loaded->debug_print_tree();
             }
         }
     };

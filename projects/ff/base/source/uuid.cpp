@@ -7,8 +7,9 @@ ff::uuid::uuid(const GUID& other)
 {}
 
 ff::uuid::uuid(std::string_view str)
-    : data(ff::uuid::data_from_sting(str))
-{}
+{
+    uuid::data_from_sting(str, this->data);
+}
 
 ff::uuid ff::uuid::create()
 {
@@ -30,7 +31,7 @@ ff::uuid& ff::uuid::operator=(const GUID& other)
 
 ff::uuid& ff::uuid::operator=(std::string_view other)
 {
-    this->data = ff::uuid::data_from_sting(other);
+    ff::uuid::data_from_sting(other, this->data);
     return *this;
 }
 
@@ -105,11 +106,21 @@ std::string ff::uuid::to_string() const
     return str;
 }
 
-GUID ff::uuid::data_from_sting(std::string_view str)
+bool ff::uuid::from_string(std::string_view str, uuid& value)
 {
-    GUID data;
+    return uuid::data_from_sting(str, value.data);
+}
+
+bool ff::uuid::data_from_sting(std::string_view str, GUID& value)
+{
     std::wstring wstr = ff::string::to_wstring(str);
-    return SUCCEEDED(::IIDFromString(wstr.data(), &data)) ? data : GUID_NULL;
+    if (SUCCEEDED(::IIDFromString(wstr.data(), &value)))
+    {
+        return true;
+    }
+
+    value = GUID_NULL;
+    return false;
 }
 
 std::string std::to_string(const ff::uuid& value)

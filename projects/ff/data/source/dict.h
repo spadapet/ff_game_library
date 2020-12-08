@@ -32,9 +32,9 @@ namespace ff
         value_ptr get(std::string_view name) const;
 
         std::vector<std::string_view> child_names() const;
-        void load_child_dicts();
-        bool save(writer_base& writer);
+        bool save(writer_base& writer) const;
         static bool load(reader_base& reader, dict& data);
+        void load_child_dicts();
 
         iterator begin();
         const_iterator begin() const;

@@ -23,6 +23,7 @@
     <ClInclude Include="public_api.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\fixed.h" />
+    <ClInclude Include="source\flags.h" />
     <ClInclude Include="source\forward_list.h" />
     <ClInclude Include="source\hash.h" />
     <ClInclude Include="source\hash_set.h" />

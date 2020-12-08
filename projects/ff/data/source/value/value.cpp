@@ -6,7 +6,6 @@
 static const uint32_t REFS_MASK = 0x00FFFFFF;
 static std::array<std::unique_ptr<ff::value_type>, 256> value_type_array;
 static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_type;
-static std::unordered_map<uint32_t, ff::value_type*, ff::no_hash<uint32_t>> persist_id_to_value_type;
 static ff::internal::value_register_default register_defaults;
 
 ff::value::value()
@@ -53,7 +52,7 @@ ff::value_ptr ff::value::load_typed(reader_base& reader)
     uint32_t persist_id;
     if (ff::load(reader, persist_id))
     {
-        const value_type* type = ff::value::get_type_by_persist_id(persist_id);
+        const value_type* type = ff::value::get_type_by_lookup_id(persist_id);
         if (type)
         {
             return type->load(reader);
@@ -66,8 +65,9 @@ ff::value_ptr ff::value::load_typed(reader_base& reader)
 
 bool ff::value::save_typed(writer_base& writer) const
 {
-    uint32_t persist_id = this->type_persist_id();
-    bool status = ff::save(writer, persist_id) && this->type()->save(this, writer);
+    const value_type* type = this->type();
+    uint32_t persist_id = type->type_lookup_id();
+    bool status = ff::save(writer, persist_id) && type->save(this, writer);
     assert(status);
     return status;
 }
@@ -116,26 +116,6 @@ bool ff::value::equals(const value* other) const
     return this->type()->equals(this, other);
 }
 
-std::type_index ff::value::type_index() const
-{
-    return this->type()->type_index();
-}
-
-std::string_view ff::value::type_name() const
-{
-    return this->type()->type_name();
-}
-
-uint32_t ff::value::type_lookup_id() const
-{
-    return this->type()->type_persist_id();
-}
-
-uint32_t ff::value::type_persist_id() const
-{
-    return this->type()->type_persist_id();
-}
-
 void ff::value::add_ref() const
 {
     if (this->data.refs)
@@ -158,10 +138,9 @@ void ff::value::release_ref() const
 bool ff::value::register_type(std::unique_ptr<value_type>&& type)
 {
     uint32_t lookup_id = (type != nullptr) ? type->type_lookup_id() : 0;
-    if (lookup_id > 0 && lookup_id < ::value_type_array.size() && ::persist_id_to_value_type.find(type->type_persist_id()) == ::persist_id_to_value_type.cend())
+    if (lookup_id > 0 && lookup_id < ::value_type_array.size() && !::value_type_array[lookup_id])
     {
         ::type_index_to_value_type.try_emplace(type->type_index(), type.get());
-        ::persist_id_to_value_type.try_emplace(type->type_persist_id(), type.get());
         ::value_type_array[lookup_id] = std::move(type);
         return true;
     }
@@ -186,18 +165,6 @@ const ff::value_type* ff::value::get_type_by_lookup_id(uint32_t id)
 {
     assert(id > 0 && id < ::value_type_array.size());
     return ::value_type_array[id].get();
-}
-
-const ff::value_type* ff::value::get_type_by_persist_id(uint32_t id)
-{
-    auto i = ::persist_id_to_value_type.find(id);
-    if (i != ::persist_id_to_value_type.cend())
-    {
-        return i->second;
-    }
-
-    assert(false);
-    return nullptr;
 }
 
 bool ff::value::is_type(std::type_index type_index) const

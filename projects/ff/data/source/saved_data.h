@@ -7,8 +7,13 @@ namespace ff
 
     enum class saved_data_type
     {
-        none,
-        zlib_compressed,
+        none = 0x00,
+
+        // type of bits
+        zlib_compressed = 0x01,
+
+        // type of data
+        dict = 0x0100,
     };
 
     class saved_data_base

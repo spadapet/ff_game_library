@@ -113,4 +113,6 @@ namespace ff
     private:
         file_write file;
     };
+
+    size_t stream_copy(writer_base& writer, reader_base& reader, size_t size, size_t chunk_size = 0);
 }

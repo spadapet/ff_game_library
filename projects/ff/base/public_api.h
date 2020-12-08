@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "source/constants.h"
 #include "source/fixed.h"
+#include "source/flags.h"
 #include "source/forward_list.h"
 #include "source/hash.h"
 #include "source/hash_set.h"

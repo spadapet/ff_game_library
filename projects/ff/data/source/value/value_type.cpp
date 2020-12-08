@@ -1,19 +1,20 @@
 #include "pch.h"
 #include "value.h"
-#include "../type/string.h"
+#include "../type/dict_v.h"
+#include "../type/string_v.h"
 
-static uint32_t next_lookup_id()
-{
-    static std::atomic_uint32_t next = 1;
-    return next.fetch_add(1);
-}
-
-ff::value_type::value_type()
-    : lookup_id(::next_lookup_id())
+ff::value_type::value_type(std::string_view name, uint32_t lookup_id)
+    : name(name)
+    , lookup_id(lookup_id)
 {}
 
 ff::value_type::~value_type()
 {}
+
+std::string_view ff::value_type::type_name() const
+{
+    return this->name;
+}
 
 uint32_t ff::value_type::type_lookup_id() const
 {
@@ -149,8 +150,7 @@ static void print_tree(std::string_view name, ff::value_ptr val, size_t level, s
     }
     else
     {
-        // TODO
-        ff::value_ptr dict_val; // = val->try_convert<ff::dict>();
+        ff::value_ptr dict_val = val->try_convert<ff::dict>();
         if (dict_val)
         {
             child_names = dict_val->child_names();
@@ -173,17 +173,19 @@ void ff::value_type::print(const value* val, std::ostream& output) const
     }
     else if (val->can_have_indexed_children())
     {
-        output << "<" << val->type_name() << "[" << val->index_child_count() << "]>";
+        output << "<" << this->type_name() << "[" << val->index_child_count() << "]>";
     }
     else if (val->can_have_named_children())
     {
-        output << "<" << val->type_name() << "[" << val->child_names().size() << "]>";
+        output << "<" << this->type_name() << "[" << val->child_names().size() << "]>";
     }
     else
     {
-        output << "<" << val->type_name() << ">";
+        output << "<" << this->type_name() << ">";
     }
 }
 
 void ff::value_type::print_tree(const value* val, std::ostream& output) const
-{}
+{
+    ::print_tree("", val, 0, output);
+}

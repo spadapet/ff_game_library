@@ -6,14 +6,7 @@
 
 bool ff::load_bytes(reader_base& reader, void* data, size_t size)
 {
-    if (reader.read(data, size))
-    {
-        static std::array<uint8_t, 4> padding;
-        size_t padding_size = ff::math::round_up<size_t>(size, 4) - size;
-        return reader.read(padding.data(), padding_size) == padding_size;
-    }
-
-    return false;
+    return reader.read(data, size) && ff::load_padding(reader, size);
 }
 
 bool ff::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data)
@@ -32,19 +25,26 @@ bool ff::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>
     return false;
 }
 
+bool ff::load_padding(reader_base& reader, size_t size_read)
+{
+    static std::array<uint8_t, 4> padding;
+    size_t padding_size = ff::math::round_up<size_t>(size_read, 4) - size_read;
+    return reader.read(padding.data(), padding_size) == padding_size;
+}
+
 bool ff::save_bytes(writer_base& writer, const void* data, size_t size)
 {
-    if (writer.write(data, size) == size)
-    {
-        static const std::array<uint8_t, 4> padding = { 0, 0, 0, 0 };
-        size_t padding_size = ff::math::round_up<size_t>(size, 4) - size;
-        return writer.write(padding.data(), padding_size) == padding_size;
-    }
-
-    return false;
+    return writer.write(data, size) == size && ff::save_padding(writer, size);
 }
 
 bool ff::save_bytes(writer_base& writer, const data_base& data)
 {
     return ff::save_bytes(writer, data.data(), data.size());
+}
+
+bool ff::save_padding(writer_base& writer, size_t size_written)
+{
+    static const std::array<uint8_t, 4> padding = { 0, 0, 0, 0 };
+    size_t padding_size = ff::math::round_up<size_t>(size_written, 4) - size_written;
+    return writer.write(padding.data(), padding_size) == padding_size;
 }
