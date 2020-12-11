@@ -20,64 +20,64 @@
     <ClCompile Include="source\persist.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\value\value.cpp">
-      <Filter>source\value</Filter>
-    </ClCompile>
-    <ClCompile Include="source\value\value_allocator.cpp">
-      <Filter>source\value</Filter>
-    </ClCompile>
-    <ClCompile Include="source\value\value_type.cpp">
-      <Filter>source\value</Filter>
-    </ClCompile>
-    <ClCompile Include="source\value\value_register_default.cpp">
-      <Filter>source\value</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\value_vector.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
     <ClCompile Include="source\dict.cpp">
       <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\bool_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\data_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\double_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\fixed_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\float_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\int_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\null_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\size_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\string_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\uuid_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\saved_data_v.cpp">
-      <Filter>source\type</Filter>
-    </ClCompile>
-    <ClCompile Include="source\type\dict_v.cpp">
-      <Filter>source\type</Filter>
     </ClCompile>
     <ClCompile Include="source\json_tokenizer.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\json_persist.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\bool_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dict_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\double_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fixed_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\float_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\int_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\null_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\saved_data_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\size_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\uuid_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_register_default.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_type.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_vector.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,7 +86,6 @@
     <ClInclude Include="source\file.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="public_api.h" />
     <ClInclude Include="source\data.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -102,74 +101,8 @@
     <ClInclude Include="source\persist.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\value\value.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
-    <ClInclude Include="source\value\value_allocator.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
-    <ClInclude Include="source\value\value_type.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
-    <ClInclude Include="source\value\value_register_default.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\value_traits.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\value\value_type_base.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\value_vector.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\value\value_ptr.h">
-      <Filter>source\value</Filter>
-    </ClInclude>
     <ClInclude Include="source\dict.h">
       <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\bool_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\data_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\double_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\fixed_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\float_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\int_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\null_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\point_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\rect_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\size_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\string_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\uuid_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\saved_data_v.h">
-      <Filter>source\type</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type\dict_v.h">
-      <Filter>source\type</Filter>
     </ClInclude>
     <ClInclude Include="source\json_tokenizer.h">
       <Filter>source</Filter>
@@ -177,16 +110,77 @@
     <ClInclude Include="source\json_persist.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="data_api.h" />
+    <ClInclude Include="source\bool_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dict_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\double_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\float_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\int_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\null_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\point_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rect_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\saved_data_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\size_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\uuid_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_register_default.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_traits.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_type.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_type_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
       <UniqueIdentifier>{76ec87b9-6627-4ce2-bbbb-8ed3e616fa63}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="source\value">
-      <UniqueIdentifier>{ce2afccf-f074-4a98-b200-8cba71268fcb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="source\type">
-      <UniqueIdentifier>{9f645fe8-ba45-42b4-9d12-2397d4d26562}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

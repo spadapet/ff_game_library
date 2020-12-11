@@ -1,8 +1,8 @@
 #pragma once
 
 #include "value_allocator.h"
+#include "value_traits.h"
 #include "value_type.h"
-#include "../type/value_traits.h"
 
 namespace ff
 {

@@ -1,10 +1,10 @@
 #include "pch.h"
+#include "bool_v.h"
+#include "double_v.h"
+#include "int_v.h"
 #include "json_tokenizer.h"
-#include "type/bool_v.h"
-#include "type/double_v.h"
-#include "type/int_v.h"
-#include "type/null_v.h"
-#include "type/string_v.h"
+#include "null_v.h"
+#include "string_v.h"
 
 ff::value_ptr ff::internal::json_token::get() const
 {

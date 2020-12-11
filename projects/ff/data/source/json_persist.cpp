@@ -1,14 +1,14 @@
 #include "pch.h"
+#include "bool_v.h"
+#include "dict_v.h"
+#include "double_v.h"
+#include "int_v.h"
 #include "json_persist.h"
 #include "json_tokenizer.h"
-#include "type/bool_v.h"
-#include "type/dict_v.h"
-#include "type/double_v.h"
-#include "type/int_v.h"
-#include "type/null_v.h"
-#include "type/saved_data_v.h"
-#include "type/string_v.h"
-#include "type/value_vector.h"
+#include "null_v.h"
+#include "saved_data_v.h"
+#include "string_v.h"
+#include "value_vector.h"
 
 static const size_t INDENT_SPACES = 2;
 

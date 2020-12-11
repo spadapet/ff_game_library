@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../dict.h"
-#include "../value/value.h"
-#include "../value/value_type_base.h"
+#include "dict.h"
+#include "value.h"
+#include "value_type_base.h"
 
 namespace ff::type
 {

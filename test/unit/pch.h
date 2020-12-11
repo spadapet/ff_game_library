@@ -5,8 +5,8 @@
 #include <iostream>
 
 // FF
-#include <ff/base/public_api.h>
-#include <ff/data/public_api.h>
+#include <ff/base/base_api.h>
+#include <ff/data/data_api.h>
 
 // VS
 #include <CppUnitTest.h>

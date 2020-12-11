@@ -1,7 +1,7 @@
 #include "pch.h"
+#include "dict_v.h"
+#include "string_v.h"
 #include "value.h"
-#include "../type/dict_v.h"
-#include "../type/string_v.h"
 
 ff::value_type::value_type(std::string_view name, uint32_t lookup_id)
     : name(name)

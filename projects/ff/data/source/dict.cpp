@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "dict.h"
+#include "dict_v.h"
 #include "persist.h"
 #include "stream.h"
-#include "type/dict_v.h"
-#include "type/value_vector.h"
-#include "value/value.h"
+#include "value.h"
+#include "value_vector.h"
 
 static const std::string& get_cached_string(std::string_view str)
 {
