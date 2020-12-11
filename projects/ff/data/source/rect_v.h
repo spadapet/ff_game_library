@@ -65,7 +65,7 @@ namespace ff::type
     {};
 
     template<class T>
-    class rect_base_type : public ff::value_type_simple<T>
+    class rect_base_type : public ff::internal::value_type_simple<T>
     {
     public:
         using value_type = typename T;
@@ -79,7 +79,7 @@ namespace ff::type
             if (type == typeid(ff::type::string_v))
             {
                 const rect_type& src = val->get<rect_type>();
-                std::stringstream str;
+                std::ostringstream str;
                 str << "[" << src.left << ", " << src.top << ", " << src.right << ", " << src.bottom << "]";
                 return ff::value::create<std::string>(str.str());
             }

@@ -16,5 +16,4 @@
 #include <typeindex>
 
 // Windows
-#define NOMINMAX
 #include <Windows.h>

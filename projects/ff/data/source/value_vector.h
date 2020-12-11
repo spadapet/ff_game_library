@@ -1,17 +1,17 @@
 #pragma once
 
-#include "value.h"
 #include "value_type_base.h"
+#include "value_vector_base.h"
 
 namespace ff::type
 {
-    using value_vector = ff::value_vector_base<value_ptr>;
+    using value_vector_v = ff::internal::value_vector_base<value_ptr>;
 
     template<>
-    struct value_traits<std::vector<value_ptr>> : public value_derived_traits<ff::type::value_vector>
+    struct value_traits<ff::value_vector> : public value_derived_traits<ff::type::value_vector_v>
     {};
 
-    class value_vector_type : public ff::value_type_base<ff::type::value_vector>
+    class value_vector_type : public ff::internal::value_type_base<ff::type::value_vector_v>
     {
     public:
         using value_type_base::value_type_base;

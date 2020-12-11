@@ -177,6 +177,9 @@
     <ClInclude Include="source\value_vector.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\value_vector_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

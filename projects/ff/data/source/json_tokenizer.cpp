@@ -82,11 +82,11 @@ ff::value_ptr ff::internal::json_token::get() const
                                 break;
 
                             case 'u':
+                                if (cur + 6 <= end)
                                 {
-                                    char buffer[5] = { cur[2], cur[3], cur[4], cur[5], '\0' };
-                                    unsigned long decoded;
-                                    std::from_chars_result result = std::from_chars(&buffer[0], &buffer[4], decoded);
-                                    if (result.ec != std::errc::invalid_argument && result.ptr == &buffer[4])
+                                    unsigned int decoded;
+                                    std::from_chars_result result = std::from_chars(cur + 2, cur + 6, decoded, 16);
+                                    if (result.ec != std::errc::invalid_argument && result.ptr == cur + 6)
                                     {
                                         val.append(1, static_cast<char>(decoded & 0xFF));
                                         cur += 6;
@@ -95,6 +95,10 @@ ff::value_ptr ff::internal::json_token::get() const
                                     {
                                         cur = nullptr;
                                     }
+                                }
+                                else
+                                {
+                                    cur = nullptr;
                                 }
                                 break;
 

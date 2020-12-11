@@ -22,7 +22,7 @@ namespace ff::type
     struct value_traits<bool> : public value_derived_traits<ff::type::bool_v>
     {};
 
-    class bool_type : public ff::value_type_simple<ff::type::bool_v>
+    class bool_type : public ff::internal::value_type_simple<ff::type::bool_v>
     {
     public:
         using value_type_simple::value_type_simple;

@@ -23,7 +23,7 @@ namespace ff::type
     struct value_traits<ff::dict> : public value_derived_traits<ff::type::dict_v>
     {};
 
-    class dict_type : public ff::value_type_base<ff::type::dict_v>
+    class dict_type : public ff::internal::value_type_base<ff::type::dict_v>
     {
     public:
         using value_type_base::value_type_base;

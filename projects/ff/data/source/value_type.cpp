@@ -128,7 +128,7 @@ static void print_tree(std::string_view name, ff::value_ptr val, size_t level, s
 
     // Write value
     {
-        std::stringstream val_output;
+        std::ostringstream val_output;
         val->print(val_output);
         ::write_sanitized_string(val_output.str(), output);
         output << std::endl;

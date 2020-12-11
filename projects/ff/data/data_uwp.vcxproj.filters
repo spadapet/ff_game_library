@@ -83,7 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="public_api.h" />
     <ClInclude Include="source\compression.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -175,6 +174,10 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\value_vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="data_api.h" />
+    <ClInclude Include="source\value_vector_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

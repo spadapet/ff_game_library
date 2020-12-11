@@ -19,8 +19,8 @@
     <ClCompile Include="source\vector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base_api.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="public_api.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\flags.h" />

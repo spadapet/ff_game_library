@@ -29,7 +29,7 @@ namespace ff::type
     struct value_traits<ff::saved_data_base> : public value_derived_traits<ff::type::saved_data_v>
     {};
 
-    class saved_data_type : public ff::value_type_base<ff::type::saved_data_v>
+    class saved_data_type : public ff::internal::value_type_base<ff::type::saved_data_v>
     {
     public:
         using value_type_base::value_type_base;

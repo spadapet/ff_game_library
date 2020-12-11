@@ -34,6 +34,7 @@
     <ClCompile Include="source\data\data_test.cpp" />
     <ClCompile Include="source\data\dict_test.cpp" />
     <ClCompile Include="source\data\file_test.cpp" />
+    <ClCompile Include="source\data\json_test.cpp" />
     <ClCompile Include="source\data\persist_test.cpp" />
     <ClCompile Include="source\data\value_test.cpp" />
   </ItemGroup>

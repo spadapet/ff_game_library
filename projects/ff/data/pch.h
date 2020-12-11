@@ -17,7 +17,6 @@
 #include <vector>
 
 // Windows
-#define NOMINMAX
 #include <Windows.h>
 
 // FF

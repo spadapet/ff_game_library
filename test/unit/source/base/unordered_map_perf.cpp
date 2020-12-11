@@ -62,7 +62,7 @@ namespace base_test
 
         // Perf results
         {
-            std::stringstream status;
+            std::ostringstream status;
             status
                 << "Map with "
                 << entry_count
@@ -79,7 +79,7 @@ namespace base_test
 
         // Mem results
         {
-            std::stringstream status;
+            std::ostringstream status;
             status
                 << "ff::unordered_map memory:Total:"
                 << my_mem_stats.total

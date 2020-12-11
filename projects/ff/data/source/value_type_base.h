@@ -1,9 +1,10 @@
 #pragma once
 
 #include "persist.h"
+#include "value_traits.h"
 #include "value_type.h"
 
-namespace ff
+namespace ff::internal
 {
     template<class T>
     class value_type_base : public value_type

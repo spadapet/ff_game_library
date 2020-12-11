@@ -60,7 +60,7 @@ static void std_compare_perf(size_t entry_count)
 
     double crt_time = timer.tick();
 
-    std::stringstream status;
+    std::ostringstream status;
     status
         << "Map with "
         << entry_count

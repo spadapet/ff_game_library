@@ -145,9 +145,10 @@
       <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;DISABLE_XAML_GENERATED_MAIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(AppType)' == 'Desktop' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;UWP_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' And '$(AppType)' == 'UWP' ">_WINRT_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDOWS;_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINDOWS;_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>

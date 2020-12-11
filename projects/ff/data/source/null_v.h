@@ -17,7 +17,7 @@ namespace ff::type
     struct value_traits<std::nullptr_t> : public value_derived_traits<ff::type::null_v>
     {};
 
-    class null_type : public ff::value_type_base<ff::type::null_v>
+    class null_type : public ff::internal::value_type_base<ff::type::null_v>
     {
     public:
         using value_type_base::value_type_base;

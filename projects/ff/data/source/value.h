@@ -24,11 +24,11 @@ namespace ff
             {
                 val = reinterpret_cast<value_derived_type*>(ff::internal::value_allocator::new_bytes(sizeof(value_derived_type)));
                 ::new(val) value_derived_type(std::forward<Args>(args)...);
-                val->data.refs++;
+                val->refs.fetch_add(1);
             }
 
             const value_type* type = ff::value::get_type(typeid(value_derived_type));
-            val->data.type_lookup_id = type->type_lookup_id();
+            val->type_lookup_id = type->type_lookup_id();
             return val;
         }
 
@@ -39,7 +39,7 @@ namespace ff
             const value_type* type = ff::value::get_type(typeid(value_derived_type));
 
             value* val = value_derived_type::get_static_default_value();
-            val->data.type_lookup_id = type->type_lookup_id();
+            val->type_lookup_id = type->type_lookup_id();
             return val;
         }
 
@@ -111,45 +111,7 @@ namespace ff
         const void* try_cast(std::type_index type_index) const;
         value_ptr try_convert(std::type_index type_index) const;
 
-        union
-        {
-            mutable uint32_t type_and_ref;
-
-            struct
-            {
-                uint32_t refs : 24;
-                uint32_t type_lookup_id : 8;
-            };
-        } data;
-    };
-
-    template<class T>
-    class value_vector_base : public value
-    {
-    public:
-        using this_type = value_vector_base<T>;
-
-        value_vector_base(std::vector<T>&& value)
-            : value(std::move(value))
-        {}
-
-        const std::vector<T>& get() const
-        {
-            return this->value;
-        }
-
-        static ff::value* get_static_value(std::vector<T>&& value)
-        {
-            return value.empty() ? this_type::get_static_default_value() : nullptr;
-        }
-
-        static ff::value* get_static_default_value()
-        {
-            static value_vector_base<T> empty = std::vector<T>();
-            return &empty;
-        }
-
-    private:
-        std::vector<T> value;
+        uint32_t type_lookup_id;
+        mutable std::atomic_int refs;
     };
 }

@@ -58,7 +58,9 @@ ff::value_ptr ff::type::float_type::try_convert_to(const ff::value* val, std::ty
 
     if (type == typeid(ff::type::string_v))
     {
-        return ff::value::create<std::string>(std::to_string(src));
+        std::ostringstream ss;
+        ss << src;
+        return ff::value::create<std::string>(ss.str());
     }
 
     return nullptr;

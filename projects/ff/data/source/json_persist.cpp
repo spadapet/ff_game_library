@@ -15,7 +15,7 @@ static const size_t INDENT_SPACES = 2;
 static bool json_write_value(const ff::value* value, size_t spaces, std::ostream& output);
 static void json_write_object(const ff::dict& dict, size_t spaces, std::ostream& output);
 static ff::dict parse_object(ff::internal::json_tokenizer& tokenizer, const char** error_pos);
-static std::vector<ff::value_ptr> parse_array(ff::internal::json_tokenizer& tokenizer, const char** error_pos);
+static ff::value_vector parse_array(ff::internal::json_tokenizer& tokenizer, const char** error_pos);
 
 static ff::value_ptr parse_value(ff::internal::json_tokenizer& tokenizer, const ff::internal::json_token* first_token, const char** error_pos)
 {
@@ -36,10 +36,10 @@ static ff::value_ptr parse_value(ff::internal::json_tokenizer& tokenizer, const 
         else if (token.type == ff::internal::json_token_type::open_bracket)
         {
             // Array
-            std::vector<ff::value_ptr> value_vector = ::parse_array(tokenizer, error_pos);
+            ff::value_vector value_vector = ::parse_array(tokenizer, error_pos);
             if (!*error_pos)
             {
-                value = ff::value::create<std::vector<ff::value_ptr>>(std::move(value_vector));
+                value = ff::value::create<ff::value_vector>(std::move(value_vector));
             }
         }
     }
@@ -52,9 +52,9 @@ static ff::value_ptr parse_value(ff::internal::json_tokenizer& tokenizer, const 
     return value;
 }
 
-static std::vector<ff::value_ptr> parse_array(ff::internal::json_tokenizer& tokenizer, const char** error_pos)
+static ff::value_vector parse_array(ff::internal::json_tokenizer& tokenizer, const char** error_pos)
 {
-    std::vector<ff::value_ptr> values;
+    ff::value_vector values;
 
     for (ff::internal::json_token token = tokenizer.next(); token.type != ff::internal::json_token_type::close_bracket; )
     {
@@ -153,8 +153,11 @@ ff::dict ff::json_parse(std::string_view text, const char** error_pos)
 {
     ff::internal::json_tokenizer tokenizer(text);
 
-    const char* my_error_pos = nullptr;
-    return ::parse_root_object(tokenizer, error_pos ? error_pos : &my_error_pos);
+    const char* my_error_pos;
+    error_pos = error_pos ? error_pos : &my_error_pos;
+    *error_pos = nullptr;
+
+    return ::parse_root_object(tokenizer, error_pos);
 }
 
 static void json_encode(std::string_view text, std::ostream& output)
@@ -205,7 +208,7 @@ static void json_encode(std::string_view text, std::ostream& output)
     output << '\"';
 }
 
-static void json_write_array(const std::vector<ff::value_ptr>& values, size_t spaces, std::ostream& output)
+static void json_write_array(const ff::value_vector& values, size_t spaces, std::ostream& output)
 {
     output << '[';
 
@@ -264,9 +267,9 @@ static bool json_write_value(const ff::value* value, size_t spaces, std::ostream
 
         ::json_write_object(dict_value->get<ff::dict>(), spaces, output);
     }
-    else if (value->is_type<std::vector<ff::value_ptr>>())
+    else if (value->is_type<ff::value_vector>())
     {
-        if (value->get<std::vector<ff::value_ptr>>().size())
+        if (value->get<ff::value_vector>().size())
         {
             output << std::endl << std::string(spaces, ' ');
         }
@@ -275,7 +278,7 @@ static bool json_write_value(const ff::value* value, size_t spaces, std::ostream
             output << ' ';
         }
 
-        ::json_write_array(value->get<std::vector<ff::value_ptr>>(), spaces, output);
+        ::json_write_array(value->get<ff::value_vector>(), spaces, output);
     }
     else
     {

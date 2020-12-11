@@ -76,6 +76,7 @@
     <ClInclude Include="source\value_type.h" />
     <ClInclude Include="source\value_type_base.h" />
     <ClInclude Include="source\value_vector.h" />
+    <ClInclude Include="source\value_vector_base.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\vendor\zlib.vcxproj">

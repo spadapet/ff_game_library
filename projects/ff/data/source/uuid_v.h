@@ -22,7 +22,7 @@ namespace ff::type
     struct value_traits<ff::uuid> : public value_derived_traits<ff::type::uuid_v>
     {};
 
-    class uuid_type : public ff::value_type_simple<ff::type::uuid_v>
+    class uuid_type : public ff::internal::value_type_simple<ff::type::uuid_v>
     {
     public:
         using value_type_simple::value_type_simple;

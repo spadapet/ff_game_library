@@ -26,7 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="public_api.h" />
     <ClInclude Include="source\constants.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -93,6 +92,7 @@
     <ClInclude Include="source\flags.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="base_api.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

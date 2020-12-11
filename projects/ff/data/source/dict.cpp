@@ -131,9 +131,9 @@ void ff::dict::load_child_dicts()
     for (const auto& i : *this)
     {
         value_ptr val = i.second;
-        if (val->is_type<std::vector<value_ptr>>())
+        if (val->is_type<ff::value_vector>())
         {
-            std::vector<value_ptr> values = val->get<std::vector<value_ptr>>();
+            ff::value_vector values = val->get<ff::value_vector>();
             for (size_t h = 0; h < values.size(); h++)
             {
                 value_ptr dict_val = values[h]->try_convert<dict>();
@@ -145,7 +145,7 @@ void ff::dict::load_child_dicts()
                 }
             }
 
-            this->set(i.first, value::create<std::vector<value_ptr>>(std::move(values)));
+            this->set(i.first, value::create<ff::value_vector>(std::move(values)));
         }
         else
         {
@@ -247,7 +247,7 @@ void ff::dict::print(std::ostream& output) const
 void ff::dict::debug_print() const
 {
 #ifdef _DEBUG
-    std::stringstream output;
+    std::ostringstream output;
     this->print(output);
     ::OutputDebugString(ff::string::to_wstring(output.str()).c_str());
 #endif

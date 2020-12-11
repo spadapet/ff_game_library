@@ -9,12 +9,13 @@ static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_
 static ff::internal::value_register_default register_defaults;
 
 ff::value::value()
-    : data{}
+    : type_lookup_id(0)
+    , refs(0)
 {}
 
 ff::value::~value()
 {
-    assert(this->data.refs == 0 || this->data.refs == 1);
+    assert(this->refs.load() == 0 || this->refs.load() == 1);
 }
 
 bool ff::value::can_have_named_children() const
@@ -85,7 +86,7 @@ void ff::value::print_tree(std::ostream& output) const
 void ff::value::debug_print_tree() const
 {
 #ifdef _DEBUG
-    std::stringstream output;
+    std::ostringstream output;
     this->print_tree(output);
     ::OutputDebugString(ff::string::to_wstring(output.str()).c_str());
 #endif
@@ -93,7 +94,7 @@ void ff::value::debug_print_tree() const
 
 const ff::value_type* ff::value::type() const
 {
-    return this->get_type_by_lookup_id(this->data.type_lookup_id);
+    return this->get_type_by_lookup_id(this->type_lookup_id);
 }
 
 bool ff::value::equals(const value* other) const
@@ -118,15 +119,15 @@ bool ff::value::equals(const value* other) const
 
 void ff::value::add_ref() const
 {
-    if (this->data.refs)
+    if (this->refs.load() != 0)
     {
-        ::InterlockedIncrement(&this->data.type_and_ref);
+        this->refs.fetch_add(1);
     }
 }
 
 void ff::value::release_ref() const
 {
-    if (this->data.refs && (::InterlockedDecrement(&this->data.type_and_ref) & ::REFS_MASK) == 1)
+    if (this->refs.load() != 0 && this->refs.fetch_sub(1) == 2)
     {
         const value_type* type = this->type();
         value* self = const_cast<value*>(this);

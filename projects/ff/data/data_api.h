@@ -11,6 +11,7 @@
 #include "source/fixed_v.h"
 #include "source/float_v.h"
 #include "source/int_v.h"
+#include "source/json_persist.h"
 #include "source/null_v.h"
 #include "source/persist.h"
 #include "source/point_v.h"

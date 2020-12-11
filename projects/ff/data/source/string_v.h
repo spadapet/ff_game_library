@@ -1,7 +1,7 @@
 #pragma once
 
-#include "value.h"
 #include "value_type_base.h"
+#include "value_vector_base.h"
 
 namespace ff::type
 {
@@ -25,7 +25,7 @@ namespace ff::type
     struct value_traits<std::string> : public value_derived_traits<ff::type::string_v>
     {};
 
-    class string_type : public ff::value_type_simple<string_v>
+    class string_type : public ff::internal::value_type_simple<string_v>
     {
     public:
         using value_type_simple::value_type_simple;
@@ -33,13 +33,13 @@ namespace ff::type
         virtual value_ptr try_convert_to(const value* val, std::type_index type) const;
     };
 
-    using string_vector = ff::value_vector_base<std::string>;
+    using string_vector = ff::internal::value_vector_base<std::string>;
 
     template<>
     struct value_traits<std::vector<std::string>> : public value_derived_traits<ff::type::string_vector>
     {};
 
-    class string_vector_type : public ff::value_type_object_vector<ff::type::string_vector>
+    class string_vector_type : public ff::internal::value_type_object_vector<ff::type::string_vector>
     {
         using value_type_object_vector::value_type_object_vector;
     };

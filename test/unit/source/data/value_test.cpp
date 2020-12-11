@@ -108,7 +108,7 @@ namespace data_test
 
         TEST_METHOD(value_vector_persist)
         {
-            ff::value_ptr val = ff::value::create<std::vector<ff::value_ptr>>(std::vector<ff::value_ptr>
+            ff::value_ptr val = ff::value::create<ff::value_vector>(ff::value_vector
             {
                 ff::value::create<int32_t>(100),
                 ff::value::create<std::string>("200"),
@@ -128,12 +128,12 @@ namespace data_test
                 ff::value_ptr val_loaded = ff::value::load_typed(reader);
 
                 Assert::IsNotNull(val_loaded.get());
-                const std::vector<ff::value_ptr>& vec = val_loaded->get<std::vector<ff::value_ptr>>();
+                const ff::value_vector& vec = val_loaded->get<ff::value_vector>();
                 Assert::AreEqual<size_t>(2, vec.size());
                 Assert::AreEqual(100, vec[0]->convert_or_default<int32_t>()->get<int32_t>());
                 Assert::AreEqual(std::string("200"), vec[1]->convert_or_default<std::string>()->get<std::string>());
 
-                std::stringstream ss;
+                std::ostringstream ss;
                 val_loaded->debug_print_tree();
             }
         }

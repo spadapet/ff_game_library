@@ -44,8 +44,8 @@
     <ClCompile Include="source\value_vector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="data_api.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="public_api.h" />
     <ClInclude Include="source\bool_v.h" />
     <ClInclude Include="source\compression.h" />
     <ClInclude Include="source\data.h" />
@@ -77,6 +77,7 @@
     <ClInclude Include="source\value_type.h" />
     <ClInclude Include="source\value_type_base.h" />
     <ClInclude Include="source\value_vector.h" />
+    <ClInclude Include="source\value_vector_base.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\vendor\zlib_uwp.vcxproj">
