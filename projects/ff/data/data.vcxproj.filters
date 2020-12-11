@@ -74,6 +74,12 @@
     <ClCompile Include="source\type\dict_v.cpp">
       <Filter>source\type</Filter>
     </ClCompile>
+    <ClCompile Include="source\json_tokenizer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\json_persist.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -164,6 +170,12 @@
     </ClInclude>
     <ClInclude Include="source\type\dict_v.h">
       <Filter>source\type</Filter>
+    </ClInclude>
+    <ClInclude Include="source\json_tokenizer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\json_persist.h">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

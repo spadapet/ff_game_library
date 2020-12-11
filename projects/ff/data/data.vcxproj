@@ -19,6 +19,8 @@
     <ClCompile Include="source\data.cpp" />
     <ClCompile Include="source\dict.cpp" />
     <ClCompile Include="source\file.cpp" />
+    <ClCompile Include="source\json_persist.cpp" />
+    <ClCompile Include="source\json_tokenizer.cpp" />
     <ClCompile Include="source\persist.cpp" />
     <ClCompile Include="source\saved_data.cpp" />
     <ClCompile Include="source\stream.cpp" />
@@ -47,6 +49,8 @@
     <ClInclude Include="source\data.h" />
     <ClInclude Include="source\dict.h" />
     <ClInclude Include="source\file.h" />
+    <ClInclude Include="source\json_persist.h" />
+    <ClInclude Include="source\json_tokenizer.h" />
     <ClInclude Include="source\persist.h" />
     <ClInclude Include="source\saved_data.h" />
     <ClInclude Include="source\stream.h" />
