@@ -10,9 +10,16 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\thread_dispatch.cpp" />
+    <ClCompile Include="source\thread_pool.cpp" />
+    <ClCompile Include="source\util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\thread_dispatch.h" />
+    <ClInclude Include="source\thread_pool.h" />
+    <ClInclude Include="source\util.h" />
+    <ClInclude Include="thread_api.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

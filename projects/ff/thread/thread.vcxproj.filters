@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\thread_dispatch.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\thread_pool.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="thread_api.h" />
+    <ClInclude Include="source\thread_dispatch.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\thread_pool.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{ccb8b2ad-1d52-4f21-8e83-fd490b817059}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
