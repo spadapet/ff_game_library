@@ -14,6 +14,7 @@
 #include "source/point.h"
 #include "source/pool_allocator.h"
 #include "source/rect.h"
+#include "source/signal.h"
 #include "source/string.h"
 #include "source/timer.h"
 #include "source/type_helper.h"
@@ -23,3 +24,4 @@
 #include "source/unordered_set.h"
 #include "source/uuid.h"
 #include "source/vector.h"
+#include "source/win_handle.h"

@@ -15,7 +15,7 @@ namespace ff
         size_t size() const;
         size_t pos() const;
         size_t pos(size_t new_pos);
-        HANDLE handle() const;
+        const win_handle& handle() const;
         const std::filesystem::path& path() const;
 
         operator bool() const;
@@ -24,11 +24,11 @@ namespace ff
     protected:
         file_base& operator=(file_base&& other) noexcept;
         file_base& operator=(const file_base& other);
-        void handle(HANDLE handle_data);
+        void handle(win_handle&& file_handle);
 
     private:
         std::filesystem::path file_path;
-        HANDLE file_handle;
+        win_handle file_handle;
     };
 
     class file_read : public file_base
@@ -85,7 +85,7 @@ namespace ff
         void close();
 
         file_read mapping_file;
-        HANDLE mapping_handle;
+        win_handle mapping_handle;
         size_t mapping_size;
         const uint8_t* mapping_data;
     };

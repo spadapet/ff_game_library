@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0
+
 namespace ff
 {
     enum class thread_type
@@ -59,6 +61,8 @@ namespace ff
 #endif
     };
 }
+
+#endif
 
 #if 0
 

@@ -2,29 +2,25 @@
 #include "file.h"
 
 ff::file_base::file_base()
-    : file_handle(INVALID_HANDLE_VALUE)
 {}
 
 ff::file_base::file_base(const std::filesystem::path& path)
     : file_path(path)
-    , file_handle(INVALID_HANDLE_VALUE)
 {}
 
 ff::file_base::file_base(file_base&& other) noexcept
     : file_path(std::move(other.file_path))
-    , file_handle(other.file_handle)
+    , file_handle(std::move(other.file_handle))
 {
-    other.file_handle = INVALID_HANDLE_VALUE;
 }
 
 ff::file_base::~file_base()
 {
-    this->handle(INVALID_HANDLE_VALUE);
 }
 
 size_t ff::file_base::size() const
 {
-    assert(this->file_handle != INVALID_HANDLE_VALUE);
+    assert(this->file_handle);
 
     FILE_STANDARD_INFO info;
     if (!::GetFileInformationByHandleEx(this->file_handle, FileStandardInfo, &info, sizeof(info)))
@@ -38,7 +34,7 @@ size_t ff::file_base::size() const
 
 size_t ff::file_base::pos() const
 {
-    assert(this->file_handle != INVALID_HANDLE_VALUE);
+    assert(this->file_handle);
 
     LARGE_INTEGER cur{}, move{};
     if (!::SetFilePointerEx(this->file_handle, move, &cur, FILE_CURRENT))
@@ -52,7 +48,7 @@ size_t ff::file_base::pos() const
 
 size_t ff::file_base::pos(size_t new_pos)
 {
-    assert(this->file_handle != INVALID_HANDLE_VALUE);
+    assert(this->file_handle);
 
     LARGE_INTEGER cur{}, move{};
     move.QuadPart = new_pos;
@@ -65,7 +61,7 @@ size_t ff::file_base::pos(size_t new_pos)
     return static_cast<size_t>(cur.QuadPart);
 }
 
-HANDLE ff::file_base::handle() const
+const ff::win_handle& ff::file_base::handle() const
 {
     return this->file_handle;
 }
@@ -77,19 +73,18 @@ const std::filesystem::path& ff::file_base::path() const
 
 ff::file_base::operator bool() const
 {
-    return this->file_handle != INVALID_HANDLE_VALUE;
+    return this->file_handle;
 }
 
 bool ff::file_base::operator!() const
 {
-    return this->file_handle == INVALID_HANDLE_VALUE;
+    return !this->file_handle;
 }
 
 ff::file_base& ff::file_base::operator=(file_base&& other) noexcept
 {
     if (this != &other)
     {
-        this->handle(INVALID_HANDLE_VALUE);
         this->file_path.clear();
 
         std::swap(this->file_handle, other.file_handle);
@@ -103,41 +98,25 @@ ff::file_base& ff::file_base::operator=(const file_base& other)
 {
     if (this != &other)
     {
-        this->handle(INVALID_HANDLE_VALUE);
         this->file_path = other.file_path;
-
-        if (other)
-        {
-            HANDLE file_handle = INVALID_HANDLE_VALUE;
-            if (::DuplicateHandle(::GetCurrentProcess(), other.handle(), ::GetCurrentProcess(), &file_handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
-            {
-                this->handle(file_handle);
-            }
-
-            assert(file_handle != INVALID_HANDLE_VALUE);
-        }
+        this->file_handle = other.file_handle.duplicate();
     }
 
     return *this;
 }
 
-void ff::file_base::handle(HANDLE file_handle)
+void ff::file_base::handle(win_handle&& file_handle)
 {
-    if (this->file_handle != INVALID_HANDLE_VALUE)
-    {
-        ::CloseHandle(this->file_handle);
-    }
-
-    this->file_handle = file_handle;
+    this->file_handle = std::move(file_handle);
 }
 
 ff::file_read::file_read(const std::filesystem::path& path)
     : file_base(path)
 {
     std::wstring wpath = ff::string::to_wstring(path.string());
-    HANDLE file_handle = ::CreateFile2(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr);
-    assert(file_handle != INVALID_HANDLE_VALUE);
-    this->handle(file_handle);
+    win_handle file_handle(::CreateFile2(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr));
+    assert(file_handle);
+    this->handle(std::move(file_handle));
 }
 
 ff::file_read::file_read(file_read&& other) noexcept
@@ -176,11 +155,11 @@ ff::file_write::file_write(const std::filesystem::path& path, bool append)
     : file_base(path)
 {
     std::wstring wpath = ff::string::to_wstring(path.string());
-    HANDLE file_handle = ::CreateFile2(wpath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr);
-    assert(file_handle != INVALID_HANDLE_VALUE);
-    this->handle(file_handle);
+    win_handle file_handle(::CreateFile2(wpath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr));
+    assert(file_handle);
+    this->handle(std::move(file_handle));
 
-    if (append && file_handle != INVALID_HANDLE_VALUE)
+    if (append && this->handle())
     {
         this->pos(this->size());
     }
@@ -213,7 +192,6 @@ ff::file_mem_mapped::file_mem_mapped(const std::filesystem::path& path)
 
 ff::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept
     : mapping_file(std::move(file))
-    , mapping_handle(nullptr)
     , mapping_size(0)
     , mapping_data(nullptr)
 {
@@ -222,11 +200,10 @@ ff::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept
 
 ff::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other) noexcept
     : mapping_file(std::move(other.mapping_file))
-    , mapping_handle(other.mapping_handle)
+    , mapping_handle(std::move(other.mapping_handle))
     , mapping_size(other.mapping_size)
     , mapping_data(other.mapping_data)
 {
-    other.mapping_handle = nullptr;
     other.mapping_size = 0;
     other.mapping_data = nullptr;
 }
@@ -296,9 +273,9 @@ void ff::file_mem_mapped::open()
     if (this->mapping_file && this->mapping_file.size())
     {
 #if METRO_APP
-        this->mapping_handle = ::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr);
+        this->mapping_handle = win_handle(::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr));
 #else
-        this->mapping_handle = ::CreateFileMapping(this->mapping_file.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr);
+        this->mapping_handle = win_handle(::CreateFileMapping(this->mapping_file.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr));
 #endif
         assert(this->mapping_handle);
 
@@ -324,9 +301,5 @@ void ff::file_mem_mapped::close()
         this->mapping_size = 0;
     }
 
-    if (this->mapping_handle)
-    {
-        ::CloseHandle(this->mapping_handle);
-        this->mapping_handle = nullptr;
-    }
+    this->mapping_handle.close();
 }

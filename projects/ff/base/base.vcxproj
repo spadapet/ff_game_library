@@ -16,11 +16,13 @@
     <ClCompile Include="source\timer.cpp" />
     <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
+    <ClCompile Include="source\win_handle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="base_api.h" />
     <ClInclude Include="source\constants.h" />
+    <ClInclude Include="source\signal.h" />
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\flags.h" />
     <ClInclude Include="source\forward_list.h" />
@@ -42,6 +44,7 @@
     <ClInclude Include="source\unordered_set.h" />
     <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\vector.h" />
+    <ClInclude Include="source\win_handle.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.natvis" />
