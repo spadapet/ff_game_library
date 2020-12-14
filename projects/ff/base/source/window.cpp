@@ -7,7 +7,8 @@
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 static HINSTANCE get_instance()
 {
-    return reinterpret_cast<HINSTANCE>(&__ImageBase);
+    HINSTANCE instance = reinterpret_cast<HINSTANCE>(&__ImageBase);
+    return instance ? instance : ::GetModuleHandle(nullptr);
 }
 
 ff::window::window()
@@ -18,12 +19,6 @@ ff::window::window(window&& other) noexcept
     : hwnd(nullptr)
 {
     *this = std::move(other);
-}
-
-ff::window::window(HWND hwnd)
-    : hwnd(nullptr)
-{
-    this->reset(hwnd);
 }
 
 ff::window::~window()
@@ -185,7 +180,7 @@ ff::window& ff::window::operator=(window&& other) noexcept
 
 LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    if (msg == WM_CREATE)
+    if (msg == WM_NCCREATE)
     {
         const CREATESTRUCT& cs = *reinterpret_cast<const CREATESTRUCT*>(lp);
         window* self = reinterpret_cast<window*>(cs.lpCreateParams);

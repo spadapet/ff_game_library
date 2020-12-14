@@ -27,4 +27,11 @@ namespace ff
     private:
         HANDLE handle;
     };
+
+    win_handle create_event(bool initial_set = false, bool manual_reset = true);
+    bool is_event_set(HANDLE hEvent);
+    bool wait_for_event_and_reset(HANDLE handle);
+    bool wait_for_handle(HANDLE handle);
+    bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_handle);
+    bool wait_for_all_handles(const HANDLE* handles, size_t count);
 }

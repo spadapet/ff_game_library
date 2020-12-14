@@ -41,7 +41,6 @@ namespace ff
         window& operator=(const window& other) = delete;
 
     private:
-        window(HWND hwnd);
         void reset(HWND hwnd);
         void destroy();
 

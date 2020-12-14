@@ -59,6 +59,9 @@
     <ClCompile Include="source\base\signal_test.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
+    <ClCompile Include="source\base\window_test.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

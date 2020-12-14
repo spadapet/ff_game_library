@@ -31,6 +31,7 @@
     <ClCompile Include="source\base\unordered_map_perf.cpp" />
     <ClCompile Include="source\base\uuid_test.cpp" />
     <ClCompile Include="source\base\vector_test.cpp" />
+    <ClCompile Include="source\base\window_test.cpp" />
     <ClCompile Include="source\data\compression_test.cpp" />
     <ClCompile Include="source\data\data_test.cpp" />
     <ClCompile Include="source\data\dict_test.cpp" />

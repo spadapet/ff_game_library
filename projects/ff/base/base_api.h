@@ -17,6 +17,8 @@
 #include "source/signal.h"
 #include "source/string.h"
 #include "source/timer.h"
+#include "source/thread_dispatch.h"
+#include "source/thread_pool.h"
 #include "source/type_helper.h"
 #include "source/unordered_map.h"
 #include "source/unordered_multimap.h"
@@ -26,3 +28,4 @@
 #include "source/vector.h"
 #include "source/win_handle.h"
 #include "source/win_msg.h"
+#include "source/window.h"
