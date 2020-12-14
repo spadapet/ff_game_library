@@ -32,6 +32,9 @@
     <ClCompile Include="source\win_msg.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\window.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -109,6 +112,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\win_msg.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\window.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

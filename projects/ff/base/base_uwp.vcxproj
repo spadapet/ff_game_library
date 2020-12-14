@@ -18,6 +18,7 @@
     <ClCompile Include="source\timer.cpp" />
     <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
+    <ClCompile Include="source\window.cpp" />
     <ClCompile Include="source\win_handle.cpp" />
     <ClCompile Include="source\win_msg.cpp" />
   </ItemGroup>
@@ -47,6 +48,7 @@
     <ClInclude Include="source\unordered_set.h" />
     <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\vector.h" />
+    <ClInclude Include="source\window.h" />
     <ClInclude Include="source\win_handle.h" />
     <ClInclude Include="source\win_msg.h" />
   </ItemGroup>
