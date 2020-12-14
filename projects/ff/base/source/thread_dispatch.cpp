@@ -1,397 +1,253 @@
 #include "pch.h"
 #include "thread_dispatch.h"
+#include "win_msg.h"
 
-#if 0
+static thread_local ff::thread_dispatch* current_thread_dispatch = nullptr;
+static ff::thread_dispatch* main_thread_dispatch = nullptr;
+static ff::thread_dispatch* game_thread_dispatch = nullptr;
 
-#include "COM/ComAlloc.h"
-#include "Globals/AppGlobals.h"
-#include "Globals/ThreadGlobals.h"
-#include "Globals/ProcessGlobals.h"
-#include "Thread/ThreadDispatch.h"
-#include "Thread/ThreadUtil.h"
-#include "Windows/Handles.h"
-#include "Windows/WinUtil.h"
-
-class __declspec(uuid("d4f237b8-f9cb-4016-926f-349086fb41d7"))
-	ThreadDispatch
-	: public ff::ComBase
-	, public ff::IThreadDispatch
-#if !METRO_APP
-	, public ff::IWindowProcListener
+ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
+    : flushed_event(ff::create_event(true))
+    , pending_event(ff::create_event())
+    , thread_id(::GetCurrentThreadId())
+    , destroyed(false)
+#if !UWP_APP
+    , message_window(ff::window::create_message_window())
+    , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1)))
 #endif
 {
-public:
-	DECLARE_HEADER(ThreadDispatch);
-
-	bool Init();
-
-	// IThreadDispatch
-	virtual void Post(std::function<void()>&& func, bool runIfCurrentThread) override;
-	virtual void Send(std::function<void()>&& func) override;
-	virtual bool IsCurrentThread() const override;
-	virtual DWORD GetThreadId() const override;
-	virtual void Flush() override;
-	virtual void Destroy() override;
-	virtual size_t WaitForAnyHandle(const HANDLE* handles, size_t count) override;
-	virtual bool WaitForAllHandles(const HANDLE* handles, size_t count) override;
-
-#if !METRO_APP
-	// IWindowProcListener
-	virtual bool ListenWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT& nResult) override;
+#if UWP_APP
+    Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    this->dispatcher = window->Dispatcher;
+    this->handler = ref new Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
 #endif
 
-private:
-	IThreadDispatch* InternalPost(std::function<void()>&& func, bool runIfCurrentThread);
-	void Flush(bool force);
-	void PostFlush();
+    switch (type)
+    {
+        case thread_dispatch_type::main:
+            assert(!::main_thread_dispatch && !::current_thread_dispatch);
+            ::main_thread_dispatch = this;
+            ::current_thread_dispatch = this;
+            break;
 
-	struct Entry
-	{
-		Entry()
-		{
-		}
+        case thread_dispatch_type::game:
+            assert(!::game_thread_dispatch && !::current_thread_dispatch);
+            ::game_thread_dispatch = this;
+            ::current_thread_dispatch = this;
+            break;
+    }
+}
 
-		Entry(std::function<void()>&& func)
-			: _func(std::move(func))
-		{
-		}
+ff::thread_dispatch::~thread_dispatch()
+{
+    // Don't allow new dispatches
+    {
+        std::lock_guard lock(this->mutex);
+        this->destroyed = true;
+    }
 
-		std::function<void()> _func;
-	};
+    this->flush(true);
 
-	DWORD _threadId;
-	ff::Mutex _mutex;
-	ff::Vector<Entry, 32> _funcs;
-	ff::WinHandle _flushedEvent;
-	ff::WinHandle _pendingEvent;
-#if METRO_APP
-	Windows::UI::Core::CoreDispatcher^ _dispatcher;
-	Windows::UI::Core::DispatchedHandler^ _handler;
+    if (::main_thread_dispatch == this)
+    {
+        ::main_thread_dispatch = nullptr;
+        ::current_thread_dispatch = nullptr;
+    }
+
+    if (::game_thread_dispatch == this)
+    {
+        ::game_thread_dispatch = nullptr;
+        ::current_thread_dispatch = nullptr;
+    }
+}
+
+ff::thread_dispatch* ff::thread_dispatch::get(thread_dispatch_type type)
+{
+    switch (type)
+    {
+        case thread_dispatch_type::game:
+            if (::game_thread_dispatch)
+            {
+                return ::game_thread_dispatch;
+            }
+            [[fallthrough]];
+
+        case thread_dispatch_type::main:
+            if (::main_thread_dispatch)
+            {
+                return ::main_thread_dispatch;
+            }
+            [[fallthrough]];
+
+        default:
+            return ::current_thread_dispatch;
+    }
+}
+
+void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current_thread)
+{
+    if (!this || (run_if_current_thread && this->current_thread()))
+    {
+        func();
+        return;
+    }
+
+    std::lock_guard lock(this->mutex);
+
+    if (this->destroyed)
+    {
+        func();
+        return;
+    }
+
+    bool was_empty = this->funcs.empty();
+    this->funcs.push_front(std::move(func));
+
+    if (was_empty)
+    {
+        ::ResetEvent(this->flushed_event);
+
+        if (!ff::is_event_set(this->pending_event))
+        {
+            ::SetEvent(this->pending_event);
+            this->post_flush();
+        }
+    }
+}
+
+void ff::thread_dispatch::flush()
+{
+    this->flush(false);
+}
+
+bool ff::thread_dispatch::current_thread() const
+{
+    return this && this->thread_id == ::GetCurrentThreadId();
+}
+
+bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index)
+{
+    if (!count || count >= MAXIMUM_WAIT_OBJECTS - 1)
+    {
+        assert(false);
+        return false;
+    }
+
+    std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
+    handles_vector.push_back(this->pending_event);
+
+    while (true)
+    {
+#if UWP_APP
+        DWORD result = ::WaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
+            FALSE, INFINITE, TRUE);
 #else
-	ff::ListenedWindow _window;
+        DWORD result = ::MsgWaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
+            INFINITE, QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
 #endif
-};
+        size_t size_result = static_cast<size_t>(result);
+        switch (size_result)
+        {
+            default:
+                if (size_result < count)
+                {
+                    completed_index = size_result;
+                    return true;
+                }
+                else if (size_result == count)
+                {
+                    this->flush(false);
+                }
+                else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + count + 1)
+                {
+                    return false;
+                }
+                break;
 
-BEGIN_INTERFACES(ThreadDispatch)
-	HAS_INTERFACE(ff::IThreadDispatch)
-END_INTERFACES()
+            case WAIT_TIMEOUT:
+            case WAIT_FAILED:
+                return false;
 
-ff::ComPtr<ff::IThreadDispatch> ff::CreateCurrentThreadDispatch()
-{
-	ComPtr<ThreadDispatch> myObj;
-	assertHrRetVal(ff::ComAllocator<ThreadDispatch>::CreateInstance(&myObj), false);
-	assertRetVal(myObj->Init(), nullptr);
-	return myObj.Interface();
+            case WAIT_IO_COMPLETION:
+                break;
+        }
+
+#if !UWP_APP
+        ff::handle_messages();
+#endif
+    }
 }
 
-ff::IThreadDispatch* ff::GetThreadDispatch()
+bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count)
 {
-	ff::IThreadDispatch* dispatch = ff::GetCurrentThreadDispatch();
+    std::vector<HANDLE> handle_vector(std::initializer_list(handles, handles + count));
 
-	// Try the main thread
-	if (!dispatch && ff::ProcessGlobals::Exists())
-	{
-		dispatch = ff::ProcessGlobals::Get()->GetDispatch();
-	}
+    while (!handle_vector.empty())
+    {
+        size_t completed;
+        if (!this->wait_for_any_handle(handle_vector.data(), handle_vector.size(), completed))
+        {
+            return false;
+        }
 
-	if (dispatch && dispatch->GetThreadId())
-	{
-		return dispatch;
-	}
+        assert(completed < handle_vector.size());
+        handle_vector.erase(handle_vector.cbegin() + completed);
+    }
 
-	return nullptr;
+    return true;
 }
 
-ff::IThreadDispatch* ff::GetCurrentThreadDispatch()
+void ff::thread_dispatch::flush(bool force)
 {
-	ff::IThreadDispatch* dispatch = nullptr;
+    if (force || this->current_thread())
+    {
+        std::forward_list<std::function<void()>> funcs;
+        {
+            std::lock_guard lock(this->mutex);
+            funcs = std::move(this->funcs);
+        }
 
-	if (ff::ThreadGlobals::Exists())
-	{
-		dispatch = ff::ThreadGlobals::Get()->GetDispatch();
-	}
+        while (!funcs.empty())
+        {
+            funcs.reverse();
+            for (auto& func : funcs)
+            {
+                func();
+            }
 
-	if (dispatch && dispatch->GetThreadId())
-	{
-		return dispatch;
-	}
+            std::lock_guard lock(this->mutex);
+            funcs = std::move(this->funcs);
 
-	return nullptr;
+            if (funcs.empty())
+            {
+                ::SetEvent(this->flushed_event);
+                ::ResetEvent(this->pending_event);
+            }
+        }
+    }
+    else
+    {
+        ff::wait_for_handle(this->flushed_event);
+    }
 }
 
-ff::IThreadDispatch* ff::GetMainThreadDispatch()
+void ff::thread_dispatch::post_flush()
 {
-	ff::IThreadDispatch* dispatch = nullptr;
-
-	if (ff::ProcessGlobals::Exists())
-	{
-		dispatch = ff::ProcessGlobals::Get()->GetDispatch();
-	}
-
-	if (dispatch && dispatch->GetThreadId())
-	{
-		return dispatch;
-	}
-
-	return nullptr;
-}
-
-ff::IThreadDispatch* ff::GetGameThreadDispatch()
-{
-	ff::AppGlobals* globals = ff::AppGlobals::Get();
-	return globals ? globals->GetGameDispatch() : ff::GetMainThreadDispatch();
-}
-
-ThreadDispatch::ThreadDispatch()
-	: _threadId(0)
-{
-}
-
-ThreadDispatch::~ThreadDispatch()
-{
-	assertSz(!_threadId, L"The owner of ThreadDispatch should've called Destroy() by now");
-}
-
-bool ThreadDispatch::Init()
-{
-	_threadId = ::GetCurrentThreadId();
-	_flushedEvent = ff::CreateEvent(true);
-	_pendingEvent = ff::CreateEvent();
-
-#if METRO_APP
-	Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-	if (window != nullptr)
-	{
-		ff::ComPtr<ThreadDispatch, ff::IThreadDispatch> keepAlive = this;
-		_handler = ref new Windows::UI::Core::DispatchedHandler([keepAlive]()
-			{
-				keepAlive->Flush(true);
-			});
-
-		_dispatcher = window->Dispatcher;
-	}
+#if UWP_APP
+    this->dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
 #else
-	static ff::StaticString s_name(L"ff::ThreadDispatchWindow");
-	_window.SetListener(this);
-	_window.CreateMessageWindow(s_name);
-#endif
-
-	return true;
-}
-
-void ThreadDispatch::Post(std::function<void()>&& func, bool runIfCurrentThread)
-{
-	InternalPost(std::move(func), runIfCurrentThread);
-}
-
-void ThreadDispatch::Send(std::function<void()>&& func)
-{
-	IThreadDispatch* dispatch = InternalPost(std::move(func), true);
-	if (dispatch)
-	{
-		dispatch->Flush();
-	}
-}
-
-ff::IThreadDispatch* ThreadDispatch::InternalPost(std::function<void()>&& func, bool runIfCurrentThread)
-{
-	assertRetVal(func != nullptr, nullptr);
-
-	if (!_threadId)
-	{
-		// This could happen if a thread pool work item finishes after its
-		// owner thread is gone. So just post somewhere else.
-		IThreadDispatch* otherDispatch = ff::GetThreadDispatch();
-		if (otherDispatch)
-		{
-			otherDispatch->Post(std::move(func), runIfCurrentThread);
-		}
-		else
-		{
-			// nowhere to post, so just run the function now
-			func();
-		}
-
-		return otherDispatch;
-	}
-
-	if (runIfCurrentThread && IsCurrentThread())
-	{
-		func();
-		return nullptr;
-	}
-
-	ff::LockMutex lock(_mutex);
-	_funcs.Push(std::move(func));
-
-	if (_funcs.Size() == 1)
-	{
-		::ResetEvent(_flushedEvent);
-
-		if (!ff::IsEventSet(_pendingEvent))
-		{
-			::SetEvent(_pendingEvent);
-			PostFlush();
-		}
-	}
-
-	return this;
-}
-
-bool ThreadDispatch::IsCurrentThread() const
-{
-	return this != nullptr && _threadId == ::GetCurrentThreadId();
-}
-
-DWORD ThreadDispatch::GetThreadId() const
-{
-	return _threadId;
-}
-
-void ThreadDispatch::Flush()
-{
-	Flush(false);
-}
-
-void ThreadDispatch::Destroy()
-{
-	assertRet(IsCurrentThread());
-
-	// Don't allow new work to be posted
-	_threadId = 0;
-
-	Flush(true);
-}
-
-size_t ThreadDispatch::WaitForAnyHandle(const HANDLE* handles, size_t count)
-{
-	assertRetVal(IsCurrentThread(), ff::INVALID_SIZE);
-	assertRetVal(count < MAXIMUM_WAIT_OBJECTS - 1, ff::INVALID_SIZE);
-
-	ff::Vector<HANDLE, 16> myHandles;
-	myHandles.Reserve(count + 1);
-
-	myHandles.Push(handles, count);
-	myHandles.Push(_pendingEvent);
-
-	while (true)
-	{
-#if METRO_APP
-		DWORD result = ::WaitForMultipleObjectsEx((DWORD)myHandles.Size(), myHandles.Data(), FALSE, INFINITE, TRUE);
-#else
-		DWORD result = ::MsgWaitForMultipleObjectsEx((DWORD)myHandles.Size(), myHandles.Data(),
-			INFINITE, QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
-#endif
-		switch (result)
-		{
-		default:
-			if (result < count)
-			{
-				return result;
-			}
-			else if (result == count)
-			{
-				Flush(false);
-
-				if (!count)
-				{
-					return ff::INVALID_SIZE;
-				}
-			}
-			else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + myHandles.Size())
-			{
-				return ff::INVALID_SIZE;
-			}
-			break;
-
-		case WAIT_TIMEOUT:
-		case WAIT_FAILED:
-			return ff::INVALID_SIZE;
-
-		case WAIT_IO_COMPLETION:
-			break;
-		}
-
-#if !METRO_APP
-		ff::HandleMessages();
-#endif
-	}
-}
-
-bool ThreadDispatch::WaitForAllHandles(const HANDLE* handles, size_t count)
-{
-	ff::Vector<HANDLE, 32> handleVector;
-	handleVector.Push(handles, count);
-
-	while (handleVector.Size())
-	{
-		size_t i = WaitForAnyHandle(handleVector.ConstData(), handleVector.Size());
-		assertRetVal(i != ff::INVALID_SIZE, false);
-
-		handleVector.Delete(i);
-	}
-
-	return true;
-}
-
-void ThreadDispatch::Flush(bool force)
-{
-	if (force || IsCurrentThread())
-	{
-		ff::Vector<Entry, 32> funcs;
-		{
-			ff::LockMutex lock(_mutex);
-			funcs = std::move(_funcs);
-		}
-
-		for (const Entry& entry : funcs)
-		{
-			entry._func();
-		}
-
-		ff::LockMutex lock(_mutex);
-		if (_funcs.IsEmpty())
-		{
-			::SetEvent(_flushedEvent);
-			::ResetEvent(_pendingEvent);
-		}
-		else
-		{
-			// More stuff needs to run
-			PostFlush();
-		}
-	}
-	else
-	{
-		ff::WaitForHandle(_flushedEvent);
-	}
-}
-
-void ThreadDispatch::PostFlush()
-{
-#if METRO_APP
-	if (_dispatcher)
-	{
-		_dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, _handler);
-	}
-#else
-	::PostMessage(_window.Handle(), WM_USER, 0, 0);
+    ::PostMessage(this->message_window, WM_USER, 0, 0);
 #endif
 }
 
-#if !METRO_APP
-bool ThreadDispatch::ListenWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT& nResult)
-{
-	switch (msg)
-	{
-	case WM_USER:
-	case WM_DESTROY:
-		Flush(true);
-		break;
-	}
+#if !UWP_APP
 
-	return false;
+void ff::thread_dispatch::handle_message(ff::window_message& msg)
+{
+    if (msg.msg == WM_USER || msg.msg == WM_DESTROY)
+    {
+        this->flush(true);
+    }
 }
-#endif
 
 #endif

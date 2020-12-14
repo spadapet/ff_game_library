@@ -35,6 +35,12 @@
     <ClCompile Include="source\window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\thread_dispatch.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\thread_pool.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -115,6 +121,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\window.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\thread_dispatch.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\thread_pool.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
