@@ -18,6 +18,7 @@
     <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
     <ClCompile Include="source\win_handle.cpp" />
+    <ClCompile Include="source\win_msg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -46,6 +47,7 @@
     <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\vector.h" />
     <ClInclude Include="source\win_handle.h" />
+    <ClInclude Include="source\win_msg.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.natvis" />

@@ -25,3 +25,4 @@
 #include "source/uuid.h"
 #include "source/vector.h"
 #include "source/win_handle.h"
+#include "source/win_msg.h"
