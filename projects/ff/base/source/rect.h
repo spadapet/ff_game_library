@@ -582,5 +582,5 @@ namespace ff
     using rect_float = rect_t<float>;
     using rect_double = rect_t<double>;
     using rect_size = rect_t<size_t>;
-    using rect_fixed = rect_t<ff::int32_fixed8_t>;
+    using rect_fixed = rect_t<ff::i32f8_t>;
 }

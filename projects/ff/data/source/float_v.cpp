@@ -43,7 +43,7 @@ ff::value_ptr ff::type::float_type::try_convert_to(const ff::value* val, std::ty
 
     if (type == typeid(ff::type::fixed_v))
     {
-        return ff::value::create<ff::int32_fixed8_t>(src);
+        return ff::value::create<ff::i32f8_t>(src);
     }
 
     if (type == typeid(ff::type::int_v))

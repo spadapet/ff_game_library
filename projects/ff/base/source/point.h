@@ -144,5 +144,5 @@ namespace ff
     using point_float = point_t<float>;
     using point_double = point_t<double>;
     using point_size = point_t<size_t>;
-    using point_fixed = point_t<ff::int32_fixed8_t>;
+    using point_fixed = point_t<ff::i32f8_t>;
 }

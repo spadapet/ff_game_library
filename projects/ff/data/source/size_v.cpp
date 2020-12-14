@@ -69,7 +69,7 @@ ff::value_ptr ff::type::size_type::try_convert_to(const ff::value* val, std::typ
 
     if (type == typeid(ff::type::fixed_v))
     {
-        return ff::value::create<ff::int32_fixed8_t>(static_cast<int>(src));
+        return ff::value::create<ff::i32f8_t>(static_cast<int>(src));
     }
 
     if (type == typeid(ff::type::float_v))

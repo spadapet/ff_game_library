@@ -26,6 +26,7 @@
     <ClCompile Include="source\base\point_test.cpp" />
     <ClCompile Include="source\base\pool_allocator_test.cpp" />
     <ClCompile Include="source\base\rect_test.cpp" />
+    <ClCompile Include="source\base\signal_test.cpp" />
     <ClCompile Include="source\base\string_test.cpp" />
     <ClCompile Include="source\base\unordered_map_perf.cpp" />
     <ClCompile Include="source\base\uuid_test.cpp" />

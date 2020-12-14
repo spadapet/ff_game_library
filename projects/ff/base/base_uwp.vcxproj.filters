@@ -23,6 +23,12 @@
     <ClCompile Include="source\uuid.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\signal.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\win_handle.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -93,6 +99,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="base_api.h" />
+    <ClInclude Include="source\signal.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\win_handle.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

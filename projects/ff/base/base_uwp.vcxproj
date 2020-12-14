@@ -13,10 +13,12 @@
     </ClCompile>
     <ClCompile Include="source\hash.cpp" />
     <ClCompile Include="source\memory.cpp" />
+    <ClCompile Include="source\signal.cpp" />
     <ClCompile Include="source\string.cpp" />
     <ClCompile Include="source\timer.cpp" />
     <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
+    <ClCompile Include="source\win_handle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base_api.h" />
@@ -34,6 +36,7 @@
     <ClInclude Include="source\point.h" />
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\rect.h" />
+    <ClInclude Include="source\signal.h" />
     <ClInclude Include="source\string.h" />
     <ClInclude Include="source\timer.h" />
     <ClInclude Include="source\type_helper.h" />
@@ -43,6 +46,7 @@
     <ClInclude Include="source\unordered_set.h" />
     <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\vector.h" />
+    <ClInclude Include="source\win_handle.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.natvis" />

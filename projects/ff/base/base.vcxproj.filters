@@ -26,6 +26,9 @@
     <ClCompile Include="source\win_handle.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\signal.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
