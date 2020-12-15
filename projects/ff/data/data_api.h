@@ -6,6 +6,7 @@
 #include "source/data.h"
 #include "source/dict.h"
 #include "source/dict_v.h"
+#include "source/dict_visitor.h"
 #include "source/double_v.h"
 #include "source/file.h"
 #include "source/fixed_v.h"
@@ -26,4 +27,3 @@
 #include "source/value_traits.h"
 #include "source/value_type.h"
 #include "source/value_vector.h"
-

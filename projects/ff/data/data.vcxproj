@@ -21,6 +21,7 @@
     <ClCompile Include="source\data_v.cpp" />
     <ClCompile Include="source\dict.cpp" />
     <ClCompile Include="source\dict_v.cpp" />
+    <ClCompile Include="source\dict_visitor.cpp" />
     <ClCompile Include="source\double_v.cpp" />
     <ClCompile Include="source\file.cpp" />
     <ClCompile Include="source\fixed_v.cpp" />
@@ -51,6 +52,7 @@
     <ClInclude Include="source\data_v.h" />
     <ClInclude Include="source\dict.h" />
     <ClInclude Include="source\dict_v.h" />
+    <ClInclude Include="source\dict_visitor.h" />
     <ClInclude Include="source\double_v.h" />
     <ClInclude Include="source\file.h" />
     <ClInclude Include="source\fixed_v.h" />

@@ -68,6 +68,9 @@
     <ClCompile Include="source\base\thread_pool_test.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
+    <ClCompile Include="source\data\dict_visitor_test.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
