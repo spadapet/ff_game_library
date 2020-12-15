@@ -15,7 +15,7 @@ namespace ff
     public:
         using func_type = std::function<void()>;
 
-        thread_pool(thread_pool_type type);
+        thread_pool(thread_pool_type type = thread_pool_type::none);
         thread_pool(thread_pool&& other) noexcept = delete;
         thread_pool(const thread_pool& other) = delete;
         ~thread_pool();

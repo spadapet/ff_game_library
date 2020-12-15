@@ -35,6 +35,11 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
             ::game_thread_dispatch = this;
             ::current_thread_dispatch = this;
             break;
+
+        case thread_dispatch_type::task:
+            assert(!::current_thread_dispatch);
+            ::current_thread_dispatch = this;
+            break;
     }
 }
 
@@ -51,12 +56,15 @@ ff::thread_dispatch::~thread_dispatch()
     if (::main_thread_dispatch == this)
     {
         ::main_thread_dispatch = nullptr;
-        ::current_thread_dispatch = nullptr;
     }
 
     if (::game_thread_dispatch == this)
     {
         ::game_thread_dispatch = nullptr;
+    }
+
+    if (::current_thread_dispatch == this)
+    {
         ::current_thread_dispatch = nullptr;
     }
 }
@@ -125,14 +133,8 @@ bool ff::thread_dispatch::current_thread() const
     return this && this->thread_id == ::GetCurrentThreadId();
 }
 
-bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index)
+bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
 {
-    if (!count || count >= MAXIMUM_WAIT_OBJECTS - 1)
-    {
-        assert(false);
-        return false;
-    }
-
     std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
     handles_vector.push_back(this->pending_event);
 
@@ -140,27 +142,29 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
     {
 #if UWP_APP
         DWORD result = ::WaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
-            FALSE, INFINITE, TRUE);
+            FALSE, static_cast<DWORD>(timeout_ms), TRUE);
 #else
         DWORD result = ::MsgWaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
-            INFINITE, QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
+            static_cast<DWORD>(timeout_ms), QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
 #endif
-        size_t size_result = static_cast<size_t>(result);
-        switch (size_result)
+        switch (result)
         {
             default:
-                if (size_result < count)
                 {
-                    completed_index = size_result;
-                    return true;
-                }
-                else if (size_result == count)
-                {
-                    this->flush(false);
-                }
-                else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + count + 1)
-                {
-                    return false;
+                    size_t size_result = static_cast<size_t>(result);
+                    if (size_result < count)
+                    {
+                        completed_index = size_result;
+                        return true;
+                    }
+                    else if (size_result == count)
+                    {
+                        this->flush(false);
+                    }
+                    else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + count + 1)
+                    {
+                        return false;
+                    }
                 }
                 break;
 
@@ -178,14 +182,14 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
     }
 }
 
-bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count)
+bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms)
 {
     std::vector<HANDLE> handle_vector(std::initializer_list(handles, handles + count));
 
     while (!handle_vector.empty())
     {
         size_t completed;
-        if (!this->wait_for_any_handle(handle_vector.data(), handle_vector.size(), completed))
+        if (!this->wait_for_any_handle(handle_vector.data(), handle_vector.size(), completed, timeout_ms))
         {
             return false;
         }

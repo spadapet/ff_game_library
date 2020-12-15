@@ -28,6 +28,8 @@
     <ClCompile Include="source\base\rect_test.cpp" />
     <ClCompile Include="source\base\signal_test.cpp" />
     <ClCompile Include="source\base\string_test.cpp" />
+    <ClCompile Include="source\base\thread_dispatch_test.cpp" />
+    <ClCompile Include="source\base\thread_pool_test.cpp" />
     <ClCompile Include="source\base\unordered_map_perf.cpp" />
     <ClCompile Include="source\base\uuid_test.cpp" />
     <ClCompile Include="source\base\vector_test.cpp" />

@@ -62,6 +62,12 @@
     <ClCompile Include="source\base\window_test.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
+    <ClCompile Include="source\base\thread_dispatch_test.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\thread_pool_test.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

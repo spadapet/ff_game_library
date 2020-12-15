@@ -29,9 +29,10 @@ namespace ff
     };
 
     win_handle create_event(bool initial_set = false, bool manual_reset = true);
-    bool is_event_set(HANDLE hEvent);
+    bool is_event_set(HANDLE handle);
     bool wait_for_event_and_reset(HANDLE handle);
+
     bool wait_for_handle(HANDLE handle);
-    bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index);
-    bool wait_for_all_handles(const HANDLE* handles, size_t count);
+    bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE);
+    bool wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms = INFINITE);
 }

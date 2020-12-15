@@ -11,12 +11,13 @@ namespace ff
         none,
         main,
         game,
+        task,
     };
 
     class thread_dispatch
     {
     public:
-        thread_dispatch(thread_dispatch_type type);
+        thread_dispatch(thread_dispatch_type type = thread_dispatch_type::none);
         thread_dispatch(thread_dispatch&& other) noexcept = delete;
         thread_dispatch(const thread_dispatch& other) = delete;
         ~thread_dispatch();
@@ -29,9 +30,8 @@ namespace ff
         void post(std::function<void()>&& func, bool run_if_current_thread = false);
         void flush();
         bool current_thread() const;
-
-        bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index);
-        bool wait_for_all_handles(const HANDLE* handles, size_t count);
+        bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE);
+        bool wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms = INFINITE);
 
     private:
         void flush(bool force);
