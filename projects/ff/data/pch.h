@@ -18,6 +18,7 @@
 
 // Windows
 #include <Windows.h>
+#include <ShlObj.h>
 
 // FF
 #include <ff/base/base_api.h>

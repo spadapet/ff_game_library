@@ -3,10 +3,13 @@
 #include "string_v.h"
 #include "value.h"
 
-ff::value_type::value_type(std::string_view name, uint32_t lookup_id)
+ff::value_type::value_type(std::string_view name)
     : name(name)
-    , lookup_id(lookup_id)
-{}
+{
+    std::ostringstream hash_name;
+    hash_name << name << "," << name.size();
+    this->lookup_id = static_cast<uint32_t>(ff::hash<std::string>()(hash_name.str()));
+}
 
 ff::value_type::~value_type()
 {}

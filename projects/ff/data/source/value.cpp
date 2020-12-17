@@ -3,12 +3,13 @@
 #include "value.h"
 #include "value_register_default.h"
 
-static std::array<std::unique_ptr<ff::value_type>, 256> value_type_array;
+static std::vector<std::unique_ptr<ff::value_type>> all_value_types;
 static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_type;
+static std::unordered_map<uint32_t, ff::value_type*> id_to_value_type;
 static ff::internal::value_register_default register_defaults;
 
 ff::value::value()
-    : type_lookup_id(0)
+    : type_data(nullptr)
     , refs(0)
 {}
 
@@ -93,7 +94,7 @@ void ff::value::debug_print_tree() const
 
 const ff::value_type* ff::value::type() const
 {
-    return this->get_type_by_lookup_id(this->type_lookup_id);
+    return this->type_data;
 }
 
 bool ff::value::equals(const value* other) const
@@ -137,11 +138,12 @@ void ff::value::release_ref() const
 
 bool ff::value::register_type(std::unique_ptr<value_type>&& type)
 {
-    uint32_t lookup_id = (type != nullptr) ? type->type_lookup_id() : 0;
-    if (lookup_id > 0 && lookup_id < ::value_type_array.size() && !::value_type_array[lookup_id])
+    if (::id_to_value_type.find(type->type_lookup_id()) == ::id_to_value_type.cend() &&
+        ::type_index_to_value_type.find(type->type_index()) == ::type_index_to_value_type.cend())
     {
         ::type_index_to_value_type.try_emplace(type->type_index(), type.get());
-        ::value_type_array[lookup_id] = std::move(type);
+        ::id_to_value_type.try_emplace(type->type_lookup_id(), type.get());
+        ::all_value_types.push_back(std::move(type));
         return true;
     }
 
@@ -163,8 +165,14 @@ const ff::value_type* ff::value::get_type(std::type_index type_index)
 
 const ff::value_type* ff::value::get_type_by_lookup_id(uint32_t id)
 {
-    assert(id > 0 && id < ::value_type_array.size());
-    return ::value_type_array[id].get();
+    auto i = ::id_to_value_type.find(id);
+    if (i != ::id_to_value_type.cend())
+    {
+        return i->second;
+    }
+
+    assert(false);
+    return nullptr;
 }
 
 bool ff::value::is_type(std::type_index type_index) const

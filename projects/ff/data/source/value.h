@@ -10,9 +10,9 @@ namespace ff
     {
     public:
         template<class Type>
-        static bool register_type(std::string_view name, uint32_t lookup_id)
+        static bool register_type(std::string_view name)
         {
-            return ff::value::register_type(std::make_unique<Type>(name, lookup_id));
+            return ff::value::register_type(std::make_unique<Type>(name));
         }
 
         template<typename T, typename... Args>
@@ -27,8 +27,7 @@ namespace ff
                 val->refs.fetch_add(1);
             }
 
-            const value_type* type = ff::value::get_type(typeid(value_derived_type));
-            val->type_lookup_id = type->type_lookup_id();
+            val->type_data = ff::value::get_type(typeid(value_derived_type));
             return val;
         }
 
@@ -36,10 +35,8 @@ namespace ff
         static value_ptr create_default()
         {
             using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
-            const value_type* type = ff::value::get_type(typeid(value_derived_type));
-
             value* val = value_derived_type::get_static_default_value();
-            val->type_lookup_id = type->type_lookup_id();
+            val->type_data = ff::value::get_type(typeid(value_derived_type));
             return val;
         }
 
@@ -76,6 +73,10 @@ namespace ff
             return val ? val : ff::value::create_default<T>();
         }
 
+        bool is_type(std::type_index type_index) const;
+        const void* try_cast(std::type_index type_index) const;
+        value_ptr try_convert(std::type_index type_index) const;
+
         // maps
         bool can_have_named_children() const;
         value_ptr named_child(std::string_view name) const;
@@ -107,11 +108,8 @@ namespace ff
         static const value_type* get_type_by_lookup_id(uint32_t id);
 
         const value_type* type() const;
-        bool is_type(std::type_index type_index) const;
-        const void* try_cast(std::type_index type_index) const;
-        value_ptr try_convert(std::type_index type_index) const;
 
-        uint32_t type_lookup_id;
+        const value_type* type_data;
         mutable std::atomic_int refs;
     };
 }

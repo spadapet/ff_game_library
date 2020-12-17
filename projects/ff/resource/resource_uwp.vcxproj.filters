@@ -2,19 +2,25 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\resource_object_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\resource_load_context.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\resource_object_v.cpp">
+    <ClCompile Include="source\file_o.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\resource.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\resource_load_context.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_object_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
     <ClCompile Include="source\resource_object_factory_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_object_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_persist.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\resource_v.cpp">
@@ -23,29 +29,29 @@
     <ClCompile Include="source\value_register.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\resource_persist.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\file_o.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource_api.h" />
+    <ClInclude Include="source\file_o.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
     <ClInclude Include="source\resource_load_context.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\resource_object_base.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\resource_object_factory_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
     <ClInclude Include="source\resource_object_v.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="resource_api.h" />
-    <ClInclude Include="source\resource.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\resource_object_factory_base.h">
+    <ClInclude Include="source\resource_persist.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\resource_v.h">
@@ -54,16 +60,10 @@
     <ClInclude Include="source\value_register.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\resource_persist.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\file_o.h">
-      <Filter>source</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
-      <UniqueIdentifier>{f8729723-4339-4b88-baa5-1fb555b2e824}</UniqueIdentifier>
+      <UniqueIdentifier>{67153630-8f17-46a6-8755-4d0fe9b964fe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

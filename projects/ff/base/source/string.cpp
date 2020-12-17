@@ -30,3 +30,13 @@ std::string ff::string::to_string(std::wstring_view wstr)
 
     return str;
 }
+
+#if UWP_APP
+
+std::string ff::string::to_string(Platform::String^ str)
+{
+    std::wstring_view wstr(str->Data(), static_cast<size_t>(str->Length()));
+    return ff::string::to_string(wstr);
+}
+
+#endif

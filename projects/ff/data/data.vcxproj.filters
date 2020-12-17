@@ -83,6 +83,9 @@
     <ClCompile Include="source\dict_visitor.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -184,6 +187,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dict_visitor.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

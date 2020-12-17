@@ -2,14 +2,6 @@
 #include "resource_object_base.h"
 #include "resource_object_v.h"
 
-static struct register_values_struct
-{
-    register_values_struct()
-    {
-        ff::value::register_type<ff::type::resource_object_type>("resource_object", 100);
-    }
-} register_values;
-
 ff::type::resource_object_v::resource_object_v(std::shared_ptr<ff::resource_object_base>&& value)
     : value(std::move(value))
 {}
@@ -55,16 +47,8 @@ ff::value_ptr ff::type::resource_object_type::try_convert_to(const value* val, s
                 {
                     return dict_value;
                 }
-                
-                if (type == typeid(ff::type::data_v))
-                {
-                    return dict_value->try_convert<ff::data_base>();
-                }
 
-                if (type == typeid(ff::type::saved_data_v))
-                {
-                    return dict_value->try_convert<ff::saved_data_base>();
-                }
+                return dict_value->try_convert(type);
             }
         }
     }
@@ -85,5 +69,5 @@ bool ff::type::resource_object_type::save(const value* val, writer_base& writer)
 void ff::type::resource_object_type::print(const value* val, std::ostream& output) const
 {
     auto& data = val->get<ff::resource_object_base>();
-    output << "<resource_object: " << (data ? typeid(*data.get()).name() : "null") << ">";
+    output << "<resource_object: " << (data ? typeid(*data.get()).name() : "<null>") << ">";
 }

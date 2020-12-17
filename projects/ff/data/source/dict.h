@@ -1,6 +1,6 @@
 #pragma once
 
-#include "value_ptr.h"
+#include "value.h"
 
 namespace ff
 {
@@ -46,6 +46,30 @@ namespace ff
 
         void print(std::ostream& output) const;
         void debug_print() const;
+
+        template<typename T, typename... Args>
+        void set(std::string_view name, Args&&... args)
+        {
+            this->set(name, ff::value::create<T>(std::forward<Args>(args)...));
+        }
+
+        template<typename T>
+        auto get(std::string_view name) const -> typename ff::type::value_traits<T>::raw_type
+        {
+            return this->get(name)->convert_or_default<T>()->get<T>();
+        }
+
+        template<typename T, typename... Args>
+        auto get(std::string_view name, Args&&... default_value_args) const -> typename ff::type::value_traits<T>::raw_type
+        {
+            value_ptr value = this->get(name)->try_convert<T>();
+            if (!value)
+            {
+                value = ff::value::create<T>(std::forward<Args>(default_value_args)...);
+            }
+
+            return value->get<T>();
+        }
 
     private:
         value_ptr get_by_path(std::string_view path) const;

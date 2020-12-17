@@ -10,7 +10,7 @@ namespace ff
     class value_type
     {
     public:
-        value_type(std::string_view name, uint32_t lookup_id);
+        value_type(std::string_view name);
         virtual ~value_type() = 0;
 
         // types
