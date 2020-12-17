@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectName>ff.resource</ProjectName>
+    <ProjectGuid>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="..\..\..\build\cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\resource_load_context.cpp" />
+    <ClCompile Include="source\resource_object_base.cpp" />
+    <ClCompile Include="source\resource_object_type.cpp" />
+    <ClCompile Include="source\resource_object_v.cpp" />
+    <ClCompile Include="source\resource_value_ref.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="resource_api.h" />
+    <ClInclude Include="source\resource_load_context.h" />
+    <ClInclude Include="source\resource_object_base.h" />
+    <ClInclude Include="source\resource_object_ptr.h" />
+    <ClInclude Include="source\resource_object_type.h" />
+    <ClInclude Include="source\resource_object_v.h" />
+    <ClInclude Include="source\resource_value_ref.h" />
+  </ItemGroup>
+  <Import Project="$(FFRoot)build\cpp.targets" />
+</Project>

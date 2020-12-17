@@ -3,7 +3,6 @@
 #include "value.h"
 #include "value_register_default.h"
 
-static const uint32_t REFS_MASK = 0x00FFFFFF;
 static std::array<std::unique_ptr<ff::value_type>, 256> value_type_array;
 static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_type;
 static ff::internal::value_register_default register_defaults;

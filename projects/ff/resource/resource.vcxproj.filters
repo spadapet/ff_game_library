@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\resource_object_type.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_object_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_load_context.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_object_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_value_ref.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\resource_object_type.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_load_context.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_object_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_object_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_value_ref.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_object_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{f8729723-4339-4b88-baa5-1fb555b2e824}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
