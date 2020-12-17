@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff
+namespace ff::internal
 {
     class resource_load_context
     {

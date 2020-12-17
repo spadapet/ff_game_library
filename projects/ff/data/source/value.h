@@ -10,9 +10,9 @@ namespace ff
     {
     public:
         template<class Type>
-        static void register_type(std::string_view name, uint32_t lookup_id)
+        static bool register_type(std::string_view name, uint32_t lookup_id)
         {
-            ff::value::register_type(std::make_unique<Type>(name, lookup_id));
+            return ff::value::register_type(std::make_unique<Type>(name, lookup_id));
         }
 
         template<typename T, typename... Args>
