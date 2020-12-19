@@ -154,6 +154,14 @@ size_t ff::file_read::read(void* data, size_t size)
 ff::file_write::file_write(const std::filesystem::path& path, bool append)
     : file_base(path)
 {
+    std::error_code ec;
+    std::filesystem::path parent_path = path.parent_path();
+    if (!parent_path.empty() && !std::filesystem::exists(parent_path, ec))
+    {
+        // Ignore failure here, let CreateFile fail
+        std::filesystem::create_directories(parent_path, ec);
+    }
+
     std::wstring wpath = ff::string::to_wstring(path.string());
     win_handle file_handle(::CreateFile2(wpath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr));
     assert(file_handle);

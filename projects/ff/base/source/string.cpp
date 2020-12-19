@@ -31,6 +31,24 @@ std::string ff::string::to_string(std::wstring_view wstr)
     return str;
 }
 
+std::string ff::string::from_acp(std::string_view str)
+{
+    std::string str8;
+    std::wstring wstr;
+    int size = static_cast<int>(str.size());
+
+    if (size)
+    {
+        int wsize = ::MultiByteToWideChar(CP_ACP, 0, str.data(), size, nullptr, 0);
+        wstr.resize(static_cast<size_t>(wsize));
+        ::MultiByteToWideChar(CP_ACP, 0, str.data(), size, wstr.data(), wsize);
+
+        str8 = ff::string::to_string(wstr);
+    }
+
+    return str8;
+}
+
 #if UWP_APP
 
 std::string ff::string::to_string(Platform::String^ str)

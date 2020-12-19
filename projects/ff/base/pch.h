@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <forward_list>
 #include <functional>
 #include <memory>

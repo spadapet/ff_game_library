@@ -46,6 +46,15 @@ namespace ff
         }
     };
 
+    template<>
+    struct hash<std::filesystem::path>
+    {
+        size_t operator()(const std::filesystem::path& value) const noexcept
+        {
+            return ff::hash<std::wstring>()(value.native());
+        }
+    };
+
     /// <summary>
     /// Treats a value as its own hash by attempting to cast to size_t
     /// </summary>

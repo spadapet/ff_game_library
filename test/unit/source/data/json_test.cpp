@@ -74,7 +74,8 @@ namespace data_test
             std::replace(json.begin(), json.end(), '\'', '\"');
 
             const char* error_pos;
-            ff::dict dict = ff::json_parse(json, &error_pos);
+            ff::dict dict;
+            ff::json_parse(json, dict, &error_pos);
 
             Assert::AreEqual<size_t>(5, dict.size());
             std::vector<std::string_view> names = dict.child_names();
@@ -103,7 +104,8 @@ namespace data_test
                 "}\n");
             std::replace(json.begin(), json.end(), '\'', '\"');
 
-            ff::dict dict = ff::json_parse(json);
+            ff::dict dict;
+            ff::json_parse(json, dict);
 
             std::ostringstream actual_output;
             ff::json_write(dict, actual_output);
@@ -151,7 +153,8 @@ namespace data_test
                 "}\n");
             std::replace(json.begin(), json.end(), '\'', '\"');
 
-            ff::dict dict = ff::json_parse(json);
+            ff::dict dict;
+            ff::json_parse(json, dict);
 
             ff::value_ptr value;
             value = dict.get("/null");

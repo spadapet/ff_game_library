@@ -47,6 +47,20 @@ ff::file_reader::file_reader(file_read&& file)
     : file(std::move(file))
 {}
 
+ff::file_reader::file_reader(const std::filesystem::path& path)
+    : file(path)
+{}
+
+ff::file_reader::operator bool() const
+{
+    return this->file;
+}
+
+bool ff::file_reader::operator!() const
+{
+    return !this->file;
+}
+
 size_t ff::file_reader::read(void* data, size_t size)
 {
     return file.read(data, size);
@@ -131,6 +145,20 @@ std::shared_ptr<ff::saved_data_base> ff::data_writer::saved_data(size_t offset, 
 ff::file_writer::file_writer(file_write&& file)
     : file(std::move(file))
 {}
+
+ff::file_writer::file_writer(const std::filesystem::path& path, bool append)
+    : file(path, append)
+{}
+
+ff::file_writer::operator bool() const
+{
+    return this->file;
+}
+
+bool ff::file_writer::operator!() const
+{
+    return !this->file;
+}
 
 size_t ff::file_writer::write(const void* data, size_t size)
 {

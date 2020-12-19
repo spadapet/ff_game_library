@@ -4,6 +4,6 @@
 
 namespace ff
 {
-	ff::dict json_parse(std::string_view text, const char** error_pos = nullptr);
+	bool json_parse(std::string_view text, ff::dict& dict, const char** error_pos = nullptr);
 	void json_write(const ff::dict& dict, std::ostream& output);
 }

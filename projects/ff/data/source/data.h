@@ -44,6 +44,7 @@ namespace ff
         data_mem_mapped& operator=(const data_mem_mapped& other) = default;
         data_mem_mapped& operator=(data_mem_mapped&& other) noexcept = default;
 
+        bool valid() const;
         const std::shared_ptr<file_mem_mapped>& file() const;
         size_t offset() const;
 

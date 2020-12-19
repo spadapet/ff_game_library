@@ -149,7 +149,7 @@ static ff::dict parse_root_object(ff::internal::json_tokenizer& tokenizer, const
     return ff::dict();
 }
 
-ff::dict ff::json_parse(std::string_view text, const char** error_pos)
+bool ff::json_parse(std::string_view text, ff::dict& dict, const char** error_pos)
 {
     ff::internal::json_tokenizer tokenizer(text);
 
@@ -157,7 +157,8 @@ ff::dict ff::json_parse(std::string_view text, const char** error_pos)
     error_pos = error_pos ? error_pos : &my_error_pos;
     *error_pos = nullptr;
 
-    return ::parse_root_object(tokenizer, error_pos);
+    dict = ::parse_root_object(tokenizer, error_pos);
+    return !*error_pos;
 }
 
 static void json_encode(std::string_view text, std::ostream& output)

@@ -10,6 +10,7 @@
 #include "source/dict_visitor.h"
 #include "source/double_v.h"
 #include "source/file.h"
+#include "source/filesystem.h"
 #include "source/fixed_v.h"
 #include "source/float_v.h"
 #include "source/int_v.h"

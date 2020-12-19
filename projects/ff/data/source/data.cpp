@@ -47,6 +47,11 @@ ff::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file, size_t offset, size
     : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)), offset, size)
 {}
 
+bool ff::data_mem_mapped::valid() const
+{
+    return this->shared_file && *this->shared_file && (this->data_offset + this->data_size) <= this->shared_file->size();
+}
+
 const std::shared_ptr<ff::file_mem_mapped>& ff::data_mem_mapped::file() const
 {
     return this->shared_file;

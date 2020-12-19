@@ -57,10 +57,13 @@ namespace ff
     public:
         file_reader(file_read&& file);
         file_reader(file_reader&& other) noexcept = default;
+        file_reader(const std::filesystem::path& path);
         file_reader(const file_reader& other) = delete;
 
         file_reader& operator=(file_reader&& other) noexcept = default;
         file_reader& operator=(const file_reader& other) = delete;
+        operator bool() const;
+        bool operator!() const;
 
         virtual size_t read(void* data, size_t size) override;
         virtual size_t size() const override;
@@ -98,11 +101,14 @@ namespace ff
     {
     public:
         file_writer(file_write&& file);
+        file_writer(const std::filesystem::path& path, bool append = false);
         file_writer(file_writer&& other) noexcept = default;
         file_writer(const file_writer& other) = delete;
 
         file_writer& operator=(file_writer&& other) noexcept = default;
         file_writer& operator=(const file_writer& other) = delete;
+        operator bool() const;
+        bool operator!() const;
 
         virtual size_t write(const void* data, size_t size) override;
         virtual size_t size() const override;

@@ -58,7 +58,8 @@ namespace data_test
                 "}");
             std::replace(expect_json.begin(), expect_json.end(), '\'', '\"');
 
-            ff::dict dict = ff::json_parse(json);
+            ff::dict dict;
+            ff::json_parse(json, dict);
 
             class visitor : public ff::dict_visitor_base
             {

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "resource_object_base.h"
+#include "resource_object_factory_base.h"
 #include "resource_object_v.h"
 
 ff::type::resource_object_v::resource_object_v(std::shared_ptr<ff::resource_object_base>&& value)
@@ -69,5 +70,13 @@ bool ff::type::resource_object_type::save(const value* val, writer_base& writer)
 void ff::type::resource_object_type::print(const value* val, std::ostream& output) const
 {
     auto& data = val->get<ff::resource_object_base>();
-    output << "<resource_object: " << (data ? typeid(*data.get()).name() : "<null>") << ">";
+    if (data)
+    {
+        const resource_object_factory_base* factory = resource_object_base::get_factory(typeid(*data.get()));
+        output << "<resource_object: " << (factory ? factory->name() : "<unregistered>") << ">";
+    }
+    else
+    {
+        output << "<resource_object: <null>>";
+    }
 }

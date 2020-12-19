@@ -31,5 +31,5 @@ namespace ff
     load_resources_result load_resources_from_json(std::string_view json_text, const std::filesystem::path& base_path, bool debug);
     load_resources_result load_resources_from_json(const ff::dict& json_dict, const std::filesystem::path& base_path, bool debug);
     bool save_resources_to_file(const ff::dict& dict, const std::filesystem::path& path);
-    bool is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path, bool debug);
+    bool is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path);
 }
