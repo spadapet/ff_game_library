@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "resource_persist.h"
+#include "resource_load.h"
 
 std::string_view ff::internal::RES_BASE("res:base");
 std::string_view ff::internal::RES_COMPRESS("res:compress");
@@ -94,7 +94,13 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
 
             if (use_cache)
             {
-                ff::save_resources_to_file(result.dict, cache_path);
+                // Ignore failures saving the cache, just delete the cache instead
+                ff::file_writer writer(cache_path);
+                if (writer && !result.dict.save(writer))
+                {
+                    std::error_code ec;
+                    std::filesystem::remove(cache_path, ec);
+                }
             }
         }
     }
@@ -118,24 +124,6 @@ ff::load_resources_result ff::load_resources_from_json(std::string_view json_tex
     }
 
     return ff::load_resources_from_json(dict, base_path, debug);
-}
-
-ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict, const std::filesystem::path& base_path, bool debug)
-{
-    return load_resources_result();
-}
-
-bool ff::save_resources_to_file(const ff::dict& dict, const std::filesystem::path& path)
-{
-    if (dict.empty())
-    {
-        std::error_code ec;
-        std::filesystem::remove(path, ec);
-        return true;
-    }
-
-    ff::file_writer writer(path);
-    return writer && dict.save(writer);
 }
 
 bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path)

@@ -7,5 +7,5 @@
 #include "source/resource_object_base.h"
 #include "source/resource_object_factory_base.h"
 #include "source/resource_object_v.h"
-#include "source/resource_persist.h"
+#include "source/resource_load.h"
 #include "source/resource_v.h"

@@ -85,7 +85,7 @@ namespace data_test
 
             visitor v;
             std::vector<std::string> errors;
-            ff::dict new_dict = v.visit_dict(dict, errors);
+            ff::dict new_dict = v.visit_dict(dict, errors)->get<ff::dict>();
 
             std::ostringstream new_json;
             ff::json_write(new_dict, new_json);

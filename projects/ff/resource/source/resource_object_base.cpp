@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "resource_object_base.h"
 #include "resource_object_factory_base.h"
-#include "resource_persist.h"
+#include "resource_load.h"
 #include "value_register.h"
 
 static std::vector<std::unique_ptr<ff::resource_object_factory_base>> factories;

@@ -9,14 +9,16 @@ namespace ff::type
     class dict_v : public ff::value
     {
     public:
-        dict_v(ff::dict&& value);
+        dict_v(ff::dict&& value, bool save_compressed = false);
 
         const ff::dict& get() const;
-        static ff::value* get_static_value(ff::dict&& value);
+        bool save_compressed() const;
+        static ff::value* get_static_value(ff::dict&& value, bool save_compressed = false);
         static ff::value* get_static_default_value();
 
     private:
         ff::dict value;
+        bool save_compressed_data;
     };
 
     template<>

@@ -6,6 +6,7 @@
 namespace ff
 {
     class data_base;
+    enum class saved_data_type;
 }
 
 namespace ff::type
@@ -13,16 +14,18 @@ namespace ff::type
     class data_v : public ff::value
     {
     public:
-        data_v(std::shared_ptr<ff::data_base>&& value);
-        data_v(const std::shared_ptr<ff::data_base>& value);
+        data_v(std::shared_ptr<ff::data_base>&& value, ff::saved_data_type saved_data_type);
+        data_v(const std::shared_ptr<ff::data_base>& value, ff::saved_data_type saved_data_type);
 
         const std::shared_ptr<ff::data_base>& get() const;
-        static ff::value* get_static_value(std::shared_ptr<ff::data_base>&& value);
-        static ff::value* get_static_value(const std::shared_ptr<ff::data_base>& value);
+        ff::saved_data_type saved_data_type() const;
+        static ff::value* get_static_value(std::shared_ptr<ff::data_base>&& value, ff::saved_data_type saved_data_type);
+        static ff::value* get_static_value(const std::shared_ptr<ff::data_base>& value, ff::saved_data_type saved_data_type);
         static ff::value* get_static_default_value();
 
     private:
         std::shared_ptr<ff::data_base> value;
+        ff::saved_data_type saved_data_type_data;
     };
 
     template<>

@@ -1,20 +1,13 @@
 #pragma once
 
-namespace ff::internal
+namespace ff
 {
     class resource_load_context
     {
     public:
-        resource_load_context(std::string_view base_path, bool debug);
-
-        const std::filesystem::path& base_path() const;
-        const std::vector<std::string> errors() const;
-        void add_error(std::string_view text);
-        bool debug() const;
-
-    private:
-        std::filesystem::path base_path_data;
-        std::vector<std::string> errors_data;
-        bool debug_data;
+        virtual const std::filesystem::path& base_path() const = 0;
+        virtual const std::vector<std::string>& errors() const = 0;
+        virtual void add_error(std::string_view text) = 0;
+        virtual bool debug() const = 0;
     };
 }

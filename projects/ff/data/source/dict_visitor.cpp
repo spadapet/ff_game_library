@@ -13,13 +13,11 @@ ff::dict_visitor_base::dict_visitor_base()
 ff::dict_visitor_base::~dict_visitor_base()
 {}
 
-ff::dict ff::dict_visitor_base::visit_dict(const ff::dict& dict, std::vector<std::string>& errors)
+ff::value_ptr ff::dict_visitor_base::visit_dict(const ff::dict& dict, std::vector<std::string>& errors)
 {
     ff::value_ptr transformed_dict_value = this->transform_dict(dict);
     errors = std::move(this->errors);
-
-    ff::value_ptr output_dict_value = transformed_dict_value->convert_or_default<ff::dict>();
-    return output_dict_value->get<ff::dict>();
+    return errors.empty() ? transformed_dict_value : nullptr;
 }
 
 void ff::dict_visitor_base::add_error(std::string_view text)

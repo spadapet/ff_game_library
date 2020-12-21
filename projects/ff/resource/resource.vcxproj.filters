@@ -5,9 +5,6 @@
     <ClCompile Include="source\resource_object_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\resource_load_context.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\resource_object_v.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -23,18 +20,18 @@
     <ClCompile Include="source\value_register.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\resource_persist.cpp">
+    <ClCompile Include="source\file_o.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\file_o.cpp">
+    <ClCompile Include="source\resource_load.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_load2.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\resource_load_context.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\resource_object_base.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -54,10 +51,13 @@
     <ClInclude Include="source\value_register.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\resource_persist.h">
+    <ClInclude Include="source\file_o.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\file_o.h">
+    <ClInclude Include="source\resource_load.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_load_context.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

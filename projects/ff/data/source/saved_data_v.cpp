@@ -44,7 +44,7 @@ ff::value_ptr ff::type::saved_data_type::try_convert_to(const value* val, std::t
         if (saved_data)
         {
             auto data = saved_data->loaded_data();
-            return ff::value::create<ff::data_base>(std::move(data));
+            return ff::value::create<ff::data_base>(std::move(data), saved_data->type());
         }
     }
 

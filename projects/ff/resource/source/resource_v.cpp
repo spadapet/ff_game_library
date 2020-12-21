@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "resource.h"
-#include "resource_persist.h"
+#include "resource_load.h"
 #include "resource_v.h"
 
 ff::type::resource_v::resource_v(std::shared_ptr<ff::resource>&& value)
