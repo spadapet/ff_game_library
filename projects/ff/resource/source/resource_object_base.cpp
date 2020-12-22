@@ -34,9 +34,9 @@ const ff::resource_object_factory_base* ff::resource_object_base::get_factory(st
     return nullptr;
 }
 
-bool ff::resource_object_base::save_to_cache_typed(const resource_object_base& value, ff::dict& dict)
+bool ff::resource_object_base::save_to_cache_typed(const resource_object_base& value, ff::dict& dict, bool& allow_compress)
 {
-    if (value.save_to_cache(dict))
+    if (value.save_to_cache(dict, allow_compress))
     {
         if (!dict.get(ff::internal::RES_TYPE))
         {

@@ -152,8 +152,6 @@ private:
     bool debug_data;
 };
 
-///////////////////////////////////////
-
 class transformer_base : public ff::dict_visitor_base
 {
 public:
@@ -176,8 +174,6 @@ private:
     transformer_context& context_data;
 };
 
-///////////////////////////////////////
-
 class expand_file_paths_transformer : public transformer_base
 {
 public:
@@ -191,7 +187,7 @@ protected:
         if (value && value->is_type<std::string>())
         {
             std::string string_value = value->get<std::string>();
-            if (!string_value.compare(0, ff::internal::FILE_PREFIX.size(), ff::internal::FILE_PREFIX))
+            if (ff::string::starts_with(string_value, ff::internal::FILE_PREFIX))
             {
                 string_value = string_value.substr(ff::internal::FILE_PREFIX.size());
                 std::filesystem::path path_value = string_value;
@@ -216,8 +212,6 @@ protected:
         return value;
     }
 };
-
-///////////////////////////////////////
 
 class epand_values_and_templates_transformer : public transformer_base
 {
@@ -319,7 +313,7 @@ protected:
         {
             std::string string_value = value->get<std::string>();
 
-            if (!string_value.compare(0, ff::internal::RES_PREFIX.size(), ff::internal::RES_PREFIX))
+            if (ff::string::starts_with(string_value, ff::internal::RES_PREFIX))
             {
                 value = this->context().values().get(string_value.substr(ff::internal::RES_PREFIX.size()));
                 value = this->transform_value(value);
@@ -331,7 +325,7 @@ protected:
                     this->add_error(str.str());
                 }
             }
-            else if (!string_value.compare(0, ff::internal::REF_PREFIX.size(), ff::internal::REF_PREFIX))
+            else if (ff::string::starts_with(string_value, ff::internal::REF_PREFIX))
             {
                 std::shared_ptr<ff::resource> res_val = std::make_shared<ff::resource>(
                     string_value.substr(ff::internal::REF_PREFIX.size()),
@@ -399,8 +393,6 @@ private:
     }
 };
 
-///////////////////////////////////////
-
 class start_load_objects_from_dict_transformer : public transformer_base
 {
 public:
@@ -465,8 +457,6 @@ protected:
         return output_value;
     }
 };
-
-///////////////////////////////////////
 
 class finish_load_objects_from_dict_transformer : public transformer_base
 {
@@ -570,8 +560,6 @@ private:
     std::unordered_set<ff::resource_object_base*> obj_to_finished;
 };
 
-///////////////////////////////////////
-
 class extract_resource_siblings_transformer : public transformer_base
 {
 public:
@@ -610,8 +598,6 @@ protected:
     }
 };
 
-///////////////////////////////////////
-
 class save_objects_to_dict_transformer : public transformer_base
 {
 public:
@@ -625,13 +611,15 @@ protected:
         if (value && value->is_type<ff::resource_object_base>())
         {
             ff::dict dict;
-            if (!ff::resource_object_base::save_to_cache_typed(*value->get<ff::resource_object_base>(), dict))
+            bool allow_compress = true;
+            auto res = value->get<ff::resource_object_base>();
+            if (!res || !ff::resource_object_base::save_to_cache_typed(*res, dict, allow_compress))
             {
                 this->add_error("Failed to save resource");
                 return nullptr;
             }
 
-            value = ff::value::create<ff::dict>(std::move(dict))->try_convert<ff::saved_data_base>();
+            value = ff::value::create<ff::dict>(std::move(dict), allow_compress && this->is_root());
             if (!value)
             {
                 this->add_error("Failed to save resource");
@@ -640,42 +628,6 @@ protected:
         }
 
         return value;
-    }
-};
-
-///////////////////////////////////////
-
-class compress_root_dicts_transformer : public transformer_base
-{
-public:
-    using transformer_base::transformer_base;
-
-protected:
-    virtual ff::value_ptr transform_root_value(ff::value_ptr value) override
-    {
-        ff::value_ptr dict_value = value->try_convert<ff::dict>();
-        if (dict_value)
-        {
-            ff::dict dict = dict_value->get<ff::dict>();
-            bool compress = dict.get<bool>(ff::internal::RES_COMPRESS, true);
-            dict.set(ff::internal::RES_COMPRESS, nullptr);
-
-            return ff::value::create<ff::dict>(std::move(dict), compress);
-        }
-
-        return value;
-    }
-
-    virtual ff::value_ptr transform_dict(const ff::dict& dict) override
-    {
-        if (!this->is_root() && dict.get(ff::internal::RES_COMPRESS))
-        {
-            ff::dict new_dict(dict);
-            new_dict.set(ff::internal::RES_COMPRESS, nullptr);
-            return transformer_base::transform_dict(new_dict);
-        }
-
-        return transformer_base::transform_dict(dict);
     }
 };
 
@@ -690,16 +642,18 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     ::finish_load_objects_from_dict_transformer t4(context);
     ::extract_resource_siblings_transformer t5(context);
     ::save_objects_to_dict_transformer t6(context);
-    ::compress_root_dicts_transformer t7(context);
-    std::array<transformer_base*, 7> transformers = { &t1, &t2, &t3, &t4, &t5, &t6, &t7 };
+    std::array<transformer_base*, 6> transformers = { &t1, &t2, &t3, &t4, &t5, &t6 };
 
     for (transformer_base* transformer : transformers)
     {
-        ff::load_resources_result result{};
-        ff::value_ptr new_dict_value = transformer->visit_dict(dict, result.errors)->try_convert<ff::dict>();
+        std::vector<std::string> errors;
+        ff::value_ptr new_dict_value = transformer->visit_dict(dict, errors)->try_convert<ff::dict>();
 
-        if (!new_dict_value || !result.errors.empty())
+        if (!new_dict_value || !errors.empty())
         {
+            ff::load_resources_result result{};
+            result.status = false;
+            result.errors = std::move(errors);
             return result;
         }
 

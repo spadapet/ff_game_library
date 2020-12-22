@@ -2,7 +2,6 @@
 #include "resource_load.h"
 
 std::string_view ff::internal::RES_BASE("res:base");
-std::string_view ff::internal::RES_COMPRESS("res:compress");
 std::string_view ff::internal::RES_DEBUG("res:debug");
 std::string_view ff::internal::RES_FILES("res:files");
 std::string_view ff::internal::RES_IMPORT("res:import");

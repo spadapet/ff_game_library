@@ -58,3 +58,13 @@ std::string ff::string::to_string(Platform::String^ str)
 }
 
 #endif
+
+bool ff::string::starts_with(std::string_view str, std::string_view str_start)
+{
+    return str.size() >= str_start.size() && !str.compare(0, str_start.size(), str_start);
+}
+
+bool ff::string::ends_with(std::string_view str, std::string_view str_end)
+{
+    return str.size() >= str_end.size() && !str.compare(str.size() - str_end.size(), str_end.size(), str_end);
+}

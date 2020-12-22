@@ -40,7 +40,8 @@ ff::value_ptr ff::type::resource_object_type::try_convert_to(const value* val, s
         if (src)
         {
             ff::dict dict;
-            if (ff::resource_object_base::save_to_cache_typed(*src.get(), dict))
+            bool allow_compress = false;
+            if (ff::resource_object_base::save_to_cache_typed(*src.get(), dict, allow_compress))
             {
                 ff::value_ptr dict_value = ff::value::create<ff::dict>(std::move(dict));
 

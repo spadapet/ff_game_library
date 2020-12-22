@@ -3,7 +3,6 @@
 namespace ff::internal
 {
     extern std::string_view RES_BASE;
-    extern std::string_view RES_COMPRESS;
     extern std::string_view RES_DEBUG;
     extern std::string_view RES_FILES;
     extern std::string_view RES_IMPORT;

@@ -8,4 +8,7 @@ namespace ff::string
 #if UWP_APP
     std::string to_string(Platform::String^ str);
 #endif
+
+    bool starts_with(std::string_view str, std::string_view str_start);
+    bool ends_with(std::string_view str, std::string_view str_end);
 }
