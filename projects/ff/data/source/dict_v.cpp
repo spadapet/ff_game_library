@@ -9,7 +9,7 @@
 
 ff::type::dict_v::dict_v(ff::dict&& value, bool save_compressed)
     : value(std::move(value))
-    , save_compressed_data(save_compressed)
+    , save_compressed_(save_compressed)
 {}
 
 const ff::dict& ff::type::dict_v::get() const
@@ -19,7 +19,7 @@ const ff::dict& ff::type::dict_v::get() const
 
 bool ff::type::dict_v::save_compressed() const
 {
-    return this->save_compressed_data;
+    return this->save_compressed_;
 }
 
 ff::value* ff::type::dict_v::get_static_value(ff::dict&& value, bool)

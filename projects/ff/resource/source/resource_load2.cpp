@@ -11,38 +11,39 @@ class transformer_context : public ff::resource_load_context
 {
 public:
     transformer_context(const std::filesystem::path& base_path, bool debug)
-        : base_path_data(base_path)
-        , debug_data(debug)
+        : base_path_(base_path)
+        , debug_(debug)
     {}
 
     virtual const std::filesystem::path& base_path() const override
     {
-        return this->base_path_data;
+        return this->base_path_;
     }
 
     virtual const std::vector<std::string>& errors() const override
     {
-        return this->errors_data;
+        return this->errors_;
     }
 
     virtual void add_error(std::string_view text) override
     {
         if (!text.empty())
         {
-            this->errors_data.emplace_back(text);
+            this->errors_.emplace_back(text);
         }
     }
 
     virtual bool debug() const override
     {
-        return this->debug_data;
+        return this->debug_;
     }
 
     const ff::dict& values() const
     {
+        static ff::dict empty_dict;
         std::lock_guard lock(this->mutex);
         auto iter = this->thread_to_values.find(::GetCurrentThreadId());
-        return iter != this->thread_to_values.cend() ? iter->second.back() : this->empty_dict;
+        return iter != this->thread_to_values.cend() ? iter->second.back() : empty_dict;
     }
 
     ff::dict& push_values()
@@ -123,7 +124,7 @@ public:
         std::filesystem::path path_canon = std::filesystem::canonical(path);
 
         std::lock_guard lock(this->mutex);
-        this->paths_data.insert(std::move(path_canon));
+        this->paths_.insert(std::move(path_canon));
     }
 
     std::vector<std::filesystem::path> paths() const
@@ -131,9 +132,9 @@ public:
         std::lock_guard lock(this->mutex);
 
         std::vector<std::filesystem::path> paths;
-        paths.reserve(this->paths_data.size());
+        paths.reserve(this->paths_.size());
 
-        for (const std::filesystem::path& path : this->paths_data)
+        for (const std::filesystem::path& path : this->paths_)
         {
             paths.push_back(path);
         }
@@ -143,20 +144,19 @@ public:
 
 private:
     mutable std::recursive_mutex mutex;
-    std::filesystem::path base_path_data;
-    std::vector<std::string> errors_data;
+    std::filesystem::path base_path_;
+    std::vector<std::string> errors_;
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
-    std::unordered_set<std::filesystem::path, ff::hash<std::filesystem::path>> paths_data;
-    ff::dict empty_dict;
-    bool debug_data;
+    std::unordered_set<std::filesystem::path, ff::hash<std::filesystem::path>> paths_;
+    bool debug_;
 };
 
 class transformer_base : public ff::dict_visitor_base
 {
 public:
     transformer_base(transformer_context& context)
-        : context_data(context)
+        : context_(context)
     {}
 
 protected:
@@ -167,11 +167,11 @@ protected:
 
     transformer_context& context() const
     {
-        return this->context_data;
+        return this->context_;
     }
 
 private:
-    transformer_context& context_data;
+    transformer_context& context_;
 };
 
 class expand_file_paths_transformer : public transformer_base

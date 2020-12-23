@@ -5,12 +5,12 @@ ff::file_base::file_base()
 {}
 
 ff::file_base::file_base(const std::filesystem::path& path)
-    : file_path(path)
+    : path_(path)
 {}
 
 ff::file_base::file_base(file_base&& other) noexcept
-    : file_path(std::move(other.file_path))
-    , file_handle(std::move(other.file_handle))
+    : path_(std::move(other.path_))
+    , handle_(std::move(other.handle_))
 {
 }
 
@@ -20,10 +20,10 @@ ff::file_base::~file_base()
 
 size_t ff::file_base::size() const
 {
-    assert(this->file_handle);
+    assert(this->handle_);
 
     FILE_STANDARD_INFO info;
-    if (!::GetFileInformationByHandleEx(this->file_handle, FileStandardInfo, &info, sizeof(info)))
+    if (!::GetFileInformationByHandleEx(this->handle_, FileStandardInfo, &info, sizeof(info)))
     {
         assert(false);
         return 0;
@@ -34,10 +34,10 @@ size_t ff::file_base::size() const
 
 size_t ff::file_base::pos() const
 {
-    assert(this->file_handle);
+    assert(this->handle_);
 
     LARGE_INTEGER cur{}, move{};
-    if (!::SetFilePointerEx(this->file_handle, move, &cur, FILE_CURRENT))
+    if (!::SetFilePointerEx(this->handle_, move, &cur, FILE_CURRENT))
     {
         assert(false);
         return 0;
@@ -48,11 +48,11 @@ size_t ff::file_base::pos() const
 
 size_t ff::file_base::pos(size_t new_pos)
 {
-    assert(this->file_handle);
+    assert(this->handle_);
 
     LARGE_INTEGER cur{}, move{};
     move.QuadPart = new_pos;
-    if (!::SetFilePointerEx(this->file_handle, move, &cur, FILE_BEGIN))
+    if (!::SetFilePointerEx(this->handle_, move, &cur, FILE_BEGIN))
     {
         assert(false);
         return 0;
@@ -63,32 +63,32 @@ size_t ff::file_base::pos(size_t new_pos)
 
 const ff::win_handle& ff::file_base::handle() const
 {
-    return this->file_handle;
+    return this->handle_;
 }
 
 const std::filesystem::path& ff::file_base::path() const
 {
-    return this->file_path;
+    return this->path_;
 }
 
 ff::file_base::operator bool() const
 {
-    return this->file_handle;
+    return this->handle_;
 }
 
 bool ff::file_base::operator!() const
 {
-    return !this->file_handle;
+    return !this->handle_;
 }
 
 ff::file_base& ff::file_base::operator=(file_base&& other) noexcept
 {
     if (this != &other)
     {
-        this->file_path.clear();
+        this->path_.clear();
 
-        std::swap(this->file_handle, other.file_handle);
-        std::swap(this->file_path, other.file_path);
+        std::swap(this->handle_, other.handle_);
+        std::swap(this->path_, other.path_);
     }
 
     return *this;
@@ -98,8 +98,8 @@ ff::file_base& ff::file_base::operator=(const file_base& other)
 {
     if (this != &other)
     {
-        this->file_path = other.file_path;
-        this->file_handle = other.file_handle.duplicate();
+        this->path_ = other.path_;
+        this->handle_ = other.handle_.duplicate();
     }
 
     return *this;
@@ -107,7 +107,7 @@ ff::file_base& ff::file_base::operator=(const file_base& other)
 
 void ff::file_base::handle(win_handle&& file_handle)
 {
-    this->file_handle = std::move(file_handle);
+    this->handle_ = std::move(file_handle);
 }
 
 ff::file_read::file_read(const std::filesystem::path& path)
@@ -199,21 +199,21 @@ ff::file_mem_mapped::file_mem_mapped(const std::filesystem::path& path)
 {}
 
 ff::file_mem_mapped::file_mem_mapped(file_read&& file) noexcept
-    : mapping_file(std::move(file))
-    , mapping_size(0)
-    , mapping_data(nullptr)
+    : file_(std::move(file))
+    , size_(0)
+    , data_(nullptr)
 {
     this->open();
 }
 
 ff::file_mem_mapped::file_mem_mapped(file_mem_mapped&& other) noexcept
-    : mapping_file(std::move(other.mapping_file))
-    , mapping_handle(std::move(other.mapping_handle))
-    , mapping_size(other.mapping_size)
-    , mapping_data(other.mapping_data)
+    : file_(std::move(other.file_))
+    , handle_(std::move(other.handle_))
+    , size_(other.size_)
+    , data_(other.data_)
 {
-    other.mapping_size = 0;
-    other.mapping_data = nullptr;
+    other.size_ = 0;
+    other.data_ = nullptr;
 }
 
 ff::file_mem_mapped::file_mem_mapped(const file_read& file)
@@ -221,7 +221,7 @@ ff::file_mem_mapped::file_mem_mapped(const file_read& file)
 {}
 
 ff::file_mem_mapped::file_mem_mapped(const file_mem_mapped& other)
-    : file_mem_mapped(other.mapping_file)
+    : file_mem_mapped(other.file_)
 {}
 
 ff::file_mem_mapped::~file_mem_mapped()
@@ -231,12 +231,12 @@ ff::file_mem_mapped::~file_mem_mapped()
 
 ff::file_mem_mapped::operator bool() const
 {
-    return this->mapping_handle && this->mapping_data;
+    return this->handle_ && this->data_;
 }
 
 bool ff::file_mem_mapped::operator!() const
 {
-    return !this->mapping_handle || !this->mapping_data;
+    return !this->handle_ || !this->data_;
 }
 
 ff::file_mem_mapped& ff::file_mem_mapped::operator=(file_mem_mapped&& other) noexcept
@@ -245,10 +245,10 @@ ff::file_mem_mapped& ff::file_mem_mapped::operator=(file_mem_mapped&& other) noe
     {
         this->close();
 
-        std::swap(this->mapping_file, other.mapping_file);
-        std::swap(this->mapping_handle, other.mapping_handle);
-        std::swap(this->mapping_size, other.mapping_size);
-        std::swap(this->mapping_data, other.mapping_data);
+        std::swap(this->file_, other.file_);
+        std::swap(this->handle_, other.handle_);
+        std::swap(this->size_, other.size_);
+        std::swap(this->data_, other.data_);
     }
 
     return *this;
@@ -256,58 +256,58 @@ ff::file_mem_mapped& ff::file_mem_mapped::operator=(file_mem_mapped&& other) noe
 
 size_t ff::file_mem_mapped::size() const
 {
-    return this->mapping_size;
+    return this->size_;
 }
 
 const uint8_t* ff::file_mem_mapped::data() const
 {
-    return this->mapping_data;
+    return this->data_;
 }
 
 const std::filesystem::path& ff::file_mem_mapped::path() const
 {
-    return this->mapping_file.path();
+    return this->file_.path();
 }
 
 const ff::file_read& ff::file_mem_mapped::file() const
 {
-    return this->mapping_file;
+    return this->file_;
 }
 
 void ff::file_mem_mapped::open()
 {
     this->close();
 
-    if (this->mapping_file && this->mapping_file.size())
+    if (this->file_ && this->file_.size())
     {
 #if METRO_APP
-        this->mapping_handle = win_handle(::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr));
+        this->handle_ = win_handle(::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr));
 #else
-        this->mapping_handle = win_handle(::CreateFileMapping(this->mapping_file.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr));
+        this->handle_ = win_handle(::CreateFileMapping(this->file_.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr));
 #endif
-        assert(this->mapping_handle);
+        assert(this->handle_);
 
-        if (this->mapping_handle)
+        if (this->handle_)
         {
-            this->mapping_size = this->mapping_file.size();
+            this->size_ = this->file_.size();
 #if METRO_APP
-            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->mapping_handle, FILE_MAP_READ, 0, _size));
+            this->data_ = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->handle_, FILE_MAP_READ, 0, _size));
 #else
-            this->mapping_data = reinterpret_cast<const uint8_t*>(::MapViewOfFile(this->mapping_handle, FILE_MAP_READ, 0, 0, this->mapping_size));
+            this->data_ = reinterpret_cast<const uint8_t*>(::MapViewOfFile(this->handle_, FILE_MAP_READ, 0, 0, this->size_));
 #endif
-            assert(this->mapping_data);
+            assert(this->data_);
         }
     }
 }
 
 void ff::file_mem_mapped::close()
 {
-    if (this->mapping_data)
+    if (this->data_)
     {
-        ::UnmapViewOfFile(this->mapping_data);
-        this->mapping_data = nullptr;
-        this->mapping_size = 0;
+        ::UnmapViewOfFile(this->data_);
+        this->data_ = nullptr;
+        this->size_ = 0;
     }
 
-    this->mapping_handle.close();
+    this->handle_.close();
 }

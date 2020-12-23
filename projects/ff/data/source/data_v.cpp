@@ -8,12 +8,12 @@
 
 ff::type::data_v::data_v(std::shared_ptr<ff::data_base>&& value, ff::saved_data_type saved_data_type)
     : value(std::move(value))
-    , saved_data_type_data(saved_data_type)
+    , saved_data_type_(saved_data_type)
 {}
 
 ff::type::data_v::data_v(const std::shared_ptr<ff::data_base>& value, ff::saved_data_type saved_data_type)
     : value(value)
-    , saved_data_type_data(saved_data_type)
+    , saved_data_type_(saved_data_type)
 {}
 
 const std::shared_ptr<ff::data_base>& ff::type::data_v::get() const
@@ -23,7 +23,7 @@ const std::shared_ptr<ff::data_base>& ff::type::data_v::get() const
 
 ff::saved_data_type ff::type::data_v::saved_data_type() const
 {
-    return this->saved_data_type_data;
+    return this->saved_data_type_;
 }
 
 ff::value* ff::type::data_v::get_static_value(std::shared_ptr<ff::data_base>&& value, ff::saved_data_type)

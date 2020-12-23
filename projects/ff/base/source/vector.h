@@ -89,9 +89,9 @@ namespace ff
         using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
 
         vector() noexcept
-            : item_data(this->get_stack_items())
-            , item_cap(StackSize)
-            , item_size(0)
+            : data_(this->get_stack_items())
+            , capacity_(StackSize)
+            , size_(0)
         {}
 
         vector(size_type count, const T& value)
@@ -154,21 +154,21 @@ namespace ff
                 this->clear();
                 this->deallocate_item_data();
 
-                if (other.item_data == other.get_stack_items())
+                if (other.data_ == other.get_stack_items())
                 {
-                    ff::internal::type_helper::shift_items(this->item_data, other.item_data, other.item_size);
+                    ff::internal::type_helper::shift_items(this->data_, other.data_, other.size_);
                 }
                 else
                 {
-                    this->item_data = other.item_data;
+                    this->data_ = other.data_;
                 }
 
-                this->item_cap = other.item_cap;
-                this->item_size = other.item_size;
+                this->capacity_ = other.capacity_;
+                this->size_ = other.size_;
 
-                other.item_data = other.get_stack_items();
-                other.item_cap = StackSize;
-                other.item_size = 0;
+                other.data_ = other.get_stack_items();
+                other.capacity_ = StackSize;
+                other.size_ = 0;
             }
 
             return *this;
@@ -206,14 +206,14 @@ namespace ff
 
         const_reference at(size_type pos) const
         {
-            assert(pos < this->item_size);
-            return this->item_data[pos];
+            assert(pos < this->size_);
+            return this->data_[pos];
         }
 
         reference at(size_type pos)
         {
-            assert(pos < this->item_size);
-            return this->item_data[pos];
+            assert(pos < this->size_);
+            return this->data_[pos];
         }
 
         reference operator[](size_type pos)
@@ -228,66 +228,66 @@ namespace ff
 
         reference front()
         {
-            assert(this->item_size);
-            return this->item_data[0];
+            assert(this->size_);
+            return this->data_[0];
         }
 
         const_reference front() const
         {
-            assert(this->item_size);
-            return this->item_data[0];
+            assert(this->size_);
+            return this->data_[0];
         }
 
         reference back()
         {
-            assert(this->item_size);
-            return this->item_data[this->item_size - 1];
+            assert(this->size_);
+            return this->data_[this->size_ - 1];
         }
 
         const_reference back() const
         {
-            assert(this->item_size);
-            return this->item_data[this->item_size - 1];
+            assert(this->size_);
+            return this->data_[this->size_ - 1];
         }
 
         T* data() noexcept
         {
-            return this->item_data;
+            return this->data_;
         }
 
         const T* data() const noexcept
         {
-            return this->item_data;
+            return this->data_;
         }
 
         iterator begin() noexcept
         {
-            return iterator(this->item_data);
+            return iterator(this->data_);
         }
 
         const_iterator begin() const noexcept
         {
-            return const_iterator(this->item_data);
+            return const_iterator(this->data_);
         }
 
         const_iterator cbegin() const noexcept
         {
-            return const_iterator(this->item_data);
+            return const_iterator(this->data_);
         }
 
         iterator end() noexcept
         {
-            return iterator(this->item_data + this->item_size);
+            return iterator(this->data_ + this->size_);
         }
 
         const_iterator end() const noexcept
         {
-            return const_iterator(this->item_data + this->item_size);
+            return const_iterator(this->data_ + this->size_);
         }
 
         const_iterator cend() const noexcept
         {
-            return const_iterator(this->item_data + this->item_size);
+            return const_iterator(this->data_ + this->size_);
         }
 
         reverse_iterator rbegin() noexcept
@@ -322,17 +322,17 @@ namespace ff
 
         bool empty() const noexcept
         {
-            return this->item_size == 0;
+            return this->size_ == 0;
         }
 
         size_type size() const noexcept
         {
-            return this->item_size;
+            return this->size_;
         }
 
         size_type byte_size() const noexcept
         {
-            return this->item_size * sizeof(T);
+            return this->size_ * sizeof(T);
         }
 
         size_type max_size() const noexcept
@@ -347,28 +347,28 @@ namespace ff
 
         size_type capacity() const noexcept
         {
-            return this->item_cap;
+            return this->capacity_;
         }
 
         void shrink_to_fit()
         {
-            if (this->item_size < this->item_cap && this->item_data != this->get_stack_items())
+            if (this->size_ < this->capacity_ && this->data_ != this->get_stack_items())
             {
-                if (this->item_size == 0)
+                if (this->size_ == 0)
                 {
                     this->deallocate_item_data();
                 }
                 else
                 {
-                    size_type new_size = this->item_size;
+                    size_type new_size = this->size_;
                     size_type new_cap = StackSize;
-                    T* new_data = (new_size <= new_cap) ? this->get_stack_items() : this->allocate_item_data(this->item_size, new_cap);
-                    ff::internal::type_helper::shift_items(new_data, this->item_data, this->item_size);
+                    T* new_data = (new_size <= new_cap) ? this->get_stack_items() : this->allocate_item_data(this->size_, new_cap);
+                    ff::internal::type_helper::shift_items(new_data, this->data_, this->size_);
                     this->deallocate_item_data();
 
-                    this->item_data = new_data;
-                    this->item_cap = new_cap;
-                    this->item_size = new_size;
+                    this->data_ = new_data;
+                    this->capacity_ = new_cap;
+                    this->size_ = new_size;
                 }
             }
         }
@@ -433,11 +433,11 @@ namespace ff
 
             size_type i = first - this->cbegin();
             size_type count = last - first;
-            ff::internal::type_helper::destruct_items(this->item_data + i, count);
-            ff::internal::type_helper::shift_items(this->item_data + i, this->item_data + i + count, this->item_size - i - count);
-            this->item_size -= count;
+            ff::internal::type_helper::destruct_items(this->data_ + i, count);
+            ff::internal::type_helper::shift_items(this->data_ + i, this->data_ + i + count, this->size_ - i - count);
+            this->size_ -= count;
 
-            return iterator(this->item_data + i);
+            return iterator(this->data_ + i);
         }
 
         void push_back(const T& value)
@@ -458,19 +458,19 @@ namespace ff
 
         void pop_back()
         {
-            assert(this->item_size);
+            assert(this->size_);
             this->erase(this->cend() - 1, this->cend());
         }
 
         void resize(size_type count)
         {
-            if (count < this->item_size)
+            if (count < this->size_)
             {
                 this->erase(this->cend() - count, this->cend());
             }
-            else if (count > this->item_size)
+            else if (count > this->size_)
             {
-                size_type new_count = count - this->item_size;
+                size_type new_count = count - this->size_;
                 iterator i = this->reserve_item_data(this->cend(), new_count);
                 ff::internal::type_helper::default_construct_items(&*i, new_count);
             }
@@ -478,11 +478,11 @@ namespace ff
 
         void resize(size_type count, const value_type& value)
         {
-            if (count < this->item_size)
+            if (count < this->size_)
             {
                 this->erase(this->cend() - count, this->cend());
             }
-            else if (count > this->item_size)
+            else if (count > this->size_)
             {
                 this->insert(this->cend(), count, value);
             }
@@ -529,29 +529,29 @@ namespace ff
         iterator reserve_item_data(const_iterator pos, size_type count, size_type new_cap = 0)
         {
             difference_type pos_index = pos - this->cbegin();
-            assert(pos_index >= 0 && static_cast<size_type>(pos_index) <= this->item_size);
+            assert(pos_index >= 0 && static_cast<size_type>(pos_index) <= this->size_);
 
-            size_type new_size = this->item_size + count;
-            new_cap = std::max(new_cap, this->item_size + count);
+            size_type new_size = this->size_ + count;
+            new_cap = std::max(new_cap, this->size_ + count);
 
-            if (new_cap > this->item_cap)
+            if (new_cap > this->capacity_)
             {
                 T* new_data = this->allocate_item_data(new_cap, new_cap);
-                ff::internal::type_helper::shift_items(new_data, this->item_data, pos_index);
-                ff::internal::type_helper::shift_items(new_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
+                ff::internal::type_helper::shift_items(new_data, this->data_, pos_index);
+                ff::internal::type_helper::shift_items(new_data + pos_index + count, this->data_ + pos_index, this->size_ - pos_index);
                 this->deallocate_item_data();
 
-                this->item_data = new_data;
-                this->item_cap = new_cap;
+                this->data_ = new_data;
+                this->capacity_ = new_cap;
             }
-            else if (static_cast<size_type>(pos_index) < this->item_size)
+            else if (static_cast<size_type>(pos_index) < this->size_)
             {
-                ff::internal::type_helper::shift_items(this->item_data + pos_index + count, this->item_data + pos_index, this->item_size - pos_index);
+                ff::internal::type_helper::shift_items(this->data_ + pos_index + count, this->data_ + pos_index, this->size_ - pos_index);
             }
 
-            this->item_size = new_size;
+            this->size_ = new_size;
 
-            return iterator(this->item_data + pos_index);
+            return iterator(this->data_ + pos_index);
         }
 
         T* allocate_item_data(size_type capacity_requested, size_type& capacity)
@@ -561,19 +561,19 @@ namespace ff
 
         void deallocate_item_data()
         {
-            if (this->item_data != this->get_stack_items())
+            if (this->data_ != this->get_stack_items())
             {
-                allocator_type::deallocate(this->item_data, this->item_cap);
-                this->item_data = this->get_stack_items();
+                allocator_type::deallocate(this->data_, this->capacity_);
+                this->data_ = this->get_stack_items();
             }
 
-            this->item_cap = StackSize;
-            this->item_size = 0;
+            this->capacity_ = StackSize;
+            this->size_ = 0;
         }
 
-        T* item_data;
-        size_type item_cap;
-        size_type item_size;
+        T* data_;
+        size_type capacity_;
+        size_type size_;
     };
 }
 

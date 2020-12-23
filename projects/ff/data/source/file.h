@@ -27,8 +27,8 @@ namespace ff
         void handle(win_handle&& file_handle);
 
     private:
-        std::filesystem::path file_path;
-        win_handle file_handle;
+        std::filesystem::path path_;
+        win_handle handle_;
     };
 
     class file_read : public file_base
@@ -84,9 +84,9 @@ namespace ff
         void open();
         void close();
 
-        file_read mapping_file;
-        win_handle mapping_handle;
-        size_t mapping_size;
-        const uint8_t* mapping_data;
+        file_read file_;
+        win_handle handle_;
+        size_t size_;
+        const uint8_t* data_;
     };
 }

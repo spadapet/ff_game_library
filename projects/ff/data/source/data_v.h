@@ -25,7 +25,7 @@ namespace ff::type
 
     private:
         std::shared_ptr<ff::data_base> value;
-        ff::saved_data_type saved_data_type_data;
+        ff::saved_data_type saved_data_type_;
     };
 
     template<>

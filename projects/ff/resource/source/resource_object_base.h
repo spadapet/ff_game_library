@@ -22,7 +22,6 @@ namespace ff
         static bool save_to_cache_typed(const resource_object_base& value, ff::dict& dict, bool& allow_compress);
         static std::shared_ptr<resource_object_base> load_from_cache_typed(const ff::dict& dict);
 
-        virtual void* try_cast_resource(std::type_index type);
         virtual bool resource_load_from_source_complete();
         virtual std::vector<std::shared_ptr<resource>> resource_get_dependencies() const;
         virtual ff::dict resource_get_siblings(const std::shared_ptr<resource>& self) const;

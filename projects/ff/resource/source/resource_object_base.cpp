@@ -63,16 +63,6 @@ std::shared_ptr<ff::resource_object_base> ff::resource_object_base::load_from_ca
     return factory ? factory->load_from_cache(dict) : nullptr;
 }
 
-void* ff::resource_object_base::try_cast_resource(std::type_index type)
-{
-    if (type == typeid(ff::resource_object_base))
-    {
-        return static_cast<ff::resource_object_base*>(this);
-    }
-
-    return nullptr;
-}
-
 bool ff::resource_object_base::resource_load_from_source_complete()
 {
     return true;

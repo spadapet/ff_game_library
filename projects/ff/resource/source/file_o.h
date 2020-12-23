@@ -11,7 +11,6 @@ namespace ff::object
         file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
         const std::shared_ptr<ff::saved_data_base>& saved_data() const;
 
-        virtual void* try_cast_resource(std::type_index type) override;
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
 
     protected:

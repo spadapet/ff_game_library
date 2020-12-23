@@ -2,7 +2,7 @@
 #include "resource_object_factory_base.h"
 
 ff::resource_object_factory_base::resource_object_factory_base(std::string_view name)
-    : name_data(name)
+    : name_(name)
 {}
 
 ff::resource_object_factory_base::~resource_object_factory_base()
@@ -10,5 +10,5 @@ ff::resource_object_factory_base::~resource_object_factory_base()
 
 std::string_view ff::resource_object_factory_base::name() const
 {
-    return this->name_data;
+    return this->name_;
 }

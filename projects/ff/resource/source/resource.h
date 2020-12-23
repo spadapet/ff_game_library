@@ -17,13 +17,13 @@ namespace ff
         std::shared_ptr<resource> new_resource() const;
 
         void new_resource(const std::shared_ptr<resource>& new_value);
-        void loading_owner(void* loading_owner_data);
+        void loading_owner(void* loading_owner);
         void* loading_owner();
 
     private:
-        std::string name_data;
-        ff::value_ptr value_data;
-        std::shared_ptr<resource> new_resource_data;
-        void* loading_owner_data;
+        std::string name_;
+        ff::value_ptr value_;
+        std::shared_ptr<resource> new_resource_;
+        void* loading_owner_;
     };
 }

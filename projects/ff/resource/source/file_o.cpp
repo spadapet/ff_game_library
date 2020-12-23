@@ -15,16 +15,6 @@ const std::shared_ptr<ff::saved_data_base>& ff::object::file_o::saved_data() con
     return this->saved_data_;
 }
 
-void* ff::object::file_o::try_cast_resource(std::type_index type)
-{
-    if (type == typeid(file_o))
-    {
-        return static_cast<file_o*>(this);
-    }
-
-    return ff::resource_object_base::try_cast_resource(type);
-}
-
 bool ff::object::file_o::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
     std::filesystem::path path = (directory_path / name).replace_extension(this->file_extension);

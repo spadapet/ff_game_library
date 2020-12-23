@@ -18,7 +18,7 @@ namespace ff
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const = 0;
 
     private:
-        std::string name_data;
+        std::string name_;
     };
 
     template<class T>

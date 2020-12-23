@@ -27,8 +27,8 @@ namespace ff
         virtual std::shared_ptr<data_base> subdata(size_t offset, size_t size) const override;
 
     private:
-        const uint8_t* static_data;
-        size_t data_size;
+        const uint8_t* data_;
+        size_t size_;
     };
 
     class data_mem_mapped : public data_base
@@ -53,9 +53,9 @@ namespace ff
         virtual std::shared_ptr<data_base> subdata(size_t offset, size_t size) const override;
 
     private:
-        std::shared_ptr<file_mem_mapped> shared_file;
-        size_t data_offset;
-        size_t data_size;
+        std::shared_ptr<file_mem_mapped> file_;
+        size_t offset_;
+        size_t size_;
     };
 
     class data_vector : public data_base
@@ -79,8 +79,8 @@ namespace ff
         virtual std::shared_ptr<data_base> subdata(size_t offset, size_t size) const override;
 
     private:
-        std::shared_ptr<const std::vector<uint8_t>> shared_vector;
-        size_t data_offset;
-        size_t data_size;
+        std::shared_ptr<const std::vector<uint8_t>> vector_;
+        size_t offset_;
+        size_t size_;
     };
 }

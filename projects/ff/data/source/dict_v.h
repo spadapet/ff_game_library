@@ -18,7 +18,7 @@ namespace ff::type
 
     private:
         ff::dict value;
-        bool save_compressed_data;
+        bool save_compressed_;
     };
 
     template<>

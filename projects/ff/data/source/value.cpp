@@ -7,7 +7,7 @@ static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_
 static std::unordered_map<uint32_t, ff::value_type*> id_to_value_type;
 
 ff::value::value()
-    : type_data(nullptr)
+    : type_(nullptr)
     , refs(0)
 {}
 
@@ -92,7 +92,7 @@ void ff::value::debug_print_tree() const
 
 const ff::value_type* ff::value::type() const
 {
-    return this->type_data;
+    return this->type_;
 }
 
 bool ff::value::equals(const value* other) const

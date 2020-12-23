@@ -27,7 +27,7 @@ namespace ff
                 val->refs.fetch_add(1);
             }
 
-            val->type_data = ff::value::get_type(typeid(value_derived_type));
+            val->type_ = ff::value::get_type(typeid(value_derived_type));
             return val;
         }
 
@@ -36,7 +36,7 @@ namespace ff
         {
             using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
             value* val = value_derived_type::get_static_default_value();
-            val->type_data = ff::value::get_type(typeid(value_derived_type));
+            val->type_ = ff::value::get_type(typeid(value_derived_type));
             return val;
         }
 
@@ -109,7 +109,7 @@ namespace ff
 
         const value_type* type() const;
 
-        const value_type* type_data;
+        const value_type* type_;
         mutable std::atomic_int refs;
     };
 }
