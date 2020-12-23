@@ -13,6 +13,7 @@
 #include "source/filesystem.h"
 #include "source/fixed_v.h"
 #include "source/float_v.h"
+#include "source/init.h"
 #include "source/int_v.h"
 #include "source/json_persist.h"
 #include "source/null_v.h"

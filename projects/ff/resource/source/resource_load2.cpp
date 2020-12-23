@@ -213,7 +213,7 @@ protected:
     }
 };
 
-class epand_values_and_templates_transformer : public transformer_base
+class expand_values_and_templates_transformer : public transformer_base
 {
 public:
     using transformer_base::transformer_base;
@@ -619,7 +619,7 @@ protected:
                 return nullptr;
             }
 
-            value = ff::value::create<ff::dict>(std::move(dict), allow_compress && this->is_root());
+            value = ff::value::create<ff::dict>(std::move(dict), allow_compress && this->path_depth() == 1);
             if (!value)
             {
                 this->add_error("Failed to save resource");
@@ -637,7 +637,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
     ::transformer_context context(base_path, debug);
     ::expand_file_paths_transformer t1(context);
-    ::epand_values_and_templates_transformer t2(context);
+    ::expand_values_and_templates_transformer t2(context);
     ::start_load_objects_from_dict_transformer t3(context);
     ::finish_load_objects_from_dict_transformer t4(context);
     ::extract_resource_siblings_transformer t5(context);

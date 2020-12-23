@@ -143,7 +143,7 @@ ff::file_read& ff::file_read::operator=(const file_read& other)
 size_t ff::file_read::read(void* data, size_t size)
 {
     DWORD read = 0;
-    if (size && ::ReadFile(this->handle(), data, static_cast<DWORD>(size), &read, nullptr))
+    if (*this && size && ::ReadFile(this->handle(), data, static_cast<DWORD>(size), &read, nullptr))
     {
         return static_cast<size_t>(read);
     }
@@ -167,7 +167,7 @@ ff::file_write::file_write(const std::filesystem::path& path, bool append)
     assert(file_handle);
     this->handle(std::move(file_handle));
 
-    if (append && this->handle())
+    if (*this && append)
     {
         this->pos(this->size());
     }
@@ -186,7 +186,7 @@ ff::file_write& ff::file_write::operator=(file_write&& other) noexcept
 size_t ff::file_write::write(const void* data, size_t size)
 {
     DWORD written = 0;
-    if (size && ::WriteFile(this->handle(), data, static_cast<DWORD>(size), &written, nullptr))
+    if (*this && size && ::WriteFile(this->handle(), data, static_cast<DWORD>(size), &written, nullptr))
     {
         return static_cast<size_t>(written);
     }

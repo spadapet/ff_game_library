@@ -2,12 +2,10 @@
 #include "resource_object_base.h"
 #include "resource_object_factory_base.h"
 #include "resource_load.h"
-#include "value_register.h"
 
 static std::vector<std::unique_ptr<ff::resource_object_factory_base>> factories;
 static std::unordered_map<std::string_view, const ff::resource_object_factory_base*> name_to_factory;
 static std::unordered_map<std::type_index, const ff::resource_object_factory_base*> type_to_factory;
-static ff::internal::value_register register_values;
 
 ff::resource_object_base::~resource_object_base()
 {}
@@ -65,6 +63,16 @@ std::shared_ptr<ff::resource_object_base> ff::resource_object_base::load_from_ca
     return factory ? factory->load_from_cache(dict) : nullptr;
 }
 
+void* ff::resource_object_base::try_cast_resource(std::type_index type)
+{
+    if (type == typeid(ff::resource_object_base))
+    {
+        return static_cast<ff::resource_object_base*>(this);
+    }
+
+    return nullptr;
+}
+
 bool ff::resource_object_base::resource_load_from_source_complete()
 {
     return true;
@@ -75,22 +83,12 @@ std::vector<std::shared_ptr<ff::resource>> ff::resource_object_base::resource_ge
     return std::vector<std::shared_ptr<ff::resource>>();
 }
 
-ff::dict ff::resource_object_base::resource_get_siblings(const std::shared_ptr<resource>& parent) const
+ff::dict ff::resource_object_base::resource_get_siblings(const std::shared_ptr<resource>& self) const
 {
     return ff::dict();
 }
 
-bool ff::resource_object_base::resource_can_save_to_file() const
-{
-    return false;
-}
-
-std::string ff::resource_object_base::resource_get_file_extension() const
-{
-    return std::string();
-}
-
-bool ff::resource_object_base::resource_save_to_file(std::string_view path) const
+bool ff::resource_object_base::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
     return false;
 }

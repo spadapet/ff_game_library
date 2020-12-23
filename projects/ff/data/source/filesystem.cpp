@@ -25,7 +25,7 @@ static std::filesystem::path append_ff_game_engine_directory(std::filesystem::pa
 
     std::error_code ec;
     bool status = std::filesystem::create_directories(path, ec);
-    assert(status);
+    assert(status || !ec.value());
 
     return path;
 }
@@ -91,4 +91,11 @@ bool ff::filesystem::read_text_file(const std::filesystem::path& path, std::stri
     // assume ACP
     text = ff::string::from_acp(std::string_view(reinterpret_cast<const char*>(mm.data()), mm.size()));
     return true;
+}
+
+bool ff::filesystem::write_text_file(const std::filesystem::path& path, std::string_view text)
+{
+    std::array<uint8_t, 3> bom = { 0xEF, 0xBB, 0xBF };
+    ff::file_write file(path);
+    return file && file.write(bom.data(), bom.size()) && file.write(text.data(), text.size());
 }

@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "source/file_o.h"
+#include "source/init.h"
 #include "source/resource.h"
 #include "source/resource_load_context.h"
 #include "source/resource_object_base.h"

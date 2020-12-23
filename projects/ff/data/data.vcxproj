@@ -40,7 +40,7 @@
     <ClCompile Include="source\uuid_v.cpp" />
     <ClCompile Include="source\value.cpp" />
     <ClCompile Include="source\value_allocator.cpp" />
-    <ClCompile Include="source\value_register_default.cpp" />
+    <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\value_type.cpp" />
     <ClCompile Include="source\value_vector.cpp" />
   </ItemGroup>
@@ -75,7 +75,7 @@
     <ClInclude Include="source\value.h" />
     <ClInclude Include="source\value_allocator.h" />
     <ClInclude Include="source\value_ptr.h" />
-    <ClInclude Include="source\value_register_default.h" />
+    <ClInclude Include="source\init.h" />
     <ClInclude Include="source\value_traits.h" />
     <ClInclude Include="source\value_type.h" />
     <ClInclude Include="source\value_type_base.h" />

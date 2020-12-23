@@ -17,6 +17,7 @@ namespace ff
         dict_visitor_base();
 
         std::string path() const;
+        size_t path_depth() const;
         void push_path(std::string_view name);
         void pop_path();
         bool is_root() const;

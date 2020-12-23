@@ -20,4 +20,16 @@ namespace ff
     private:
         std::string name_data;
     };
+
+    template<class T>
+    class resource_object_factory : public resource_object_factory_base
+    {
+    public:
+        using resource_object_factory_base::resource_object_factory_base;
+
+        virtual std::type_index type_index() const override
+        {
+            return typeid(T);
+        }
+    };
 }

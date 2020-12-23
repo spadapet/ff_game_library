@@ -18,7 +18,7 @@
     <ClCompile Include="source\resource_load.cpp" />
     <ClCompile Include="source\resource_load2.cpp" />
     <ClCompile Include="source\resource_v.cpp" />
-    <ClCompile Include="source\value_register.cpp" />
+    <ClCompile Include="source\init.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -31,7 +31,7 @@
     <ClInclude Include="source\resource.h" />
     <ClInclude Include="source\resource_load.h" />
     <ClInclude Include="source\resource_v.h" />
-    <ClInclude Include="source\value_register.h" />
+    <ClInclude Include="source\init.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

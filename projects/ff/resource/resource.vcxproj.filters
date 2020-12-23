@@ -17,9 +17,6 @@
     <ClCompile Include="source\resource_v.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\value_register.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\file_o.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -27,6 +24,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\resource_load2.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,9 +48,6 @@
     <ClInclude Include="source\resource_v.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\value_register.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\file_o.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -58,6 +55,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\resource_load_context.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

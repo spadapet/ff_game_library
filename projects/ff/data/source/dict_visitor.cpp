@@ -60,6 +60,13 @@ std::string ff::dict_visitor_base::path() const
     return str.str();
 }
 
+size_t ff::dict_visitor_base::path_depth() const
+{
+    std::lock_guard lock(this->mutex);
+    auto i = this->thread_to_path.find(::GetCurrentThreadId());
+    return (i != this->thread_to_path.cend()) ? i->second.size() : 0;
+}
+
 void ff::dict_visitor_base::push_path(std::string_view name)
 {
     std::lock_guard lock(this->mutex);
@@ -85,8 +92,7 @@ void ff::dict_visitor_base::pop_path()
 
 bool ff::dict_visitor_base::is_root() const
 {
-    std::lock_guard lock(this->mutex);
-    return this->thread_to_path.find(::GetCurrentThreadId()) == this->thread_to_path.cend();
+    return this->path_depth() == 0;
 }
 
 ff::value_ptr ff::dict_visitor_base::transform_root_value(ff::value_ptr value)

@@ -1,12 +1,10 @@
 #include "pch.h"
 #include "persist.h"
 #include "value.h"
-#include "value_register_default.h"
 
 static std::vector<std::unique_ptr<ff::value_type>> all_value_types;
 static std::unordered_map<std::type_index, ff::value_type*> type_index_to_value_type;
 static std::unordered_map<uint32_t, ff::value_type*> id_to_value_type;
-static ff::internal::value_register_default register_defaults;
 
 ff::value::value()
     : type_data(nullptr)
