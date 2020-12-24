@@ -241,7 +241,7 @@ ff::dict::const_iterator ff::dict::cend() const
 
 void ff::dict::print(std::ostream& output) const
 {
-    ff::value::create<dict>(dict(*this))->print(output);
+    ff::value::create<dict>(dict(*this))->print_tree(output);
 }
 
 void ff::dict::debug_print() const

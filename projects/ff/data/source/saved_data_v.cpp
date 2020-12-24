@@ -51,7 +51,7 @@ ff::value_ptr ff::type::saved_data_type::try_convert_to(const value* val, std::t
     if (type == typeid(ff::type::dict_v))
     {
         auto& saved_data = val->get<ff::saved_data_base>();
-        if (saved_data && ff::flags::has_all(saved_data->type(), ff::saved_data_type::dict))
+        if (saved_data && ff::flags::has(saved_data->type(), ff::saved_data_type::dict))
         {
             auto reader = saved_data->loaded_reader();
             if (reader)

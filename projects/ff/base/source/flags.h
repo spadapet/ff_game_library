@@ -15,7 +15,7 @@ namespace ff::flags
     }
 
     template<typename T>
-    bool has_all(T state, T check)
+    bool has(T state, T check)
     {
         typedef std::underlying_type_t<T> TI;
         return (static_cast<TI>(state) & static_cast<TI>(check)) == static_cast<TI>(check);

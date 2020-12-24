@@ -22,8 +22,8 @@ namespace resource_test
             std::string test_string2 = "This is a test string2 👌";
             std::string json_source =
                 "{ \n"
-                "    'test_file1': { 'res:type': 'file', 'file': 'file:test1.txt', 'compress': 'true' },\n"
-                "    'test_file2': { 'res:type': 'file', 'file': 'file:test2.txt', 'compress': 'false' }\n"
+                "    'test_file1': { 'res:type': 'file', 'file': 'file:test1.txt', 'compress': true },\n"
+                "    'test_file2': { 'res:type': 'file', 'file': 'file:test2.txt', 'compress': false }\n"
                 "}\n";
             std::replace(json_source.begin(), json_source.end(), '\'', '\"');
 
@@ -35,10 +35,13 @@ namespace resource_test
             Assert::IsTrue(result.status);
             Assert::IsTrue(result.errors.empty());
 
-            std::ostringstream dict_printed;
-            result.dict.print(dict_printed);
+            result.status = result.dict.save(ff::file_writer(pack_path));
+            Assert::IsTrue(result.status);
 
-            Logger::WriteMessage(dict_printed.str().c_str());
+            ff::dict loaded_dict;
+            result.status = ff::dict::load(ff::file_reader(pack_path), loaded_dict);
+
+            loaded_dict.debug_print();
         }
     };
 }

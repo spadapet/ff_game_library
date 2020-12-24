@@ -49,7 +49,7 @@ ff::value_ptr ff::type::data_type::try_convert_to(const value* val, std::type_in
         auto& data = val->get<ff::data_base>();
         ff::saved_data_type saved_data_type = static_cast<const data_v*>(val)->saved_data_type();
 
-        if (data && data->size() && ff::flags::has_all(saved_data_type, ff::saved_data_type::zlib_compressed))
+        if (data && data->size() && ff::flags::has(saved_data_type, ff::saved_data_type::zlib_compressed))
         {
             auto buffer_compressed = std::make_shared<std::vector<uint8_t>>();
             buffer_compressed->reserve(data->size());

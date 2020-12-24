@@ -228,11 +228,18 @@ ff::value_ptr ff::dict_visitor_base::transform_vector(const std::vector<ff::valu
 ff::value_ptr ff::dict_visitor_base::transform_value(ff::value_ptr value)
 {
     ff::value_ptr output_value = value;
-    ff::value_ptr dict_value = value->try_convert<ff::dict>();
 
-    if (dict_value)
+    if (value->is_type<ff::dict>())
     {
-        output_value = this->transform_dict(dict_value->get<ff::dict>());
+        output_value = this->transform_dict(value->get<ff::dict>());
+    }
+    else if (value->is_type<ff::saved_data_base>() && ff::flags::has(value->get<ff::saved_data_base>()->type(), ff::saved_data_type::dict))
+    {
+        ff::value_ptr dict_value = value->try_convert<ff::dict>();
+        if (dict_value)
+        {
+            output_value = this->transform_dict(dict_value->get<ff::dict>());
+        }
     }
     else if (value->is_type<ff::value_vector>())
     {

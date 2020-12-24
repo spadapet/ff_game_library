@@ -15,7 +15,7 @@ std::shared_ptr<ff::reader_base> ff::saved_data_base::loaded_reader() const
 
 std::shared_ptr<ff::data_base> ff::saved_data_base::loaded_data() const
 {
-    if (ff::flags::has_all(this->type(), saved_data_type::zlib_compressed))
+    if (ff::flags::has(this->type(), saved_data_type::zlib_compressed))
     {
         auto write_buffer = std::make_shared<std::vector<uint8_t>>();
         write_buffer->reserve(this->loaded_size());

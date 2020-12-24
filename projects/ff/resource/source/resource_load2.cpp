@@ -508,8 +508,6 @@ private:
             else
             {
                 finishing_info info;
-                info.thread_id = ::GetCurrentThreadId();
-                info.event_handle = ff::create_event();
                 this->obj_to_currently_finishing.try_emplace(obj, std::move(info));
             }
         }
@@ -551,6 +549,11 @@ private:
 
     struct finishing_info
     {
+        finishing_info()
+            : thread_id(::GetCurrentThreadId())
+            , event_handle(ff::create_event())
+        {}
+
         DWORD thread_id;
         ff::win_handle event_handle;
     };
