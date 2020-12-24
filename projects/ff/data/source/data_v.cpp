@@ -57,13 +57,13 @@ ff::value_ptr ff::type::data_type::try_convert_to(const value* val, std::type_in
             if (ff::compression::compress(ff::data_reader(data), data->size(), ff::data_writer(buffer_compressed)))
             {
                 auto saved_data = std::make_shared<ff::saved_data_static>(std::make_shared<ff::data_vector>(buffer_compressed), data->size(), saved_data_type);
-                return ff::value::create<ff::saved_data_base>(std::move(saved_data));
+                return ff::value::create<ff::saved_data_base>(saved_data);
             }
         }
         else
         {
             auto saved_data = data ? std::make_shared<ff::saved_data_static>(data, data->size(), ff::flags::clear(saved_data_type, ff::saved_data_type::zlib_compressed)) : nullptr;
-            return ff::value::create<ff::saved_data_base>(std::move(saved_data));
+            return ff::value::create<ff::saved_data_base>(saved_data);
         }
     }
 

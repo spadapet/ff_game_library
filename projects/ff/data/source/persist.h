@@ -33,7 +33,7 @@ namespace ff
     struct persist;
 
     template<class T>
-    struct persist<T, std::enable_if_t<std::is_trivially_copyable_v<T>>>
+    struct persist<T, std::enable_if_t<std::is_trivially_copyable_v<T> && !std::is_base_of_v<std::string_view, T> && !std::is_base_of_v<std::wstring_view, T>>>
     {
         static bool load(reader_base& reader, T& data)
         {
@@ -84,6 +84,16 @@ namespace ff
         }
 
         static bool save(writer_base& writer, const std::basic_string<Elem, Traits, Alloc>& data)
+        {
+            size_t length = data.length();
+            return ff::save(writer, length) && ff::save_bytes(writer, data.data(), length * sizeof(Elem));
+        }
+    };
+
+    template<class Elem, class Traits>
+    struct persist<std::basic_string_view<Elem, Traits>>
+    {
+        static bool save(writer_base& writer, const std::basic_string_view<Elem, Traits>& data)
         {
             size_t length = data.length();
             return ff::save(writer, length) && ff::save_bytes(writer, data.data(), length * sizeof(Elem));

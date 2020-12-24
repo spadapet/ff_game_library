@@ -332,7 +332,7 @@ protected:
                     ff::value::create<nullptr_t>());
                 res_val = this->context().set_reference(res_val);
 
-                value = ff::value::create<ff::resource>(std::move(res_val));
+                value = ff::value::create<ff::resource>(res_val);
             }
         }
 
@@ -442,7 +442,7 @@ protected:
 
                     if (obj)
                     {
-                        output_value = ff::value::create<ff::resource_object_base>(std::move(obj));
+                        output_value = ff::value::create<ff::resource_object_base>(obj);
                     }
                     else
                     {

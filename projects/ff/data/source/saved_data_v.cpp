@@ -44,7 +44,7 @@ ff::value_ptr ff::type::saved_data_type::try_convert_to(const value* val, std::t
         if (saved_data)
         {
             auto data = saved_data->loaded_data();
-            return ff::value::create<ff::data_base>(std::move(data), saved_data->type());
+            return ff::value::create<ff::data_base>(data, saved_data->type());
         }
     }
 
@@ -83,7 +83,7 @@ ff::value_ptr ff::type::saved_data_type::load(reader_base& reader) const
             auto saved_data = reader.saved_data(start_pos, saved_size, loaded_size, type);
             if (saved_data)
             {
-                return ff::value::create<ff::saved_data_base>(std::move(saved_data));
+                return ff::value::create<ff::saved_data_base>(saved_data);
             }
         }
     }
@@ -136,8 +136,8 @@ void ff::type::saved_data_type::print(const value* val, std::ostream& output) co
             << " -> "
             << loaded_size
             << " ("
-            << std::setprecision(1)
-            << (loaded_size_d - saved_size_d) * 100.0 / loaded_size_d << "%)>";
+            << std::setprecision(4)
+            << saved_size_d * 100.0 / loaded_size_d << "%)>";
     }
     else
     {

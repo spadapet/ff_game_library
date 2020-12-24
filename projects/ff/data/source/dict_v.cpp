@@ -45,7 +45,7 @@ ff::value_ptr ff::type::dict_type::try_convert_to(const value* val, std::type_in
         {
             auto data = std::make_shared<ff::data_vector>(buffer);
             ff::saved_data_type data_type = save_compressed ? ff::flags::combine(ff::saved_data_type::dict, ff::saved_data_type::zlib_compressed) : ff::saved_data_type::dict;
-            return ff::value::create<ff::data_base>(std::move(data), data_type);
+            return ff::value::create<ff::data_base>(data, data_type);
         }
     }
     else if (type == typeid(ff::type::saved_data_v))
