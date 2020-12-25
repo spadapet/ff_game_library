@@ -40,8 +40,11 @@ namespace resource_test
 
             ff::dict loaded_dict;
             result.status = ff::dict::load(ff::file_reader(pack_path), loaded_dict);
-
-            loaded_dict.debug_print();
+            Assert::IsTrue(result.status);
+            Assert::AreEqual<size_t>(3, loaded_dict.size());
+            Assert::IsTrue(loaded_dict.get("test_file1") != nullptr);
+            Assert::IsTrue(loaded_dict.get("test_file2") != nullptr);
+            Assert::IsTrue(loaded_dict.get(ff::internal::RES_FILES) != nullptr);
         }
     };
 }

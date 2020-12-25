@@ -2,6 +2,8 @@
 
 namespace ff
 {
+    class resource_object_loader;
+
     class resource
     {
     public:
@@ -17,13 +19,13 @@ namespace ff
         std::shared_ptr<resource> new_resource() const;
 
         void new_resource(const std::shared_ptr<resource>& new_value);
-        void loading_owner(void* loading_owner);
-        void* loading_owner();
+        void loading_owner(resource_object_loader* loading_owner);
+        resource_object_loader* loading_owner();
 
     private:
         std::string name_;
         ff::value_ptr value_;
         std::shared_ptr<resource> new_resource_;
-        void* loading_owner_;
+        resource_object_loader* loading_owner_;
     };
 }

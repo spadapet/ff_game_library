@@ -8,9 +8,6 @@
     <ClCompile Include="source\resource.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\resource_load_context.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\resource_object_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -20,13 +17,22 @@
     <ClCompile Include="source\resource_object_v.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\resource_persist.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\resource_v.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\value_register.cpp">
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_load.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_load2.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_objects.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_values.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,13 +57,25 @@
     <ClInclude Include="source\resource_object_v.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\resource_persist.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\resource_v.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\value_register.h">
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_load.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_object_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_objects.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_value_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_values.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

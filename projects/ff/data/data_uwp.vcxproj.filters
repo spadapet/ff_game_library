@@ -71,9 +71,6 @@
     <ClCompile Include="source\value_allocator.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\value_register_default.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\value_type.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -84,6 +81,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -167,9 +167,6 @@
     <ClInclude Include="source\value_ptr.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\value_register_default.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\value_traits.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -190,6 +187,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\filesystem.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

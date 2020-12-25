@@ -12,27 +12,33 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\file_o.cpp" />
+    <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\resource.cpp" />
-    <ClCompile Include="source\resource_load_context.cpp" />
+    <ClCompile Include="source\resource_load.cpp" />
+    <ClCompile Include="source\resource_load2.cpp" />
+    <ClCompile Include="source\resource_objects.cpp" />
     <ClCompile Include="source\resource_object_base.cpp" />
     <ClCompile Include="source\resource_object_factory_base.cpp" />
     <ClCompile Include="source\resource_object_v.cpp" />
-    <ClCompile Include="source\resource_persist.cpp" />
     <ClCompile Include="source\resource_v.cpp" />
-    <ClCompile Include="source\value_register.cpp" />
+    <ClCompile Include="source\resource_values.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource_api.h" />
     <ClInclude Include="source\file_o.h" />
+    <ClInclude Include="source\init.h" />
     <ClInclude Include="source\resource.h" />
+    <ClInclude Include="source\resource_load.h" />
     <ClInclude Include="source\resource_load_context.h" />
+    <ClInclude Include="source\resource_objects.h" />
     <ClInclude Include="source\resource_object_base.h" />
     <ClInclude Include="source\resource_object_factory_base.h" />
+    <ClInclude Include="source\resource_object_provider.h" />
     <ClInclude Include="source\resource_object_v.h" />
-    <ClInclude Include="source\resource_persist.h" />
     <ClInclude Include="source\resource_v.h" />
-    <ClInclude Include="source\value_register.h" />
+    <ClInclude Include="source\resource_values.h" />
+    <ClInclude Include="source\resource_value_provider.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

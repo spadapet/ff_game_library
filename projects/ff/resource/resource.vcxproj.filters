@@ -29,6 +29,12 @@
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\resource_objects.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_values.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -58,6 +64,18 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_object_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_value_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_objects.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_values.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

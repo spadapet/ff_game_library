@@ -59,14 +59,14 @@ void ff::resource::new_resource(const std::shared_ptr<resource>& new_value)
     this->loading_owner_ = nullptr;
 }
 
-void ff::resource::loading_owner(void* loading_owner_)
+void ff::resource::loading_owner(resource_object_loader* loading_owner_)
 {
     std::lock_guard lock(::get_static_mutex());
     assert(!this->loading_owner_ && loading_owner_);
     this->loading_owner_ = loading_owner_;
 }
 
-void* ff::resource::loading_owner()
+ff::resource_object_loader* ff::resource::loading_owner()
 {
     std::lock_guard lock(::get_static_mutex());
     return this->loading_owner_;

@@ -136,7 +136,7 @@ void ff::type::saved_data_type::print(const value* val, std::ostream& output) co
             << " -> "
             << loaded_size
             << " ("
-            << std::setprecision(4)
+            << std::setprecision(3)
             << saved_size_d * 100.0 / loaded_size_d << "%)>";
     }
     else

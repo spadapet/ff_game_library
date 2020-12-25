@@ -53,7 +53,7 @@ std::filesystem::path ff::filesystem::user_directory_path()
 std::filesystem::path ff::filesystem::to_lower(const std::filesystem::path& path)
 {
     std::wstring wstr = path.native();
-    ::CharLowerBuff(wstr.data(), static_cast<DWORD>(wstr.size()));
+    ::_wcslwr_s(wstr.data(), static_cast<DWORD>(wstr.size()));
     return std::filesystem::path(wstr);
 }
 
