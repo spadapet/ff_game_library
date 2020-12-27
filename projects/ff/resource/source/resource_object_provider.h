@@ -19,5 +19,6 @@ namespace ff
         virtual ~resource_object_loader() = 0;
 
         virtual std::shared_ptr<ff::resource> flush_resource(const std::shared_ptr<ff::resource>& value) = 0;
+        virtual void flush_all_resources() = 0;
     };
 }

@@ -23,6 +23,7 @@ namespace ff
         thread_pool& operator=(thread_pool&& other) noexcept = delete;
         thread_pool& operator=(const thread_pool& other) = delete;
 
+        static thread_pool* current();
         static thread_pool* global();
 
         void add_thread(func_type&& func);

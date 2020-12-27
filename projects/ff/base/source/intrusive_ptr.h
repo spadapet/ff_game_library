@@ -113,13 +113,11 @@ namespace ff
 
         T& operator*() const
         {
-            assert(this->value);
             return *this->value;
         }
 
         T* operator->() const
         {
-            assert(this->value);
             return this->value;
         }
 

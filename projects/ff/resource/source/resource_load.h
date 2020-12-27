@@ -2,11 +2,8 @@
 
 namespace ff::internal
 {
-    extern std::string_view RES_BASE;
-    extern std::string_view RES_DEBUG;
     extern std::string_view RES_FILES;
     extern std::string_view RES_IMPORT;
-    extern std::string_view RES_LOAD_LISTENER;
     extern std::string_view RES_TEMPLATE;
     extern std::string_view RES_TYPE;
     extern std::string_view RES_VALUES;

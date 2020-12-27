@@ -7,6 +7,8 @@ namespace resource_test
     public:
         TEST_METHOD(file_persist)
         {
+            ff::thread_pool thread_pool;
+
             std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "resource_persist_test";
             ff::at_scope cleanup([&temp_path]()
                 {
@@ -45,6 +47,35 @@ namespace resource_test
             Assert::IsTrue(loaded_dict.get("test_file1") != nullptr);
             Assert::IsTrue(loaded_dict.get("test_file2") != nullptr);
             Assert::IsTrue(loaded_dict.get(ff::internal::RES_FILES) != nullptr);
+
+            const ff::resource_object_factory_base* factory = ff::object::resource_objects::factory();
+            Assert::IsNotNull(factory);
+
+            std::shared_ptr<ff::resource_object_base> obj_base = factory->load_from_cache(loaded_dict);
+            Assert::IsNotNull(obj_base.get());
+
+            auto res_obj = std::dynamic_pointer_cast<ff::object::resource_objects>(obj_base);
+            Assert::IsTrue(res_obj && res_obj->resource_object_names().size() == 2);
+
+            std::shared_ptr<ff::resource> res1 = res_obj->get_resource_object("test_file1");
+            std::shared_ptr<ff::resource> res2 = res_obj->get_resource_object("test_file2");
+            Assert::IsTrue(res1 && res1->name() == "test_file1" && res1->value()->is_type<nullptr_t>());
+            Assert::IsTrue(res2 && res2->name() == "test_file2" && res2->value()->is_type<nullptr_t>());
+
+            res_obj->flush_all_resources();
+            res1 = res1->new_resource();
+            res2 = res2->new_resource();
+
+            Assert::IsTrue(res1 && res1->name() == "test_file1" && res1->value()->is_type<ff::resource_object_base>());
+            Assert::IsTrue(res2 && res2->name() == "test_file2" && res2->value()->is_type<ff::resource_object_base>());
+
+            auto res_file1 = std::dynamic_pointer_cast<ff::object::file_o>(res1->value()->get<ff::resource_object_base>());
+            auto res_file2 = std::dynamic_pointer_cast<ff::object::file_o>(res2->value()->get<ff::resource_object_base>());
+
+            std::shared_ptr<ff::data_base> data1 = res_file1 && res_file1->saved_data() ? res_file1->saved_data()->loaded_data() : nullptr;
+            std::shared_ptr<ff::data_base> data2 = res_file2 && res_file2->saved_data() ? res_file2->saved_data()->loaded_data() : nullptr;
+            Assert::IsTrue(data1 && data1->size() == test_string1.size() + 3 && !std::memcmp(data1->data() + 3, test_string1.data(), test_string1.size()));
+            Assert::IsTrue(data2 && data2->size() == test_string2.size() + 3 && !std::memcmp(data2->data() + 3, test_string2.data(), test_string2.size()));
         }
     };
 }

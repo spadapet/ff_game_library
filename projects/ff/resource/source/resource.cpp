@@ -68,6 +68,6 @@ void ff::resource::loading_owner(resource_object_loader* loading_owner_)
 
 ff::resource_object_loader* ff::resource::loading_owner()
 {
-    std::lock_guard lock(::get_static_mutex());
+    //std::lock_guard lock(::get_static_mutex());
     return this->loading_owner_;
 }

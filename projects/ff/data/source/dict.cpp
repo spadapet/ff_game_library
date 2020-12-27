@@ -85,10 +85,10 @@ void ff::dict::set(const dict& other, bool merge_child_dicts)
     for (const auto& i : other)
     {
         value_ptr new_val = i.second;
-        value_ptr new_dict = merge_child_dicts ? new_val->try_convert<dict>() : nullptr;
+        value_ptr new_dict = merge_child_dicts ? ff::type::try_get_dict_from_data(new_val) : nullptr;
         if (new_dict)
         {
-            value_ptr old_dict = this->get(i.first)->try_convert<dict>();
+            value_ptr old_dict = ff::type::try_get_dict_from_data(this->get(i.first));
             if (old_dict)
             {
                 dict combined_dict = old_dict->get<dict>();
@@ -126,38 +126,50 @@ std::vector<std::string_view> ff::dict::child_names() const
     return names;
 }
 
-void ff::dict::load_child_dicts()
+bool ff::dict::load_child_dicts()
 {
-    for (const auto& i : *this)
+    bool changed = false;
+
+    for (auto& i : *this)
     {
         value_ptr val = i.second;
         if (val->is_type<ff::value_vector>())
         {
+            bool changed_vector = false;
             ff::value_vector values = val->get<ff::value_vector>();
             for (size_t h = 0; h < values.size(); h++)
             {
-                value_ptr dict_val = values[h]->try_convert<dict>();
+                value_ptr dict_val = ff::type::try_get_dict_from_data(values[h]);
                 if (dict_val)
                 {
                     dict new_dict = dict_val->get<dict>();
                     new_dict.load_child_dicts();
                     values[h] = value::create<dict>(std::move(new_dict));
+                    changed_vector = true;
                 }
             }
 
-            this->set(i.first, value::create<ff::value_vector>(std::move(values)));
+            if (changed_vector)
+            {
+                i.second = value::create<ff::value_vector>(std::move(values));
+                changed = true;
+            }
         }
         else
         {
-            value_ptr dict_val = val->try_convert<dict>();
+            value_ptr dict_val = ff::type::try_get_dict_from_data(val);
             if (dict_val)
             {
                 dict new_dict = dict_val->get<dict>();
                 new_dict.load_child_dicts();
-                this->set(i.first, value::create<dict>(std::move(new_dict)));
+
+                i.second = value::create<dict>(std::move(new_dict));
+                changed = true;
             }
         }
     }
+
+    return changed;
 }
 
 bool ff::dict::save(writer_base& writer) const
@@ -249,7 +261,7 @@ void ff::dict::debug_print() const
 #ifdef _DEBUG
     std::ostringstream output;
     this->print(output);
-    ::OutputDebugString(ff::string::to_wstring(output.str()).c_str());
+    ff::log::write_debug(output.str());
 #endif
 }
 

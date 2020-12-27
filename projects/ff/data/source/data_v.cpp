@@ -2,6 +2,8 @@
 #include "compression.h"
 #include "data.h"
 #include "data_v.h"
+#include "dict.h"
+#include "dict_v.h"
 #include "saved_data.h"
 #include "saved_data_v.h"
 #include "stream.h"
@@ -64,6 +66,21 @@ ff::value_ptr ff::type::data_type::try_convert_to(const value* val, std::type_in
         {
             auto saved_data = data ? std::make_shared<ff::saved_data_static>(data, data->size(), ff::flags::clear(saved_data_type, ff::saved_data_type::zlib_compressed)) : nullptr;
             return ff::value::create<ff::saved_data_base>(saved_data);
+        }
+    }
+
+    if (type == typeid(ff::type::dict_v))
+    {
+        auto& data = val->get<ff::data_base>();
+        ff::saved_data_type saved_data_type = static_cast<const data_v*>(val)->saved_data_type();
+
+        if (data && ff::flags::has(saved_data_type, ff::saved_data_type::dict))
+        {
+            ff::dict dict;
+            if (ff::dict::load(ff::data_reader(data), dict))
+            {
+                return ff::value::create<ff::dict>(std::move(dict));
+            }
         }
     }
 

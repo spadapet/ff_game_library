@@ -22,7 +22,7 @@ void ff::init_resource()
             // Resource objects
 
             ff::resource_object_base::register_factory<ff::object::file_factory>("file");
-            ff::resource_object_base::register_factory<ff::object::resource_objects_factory>("resource_objects");
+            ff::resource_object_base::register_factory<ff::object::resource_objects_factory>(ff::internal::RES_FACTORY_NAME);
             ff::resource_object_base::register_factory<ff::object::resource_values_factory>("resource_values");
         }
     } init;

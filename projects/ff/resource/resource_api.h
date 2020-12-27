@@ -12,4 +12,5 @@
 #include "source/resource_object_v.h"
 #include "source/resource_objects.h"
 #include "source/resource_value_provider.h"
+#include "source/resource_values.h"
 #include "source/resource_v.h"

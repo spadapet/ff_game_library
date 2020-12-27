@@ -82,3 +82,15 @@ bool ff::type::dict_type::save(const value* val, writer_base& writer) const
 {
     return val->try_convert<ff::saved_data_base>()->save_typed(writer);
 }
+
+ff::value_ptr ff::type::try_get_dict_from_data(const value* value)
+{
+    if (value->is_type<ff::dict>() ||
+        value->is_type<ff::data_base>() ||
+        value->is_type<ff::saved_data_base>())
+    {
+        return value->try_convert<ff::dict>();
+    }
+
+    return nullptr;
+}

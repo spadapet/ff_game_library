@@ -86,7 +86,7 @@ void ff::value::debug_print_tree() const
 #ifdef _DEBUG
     std::ostringstream output;
     this->print_tree(output);
-    ::OutputDebugString(ff::string::to_wstring(output.str()).c_str());
+    ff::log::write_debug(output);
 #endif
 }
 
@@ -175,7 +175,7 @@ const ff::value_type* ff::value::get_type_by_lookup_id(uint32_t id)
 
 bool ff::value::is_type(std::type_index type_index) const
 {
-    return type_index == typeid(ff::value) || this->type()->type_index() == type_index;
+    return this && (type_index == typeid(ff::value) || this->type()->type_index() == type_index);
 }
 
 const void* ff::value::try_cast(std::type_index type_index) const

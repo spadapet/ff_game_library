@@ -24,9 +24,10 @@ namespace ff::object
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        void update_user_languages();
+        void populate_user_languages();
+        void populate_values(const ff::dict& dict);
 
-        std::unordered_map<std::string, ff::dict> lang_to_resource_values;
+        std::unordered_map<std::string_view, ff::dict> lang_to_dict;
         std::vector<std::string> user_langs;
         ff::dict original_dict;
     };

@@ -153,7 +153,7 @@ static void print_tree(std::string_view name, ff::value_ptr val, size_t level, s
     }
     else
     {
-        ff::value_ptr dict_val = val->try_convert<ff::dict>();
+        ff::value_ptr dict_val = val->try_convert<ff::dict>(); // allow resources to convert to dict
         if (dict_val)
         {
             val = dict_val;

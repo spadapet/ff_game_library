@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "thread_pool.h"
 
+static thread_local ff::thread_pool* current_thread_pool = nullptr;
 static ff::thread_pool* global_thread_pool = nullptr;
 
 ff::thread_pool::thread_pool(thread_pool_type type)
@@ -8,6 +9,9 @@ ff::thread_pool::thread_pool(thread_pool_type type)
     , task_count(0)
     , destroyed(false)
 {
+    assert(!::current_thread_pool);
+    ::current_thread_pool = this;
+
     if (type == thread_pool_type::global)
     {
         assert(!::global_thread_pool);
@@ -29,6 +33,16 @@ ff::thread_pool::~thread_pool()
     {
         ::global_thread_pool = nullptr;
     }
+
+    if (::current_thread_pool == this)
+    {
+        ::current_thread_pool = nullptr;
+    }
+}
+
+ff::thread_pool* ff::thread_pool::current()
+{
+    return ::current_thread_pool ? ::current_thread_pool : ::global_thread_pool;
 }
 
 ff::thread_pool* ff::thread_pool::global()

@@ -20,7 +20,7 @@ ff::value_ptr ff::dict_visitor_base::visit_dict(const ff::dict& dict, std::vecto
     return errors.empty() ? transformed_dict_value : nullptr;
 }
 
-void ff::dict_visitor_base::add_error(std::string_view text)
+void ff::dict_visitor_base::add_error(std::string_view text) noexcept
 {
     std::ostringstream str;
     str << ::GetCurrentThreadId() << "> " << this->path() << " : " << text;
@@ -156,7 +156,7 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
         values[i] = dict.get(names[i]);
         value_events[i] = ff::create_event();
 
-        ff::thread_pool::global()->add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
+        ff::thread_pool::current()->add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
             {
                 this->async_thread_started(main_thread_id);
                 this->push_path(names[i]);
@@ -228,18 +228,11 @@ ff::value_ptr ff::dict_visitor_base::transform_vector(const std::vector<ff::valu
 ff::value_ptr ff::dict_visitor_base::transform_value(ff::value_ptr value)
 {
     ff::value_ptr output_value = value;
+    ff::value_ptr dict_val = ff::type::try_get_dict_from_data(value);
 
-    if (value->is_type<ff::dict>())
+    if (dict_val)
     {
         output_value = this->transform_dict(value->get<ff::dict>());
-    }
-    else if (value->is_type<ff::saved_data_base>() && ff::flags::has(value->get<ff::saved_data_base>()->type(), ff::saved_data_type::dict))
-    {
-        ff::value_ptr dict_value = value->try_convert<ff::dict>();
-        if (dict_value)
-        {
-            output_value = this->transform_dict(dict_value->get<ff::dict>());
-        }
     }
     else if (value->is_type<ff::value_vector>())
     {

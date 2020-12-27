@@ -37,4 +37,6 @@ namespace ff::type
         virtual value_ptr load(reader_base& reader) const override;
         virtual bool save(const value* val, writer_base& writer) const override;
     };
+
+    value_ptr try_get_dict_from_data(const value* value);
 }

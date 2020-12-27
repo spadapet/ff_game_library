@@ -1,11 +1,8 @@
 #include "pch.h"
 #include "resource_load.h"
 
-std::string_view ff::internal::RES_BASE("res:base");
-std::string_view ff::internal::RES_DEBUG("res:debug");
 std::string_view ff::internal::RES_FILES("res:files");
 std::string_view ff::internal::RES_IMPORT("res:import");
-std::string_view ff::internal::RES_LOAD_LISTENER("res:loadListener");
 std::string_view ff::internal::RES_TEMPLATE("res:template");
 std::string_view ff::internal::RES_TYPE("res:type");
 std::string_view ff::internal::RES_VALUES("res:values");

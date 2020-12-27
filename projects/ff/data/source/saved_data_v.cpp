@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "data.h"
 #include "data_v.h"
-#include "dict.h"
 #include "dict_v.h"
 #include "saved_data.h"
 #include "saved_data_v.h"
@@ -38,30 +37,13 @@ ff::value* ff::type::saved_data_v::get_static_default_value()
 
 ff::value_ptr ff::type::saved_data_type::try_convert_to(const value* val, std::type_index type) const
 {
-    if (type == typeid(ff::type::data_v))
+    if (type == typeid(ff::type::data_v) || type == typeid(ff::type::dict_v))
     {
         auto& saved_data = val->get<ff::saved_data_base>();
-        if (saved_data)
+        if (saved_data && (type != typeid(ff::type::dict_v) || ff::flags::has(saved_data->type(), ff::saved_data_type::dict)))
         {
             auto data = saved_data->loaded_data();
-            return ff::value::create<ff::data_base>(data, saved_data->type());
-        }
-    }
-
-    if (type == typeid(ff::type::dict_v))
-    {
-        auto& saved_data = val->get<ff::saved_data_base>();
-        if (saved_data && ff::flags::has(saved_data->type(), ff::saved_data_type::dict))
-        {
-            auto reader = saved_data->loaded_reader();
-            if (reader)
-            {
-                ff::dict dict;
-                if (ff::dict::load(*reader, dict))
-                {
-                    return ff::value::create<ff::dict>(std::move(dict));
-                }
-            }
+            return ff::value::create<ff::data_base>(data, saved_data->type())->try_convert(type);
         }
     }
 

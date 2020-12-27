@@ -283,7 +283,7 @@ protected:
                 return nullptr;
             }
 
-            ff::value_ptr dict_value = template_value->try_convert<ff::dict>();
+            ff::value_ptr dict_value = ff::type::try_get_dict_from_data(template_value);
             if (dict_value)
             {
                 ff::dict output_dict = dict_value->get<ff::dict>();
@@ -379,7 +379,7 @@ private:
         }
 
         ff::value_ptr output_value = this->transform_dict(dict);
-        ff::value_ptr output_dict = output_value->try_convert<ff::dict>();
+        ff::value_ptr output_dict = ff::type::try_get_dict_from_data(output_value);
         if (!output_dict)
         {
             std::ostringstream str;
@@ -407,7 +407,7 @@ protected:
         {
             // Save references to all root objects
 
-            ff::value_ptr dict_value = output_value->try_convert<ff::dict>();
+            ff::value_ptr dict_value = ff::type::try_get_dict_from_data(output_value);
             if (dict_value)
             {
                 ff::dict output_dict = dict_value->get<ff::dict>();
@@ -428,7 +428,7 @@ protected:
         {
             // Convert all typed object dicts into objects
 
-            ff::value_ptr output_dict_value = output_value->try_convert<ff::dict>();
+            ff::value_ptr output_dict_value = ff::type::try_get_dict_from_data(output_value);
             if (output_dict_value)
             {
                 const ff::dict& output_dict = output_dict_value->get<ff::dict>();
@@ -574,7 +574,7 @@ protected:
         ff::value_ptr root_value = transformer_base::transform_dict(dict);
         if (this->is_root())
         {
-            ff::value_ptr dict_value = root_value->try_convert<ff::dict>();
+            ff::value_ptr dict_value = ff::type::try_get_dict_from_data(root_value);
             if (dict_value)
             {
                 ff::dict output_dict = dict_value->get<ff::dict>();
@@ -650,7 +650,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     for (transformer_base* transformer : transformers)
     {
         std::vector<std::string> errors;
-        ff::value_ptr new_dict_value = transformer->visit_dict(dict, errors)->try_convert<ff::dict>();
+        ff::value_ptr new_dict_value = ff::type::try_get_dict_from_data(transformer->visit_dict(dict, errors));
 
         if (!new_dict_value || !errors.empty())
         {

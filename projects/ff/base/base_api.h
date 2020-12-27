@@ -10,6 +10,7 @@
 #include "source/hash_set.h"
 #include "source/intrusive_ptr.h"
 #include "source/list.h"
+#include "source/log.h"
 #include "source/math.h"
 #include "source/memory.h"
 #include "source/point.h"
