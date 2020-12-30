@@ -311,7 +311,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
     return value;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::resource_objects_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     std::vector<std::string> errors;
     ff::load_resources_result result = ff::load_resources_from_json(dict, context.base_path(), context.debug());
@@ -327,7 +327,7 @@ std::shared_ptr<ff::resource_object_base> ff::resource_objects_factory::load_fro
     return result.status ? this->load_from_cache(result.dict) : nullptr;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::resource_objects_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory::load_from_cache(const ff::dict& dict) const
 {
     return std::make_shared<resource_objects>(dict);
 }

@@ -84,12 +84,12 @@ void ff::resource_values::populate_values(const ff::dict& dict)
     }
 }
 
-std::shared_ptr<ff::resource_object_base> ff::resource_values_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_values_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     return this->load_from_cache(dict);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::resource_values_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_values_factory::load_from_cache(const ff::dict& dict) const
 {
     return std::make_shared<ff::resource_values>(ff::dict(dict));
 }

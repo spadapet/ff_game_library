@@ -34,7 +34,7 @@ bool ff::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
     return true;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     std::filesystem::path path = dict.get<std::string>("file");
     if (path.empty())
@@ -70,7 +70,7 @@ std::shared_ptr<ff::resource_object_base> ff::file_factory::load_from_source(con
     return std::make_shared<file_o>(saved_data, file_extension, compress);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::file_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::file_factory::load_from_cache(const ff::dict& dict) const
 {
     auto saved_data = dict.get<ff::saved_data_base>("data");
     std::string file_extension = dict.get<std::string>("extension");

@@ -21,9 +21,9 @@ void ff::init_resource()
 
             // Resource objects
 
-            ff::resource_object_base::register_factory<ff::file_factory>("file");
-            ff::resource_object_base::register_factory<ff::resource_objects_factory>(ff::internal::RES_FACTORY_NAME);
-            ff::resource_object_base::register_factory<ff::resource_values_factory>("resource_values");
+            ff::resource_object_base::register_factory<ff::internal::file_factory>("file");
+            ff::resource_object_base::register_factory<ff::internal::resource_objects_factory>(ff::internal::RES_FACTORY_NAME);
+            ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
         }
     } init;
 }

@@ -69,7 +69,10 @@ namespace ff
         ff::win_handle done_loading_event;
         size_t loading_count;
     };
+}
 
+namespace ff::internal
+{
     class resource_objects_factory : public ff::resource_object_factory<resource_objects>
     {
     public:

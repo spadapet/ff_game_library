@@ -21,7 +21,10 @@ namespace ff
         std::string file_extension;
         bool compress;
     };
+}
 
+namespace ff::internal
+{
     class file_factory : public ff::resource_object_factory<file_o>
     {
     public:

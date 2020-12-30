@@ -31,7 +31,10 @@ namespace ff
         std::vector<std::string> user_langs;
         ff::dict original_dict;
     };
+}
 
+namespace ff::internal
+{
     class resource_values_factory : public ff::resource_object_factory<resource_values>
     {
     public:
