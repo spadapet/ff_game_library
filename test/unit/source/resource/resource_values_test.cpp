@@ -25,20 +25,11 @@ namespace resource_test
             Assert::IsTrue(result.status);
             Assert::IsTrue(result.errors.empty());
 
-            std::shared_ptr<ff::object::resource_objects> res = std::dynamic_pointer_cast<ff::object::resource_objects>(
-                ff::object::resource_objects::factory()->load_from_cache(result.dict));
+            auto res = std::dynamic_pointer_cast<ff::resource_objects>(ff::resource_objects::factory()->load_from_cache(result.dict));
             Assert::IsNotNull(res.get());
 
-            std::shared_ptr<ff::resource> res_values = res->get_resource_object("values");
-            Assert::IsNotNull(res_values.get());
-
-            res_values = res->flush_resource(res_values);
-            Assert::IsNotNull(res_values.get());
-            Assert::IsTrue(res_values->value()->is_type<ff::resource_object_base>());
-
-            std::shared_ptr<ff::object::resource_values> values = std::dynamic_pointer_cast<ff::object::resource_values>(
-                res_values->value()->get<ff::resource_object_base>());
-            Assert::IsNotNull(values.get());
+            ff::auto_resource<ff::resource_values> values = res->get_resource_object("values");
+            Assert::IsNotNull(values.object().get());
 
             Assert::IsTrue(values->get_resource_value("name")->is_type<std::string>());
             Assert::IsTrue(values->get_resource_value("age")->is_type<int>());

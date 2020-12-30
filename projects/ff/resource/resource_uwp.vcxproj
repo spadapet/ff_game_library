@@ -26,6 +26,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource_api.h" />
+    <ClInclude Include="source\auto_resource.h" />
     <ClInclude Include="source\file_o.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\resource.h" />

@@ -13,7 +13,7 @@ namespace ff::internal
     extern std::string_view RES_FACTORY_NAME;
 }
 
-namespace ff::object
+namespace ff
 {
     class resource_objects
         : public ff::resource_object_base

@@ -7,16 +7,11 @@ static std::recursive_mutex& get_static_mutex() noexcept
     return mutex;
 }
 
-ff::resource::resource(std::string_view name, ff::value_ptr value)
+ff::resource::resource(std::string_view name, ff::value_ptr value, resource_object_loader* loading_owner)
     : name_(name)
-    , value_(value)
-    , loading_owner_(nullptr)
-{
-    if (!this->value_)
-    {
-        this->value_ = ff::value::create<nullptr_t>();
-    }
-}
+    , value_(value ? value : ff::value::create<nullptr_t>())
+    , loading_owner_(loading_owner)
+{}
 
 std::string_view ff::resource::name() const
 {
@@ -57,13 +52,6 @@ void ff::resource::new_resource(const std::shared_ptr<resource>& new_value)
     std::lock_guard lock(::get_static_mutex());
     this->new_resource_ = new_value;
     this->loading_owner_ = nullptr;
-}
-
-void ff::resource::loading_owner(resource_object_loader* loading_owner_)
-{
-    std::lock_guard lock(::get_static_mutex());
-    assert(!this->loading_owner_ && loading_owner_);
-    this->loading_owner_ = loading_owner_;
 }
 
 ff::resource_object_loader* ff::resource::loading_owner()

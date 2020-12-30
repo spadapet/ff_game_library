@@ -4,13 +4,13 @@
 ff::resource_value_provider::~resource_value_provider()
 {}
 
-ff::object::resource_values::resource_values(const ff::dict& dict)
+ff::resource_values::resource_values(const ff::dict& dict)
 {
     this->populate_user_languages();
     this->populate_values(dict);
 }
 
-ff::value_ptr ff::object::resource_values::get_resource_value(std::string_view name) const
+ff::value_ptr ff::resource_values::get_resource_value(std::string_view name) const
 {
     for (const std::string& lang_name : this->user_langs)
     {
@@ -29,18 +29,18 @@ ff::value_ptr ff::object::resource_values::get_resource_value(std::string_view n
     return nullptr;
 }
 
-std::string ff::object::resource_values::get_string_resource_value(std::string_view name) const
+std::string ff::resource_values::get_string_resource_value(std::string_view name) const
 {
     return this->get_resource_value(name)->convert_or_default<std::string>()->get<std::string>();
 }
 
-bool ff::object::resource_values::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_values::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set(this->original_dict, false);
     return true;
 }
 
-void ff::object::resource_values::populate_user_languages()
+void ff::resource_values::populate_user_languages()
 {
     this->user_langs.push_back("override");
 
@@ -66,7 +66,7 @@ void ff::object::resource_values::populate_user_languages()
     this->user_langs.push_back(std::string());
 }
 
-void ff::object::resource_values::populate_values(const ff::dict& dict)
+void ff::resource_values::populate_values(const ff::dict& dict)
 {
     this->original_dict = dict;
 
@@ -84,12 +84,12 @@ void ff::object::resource_values::populate_values(const ff::dict& dict)
     }
 }
 
-std::shared_ptr<ff::resource_object_base> ff::object::resource_values_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::resource_values_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     return this->load_from_cache(dict);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::object::resource_values_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::resource_values_factory::load_from_cache(const ff::dict& dict) const
 {
-    return std::make_shared<ff::object::resource_values>(ff::dict(dict));
+    return std::make_shared<ff::resource_values>(ff::dict(dict));
 }

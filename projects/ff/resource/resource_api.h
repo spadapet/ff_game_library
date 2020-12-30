@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "source/auto_resource.h"
 #include "source/file_o.h"
 #include "source/init.h"
 #include "source/resource.h"

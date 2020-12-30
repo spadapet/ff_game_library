@@ -2,7 +2,7 @@
 #include "file_o.h"
 #include "resource_load_context.h"
 
-ff::object::file_o::file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
+ff::file_o::file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
     : saved_data_(saved_data)
     , file_extension(file_extension)
     , compress(compress)
@@ -10,12 +10,12 @@ ff::object::file_o::file_o(std::shared_ptr<ff::saved_data_base> saved_data, std:
     assert(this->saved_data_);
 }
 
-const std::shared_ptr<ff::saved_data_base>& ff::object::file_o::saved_data() const
+const std::shared_ptr<ff::saved_data_base>& ff::file_o::saved_data() const
 {
     return this->saved_data_;
 }
 
-bool ff::object::file_o::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
+bool ff::file_o::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
     std::filesystem::path path = (directory_path / name).replace_extension(this->file_extension);
     size_t size = this->saved_data_->loaded_size();
@@ -23,7 +23,7 @@ bool ff::object::file_o::resource_save_to_file(const std::filesystem::path& dire
     return copied_size == size;
 }
 
-bool ff::object::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     allow_compress = this->compress;
 
@@ -34,7 +34,7 @@ bool ff::object::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) con
     return true;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::object::file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     std::filesystem::path path = dict.get<std::string>("file");
     if (path.empty())
@@ -70,7 +70,7 @@ std::shared_ptr<ff::resource_object_base> ff::object::file_factory::load_from_so
     return std::make_shared<file_o>(saved_data, file_extension, compress);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::object::file_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::file_factory::load_from_cache(const ff::dict& dict) const
 {
     auto saved_data = dict.get<ff::saved_data_base>("data");
     std::string file_extension = dict.get<std::string>("extension");

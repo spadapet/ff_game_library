@@ -78,6 +78,9 @@
     <ClInclude Include="source\resource_values.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\auto_resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

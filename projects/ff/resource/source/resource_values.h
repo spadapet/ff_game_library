@@ -3,7 +3,7 @@
 #include "resource_object_factory_base.h"
 #include "resource_value_provider.h"
 
-namespace ff::object
+namespace ff
 {
     class resource_values
         : public ff::resource_object_base
