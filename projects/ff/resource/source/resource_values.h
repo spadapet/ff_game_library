@@ -5,17 +5,17 @@
 
 namespace ff
 {
-    class resource_values
+    class resource_values_o
         : public ff::resource_object_base
         , public ff::resource_value_provider
     {
     public:
-        resource_values(const ff::dict& dict);
-        resource_values(resource_values&& other) noexcept = delete;
-        resource_values(const resource_values& other) = delete;
+        resource_values_o(const ff::dict& dict);
+        resource_values_o(resource_values_o&& other) noexcept = delete;
+        resource_values_o(const resource_values_o& other) = delete;
 
-        resource_values& operator=(resource_values&& other) noexcept = delete;
-        resource_values& operator=(const resource_values& other) = delete;
+        resource_values_o& operator=(resource_values_o&& other) noexcept = delete;
+        resource_values_o& operator=(const resource_values_o& other) = delete;
 
         virtual ff::value_ptr get_resource_value(std::string_view name) const override;
         virtual std::string get_string_resource_value(std::string_view name) const override;
@@ -35,10 +35,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class resource_values_factory : public ff::resource_object_factory<resource_values>
+    class resource_values_factory : public ff::resource_object_factory<resource_values_o>
     {
     public:
-        using ff::resource_object_factory<resource_values>::resource_object_factory;
+        using ff::resource_object_factory<resource_values_o>::resource_object_factory;
 
         virtual std::shared_ptr<resource_object_base> load_from_source(const ff::dict& dict, resource_load_context& context) const override;
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;

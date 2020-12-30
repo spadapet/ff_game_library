@@ -4,13 +4,13 @@
 ff::resource_value_provider::~resource_value_provider()
 {}
 
-ff::resource_values::resource_values(const ff::dict& dict)
+ff::resource_values_o::resource_values_o(const ff::dict& dict)
 {
     this->populate_user_languages();
     this->populate_values(dict);
 }
 
-ff::value_ptr ff::resource_values::get_resource_value(std::string_view name) const
+ff::value_ptr ff::resource_values_o::get_resource_value(std::string_view name) const
 {
     for (const std::string& lang_name : this->user_langs)
     {
@@ -29,18 +29,18 @@ ff::value_ptr ff::resource_values::get_resource_value(std::string_view name) con
     return nullptr;
 }
 
-std::string ff::resource_values::get_string_resource_value(std::string_view name) const
+std::string ff::resource_values_o::get_string_resource_value(std::string_view name) const
 {
     return this->get_resource_value(name)->convert_or_default<std::string>()->get<std::string>();
 }
 
-bool ff::resource_values::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_values_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set(this->original_dict, false);
     return true;
 }
 
-void ff::resource_values::populate_user_languages()
+void ff::resource_values_o::populate_user_languages()
 {
     this->user_langs.push_back("override");
 
@@ -66,7 +66,7 @@ void ff::resource_values::populate_user_languages()
     this->user_langs.push_back(std::string());
 }
 
-void ff::resource_values::populate_values(const ff::dict& dict)
+void ff::resource_values_o::populate_values(const ff::dict& dict)
 {
     this->original_dict = dict;
 
@@ -91,5 +91,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_values_factory:
 
 std::shared_ptr<ff::resource_object_base> ff::internal::resource_values_factory::load_from_cache(const ff::dict& dict) const
 {
-    return std::make_shared<ff::resource_values>(ff::dict(dict));
+    return std::make_shared<ff::resource_values_o>(ff::dict(dict));
 }

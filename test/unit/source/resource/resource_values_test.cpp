@@ -25,10 +25,10 @@ namespace resource_test
             Assert::IsTrue(result.status);
             Assert::IsTrue(result.errors.empty());
 
-            auto res = std::dynamic_pointer_cast<ff::resource_objects>(ff::resource_objects::factory()->load_from_cache(result.dict));
+            auto res = std::dynamic_pointer_cast<ff::resource_objects_o>(ff::resource_objects_o::factory()->load_from_cache(result.dict));
             Assert::IsNotNull(res.get());
 
-            ff::auto_resource<ff::resource_values> values = res->get_resource_object("values");
+            ff::auto_resource<ff::resource_values_o> values = res->get_resource_object("values");
             Assert::IsNotNull(values.object().get());
 
             Assert::IsTrue(values->get_resource_value("name")->is_type<std::string>());

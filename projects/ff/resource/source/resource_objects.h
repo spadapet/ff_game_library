@@ -15,20 +15,20 @@ namespace ff::internal
 
 namespace ff
 {
-    class resource_objects
+    class resource_objects_o
         : public ff::resource_object_base
         , public ff::resource_object_loader
     {
     public:
-        resource_objects(const ff::dict& dict);
-        resource_objects(resource_objects&& other) noexcept = delete;
-        resource_objects(const resource_objects& other) = delete;
-        ~resource_objects();
+        resource_objects_o(const ff::dict& dict);
+        resource_objects_o(resource_objects_o&& other) noexcept = delete;
+        resource_objects_o(const resource_objects_o& other) = delete;
+        ~resource_objects_o();
 
         static const resource_object_factory_base* factory();
 
-        resource_objects& operator=(resource_objects&& other) noexcept = delete;
-        resource_objects& operator=(const resource_objects& other) = delete;
+        resource_objects_o& operator=(resource_objects_o&& other) noexcept = delete;
+        resource_objects_o& operator=(const resource_objects_o& other) = delete;
 
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
@@ -73,10 +73,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class resource_objects_factory : public ff::resource_object_factory<resource_objects>
+    class resource_objects_factory : public ff::resource_object_factory<resource_objects_o>
     {
     public:
-        using ff::resource_object_factory<resource_objects>::resource_object_factory;
+        using ff::resource_object_factory<resource_objects_o>::resource_object_factory;
 
         virtual std::shared_ptr<resource_object_base> load_from_source(const ff::dict& dict, resource_load_context& context) const override;
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;

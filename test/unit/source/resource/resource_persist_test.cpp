@@ -48,13 +48,13 @@ namespace resource_test
             Assert::IsTrue(loaded_dict.get("test_file2") != nullptr);
             Assert::IsTrue(loaded_dict.get(ff::internal::RES_FILES) != nullptr);
 
-            const ff::resource_object_factory_base* factory = ff::resource_objects::factory();
+            const ff::resource_object_factory_base* factory = ff::resource_objects_o::factory();
             Assert::IsNotNull(factory);
 
             std::shared_ptr<ff::resource_object_base> obj_base = factory->load_from_cache(loaded_dict);
             Assert::IsNotNull(obj_base.get());
 
-            auto res_obj = std::dynamic_pointer_cast<ff::resource_objects>(obj_base);
+            auto res_obj = std::dynamic_pointer_cast<ff::resource_objects_o>(obj_base);
             Assert::IsTrue(res_obj && res_obj->resource_object_names().size() == 2);
 
             ff::auto_resource<ff::file_o> res_file1 = res_obj->get_resource_object("test_file1");
