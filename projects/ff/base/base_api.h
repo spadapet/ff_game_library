@@ -8,6 +8,7 @@
 #include "source/functions.h"
 #include "source/hash.h"
 #include "source/hash_set.h"
+#include "source/init.h"
 #include "source/intrusive_ptr.h"
 #include "source/list.h"
 #include "source/log.h"

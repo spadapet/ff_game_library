@@ -2,7 +2,7 @@
 #include "thread_dispatch.h"
 #include "win_msg.h"
 
-static thread_local ff::thread_dispatch* current_thread_dispatch = nullptr;
+static thread_local ff::thread_dispatch* task_thread_dispatch = nullptr;
 static ff::thread_dispatch* main_thread_dispatch = nullptr;
 static ff::thread_dispatch* game_thread_dispatch = nullptr;
 
@@ -25,20 +25,18 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     switch (type)
     {
         case thread_dispatch_type::main:
-            assert(!::main_thread_dispatch && !::current_thread_dispatch);
+            assert(!::main_thread_dispatch);
             ::main_thread_dispatch = this;
-            ::current_thread_dispatch = this;
             break;
 
         case thread_dispatch_type::game:
-            assert(!::game_thread_dispatch && !::current_thread_dispatch);
+            assert(!::game_thread_dispatch);
             ::game_thread_dispatch = this;
-            ::current_thread_dispatch = this;
             break;
 
         case thread_dispatch_type::task:
-            assert(!::current_thread_dispatch);
-            ::current_thread_dispatch = this;
+            assert(!::task_thread_dispatch);
+            ::task_thread_dispatch = this;
             break;
     }
 }
@@ -63,9 +61,9 @@ ff::thread_dispatch::~thread_dispatch()
         ::game_thread_dispatch = nullptr;
     }
 
-    if (::current_thread_dispatch == this)
+    if (::task_thread_dispatch == this)
     {
-        ::current_thread_dispatch = nullptr;
+        ::task_thread_dispatch = nullptr;
     }
 }
 
@@ -88,7 +86,7 @@ ff::thread_dispatch* ff::thread_dispatch::get(thread_dispatch_type type)
             [[fallthrough]];
 
         default:
-            return ::current_thread_dispatch;
+            return ::task_thread_dispatch;
     }
 }
 

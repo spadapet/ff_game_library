@@ -7,8 +7,6 @@ namespace resource_test
     public:
         TEST_METHOD(file_persist)
         {
-            ff::thread_pool thread_pool;
-
             std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "resource_persist_test";
             ff::at_scope cleanup([&temp_path]()
                 {

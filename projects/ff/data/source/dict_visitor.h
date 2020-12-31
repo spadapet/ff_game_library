@@ -27,7 +27,7 @@ namespace ff
         virtual ff::value_ptr transform_vector(const std::vector<ff::value_ptr>& values);
         virtual ff::value_ptr transform_value(ff::value_ptr value);
         virtual ff::value_ptr transform_root_value(ff::value_ptr value);
-        virtual void add_error(std::string_view text) noexcept;
+        virtual void add_error(std::string_view text);
 
         virtual bool async_allowed(const ff::dict& dict);
         virtual void async_thread_started(DWORD main_thread_id);

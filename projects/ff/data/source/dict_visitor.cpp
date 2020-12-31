@@ -20,7 +20,7 @@ ff::value_ptr ff::dict_visitor_base::visit_dict(const ff::dict& dict, std::vecto
     return errors.empty() ? transformed_dict_value : nullptr;
 }
 
-void ff::dict_visitor_base::add_error(std::string_view text) noexcept
+void ff::dict_visitor_base::add_error(std::string_view text)
 {
     std::ostringstream str;
     str << ::GetCurrentThreadId() << "> " << this->path() << " : " << text;
@@ -156,7 +156,7 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
         values[i] = dict.get(names[i]);
         value_events[i] = ff::create_event();
 
-        ff::thread_pool::current()->add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
+        ff::thread_pool::get()->add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
             {
                 this->async_thread_started(main_thread_id);
                 this->push_path(names[i]);

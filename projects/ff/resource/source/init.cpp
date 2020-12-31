@@ -6,14 +6,12 @@
 #include "resource_objects.h"
 #include "resource_values.h"
 
-void ff::init_resource()
+ff::init_resource::init_resource()
 {
-    static struct init_struct
+    static struct one_time_init
     {
-        init_struct()
+        one_time_init()
         {
-            ff::init_data();
-
             // Values
 
             ff::value::register_type<ff::type::resource_type>("resource");

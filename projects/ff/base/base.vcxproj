@@ -12,6 +12,7 @@
     </ClCompile>
     <ClCompile Include="source\functions.cpp" />
     <ClCompile Include="source\hash.cpp" />
+    <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\log.cpp" />
     <ClCompile Include="source\memory.cpp" />
     <ClCompile Include="source\signal.cpp" />
@@ -30,6 +31,7 @@
     <ClInclude Include="base_api.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\functions.h" />
+    <ClInclude Include="source\init.h" />
     <ClInclude Include="source\log.h" />
     <ClInclude Include="source\signal.h" />
     <ClInclude Include="source\fixed.h" />

@@ -16,11 +16,11 @@
 #include "uuid_v.h"
 #include "value_vector.h"
 
-void ff::init_data()
+ff::init_data::init_data()
 {
-    static struct init_struct
+    static struct one_time_init
     {
-        init_struct()
+        one_time_init()
         {
             ff::value::register_type<ff::type::bool_type>("bool");
             ff::value::register_type<ff::type::dict_type>("dict");

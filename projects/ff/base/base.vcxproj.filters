@@ -47,6 +47,9 @@
     <ClCompile Include="source\log.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -139,6 +142,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\log.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

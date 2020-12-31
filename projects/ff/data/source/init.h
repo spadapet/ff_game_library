@@ -2,5 +2,12 @@
 
 namespace ff
 {
-    void init_data();
+    class init_data
+    {
+    public:
+        init_data();
+
+    private:
+        ff::init_base init_base;
+    };
 }

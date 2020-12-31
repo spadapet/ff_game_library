@@ -7,8 +7,6 @@ namespace resource_test
     public:
         TEST_METHOD(parse_values)
         {
-            ff::thread_pool thread_pool;
-
             std::string json_source =
                 "{ \n"
                 "  'values': {\n"

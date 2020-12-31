@@ -7,7 +7,8 @@ namespace ff
     enum class thread_pool_type
     {
         none,
-        global,
+        main,
+        task,
     };
 
     class thread_pool
@@ -23,8 +24,7 @@ namespace ff
         thread_pool& operator=(thread_pool&& other) noexcept = delete;
         thread_pool& operator=(const thread_pool& other) = delete;
 
-        static thread_pool* current();
-        static thread_pool* global();
+        static thread_pool* get();
 
         void add_thread(func_type&& func);
         void add_task(func_type&& func);

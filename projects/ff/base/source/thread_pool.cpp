@@ -1,21 +1,25 @@
 #include "pch.h"
 #include "thread_pool.h"
 
-static thread_local ff::thread_pool* current_thread_pool = nullptr;
-static ff::thread_pool* global_thread_pool = nullptr;
+static thread_local ff::thread_pool* task_thread_pool = nullptr;
+static ff::thread_pool* main_thread_pool = nullptr;
 
 ff::thread_pool::thread_pool(thread_pool_type type)
     : no_tasks_event(ff::create_event(true))
     , task_count(0)
     , destroyed(false)
 {
-    assert(!::current_thread_pool);
-    ::current_thread_pool = this;
-
-    if (type == thread_pool_type::global)
+    switch (type)
     {
-        assert(!::global_thread_pool);
-        ::global_thread_pool = this;
+        case thread_pool_type::main:
+            assert(!::main_thread_pool);
+            ::main_thread_pool = this;
+            break;
+
+        case thread_pool_type::task:
+            assert(!::task_thread_pool);
+            ::task_thread_pool = this;
+            break;
     }
 }
 
@@ -29,25 +33,20 @@ ff::thread_pool::~thread_pool()
 
     this->flush();
 
-    if (::global_thread_pool == this)
+    if (::main_thread_pool == this)
     {
-        ::global_thread_pool = nullptr;
+        ::main_thread_pool = nullptr;
     }
 
-    if (::current_thread_pool == this)
+    if (::task_thread_pool == this)
     {
-        ::current_thread_pool = nullptr;
+        ::task_thread_pool = nullptr;
     }
 }
 
-ff::thread_pool* ff::thread_pool::current()
+ff::thread_pool* ff::thread_pool::get()
 {
-    return ::current_thread_pool ? ::current_thread_pool : ::global_thread_pool;
-}
-
-ff::thread_pool* ff::thread_pool::global()
-{
-    return ::global_thread_pool;
+    return ::task_thread_pool ? ::task_thread_pool : ::main_thread_pool;
 }
 
 void ff::thread_pool::add_thread(func_type&& func)

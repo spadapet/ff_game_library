@@ -74,7 +74,7 @@ std::shared_ptr<ff::resource> ff::resource_objects_o::get_resource_object(std::s
             info.loading_info->event = ff::create_event();
 
             std::string keep_name(name);
-            ff::thread_pool::current()->add_task([this, keep_name, &info]()
+            ff::thread_pool::get()->add_task([this, keep_name, &info]()
                 {
                     ff::value_ptr new_value = this->create_resource_objects(info, info.dict_value);
                     this->update_resource_object_info(info, std::make_shared<ff::resource>(keep_name, new_value));
