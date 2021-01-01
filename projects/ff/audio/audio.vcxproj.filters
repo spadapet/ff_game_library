@@ -18,6 +18,12 @@
     <ClInclude Include="source\audio.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\audio_child_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\audio_playing_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

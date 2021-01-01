@@ -12,7 +12,7 @@ ff::init_audio::init_audio()
 
 ff::init_audio::~init_audio()
 {
-    ff::audio::internal::cleanup();
+    ff::audio::internal::destroy();
     ::init_status = 0;
 }
 

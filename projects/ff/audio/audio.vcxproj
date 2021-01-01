@@ -17,6 +17,8 @@
     <ClInclude Include="audio_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\audio.h" />
+    <ClInclude Include="source\audio_child_base.h" />
+    <ClInclude Include="source\audio_playing_base.h" />
     <ClInclude Include="source\init.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
