@@ -2,13 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\init.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\audio.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\destroy_voice.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\audio_effect.cpp">
@@ -17,26 +11,22 @@
     <ClCompile Include="source\audio_effect_playing.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\destroy_voice.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
     <ClCompile Include="source\wav_file.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="audio_api.h" />
-    <ClInclude Include="source\init.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\audio.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\audio_child_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\audio_playing_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\destroy_voice.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\audio_effect.h">
@@ -45,13 +35,23 @@
     <ClInclude Include="source\audio_effect_playing.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\audio_playing_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\destroy_voice.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
     <ClInclude Include="source\wav_file.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="audio_api.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
-      <UniqueIdentifier>{e90b21b7-ad24-404e-9564-9d5c98cf9dfd}</UniqueIdentifier>
+      <UniqueIdentifier>{8d75f06d-ebc9-4a15-a2ae-90e96c7dccfd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

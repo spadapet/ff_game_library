@@ -1,8 +1,9 @@
 #pragma once
+#include "audio_child_base.h"
 
-namespace ff::audio
+namespace ff
 {
-    class audio_playing_base
+    class audio_playing_base : public ff::internal::audio_child_base
     {
     public:
         virtual ~audio_playing_base() = 0;

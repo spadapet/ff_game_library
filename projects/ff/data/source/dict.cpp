@@ -1,7 +1,10 @@
 #include "pch.h"
+#include "data.h"
+#include "data_v.h"
 #include "dict.h"
 #include "dict_v.h"
 #include "persist.h"
+#include "saved_data.h"
 #include "stream.h"
 #include "value.h"
 #include "value_vector.h"
@@ -68,18 +71,6 @@ void ff::dict::clear()
     this->map.clear();
 }
 
-void ff::dict::set(std::string_view name, const value* value)
-{
-    if (!value)
-    {
-        this->map.erase(name);
-    }
-    else
-    {
-        this->map.insert_or_assign(::get_cached_string(name), value);
-    }
-}
-
 void ff::dict::set(const dict& other, bool merge_child_dicts)
 {
     for (const auto& i : other)
@@ -101,6 +92,24 @@ void ff::dict::set(const dict& other, bool merge_child_dicts)
     }
 }
 
+void ff::dict::set(std::string_view name, const value* value)
+{
+    if (!value)
+    {
+        this->map.erase(name);
+    }
+    else
+    {
+        this->map.insert_or_assign(::get_cached_string(name), value);
+    }
+}
+
+void ff::dict::set_bytes(std::string_view name, const void* data, size_t size)
+{
+    std::shared_ptr<ff::data_base> value = std::make_shared<ff::data_static>(data, size);
+    this->set<ff::data_base>(name, value, ff::saved_data_type::none);
+}
+
 ff::value_ptr ff::dict::get(std::string_view name) const
 {
     value_ptr value = this->get_by_path(name);
@@ -111,6 +120,18 @@ ff::value_ptr ff::dict::get(std::string_view name) const
     }
 
     return value;
+}
+
+bool ff::dict::get_bytes(std::string_view name, void* data, size_t size) const
+{
+    std::shared_ptr<ff::data_base> value = this->get<ff::data_base>(name);
+    if (value && value->size() == size)
+    {
+        std::memcpy(data, value->data(), size);
+        return true;
+    }
+
+    return false;
 }
 
 std::vector<std::string_view> ff::dict::child_names() const

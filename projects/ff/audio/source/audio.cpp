@@ -9,9 +9,9 @@ static IXAudio2SubmixVoice* effect_voice = nullptr;
 static IXAudio2SubmixVoice* music_voice = nullptr;
 
 static std::recursive_mutex audio_mutex;
-static std::vector<ff::audio::internal::audio_child_base*> audio_children;
-static std::vector<ff::audio::audio_playing_base*> audio_playing;
-static std::vector<ff::audio::audio_playing_base*> audio_paused;
+static std::vector<ff::internal::audio_child_base*> audio_children;
+static std::vector<ff::audio_playing_base*> audio_playing;
+static std::vector<ff::audio_playing_base*> audio_paused;
 
 template<class T>
 static void get_copy(ff::vector<T*, 64>& dest, const std::vector<T*>& src)
@@ -52,10 +52,10 @@ static bool init_mastering_voice()
 
 static void destroy_mastering_voice()
 {
-    ff::vector<ff::audio::internal::audio_child_base*, 64> audio_children_copy;
+    ff::vector<ff::internal::audio_child_base*, 64> audio_children_copy;
     ::get_copy(audio_children_copy, ::audio_children);
 
-    for (ff::audio::internal::audio_child_base* child : audio_children_copy)
+    for (ff::internal::audio_child_base* child : audio_children_copy)
     {
         child->reset();
     }
@@ -105,13 +105,13 @@ void ff::audio::internal::destroy()
     ::MFShutdown();
 }
 
-void ff::audio::internal::add_child(audio_child_base* child)
+void ff::audio::internal::add_child(ff::internal::audio_child_base* child)
 {
     std::lock_guard lock(::audio_mutex);
     ::audio_children.push_back(child);
 }
 
-void ff::audio::internal::remove_child(audio_child_base* child)
+void ff::audio::internal::remove_child(ff::internal::audio_child_base* child)
 {
     std::lock_guard lock(::audio_mutex);
     auto i = std::find(::audio_children.cbegin(), ::audio_children.cend(), child);
@@ -121,8 +121,10 @@ void ff::audio::internal::remove_child(audio_child_base* child)
     }
 }
 
-void ff::audio::internal::add_playing(audio_playing_base* child)
+void ff::audio::internal::add_playing(ff::audio_playing_base* child)
 {
+    ff::audio::internal::add_child(child);
+
     std::lock_guard lock(::audio_mutex);
     ::audio_playing.push_back(child);
 
@@ -132,8 +134,10 @@ void ff::audio::internal::add_playing(audio_playing_base* child)
     }
 }
 
-void ff::audio::internal::remove_playing(audio_playing_base* child)
+void ff::audio::internal::remove_playing(ff::audio_playing_base* child)
 {
+    ff::audio::internal::remove_child(child);
+
     std::lock_guard lock(::audio_mutex);
 
     auto i = std::find(::audio_paused.cbegin(), ::audio_paused.cend(), child);
@@ -223,44 +227,45 @@ void ff::audio::advance_effects()
         ::init_mastering_voice();
     }
 
-    ff::vector<ff::audio::audio_playing_base*, 64> audio_playing_copy;
+    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
-    for (auto i = audio_playing_copy.rbegin(); i != audio_playing_copy.rend(); i++)
+    for (ff::audio_playing_base* playing : audio_playing_copy)
     {
-        (*i)->advance();
+        playing->advance();
     }
 }
 
 void ff::audio::stop_effects()
 {
-    ff::vector<ff::audio::audio_playing_base*, 64> audio_playing_copy;
+    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
-    for (auto i = audio_playing_copy.rbegin(); i != audio_playing_copy.rend(); i++)
+    for (ff::audio_playing_base* playing : audio_playing_copy)
     {
-        (*i)->stop();
+        playing->stop();
     }
 }
 
 void ff::audio::pause_effects()
 {
-    ff::vector<ff::audio::audio_playing_base*, 64> audio_playing_copy;
-    ff::vector<ff::audio::audio_playing_base*, 64> new_paused;
+    ff::vector<ff::audio_playing_base*, 64> new_paused;
+    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
-    for (auto i = audio_playing_copy.rbegin(); i != audio_playing_copy.rend(); i++)
+    for (ff::audio_playing_base* playing : audio_playing_copy)
     {
-        if (!(*i)->paused())
+        playing->pause();
+
+        if (playing->paused())
         {
-            new_paused.push_back(*i);
-            (*i)->pause();
+            new_paused.push_back(playing);
         }
     }
 
     std::lock_guard lock(::audio_mutex);
 
-    for (ff::audio::audio_playing_base* paused : new_paused)
+    for (ff::audio_playing_base* paused : new_paused)
     {
         if (std::find(::audio_paused.cbegin(), ::audio_paused.cend(), paused) == ::audio_paused.cend())
         {
@@ -271,13 +276,13 @@ void ff::audio::pause_effects()
 
 void ff::audio::resume_effects()
 {
-    std::vector<ff::audio::audio_playing_base*> old_paused;
+    std::vector<ff::audio_playing_base*> paused;
     {
         std::lock_guard lock(::audio_mutex);
-        std::swap(old_paused, ::audio_paused);
+        std::swap(paused, ::audio_paused);
     }
 
-    for (ff::audio::audio_playing_base* paused : old_paused)
+    for (ff::audio_playing_base* paused : paused)
     {
         paused->resume();
     }

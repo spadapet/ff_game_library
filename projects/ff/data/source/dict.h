@@ -27,9 +27,11 @@ namespace ff
         void reserve(size_t count);
         void clear();
 
-        void set(std::string_view name, const value* value);
         void set(const dict& other, bool merge_child_dicts);
+        void set(std::string_view name, const value* value);
+        void set_bytes(std::string_view name, const void* data, size_t size);
         value_ptr get(std::string_view name) const;
+        bool get_bytes(std::string_view name, void* data, size_t size) const;
 
         std::vector<std::string_view> child_names() const;
         bool save(writer_base& writer) const;
@@ -47,19 +49,19 @@ namespace ff
         void print(std::ostream& output) const;
         void debug_print() const;
 
-        template<typename T, typename... Args>
+        template<class T, typename... Args>
         void set(std::string_view name, Args&&... args)
         {
             this->set(name, ff::value::create<T>(std::forward<Args>(args)...));
         }
 
-        template<typename T>
+        template<class T>
         auto get(std::string_view name) const -> typename ff::type::value_traits<T>::raw_type
         {
             return this->get(name)->convert_or_default<T>()->get<T>();
         }
 
-        template<typename T, typename... Args>
+        template<class T, typename... Args>
         auto get(std::string_view name, Args&&... default_value_args) const -> typename ff::type::value_traits<T>::raw_type
         {
             value_ptr value = this->get(name)->try_convert<T>();
@@ -69,6 +71,18 @@ namespace ff
             }
 
             return value->get<T>();
+        }
+
+        template<class T>
+        void set_struct(std::string_view name, const T& value)
+        {
+            this->set_bytes(name, &value, sizeof(T));
+        }
+
+        template<class T>
+        bool get_struct(std::string_view name, T& value) const
+        {
+            return this->get_bytes(name, &value, sizeof(T));
         }
 
     private:

@@ -1,9 +1,17 @@
 #pragma once
 
-namespace ff::audio
+namespace ff
 {
     class audio_playing_base;
+}
 
+namespace ff::internal
+{
+    class audio_child_base;
+}
+
+namespace ff::audio
+{
     enum class voice_type
     {
         master,
@@ -25,15 +33,13 @@ namespace ff::audio
 
 namespace ff::audio::internal
 {
-    class audio_child_base;
-
     bool init();
     void destroy();
 
-    void add_child(audio_child_base* child);
-    void remove_child(audio_child_base* child);
-    void add_playing(audio_playing_base* child);
-    void remove_playing(audio_playing_base* child);
+    void add_child(ff::internal::audio_child_base* child);
+    void remove_child(ff::internal::audio_child_base* child);
+    void add_playing(ff::audio_playing_base* child);
+    void remove_playing(ff::audio_playing_base* child);
 
     IXAudio2* xaudio();
     IXAudio2Voice* xaudio_voice(voice_type type);

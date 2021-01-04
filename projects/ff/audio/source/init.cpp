@@ -2,21 +2,16 @@
 #include "audio.h"
 #include "init.h"
 
-static int init_status = 0;
-
 ff::init_audio::init_audio()
 {
-    assert(!::init_status); // can't init twice
-    ::init_status = ff::audio::internal::init() ? 1 : -1;
+    static bool did_init = false;
+    assert(!did_init);
+    did_init = true;
+
+    ff::audio::internal::init();
 }
 
 ff::init_audio::~init_audio()
 {
     ff::audio::internal::destroy();
-    ::init_status = 0;
-}
-
-bool ff::init_audio::status() const
-{
-    return ::init_status > 0;
 }

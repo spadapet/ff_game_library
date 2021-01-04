@@ -8,8 +8,6 @@ namespace ff
         init_audio();
         ~init_audio();
 
-        bool status() const;
-
     private:
         ff::init_resource init_resource;
     };

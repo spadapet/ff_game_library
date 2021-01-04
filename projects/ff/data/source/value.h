@@ -15,7 +15,7 @@ namespace ff
             return ff::value::register_type(std::make_unique<Type>(name));
         }
 
-        template<typename T, typename... Args>
+        template<class T, class... Args>
         static value_ptr create(Args&&... args)
         {
             using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;
@@ -31,7 +31,7 @@ namespace ff
             return val;
         }
 
-        template<typename T>
+        template<class T>
         static value_ptr create_default()
         {
             using value_derived_type = typename ff::type::value_traits<T>::value_derived_type;

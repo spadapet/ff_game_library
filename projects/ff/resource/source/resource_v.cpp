@@ -54,6 +54,11 @@ ff::value_ptr ff::type::resource_type::load(reader_base& reader) const
     std::string str;
     if (ff::load(reader, str))
     {
+        if (str.empty())
+        {
+            return resource_v::get_static_default_value();
+        }
+
         str.insert(0, ff::internal::REF_PREFIX);
         return ff::value::create<std::string>(std::move(str));
     }
