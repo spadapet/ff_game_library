@@ -73,6 +73,17 @@ void ff::win_handle::close()
     win_handle::close(this->handle);
 }
 
+#if !UWP_APP
+
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+HINSTANCE ff::get_hinstance()
+{
+    HINSTANCE instance = reinterpret_cast<HINSTANCE>(&__ImageBase);
+    return instance ? instance : ::GetModuleHandle(nullptr);
+}
+
+#endif
+
 ff::win_handle ff::create_event(bool initial_set, bool manual_reset)
 {
     HANDLE handle = ::CreateEventEx(nullptr, nullptr,

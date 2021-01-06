@@ -1,15 +1,9 @@
 #include "pch.h"
 #include "string.h"
+#include "win_handle.h"
 #include "window.h"
 
 #if !UWP_APP
-
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-static HINSTANCE get_instance()
-{
-    HINSTANCE instance = reinterpret_cast<HINSTANCE>(&__ImageBase);
-    return instance ? instance : ::GetModuleHandle(nullptr);
-}
 
 ff::window::window()
     : hwnd(nullptr)
@@ -109,14 +103,14 @@ ff::window ff::window::create_blank(std::string_view window_name, HWND parent, D
     if (window::create_class(
         class_name,
         CS_DBLCLKS,
-        ::get_instance(),
+        ff::get_hinstance(),
         ::LoadCursor(nullptr, IDC_ARROW),
         nullptr, // brush
         0, // menu
         nullptr, // large icon
         nullptr)) // small icon
     {
-        return window::create(class_name, window_name, parent, style, ex_style, x, y, cx, cy, ::get_instance(), menu);
+        return window::create(class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
     }
 
     assert(false);
@@ -127,9 +121,9 @@ ff::window ff::window::create_message_window()
 {
     std::string_view class_name = "ff::window::message";
 
-    if (window::create_class(class_name, 0, ::get_instance(), nullptr, nullptr, 0, nullptr, nullptr))
+    if (window::create_class(class_name, 0, ff::get_hinstance(), nullptr, nullptr, 0, nullptr, nullptr))
     {
-        return window::create(class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ::get_instance(), nullptr);
+        return window::create(class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance(), nullptr);
     }
 
     assert(false);

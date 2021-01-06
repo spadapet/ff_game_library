@@ -21,7 +21,7 @@ namespace resource_test
             std::string test_string1 = "This is a test string1 👌";
             std::string test_string2 = "This is a test string2 👌";
             std::string json_source =
-                "{ \n"
+                "{\n"
                 "    'test_file1': { 'res:type': 'file', 'file': 'file:test1.txt', 'compress': true },\n"
                 "    'test_file2': { 'res:type': 'file', 'file': 'file:test2.txt', 'compress': false }\n"
                 "}\n";

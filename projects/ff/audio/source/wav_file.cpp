@@ -25,11 +25,12 @@ namespace
             }
 
             DWORD size;
-            if (!ff::load(reader, size) || !ff::load(reader, id))
+            if (!ff::load(reader, size) || size < sizeof(DWORD) || !ff::load(reader, id))
             {
                 return false;
             }
 
+            size -= sizeof(DWORD);
             std::shared_ptr<ff::saved_data_base> saved_data = reader.saved_data(reader.pos(), size, size, ff::saved_data_type::none);
             if (!saved_data || !this->handle_data(id, saved_data))
             {
@@ -103,7 +104,7 @@ namespace
 std::shared_ptr<ff::saved_data_base> ff::internal::read_wav_file(ff::reader_base& reader, WAVEFORMATEX& format)
 {
     ::wav_reader wav;
-    if (wav.read(reader) && wav.wav_data != nullptr && wav.format.cbSize > 0)
+    if (wav.read(reader) && wav.wav_data != nullptr && wav.format.wFormatTag != 0)
     {
         format = wav.format;
         return wav.wav_data;

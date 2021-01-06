@@ -13,8 +13,6 @@ static void delete_audio_effect(ff::audio_playing_base* value)
 
 ff::audio_effect_o::audio_effect_o(
     const std::shared_ptr<ff::resource>& file_resource,
-    const std::shared_ptr<ff::data_base>& data,
-    const WAVEFORMATEX& format,
     size_t start,
     size_t length,
     size_t loop_start,
@@ -23,8 +21,7 @@ ff::audio_effect_o::audio_effect_o(
     float volume,
     float speed)
     : file(file_resource)
-    , data_(data)
-    , format_(format)
+    , format_{}
     , start(start)
     , length(length)
     , loop_start(loop_start)
@@ -152,18 +149,27 @@ std::shared_ptr<ff::audio_effect_playing> ff::audio_effect_o::remove_playing(aud
     return nullptr;
 }
 
+bool ff::audio_effect_o::resource_load_complete(bool from_source)
+{
+    std::shared_ptr<ff::saved_data_base> file_saved_data = this->file.object() ? this->file->saved_data() : nullptr;
+    std::shared_ptr<ff::reader_base> reader = file_saved_data ? file_saved_data->loaded_reader() : nullptr;
+    std::shared_ptr<ff::saved_data_base> wav_saved_data = reader ? ff::internal::read_wav_file(*reader, this->format_) : nullptr;
+    this->data_ = wav_saved_data ? wav_saved_data->loaded_data() : nullptr;
+
+    return this->data_ != nullptr && this->format_.wFormatTag != 0;
+}
+
+std::vector<std::shared_ptr<ff::resource>> ff::audio_effect_o::resource_get_dependencies() const
+{
+    return std::vector<std::shared_ptr<resource>>
+    {
+        this->file.resource()
+    };
+}
+
 bool ff::audio_effect_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
-    if (this->file.valid())
-    {
-        dict.set<ff::resource>("file", this->file.resource());
-    }
-    else
-    {
-        dict.set<ff::data_base>("data", this->data_, ff::saved_data_type::zlib_compressed);
-        dict.set_struct("format", this->format_);
-    }
-
+    dict.set<ff::resource>("file", this->file.resource());
     dict.set<size_t>("start", this->start);
     dict.set<size_t>("length", this->length);
     dict.set<size_t>("loop_start", this->loop_start);
@@ -177,44 +183,31 @@ bool ff::audio_effect_o::save_to_cache(ff::dict& dict, bool& allow_compress) con
 
 std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
-    return audio_effect_factory::load_from_cache(dict);
-}
+    int loop_count_int = dict.get<int>("loop_count");
+    loop_count_int = (loop_count_int < 0) ? XAUDIO2_LOOP_INFINITE : std::min(XAUDIO2_MAX_LOOP_COUNT, loop_count_int);
 
-std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::load_from_cache(const ff::dict& dict) const
-{
-    std::shared_ptr<ff::data_base> data;
-    WAVEFORMATEX format{};
-
-    std::shared_ptr<ff::resource> file_resource = dict.get<ff::resource>("file");
-    if (file_resource)
-    {
-        ff::auto_resource<ff::file_o> file(file_resource);
-        std::shared_ptr<ff::saved_data_base> file_saved_data = file.object() ? file->saved_data() : nullptr;
-        std::shared_ptr<ff::reader_base> reader = file_saved_data ? file_saved_data->loaded_reader() : nullptr;
-        std::shared_ptr<ff::saved_data_base> wav_saved_data = reader ? ff::internal::read_wav_file(*reader, format) : nullptr;
-
-        data = wav_saved_data ? wav_saved_data->loaded_data() : nullptr;
-        if (!data)
-        {
-            return nullptr;
-        }
-    }
-    else
-    {
-        data = dict.get<ff::data_base>("data");
-        if (!data || !dict.get_struct("format", format))
-        {
-            return nullptr;
-        }
-    }
-
+    std::shared_ptr<ff::resource> file = dict.get<ff::resource>("file");
     size_t start = dict.get<size_t>("start");
     size_t length = dict.get<size_t>("length");
     size_t loop_start = dict.get<size_t>("loop_start");
     size_t loop_length = dict.get<size_t>("loop_length");
-    size_t loop_count = std::min<size_t>(dict.get<int>("loop_count") >= 0 ? dict.get<size_t>("loop_count") : XAUDIO2_LOOP_INFINITE, XAUDIO2_LOOP_INFINITE);
+    size_t loop_count = static_cast<size_t>(loop_count_int);
     float volume = dict.get<float>("volume", 1.0f);
     float speed = dict.get<float>("speed", 1.0f);
 
-    return std::make_shared<audio_effect_o>(file_resource, data, format, start, length, loop_start, loop_length, loop_count, volume, speed);
+    return std::make_shared<audio_effect_o>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
+}
+
+std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::load_from_cache(const ff::dict& dict) const
+{
+    std::shared_ptr<ff::resource> file = dict.get<ff::resource>("file");
+    size_t start = dict.get<size_t>("start");
+    size_t length = dict.get<size_t>("length");
+    size_t loop_start = dict.get<size_t>("loop_start");
+    size_t loop_length = dict.get<size_t>("loop_length");
+    size_t loop_count = dict.get<size_t>("loop_count");
+    float volume = dict.get<float>("volume", 1.0f);
+    float speed = dict.get<float>("speed", 1.0f);
+
+    return std::make_shared<audio_effect_o>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
 }

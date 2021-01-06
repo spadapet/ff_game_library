@@ -1,0 +1,7 @@
+#include <windows.h>
+#include "source/resource.h"
+#pragma code_page(1252)
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+ID_TEST_EFFECT RCDATA "source/assets/test_effect.wav"

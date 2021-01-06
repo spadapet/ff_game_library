@@ -60,7 +60,7 @@ namespace ff
             std::unique_ptr<resource_object_loading_info> loading_info;
         };
 
-        void update_resource_object_info(resource_object_info& info, const std::shared_ptr<ff::resource>& new_value);
+        void update_resource_object_info(resource_object_info& info, std::shared_ptr<ff::resource> new_value);
         ff::value_ptr create_resource_objects(resource_object_info& info, ff::value_ptr value);
 
         std::recursive_mutex mutex;

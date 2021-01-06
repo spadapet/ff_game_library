@@ -28,6 +28,9 @@ namespace ff
         HANDLE handle;
     };
 
+#if !UWP_APP
+    HINSTANCE get_hinstance();
+#endif
     win_handle create_event(bool initial_set = false, bool manual_reset = true);
     bool is_event_set(HANDLE handle);
     bool wait_for_event_and_reset(HANDLE handle);

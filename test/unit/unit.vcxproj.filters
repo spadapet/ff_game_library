@@ -80,9 +80,15 @@
     <ClCompile Include="source\resource\resource_values_test.cpp">
       <Filter>source\resource</Filter>
     </ClCompile>
+    <ClCompile Include="source\audio\effect_test.cpp">
+      <Filter>source\audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
@@ -97,5 +103,16 @@
     <Filter Include="source\resource">
       <UniqueIdentifier>{b7a6460a-796a-4a06-b9a9-d3566cbc9dbc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\audio">
+      <UniqueIdentifier>{461ed571-3b17-4113-acf2-74827f2898c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\resource.rc">
+      <Filter>source</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="source\binary1.bin" />
   </ItemGroup>
 </Project>

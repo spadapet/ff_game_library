@@ -164,15 +164,29 @@ bool ff::resource_objects_o::save_to_cache(ff::dict& dict, bool& allow_compress)
     return true;
 }
 
-void ff::resource_objects_o::update_resource_object_info(resource_object_info& info, const std::shared_ptr<ff::resource>& new_value)
+void ff::resource_objects_o::update_resource_object_info(resource_object_info& info, std::shared_ptr<ff::resource> new_value)
 {
+    // notify new object that loading is done
+    if (new_value)
+    {
+        this->mutex.lock();
+        bool done_loading = info.loading_info->child_infos.empty();
+        this->mutex.unlock();
+
+        std::shared_ptr<ff::resource_object_base> new_obj = new_value->value()->get<ff::resource_object_base>();
+        if (done_loading && new_obj && !new_obj->resource_load_complete(false))
+        {
+            assert(false);
+            new_value = ::create_null_resource(new_value->name());
+        }
+    }
+
     std::lock_guard lock(this->mutex);
-    resource_object_loading_info& load_info = *info.loading_info;
     std::vector<resource_object_info*> parent_infos;
 
-    load_info.final_value = new_value;
+    info.loading_info->final_value = new_value;
 
-    if (load_info.child_infos.empty())
+    if (info.loading_info->child_infos.empty())
     {
         std::shared_ptr<ff::resource> old_resource = info.weak_value.lock();
         if (old_resource)
@@ -182,8 +196,8 @@ void ff::resource_objects_o::update_resource_object_info(resource_object_info& i
 
         info.weak_value = new_value;
 
-        ff::win_handle event = std::move(load_info.event);
-        parent_infos = std::move(load_info.parent_infos);
+        ff::win_handle event = std::move(info.loading_info->event);
+        std::swap(parent_infos, info.loading_info->parent_infos);
         info.loading_info.reset();
 
         ::SetEvent(event);
@@ -243,8 +257,7 @@ ff::value_ptr ff::resource_objects_o::create_resource_objects(resource_object_in
         if (!is_nested_resources && factory)
         {
             std::shared_ptr<ff::resource_object_base> obj = factory->load_from_cache(dict);
-            ff::value_ptr new_value = ff::value::create<ff::resource_object_base>(obj);
-            value = this->create_resource_objects(info, new_value);
+            value = ff::value::create<ff::resource_object_base>(obj);
         }
         else
         {
@@ -261,14 +274,15 @@ ff::value_ptr ff::resource_objects_o::create_resource_objects(resource_object_in
 
         value = ff::value::create<std::vector<ff::value_ptr>>(std::move(vec));
     }
-    else if (value->is_type<std::string>())
+    else if (value->is_type<std::string>() || value->is_type<ff::resource>())
     {
-        // Resolve references to other resources
-        std::string_view str = value->get<std::string>();
+        // Resolve references to other resources (and update existing references with the latest value)
+        ff::value_ptr string_val = value->convert_or_default<std::string>();
+        std::string_view str = string_val->get<std::string>();
 
-        if (ff::string::starts_with(str, ff::internal::RES_PREFIX))
+        if (ff::string::starts_with(str, ff::internal::REF_PREFIX))
         {
-            std::string_view ref_name = str.substr(ff::internal::RES_PREFIX.size());
+            std::string_view ref_name = str.substr(ff::internal::REF_PREFIX.size());
             std::shared_ptr<ff::resource> ref_value = this->get_resource_object(ref_name);
             {
                 std::lock_guard lock(this->mutex);
@@ -284,8 +298,7 @@ ff::value_ptr ff::resource_objects_o::create_resource_objects(resource_object_in
                 }
             }
 
-            ff::value_ptr new_value = ff::value::create<ff::resource>(ref_value);
-            value = this->create_resource_objects(info, new_value);
+            value = ff::value::create<ff::resource>(ref_value);
         }
         else if (ff::string::starts_with(str, ff::internal::LOC_PREFIX))
         {

@@ -18,6 +18,9 @@ namespace ff
     {
     public:
         data_static(const void* data, size_t size);
+#if !UWP_APP
+        data_static(HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name);
+#endif
         data_static(const data_static& other) = default;
 
         data_static& operator=(const data_static& other) = default;

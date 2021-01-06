@@ -11,6 +11,19 @@ ff::data_static::data_static(const void* data, size_t size)
     , size_(size)
 {}
 
+#if !UWP_APP
+
+ff::data_static::data_static(HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name)
+{
+    HRSRC res_found = ::FindResourceW(instance, rc_name, rc_type);
+    HGLOBAL res = res_found ? ::LoadResource(instance, res_found) : nullptr;
+    this->data_ = res ? reinterpret_cast<const uint8_t*>(::LockResource(res)) : nullptr;
+    this->size_ = this->data_ ? ::SizeofResource(instance, res_found) : 0;
+    assert(this->size_);
+}
+
+#endif
+
 size_t ff::data_static::size() const
 {
     return this->size_;

@@ -63,7 +63,7 @@ std::shared_ptr<ff::resource_object_base> ff::resource_object_base::load_from_ca
     return factory ? factory->load_from_cache(dict) : nullptr;
 }
 
-bool ff::resource_object_base::resource_load_from_source_complete()
+bool ff::resource_object_base::resource_load_complete(bool from_source)
 {
     return true;
 }

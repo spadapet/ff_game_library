@@ -21,8 +21,6 @@ namespace ff
     public:
         audio_effect_o(
             const std::shared_ptr<ff::resource>& file_resource,
-            const std::shared_ptr<ff::data_base>& data,
-            const WAVEFORMATEX& format,
             size_t start,
             size_t length,
             size_t loop_start,
@@ -40,6 +38,9 @@ namespace ff
         const WAVEFORMATEX& format() const;
         const std::shared_ptr<ff::data_base> data() const;
         std::shared_ptr<audio_effect_playing> remove_playing(audio_effect_playing* playing);
+
+        virtual bool resource_load_complete(bool from_source) override;
+        virtual std::vector<std::shared_ptr<resource>> resource_get_dependencies() const override;
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;

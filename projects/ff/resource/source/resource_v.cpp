@@ -42,6 +42,13 @@ ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::typ
 
     if (src)
     {
+        if (type == typeid(ff::type::string_v))
+        {
+            std::string ref_str(ff::internal::REF_PREFIX);
+            ref_str += src->name();
+            return ff::value::create<std::string>(std::move(ref_str));
+        }
+
         return src->value()->try_convert(type);
     }
 

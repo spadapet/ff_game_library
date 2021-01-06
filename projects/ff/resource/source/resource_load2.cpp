@@ -517,7 +517,12 @@ private:
         {
             for (std::shared_ptr<ff::resource> dep : obj->resource_get_dependencies())
             {
-                std::shared_ptr<ff::resource_object_base> dep_obj = dep->value()->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
+                if (dep && dep->new_resource())
+                {
+                    dep = dep->new_resource();
+                }
+
+                std::shared_ptr<ff::resource_object_base> dep_obj = dep ? dep->value()->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>() : nullptr;
                 if (dep_obj && !this->finish_loading_object(dep_obj.get()))
                 {
                     std::ostringstream str;
@@ -528,7 +533,7 @@ private:
                 }
             }
 
-            result = obj->resource_load_from_source_complete();
+            result = obj->resource_load_complete(true);
         }
 
         // Done
