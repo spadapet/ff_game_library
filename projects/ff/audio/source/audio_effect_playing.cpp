@@ -4,7 +4,7 @@
 #include "audio_effect_playing.h"
 #include "destroy_voice.h"
 
-ff::audio_effect_playing::audio_effect_playing(audio_effect_o* owner)
+ff::internal::audio_effect_playing::audio_effect_playing(audio_effect_o* owner)
     : owner(owner)
     , data(owner->data())
     , source(nullptr)
@@ -14,14 +14,14 @@ ff::audio_effect_playing::audio_effect_playing(audio_effect_o* owner)
     ff::audio::internal::add_playing(this);
 }
 
-ff::audio_effect_playing::~audio_effect_playing()
+ff::internal::audio_effect_playing::~audio_effect_playing()
 {
     this->reset();
 
     ff::audio::internal::remove_playing(this);
 }
 
-void ff::audio_effect_playing::init(IXAudio2SourceVoice* source, bool start_now)
+void ff::internal::audio_effect_playing::init(IXAudio2SourceVoice* source, bool start_now)
 {
     this->source = source;
 
@@ -31,12 +31,12 @@ void ff::audio_effect_playing::init(IXAudio2SourceVoice* source, bool start_now)
     }
 }
 
-void ff::audio_effect_playing::clear_owner()
+void ff::internal::audio_effect_playing::clear_owner()
 {
     this->owner = nullptr;
 }
 
-void ff::audio_effect_playing::reset()
+void ff::internal::audio_effect_playing::reset()
 {
     IXAudio2SourceVoice* source = this->source;
     if (source)
@@ -46,27 +46,27 @@ void ff::audio_effect_playing::reset()
     }
 }
 
-bool ff::audio_effect_playing::playing() const
+bool ff::internal::audio_effect_playing::playing() const
 {
     return this->source && !this->paused_ && !this->done;
 }
 
-bool ff::audio_effect_playing::paused() const
+bool ff::internal::audio_effect_playing::paused() const
 {
     return this->source && this->paused_ && !this->done;
 }
 
-bool ff::audio_effect_playing::stopped() const
+bool ff::internal::audio_effect_playing::stopped() const
 {
     return !this->source || this->done;
 }
 
-bool ff::audio_effect_playing::music() const
+bool ff::internal::audio_effect_playing::music() const
 {
     return false;
 }
 
-void ff::audio_effect_playing::advance()
+void ff::internal::audio_effect_playing::advance()
 {
     if (this->done)
     {
@@ -87,7 +87,7 @@ void ff::audio_effect_playing::advance()
     }
 }
 
-void ff::audio_effect_playing::stop()
+void ff::internal::audio_effect_playing::stop()
 {
     if (this->source && !this->done)
     {
@@ -96,7 +96,7 @@ void ff::audio_effect_playing::stop()
     }
 }
 
-void ff::audio_effect_playing::pause()
+void ff::internal::audio_effect_playing::pause()
 {
     if (this->source && !this->done)
     {
@@ -105,7 +105,7 @@ void ff::audio_effect_playing::pause()
     }
 }
 
-void ff::audio_effect_playing::resume()
+void ff::internal::audio_effect_playing::resume()
 {
     if (this->paused())
     {
@@ -114,62 +114,62 @@ void ff::audio_effect_playing::resume()
     }
 }
 
-double ff::audio_effect_playing::duration() const
+double ff::internal::audio_effect_playing::duration() const
 {
     return 0.0;
 }
 
-double ff::audio_effect_playing::position() const
+double ff::internal::audio_effect_playing::position() const
 {
     return 0.0;
 }
 
-bool ff::audio_effect_playing::position(double value)
+bool ff::internal::audio_effect_playing::position(double value)
 {
     return false;
 }
 
-double ff::audio_effect_playing::volume() const
+double ff::internal::audio_effect_playing::volume() const
 {
     return 0.0;
 }
 
-bool ff::audio_effect_playing::volume(double value)
+bool ff::internal::audio_effect_playing::volume(double value)
 {
     return false;
 }
 
-bool ff::audio_effect_playing::fade_in(double value)
+bool ff::internal::audio_effect_playing::fade_in(double value)
 {
     return false;
 }
 
-bool ff::audio_effect_playing::fade_out(double value)
+bool ff::internal::audio_effect_playing::fade_out(double value)
 {
     return false;
 }
 
-void __stdcall ff::audio_effect_playing::OnVoiceProcessingPassStart(UINT32 BytesRequired)
+void __stdcall ff::internal::audio_effect_playing::OnVoiceProcessingPassStart(UINT32 BytesRequired)
 {}
 
-void __stdcall ff::audio_effect_playing::OnVoiceProcessingPassEnd()
+void __stdcall ff::internal::audio_effect_playing::OnVoiceProcessingPassEnd()
 {}
 
-void __stdcall ff::audio_effect_playing::OnStreamEnd()
+void __stdcall ff::internal::audio_effect_playing::OnStreamEnd()
 {}
 
-void __stdcall ff::audio_effect_playing::OnBufferStart(void* pBufferContext)
+void __stdcall ff::internal::audio_effect_playing::OnBufferStart(void* pBufferContext)
 {}
 
-void __stdcall ff::audio_effect_playing::OnBufferEnd(void* pBufferContext)
+void __stdcall ff::internal::audio_effect_playing::OnBufferEnd(void* pBufferContext)
 {
     this->done = true;
 }
 
-void __stdcall ff::audio_effect_playing::OnLoopEnd(void* pBufferContext)
+void __stdcall ff::internal::audio_effect_playing::OnLoopEnd(void* pBufferContext)
 {}
 
-void __stdcall ff::audio_effect_playing::OnVoiceError(void* pBufferContext, HRESULT error)
+void __stdcall ff::internal::audio_effect_playing::OnVoiceError(void* pBufferContext, HRESULT error)
 {
     assert(false);
 }

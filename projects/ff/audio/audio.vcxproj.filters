@@ -20,6 +20,12 @@
     <ClCompile Include="source\wav_file.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\music.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\music_playing.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -46,6 +52,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\wav_file.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\music.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\music_playing.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\audio_effect_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

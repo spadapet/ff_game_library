@@ -1,19 +1,14 @@
 #pragma once
 #include "audio_child_base.h"
+#include "audio_effect_base.h"
+
+namespace ff::internal
+{
+    class audio_effect_playing;
+}
 
 namespace ff
 {
-    class audio_effect_playing;
-    class audio_playing_base;
-
-    class audio_effect_base : public ff::internal::audio_child_base
-    {
-    public:
-        virtual std::shared_ptr<audio_playing_base> play(bool start_now = true, float volume = 1, float speed = 1) = 0;
-        virtual bool playing() const = 0;
-        virtual void stop() = 0;
-    };
-
     class audio_effect_o
         : public ff::audio_effect_base
         , public ff::resource_object_base
@@ -37,7 +32,7 @@ namespace ff
 
         const WAVEFORMATEX& format() const;
         const std::shared_ptr<ff::data_base> data() const;
-        std::shared_ptr<audio_effect_playing> remove_playing(audio_effect_playing* playing);
+        std::shared_ptr<ff::internal::audio_effect_playing> remove_playing(ff::internal::audio_effect_playing* playing);
 
         virtual bool resource_load_complete(bool from_source) override;
         virtual std::vector<std::shared_ptr<resource>> resource_get_dependencies() const override;
@@ -57,7 +52,7 @@ namespace ff
         float volume;
         float speed;
 
-        std::vector<std::shared_ptr<audio_effect_playing>> playing_;
+        std::vector<std::shared_ptr<ff::internal::audio_effect_playing>> playing_;
     };
 }
 

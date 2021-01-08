@@ -4,11 +4,11 @@
 #include "audio_effect_playing.h"
 #include "wav_file.h"
 
-static ff::pool_allocator<ff::audio_effect_playing> audio_effect_pool;
+static ff::pool_allocator<ff::internal::audio_effect_playing> audio_effect_pool;
 
 static void delete_audio_effect(ff::audio_playing_base* value)
 {
-    ::audio_effect_pool.delete_obj(static_cast<ff::audio_effect_playing*>(value));
+    ::audio_effect_pool.delete_obj(static_cast<ff::internal::audio_effect_playing*>(value));
 }
 
 ff::audio_effect_o::audio_effect_o(
@@ -53,10 +53,10 @@ std::shared_ptr<ff::audio_playing_base> ff::audio_effect_o::play(bool start_now,
         return nullptr;
     }
 
-    std::shared_ptr<ff::audio_effect_playing> effect_ptr;
+    std::shared_ptr<ff::internal::audio_effect_playing> effect_ptr;
     {
-        ff::audio_effect_playing* effect = ::audio_effect_pool.new_obj(this);
-        effect_ptr = std::shared_ptr<ff::audio_effect_playing>(effect, ::delete_audio_effect);
+        ff::internal::audio_effect_playing* effect = ::audio_effect_pool.new_obj(this);
+        effect_ptr = std::shared_ptr<ff::internal::audio_effect_playing>(effect, ::delete_audio_effect);
     }
 
     XAUDIO2_SEND_DESCRIPTOR send{};
@@ -113,7 +113,7 @@ bool ff::audio_effect_o::playing() const
 
 void ff::audio_effect_o::stop()
 {
-    std::vector<std::shared_ptr<audio_effect_playing>> playing;
+    std::vector<std::shared_ptr<ff::internal::audio_effect_playing>> playing;
     std::swap(playing, this->playing_);
 
     for (const auto& i : playing)
@@ -133,13 +133,13 @@ const std::shared_ptr<ff::data_base> ff::audio_effect_o::data() const
     return this->data_;
 }
 
-std::shared_ptr<ff::audio_effect_playing> ff::audio_effect_o::remove_playing(audio_effect_playing* playing)
+std::shared_ptr<ff::internal::audio_effect_playing> ff::audio_effect_o::remove_playing(ff::internal::audio_effect_playing* playing)
 {
     for (auto i = this->playing_.cbegin(); i != this->playing_.cend(); ++i)
     {
         if ((*i).get() == playing)
         {
-            std::shared_ptr<ff::audio_effect_playing> ret = *i;
+            std::shared_ptr<ff::internal::audio_effect_playing> ret = *i;
             this->playing_.erase(i);
             return ret;
         }

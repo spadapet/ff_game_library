@@ -15,6 +15,8 @@
     <ClCompile Include="source\audio_effect_playing.cpp" />
     <ClCompile Include="source\destroy_voice.cpp" />
     <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\music.cpp" />
+    <ClCompile Include="source\music_playing.cpp" />
     <ClCompile Include="source\wav_file.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -23,10 +25,13 @@
     <ClInclude Include="source\audio.h" />
     <ClInclude Include="source\audio_child_base.h" />
     <ClInclude Include="source\audio_effect.h" />
+    <ClInclude Include="source\audio_effect_base.h" />
     <ClInclude Include="source\audio_effect_playing.h" />
     <ClInclude Include="source\audio_playing_base.h" />
     <ClInclude Include="source\destroy_voice.h" />
     <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\music.h" />
+    <ClInclude Include="source\music_playing.h" />
     <ClInclude Include="source\wav_file.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
