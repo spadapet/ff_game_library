@@ -121,4 +121,5 @@ namespace ff
     };
 
     size_t stream_copy(writer_base& writer, reader_base& reader, size_t size, size_t chunk_size = 0);
+    Microsoft::WRL::ComPtr<IStream> get_stream(const std::shared_ptr<reader_base>& reader);
 }

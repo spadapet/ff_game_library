@@ -18,6 +18,7 @@
 
 // Windows
 #include <Windows.h>
+#include <wrl.h>
 #include <ShlObj.h>
 
 // FF

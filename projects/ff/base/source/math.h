@@ -83,4 +83,10 @@ namespace ff::math
     {
         return (value + multiple - static_cast<T>(1)) / multiple * multiple;
     }
+
+    template<class T>
+    constexpr T clamp(T value, T min_value, T max_value)
+    {
+        return std::min<T>(std::max<T>(value, min_value), max_value);
+    }
 }

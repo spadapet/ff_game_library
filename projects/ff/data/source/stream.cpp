@@ -3,6 +3,211 @@
 #include "saved_data.h"
 #include "stream.h"
 
+namespace ff::internal
+{
+    class reader_stream : public IStream
+    {
+    public:
+        reader_stream(const std::shared_ptr<ff::reader_base>& reader)
+            : reader(reader)
+            , refs(0)
+        {}
+
+        virtual HRESULT __stdcall QueryInterface(REFIID riid, void** ppvObject) override
+        {
+            if (!ppvObject)
+            {
+                return E_POINTER;
+            }
+            else if (riid == __uuidof(IUnknown))
+            {
+                *ppvObject = static_cast<IUnknown*>(this);
+            }
+            else if (riid == __uuidof(IStream))
+            {
+                *ppvObject = static_cast<IStream*>(this);
+            }
+            else
+            {
+                return E_NOINTERFACE;
+            }
+
+            this->AddRef();
+            return S_OK;
+        }
+
+        virtual ULONG __stdcall AddRef() override
+        {
+            return this->refs.fetch_add(1) + 1;
+        }
+
+        virtual ULONG __stdcall Release() override
+        {
+            ULONG refs = this->refs.fetch_sub(1) - 1;
+            if (!refs)
+            {
+                delete this;
+            }
+
+            return refs;
+        }
+
+        virtual HRESULT __stdcall Read(void* pv, ULONG cb, ULONG* pcbRead) override
+        {
+            size_t cb2 = static_cast<size_t>(cb);
+            size_t bytes_left = this->reader->size() - this->reader->pos();
+            size_t bytes_read = std::min(cb2, bytes_left);
+
+            if (bytes_read)
+            {
+                bytes_read = this->reader->read(pv, bytes_read);
+            }
+
+            if (pcbRead)
+            {
+                *pcbRead = static_cast<ULONG>(bytes_read);
+            }
+
+            return (bytes_read == cb2) ? S_OK : S_FALSE;
+        }
+
+        virtual HRESULT __stdcall Write(const void* pv, ULONG cb, ULONG* pcbWritten) override
+        {
+            return STG_E_CANTSAVE;
+        }
+
+        virtual HRESULT __stdcall Seek(LARGE_INTEGER dlibMove, DWORD dwOrigin, ULARGE_INTEGER* plibNewPosition) override
+        {
+            LARGE_INTEGER new_pos;
+            switch (dwOrigin)
+            {
+                case STREAM_SEEK_SET:
+                    new_pos = dlibMove;
+                    break;
+
+                case STREAM_SEEK_CUR:
+                    new_pos.QuadPart = static_cast<LONGLONG>(this->reader->pos()) + dlibMove.QuadPart;
+                    break;
+
+                case STREAM_SEEK_END:
+                    new_pos.QuadPart = static_cast<LONGLONG>(this->reader->size()) + dlibMove.QuadPart;
+                    break;
+
+                default:
+                    return STG_E_INVALIDFUNCTION;
+            }
+
+            size_t new_pos2 = static_cast<size_t>(new_pos.QuadPart);
+            if (this->reader->pos(new_pos2) != new_pos2)
+            {
+                return STG_E_INVALIDFUNCTION;
+            }
+
+            if (plibNewPosition)
+            {
+                plibNewPosition->QuadPart = static_cast<ULONGLONG>(new_pos.QuadPart);
+            }
+
+            return S_OK;
+        }
+
+        virtual HRESULT __stdcall SetSize(ULARGE_INTEGER libNewSize) override
+        {
+            return STG_E_INVALIDFUNCTION;
+        }
+
+        virtual HRESULT __stdcall CopyTo(IStream* pstm, ULARGE_INTEGER cb, ULARGE_INTEGER* pcbRead, ULARGE_INTEGER* pcbWritten) override
+        {
+            if (!pstm || pstm == this)
+            {
+                return STG_E_INVALIDPOINTER;
+            }
+
+            size_t bytes_requested = static_cast<size_t>(cb.QuadPart);
+            size_t bytes_left = this->reader->size() - this->reader->pos();
+            size_t bytes_read = std::min(bytes_requested, bytes_left);
+
+            if (pcbRead)
+            {
+                pcbRead->QuadPart = static_cast<ULONGLONG>(bytes_read);
+            }
+
+            if (bytes_read)
+            {
+                ff::vector<uint8_t, 1024> buffer;
+                buffer.resize(bytes_read);
+                if (this->reader->read(buffer.data(), bytes_read) != bytes_read)
+                {
+                    return E_FAIL;
+                }
+
+                ULONG bytes_written = 0;
+                HRESULT hr = pstm->Write(buffer.data(), static_cast<ULONG>(bytes_read), &bytes_written);
+
+                if (pcbWritten)
+                {
+                    pcbWritten->QuadPart = static_cast<ULONGLONG>(bytes_written);
+                }
+
+                return hr;
+            }
+            else
+            {
+                if (pcbWritten)
+                {
+                    pcbWritten->QuadPart = 0;
+                }
+
+                return S_OK;
+            }
+        }
+
+        virtual HRESULT __stdcall Commit(DWORD grfCommitFlags) override
+        {
+            return S_OK;
+        }
+
+        virtual HRESULT __stdcall Revert() override
+        {
+            return S_OK;
+        }
+
+        virtual HRESULT __stdcall LockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType) override
+        {
+            return STG_E_INVALIDFUNCTION;
+        }
+
+        virtual HRESULT __stdcall UnlockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType) override
+        {
+            return STG_E_INVALIDFUNCTION;
+        }
+
+        virtual HRESULT __stdcall Stat(STATSTG* pstatstg, DWORD grfStatFlag) override
+        {
+            if (!pstatstg)
+            {
+                return STG_E_INVALIDPOINTER;
+            }
+
+            std::memset(pstatstg, 0, sizeof(*pstatstg));
+
+            pstatstg->type = STGTY_STREAM;
+            pstatstg->cbSize.QuadPart = static_cast<ULONGLONG>(this->reader->size());
+
+            return S_OK;
+        }
+
+        virtual HRESULT __stdcall Clone(IStream** ppstm) override
+        {
+            return STG_E_INVALIDFUNCTION;
+        }
+
+    protected:
+        std::atomic_ulong refs;
+        std::shared_ptr<ff::reader_base> reader;
+    };
+}
+
 ff::stream_base::~stream_base()
 {}
 
@@ -220,3 +425,7 @@ size_t ff::stream_copy(writer_base& writer, reader_base& reader, size_t size, si
     return copied;
 }
 
+Microsoft::WRL::ComPtr<IStream> ff::get_stream(const std::shared_ptr<reader_base>& reader)
+{
+    return reader ? Microsoft::WRL::ComPtr<IStream>(new ff::internal::reader_stream(reader)) : nullptr;
+}
