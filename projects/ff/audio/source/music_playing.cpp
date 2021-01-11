@@ -94,7 +94,6 @@ ff::internal::music_playing::music_playing(music_o* owner)
     , desired_position(0)
     , source(nullptr)
     , async_event(ff::create_event(true))
-    , stop_event(ff::create_event())
     , media_callback(new source_reader_callback(this))
     , speed(1)
     , volume_(1)
@@ -115,20 +114,34 @@ ff::internal::music_playing::~music_playing()
     ff::audio::internal::remove_playing(this);
 }
 
-void ff::internal::music_playing::init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop)
+bool ff::internal::music_playing::init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop)
 {
     assert(this->state == state_t::invalid);
-    if (ff::audio::internal::xaudio() && ff::audio::internal::xaudio_voice(ff::audio::voice_type::music))
+
+    if (file && file->saved_data() && ff::audio::internal::xaudio() && ff::audio::internal::xaudio_voice(ff::audio::voice_type::music))
     {
         this->state = state_t::init;
         this->file = file;
-        this->start_playing = start_playing;
+        this->start_playing = start_now;
         this->volume_ = volume;
         this->speed = speed;
         this->loop = loop;
 
-        this->async_start();
+        ::ResetEvent(this->async_event);
+
+        ff::thread_pool::get()->add_task([this]()
+        {
+            bool status = this->async_init();
+            assert(status);
+            this->read_sample();
+
+            ::SetEvent(this->async_event);
+        });
+
+        return true;
     }
+
+    return false;
 }
 
 void ff::internal::music_playing::clear_owner()
@@ -139,7 +152,7 @@ void ff::internal::music_playing::clear_owner()
 
 void ff::internal::music_playing::reset()
 {
-    this->async_cancel();
+    ff::wait_for_handle(this->async_event);
 
     std::lock_guard lock(this->mutex);
 
@@ -529,14 +542,17 @@ HRESULT ff::internal::music_playing::OnFlush(DWORD dwStreamIndex)
             this->state = state_t::init;
         }
 
-        PROPVARIANT value;
-        ::PropVariantInit(&value);
-        value.vt = VT_I8;
-        value.hVal.QuadPart = this->desired_position;
+        if (this->media_reader)
+        {
+            PROPVARIANT value;
+            ::PropVariantInit(&value);
+            value.vt = VT_I8;
+            value.hVal.QuadPart = this->desired_position;
 
-        this->media_reader->SetCurrentPosition(GUID_NULL, value);
+            this->media_reader->SetCurrentPosition(GUID_NULL, value);
 
-        ::PropVariantClear(&value);
+            ::PropVariantClear(&value);
+        }
     }
 
     this->read_sample();
@@ -551,68 +567,85 @@ HRESULT ff::internal::music_playing::OnEvent(DWORD dwStreamIndex, IMFMediaEvent*
 
 bool ff::internal::music_playing::async_init()
 {
-    assertRetVal(_stream && _mediaCallback && !this->source && !this->media_reader, false);
+    Microsoft::WRL::ComPtr<IMFByteStream> media_byte_stream;
+    {
+        Microsoft::WRL::ComPtr<IStream> file_stream = ff::get_stream(this->file->saved_data()->loaded_reader());
+        if (FAILED(::MFCreateMFByteStreamOnStream(file_stream.Get(), &media_byte_stream)))
+        {
+            return false;
+        }
 
-    Microsoft::WRL::ComPtr<ff::IDataReader> reader;
-    assertRetVal(_stream->CreateReader(&reader), false);
+        Microsoft::WRL::ComPtr<IMFAttributes> stream_attributes;
+        if (SUCCEEDED(media_byte_stream.As(&stream_attributes)))
+        {
+            // Only MP3 is supported now
+            stream_attributes->SetString(MF_BYTESTREAM_CONTENT_TYPE, L"audio/mpeg");
+        }
+    }
 
-    Microsoft::WRL::ComPtr<IMFByteStream> mediaByteStream;
-    assertRetVal(ff::CreateReadStream(reader, _stream->GetMimeType(), &mediaByteStream), false);
+    Microsoft::WRL::ComPtr<IMFSourceResolver> source_resolver;
+    if (FAILED(::MFCreateSourceResolver(&source_resolver)))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IMFSourceResolver> sourceResolver;
-    assertHrRetVal(::MFCreateSourceResolver(&sourceResolver), false);
+    Microsoft::WRL::ComPtr<IUnknown> media_source_unknown;
+    MF_OBJECT_TYPE media_source_object_type = MF_OBJECT_MEDIASOURCE;
+    DWORD media_source_flags = MF_RESOLUTION_MEDIASOURCE | MF_RESOLUTION_READ | MF_RESOLUTION_DISABLE_LOCAL_PLUGINS;
+    if (FAILED(source_resolver->CreateObjectFromByteStream(media_byte_stream.Get(), nullptr, media_source_flags, nullptr, &media_source_object_type, &media_source_unknown)))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IUnknown> mediaSourceUnknown;
-    MF_OBJECT_TYPE mediaSourceObjectType = MF_OBJECT_MEDIASOURCE;
-    DWORD mediaSourceFlags = MF_RESOLUTION_MEDIASOURCE | MF_RESOLUTION_READ | MF_RESOLUTION_DISABLE_LOCAL_PLUGINS;
-    assertHrRetVal(sourceResolver->CreateObjectFromByteStream(mediaByteStream, nullptr, mediaSourceFlags, nullptr, &mediaSourceObjectType, &mediaSourceUnknown), false);
+    Microsoft::WRL::ComPtr<IMFMediaSource> media_source;
+    Microsoft::WRL::ComPtr<IMFAttributes> media_attributes;
+    if (FAILED(FAILED(media_source_unknown.As(&media_source))) ||
+        FAILED(::MFCreateAttributes(&media_attributes, 1)) ||
+        FAILED(media_attributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, this->media_callback.Get())))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IMFMediaSource> mediaSource;
-    assertRetVal(mediaSource.QueryFrom(mediaSourceUnknown), false);
+    Microsoft::WRL::ComPtr<IMFSourceReader> media_reader;
+    if (FAILED(::MFCreateSourceReaderFromMediaSource(media_source.Get(), media_attributes.Get(), &media_reader)) ||
+        FAILED(media_reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, false)) ||
+        FAILED(media_reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, true)))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IMFAttributes> mediaAttributes;
-    assertHrRetVal(::MFCreateAttributes(&mediaAttributes, 1), false);
-    assertHrRetVal(mediaAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, _mediaCallback.Interface()), false);
+    Microsoft::WRL::ComPtr<IMFMediaType> media_type;
+    Microsoft::WRL::ComPtr<IMFMediaType> actual_media_type;
+    if (FAILED(::MFCreateMediaType(&media_type)) ||
+        FAILED(media_type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio)) ||
+        FAILED(media_type->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_Float)) ||
+        FAILED(media_reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, media_type.Get())) ||
+        FAILED(media_reader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, &actual_media_type)))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IMFSourceReader> mediaReader;
-    assertHrRetVal(::MFCreateSourceReaderFromMediaSource(mediaSource, mediaAttributes, &mediaReader), false);
-    assertHrRetVal(mediaReader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, false), false);
-    assertHrRetVal(mediaReader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, true), false);
+    WAVEFORMATEX* wave_format = nullptr;
+    UINT wave_format_length = 0;
+    PROPVARIANT duration_value;
+    if (FAILED(::MFCreateWaveFormatExFromMFMediaType(actual_media_type.Get(), &wave_format, &wave_format_length)) ||
+        FAILED(media_reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &duration_value)))
+    {
+        return false;
+    }
 
-    Microsoft::WRL::ComPtr<IMFMediaType> mediaType;
-    assertHrRetVal(::MFCreateMediaType(&mediaType), false);
-    assertHrRetVal(mediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio), false);
-    assertHrRetVal(mediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_Float), false);
-    assertHrRetVal(mediaReader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, mediaType), false);
+    XAUDIO2_SEND_DESCRIPTOR send_desc{};
+    send_desc.pOutputVoice = ff::audio::internal::xaudio_voice(ff::audio::voice_type::music);
 
-    Microsoft::WRL::ComPtr<IMFMediaType> actualMediaType;
-    assertHrRetVal(mediaReader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, &actualMediaType), false);
-
-    WAVEFORMATEX* waveFormat = nullptr;
-    UINT waveFormatLength = 0;
-    assertHrRetVal(::MFCreateWaveFormatExFromMFMediaType(actualMediaType, &waveFormat, &waveFormatLength), false);
-
-    PROPVARIANT durationValue;
-    assertHrRetVal(mediaReader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &durationValue), false);
-
-    XAUDIO2_SEND_DESCRIPTOR sendDesc{ 0 };
-    sendDesc.pOutputVoice = _device->AsXAudioDevice()->GetVoice(ff::AudioVoiceType::MUSIC);
-
-    XAUDIO2_VOICE_SENDS sends;
+    XAUDIO2_VOICE_SENDS sends{};
     sends.SendCount = 1;
-    sends.pSends = &sendDesc;
+    sends.pSends = &send_desc;
 
     IXAudio2SourceVoice* source = nullptr;
-    HRESULT hr = _device->AsXAudioDevice()->GetAudio()->CreateSourceVoice(
-        &source,
-        waveFormat,
-        0, // flags
-        XAUDIO2_DEFAULT_FREQ_RATIO,
-        this, // callback,
-        &sends);
+    HRESULT hr = ff::audio::internal::xaudio()->CreateSourceVoice(&source, wave_format, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this, &sends);
 
-    ::CoTaskMemFree(waveFormat);
-    waveFormat = nullptr;
+    ::CoTaskMemFree(wave_format);
+    wave_format = nullptr;
 
     if (FAILED(hr))
     {
@@ -621,12 +654,12 @@ bool ff::internal::music_playing::async_init()
             source->DestroyVoice();
         }
 
-        assertHrRetVal(hr, false);
+        return false;
     }
 
     std::lock_guard lock(this->mutex);
 
-    this->duration_ = (LONGLONG)durationValue.uhVal.QuadPart;
+    this->duration_ = static_cast<LONGLONG>(duration_value.uhVal.QuadPart);
 
     if (this->desired_position >= 0 && this->desired_position <= this->duration_)
     {
@@ -635,54 +668,24 @@ bool ff::internal::music_playing::async_init()
 
         value.vt = VT_I8;
         value.hVal.QuadPart = this->desired_position;
-        verifyHr(mediaReader->SetCurrentPosition(GUID_NULL, value));
+        media_reader->SetCurrentPosition(GUID_NULL, value);
 
         ::PropVariantClear(&value);
     }
 
-    if (this->state == state_t::MUSIC_INIT)
+    if (this->state == state_t::init)
     {
-        UpdateSourceVolume(source);
-        source->SetFrequencyRatio(_freqRatio);
+        this->update_source_volume(source);
+        source->SetFrequencyRatio(this->speed);
         this->source = source;
-        this->media_reader = mediaReader;
+        this->media_reader = media_reader;
     }
     else
     {
         source->DestroyVoice();
     }
 
-    assertRetVal(this->source, false);
-    return true;
-}
-
-void ff::internal::music_playing::async_start()
-{
-    ::ResetEvent(this->async_event);
-
-    ff::thread_pool::get()->add_task([this]()
-        {
-            this->async_run();
-        });
-}
-
-void ff::internal::music_playing::async_run()
-{
-    if (!this->source && !ff::is_event_set(this->stop_event))
-    {
-        this->async_init();
-    }
-
-    this->read_sample();
-
-    ::SetEvent(this->async_event);
-}
-
-void ff::internal::music_playing::async_cancel()
-{
-    ::SetEvent(this->stop_event);
-    ff::wait_for_handle(this->async_event);
-    ::ResetEvent(this->stop_event);
+    return this->source != nullptr;
 }
 
 void ff::internal::music_playing::read_sample()

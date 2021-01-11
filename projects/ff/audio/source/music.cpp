@@ -32,14 +32,12 @@ void ff::music_o::reset()
 
 std::shared_ptr<ff::audio_playing_base> ff::music_o::play(bool start_now, float volume, float speed)
 {
-#if 0
-    noAssertRetVal(_device->IsValid() && _streamRes.GetObject(), false);
-
-    ff::ComPtr<AudioMusicPlaying, ff::IAudioPlaying> playing;
-    assertHrRetVal(ff::ComAllocator<AudioMusicPlaying>::CreateInstance(_device, &playing), false);
-    assertRetVal(playing->Init(this, _streamRes.GetObject(), startPlaying, _volume * volume, _freqRatio * freqRatio, _loop), false);
-    _playing.Push(playing);
-#endif
+    std::shared_ptr<ff::internal::music_playing> playing = std::make_shared<ff::internal::music_playing>(this);
+    if (playing->init(this->file.object(), start_now, this->volume * volume, this->speed * speed, this->loop))
+    {
+        this->playing_.push_back(playing);
+        return playing;
+    }
 
     return nullptr;
 }

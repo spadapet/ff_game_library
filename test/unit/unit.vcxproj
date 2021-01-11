@@ -20,6 +20,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\audio\effect_test.cpp" />
+    <ClCompile Include="source\audio\music_test.cpp" />
     <ClCompile Include="source\base\fixed_test.cpp" />
     <ClCompile Include="source\base\forward_list_test.cpp" />
     <ClCompile Include="source\base\hash_set_test.cpp" />
@@ -67,9 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="source\resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="source\binary1.bin" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

@@ -19,7 +19,7 @@ namespace ff::internal
         music_playing(music_o* owner);
         virtual ~music_playing() override;
 
-        void init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop);
+        bool init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop);
         void clear_owner();
 
         enum class state_t
@@ -69,9 +69,6 @@ namespace ff::internal
 
     private:
         bool async_init();
-        void async_start();
-        void async_run();
-        void async_cancel();
         void read_sample();
         std::shared_ptr<ff::internal::music_playing> on_music_done();
         void update_source_volume(IXAudio2SourceVoice* source);
@@ -103,7 +100,6 @@ namespace ff::internal
         IXAudio2SourceVoice* source;
         ff::timer fade_timer;
         ff::win_handle async_event; // set when there is no async action running
-        ff::win_handle stop_event; // set when everything should stop
         std::list<buffer_info> buffer_infos;
         std::shared_ptr<ff::file_o> file;
         Microsoft::WRL::ComPtr<IMFSourceReader> media_reader;

@@ -14,3 +14,5 @@
 #include "source/wav_file.h"
 
 #pragma comment(lib, "Mfplat.lib")
+#pragma comment(lib, "Mfreadwrite.lib")
+#pragma comment(lib, "Mfuuid.lib")

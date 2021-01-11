@@ -83,6 +83,9 @@
     <ClCompile Include="source\audio\effect_test.cpp">
       <Filter>source\audio</Filter>
     </ClCompile>
+    <ClCompile Include="source\audio\music_test.cpp">
+      <Filter>source\audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -111,8 +114,5 @@
     <ResourceCompile Include="source\resource.rc">
       <Filter>source</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="source\binary1.bin" />
   </ItemGroup>
 </Project>

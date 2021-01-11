@@ -42,12 +42,13 @@ namespace audio_test
             effect->play();
 
             int i = 0;
-            while (effect->playing() && ++i < 100)
+            while (effect->playing() && ++i < 200)
             {
-                std::this_thread::sleep_for(32ms);
+                std::this_thread::sleep_for(16ms);
+                ff::audio::advance_effects();
             }
 
-            Assert::IsTrue(i < 100);
+            Assert::IsTrue(i < 200);
         }
     };
 }

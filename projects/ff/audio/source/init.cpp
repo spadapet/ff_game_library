@@ -2,6 +2,7 @@
 #include "audio.h"
 #include "audio_effect.h"
 #include "init.h"
+#include "music.h"
 
 ff::init_audio::init_audio()
 {
@@ -14,6 +15,7 @@ ff::init_audio::init_audio()
             // Resource objects
 
             ff::resource_object_base::register_factory<ff::internal::audio_effect_factory>("effect");
+            ff::resource_object_base::register_factory<ff::internal::music_factory>("music");
         }
     } init;
 }
