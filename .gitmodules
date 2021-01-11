@@ -10,7 +10,3 @@
 	path = vendor/libpng
 	url = https://github.com/glennrp/libpng.git
 	branch = libpng16
-[submodule "vendor/entt"]
-	path = vendor/entt
-	url = https://github.com/spadapet/entt.git
-	branch = user/spadapet
