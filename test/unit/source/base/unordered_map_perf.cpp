@@ -5,8 +5,8 @@ namespace base_test
 {
     static void std_compare_perf(size_t entry_count)
     {
-        ff::vector<std::string> keys;
-        ff::vector<size_t> values;
+        std::vector<std::string> keys;
+        std::vector<size_t> values;
         ff::unordered_map<std::string_view, size_t> map;
         std::unordered_map<std::string_view, size_t, ff::hash<std::string_view>> map2;
 
@@ -19,7 +19,7 @@ namespace base_test
             values.push_back(i);
         }
 
-        ff::memory::start_tracking_allocations();
+        ff::memory::allocation_stats my_mem_stats_before = ff::memory::start_tracking_allocations();
         ff::timer timer;
 
         for (size_t i = 0; i < 8; i++)
@@ -39,7 +39,7 @@ namespace base_test
 
         double my_time = timer.tick();
         ff::memory::allocation_stats my_mem_stats = ff::memory::stop_tracking_allocations();
-        ff::memory::start_tracking_allocations();
+        ff::memory::allocation_stats crt_mem_stats_before = ff::memory::start_tracking_allocations();
         timer.tick();
 
         for (size_t i = 0; i < 8; i++)
@@ -78,24 +78,26 @@ namespace base_test
         }
 
         // Mem results
+#if _DEBUG
         {
             std::ostringstream status;
             status
                 << "ff::unordered_map memory:Total:"
-                << my_mem_stats.total
+                << my_mem_stats.total - my_mem_stats_before.total
                 << ",Max:"
-                << my_mem_stats.maximum
+                << my_mem_stats.maximum - my_mem_stats_before.maximum
                 << ",Count:"
-                << my_mem_stats.count
+                << my_mem_stats.count - my_mem_stats_before.count
                 << ". std::unordered_map memory:Total:"
-                << crt_mem_stats.total
+                << crt_mem_stats.total - crt_mem_stats_before.total
                 << ",Max:"
-                << crt_mem_stats.maximum
+                << crt_mem_stats.maximum - crt_mem_stats_before.maximum
                 << ",Count:"
-                << crt_mem_stats.count
+                << crt_mem_stats.count - crt_mem_stats_before.count
                 << "\r\n";
             Logger::WriteMessage(status.str().c_str());
         }
+#endif
     }
 
     TEST_CLASS(unordered_map_perf)

@@ -99,7 +99,7 @@ bool ff::audio::internal::init()
         dc.BreakMask = XAUDIO2_LOG_ERRORS;
         ::xaudio2->SetDebugConfiguration(&dc);
 #endif
-    }
+}
 
     return ::init_mastering_voice();
 }

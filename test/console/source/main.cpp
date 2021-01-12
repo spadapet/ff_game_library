@@ -2,8 +2,8 @@
 
 static void std_compare_perf(size_t entry_count)
 {
-    ff::vector<std::string> keys;
-    ff::vector<size_t> values;
+    std::vector<std::string> keys;
+    std::vector<size_t> values;
     ff::unordered_map<std::string_view, size_t> map;
     std::unordered_map<std::string_view, size_t, ff::hash<std::string_view>> map2;
 
@@ -98,7 +98,7 @@ static void run_unicode_file_name()
 
 int main()
 {
-    ff::init_resource();
+    ff::init_resource init;
 
     std::cout << "Choose:" << std::endl
         << "1) Hash table perf" << std::endl

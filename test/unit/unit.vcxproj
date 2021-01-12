@@ -44,6 +44,7 @@
     <ClCompile Include="source\data\json_test.cpp" />
     <ClCompile Include="source\data\persist_test.cpp" />
     <ClCompile Include="source\data\value_test.cpp" />
+    <ClCompile Include="source\entity\entity_test.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\resource\resource_persist_test.cpp" />
     <ClCompile Include="source\resource\resource_values_test.cpp" />

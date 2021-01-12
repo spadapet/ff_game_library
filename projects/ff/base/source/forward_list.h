@@ -75,7 +75,7 @@ namespace ff::internal
         {}
 
         // Convert non-const iterator to const iterator
-        template<typename = std::enable_if_t<std::is_const_v<T>>>
+        template<class = std::enable_if_t<std::is_const_v<T>>>
         forward_list_iterator(const forward_list_iterator<std::remove_const_t<T>>& other)
             : node(other.internal_node())
         {}

@@ -10,7 +10,7 @@ namespace ff::memory
         size_t count;
     };
 
-    void start_tracking_allocations();
+    allocation_stats start_tracking_allocations();
     allocation_stats stop_tracking_allocations();
     allocation_stats get_allocation_stats();
 }

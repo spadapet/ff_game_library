@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectName>ff.entity</ProjectName>
+    <ProjectGuid>{740d7a9f-9a5a-4570-bf6f-27ba3628d399}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="..\..\..\build\cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\component_pool.cpp" />
+    <ClCompile Include="source\entity.cpp" />
+    <ClCompile Include="source\entity_bucket.cpp" />
+    <ClCompile Include="source\entity_data.cpp" />
+    <ClCompile Include="source\entity_domain.cpp" />
+    <ClCompile Include="source\entity_events.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="entity_api.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\component_pool.h" />
+    <ClInclude Include="source\entity.h" />
+    <ClInclude Include="source\entity_bucket.h" />
+    <ClInclude Include="source\entity_data.h" />
+    <ClInclude Include="source\entity_domain.h" />
+    <ClInclude Include="source\entity_events.h" />
+  </ItemGroup>
+  <Import Project="$(FFRoot)build\cpp.targets" />
+</Project>

@@ -9,6 +9,7 @@ namespace ff
     {
     public:
         init_base();
+        ~init_base();
 
     private:
         ff::thread_dispatch thread_dispatch;

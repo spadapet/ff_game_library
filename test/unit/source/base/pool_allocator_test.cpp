@@ -5,7 +5,7 @@ static void pool_allocator_test()
 {
     typedef std::tuple<int, float> test_data;
     ff::pool_allocator<test_data, ThreadSafe> pool;
-    ff::vector<test_data*> all;
+    std::vector<test_data*> all;
     all.reserve(256);
 
     size_t size, allocated;

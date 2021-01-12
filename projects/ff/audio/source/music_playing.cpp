@@ -570,7 +570,7 @@ bool ff::internal::music_playing::async_init()
     Microsoft::WRL::ComPtr<IMFByteStream> media_byte_stream;
     {
         Microsoft::WRL::ComPtr<IStream> file_stream = ff::get_stream(this->file->saved_data()->loaded_reader());
-        if (FAILED(::MFCreateMFByteStreamOnStream(file_stream.Get(), &media_byte_stream)))
+        if (FAILED(::MFCreateMFByteStreamOnStreamEx(file_stream.Get(), &media_byte_stream)))
         {
             return false;
         }
@@ -599,7 +599,7 @@ bool ff::internal::music_playing::async_init()
 
     Microsoft::WRL::ComPtr<IMFMediaSource> media_source;
     Microsoft::WRL::ComPtr<IMFAttributes> media_attributes;
-    if (FAILED(FAILED(media_source_unknown.As(&media_source))) ||
+    if (FAILED(media_source_unknown.As(&media_source)) ||
         FAILED(::MFCreateAttributes(&media_attributes, 1)) ||
         FAILED(media_attributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK, this->media_callback.Get())))
     {

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "log.h"
 #include "memory.h"
 
 #include <crtdbg.h>
@@ -9,6 +10,7 @@ namespace ff::memory::internal
     static std::atomic_size_t current_bytes;
     static std::atomic_size_t max_bytes;
     static std::atomic_size_t alloc_count;
+    static std::atomic_int tracking_refs;
     static _CRT_ALLOC_HOOK old_hook;
 
     static int crt_alloc_hook(
@@ -60,24 +62,41 @@ namespace ff::memory::internal
     }
 }
 
-void ff::memory::start_tracking_allocations()
+ff::memory::allocation_stats ff::memory::start_tracking_allocations()
 {
-    assert(!ff::memory::internal::old_hook);
+    if (ff::memory::internal::tracking_refs.fetch_add(1) == 0)
+    {
+        assert(!ff::memory::internal::old_hook);
 
-    _CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
-    ff::memory::internal::old_hook = _CrtSetAllocHook(ff::memory::internal::crt_alloc_hook);
+        _CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG));
+        ff::memory::internal::old_hook = _CrtSetAllocHook(ff::memory::internal::crt_alloc_hook);
+    }
+
+    return ff::memory::get_allocation_stats();
 }
 
 ff::memory::allocation_stats ff::memory::stop_tracking_allocations()
 {
     ff::memory::allocation_stats stats = ff::memory::get_allocation_stats();
-    _CrtSetAllocHook(ff::memory::internal::old_hook);
 
-    ff::memory::internal::total_bytes = 0;
-    ff::memory::internal::current_bytes = 0;
-    ff::memory::internal::max_bytes = 0;
-    ff::memory::internal::alloc_count = 0;
-    ff::memory::internal::old_hook = nullptr;
+    if (ff::memory::internal::tracking_refs.fetch_sub(1) == 1)
+    {
+        _CrtSetAllocHook(ff::memory::internal::old_hook);
+
+        std::ostringstream status;
+        status
+            << "CRT memory allocations:" << std::endl
+            << "  Total: " << stats.total << " bytes" << std::endl
+            << "  Max:   " << stats.maximum << " bytes" << std::endl
+            << "  Count: " << stats.count << " allocations";
+        ff::log::write_debug(status);
+
+        ff::memory::internal::total_bytes = 0;
+        ff::memory::internal::current_bytes = 0;
+        ff::memory::internal::max_bytes = 0;
+        ff::memory::internal::alloc_count = 0;
+        ff::memory::internal::old_hook = nullptr;
+    }
 
     return stats;
 }
