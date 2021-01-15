@@ -86,9 +86,6 @@
     <ClCompile Include="source\audio\music_test.cpp">
       <Filter>source\audio</Filter>
     </ClCompile>
-    <ClCompile Include="source\entity\entity_test.cpp">
-      <Filter>source\entity</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -111,9 +108,6 @@
     </Filter>
     <Filter Include="source\audio">
       <UniqueIdentifier>{461ed571-3b17-4113-acf2-74827f2898c1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="source\entity">
-      <UniqueIdentifier>{37085415-53c3-4bbc-a503-34449b515f53}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -48,8 +48,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{07CD83
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource", "projects\ff\resource\resource_uwp.vcxproj", "{AA32970A-8178-4979-8C52-EA30EEBB77C9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.entity", "projects\ff\entity\entity_uwp.vcxproj", "{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -154,14 +152,6 @@ Global
 		{AA32970A-8178-4979-8C52-EA30EEBB77C9}.Release|x64.Build.0 = Release|x64
 		{AA32970A-8178-4979-8C52-EA30EEBB77C9}.Release|x86.ActiveCfg = Release|Win32
 		{AA32970A-8178-4979-8C52-EA30EEBB77C9}.Release|x86.Build.0 = Release|Win32
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Debug|x64.ActiveCfg = Debug|x64
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Debug|x64.Build.0 = Debug|x64
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Debug|x86.ActiveCfg = Debug|Win32
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Debug|x86.Build.0 = Debug|Win32
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Release|x64.ActiveCfg = Release|x64
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Release|x64.Build.0 = Release|x64
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Release|x86.ActiveCfg = Release|Win32
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -179,7 +169,6 @@ Global
 		{EABBDAC6-970E-403E-A7C9-ECC410B2A040} = {47627E0A-97AB-443C-858F-58FE0484F0D6}
 		{F3F87D0D-69B7-4187-95B0-BFC0DD83E311} = {47627E0A-97AB-443C-858F-58FE0484F0D6}
 		{AA32970A-8178-4979-8C52-EA30EEBB77C9} = {47627E0A-97AB-443C-858F-58FE0484F0D6}
-		{F33E0D4D-973E-4B3E-A75F-5B0CEFB5AE4B} = {47627E0A-97AB-443C-858F-58FE0484F0D6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9E65BE6F-B921-4190-995D-5E5CA6AA77DB}

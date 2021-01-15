@@ -8,7 +8,6 @@
 #include <ff/audio/audio_api.h>
 #include <ff/base/base_api.h>
 #include <ff/data/data_api.h>
-#include <ff/entity/entity_api.h>
 #include <ff/resource/resource_api.h>
 
 // VS
