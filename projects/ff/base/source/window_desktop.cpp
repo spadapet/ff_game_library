@@ -5,9 +5,17 @@
 
 #if !UWP_APP
 
-ff::window::window()
+static ff::window* main_window = nullptr;
+
+ff::window::window(window_type type)
     : hwnd(nullptr)
-{}
+{
+    if (type == window_type::main)
+    {
+        assert(!::main_window);
+        ::main_window = this;
+    }
+}
 
 ff::window::window(window&& other) noexcept
     : hwnd(nullptr)
@@ -18,6 +26,11 @@ ff::window::window(window&& other) noexcept
 ff::window::~window()
 {
     this->destroy();
+
+    if (this == ::main_window)
+    {
+        ::main_window = nullptr;
+    }
 }
 
 void ff::window::reset(HWND hwnd)
@@ -78,12 +91,12 @@ bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE inst
     return ::RegisterClassEx(&new_class) != 0;
 }
 
-ff::window ff::window::create(std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance, HMENU menu)
+ff::window ff::window::create(window_type type, std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance, HMENU menu)
 {
     std::wstring wclass_name = ff::string::to_wstring(class_name);
     std::wstring wwindow_name = ff::string::to_wstring(window_name);
 
-    window new_window;
+    window new_window(type);
     HWND hwnd = ::CreateWindowEx(
         ex_style,
         wclass_name.c_str(),
@@ -96,7 +109,7 @@ ff::window ff::window::create(std::string_view class_name, std::string_view wind
     return new_window;
 }
 
-ff::window ff::window::create_blank(std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
+ff::window ff::window::create_blank(window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
 {
     std::string_view class_name = "ff::window::blank";
 
@@ -110,11 +123,11 @@ ff::window ff::window::create_blank(std::string_view window_name, HWND parent, D
         nullptr, // large icon
         nullptr)) // small icon
     {
-        return window::create(class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
+        return window::create(type, class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
     }
 
     assert(false);
-    return window();
+    return window(window_type::none);
 }
 
 ff::window ff::window::create_message_window()
@@ -123,16 +136,92 @@ ff::window ff::window::create_message_window()
 
     if (window::create_class(class_name, 0, ff::get_hinstance(), nullptr, nullptr, 0, nullptr, nullptr))
     {
-        return window::create(class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance(), nullptr);
+        return window::create(window_type::none, class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance(), nullptr);
     }
 
     assert(false);
-    return window();
+    return window(window_type::none);
+}
+
+ff::window* ff::window::main()
+{
+    assert(::main_window);
+    return ::main_window;
 }
 
 ff::signal_sink<ff::window_message&>& ff::window::message_sink()
 {
     return this->message_signal;
+}
+
+ff::window_size ff::window::size()
+{
+    ff::window_size size{};
+
+    RECT client_rect;
+    if (this->hwnd && ::GetClientRect(this->hwnd, &client_rect))
+    {
+        size.dpi_scale = this->dpi_scale();
+        size.pixel_size = ff::point_int(client_rect.right - client_rect.left, client_rect.bottom - client_rect.top);
+        size.native_rotation = DMDO_DEFAULT;
+        size.current_rotation = DMDO_DEFAULT;
+
+        MONITORINFOEX mi{};
+        mi.cbSize = sizeof(mi);
+
+        DEVMODE dm{};
+        dm.dmSize = sizeof(dm);
+
+        HMONITOR monitor = ::MonitorFromWindow(this->hwnd, MONITOR_DEFAULTTOPRIMARY);
+        if (::GetMonitorInfo(monitor, &mi) && ::EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm))
+        {
+            size.current_rotation = dm.dmDisplayOrientation;
+        }
+    }
+
+    return size;
+}
+
+double ff::window::dpi_scale()
+{
+    return (this->hwnd ? ::GetDpiForWindow(this->hwnd) : ::GetDpiForSystem()) / 96.0;
+}
+
+bool ff::window::active()
+{
+    if (this->hwnd)
+    {
+        for (HWND active = ::GetActiveWindow(); active; active = ::GetParent(active))
+        {
+            if (active == this->hwnd)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool ff::window::visible()
+{
+    return this->hwnd && !::IsIconic(this->hwnd);
+}
+
+bool ff::window::focused()
+{
+    return this->hwnd && ::GetFocus() == this->hwnd;
+}
+
+bool ff::window::close()
+{
+    if (this->hwnd)
+    {
+        ::PostMessage(this->hwnd, WM_CLOSE, 0, 0);
+        return true;
+    }
+
+    return false;
 }
 
 HWND ff::window::handle() const
@@ -164,6 +253,11 @@ ff::window& ff::window::operator=(window&& other) noexcept
 {
     if (this != &other)
     {
+        if (&other == ::main_window)
+        {
+            ::main_window = this;
+        }
+
         HWND hwnd = other.hwnd;
         other.reset(nullptr);
         this->reset(hwnd);

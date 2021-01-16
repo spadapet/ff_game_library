@@ -1,7 +1,5 @@
 #pragma once
 
-// C++
-
 // Windows
 #include <mfapi.h>
 #include <Mferror.h>

@@ -32,9 +32,6 @@
     <ClCompile Include="source\win_msg.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\thread_dispatch.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -48,6 +45,12 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\log.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_desktop.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_uwp.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
