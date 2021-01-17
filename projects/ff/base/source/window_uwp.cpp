@@ -3,6 +3,8 @@
 
 #if UWP_APP
 
+static ff::window* main_window = nullptr;
+
 ref class main_window_events sealed
 {
 public:
@@ -57,6 +59,7 @@ private:
     {
         WPARAM active = args->WindowActivationState != Windows::UI::Core::CoreWindowActivationState::Deactivated;
         ff::window::main()->send_message(WM_ACTIVATEAPP, active, 0);
+        ff::window::main()->send_message(active ? WM_SETFOCUS : WM_KILLFOCUS, 0, 0);
     }
 
     void visiblity_changed(Platform::Object^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args)
@@ -108,15 +111,23 @@ void ff::window::send_message(UINT msg, WPARAM wp, LPARAM lp)
 
 ff::window::window()
     : window_events(ref new main_window_events())
-{}
+{
+    assert(!::main_window);
+    ::main_window = this;
+}
 
 ff::window::~window()
-{}
+{
+    if (this == ::main_window)
+    {
+        ::main_window = nullptr;
+    }
+}
 
 ff::window* ff::window::main()
 {
-    static ff::window main_window;
-    return &main_window;
+    assert(::main_window);
+    return ::main_window;
 }
 
 ff::signal_sink<ff::window_message&>& ff::window::message_sink()

@@ -35,6 +35,13 @@ namespace ff
     {
     public:
 #if UWP_APP
+        window();
+        window(window&& other) noexcept = delete;
+        window(const window& other) = delete;
+
+        window& operator=(window&& other) noexcept = delete;
+        window& operator=(const window& other) = delete;
+
         Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel();
         void send_message(UINT msg, WPARAM wp, LPARAM lp);
 #else
@@ -69,13 +76,6 @@ namespace ff
 
     private:
 #if UWP_APP
-        window();
-        window(window&& other) noexcept = delete;
-        window(const window& other) = delete;
-
-        window& operator=(window&& other) noexcept = delete;
-        window& operator=(const window& other) = delete;
-
         Platform::Object^ window_events;
 #else
         void reset(HWND hwnd);

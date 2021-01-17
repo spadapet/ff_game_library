@@ -1,8 +1,5 @@
 #pragma once
 
-#include "thread_dispatch.h"
-#include "thread_pool.h"
-
 namespace ff
 {
     class init_base
@@ -10,9 +7,15 @@ namespace ff
     public:
         init_base();
         ~init_base();
+    };
+
+    class init_main_window
+    {
+    public:
+        init_main_window(std::string_view title);
+        ~init_main_window();
 
     private:
-        ff::thread_dispatch thread_dispatch;
-        ff::thread_pool thread_pool;
+        ff::init_base init_base;
     };
 }
