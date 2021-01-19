@@ -17,13 +17,16 @@
     <ClCompile Include="source\keyboard_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\pointer_device.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\controller_device_desktop.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\controller_device_uwp.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\pointer_device_desktop.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\pointer_device_uwp.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>

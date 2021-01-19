@@ -76,6 +76,8 @@ namespace ff
 
     private:
 #if UWP_APP
+        Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
+        Windows::Graphics::Display::DisplayInformation^ display_info;
         Platform::Object^ window_events;
 #else
         void reset(HWND hwnd);

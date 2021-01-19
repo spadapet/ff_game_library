@@ -2,6 +2,8 @@
 #include "input.h"
 #include "pointer_device.h"
 
+#if !UWP_APP
+
 ff::pointer_device::pointer_device()
 {
     ff::input::internal::add_device(this);
@@ -23,7 +25,7 @@ bool ff::pointer_device::connected() const
     return true;
 }
 
-ff::signal_sink<ff::input_device_event>& ff::pointer_device::event_sink()
+ff::signal_sink<const ff::input_device_event&>& ff::pointer_device::event_sink()
 {
     return this->device_event;
 }
@@ -31,3 +33,5 @@ ff::signal_sink<ff::input_device_event>& ff::pointer_device::event_sink()
 void ff::pointer_device::notify_main_window_message(ff::window_message& message)
 {
 }
+
+#endif

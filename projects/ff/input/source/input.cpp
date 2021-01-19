@@ -47,7 +47,7 @@ namespace
             return !::all_devices.empty();
         }
 
-        virtual ff::signal_sink<ff::input_device_event>& event_sink() override
+        virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override
         {
             return this->device_event;
         }
@@ -68,7 +68,7 @@ namespace
             }
         }
 
-        ff::signal<ff::input_device_event> device_event;
+        ff::signal<const ff::input_device_event&> device_event;
     };
 }
 

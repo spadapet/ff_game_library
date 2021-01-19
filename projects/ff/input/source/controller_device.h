@@ -14,13 +14,13 @@ namespace ff
         virtual void advance() override;
         virtual void kill_pending() override;
         virtual bool connected() const override;
-        virtual ff::signal_sink<ff::input_device_event>& event_sink() override;
+        virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override;
         virtual void notify_main_window_message(ff::window_message& message) override;
 
         size_t index() const;
 
     private:
         size_t index_;
-        ff::signal<ff::input_device_event> device_event;
+        ff::signal<const ff::input_device_event&> device_event;
     };
 }

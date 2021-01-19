@@ -86,6 +86,9 @@
     <ClCompile Include="source\audio\music_test.cpp">
       <Filter>source\audio</Filter>
     </ClCompile>
+    <ClCompile Include="source\input\keyboard_test.cpp">
+      <Filter>source\input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -108,6 +111,9 @@
     </Filter>
     <Filter Include="source\audio">
       <UniqueIdentifier>{461ed571-3b17-4113-acf2-74827f2898c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\input">
+      <UniqueIdentifier>{500925ae-e8dd-4024-9262-fffd194a21de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

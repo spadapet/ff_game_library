@@ -21,3 +21,8 @@
 
 // Windows
 #include <Windows.h>
+
+// UWP
+#if UWP_APP
+#include <agile.h>
+#endif

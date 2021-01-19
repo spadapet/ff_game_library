@@ -26,7 +26,7 @@ bool ff::controller_device::connected() const
     return true;
 }
 
-ff::signal_sink<ff::input_device_event>& ff::controller_device::event_sink()
+ff::signal_sink<const ff::input_device_event&>& ff::controller_device::event_sink()
 {
     return this->device_event;
 }
