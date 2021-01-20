@@ -33,28 +33,31 @@ ff::window::~window()
     }
 }
 
-void ff::window::reset(HWND hwnd)
+ff::window& ff::window::operator=(window&& other) noexcept
 {
-    if (this->hwnd)
+    if (this != &other)
     {
-        ::SetWindowLongPtr(this->hwnd, 0, 0);
+        if (&other == ::main_window)
+        {
+            ::main_window = this;
+        }
+
+        HWND hwnd = other.hwnd;
+        other.reset(nullptr);
+        this->reset(hwnd);
     }
 
-    this->hwnd = hwnd;
-
-    if (this->hwnd)
-    {
-        ::SetWindowLongPtr(this->hwnd, 0, reinterpret_cast<ULONG_PTR>(this));
-    }
+    return *this;
 }
 
-void ff::window::destroy()
+ff::window::operator bool() const
 {
-    if (this->hwnd)
-    {
-        ::DestroyWindow(this->hwnd);
-        assert(!this->hwnd);
-    }
+    return this->hwnd != nullptr;
+}
+
+bool ff::window::operator!() const
+{
+    return this->hwnd == nullptr;
 }
 
 bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE instance, HCURSOR cursor, HBRUSH brush, UINT menu, HICON large_icon, HICON small_icon)
@@ -143,6 +146,21 @@ ff::window ff::window::create_message_window()
     return window(window_type::none);
 }
 
+HWND ff::window::handle() const
+{
+    return this->hwnd;
+}
+
+ff::window::operator HWND() const
+{
+    return this->hwnd;
+}
+
+bool ff::window::operator==(HWND hwnd) const
+{
+    return this->hwnd == hwnd;
+}
+
 ff::window* ff::window::main()
 {
     assert(::main_window);
@@ -152,6 +170,12 @@ ff::window* ff::window::main()
 ff::signal_sink<ff::window_message&>& ff::window::message_sink()
 {
     return this->message_signal;
+}
+
+void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
+{
+    ff::window_message message{ this->handle(), msg, wp, lp, 0, false };
+    this->message_signal.notify(message);
 }
 
 ff::window_size ff::window::size()
@@ -224,46 +248,28 @@ bool ff::window::close()
     return false;
 }
 
-HWND ff::window::handle() const
+void ff::window::reset(HWND hwnd)
 {
-    return this->hwnd;
-}
-
-ff::window::operator HWND() const
-{
-    return this->hwnd;
-}
-
-ff::window::operator bool() const
-{
-    return this->hwnd != nullptr;
-}
-
-bool ff::window::operator!() const
-{
-    return this->hwnd == nullptr;
-}
-
-bool ff::window::operator==(HWND hwnd) const
-{
-    return this->hwnd == hwnd;
-}
-
-ff::window& ff::window::operator=(window&& other) noexcept
-{
-    if (this != &other)
+    if (this->hwnd)
     {
-        if (&other == ::main_window)
-        {
-            ::main_window = this;
-        }
-
-        HWND hwnd = other.hwnd;
-        other.reset(nullptr);
-        this->reset(hwnd);
+        ::SetWindowLongPtr(this->hwnd, 0, 0);
     }
 
-    return *this;
+    this->hwnd = hwnd;
+
+    if (this->hwnd)
+    {
+        ::SetWindowLongPtr(this->hwnd, 0, reinterpret_cast<ULONG_PTR>(this));
+    }
+}
+
+void ff::window::destroy()
+{
+    if (this->hwnd)
+    {
+        ::DestroyWindow(this->hwnd);
+        assert(!this->hwnd);
+    }
 }
 
 LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)

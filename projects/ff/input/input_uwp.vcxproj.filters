@@ -29,6 +29,9 @@
     <ClCompile Include="source\pointer_device_uwp.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\pointer_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -18,6 +18,7 @@
     <ClCompile Include="source\input_device_base.cpp" />
     <ClCompile Include="source\input_device_event.cpp" />
     <ClCompile Include="source\keyboard_device.cpp" />
+    <ClCompile Include="source\pointer_device.cpp" />
     <ClCompile Include="source\pointer_device_desktop.cpp" />
     <ClCompile Include="source\pointer_device_uwp.cpp" />
   </ItemGroup>

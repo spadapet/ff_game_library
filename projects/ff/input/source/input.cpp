@@ -68,6 +68,20 @@ namespace
             }
         }
 
+#if UWP_APP
+        void notify_main_window_pointer_message(unsigned int msg, Windows::UI::Core::PointerEventArgs^ args)
+        {
+            for (auto& pair : ::all_devices)
+            {
+                ff::pointer_device* pointer = dynamic_cast<ff::pointer_device*>(pair.first);
+                if (pointer)
+                {
+                    pointer->notify_main_window_pointer_message(msg, args);
+                }
+            }
+        }
+#endif
+
         ff::signal<const ff::input_device_event&> device_event;
     };
 }
@@ -76,7 +90,7 @@ static std::unique_ptr<::combined_input_devices> combined_devices_;
 static std::unique_ptr<ff::keyboard_device> keyboard;
 static std::unique_ptr<ff::pointer_device> pointer;
 static std::vector<std::unique_ptr<ff::controller_device>> controllers;
-static ff::signal_connection main_window_connection;
+static std::vector<ff::signal_connection> main_window_connections;
 static const size_t MAX_CONTROLLERS = 4;
 
 bool ff::input::internal::init()
@@ -92,17 +106,24 @@ bool ff::input::internal::init()
         ::controllers.emplace_back(std::make_unique<ff::controller_device>(i));
     }
 
-    ::main_window_connection = ff::window::main()->message_sink().connect([](ff::window_message& message)
+    ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect([](ff::window_message& message)
         {
             ::combined_devices_->notify_main_window_message(message);
-        });
+        }));
+
+#if UWP_APP
+    ::main_window_connections.emplace_back(ff::window::main()->pointer_message_sink().connect([](unsigned int msg, Windows::UI::Core::PointerEventArgs^ args)
+        {
+            ::combined_devices_->notify_main_window_pointer_message(msg, args);
+        }));
+#endif
 
     return true;
 }
 
 void ff::input::internal::destroy()
 {
-    ::main_window_connection.disconnect();
+    ::main_window_connections.clear();
     ::controllers.clear();
     ::pointer.reset();
     ::keyboard.reset();

@@ -27,7 +27,9 @@ namespace
     struct one_time_init_main_window
     {
         one_time_init_main_window(std::string_view title)
-#if !UWP_APP
+#if UWP_APP
+            : main_window(ff::window_type::main)
+#else
             : main_window(ff::window::create_blank(ff::window_type::main, title, nullptr,
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT))

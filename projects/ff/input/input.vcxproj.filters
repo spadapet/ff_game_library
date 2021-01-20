@@ -29,6 +29,9 @@
     <ClCompile Include="source\keyboard_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\pointer_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -52,6 +55,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\pointer_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\input_devices.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
