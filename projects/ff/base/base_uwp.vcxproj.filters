@@ -53,6 +53,9 @@
     <ClCompile Include="source\window_uwp.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\math.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

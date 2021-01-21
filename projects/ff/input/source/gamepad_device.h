@@ -4,11 +4,11 @@
 
 namespace ff
 {
-    enum class gamepad_direction_type
+    enum class gamepad_stick_type
     {
         left_stick,
         right_stick,
-        direction_pad,
+        stick_pad,
     };
 
     enum class gamepad_trigger_type
@@ -21,24 +21,19 @@ namespace ff
     {
     public:
 #if UWP_APP
-        using index_type = typename Windows::Gaming::Input::Gamepad^;
+        using gamepad_type = typename Windows::Gaming::Input::Gamepad^;
 #else
-        using index_type = typename size_t;
+        using gamepad_type = typename size_t;
 #endif
-        gamepad_device(index_type index);
+        gamepad_device(gamepad_type gamepad);
         virtual ~gamepad_device() override;
 
-        index_type index() const;
-        void index(index_type index);
+        gamepad_type gamepad() const;
+        void gamepad(gamepad_type gamepad);
 
-        ff::point_float direction_pressing(gamepad_direction_type type, bool digital) const;
-        ff::rect_int direction_press_count(gamepad_direction_type type) const;
-
-        float trigger_pressing(gamepad_trigger_type type, bool digital) const;
-        int trigger_press_count(gamepad_trigger_type type) const;
-
-        bool button_pressing(int vk) const;
-        int button_press_count(int vk) const;
+        float pressing_analog(int vk) const;
+        bool pressing(int vk) const;
+        bool press_started(int vk) const;
 
         // input_device_base
         virtual void advance() override;
@@ -48,7 +43,29 @@ namespace ff
         virtual void notify_main_window_message(ff::window_message& message) override;
 
     private:
-        index_type index_;
+        static const int VK_GAMEPAD_FIRST = VK_GAMEPAD_A;
+        static const size_t VK_GAMEPAD_COUNT = static_cast<size_t>(VK_GAMEPAD_RIGHT_THUMBSTICK_LEFT - VK_GAMEPAD_A + 1);
+
+        struct reading_t
+        {
+            std::array<float, VK_GAMEPAD_COUNT> values;
+        };
+
+        struct state_t
+        {
+            reading_t reading;
+            std::array<size_t, VK_GAMEPAD_COUNT> press_count;
+            std::array<bool, VK_GAMEPAD_COUNT> pressing;
+        };
+
+        bool poll(reading_t& reading);
+        void update_state(const reading_t& reading);
+        void update_press_count(size_t index);
+
+        gamepad_type gamepad_;
         ff::signal<const ff::input_device_event&> device_event;
+        state_t state;
+        int check_connected;
+        bool connected_;
     };
 }

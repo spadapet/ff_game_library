@@ -47,6 +47,10 @@ namespace ff
         using handle_type = typename Windows::UI::Core::CoreWindow^;
 
         Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel() const;
+
+        ff::signal_sink<bool, Windows::Gaming::Input::Gamepad^>& gamepad_message_sink();
+        void notify_gamepad_message(bool added, Windows::Gaming::Input::Gamepad^ gamepad);
+
         ff::signal_sink<unsigned int, Windows::UI::Core::PointerEventArgs^>& pointer_message_sink();
         void notify_pointer_message(unsigned int msg, Windows::UI::Core::PointerEventArgs^ args);
 
@@ -79,6 +83,7 @@ namespace ff
         Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
         Windows::Graphics::Display::DisplayInformation^ display_info;
         Platform::Object^ window_events;
+        ff::signal<bool, Windows::Gaming::Input::Gamepad^> gamepad_message_signal;
         ff::signal<unsigned int, Windows::UI::Core::PointerEventArgs^> pointer_message_signal;
 #else
         void reset(HWND hwnd);

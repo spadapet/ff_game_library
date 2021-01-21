@@ -1,3 +1,228 @@
 #include "pch.h"
 #include "gamepad_device.h"
 #include "input.h"
+#include "input_device_event.h"
+
+static const float PRESS_VALUE = 0.5625f;
+static const float RELEASE_VALUE = 0.5f;
+
+static size_t vk_to_index(int vk)
+{
+    return (vk >= VK_GAMEPAD_A)
+        ? static_cast<size_t>(vk) - VK_GAMEPAD_A
+        : VK_GAMEPAD_RIGHT_THUMBSTICK_LEFT + 1;
+}
+
+static float analog_short_to_float(int16_t value)
+{
+    return value / ((value < 0) * 32768.0f + (value >= 0) * 32767.0f);
+}
+
+ff::gamepad_device::gamepad_device(gamepad_type gamepad)
+    : gamepad_(gamepad)
+    , state{}
+    , check_connected(0)
+    , connected_(true)
+{}
+
+ff::gamepad_device::~gamepad_device()
+{}
+
+ff::gamepad_device::gamepad_type ff::gamepad_device::gamepad() const
+{
+    return this->gamepad_;
+}
+
+void ff::gamepad_device::gamepad(gamepad_type gamepad)
+{
+    this->gamepad_ = gamepad;
+}
+
+float ff::gamepad_device::pressing_analog(int vk) const
+{
+    size_t i = ::vk_to_index(vk);
+    return i < this->state.reading.values.size() ? this->state.reading.values[i] : 0.0f;
+}
+
+bool ff::gamepad_device::pressing(int vk) const
+{
+    size_t i = ::vk_to_index(vk);
+    return i < this->state.pressing.size() && this->state.pressing[i];
+}
+
+bool ff::gamepad_device::press_started(int vk) const
+{
+    size_t i = ::vk_to_index(vk);
+    return i < this->state.press_count.size() && this->state.press_count[i] == 1;
+}
+
+void ff::gamepad_device::advance()
+{
+    reading_t reading{};
+    if ((this->connected_ || !this->check_connected) && this->poll(reading))
+    {
+        this->connected_ = true;
+    }
+    else if (this->connected_ || !this->check_connected)
+    {
+        this->connected_ = false;
+        this->check_connected =
+            ff::constants::advances_per_second_s +
+            static_cast<size_t>(ff::math::random_non_negative()) %
+            ff::constants::advances_per_second_s;
+    }
+    else
+    {
+        this->check_connected--;
+    }
+
+    this->update_state(reading);
+}
+
+void ff::gamepad_device::kill_pending()
+{
+    this->update_state(reading_t{});
+}
+
+bool ff::gamepad_device::connected() const
+{
+#if UWP_APP
+    return this->connected_ && this->gamepad_;
+#else
+    return this->connected_;
+#endif
+}
+
+ff::signal_sink<const ff::input_device_event&>& ff::gamepad_device::event_sink()
+{
+    return this->device_event;
+}
+
+void ff::gamepad_device::notify_main_window_message(ff::window_message& message)
+{}
+
+bool ff::gamepad_device::poll(reading_t& reading)
+{
+#if UWP_APP
+    if (this->gamepad_)
+    {
+        Windows::Gaming::Input::GamepadReading gr = this->gamepad_->GetCurrentReading();
+
+        reading.values[::vk_to_index(VK_GAMEPAD_A)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::A) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_B)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::B) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_X)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::X) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_Y)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::Y) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_SHOULDER)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::RightShoulder) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_SHOULDER)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::LeftShoulder) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_TRIGGER)] = static_cast<float>(gr.RightTrigger);
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_TRIGGER)] = static_cast<float>(gr.LeftTrigger);
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_UP)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadUp) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_DOWN)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadDown) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_LEFT)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadLeft) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_RIGHT)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadRight) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_MENU)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::Menu) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_VIEW)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::View) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::LeftThumbstick) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::RightThumbstick) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_UP)] = (gr.LeftThumbstickY > 0.0) ? static_cast<float>(gr.LeftThumbstickY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_DOWN)] = (gr.LeftThumbstickY < 0.0) ? -static_cast<float>(gr.LeftThumbstickY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_RIGHT)] = (gr.LeftThumbstickX > 0.0) ? static_cast<float>(gr.LeftThumbstickX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_LEFT)] = (gr.LeftThumbstickX < 0.0) ? -static_cast<float>(gr.LeftThumbstickX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_UP)] = (gr.RightThumbstickY > 0.0) ? static_cast<float>(gr.RightThumbstickY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_DOWN)] = (gr.RightThumbstickY < 0.0) ? -static_cast<float>(gr.RightThumbstickY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_RIGHT)] = (gr.RightThumbstickX > 0.0) ? static_cast<float>(gr.RightThumbstickX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_LEFT)] = (gr.RightThumbstickX < 0.0) ? -static_cast<float>(gr.RightThumbstickX) : 0.0f;
+
+        return true;
+    }
+#else
+    XINPUT_STATE gs;
+
+    if (SUCCEEDED(::XInputGetState(static_cast<DWORD>(this->gamepad_), &gs)))
+    {
+        const XINPUT_GAMEPAD& gp = gs.Gamepad;
+        WORD buttons = gp.wButtons;
+
+        reading.values[::vk_to_index(VK_GAMEPAD_A)] = (buttons & XINPUT_GAMEPAD_A) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_B)] = (buttons & XINPUT_GAMEPAD_B) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_X)] = (buttons & XINPUT_GAMEPAD_X) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_Y)] = (buttons & XINPUT_GAMEPAD_Y) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_SHOULDER)] = (buttons & XINPUT_GAMEPAD_RIGHT_SHOULDER) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_SHOULDER)] = (buttons & XINPUT_GAMEPAD_LEFT_SHOULDER) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_TRIGGER)] = gp.bRightTrigger / 255.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_TRIGGER)] = gp.bLeftTrigger / 255.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_UP)] = (buttons & XINPUT_GAMEPAD_DPAD_UP) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_DOWN)] = (buttons & XINPUT_GAMEPAD_DPAD_DOWN) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_LEFT)] = (buttons & XINPUT_GAMEPAD_DPAD_LEFT) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_RIGHT)] = (buttons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_MENU)] = (buttons & XINPUT_GAMEPAD_START) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_VIEW)] = (buttons & XINPUT_GAMEPAD_BACK) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_BUTTON)] = (buttons & XINPUT_GAMEPAD_LEFT_THUMB) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_BUTTON)] = (buttons & XINPUT_GAMEPAD_RIGHT_THUMB) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_UP)] = (gp.sThumbLY > 0) ? ::analog_short_to_float(gp.sThumbLY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_DOWN)] = (gp.sThumbLY < 0) ? -::analog_short_to_float(gp.sThumbLY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_RIGHT)] = (gp.sThumbLX > 0) ? ::analog_short_to_float(gp.sThumbLX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_LEFT)] = (gp.sThumbLX < 0) ? -::analog_short_to_float(gp.sThumbLX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_UP)] = (gp.sThumbRY > 0) ? ::analog_short_to_float(gp.sThumbRY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_DOWN)] = (gp.sThumbRY < 0) ? -::analog_short_to_float(gp.sThumbRY) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_RIGHT)] = (gp.sThumbRX > 0) ? ::analog_short_to_float(gp.sThumbRX) : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_LEFT)] = (gp.sThumbRX < 0) ? -::analog_short_to_float(gp.sThumbRX) : 0.0f;
+
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+void ff::gamepad_device::update_state(const reading_t& reading)
+{
+    for (size_t i = 0; i < reading.values.size(); i++)
+    {
+        if (reading.values[i] >= ::PRESS_VALUE)
+        {
+            this->state.pressing[i] = true;
+        }
+        else if (reading.values[i] < ::RELEASE_VALUE)
+        {
+            this->state.pressing[i] = true;
+        }
+
+        this->update_press_count(i);
+    }
+}
+
+void ff::gamepad_device::update_press_count(size_t index)
+{
+    // UWP will already create key events for gamepads, so just do it for desktop
+#if UWP_APP
+    this->state.press_count[index] = this->state.pressing[index] ? this->state.press_count[index] + 1 : 0;
+#else
+    unsigned int vk = static_cast<unsigned int>(index) + VK_GAMEPAD_A;
+
+    if (this->state.pressing[index])
+    {
+        ++this->state.press_count[index];
+
+        size_t count = this->state.press_count[index];
+
+        const size_t first_repeat = 30;
+        const size_t repeat_count = 6;
+
+        if (count == 1)
+        {
+            this->device_event.notify(ff::input_device_event_key_press(vk, 1));
+        }
+        else if (count > first_repeat && (count - first_repeat) % repeat_count == 0)
+        {
+            size_t repeats = (count - first_repeat) / repeat_count + 1;
+            this->device_event.notify(ff::input_device_event_key_press(vk, static_cast<int>(repeats)));
+        }
+    }
+    else if (this->state.press_count[index])
+    {
+        this->state.press_count[index] = 0;
+        this->device_event.notify(ff::input_device_event_key_press(vk, 0));
+    }
+#endif
+}

@@ -29,12 +29,6 @@
     <ClCompile Include="source\gamepad_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\gamepad_device_desktop.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\gamepad_device_uwp.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

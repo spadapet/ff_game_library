@@ -7,3 +7,8 @@
 
 // Windows
 #include <windowsx.h>
+#include <Xinput.h>
+
+#if UWP_APP
+#include <collection.h>
+#endif

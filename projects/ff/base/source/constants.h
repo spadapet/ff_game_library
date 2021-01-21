@@ -9,6 +9,7 @@ namespace ff::constants
     /// Fixed amount of times per second that the game loop advances
     /// </summary>
     const double advances_per_second = 60.0;
+    const size_t advances_per_second_s = 60;
 
     /// <summary>
     /// Each time the game advances, this fixed amount of time has passed

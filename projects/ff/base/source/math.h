@@ -1,6 +1,7 @@
 #pragma once
 
 #include "constants.h"
+#include "fixed.h"
 
 /// <summary>
 /// Useful math helper functions
@@ -88,5 +89,24 @@ namespace ff::math
     constexpr T clamp(T value, T min_value, T max_value)
     {
         return std::min<T>(std::max<T>(value, min_value), max_value);
+    }
+
+    int random_non_negative();
+    bool random_bool();
+    int random_range(int start, int end);
+    size_t random_range(size_t start, size_t end);
+    float random_range(float start, float after_end);
+
+    template<class T, class ExpandedT, T FixedCount>
+    int random_range(ff::fixed_t<T, ExpandedT, FixedCount> start, ff::fixed_t<T, ExpandedT, FixedCount> end)
+    {
+        using f_t = typename ff::fixed_t<T, ExpandedT, FixedCount>;
+        return f_t::from_raw(random_range(start.get_raw(), end.get_raw()));
+    }
+
+    template<typename T>
+    T random_range(const std::pair<T, T>& range)
+    {
+        return ff::math::random_range(range.first, range.second);
     }
 }

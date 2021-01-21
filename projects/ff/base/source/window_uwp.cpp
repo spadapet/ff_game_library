@@ -80,6 +80,16 @@ internal:
         this->tokens[i++] = this->display_info->OrientationChanged +=
             ref new Windows::Foundation::TypedEventHandler<Windows::Graphics::Display::DisplayInformation^, Platform::Object^>(
                 this, &main_window_events::orientation_changed);
+
+        this->tokens[i++] = Windows::Gaming::Input::Gamepad::GamepadAdded +=
+            ref new Windows::Foundation::EventHandler<Windows::Gaming::Input::Gamepad^>(
+                this, &main_window_events::gamepad_added);
+
+        this->tokens[i++] = Windows::Gaming::Input::Gamepad::GamepadRemoved +=
+            ref new Windows::Foundation::EventHandler<Windows::Gaming::Input::Gamepad^>(
+                this, &main_window_events::gamepad_removed);
+
+        assert(i == this->tokens.size());
     }
 
 public:
@@ -104,6 +114,10 @@ public:
         this->display_info->DpiChanged -= this->tokens[i++];
         this->display_info->DisplayContentsInvalidated -= this->tokens[i++];
         this->display_info->OrientationChanged -= this->tokens[i++];
+        Windows::Gaming::Input::Gamepad::GamepadAdded -= this->tokens[i++];
+        Windows::Gaming::Input::Gamepad::GamepadRemoved -= this->tokens[i++];
+
+        assert(i == this->tokens.size());
     }
 
 private:
@@ -205,10 +219,20 @@ private:
         this->main_window->notify_message(WM_DISPLAYCHANGE, 0, 0);
     }
 
+    void gamepad_added(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)
+    {
+        this->main_window->notify_gamepad_message(true, gamepad);
+    }
+
+    void gamepad_removed(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)
+    {
+        this->main_window->notify_gamepad_message(false, gamepad);
+    }
+
     ff::window* main_window;
     Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
     Windows::Graphics::Display::DisplayInformation^ display_info;
-    std::array<Windows::Foundation::EventRegistrationToken, 17> tokens;
+    std::array<Windows::Foundation::EventRegistrationToken, 19> tokens;
 };
 
 static ff::window* main_window = nullptr;
@@ -274,6 +298,16 @@ Windows::UI::Xaml::Controls::SwapChainPanel^ ff::window::swap_chain_panel() cons
     }
 
     return nullptr;
+}
+
+ff::signal_sink<bool, Windows::Gaming::Input::Gamepad^>& ff::window::gamepad_message_sink()
+{
+    return this->gamepad_message_signal;
+}
+
+void ff::window::notify_gamepad_message(bool added, Windows::Gaming::Input::Gamepad^ gamepad)
+{
+    this->gamepad_message_signal.notify(added, gamepad);
 }
 
 ff::signal_sink<unsigned int, Windows::UI::Core::PointerEventArgs^>& ff::window::pointer_message_sink()

@@ -12,8 +12,6 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\gamepad_device.cpp" />
-    <ClCompile Include="source\gamepad_device_desktop.cpp" />
-    <ClCompile Include="source\gamepad_device_uwp.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\input.cpp" />
     <ClCompile Include="source\input_device_base.cpp" />

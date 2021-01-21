@@ -222,7 +222,7 @@ namespace ff
             std::swap(this->data, rhs.data);
         }
 
-        static this_type from_raw(int data)
+        static this_type from_raw(T data)
         {
             this_type value;
             value.data = data;
