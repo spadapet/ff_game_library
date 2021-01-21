@@ -14,12 +14,6 @@
     <ClCompile Include="source\input_device_event.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\controller_device_desktop.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\controller_device_uwp.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\pointer_device_desktop.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -32,7 +26,13 @@
     <ClCompile Include="source\pointer_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\controller_device.cpp">
+    <ClCompile Include="source\gamepad_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gamepad_device_desktop.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gamepad_device_uwp.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,13 +54,13 @@
     <ClInclude Include="source\keyboard_device.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\controller_device.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\pointer_device.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\input_devices.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gamepad_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pch.h"
-#include "source/controller_device.h"
+#include "source/gamepad_device.h"
 #include "source/init.h"
 #include "source/input.h"
 #include "source/input_devices.h"

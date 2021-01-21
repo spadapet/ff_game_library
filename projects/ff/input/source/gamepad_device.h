@@ -4,20 +4,20 @@
 
 namespace ff
 {
-    enum class controller_direction_type
+    enum class gamepad_direction_type
     {
         left_stick,
         right_stick,
         direction_pad,
     };
 
-    enum class controller_trigger_type
+    enum class gamepad_trigger_type
     {
         left_trigger,
         right_trigger,
     };
 
-    class controller_device : public input_device_base
+    class gamepad_device : public input_device_base
     {
     public:
 #if UWP_APP
@@ -25,17 +25,17 @@ namespace ff
 #else
         using index_type = typename size_t;
 #endif
-        controller_device(index_type index);
-        virtual ~controller_device() override;
+        gamepad_device(index_type index);
+        virtual ~gamepad_device() override;
 
         index_type index() const;
         void index(index_type index);
 
-        ff::point_float direction_pressing(controller_direction_type type, bool digital) const;
-        ff::rect_int direction_press_count(controller_direction_type type) const;
+        ff::point_float direction_pressing(gamepad_direction_type type, bool digital) const;
+        ff::rect_int direction_press_count(gamepad_direction_type type) const;
 
-        float trigger_pressing(controller_trigger_type type, bool digital) const;
-        int trigger_press_count(controller_trigger_type type) const;
+        float trigger_pressing(gamepad_trigger_type type, bool digital) const;
+        int trigger_press_count(gamepad_trigger_type type) const;
 
         bool button_pressing(int vk) const;
         int button_press_count(int vk) const;

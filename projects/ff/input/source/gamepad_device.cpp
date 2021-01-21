@@ -1,3 +1,3 @@
 #include "pch.h"
-#include "controller_device.h"
+#include "gamepad_device.h"
 #include "input.h"

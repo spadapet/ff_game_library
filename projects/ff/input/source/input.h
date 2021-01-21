@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    class controller_device;
+    class gamepad_device;
     class input_device_base;
     class keyboard_device;
     class pointer_device;
@@ -13,8 +13,8 @@ namespace ff::input
     ff::input_device_base& combined_devices();
     ff::keyboard_device& keyboard();
     ff::pointer_device& pointer();
-    ff::controller_device& controller(size_t index);
-    size_t controller_count();
+    ff::gamepad_device& gamepad(size_t index);
+    size_t gamepad_count();
 }
 
 namespace ff::input::internal

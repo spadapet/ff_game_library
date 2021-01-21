@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "controller_device.h"
+#include "gamepad_device.h"
 #include "input.h"
 #include "input_device_base.h"
 #include "input_device_event.h"
@@ -89,7 +89,7 @@ namespace
 static std::unique_ptr<::combined_input_devices> combined_devices_;
 static std::unique_ptr<ff::keyboard_device> keyboard;
 static std::unique_ptr<ff::pointer_device> pointer;
-static std::vector<std::unique_ptr<ff::controller_device>> controllers;
+static std::vector<std::unique_ptr<ff::gamepad_device>> gamepads;
 static std::vector<ff::signal_connection> main_window_connections;
 static const size_t MAX_CONTROLLERS = 4;
 
@@ -103,7 +103,7 @@ bool ff::input::internal::init()
 
     for (size_t i = 0; i < ::MAX_CONTROLLERS; i++)
     {
-        ::controllers.emplace_back(std::make_unique<ff::controller_device>(i));
+        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(i));
     }
 
     ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect([](ff::window_message& message)
@@ -124,7 +124,7 @@ bool ff::input::internal::init()
 void ff::input::internal::destroy()
 {
     ::main_window_connections.clear();
-    ::controllers.clear();
+    ::gamepads.clear();
     ::pointer.reset();
     ::keyboard.reset();
     ::combined_devices_.reset();
@@ -158,12 +158,12 @@ ff::pointer_device& ff::input::pointer()
     return *::pointer;
 }
 
-ff::controller_device& ff::input::controller(size_t index)
+ff::gamepad_device& ff::input::gamepad(size_t index)
 {
-    return *::controllers[index];
+    return *::gamepads[index];
 }
 
-size_t ff::input::controller_count()
+size_t ff::input::gamepad_count()
 {
-    return ::controllers.size();
+    return ::gamepads.size();
 }
