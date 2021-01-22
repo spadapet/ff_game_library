@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <AppType>UWP</AppType>
+    <ConfigurationType>Application</ConfigurationType>
+    <ProjectGuid>{b6e9e2d4-919d-466f-8414-f1bd166c9a3c}</ProjectGuid>
+    <ProjectName>ff.test.uwp</ProjectName>
+    <RootNamespace>test_uwp</RootNamespace>
+  </PropertyGroup>
+  <Import Project="..\..\build\cpp.props" />
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="app.xaml.h">
+      <DependentUpon>app.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="source\main_page.xaml.h">
+      <DependentUpon>source\main_page.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="source\test_input_devices.xaml.h">
+      <DependentUpon>source\test_input_devices.xaml</DependentUpon>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="app.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="source\main_page.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="source\test_input_devices.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png" />
+    <Image Include="Assets\SplashScreen.scale-200.png" />
+    <Image Include="Assets\Square150x150Logo.scale-200.png" />
+    <Image Include="Assets\Square44x44Logo.scale-200.png" />
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="app.xaml.cpp">
+      <DependentUpon>app.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="source\main_page.xaml.cpp">
+      <DependentUpon>source\main_page.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\test_input_devices.xaml.cpp">
+      <DependentUpon>source\test_input_devices.xaml</DependentUpon>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\projects\ff\audio\audio_uwp.vcxproj">
+      <Project>{e3bf3073-8da5-4d8a-954b-9ce0bfc04a16}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\base\base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\data\data_uwp.vcxproj">
+      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\input\input_uwp.vcxproj">
+      <Project>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\resource\resource_uwp.vcxproj">
+      <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(FFRoot)build\cpp.targets" />
+</Project>

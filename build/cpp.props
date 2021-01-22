@@ -66,6 +66,7 @@
         <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">true</AppContainerApplication>
         <ApplicationType Condition=" '$(ApplicationType)' == '' ">Windows Store</ApplicationType>
         <ApplicationTypeRevision Condition=" '$(ApplicationTypeRevision)' == '' ">10.0</ApplicationTypeRevision>
+        <AppxPackageSigningEnabled Condition=" '$(AppxPackageSigningEnabled)' == '' ">false</AppxPackageSigningEnabled>
         <EnableDotNetNativeCompatibleProfile Condition=" '$(EnableDotNetNativeCompatibleProfile)' == '' And '$(ConfigurationType)' == 'Application' ">true</EnableDotNetNativeCompatibleProfile>
         <GenerateManifest Condition=" '$(GenerateManifest)' == '' And '$(ConfigurationType)' != 'Application' ">false</GenerateManifest>
         <GenerateWindowsMetadata Condition=" '$(GenerateWindowsMetadata)' == '' And '$(ConfigurationType)' == 'Application' ">true</GenerateWindowsMetadata>
@@ -142,7 +143,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;DISABLE_XAML_GENERATED_MAIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(AppType)' == 'Desktop' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;UWP_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' And '$(AppType)' == 'UWP' ">_WINRT_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>

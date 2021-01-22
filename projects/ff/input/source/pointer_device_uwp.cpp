@@ -53,7 +53,10 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
                     }
                 }
 
-                this->device_event.notify(device_event);
+                if (device_event.type != ff::input_device_event_type::none)
+                {
+                    this->device_event.notify(device_event);
+                }
             }
             break;
 
@@ -71,7 +74,10 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
                     }
                 }
 
-                this->device_event.notify(device_event);
+                if (device_event.type != ff::input_device_event_type::none)
+                {
+                    this->device_event.notify(device_event);
+                }
             }
             break;
 
@@ -89,7 +95,10 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
                     }
                 }
 
-                this->device_event.notify(device_event);
+                if (device_event.type != ff::input_device_event_type::none)
+                {
+                    this->device_event.notify(device_event);
+                }
             }
             break;
 

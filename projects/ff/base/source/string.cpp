@@ -57,6 +57,12 @@ std::string ff::string::to_string(Platform::String^ str)
     return ff::string::to_string(wstr);
 }
 
+Platform::String^ ff::string::to_pstring(std::string_view str)
+{
+    std::wstring wstr = ff::string::to_wstring(str);
+    return ref new Platform::String(wstr.data(), static_cast<unsigned int>(wstr.size()));
+}
+
 #endif
 
 bool ff::string::starts_with(std::string_view str, std::string_view str_start)
