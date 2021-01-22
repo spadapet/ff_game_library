@@ -5,6 +5,12 @@
     <ClCompile Include="source\main.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\hash_table_perf.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input_device_events.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

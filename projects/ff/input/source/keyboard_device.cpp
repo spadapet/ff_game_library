@@ -78,7 +78,8 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
         case WM_KEYDOWN:
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {
-                this->device_event.notify(ff::input_device_event_key_press(static_cast<unsigned int>(message.wp), static_cast<int>(message.wp & 0xFFFF)));
+                int count = 0;
+                this->device_event.notify(ff::input_device_event_key_press(static_cast<unsigned int>(message.wp), static_cast<int>(message.lp & 0xFFFF)));
 
                 if (!(message.lp & 0x40000000)) // wasn't already down
                 {

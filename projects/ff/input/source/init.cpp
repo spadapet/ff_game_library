@@ -26,7 +26,7 @@ static std::atomic_int init_input_refs;
 static std::unique_ptr<one_time_init_input> init_input_data;
 
 ff::init_input::init_input()
-    : init_main_window("")
+    : init_main_window("Input test window")
 {
     if (::init_input_refs.fetch_add(1) == 0)
     {

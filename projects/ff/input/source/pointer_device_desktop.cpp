@@ -216,7 +216,10 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
         }
     }
 
-    this->device_event.notify(device_event);
+    if (device_event.type != ff::input_device_event_type::none)
+    {
+        this->device_event.notify(device_event);
+    }
 
     if (notify_mouse_leave)
     {
@@ -249,6 +252,7 @@ void ff::pointer_device::pointer_message(const ff::window_message& message)
 {
     ff::input_device_event device_event;
     std::vector<internal_touch_info>::iterator info;
+    ff::pointer_touch_info event_info{};
     {
         std::lock_guard lock(this->mutex);
 
@@ -257,14 +261,16 @@ void ff::pointer_device::pointer_message(const ff::window_message& message)
             case WM_POINTERDOWN:
                 if ((info = this->find_touch_info(message, true)) != this->pending_touches.end())
                 {
-                    device_event = ff::input_device_event_touch_press(info->info.id, 1, info->info.pos.cast<int>());
+                    event_info = info->info;
+                    device_event = ff::input_device_event_touch_press(event_info.id, 1, event_info.pos.cast<int>());
                 }
                 break;
 
             case WM_POINTERUPDATE:
                 if ((info = this->find_touch_info(message, false)) != this->pending_touches.end())
                 {
-                    device_event = ff::input_device_event_touch_move(info->info.id, info->info.pos.cast<int>());
+                    event_info = info->info;
+                    device_event = ff::input_device_event_touch_move(event_info.id, event_info.pos.cast<int>());
                 }
                 break;
 
@@ -272,14 +278,16 @@ void ff::pointer_device::pointer_message(const ff::window_message& message)
             case WM_POINTERCAPTURECHANGED:
                 if ((info = this->find_touch_info(message, false)) != this->pending_touches.end())
                 {
+                    event_info = info->info;
+                    device_event = ff::input_device_event_touch_press(event_info.id, 0, event_info.pos.cast<int>());
                     this->pending_touches.erase(info);
-                    device_event = ff::input_device_event_touch_press(info->info.id, 0, info->info.pos.cast<int>());
+                    info = this->pending_touches.end();
                 }
                 break;
         }
     }
 
-    if (info != this->pending_touches.end() && info->info.type != ff::input_device::mouse)
+    if (device_event.type != ff::input_device_event_type::none && event_info.type != ff::input_device::mouse)
     {
         this->device_event.notify(device_event);
     }
