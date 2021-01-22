@@ -98,15 +98,15 @@ bool ff::is_event_set(HANDLE handle)
     return ::WaitForSingleObjectEx(handle, 0, FALSE) == WAIT_OBJECT_0;
 }
 
-bool ff::wait_for_event_and_reset(HANDLE handle)
+bool ff::wait_for_event_and_reset(HANDLE handle, size_t timeout_ms)
 {
-    return ff::wait_for_handle(handle) && ::ResetEvent(handle);
+    return ff::wait_for_handle(handle, timeout_ms) && ::ResetEvent(handle);
 }
 
-bool ff::wait_for_handle(HANDLE handle)
+bool ff::wait_for_handle(HANDLE handle, size_t timeout_ms)
 {
     size_t completed_index;
-    return ff::wait_for_any_handle(&handle, 1, completed_index) && completed_index == 0;
+    return ff::wait_for_any_handle(&handle, 1, completed_index, timeout_ms) && completed_index == 0;
 }
 
 bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)

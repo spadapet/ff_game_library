@@ -215,7 +215,7 @@ bool ff::window::active()
 {
     if (this->hwnd)
     {
-        for (HWND active = ::GetActiveWindow(); active; active = ::GetParent(active))
+        for (HWND active = ::GetForegroundWindow(); active; active = ::GetParent(active))
         {
             if (active == this->hwnd)
             {
@@ -290,6 +290,11 @@ LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         if (msg == WM_NCDESTROY)
         {
             self->reset(nullptr);
+
+            if (::main_window == self)
+            {
+                ::PostQuitMessage(0);
+            }
         }
 
         if (args.handled)

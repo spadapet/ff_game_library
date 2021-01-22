@@ -85,6 +85,9 @@ namespace ff
         Platform::Object^ window_events;
         ff::signal<bool, Windows::Gaming::Input::Gamepad^> gamepad_message_signal;
         ff::signal<unsigned int, Windows::UI::Core::PointerEventArgs^> pointer_message_signal;
+        double dpi_scale_;
+        bool active_;
+        bool visible_;
 #else
         void reset(HWND hwnd);
         void destroy();

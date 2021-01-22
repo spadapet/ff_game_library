@@ -21,12 +21,17 @@ static float analog_short_to_float(int16_t value)
 ff::gamepad_device::gamepad_device(gamepad_type gamepad)
     : gamepad_(gamepad)
     , state{}
+    , pending_state{}
     , check_connected(0)
     , connected_(true)
-{}
+{
+    ff::input::internal::add_device(this);
+}
 
 ff::gamepad_device::~gamepad_device()
-{}
+{
+    ff::input::internal::remove_device(this);
+}
 
 ff::gamepad_device::gamepad_type ff::gamepad_device::gamepad() const
 {
@@ -76,12 +81,15 @@ void ff::gamepad_device::advance()
         this->check_connected--;
     }
 
-    this->update_state(reading);
+    std::lock_guard lock(this->mutex);
+    this->update_pending_state(reading);
+    this->state = this->pending_state;
 }
 
 void ff::gamepad_device::kill_pending()
 {
-    this->update_state(reading_t{});
+    std::lock_guard lock(this->mutex);
+    this->update_pending_state(reading_t{});
 }
 
 bool ff::gamepad_device::connected() const
@@ -138,7 +146,8 @@ bool ff::gamepad_device::poll(reading_t& reading)
 #else
     XINPUT_STATE gs;
 
-    if (SUCCEEDED(::XInputGetState(static_cast<DWORD>(this->gamepad_), &gs)))
+    DWORD status = ::XInputGetState(static_cast<DWORD>(this->gamepad_), &gs);
+    if (status == ERROR_SUCCESS)
     {
         const XINPUT_GAMEPAD& gp = gs.Gamepad;
         WORD buttons = gp.wButtons;
@@ -175,17 +184,17 @@ bool ff::gamepad_device::poll(reading_t& reading)
     return false;
 }
 
-void ff::gamepad_device::update_state(const reading_t& reading)
+void ff::gamepad_device::update_pending_state(const reading_t& reading)
 {
     for (size_t i = 0; i < reading.values.size(); i++)
     {
         if (reading.values[i] >= ::PRESS_VALUE)
         {
-            this->state.pressing[i] = true;
+            this->pending_state.pressing[i] = true;
         }
         else if (reading.values[i] < ::RELEASE_VALUE)
         {
-            this->state.pressing[i] = true;
+            this->pending_state.pressing[i] = false;
         }
 
         this->update_press_count(i);
@@ -199,30 +208,37 @@ void ff::gamepad_device::update_press_count(size_t index)
     this->state.press_count[index] = this->state.pressing[index] ? this->state.press_count[index] + 1 : 0;
 #else
     unsigned int vk = static_cast<unsigned int>(index) + VK_GAMEPAD_A;
+    ff::input_device_event device_event{};
 
-    if (this->state.pressing[index])
+    if (this->pending_state.pressing[index])
     {
-        ++this->state.press_count[index];
+        ++this->pending_state.press_count[index];
 
-        size_t count = this->state.press_count[index];
+        size_t count = this->pending_state.press_count[index];
 
         const size_t first_repeat = 30;
         const size_t repeat_count = 6;
 
         if (count == 1)
         {
-            this->device_event.notify(ff::input_device_event_key_press(vk, 1));
+            device_event = ff::input_device_event_key_press(vk, 1);
         }
         else if (count > first_repeat && (count - first_repeat) % repeat_count == 0)
         {
             size_t repeats = (count - first_repeat) / repeat_count + 1;
-            this->device_event.notify(ff::input_device_event_key_press(vk, static_cast<int>(repeats)));
+            device_event = ff::input_device_event_key_press(vk, static_cast<int>(repeats));
         }
     }
-    else if (this->state.press_count[index])
+    else if (this->pending_state.press_count[index])
     {
-        this->state.press_count[index] = 0;
-        this->device_event.notify(ff::input_device_event_key_press(vk, 0));
+        this->pending_state.press_count[index] = 0;
+        device_event = ff::input_device_event_key_press(vk, 0);
     }
+
+    if (device_event.type != ff::input_device_event_type::none && ff::window::main()->focused())
+    {
+        this->device_event.notify(device_event);
+    }
+
 #endif
 }

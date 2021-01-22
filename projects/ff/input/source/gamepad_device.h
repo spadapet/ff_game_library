@@ -59,12 +59,14 @@ namespace ff
         };
 
         bool poll(reading_t& reading);
-        void update_state(const reading_t& reading);
+        void update_pending_state(const reading_t& reading);
         void update_press_count(size_t index);
 
+        std::mutex mutex;
         gamepad_type gamepad_;
         ff::signal<const ff::input_device_event&> device_event;
         state_t state;
+        state_t pending_state;
         int check_connected;
         bool connected_;
     };

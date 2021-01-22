@@ -206,7 +206,8 @@ private:
 
     void dpi_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
-        this->main_window->notify_message(WM_DPICHANGED, 0, 0);
+        int dpi = static_cast<int>(display_info->LogicalDpi);
+        this->main_window->notify_message(WM_DPICHANGED, MAKEWPARAM(dpi, dpi), 0);
     }
 
     void display_invalidated(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
@@ -241,6 +242,9 @@ ff::window::window(ff::window_type type)
     : core_window(Windows::UI::Core::CoreWindow::GetForCurrentThread())
     , display_info(Windows::Graphics::Display::DisplayInformation::GetForCurrentView())
     , window_events(ref new main_window_events(this, this->core_window.Get(), this->display_info))
+    , dpi_scale_(this->display_info->LogicalDpi / 96.0)
+    , active_(this->core_window->ActivationMode != Windows::UI::Core::CoreWindowActivationMode::Deactivated)
+    , visible_(this->core_window->Visible)
 {
     if (type == ff::window_type::main)
     {
@@ -348,6 +352,21 @@ ff::signal_sink<ff::window_message&>& ff::window::message_sink()
 
 void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
 {
+    switch (msg)
+    {
+        case WM_ACTIVATEAPP:
+            this->active_ = wp != 0;
+            break;
+
+        case WM_SHOWWINDOW:
+            this->visible_ = wp != 0;
+            break;
+
+        case WM_DPICHANGED:
+            this->dpi_scale_ = this->display_info->LogicalDpi / 96.0;
+            break;
+    }
+
     ff::window_message message{ nullptr, msg, wp, lp, 0, false };
     this->message_signal.notify(message);
 }
@@ -385,17 +404,17 @@ ff::window_size ff::window::size()
 
 double ff::window::dpi_scale()
 {
-    return this->display_info->LogicalDpi;
+    return this->dpi_scale_;
 }
 
 bool ff::window::active()
 {
-    return this->core_window->ActivationMode != Windows::UI::Core::CoreWindowActivationMode::Deactivated;
+    return this->active_;
 }
 
 bool ff::window::visible()
 {
-    return this->core_window->Visible;
+    return this->visible_;
 }
 
 bool ff::window::focused()
