@@ -13,6 +13,31 @@ namespace
     class combined_input_devices : public ff::input_device_base
     {
     public:
+        virtual bool pressing(int vk) const override
+        {
+            for (auto& pair : ::all_devices)
+            {
+                if (pair.first->pressing(vk))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        virtual int press_count(int vk) const override
+        {
+            int count = 0;
+
+            for (auto& pair : ::all_devices)
+            {
+                count = std::max(count, pair.first->press_count(vk));
+            }
+
+            return count;
+        }
+
         virtual ~combined_input_devices() override
         {
             this->kill_pending();

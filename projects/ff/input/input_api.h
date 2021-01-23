@@ -6,7 +6,9 @@
 #include "source/input.h"
 #include "source/input_device_base.h"
 #include "source/input_device_event.h"
-#include "source/input_devices.h"
+#include "source/input_device.h"
+#include "source/input_events.h"
+#include "source/input_vk.h"
 #include "source/keyboard_device.h"
 #include "source/pointer_device.h"
 

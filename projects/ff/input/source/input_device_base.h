@@ -1,14 +1,14 @@
 #pragma once
 
+#include "input_vk.h"
+
 namespace ff
 {
     struct input_device_event;
 
-    class input_device_base
+    class input_device_base : public input_vk
     {
     public:
-        virtual ~input_device_base() = 0;
-
         virtual void advance() = 0;
         virtual void kill_pending() = 0;
         virtual bool connected() const = 0;
@@ -16,4 +16,3 @@ namespace ff
         virtual void notify_main_window_message(ff::window_message& message) = 0;
     };
 }
-

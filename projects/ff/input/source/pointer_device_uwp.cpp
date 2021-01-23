@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "input.h"
 #include "input_device_event.h"
-#include "input_devices.h"
 #include "pointer_device.h"
 
 #if UWP_APP

@@ -43,7 +43,7 @@ void ff::gamepad_device::gamepad(gamepad_type gamepad)
     this->gamepad_ = gamepad;
 }
 
-float ff::gamepad_device::pressing_analog(int vk) const
+float ff::gamepad_device::analog_value(int vk) const
 {
     size_t i = ::vk_to_index(vk);
     return i < this->state.reading.values.size() ? this->state.reading.values[i] : 0.0f;
@@ -55,10 +55,10 @@ bool ff::gamepad_device::pressing(int vk) const
     return i < this->state.pressing.size() && this->state.pressing[i];
 }
 
-bool ff::gamepad_device::press_started(int vk) const
+int ff::gamepad_device::press_count(int vk) const
 {
     size_t i = ::vk_to_index(vk);
-    return i < this->state.press_count.size() && this->state.press_count[i] == 1;
+    return (i < this->state.press_count.size() && this->state.press_count[i] == 1) ? 1 : 0;
 }
 
 void ff::gamepad_device::advance()

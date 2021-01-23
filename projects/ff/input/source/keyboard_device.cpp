@@ -4,6 +4,8 @@
 #include "keyboard_device.h"
 
 ff::keyboard_device::keyboard_device()
+    : state{}
+    , pending_state{}
 {
     ff::input::internal::add_device(this);
 }

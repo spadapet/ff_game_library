@@ -1,7 +1,7 @@
 #pragma once
 
 #include "input_device_base.h"
-#include "input_devices.h"
+#include "input_device.h"
 
 namespace ff
 {
@@ -25,14 +25,16 @@ namespace ff
         ff::point_double pos() const; // in pixels
         ff::point_double relative_pos() const;
 
-        bool pressing(int vk_button) const;
-        int press_count(int vk_button) const;
         int release_count(int vk_button) const;
         int double_click_count(int vk_button) const;
         ff::point_double wheel_scroll() const;
 
         size_t touch_info_count() const;
         const pointer_touch_info& touch_info(size_t index) const;
+
+        // input_vk
+        virtual bool pressing(int vk_button) const override;
+        virtual int press_count(int vk_button) const override;
 
         // input_device_base
         virtual void advance() override;

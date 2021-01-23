@@ -31,9 +31,10 @@ namespace ff
         gamepad_type gamepad() const;
         void gamepad(gamepad_type gamepad);
 
-        float pressing_analog(int vk) const;
-        bool pressing(int vk) const;
-        bool press_started(int vk) const;
+        // input_vk
+        virtual bool pressing(int vk) const override;
+        virtual int press_count(int vk) const override;
+        virtual float analog_value(int vk) const override;
 
         // input_device_base
         virtual void advance() override;

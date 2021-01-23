@@ -10,9 +10,11 @@ namespace ff
         keyboard_device();
         virtual ~keyboard_device() override;
 
-        bool pressing(int vk) const;
-        int press_count(int vk) const;
         std::string text() const;
+
+        // input_vk
+        virtual bool pressing(int vk) const override;
+        virtual int press_count(int vk) const override;
 
         // input_device_base
         virtual void advance() override;
@@ -26,8 +28,8 @@ namespace ff
 
         struct key_state
         {
-            std::array<uint8_t, KEY_COUNT> pressing = {};
-            std::array<uint8_t, KEY_COUNT> press_count = {};
+            std::array<uint8_t, KEY_COUNT> pressing;
+            std::array<uint8_t, KEY_COUNT> press_count;
             std::wstring text;
         };
 

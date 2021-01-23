@@ -8,9 +8,6 @@
     <ClCompile Include="source\input.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\input_device_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\input_device_event.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -27,6 +24,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\gamepad_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input_vk.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,10 +51,16 @@
     <ClInclude Include="source\pointer_device.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\input_devices.h">
+    <ClInclude Include="source\gamepad_device.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\gamepad_device.h">
+    <ClInclude Include="source\input_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\input_events.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\input_vk.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
