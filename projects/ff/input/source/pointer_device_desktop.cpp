@@ -46,6 +46,13 @@ void ff::pointer_device::notify_main_window_message(ff::window_message& message)
 
 void ff::pointer_device::mouse_message(const ff::window_message& message)
 {
+    if ((::GetMessageExtraInfo() & 0xFFFFFF00) == 0xFF515700)
+    {
+        // Ignore fake mouse messages from touch screen. See:
+        // https://docs.microsoft.com/en-us/windows/win32/tablet/system-events-and-mouse-messages
+        return;
+    }
+
     bool notify_mouse_leave = false;
     bool all_buttons_up = true;
     unsigned int presses = 0;

@@ -9,7 +9,10 @@
     Loaded="loaded"
     Unloaded="unloaded">
 
-    <ScrollViewer x:Name="scroller">
-        <RichTextBlock x:Name="output_box" IsTextSelectionEnabled="False" />
-    </ScrollViewer>
+    <Grid>
+        <ScrollViewer x:Name="scroller" IsHitTestVisible="False">
+            <RichTextBlock x:Name="output_box" IsTextSelectionEnabled="False" />
+        </ScrollViewer>
+        <Border Background="Transparent" />
+    </Grid>
 </Page>

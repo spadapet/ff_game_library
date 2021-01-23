@@ -53,7 +53,6 @@ void test_uwp::test_input_devices::handle_input_event(const ff::input_device_eve
         auto paragraph = ref new Windows::UI::Xaml::Documents::Paragraph();
         auto run = ref new Windows::UI::Xaml::Documents::Run();
         run->Text = ff::string::to_pstring(str.str());
-        paragraph->Margin = Windows::UI::Xaml::Thickness(0);
         paragraph->Inlines->Append(run);
         this->output_box->Blocks->Append(paragraph);
 

@@ -12,16 +12,11 @@ namespace
         one_time_init_base()
         {
 #if !UWP_APP
-            static bool init_win32 = false;
-            if (!init_win32)
+            if (!::IsMouseInPointerEnabled())
             {
-                init_win32 = true;
-
-                BOOL success = ::EnableMouseInPointer(TRUE);
-                assert(success);
+                ::EnableMouseInPointer(TRUE);
             }
 #endif
-
             ff::memory::start_tracking_allocations();
         }
 
