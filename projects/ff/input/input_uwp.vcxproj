@@ -15,6 +15,7 @@
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\input.cpp" />
     <ClCompile Include="source\input_device_event.cpp" />
+    <ClCompile Include="source\input_mapping.cpp" />
     <ClCompile Include="source\input_vk.cpp" />
     <ClCompile Include="source\keyboard_device.cpp" />
     <ClCompile Include="source\pointer_device.cpp" />
@@ -27,10 +28,9 @@
     <ClInclude Include="source\gamepad_device.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\input.h" />
-    <ClInclude Include="source\input_device.h" />
     <ClInclude Include="source\input_device_base.h" />
     <ClInclude Include="source\input_device_event.h" />
-    <ClInclude Include="source\input_events.h" />
+    <ClInclude Include="source\input_mapping.h" />
     <ClInclude Include="source\input_vk.h" />
     <ClInclude Include="source\keyboard_device.h" />
     <ClInclude Include="source\pointer_device.h" />

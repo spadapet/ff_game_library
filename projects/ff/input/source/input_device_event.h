@@ -2,6 +2,18 @@
 
 namespace ff
 {
+    enum class input_device
+    {
+        none,
+        keyboard,
+        mouse,
+        gamepad,
+        touch,
+        touchpad,
+        pen,
+        pointer, // generic
+    };
+
     enum class input_device_event_type
     {
         none,

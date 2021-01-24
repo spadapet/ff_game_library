@@ -54,12 +54,12 @@ bool ff::pointer_device::pressing(int vk_button) const
 
 int ff::pointer_device::press_count(int vk_button) const
 {
-    return ::is_valid_button(vk_button) ? this->mouse.presses[vk_button] : 0;
+    return ::is_valid_button(vk_button) ? this->mouse.press_count[vk_button] : 0;
 }
 
 int ff::pointer_device::release_count(int vk_button) const
 {
-    return ::is_valid_button(vk_button) ? this->mouse.releases[vk_button] : 0;
+    return ::is_valid_button(vk_button) ? this->mouse.release_count[vk_button] : 0;
 }
 
 int ff::pointer_device::double_click_count(int vk_button) const
@@ -97,8 +97,8 @@ void ff::pointer_device::advance()
     this->pending_mouse.pos_relative = ff::point_double::zeros();
     this->pending_mouse.wheel_scroll = ff::point_double::zeros();
 
-    std::memset(this->pending_mouse.presses, 0, sizeof(this->pending_mouse.presses));
-    std::memset(this->pending_mouse.releases, 0, sizeof(this->pending_mouse.releases));
+    std::memset(this->pending_mouse.press_count, 0, sizeof(this->pending_mouse.press_count));
+    std::memset(this->pending_mouse.release_count, 0, sizeof(this->pending_mouse.release_count));
     std::memset(this->pending_mouse.double_clicks, 0, sizeof(this->pending_mouse.double_clicks));
 }
 
@@ -114,9 +114,9 @@ void ff::pointer_device::kill_pending()
             {
                 this->pending_mouse.pressing[i] = false;
 
-                if (this->pending_mouse.releases[i] != 0xFF)
+                if (this->pending_mouse.release_count[i] != 0xFF)
                 {
-                    this->pending_mouse.releases[i]++;
+                    this->pending_mouse.release_count[i]++;
                 }
 
                 device_events.push_back(ff::input_device_event_mouse_press(static_cast<unsigned int>(i), 0, this->pending_mouse.pos.cast<int>()));

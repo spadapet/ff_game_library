@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "init.h"
 #include "input.h"
+#include "input_mapping.h"
 
 namespace
 {
@@ -12,7 +13,7 @@ namespace
 
             // Resource objects
 
-            // ff::resource_object_base::register_factory<ff::internal::input_factory>("input");
+            ff::resource_object_base::register_factory<ff::internal::input_mapping_factory>("input");
         }
 
         ~one_time_init_input()

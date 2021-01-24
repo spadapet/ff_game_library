@@ -29,6 +29,9 @@
     <ClCompile Include="source\input_vk.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\input_mapping.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -54,13 +57,10 @@
     <ClInclude Include="source\gamepad_device.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\input_device.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\input_events.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\input_vk.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\input_mapping.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "input_device_base.h"
-#include "input_device.h"
+#include "input_device_event.h"
 
 namespace ff
 {
@@ -55,8 +55,8 @@ namespace ff
             ff::point_double pos_relative;
             ff::point_double wheel_scroll;
             bool pressing[BUTTON_COUNT];
-            uint8_t presses[BUTTON_COUNT];
-            uint8_t releases[BUTTON_COUNT];
+            uint8_t press_count[BUTTON_COUNT];
+            uint8_t release_count[BUTTON_COUNT];
             uint8_t double_clicks[BUTTON_COUNT];
             bool inside_window;
         };

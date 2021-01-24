@@ -142,14 +142,14 @@ ff::input_device_event ff::pointer_device::mouse_moved(Windows::UI::Input::Point
 
 ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::PointerPoint^ point)
 {
-    int presses = 0;
+    int press_count = 0;
     int vk_button = 0;
 
     switch (point->Properties->PointerUpdateKind)
     {
         case Windows::UI::Input::PointerUpdateKind::LeftButtonPressed:
             vk_button = VK_LBUTTON;
-            presses = 1;
+            press_count = 1;
             break;
 
         case Windows::UI::Input::PointerUpdateKind::LeftButtonReleased:
@@ -158,7 +158,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
 
         case Windows::UI::Input::PointerUpdateKind::RightButtonPressed:
             vk_button = VK_RBUTTON;
-            presses = 1;
+            press_count = 1;
             break;
 
         case Windows::UI::Input::PointerUpdateKind::RightButtonReleased:
@@ -167,7 +167,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
 
         case Windows::UI::Input::PointerUpdateKind::MiddleButtonPressed:
             vk_button = VK_MBUTTON;
-            presses = 1;
+            press_count = 1;
             break;
 
         case Windows::UI::Input::PointerUpdateKind::MiddleButtonReleased:
@@ -176,7 +176,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
 
         case Windows::UI::Input::PointerUpdateKind::XButton1Pressed:
             vk_button = VK_XBUTTON1;
-            presses = 1;
+            press_count = 1;
             break;
 
         case Windows::UI::Input::PointerUpdateKind::XButton1Released:
@@ -185,7 +185,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
 
         case Windows::UI::Input::PointerUpdateKind::XButton2Pressed:
             vk_button = VK_XBUTTON2;
-            presses = 1;
+            press_count = 1;
             break;
 
         case Windows::UI::Input::PointerUpdateKind::XButton2Released:
@@ -195,7 +195,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
 
     if (vk_button)
     {
-        switch (presses)
+        switch (press_count)
         {
             case 2:
                 if (this->pending_mouse.double_clicks[vk_button] != 0xFF)
@@ -207,25 +207,25 @@ ff::input_device_event ff::pointer_device::mouse_pressed(Windows::UI::Input::Poi
             case 1:
                 this->pending_mouse.pressing[vk_button] = true;
 
-                if (this->pending_mouse.presses[vk_button] != 0xFF)
+                if (this->pending_mouse.press_count[vk_button] != 0xFF)
                 {
-                    this->pending_mouse.presses[vk_button]++;
+                    this->pending_mouse.press_count[vk_button]++;
                 }
                 break;
 
             case 0:
                 this->pending_mouse.pressing[vk_button] = false;
 
-                if (this->pending_mouse.releases[vk_button] != 0xFF)
+                if (this->pending_mouse.release_count[vk_button] != 0xFF)
                 {
-                    this->pending_mouse.releases[vk_button]++;
+                    this->pending_mouse.release_count[vk_button]++;
                 }
                 break;
         }
 
         this->mouse_moved(point);
 
-        return ff::input_device_event_mouse_press(vk_button, presses, this->pending_mouse.pos.cast<int>());
+        return ff::input_device_event_mouse_press(vk_button, press_count, this->pending_mouse.pos.cast<int>());
     }
 
     return ff::input_device_event();

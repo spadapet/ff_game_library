@@ -55,7 +55,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
     bool notify_mouse_leave = false;
     bool all_buttons_up = true;
-    unsigned int presses = 0;
+    unsigned int press_count = 0;
     unsigned int vk_button = 0;
     ff::point_int mouse_pos(GET_X_LPARAM(message.lp), GET_Y_LPARAM(message.lp));
     ff::input_device_event device_event(ff::input_device_event_type::none);
@@ -66,7 +66,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
         {
             case WM_LBUTTONDOWN:
                 vk_button = VK_LBUTTON;
-                presses = 1;
+                press_count = 1;
                 break;
 
             case WM_LBUTTONUP:
@@ -75,12 +75,12 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
             case WM_LBUTTONDBLCLK:
                 vk_button = VK_LBUTTON;
-                presses = 2;
+                press_count = 2;
                 break;
 
             case WM_RBUTTONDOWN:
                 vk_button = VK_RBUTTON;
-                presses = 1;
+                press_count = 1;
                 break;
 
             case WM_RBUTTONUP:
@@ -89,12 +89,12 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
             case WM_RBUTTONDBLCLK:
                 vk_button = VK_RBUTTON;
-                presses = 2;
+                press_count = 2;
                 break;
 
             case WM_MBUTTONDOWN:
                 vk_button = VK_MBUTTON;
-                presses = 1;
+                press_count = 1;
                 break;
 
             case WM_MBUTTONUP:
@@ -103,7 +103,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
             case WM_MBUTTONDBLCLK:
                 vk_button = VK_MBUTTON;
-                presses = 2;
+                press_count = 2;
                 break;
 
             case WM_XBUTTONDOWN:
@@ -111,12 +111,12 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
                 {
                     case 1:
                         vk_button = VK_XBUTTON1;
-                        presses = 1;
+                        press_count = 1;
                         break;
 
                     case 2:
                         vk_button = VK_XBUTTON2;
-                        presses = 1;
+                        press_count = 1;
                         break;
                 }
                 break;
@@ -139,12 +139,12 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
                 {
                     case 1:
                         vk_button = VK_XBUTTON1;
-                        presses = 2;
+                        press_count = 2;
                         break;
 
                     case 2:
                         vk_button = VK_XBUTTON2;
-                        presses = 2;
+                        press_count = 2;
                         break;
                 }
                 break;
@@ -176,7 +176,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
         if (vk_button)
         {
-            switch (presses)
+            switch (press_count)
             {
                 case 2:
                     if (this->pending_mouse.double_clicks[vk_button] != 0xFF)
@@ -188,23 +188,23 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
                 case 1:
                     this->pending_mouse.pressing[vk_button] = true;
 
-                    if (this->pending_mouse.presses[vk_button] != 0xFF)
+                    if (this->pending_mouse.press_count[vk_button] != 0xFF)
                     {
-                        this->pending_mouse.presses[vk_button]++;
+                        this->pending_mouse.press_count[vk_button]++;
                     }
                     break;
 
                 case 0:
                     this->pending_mouse.pressing[vk_button] = false;
 
-                    if (this->pending_mouse.releases[vk_button] != 0xFF)
+                    if (this->pending_mouse.release_count[vk_button] != 0xFF)
                     {
-                        this->pending_mouse.releases[vk_button]++;
+                        this->pending_mouse.release_count[vk_button]++;
                     }
                     break;
             }
 
-            device_event = ff::input_device_event_mouse_press(vk_button, presses, mouse_pos);
+            device_event = ff::input_device_event_mouse_press(vk_button, press_count, mouse_pos);
         }
 
         if (vk_button || message.msg == WM_MOUSEMOVE)
@@ -239,7 +239,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
 
     if (vk_button)
     {
-        if (presses)
+        if (press_count)
         {
             if (::GetCapture() != message.hwnd)
             {
