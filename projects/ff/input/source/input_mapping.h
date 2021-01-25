@@ -42,7 +42,7 @@ namespace ff
     public:
         input_event_provider(const input_mapping_def& mapping, std::vector<input_vk const*>&& devices);
 
-        void advance(double delta_time);
+        bool advance(double delta_time);
 
         const std::vector<input_event>& events() const;
         float event_progress(size_t event_id) const; // 1=triggered once, 2=hold time hit twice, etc...
@@ -55,17 +55,18 @@ namespace ff
         struct input_event_progress : public input_event_def
         {
             double holding_seconds;
-            int event_count;
+            size_t event_count;
             bool holding;
         };
 
-        bool get_digital_value(int vk, int& press_count) const;
+        int get_press_count(int vk) const;
+        bool get_digital_value(int vk) const;
         float get_analog_value(int vk) const;
         void push_start_event(input_event_progress& event);
         void push_stop_event(input_event_progress& event);
 
         std::unordered_multimap<size_t, input_event_progress> event_id_to_progress;
-        std::unordered_map<size_t, int> value_id_to_vk;
+        std::unordered_multimap<size_t, int> value_id_to_vk;
         std::vector<input_event> events_;
         std::vector<input_vk const*> devices;
     };
@@ -79,6 +80,9 @@ namespace ff
 
         virtual const std::vector<input_event_def>& events() const override;
         virtual const std::vector<input_value_def>& values() const override;
+
+    protected:
+        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
         std::vector<input_event_def> events_;

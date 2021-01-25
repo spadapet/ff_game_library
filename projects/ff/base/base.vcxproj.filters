@@ -38,9 +38,6 @@
     <ClCompile Include="source\thread_pool.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\functions.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\log.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -54,6 +51,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\math.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\at_scope.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -144,13 +144,13 @@
     <ClInclude Include="source\thread_pool.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\functions.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\log.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\at_scope.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

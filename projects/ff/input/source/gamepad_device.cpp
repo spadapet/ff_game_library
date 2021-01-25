@@ -238,7 +238,9 @@ void ff::gamepad_device::update_press_count(size_t index)
     if (device_event.type != ff::input_device_event_type::none && ff::window::main()->focused())
     {
         this->device_event.notify(device_event);
-    }
 
+        // Gamepad activity should prevent Windows from going to sleep
+        ::SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+    }
 #endif
 }

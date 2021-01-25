@@ -21,7 +21,7 @@ static void get_copy(ff::vector<T*, 64>& dest, const std::vector<T*>& src)
 
     if (src.size())
     {
-        std::memcpy(dest.data(), src.data(), src.size() * sizeof(T*));
+        std::memcpy(dest.data(), src.data(), ff::vector_byte_size(src));
     }
 }
 

@@ -575,6 +575,18 @@ namespace ff
         size_type capacity_;
         size_type size_;
     };
+
+    template<class T, size_t StackSize>
+    size_t vector_byte_size(const ff::vector<T, StackSize>& vec)
+    {
+        return vec.size() * sizeof(typename ff::vector<T, StackSize>::value_type);
+    }
+
+    template<class T, class Alloc>
+    size_t vector_byte_size(const std::vector<T, Alloc>& vec)
+    {
+        return vec.size() * sizeof(typename std::vector<T, Alloc>::value_type);
+    }
 }
 
 template<class T, size_t StackSize>

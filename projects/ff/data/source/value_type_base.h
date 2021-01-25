@@ -112,7 +112,7 @@ namespace ff::internal
                 if (size)
                 {
                     vec.resize(size);
-                    if (ff::load_bytes(reader, vec.data(), vec.size() * sizeof(raw_type::value_type)))
+                    if (ff::load_bytes(reader, vec.data(), ff::vector_byte_size(vec)))
                     {
                         return ff::value::create<T>(std::move(vec));
                     }
@@ -129,7 +129,7 @@ namespace ff::internal
             size_t size = src.size();
             if (ff::save(writer, size))
             {
-                if (src.empty() || ff::save_bytes(writer, src.data(), src.size() * sizeof(raw_type::value_type)))
+                if (src.empty() || ff::save_bytes(writer, src.data(), ff::vector_byte_size(src)))
                 {
                     return true;
                 }
