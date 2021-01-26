@@ -85,6 +85,20 @@ namespace ff
             return this->get_bytes(name, &value, sizeof(T));
         }
 
+        template<class T, class = std::enable_if_t<std::is_enum_v<T>>>
+        void set_enum(std::string_view name, T value)
+        {
+            static_assert(sizeof(T) <= sizeof(int));
+            this->set<int>(name, static_cast<int>(value));
+        }
+
+        template<class T, class = std::enable_if_t<std::is_enum_v<T>>>
+        T get_enum(std::string_view name) const
+        {
+            static_assert(sizeof(T) <= sizeof(int));
+            return static_cast<T>(this->get<int>(name));
+        }
+
     private:
         value_ptr get_by_path(std::string_view path) const;
 

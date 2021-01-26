@@ -69,6 +69,9 @@
     <ProjectReference Include="..\..\projects\ff\data\data_uwp.vcxproj">
       <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\graphics\graphics_uwp.vcxproj">
+      <Project>{eabbdac6-970e-403e-a7c9-ecc410b2a040}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\input\input_uwp.vcxproj">
       <Project>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</Project>
     </ProjectReference>

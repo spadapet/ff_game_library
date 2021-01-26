@@ -11,9 +11,18 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\color.cpp" />
+    <ClCompile Include="source\key_frames.cpp" />
+    <ClCompile Include="source\matrix.cpp" />
+    <ClCompile Include="source\transform.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\color.h" />
+    <ClInclude Include="source\key_frames.h" />
+    <ClInclude Include="source\matrix.h" />
+    <ClInclude Include="source\transform.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

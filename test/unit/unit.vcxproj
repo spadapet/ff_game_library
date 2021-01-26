@@ -64,6 +64,9 @@
     <ProjectReference Include="..\..\projects\ff\data\data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\graphics\graphics.vcxproj">
+      <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\input\input.vcxproj">
       <Project>{475230fd-c110-4b27-9c6a-8ef1c11b5a2e}</Project>
     </ProjectReference>
