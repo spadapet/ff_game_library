@@ -106,7 +106,14 @@ void ff::dict::set(std::string_view name, const value* value)
 
 void ff::dict::set_bytes(std::string_view name, const void* data, size_t size)
 {
-    std::shared_ptr<ff::data_base> value = std::make_shared<ff::data_static>(data, size);
+    std::vector<uint8_t> data_vector;
+    if (size)
+    {
+        data_vector.resize(size);
+        std::memcpy(data_vector.data(), data, size);
+    }
+
+    std::shared_ptr<ff::data_base> value = std::make_shared<ff::data_vector>(std::move(data_vector));
     this->set<ff::data_base>(name, value, ff::saved_data_type::none);
 }
 

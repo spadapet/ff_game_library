@@ -159,11 +159,24 @@ float ff::input_event_provider::event_progress(size_t event_id) const
     return static_cast<float>(max_progress);
 }
 
-bool ff::input_event_provider::event_started(size_t event_id) const
+bool ff::input_event_provider::event_hit(size_t event_id) const
 {
     for (const ff::input_event& event : this->events_)
     {
         if (event.event_id == event_id && event.count >= 1)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ff::input_event_provider::event_stopped(size_t event_id) const
+{
+    for (const ff::input_event& event : this->events_)
+    {
+        if (event.event_id == event_id && event.count == 0)
         {
             return true;
         }
@@ -455,50 +468,72 @@ static int name_to_vk(std::string_view name)
     return (i != name_to_vk.cend()) ? i->second : 0;
 }
 
+static bool parse_event_def(std::string_view name, const ff::dict& dict, std::vector<ff::input_event_def>& defs)
+{
+    ff::input_event_def def{};
+    def.event_id = ff::hash<std::string_view>()(name);
+    def.hold_seconds = dict.get<double>("hold");
+    def.repeat_seconds = dict.get<double>("repeat");
+
+    std::vector<int> vks;
+    ff::value_ptr action_value = dict.get("action");
+
+    if (action_value->is_type<std::string>())
+    {
+        int vk = ::name_to_vk(action_value->get<std::string>());
+        if (vk)
+        {
+            vks.push_back(vk);
+        }
+    }
+    else if (action_value->is_type<std::vector<ff::value_ptr>>())
+    {
+        for (ff::value_ptr single_action_value : action_value->get<std::vector<ff::value_ptr>>())
+        {
+            int vk = ::name_to_vk(single_action_value->get<std::string>());
+            if (vk)
+            {
+                vks.push_back(vk);
+            }
+        }
+    }
+
+    if (vks.empty() || vks.size() > def.vk.size())
+    {
+        return false;
+    }
+
+    std::memcpy(def.vk.data(), vks.data(), ff::vector_byte_size(vks));
+    defs.push_back(def);
+    return true;
+}
+
 static bool parse_event_defs(const ff::dict& dict, std::vector<ff::input_event_def>& defs)
 {
     for (std::string_view name : dict.child_names())
     {
-        for (ff::value_ptr nested_value : dict.get<std::vector<ff::value_ptr>>(name))
+        ff::value_ptr value = dict.get(name);
+
+        if (value->is_type<ff::dict>())
         {
-            ff::input_event_def def{};
-            def.event_id = ff::hash<std::string_view>()(name);
-
-            const ff::dict& nested_dict = nested_value->get<ff::dict>();
-            def.hold_seconds = nested_dict.get<double>("hold");
-            def.repeat_seconds = nested_dict.get<double>("repeat");
-
-            std::vector<int> vks;
-            ff::value_ptr action_value = nested_dict.get("action");
-
-            if (action_value->is_type<std::string>())
+            if (!::parse_event_def(name, value->get<ff::dict>(), defs))
             {
-                int vk = ::name_to_vk(action_value->get<std::string>());
-                if (vk)
-                {
-                    vks.push_back(vk);
-                }
-            }
-            else if (action_value->is_type<std::vector<ff::value_ptr>>())
-            {
-                for (ff::value_ptr single_action_value : action_value->get<std::vector<ff::value_ptr>>())
-                {
-                    int vk = ::name_to_vk(single_action_value->get<std::string>());
-                    if (vk)
-                    {
-                        vks.push_back(vk);
-                    }
-                }
-            }
-
-            if (vks.empty() || vks.size() > def.vk.size())
-            {
-                assert(false);
                 return false;
             }
-
-            std::memcpy(def.vk.data(), vks.data(), ff::vector_byte_size(vks));
-            defs.push_back(def);
+        }
+        else if (value->is_type<std::vector<ff::value_ptr>>())
+        {
+            for (ff::value_ptr nested_value : value->get<std::vector<ff::value_ptr>>())
+            {
+                if (!::parse_event_def(name, nested_value->get<ff::dict>(), defs))
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -526,6 +561,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::input_mapping_factory::l
         return std::make_shared<ff::input_mapping_o>(std::move(event_defs), ::map_events_to_values(value_defs));
     }
 
+    assert(false);
     return nullptr;
 }
 

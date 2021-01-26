@@ -46,7 +46,8 @@ namespace ff
 
         const std::vector<input_event>& events() const;
         float event_progress(size_t event_id) const; // 1=triggered once, 2=hold time hit twice, etc...
-        bool event_started(size_t event_id) const;
+        bool event_hit(size_t event_id) const;
+        bool event_stopped(size_t event_id) const;
 
         bool digital_value(size_t value_id) const;
         float analog_value(size_t value_id) const; // 0.0f - 1.0f

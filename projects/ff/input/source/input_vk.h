@@ -2,6 +2,9 @@
 
 namespace ff
 {
+    /// <summary>
+    /// Access the state of any virtual key
+    /// </summary>
     class input_vk
     {
     public:

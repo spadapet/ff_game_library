@@ -89,6 +89,9 @@
     <ClCompile Include="source\input\keyboard_test.cpp">
       <Filter>source\input</Filter>
     </ClCompile>
+    <ClCompile Include="source\input\mapping_test.cpp">
+      <Filter>source\input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
