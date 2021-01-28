@@ -1,11 +1,7 @@
 #include "pch.h"
+#include "directx_operators.h"
 #include "matrix.h"
 #include "matrix_stack.h"
-
-static bool operator!=(const DirectX::XMFLOAT4X4& lhs, const DirectX::XMFLOAT4X4& rhs)
-{
-    return std::memcmp(&lhs, &rhs, sizeof(lhs)) != 0;
-}
 
 ff::matrix_stack::matrix_stack()
     : stack{ ff::matrix::identity_4x4() }

@@ -67,9 +67,9 @@ namespace input_test
                 "}\n";
             std::replace(json_source.begin(), json_source.end(), '\'', '\"');
 
-            const size_t up_id = ff::hash<std::string_view>()("up");
-            const size_t down_id = ff::hash<std::string_view>()("down");
-            const size_t print_id = ff::hash<std::string_view>()("print");
+            const size_t up_id = ff::hash_func("up"sv);
+            const size_t down_id = ff::hash_func("down"sv);
+            const size_t print_id = ff::hash_func("print"sv);
 
             ff::load_resources_result result = ff::load_resources_from_json(json_source, "", false);
             ff::resource_objects_o res(result.dict);

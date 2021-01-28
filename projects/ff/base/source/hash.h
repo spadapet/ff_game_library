@@ -66,6 +66,12 @@ namespace ff
             return static_cast<size_t>(value);
         }
     };
+
+    template<class T>
+    size_t hash_func(const T& value)
+    {
+        return ff::hash<T>()(value);
+    }
 }
 
 namespace ff::internal

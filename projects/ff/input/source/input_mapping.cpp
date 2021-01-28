@@ -471,7 +471,7 @@ static int name_to_vk(std::string_view name)
 static bool parse_event_def(std::string_view name, const ff::dict& dict, std::vector<ff::input_event_def>& defs)
 {
     ff::input_event_def def{};
-    def.event_id = ff::hash<std::string_view>()(name);
+    def.event_id = ff::hash_func(name);
     def.hold_seconds = dict.get<double>("hold");
     def.repeat_seconds = dict.get<double>("repeat");
 

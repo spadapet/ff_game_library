@@ -20,6 +20,18 @@
     <ClCompile Include="source\vertex.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\viewport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_format.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dxgi_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -40,6 +52,27 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\vertex.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\viewport.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_type.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_format.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\directx_operators.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graph_counters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dxgi_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_util.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
