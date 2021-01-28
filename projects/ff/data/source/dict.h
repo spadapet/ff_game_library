@@ -93,10 +93,10 @@ namespace ff
         }
 
         template<class T, class = std::enable_if_t<std::is_enum_v<T>>>
-        T get_enum(std::string_view name) const
+        T get_enum(std::string_view name, T default_value = T{}) const
         {
             static_assert(sizeof(T) <= sizeof(int));
-            return static_cast<T>(this->get<int>(name));
+            return static_cast<T>(this->get<int>(name, static_cast<int>(default_value)));
         }
 
     private:

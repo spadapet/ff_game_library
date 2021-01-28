@@ -9,5 +9,7 @@ namespace ff
         virtual const std::vector<std::string>& errors() const = 0;
         virtual void add_error(std::string_view text) = 0;
         virtual bool debug() const = 0;
+
+        static resource_load_context& null();
     };
 }

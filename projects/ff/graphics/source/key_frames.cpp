@@ -113,9 +113,14 @@ bool ff::key_frames::load_from_cache_internal(const ff::dict& dict)
     std::vector<float> frames = dict.get<std::vector<float>>("frames");
     std::vector<ff::value_ptr> values = dict.get<std::vector<ff::value_ptr>>("values");
     std::vector<ff::value_ptr> tangents = dict.get<std::vector<ff::value_ptr>>("tangents");
-    assertRetVal(frames.size() == values.size() && frames.size() == tangents.size(), false);
 
-    this->keys.Reserve(frames.size());
+    if (frames.size() != values.size() || frames.size() != tangents.size())
+    {
+        assert(false);
+        return false;
+    }
+
+    this->keys.reserve(frames.size());
     for (size_t i = 0; i < frames.size(); i++)
     {
         key_frame key;
@@ -128,132 +133,126 @@ bool ff::key_frames::load_from_cache_internal(const ff::dict& dict)
     return true;
 }
 
-static ff::value_ptr ConvertKeyValue(ff::value_ptr value)
+static ff::value_ptr convert_key_value(ff::value_ptr value)
 {
     // Check if it's an interpolatable value
 
-    ff::ValuePtrT<ff::RectFloatValue> rectFloatValue = value;
-    if (rectFloatValue)
+    ff::value_ptr rect_float_value = value->try_convert<ff::rect_float>();
+    if (rect_float_value)
     {
-        return rectFloatValue;
+        return rect_float_value;
     }
 
-    ff::ValuePtrT<ff::PointFloatValue> pointFloatValue = value;
-    if (pointFloatValue)
+    ff::value_ptr point_float_value = value->try_convert<ff::point_float>();
+    if (point_float_value)
     {
-        return pointFloatValue;
+        return point_float_value;
     }
 
-    ff::ValuePtrT<float> floatValue = value;
-    if (floatValue)
+    ff::value_ptr float_value = value->try_convert<float>();
+    if (float_value)
     {
-        return floatValue;
+        return float_value;
     }
 
-    return value ? value : ff::Value::New<ff::NullValue>();
+    return value ? value : ff::value::create<nullptr_t>();
 }
 
-bool ff::key_frames::load_from_source_internal(ff::StringRef name, const ff::dict& dict, ff::IResourceLoadListener* loadListener)
+bool ff::key_frames::load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context)
 {
-    float tension = dict.get<float>(::PROP_TENSION, 0.0f);
+    float tension = dict.get<float>("tension");
     tension = (1.0f - tension) / 2.0f;
 
     std::vector<ff::value_ptr> values = dict.get<std::vector<ff::value_ptr>>("values");
     for (ff::value_ptr value : values)
     {
-        ff::dict valueDict = value->get_value<ff::DictValue>();
-        ff::ValuePtrT<float> frameValue = valueDict.get_value(::PROP_FRAME);
-        ff::value_ptr valueValue = valueDict.get_value(::PROP_VALUE);
-        if (!frameValue || !valueValue)
+        ff::dict value_dict = value->get<ff::dict>();
+        ff::value_ptr frame_value = value_dict.get("frame")->try_convert<float>();
+        ff::value_ptr value_value = value_dict.get("value");
+        if (!frame_value || !value_value)
         {
-            if (loadListener)
-            {
-                loadListener->AddError(ff::String::from_static(L"Key frame missing frame or value"));
-            }
-
-            assertRetVal(false, false);
+            context.add_error("Key frame missing frame or value");
+            return false;
         }
 
         key_frame key;
-        key.frame = frameValue.get_value();
-        key.value = ::ConvertKeyValue(valueValue);
-        key.tangent_value = ff::Value::New<ff::NullValue>();
+        key.frame = frame_value->get<float>();
+        key.value = ::convert_key_value(value_value);
+        key.tangent_value = ff::value::create<nullptr_t>();
 
-        size_t keyPos;
-        if (this->keys.SortFind(key, &keyPos))
+        auto key_iter = std::lower_bound(this->keys.cbegin(), this->keys.cend(), key);
+        if (key_iter != this->keys.cend() && key_iter->frame == key.frame)
         {
-            if (loadListener)
-            {
-                loadListener->AddError(ff::String::format_new(L"Key frame not unique: %g", key.frame));
-            }
-
-            assertRetVal(false, false);
+            std::ostringstream str;
+            str << "Key frame not unique: " << key.frame;
+            context.add_error(str.str());
+            return false;
         }
 
-        this->keys.Insert(keyPos, key);
+        this->keys.insert(key_iter, key);
     }
+
+    assert(std::is_sorted(this->keys.cbegin(), this->keys.cend()));
 
     this->name_ = name;
     this->start_ = dict.get<float>("start", this->keys.size() ? this->keys[0].frame : 0.0f);
-    this->length_ = dict.get<float>("length", this->keys.size() ? this->keys.GetLast().frame : 0.0f);
-    this->default_value = ::ConvertKeyValue(dict.get_value("default"));
-    this->method = load_method(dict, false);
+    this->length_ = dict.get<float>("length", this->keys.size() ? this->keys.back().frame : 0.0f);
+    this->default_value = ::convert_key_value(dict.get("default"));
+    this->method = ff::key_frames::load_method(dict, false);
 
     if (this->length_ < 0.0f)
     {
-        if (loadListener)
-        {
-            loadListener->AddError(ff::String::format_new(L"Invalid key frame length: %g", this->length_));
-        }
-
-        assertRetVal(false, false);
+        std::ostringstream str;
+        str << "Invalid key frame length: " << this->length_;
+        context.add_error(str.str());
+        return false;
     }
 
     // Init tangents
 
     for (size_t i = 0; i < this->keys.size(); i++)
     {
-        key_frame& keyBefore = this->keys[i ? i - 1 : this->keys.size() - 1];
-        key_frame& keyAfter = this->keys[i + 1 < this->keys.size() ? i + 1 : 0];
+        key_frame& key_before = this->keys[i ? i - 1 : this->keys.size() - 1];
+        key_frame& key_after = this->keys[i + 1 < this->keys.size() ? i + 1 : 0];
 
-        if (keyBefore.value->IsSameType(keyAfter.value))
+        if (key_before.value->is_same_type(key_after.value))
         {
-            if (keyBefore.value->is_type<float>())
+            if (key_before.value->is_type<float>())
             {
-                float v1 = keyBefore.value->get_value<float>();
-                float v2 = keyAfter.value->get_value<float>();
+                float v1 = key_before.value->get<float>();
+                float v2 = key_after.value->get<float>();
 
-                this->keys[i].tangent_value = ff::Value::New<float>(tension * (v2 - v1));
+                this->keys[i].tangent_value = ff::value::create<float>(tension * (v2 - v1));
             }
-            else if (keyBefore.value->is_type<ff::PointFloatValue>())
+            else if (key_before.value->is_type<ff::point_float>())
             {
-                ff::PointFloat v1 = keyBefore.value->get_value<ff::PointFloatValue>();
-                ff::PointFloat v2 = keyAfter.value->get_value<ff::PointFloatValue>();
+                ff::point_float v1 = key_before.value->get<ff::point_float>();
+                ff::point_float v2 = key_after.value->get<ff::point_float>();
 
-                ff::RectFloat output;
-                DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+                ff::rect_float output;
+                DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                     DirectX::XMVectorMultiply(
                         DirectX::XMVectorReplicate(tension),
                         DirectX::XMVectorSubtract(
-                            DirectX::XMLoadFloat2((DirectX::XMFLOAT2*)&v2),
-                            DirectX::XMLoadFloat2((DirectX::XMFLOAT2*)&v1))));
+                            DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&v2)),
+                            DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&v1)))));
 
-                this->keys[i].tangent_value = ff::Value::New<ff::PointFloatValue>(output.TopLeft());
+                this->keys[i].tangent_value = ff::value::create<ff::point_float>(output.top_left());
             }
-            else if (keyBefore.value->is_type<ff::RectFloatValue>())
+            else if (key_before.value->is_type<ff::rect_float>())
             {
-                ff::RectFloat v1 = keyBefore.value->get_value<ff::RectFloatValue>();
-                ff::RectFloat v2 = keyAfter.value->get_value<ff::RectFloatValue>();
+                ff::rect_float v1 = key_before.value->get<ff::rect_float>();
+                ff::rect_float v2 = key_after.value->get<ff::rect_float>();
 
-                ff::RectFloat output;
-                DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+                ff::rect_float output;
+                DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                     DirectX::XMVectorMultiply(
                         DirectX::XMVectorReplicate(tension),
                         DirectX::XMVectorSubtract(
-                            DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v2),
-                            DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v1))));
+                            DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v2)),
+                            DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v1)))));
 
-                this->keys[i].tangent_value = ff::Value::New<ff::RectFloatValue>(output);
+                this->keys[i].tangent_value = ff::value::create<ff::rect_float>(output);
             }
         }
     }
@@ -267,27 +266,26 @@ ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame&
 
     if (value->is_type<std::string>())
     {
-        ff::String paramName = value->get_value<std::string>();
-        if (!std::wcsncmp(paramName.c_str(), L"param:", 6))
+        const std::string& param_name = value->get<std::string>();
+        if (ff::string::starts_with(param_name, "param:"))
         {
-            ff::StaticString paramName2(paramName.c_str() + 6, paramName.size() - 6);
-            value = params->get_value(paramName2);
+            value = params->get(param_name.substr(6));
         }
     }
-    else if (lhs.value->IsSameType(other.value)) // Can only interplate the same types
+    else if (lhs.value->is_same_type(other.value)) // Can only interplate the same types
     {
         // Spline interpolation
-        if (lhs.tangent_value->IsSameType(lhs.value) && other.tangent_value->IsSameType(lhs.value))
+        if (lhs.tangent_value->is_same_type(lhs.value) && other.tangent_value->is_same_type(lhs.value))
         {
             if (lhs.value->is_type<float>())
             {
                 // Q(s) = (2s^3 - 3s^2 + 1)v1 + (-2s^3 + 3s^2)v2 + (s^3 - 2s^2 + s)t1 + (s^3 - s^2)t2
                 float time2 = time * time;
                 float time3 = time2 * time;
-                float v1 = lhs.value->get_value<float>();
-                float t1 = lhs.tangent_value->get_value<float>();
-                float v2 = other.value->get_value<float>();
-                float t2 = other.tangent_value->get_value<float>();
+                float v1 = lhs.value->get<float>();
+                float t1 = lhs.tangent_value->get<float>();
+                float v2 = other.value->get<float>();
+                float t2 = other.tangent_value->get<float>();
 
                 float output =
                     (2 * time3 - 3 * time2 + 1) * v1 +
@@ -295,107 +293,107 @@ ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame&
                     (time3 - 2 * time2 + time) * t1 +
                     (time3 - time2) * t2;
 
-                value = ff::Value::New<float>(output);
+                value = ff::value::create<float>(output);
             }
-            else if (lhs.value->is_type<ff::PointFloatValue>())
+            else if (lhs.value->is_type<ff::point_float>())
             {
-                ff::PointFloat v1 = lhs.value->get_value<ff::PointFloatValue>();
-                ff::PointFloat t1 = lhs.tangent_value->get_value<ff::PointFloatValue>();
-                ff::PointFloat v2 = other.value->get_value<ff::PointFloatValue>();
-                ff::PointFloat t2 = other.tangent_value->get_value<ff::PointFloatValue>();
+                ff::point_float v1 = lhs.value->get<ff::point_float>();
+                ff::point_float t1 = lhs.tangent_value->get<ff::point_float>();
+                ff::point_float v2 = other.value->get<ff::point_float>();
+                ff::point_float t2 = other.tangent_value->get<ff::point_float>();
 
-                ff::RectFloat output;
-                DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+                ff::rect_float output;
+                DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                     DirectX::XMVectorHermite(
-                        DirectX::XMLoadFloat2((const DirectX::XMFLOAT2*)&v1),
-                        DirectX::XMLoadFloat2((const DirectX::XMFLOAT2*)&t1),
-                        DirectX::XMLoadFloat2((const DirectX::XMFLOAT2*)&v2),
-                        DirectX::XMLoadFloat2((const DirectX::XMFLOAT2*)&t2),
+                        DirectX::XMLoadFloat2(reinterpret_cast<const DirectX::XMFLOAT2*>(&v1)),
+                        DirectX::XMLoadFloat2(reinterpret_cast<const DirectX::XMFLOAT2*>(&t1)),
+                        DirectX::XMLoadFloat2(reinterpret_cast<const DirectX::XMFLOAT2*>(&v2)),
+                        DirectX::XMLoadFloat2(reinterpret_cast<const DirectX::XMFLOAT2*>(&t2)),
                         time));
 
-                value = ff::Value::New<ff::PointFloatValue>(output.TopLeft());
+                value = ff::value::create<ff::point_float>(output.top_left());
             }
-            else if (lhs.value->is_type<ff::RectFloatValue>())
+            else if (lhs.value->is_type<ff::rect_float>())
             {
-                ff::RectFloat v1 = lhs.value->get_value<ff::RectFloatValue>();
-                ff::RectFloat t1 = lhs.tangent_value->get_value<ff::RectFloatValue>();
-                ff::RectFloat v2 = other.value->get_value<ff::RectFloatValue>();
-                ff::RectFloat t2 = other.tangent_value->get_value<ff::RectFloatValue>();
+                ff::rect_float v1 = lhs.value->get<ff::rect_float>();
+                ff::rect_float t1 = lhs.tangent_value->get<ff::rect_float>();
+                ff::rect_float v2 = other.value->get<ff::rect_float>();
+                ff::rect_float t2 = other.tangent_value->get<ff::rect_float>();
 
-                ff::RectFloat output;
-                DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+                ff::rect_float output;
+                DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                     DirectX::XMVectorHermite(
-                        DirectX::XMLoadFloat4((const DirectX::XMFLOAT4*)&v1),
-                        DirectX::XMLoadFloat4((const DirectX::XMFLOAT4*)&t1),
-                        DirectX::XMLoadFloat4((const DirectX::XMFLOAT4*)&v2),
-                        DirectX::XMLoadFloat4((const DirectX::XMFLOAT4*)&t2),
+                        DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&v1)),
+                        DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&t1)),
+                        DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&v2)),
+                        DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&t2)),
                         time));
 
-                value = ff::Value::New<ff::RectFloatValue>(output);
+                value = ff::value::create<ff::rect_float>(output);
             }
         }
         else if (lhs.value->is_type<float>())
         {
-            float v1 = lhs.value->get_value<float>();
-            float v2 = other.value->get_value<float>();
+            float v1 = lhs.value->get<float>();
+            float v2 = other.value->get<float>();
             float output = (v2 - v1) * time + v1;
 
-            value = ff::Value::New<float>(output);
+            value = ff::value::create<float>(output);
         }
-        else if (lhs.value->is_type<ff::PointFloatValue>())
+        else if (lhs.value->is_type<ff::point_float>())
         {
-            ff::RectFloat v1(lhs.value->get_value<ff::PointFloatValue>(), ff::PointFloat::Zeros());
-            ff::RectFloat v2(other.value->get_value<ff::PointFloatValue>(), ff::PointFloat::Zeros());
+            ff::rect_float v1(lhs.value->get<ff::point_float>(), ff::point_float::zeros());
+            ff::rect_float v2(other.value->get<ff::point_float>(), ff::point_float::zeros());
 
-            ff::RectFloat output;
-            DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+            ff::rect_float output;
+            DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                 DirectX::XMVectorLerp(
-                    DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v1),
-                    DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v2),
+                    DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v1)),
+                    DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v2)),
                     time));
 
-            value = ff::Value::New<ff::PointFloatValue>(output.TopLeft());
+            value = ff::value::create<ff::point_float>(output.top_left());
         }
-        else if (lhs.value->is_type<ff::RectFloatValue>())
+        else if (lhs.value->is_type<ff::rect_float>())
         {
-            ff::RectFloat v1 = lhs.value->get_value<ff::RectFloatValue>();
-            ff::RectFloat v2 = other.value->get_value<ff::RectFloatValue>();
+            ff::rect_float v1 = lhs.value->get<ff::rect_float>();
+            ff::rect_float v2 = other.value->get<ff::rect_float>();
 
-            ff::RectFloat output;
-            DirectX::XMStoreFloat4((DirectX::XMFLOAT4*)&output,
+            ff::rect_float output;
+            DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),
                 DirectX::XMVectorLerp(
-                    DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v1),
-                    DirectX::XMLoadFloat4((DirectX::XMFLOAT4*)&v2),
+                    DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v1)),
+                    DirectX::XMLoadFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&v2)),
                     time));
 
-            value = ff::Value::New<ff::RectFloatValue>(output);
+            value = ff::value::create<ff::rect_float>(output);
         }
     }
 
     return value;
 }
 
-ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool fromCache)
+ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool from_cache)
 {
     method_t method = method_t::none;
 
-    if (fromCache || dict.get_value("method")->is_type<int>())
+    if (from_cache || dict.get("method")->is_type<int>())
     {
-        method = (method_t)dict.get<int>("method");
+        method = dict.get_enum<method_t>("method");
     }
     else
     {
-        ff::String methodString = dict.get<std::string>("method", ff::String::from_static(L"linear"));
-        method = ff::SetFlags(method, methodString == L"spline" ? method_t::interpolate_spline : method_t::interpolate_linear);
+        std::string method_string = dict.get<std::string>("method", "linear");
+        method = ff::flags::set(method, method_string == "spline" ? method_t::interpolate_spline : method_t::interpolate_linear);
 
-        ff::value_ptr loopValue = dict.get_value(::PROP_LOOP);
-        if (!loopValue || loopValue->is_type<ff::BoolValue>())
+        ff::value_ptr loop_value = dict.get("loop");
+        if (!loop_value || loop_value->is_type<bool>())
         {
-            method = ff::SetFlags(method, loopValue->get_value<ff::BoolValue>() ? method_t::bounds_loop : method_t::bounds_none);
+            method = ff::flags::set(method, loop_value->get<bool>() ? method_t::bounds_loop : method_t::bounds_none);
         }
-        else if (loopValue->is_type<std::string>() && loopValue->get_value<std::string>() == L"clamp")
+        else if (loop_value->is_type<std::string>() && loop_value->get<std::string>() == "clamp")
         {
-            method = ff::SetFlags(method, method_t::bounds_clamp);
+            method = ff::flags::set(method, method_t::bounds_clamp);
         }
     }
 
@@ -406,7 +404,7 @@ bool ff::key_frames::adjust_frame(float& frame, float start, float length, ff::k
 {
     if (frame < start)
     {
-        switch (ff::GetFlags(method, method_t::bounds_bits))
+        switch (ff::flags::get(method, method_t::bounds_bits))
         {
             default:
                 return false;
@@ -422,7 +420,7 @@ bool ff::key_frames::adjust_frame(float& frame, float start, float length, ff::k
     }
     else if (frame >= start + length)
     {
-        switch (ff::GetFlags(method, method_t::bounds_bits))
+        switch (ff::flags::get(method, method_t::bounds_bits))
         {
             default:
                 return false;
@@ -440,46 +438,36 @@ bool ff::key_frames::adjust_frame(float& frame, float start, float length, ff::k
     return true;
 }
 
-ff::create_key_frames::create_key_frames(ff::StringRef name, float start, float length, key_frames::method_t method, ff::value_ptr defaultValue)
+ff::create_key_frames::create_key_frames(std::string_view name, float start, float length, key_frames::method_t method, ff::value_ptr default_value)
 {
-    _dict.Set<std::string>("name", name);
-    _dict.Set<float>("start", start);
-    _dict.Set<float>("length", length);
-    _dict.Set<int>("method", (int)method);
-    _dict.SetValue("default", defaultValue);
+    this->dict.set<std::string>("name", std::string(name));
+    this->dict.set<float>("start", start);
+    this->dict.set<float>("length", length);
+    this->dict.set_enum("method", method);
+    this->dict.set("default", default_value);
 }
-
-ff::create_key_frames::create_key_frames(const create_key_frames& other)
-    : _dict(other._dict)
-    , _values(other._values)
-{}
-
-ff::create_key_frames::create_key_frames(create_key_frames&& other)
-    : _dict(std::move(other._dict))
-    , _values(std::move(other._values))
-{}
 
 void ff::create_key_frames::add_frame(float frame, ff::value_ptr value)
 {
     ff::dict dict;
-    dict.Set<float>(::PROP_FRAME, frame);
-    dict.SetValue(::PROP_VALUE, value);
+    dict.set<float>("frame", frame);
+    dict.set("value", value);
 
-    _values.push_back(ff::Value::New<ff::DictValue>(std::move(dict)));
+    this->values.push_back(ff::value::create<ff::dict>(std::move(dict)));
 }
 
 ff::key_frames ff::create_key_frames::create() const
 {
-    ff::String name;
-    ff::dict dict = create_source_dict(name);
-    return key_frames::load_from_source(name, dict);
+    std::string name;
+    ff::dict dict = this->create_source_dict(name);
+    return key_frames::load_from_source(name, dict, ff::resource_load_context::null());
 }
 
-ff::dict ff::create_key_frames::create_source_dict(ff::StringOut name) const
+ff::dict ff::create_key_frames::create_source_dict(std::string& name) const
 {
-    name = _dict.get<std::string>("name");
+    name = this->dict.get<std::string>("name");
 
-    ff::dict dict = _dict;
-    dict.Set<std::vector<ff::value_ptr>>("values", std::vector<ff::value_ptr>(_values));
+    ff::dict dict = this->dict;
+    dict.set<std::vector<ff::value_ptr>>("values", std::vector<ff::value_ptr>(this->values));
     return dict;
 }

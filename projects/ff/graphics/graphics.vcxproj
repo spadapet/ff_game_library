@@ -13,7 +13,9 @@
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
+    <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\transform.cpp" />
+    <ClCompile Include="source\vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphics_api.h" />
@@ -21,7 +23,9 @@
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
+    <ClInclude Include="source\matrix_stack.h" />
     <ClInclude Include="source\transform.h" />
+    <ClInclude Include="source\vertex.h" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

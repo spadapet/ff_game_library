@@ -16,6 +16,7 @@
     <ClCompile Include="source\resource.cpp" />
     <ClCompile Include="source\resource_load.cpp" />
     <ClCompile Include="source\resource_load2.cpp" />
+    <ClCompile Include="source\resource_load_context.cpp" />
     <ClCompile Include="source\resource_objects.cpp" />
     <ClCompile Include="source\resource_object_base.cpp" />
     <ClCompile Include="source\resource_object_factory_base.cpp" />

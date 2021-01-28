@@ -14,6 +14,12 @@
     <ClCompile Include="source\transform.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\matrix_stack.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vertex.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -30,6 +36,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="graphics_api.h" />
+    <ClInclude Include="source\matrix_stack.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vertex.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

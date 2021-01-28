@@ -33,7 +33,7 @@ namespace ff
             default = bounds_none | interpolate_linear,
         };
 
-        static method_t load_method(const ff::dict& dict, bool fromCache);
+        static method_t load_method(const ff::dict& dict, bool from_cache);
         static bool adjust_frame(float& frame, float start, float length, method_t method);
 
     private:
@@ -63,17 +63,17 @@ namespace ff
     class create_key_frames
     {
     public:
-        create_key_frames(std::string_view name, float start, float length, key_frames::method_t method = key_frames::method_t::default, ff::value_ptr defaultValue = nullptr);
-        create_key_frames(const create_key_frames& other);
-        create_key_frames(create_key_frames&& other);
+        create_key_frames(std::string_view name, float start, float length, key_frames::method_t method = key_frames::method_t::default, ff::value_ptr default_value = nullptr);
+        create_key_frames(const create_key_frames& other) = default;
+        create_key_frames(create_key_frames&& other) noexcept = default;
 
         void add_frame(float frame, ff::value_ptr value);
         key_frames create() const;
         ff::dict create_source_dict(std::string& name) const;
 
     private:
-        ff::dict _dict;
-        std::vector<ff::value_ptr> _values;
+        ff::dict dict;
+        std::vector<ff::value_ptr> values;
     };
 
 }

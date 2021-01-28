@@ -74,6 +74,7 @@ namespace ff
         }
 
         bool is_type(std::type_index type_index) const;
+        bool is_same_type(const value* other) const;
         const void* try_cast(std::type_index type_index) const;
         value_ptr try_convert(std::type_index type_index) const;
 

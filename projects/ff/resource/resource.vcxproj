@@ -11,6 +11,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\file_o.cpp" />
+    <ClCompile Include="source\resource_load_context.cpp" />
     <ClCompile Include="source\resource_objects.cpp" />
     <ClCompile Include="source\resource_object_base.cpp" />
     <ClCompile Include="source\resource_object_factory_base.cpp" />
