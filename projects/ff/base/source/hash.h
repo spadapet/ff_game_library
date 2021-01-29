@@ -1,12 +1,9 @@
 #pragma once
 
-namespace ff::internal
-{
-    size_t hash_bytes(const void* data, size_t size) noexcept;
-}
-
 namespace ff
 {
+    size_t hash_bytes(const void* data, size_t size) noexcept;
+
     /// <summary>
     /// Replacement for std::hash that is always stable, the hashes could be persisted.
     /// </summary>
@@ -15,7 +12,7 @@ namespace ff
     {
         size_t operator()(const T& value) const noexcept
         {
-            return ff::internal::hash_bytes(&value, sizeof(T));
+            return ff::hash_bytes(&value, sizeof(T));
         }
     };
 
@@ -33,7 +30,7 @@ namespace ff
     {
         size_t operator()(const std::basic_string_view<Elem, Traits>& value) const noexcept
         {
-            return ff::internal::hash_bytes(value.data(), value.size() * sizeof(Elem));
+            return ff::hash_bytes(value.data(), value.size() * sizeof(Elem));
         }
     };
 
@@ -42,7 +39,7 @@ namespace ff
     {
         size_t operator()(const std::basic_string<Elem, Traits, Alloc>& value) const noexcept
         {
-            return ff::internal::hash_bytes(value.data(), value.size() * sizeof(Elem));
+            return ff::hash_bytes(value.data(), value.size() * sizeof(Elem));
         }
     };
 

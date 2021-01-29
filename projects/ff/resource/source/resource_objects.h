@@ -65,7 +65,7 @@ namespace ff
 
         std::recursive_mutex mutex;
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
-        const ff::resource_value_provider* localized_value_provider_;
+        ff::resource_value_provider const* localized_value_provider_;
         ff::win_handle done_loading_event;
         size_t loading_count;
     };

@@ -2,8 +2,10 @@
 
 #include "pch.h"
 #include "source/color.h"
-#include "source/device_context_state.h"
-#include "source/directx_operators.h"
+#include "source/dx_operators.h"
+#include "source/dx11_device_state.h"
+#include "source/dx11_fixed_state.h"
+#include "source/dx11_object_cache.h"
 #include "source/dxgi_util.h"
 #include "source/graph_counters.h"
 #include "source/key_frames.h"

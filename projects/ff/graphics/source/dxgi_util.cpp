@@ -49,7 +49,7 @@ size_t ff::internal::get_adapters_hash(IDXGIFactoryX* factory)
         }
     }
 
-    return !luids.empty() ? ff::internal::hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
+    return !luids.empty() ? ff::hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
 }
 
 size_t ff::internal::get_adapter_outputs_hash(IDXGIFactoryX* dxgi, IDXGIAdapterX* card)
@@ -67,7 +67,7 @@ size_t ff::internal::get_adapter_outputs_hash(IDXGIFactoryX* dxgi, IDXGIAdapterX
         }
     }
 
-    return !monitors.empty() ? ff::internal::hash_bytes(monitors.data(), ff::vector_byte_size(monitors)) : 0;
+    return !monitors.empty() ? ff::hash_bytes(monitors.data(), ff::vector_byte_size(monitors)) : 0;
 }
 
 std::vector<Microsoft::WRL::ComPtr<IDXGIOutputX>> ff::internal::get_adapter_outputs(IDXGIFactoryX* dxgi, IDXGIAdapterX* card)

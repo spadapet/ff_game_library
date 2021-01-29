@@ -587,6 +587,12 @@ namespace ff
     {
         return vec.size() * sizeof(typename std::vector<T, Alloc>::value_type);
     }
+
+    template<class T, size_t Size>
+    size_t array_byte_size(const std::array<T, Size>& arr)
+    {
+        return Size * sizeof(T);
+    }
 }
 
 template<class T, size_t StackSize>

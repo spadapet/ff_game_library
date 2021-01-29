@@ -11,7 +11,9 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\color.cpp" />
-    <ClCompile Include="source\device_context_state.cpp" />
+    <ClCompile Include="source\dx11_device_state.cpp" />
+    <ClCompile Include="source\dx11_fixed_state.cpp" />
+    <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
@@ -27,8 +29,9 @@
     <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\color.h" />
-    <ClInclude Include="source\device_context_state.h" />
-    <ClInclude Include="source\directx_operators.h" />
+    <ClInclude Include="source\dx11_device_state.h" />
+    <ClInclude Include="source\dx11_fixed_state.h" />
+    <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\graph_counters.h" />
     <ClInclude Include="source\key_frames.h" />
