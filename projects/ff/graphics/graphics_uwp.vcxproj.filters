@@ -32,6 +32,12 @@
     <ClCompile Include="source\texture_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\png_image.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\device_context_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -73,6 +79,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\png_image.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\palette_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_context_state.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

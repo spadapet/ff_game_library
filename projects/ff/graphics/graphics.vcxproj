@@ -11,10 +11,12 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\color.cpp" />
+    <ClCompile Include="source\device_context_state.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
+    <ClCompile Include="source\png_image.cpp" />
     <ClCompile Include="source\texture_format.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
     <ClCompile Include="source\transform.cpp" />
@@ -25,12 +27,15 @@
     <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\color.h" />
+    <ClInclude Include="source\device_context_state.h" />
     <ClInclude Include="source\directx_operators.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\graph_counters.h" />
     <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
+    <ClInclude Include="source\palette_data.h" />
+    <ClInclude Include="source\png_image.h" />
     <ClInclude Include="source\sprite_type.h" />
     <ClInclude Include="source\texture_format.h" />
     <ClInclude Include="source\texture_util.h" />
