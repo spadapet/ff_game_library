@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "source/color.h"
+#include "source/data_blob.h"
 #include "source/dx_operators.h"
 #include "source/dx11_device_state.h"
 #include "source/dx11_fixed_state.h"
@@ -13,6 +14,7 @@
 #include "source/matrix_stack.h"
 #include "source/palette_data.h"
 #include "source/png_image.h"
+#include "source/shader.h"
 #include "source/sprite_type.h"
 #include "source/texture_format.h"
 #include "source/texture_util.h"

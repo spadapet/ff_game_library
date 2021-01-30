@@ -52,6 +52,10 @@ ff::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& fil
     assert(*file && offset + size <= file->size());
 }
 
+ff::data_mem_mapped::data_mem_mapped(const std::filesystem::path& path)
+    : data_mem_mapped(file_mem_mapped(path))
+{}
+
 ff::data_mem_mapped::data_mem_mapped(file_mem_mapped&& file) noexcept
     : data_mem_mapped(std::make_shared<file_mem_mapped>(std::move(file)))
 {}

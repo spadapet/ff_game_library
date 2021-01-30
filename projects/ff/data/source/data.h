@@ -39,6 +39,7 @@ namespace ff
     public:
         data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file);
         data_mem_mapped(const std::shared_ptr<file_mem_mapped>& file, size_t offset, size_t size);
+        data_mem_mapped(const std::filesystem::path& path);
         data_mem_mapped(file_mem_mapped&& file) noexcept;
         data_mem_mapped(file_mem_mapped&& file, size_t offset, size_t size) noexcept;
         data_mem_mapped(const data_mem_mapped& other) = default;
@@ -71,8 +72,8 @@ namespace ff
         data_vector(const data_vector& other) = default;
         data_vector(data_vector&& other) noexcept = default;
 
-        data_vector& operator=(const data_vector& other);
-        data_vector& operator=(data_vector&& other) noexcept;
+        data_vector& operator=(const data_vector& other) = default;
+        data_vector& operator=(data_vector&& other) noexcept = default;
 
         const std::shared_ptr<const std::vector<uint8_t>>& vector() const;
         size_t offset() const;

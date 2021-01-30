@@ -74,3 +74,25 @@ bool ff::string::ends_with(std::string_view str, std::string_view str_end)
 {
     return str.size() >= str_end.size() && !str.compare(str.size() - str_end.size(), str_end.size(), str_end);
 }
+
+std::vector<std::string_view> ff::string::split(std::string_view str, std::string_view delims)
+{
+    std::vector<std::string_view> tokens;
+
+    size_t pos = 0;
+    while (pos < str.size())
+    {
+        size_t end = str.find_first_of(delims, pos);
+        end = (end == std::string_view::npos) ? str.size() : end;
+
+        if (end > pos)
+        {
+            tokens.push_back(str.substr(pos, end - pos));
+        }
+
+        pos = (end != str.size()) ? str.find_first_not_of(delims, end) : str.size();
+        pos = (pos == std::string_view::npos) ? str.size() : pos;
+    }
+
+    return tokens;
+}
