@@ -9,6 +9,7 @@
 #include "source/dx11_object_cache.h"
 #include "source/dxgi_util.h"
 #include "source/graph_counters.h"
+#include "source/init.h"
 #include "source/key_frames.h"
 #include "source/matrix.h"
 #include "source/matrix_stack.h"
@@ -21,3 +22,5 @@
 #include "source/transform.h"
 #include "source/vertex.h"
 #include "source/viewport.h"
+
+#pragma comment(lib, "d3dcompiler.lib")

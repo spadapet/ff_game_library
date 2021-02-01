@@ -92,6 +92,9 @@
     <ClCompile Include="source\input\mapping_test.cpp">
       <Filter>source\input</Filter>
     </ClCompile>
+    <ClCompile Include="source\graphics\shader_test.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -117,6 +120,9 @@
     </Filter>
     <Filter Include="source\input">
       <UniqueIdentifier>{500925ae-e8dd-4024-9262-fffd194a21de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\graphics">
+      <UniqueIdentifier>{a8221fdc-2b07-473c-96ff-85a2c91d88c0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -6,3 +6,4 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 ID_TEST_EFFECT RCDATA "source/assets/test_effect.wav"
 ID_TEST_MUSIC RCDATA "source/assets/test_music.mp3"
+ID_TEST_SHADER RCDATA "source/assets/test_shader.hlsl"

@@ -17,6 +17,7 @@
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
+    <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
@@ -39,6 +40,7 @@
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
     <ClInclude Include="source\graph_counters.h" />
+    <ClInclude Include="source\init.h" />
     <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
@@ -51,6 +53,14 @@
     <ClInclude Include="source\transform.h" />
     <ClInclude Include="source\vertex.h" />
     <ClInclude Include="source\viewport.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\vendor\directxtex_uwp.vcxproj">
+      <Project>{57ae618b-7b0e-4f51-b623-d1b5b90d11c9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\vendor\libpng_uwp.vcxproj">
+      <Project>{4976a08a-4cd9-4e6c-9da7-e549d6f2295f}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

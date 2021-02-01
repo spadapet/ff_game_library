@@ -50,6 +50,9 @@
     <ClCompile Include="source\data_blob.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -109,6 +112,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\data_blob.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

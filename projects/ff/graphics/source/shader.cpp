@@ -143,7 +143,32 @@ ff::shader_o::shader_o(std::shared_ptr<ff::saved_data_base> saved_data)
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
-    return std::shared_ptr<resource_object_base>();
+    bool debug = dict.get<bool>("debug");
+    std::filesystem::path file_path = dict.get<std::string>("file");
+    std::string entry = dict.get<std::string>("entry", "main");
+    std::string target = dict.get<std::string>("target");
+
+    std::unordered_map<std::string_view, std::string_view> defines;
+    for (auto& i : dict.get<ff::dict>("defines"))
+    {
+        defines.try_emplace(i.first, i.second->get<std::string>());
+    }
+
+    std::vector<std::string> compile_errors;
+    std::shared_ptr<ff::data_base> shader_data = ::compile_shader(file_path, entry, target, defines, debug, compile_errors);
+
+    if (!compile_errors.empty())
+    {
+        for (const std::string& error : compile_errors)
+        {
+            std::ostringstream str;
+            str << "Shader compiler error: " << error;
+            context.add_error(str.str());
+        }
+    }
+
+    auto shader_saved_data = std::make_shared<ff::saved_data_static>(shader_data, shader_data->size(), ff::saved_data_type::none);
+    return std::make_shared<ff::shader_o>(shader_saved_data);
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_cache(const ff::dict& dict) const

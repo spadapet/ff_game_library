@@ -79,8 +79,7 @@ std::vector<std::string_view> ff::string::split(std::string_view str, std::strin
 {
     std::vector<std::string_view> tokens;
 
-    size_t pos = 0;
-    while (pos < str.size())
+    for (size_t pos = 0; pos < str.size(); )
     {
         size_t end = str.find_first_of(delims, pos);
         end = (end == std::string_view::npos) ? str.size() : end;
