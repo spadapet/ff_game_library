@@ -53,6 +53,15 @@
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx11_buffer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -118,6 +127,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\graphics_counters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_buffer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

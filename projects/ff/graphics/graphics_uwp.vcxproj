@@ -13,10 +13,13 @@
     </ClCompile>
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
+    <ClCompile Include="source\dx11_buffer.cpp" />
     <ClCompile Include="source\dx11_device_state.cpp" />
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
+    <ClCompile Include="source\graphics.cpp" />
+    <ClCompile Include="source\graphics_child_base.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
@@ -34,11 +37,14 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
+    <ClInclude Include="source\dx11_buffer.h" />
     <ClInclude Include="source\dx11_device_state.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
+    <ClInclude Include="source\graphics.h" />
+    <ClInclude Include="source\graphics_child_base.h" />
     <ClInclude Include="source\graphics_counters.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\key_frames.h" />
