@@ -1,6 +1,9 @@
 #include "pch.h"
+#include "graphics.h"
 #include "init.h"
 #include "shader.h"
+
+static bool init_graphics_status;
 
 namespace
 {
@@ -8,15 +11,16 @@ namespace
     {
         one_time_init_grahics()
         {
-            // ff::graphics::internal::init();
-
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::shader_factory>("shader");
+
+            ::init_graphics_status = ff::graphics::internal::init();
         }
 
         ~one_time_init_grahics()
         {
-            // ff::graphics::internal::destroy();
+            ff::graphics::internal::destroy();
+            ::init_graphics_status = false;
         }
     };
 }
@@ -38,4 +42,9 @@ ff::init_graphics::~init_graphics()
     {
         ::init_graphics_data.reset();
     }
+}
+
+ff::init_graphics::operator bool() const
+{
+    return this->init_resource && ::init_graphics_status;
 }

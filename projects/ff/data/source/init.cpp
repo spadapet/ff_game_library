@@ -53,3 +53,8 @@ ff::init_data::init_data()
         }
     } init;
 }
+
+ff::init_data::operator bool() const
+{
+    return this->init_base;
+}

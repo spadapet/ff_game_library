@@ -25,4 +25,7 @@
 #include "source/vertex.h"
 #include "source/viewport.h"
 
+#pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dwrite.lib")
+#pragma comment(lib, "dxgi.lib")

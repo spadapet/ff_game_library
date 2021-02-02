@@ -4,22 +4,25 @@
 #include "init.h"
 #include "music.h"
 
+static bool init_audio_status;
+
 namespace
 {
     struct one_time_init_audio
     {
         one_time_init_audio()
         {
-            ff::audio::internal::init();
-
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::audio_effect_factory>("effect");
             ff::resource_object_base::register_factory<ff::internal::music_factory>("music");
+
+            ::init_audio_status = ff::audio::internal::init();
         }
 
         ~one_time_init_audio()
         {
             ff::audio::internal::destroy();
+            ::init_audio_status = false;
         }
     };
 }
@@ -41,4 +44,9 @@ ff::init_audio::~init_audio()
     {
         ::init_audio_data.reset();
     }
+}
+
+ff::init_audio::operator bool() const
+{
+    return this->init_resource && ::init_audio_status;
 }

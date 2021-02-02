@@ -32,12 +32,12 @@ namespace
 
     struct one_time_init_main_window
     {
-        one_time_init_main_window(std::string_view title)
+        one_time_init_main_window(std::string_view title, bool visible)
 #if UWP_APP
             : main_window(ff::window_type::main)
 #else
             : main_window(ff::window::create_blank(ff::window_type::main, title, nullptr,
-                WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0,
+                WS_OVERLAPPEDWINDOW | (visible ? WS_VISIBLE : 0), 0,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT))
 #endif
         {}
@@ -68,11 +68,16 @@ ff::init_base::~init_base()
     }
 }
 
-ff::init_main_window::init_main_window(std::string_view title)
+ff::init_base::operator bool() const
+{
+    return true;
+}
+
+ff::init_main_window::init_main_window(std::string_view title, bool visible)
 {
     if (::init_main_window_refs.fetch_add(1) == 0)
     {
-        ::init_main_window_data = std::make_unique<one_time_init_main_window>(title);
+        ::init_main_window_data = std::make_unique<one_time_init_main_window>(title, visible);
     }
 }
 
@@ -82,4 +87,9 @@ ff::init_main_window::~init_main_window()
     {
         ::init_main_window_data.reset();
     }
+}
+
+ff::init_main_window::operator bool() const
+{
+    return this->init_base && ff::window::main() && ff::window::main()->operator bool();
 }

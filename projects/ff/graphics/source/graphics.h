@@ -33,6 +33,7 @@ namespace ff::graphics::internal
     IDXGIAdapterX* dxgi_adapter_for_device();
     ID3D11DeviceX* dx11_device();
     ID3D11DeviceContextX* dx11_device_context();
+    D3D_FEATURE_LEVEL dx11_feature_level();
 
     ff::dx11_device_state& dx11_device_state();
     ff::dx11_object_cache& dx11_object_cache();

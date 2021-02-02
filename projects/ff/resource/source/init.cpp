@@ -13,15 +13,18 @@ ff::init_resource::init_resource()
         one_time_init()
         {
             // Values
-
             ff::value::register_type<ff::type::resource_type>("resource");
             ff::value::register_type<ff::type::resource_object_type>("resource_object");
 
             // Resource objects
-
             ff::resource_object_base::register_factory<ff::internal::file_factory>("file");
             ff::resource_object_base::register_factory<ff::internal::resource_objects_factory>(ff::internal::RES_FACTORY_NAME);
             ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
         }
     } init;
+}
+
+ff::init_resource::operator bool() const
+{
+    return this->init_data;
 }

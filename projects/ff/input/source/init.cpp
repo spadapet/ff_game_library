@@ -3,22 +3,24 @@
 #include "input.h"
 #include "input_mapping.h"
 
+static bool init_input_status;
+
 namespace
 {
     struct one_time_init_input
     {
         one_time_init_input()
         {
-            ff::input::internal::init();
-
             // Resource objects
-
             ff::resource_object_base::register_factory<ff::internal::input_mapping_factory>("input");
+
+            ::init_input_status = ff::input::internal::init();
         }
 
         ~one_time_init_input()
         {
             ff::input::internal::destroy();
+            ::init_input_status = false;
         }
     };
 }
@@ -27,7 +29,7 @@ static std::atomic_int init_input_refs;
 static std::unique_ptr<one_time_init_input> init_input_data;
 
 ff::init_input::init_input()
-    : init_main_window("Input test window")
+    : init_main_window("Input test window", false)
 {
     if (::init_input_refs.fetch_add(1) == 0)
     {
@@ -41,4 +43,9 @@ ff::init_input::~init_input()
     {
         ::init_input_data.reset();
     }
+}
+
+ff::init_input::operator bool() const
+{
+    return ::init_input_status;
 }

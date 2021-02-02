@@ -7,6 +7,8 @@ namespace ff
     public:
         init_resource();
 
+        operator bool() const;
+
     private:
         ff::init_data init_data;
     };
