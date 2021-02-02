@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graph_counters.h"
+#include "graphics_counters.h"
 
 namespace ff
 {
@@ -18,7 +18,7 @@ namespace ff
         void clear();
         void reset(ID3D11DeviceContext* context);
         void apply(dx11_device_state& dest);
-        ff::graph_counters reset_counters();
+        ff::graphics_counters reset_counters();
         void draw(size_t count, size_t start);
         void draw_indexed(size_t index_count, size_t index_start, int vertex_offset);
         void* map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map = nullptr);
@@ -61,7 +61,7 @@ namespace ff
 
     private:
         Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
-        ff::graph_counters counters;
+        ff::graphics_counters counters;
 
         template<typename TShader>
         struct shader_state

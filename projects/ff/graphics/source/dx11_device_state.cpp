@@ -20,7 +20,7 @@ void ff::dx11_device_state::clear()
         this->context->Flush();
     }
 
-    this->counters = ff::graph_counters{};
+    this->counters = ff::graphics_counters{};
 
     this->vs_state.reset();
     this->gs_state.reset();
@@ -141,10 +141,10 @@ void ff::dx11_device_state::apply(dx11_device_state& dest)
     dest.set_scissors(this->scissor_count ? this->scissors.data() : nullptr, this->scissor_count);
 }
 
-ff::graph_counters ff::dx11_device_state::reset_counters()
+ff::graphics_counters ff::dx11_device_state::reset_counters()
 {
-    ff::graph_counters counters = this->counters;
-    this->counters = ff::graph_counters{};
+    ff::graphics_counters counters = this->counters;
+    this->counters = ff::graphics_counters{};
     return counters;
 }
 

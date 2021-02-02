@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    struct graph_counters
+    struct graphics_counters
     {
         size_t draw;
         size_t clear;

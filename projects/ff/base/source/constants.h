@@ -5,6 +5,8 @@
 /// </summary>
 namespace ff::constants
 {
+    const bool debug_build = static_cast<bool>(DEBUG);
+
     /// <summary>
     /// Fixed amount of times per second that the game loop advances
     /// </summary>

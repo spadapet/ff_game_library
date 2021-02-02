@@ -53,6 +53,12 @@
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\graphics.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -84,7 +90,7 @@
     <ClInclude Include="source\texture_format.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\graph_counters.h">
+    <ClInclude Include="source\graphics_counters.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dxgi_util.h">
@@ -115,6 +121,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

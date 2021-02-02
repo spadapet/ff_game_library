@@ -39,7 +39,7 @@
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
-    <ClInclude Include="source\graph_counters.h" />
+    <ClInclude Include="source\graphics_counters.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
