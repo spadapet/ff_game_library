@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "source/resource.h"
 
 namespace graphics_test
 {

@@ -3,24 +3,44 @@
 #include "dx11_device_state.h"
 #include "graphics.h"
 
+static const size_t MIN_BUFFER_SIZE = 4;
+
 ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type)
-    : dx11_buffer(type, 32)
+    : dx11_buffer(type, 0)
 {}
 
 ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size)
-{
-    ff::graphics::internal::add_child(this);
-
-    bool status = this->init(type, size, nullptr);
-    assert(status);
-}
+    : dx11_buffer(type, size, nullptr)
+{}
 
 ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, std::shared_ptr<ff::data_base> read_only_data)
+    : dx11_buffer(type, 0, read_only_data)
+{}
+
+ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> read_only_data)
+    : initial_data(read_only_data)
 {
     ff::graphics::internal::add_child(this);
 
-    bool status = this->init(type, read_only_data->size(), read_only_data);
-    assert(status);
+    UINT bind_flags = type;
+    UINT cpu_flags = !read_only_data ? D3D11_CPU_ACCESS_WRITE : 0;
+    D3D11_USAGE usage = !read_only_data ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
+    D3D11_SUBRESOURCE_DATA data{};
+
+    size = std::max(size, ::MIN_BUFFER_SIZE);
+
+    if (read_only_data)
+    {
+        size = std::max(size, read_only_data->size());
+
+        data.pSysMem = read_only_data->data();
+        data.SysMemPitch = static_cast<UINT>(read_only_data->size());
+        data.SysMemSlicePitch = 0;
+    }
+
+    CD3D11_BUFFER_DESC desc(static_cast<UINT>(size), bind_flags, usage, cpu_flags);
+    HRESULT hr = ff::graphics::internal::dx11_device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, this->buffer_.GetAddressOf());
+    assert(SUCCEEDED(hr));
 }
 
 ff::dx11_buffer::~dx11_buffer()
@@ -30,9 +50,9 @@ ff::dx11_buffer::~dx11_buffer()
     ff::graphics::internal::remove_child(this);
 }
 
-ID3D11Buffer* ff::dx11_buffer::buffer() const
+ff::dx11_buffer::operator bool() const
 {
-    return this->buffer_.Get();
+    return this->buffer_;
 }
 
 D3D11_BIND_FLAG ff::dx11_buffer::type() const
@@ -58,22 +78,22 @@ bool ff::dx11_buffer::writable() const
 
 void* ff::dx11_buffer::map(size_t size)
 {
-    this->unmap();
-
     if (this->writable())
     {
+        this->unmap();
+
         if (size > this->size())
         {
             size = ff::math::nearest_power_of_two(size);
 
             dx11_buffer new_buffer(this->type(), size);
-            if (!new_buffer.buffer())
+            if (!new_buffer)
             {
                 assert(false);
                 return nullptr;
             }
 
-            *this = std::move(new_buffer);
+            std::swap(*this, new_buffer);
         }
 
         this->mapped_device = ff::graphics::internal::dx11_device();
@@ -93,30 +113,16 @@ void ff::dx11_buffer::unmap()
     }
 }
 
-bool ff::dx11_buffer::reset()
+ID3D11Buffer* ff::dx11_buffer::buffer() const
 {
-    return this->init(this->type(), this->size(), this->initial_data);
+    return this->buffer_.Get();
 }
 
-bool ff::dx11_buffer::init(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> read_only_data)
+bool ff::dx11_buffer::reset()
 {
-    this->unmap();
+    *this = this->initial_data
+        ? dx11_buffer(this->type(), this->initial_data)
+        : dx11_buffer(this->type());
 
-    this->initial_data = read_only_data;
-    this->buffer_.Reset();
-
-    UINT bind_flags = type;
-    UINT cpu_flags = !read_only_data ? D3D11_CPU_ACCESS_WRITE : 0;
-    D3D11_USAGE usage = !read_only_data ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-
-    D3D11_SUBRESOURCE_DATA data{};
-    if (read_only_data)
-    {
-        data.pSysMem = read_only_data->data();
-        data.SysMemPitch = static_cast<UINT>(read_only_data->size());
-        data.SysMemSlicePitch = 0;
-    }
-
-    CD3D11_BUFFER_DESC desc(static_cast<UINT>(size), bind_flags, usage, cpu_flags);
-    return SUCCEEDED(ff::graphics::internal::dx11_device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, &this->buffer_));
+    return *this;
 }

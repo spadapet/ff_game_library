@@ -45,6 +45,7 @@
     <ClCompile Include="source\data\persist_test.cpp" />
     <ClCompile Include="source\data\value_test.cpp" />
     <ClCompile Include="source\graphics\buffer_test.cpp" />
+    <ClCompile Include="source\graphics\depth_test.cpp" />
     <ClCompile Include="source\graphics\shader_test.cpp" />
     <ClCompile Include="source\input\keyboard_test.cpp" />
     <ClCompile Include="source\input\mapping_test.cpp" />

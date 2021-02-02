@@ -14,6 +14,7 @@ namespace ff::internal
 namespace ff::graphics
 {
     bool reset(bool force);
+    size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 }
 
 namespace ff::graphics::internal

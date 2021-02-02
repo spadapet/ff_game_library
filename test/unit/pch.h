@@ -17,3 +17,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::literals;
+
+// Local
+#include "source/resource.h"

@@ -13,6 +13,7 @@
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\dx11_buffer.cpp" />
+    <ClCompile Include="source\dx11_depth.cpp" />
     <ClCompile Include="source\dx11_device_state.cpp" />
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
@@ -37,6 +38,7 @@
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
     <ClInclude Include="source\dx11_buffer.h" />
+    <ClInclude Include="source\dx11_depth.h" />
     <ClInclude Include="source\dx11_device_state.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />

@@ -5,6 +5,7 @@
 #include "source/data_blob.h"
 #include "source/dx_operators.h"
 #include "source/dx11_buffer.h"
+#include "source/dx11_depth.h"
 #include "source/dx11_device_state.h"
 #include "source/dx11_fixed_state.h"
 #include "source/dx11_object_cache.h"

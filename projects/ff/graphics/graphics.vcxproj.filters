@@ -62,6 +62,9 @@
     <ClCompile Include="source\dx11_buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx11_depth.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -136,6 +139,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx_operators.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_depth.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
