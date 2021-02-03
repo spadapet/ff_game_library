@@ -1,7 +1,9 @@
 #include "pch.h"
+#include "dx11_texture.h"
 #include "graphics.h"
 #include "init.h"
 #include "shader.h"
+#include "texture_metadata.h"
 
 static bool init_graphics_status;
 
@@ -13,6 +15,8 @@ namespace
         {
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::shader_factory>("shader");
+            ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
+            ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
             ::init_graphics_status = ff::graphics::internal::init();
         }

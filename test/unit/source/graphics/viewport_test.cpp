@@ -5,7 +5,7 @@ namespace graphics_test
     TEST_CLASS(viewport_test)
     {
     public:
-        TEST_METHOD(padding)
+        TEST_METHOD(with_padding)
         {
             ff::viewport view(ff::point_int(1920, 1080), ff::rect_int(8, 8, 8, 8));
 
