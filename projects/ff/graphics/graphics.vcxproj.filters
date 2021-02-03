@@ -150,6 +150,9 @@
     <ClInclude Include="source\render_target_base.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\render_target_window_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

@@ -55,6 +55,7 @@
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
     <ClInclude Include="source\render_target_base.h" />
+    <ClInclude Include="source\render_target_window_base.h" />
     <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\sprite_type.h" />
     <ClInclude Include="source\texture_format.h" />

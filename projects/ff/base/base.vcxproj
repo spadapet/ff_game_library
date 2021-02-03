@@ -23,6 +23,7 @@
     <ClCompile Include="source\timer.cpp" />
     <ClCompile Include="source\uuid.cpp" />
     <ClCompile Include="source\vector.cpp" />
+    <ClCompile Include="source\window.cpp" />
     <ClCompile Include="source\window_uwp.cpp" />
     <ClCompile Include="source\win_handle.cpp" />
     <ClCompile Include="source\window_desktop.cpp" />

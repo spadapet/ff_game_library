@@ -101,6 +101,9 @@
     <ClCompile Include="source\graphics\depth_test.cpp">
       <Filter>source\graphics</Filter>
     </ClCompile>
+    <ClCompile Include="source\graphics\viewport_test.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

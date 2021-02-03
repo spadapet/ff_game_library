@@ -38,7 +38,7 @@ namespace ff
         }
 
         template<class T2>
-        rect_t<T2> cast()
+        rect_t<T2> cast() const
         {
             return rect_t<T2>(static_cast<T2>(this->left), static_cast<T2>(this->top), static_cast<T2>(this->right), static_cast<T2>(this->bottom));
         }
@@ -363,34 +363,24 @@ namespace ff
             return rect;
         }
 
-        this_type deflate(T x, T y, T x2, T y2) const
+        this_type deflate(T x, T y, T x2 = x, T y2 = y) const
         {
             return this_type(this->left + x, this->top + y, this->right - x2, this->bottom - y2).normalize();
         }
 
-        this_type deflate(T x, T y = x) const
+        this_type deflate(const point_type& top_left, const point_type& bottom_right = top_left) const
         {
-            return this->deflate(x, y, x, y);
+            return this->deflate(top_left.x, top_left.y, bottom_right.x, bottom_right.y);
         }
 
-        this_type deflate(const point_type& value) const
-        {
-            return this->deflate(value.x, value.y, value.x, value.y);
-        }
-
-        this_type inflate(T x, T y, T x2, T y2) const
+        this_type inflate(T x, T y, T x2 = x, T y2 = y) const
         {
             return this_type(this->left - x, this->top - y, this->right + x2, this->bottom + y2).normalize();
         }
 
-        this_type inflate(T x, T y = x) const
+        this_type inflate(const point_type& top_left, const point_type& bottom_right = top_left) const
         {
-            return this->inflate(x, y, x, y);
-        }
-
-        this_type inflate(const point_type& value) const
-        {
-            return this->inflate(value.x, value.y, value.x, value.y);
+            return this->inflate(top_left.x, top_left.y, bottom_right.x, bottom_right.y);
         }
 
         this_type boundary(const this_type& other) const

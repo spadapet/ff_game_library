@@ -33,6 +33,16 @@ namespace ff
             return this_type(this_type::value_one, this_type::value_one);
         }
 
+        this_type swap() const
+        {
+            return this_type(this->y, this->x);
+        }
+
+        this_type abs() const
+        {
+            return this_type(std::abs(this->x), std::abs(this->y));
+        }
+
         template<class T2>
         point_t<T2> cast() const
         {

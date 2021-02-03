@@ -17,6 +17,8 @@ namespace ff
 
     struct window_size
     {
+        ff::point_int rotated_pixel_size() const;
+
         ff::point_int pixel_size;
         double dpi_scale;
         int native_rotation; // DMDO_DEFAULT|90|180|270
