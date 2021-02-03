@@ -25,6 +25,7 @@
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\png_image.cpp" />
+    <ClCompile Include="source\render_target_base.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\texture_format.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
@@ -53,6 +54,7 @@
     <ClInclude Include="source\matrix_stack.h" />
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
+    <ClInclude Include="source\render_target_base.h" />
     <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\sprite_type.h" />
     <ClInclude Include="source\texture_format.h" />
