@@ -83,6 +83,18 @@
     <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\animation_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\renderer_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\animation_player_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_texture_view_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -184,6 +196,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\renderer_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\animation_player_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_texture_view_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

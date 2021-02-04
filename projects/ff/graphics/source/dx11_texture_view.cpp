@@ -18,3 +18,8 @@ const std::shared_ptr<ff::dx11_texture_o>& ff::dx11_texture_view::texture() cons
 {
     return this->texture_;
 }
+
+bool ff::dx11_texture_view::reset()
+{
+    return false;
+}

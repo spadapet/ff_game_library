@@ -1,13 +1,10 @@
 #pragma once
 
+#include "animation_player_base.h"
+
 namespace ff
 {
-    class animation_base;
-    class renderer_base;
-    struct animation_event;
-    struct transform;
-
-    class animation_player
+    class animation_player : public ff::animation_player_base
     {
     public:
         animation_player(const std::shared_ptr<ff::animation_base>& animation, float start_frame, float speed, const ff::dict* params);
@@ -17,16 +14,15 @@ namespace ff
         animation_player& operator=(animation_player&& other) noexcept = default;
         animation_player& operator=(const animation_player & other) = default;
 
-        void advance(ff::push_back_base<ff::animation_event>* events);
-        void render(ff::renderer_base* render, const ff::transform& transform) const;
-        float frame() const;
-        const std::shared_ptr<ff::animation_base>& animation() const;
+        virtual void advance_animation(ff::push_back_base<ff::animation_event>* events) override;
+        virtual void render_animation(ff::renderer_base& render, const ff::transform& transform) const override;
+        virtual float animation_frame() const override;
 
     private:
         ff::dict params;
-        std::shared_ptr<ff::animation_base> animation_;
-        float start;
-        float frame_;
+        std::shared_ptr<ff::animation_base> animation;
+        float start_frame;
+        float frame;
         float fps;
         float advances;
     };

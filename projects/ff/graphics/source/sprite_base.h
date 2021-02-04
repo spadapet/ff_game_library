@@ -9,6 +9,6 @@ namespace ff
     public:
         virtual ~sprite_base() = 0;
 
-        virtual const sprite_data& sprite_data() const = 0;
+        virtual const ff::sprite_data& sprite_data() const = 0;
     };
 }

@@ -11,6 +11,7 @@ namespace ff::constants
     /// Fixed amount of times per second that the game loop advances
     /// </summary>
     const double advances_per_second = 60.0;
+    const float advances_per_second_f = 60.0f;
     const size_t advances_per_second_s = 60;
 
     /// <summary>

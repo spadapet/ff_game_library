@@ -10,7 +10,9 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\animation_base.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
+    <ClCompile Include="source\animation_player_base.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\dx11_buffer.cpp" />
@@ -19,6 +21,7 @@
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dx11_texture_view.cpp" />
+    <ClCompile Include="source\dx11_texture_view_base.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\graphics_child_base.cpp" />
@@ -27,6 +30,7 @@
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\png_image.cpp" />
+    <ClCompile Include="source\renderer_base.cpp" />
     <ClCompile Include="source\render_target_base.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\dx11_texture.cpp" />
@@ -43,6 +47,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\animation_base.h" />
     <ClInclude Include="source\animation_player.h" />
+    <ClInclude Include="source\animation_player_base.h" />
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
     <ClInclude Include="source\dx11_buffer.h" />
@@ -51,6 +56,7 @@
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dx11_texture_view.h" />
+    <ClInclude Include="source\dx11_texture_view_base.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
     <ClInclude Include="source\graphics.h" />
@@ -62,6 +68,7 @@
     <ClInclude Include="source\matrix_stack.h" />
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
+    <ClInclude Include="source\renderer_base.h" />
     <ClInclude Include="source\render_target_base.h" />
     <ClInclude Include="source\render_target_window_base.h" />
     <ClInclude Include="source\shader.h" />
