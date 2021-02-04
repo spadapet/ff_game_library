@@ -17,10 +17,11 @@ namespace ff
         virtual void advance_animation(ff::push_back_base<ff::animation_event>* events) override;
         virtual void render_animation(ff::renderer_base& render, const ff::transform& transform) const override;
         virtual float animation_frame() const override;
+        virtual const ff::animation_base* animation() const override;
 
     private:
         ff::dict params;
-        std::shared_ptr<ff::animation_base> animation;
+        std::shared_ptr<ff::animation_base> animation_;
         float start_frame;
         float frame;
         float fps;

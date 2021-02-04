@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "dx11_texture.h"
-#include "dx11_texture_view.h"
+#include "dx11_texture_view_base.h"
 #include "sprite_data.h"
 
-ff::sprite_data::sprite_data(std::string_view name, ff::dx11_texture_view* view, ff::rect_float texture_uv, ff::rect_float world, ff::sprite_type type)
+ff::sprite_data::sprite_data(std::string_view name, ff::dx11_texture_view_base* view, ff::rect_float texture_uv, ff::rect_float world, ff::sprite_type type)
     : name_(name)
     , view_(view)
     , texture_uv_(texture_uv)
@@ -16,7 +16,7 @@ std::string_view ff::sprite_data::name() const
     return this->name_;
 }
 
-ff::dx11_texture_view* ff::sprite_data::view() const
+ff::dx11_texture_view_base* ff::sprite_data::view() const
 {
     return this->view_;
 }
@@ -38,7 +38,7 @@ ff::sprite_type ff::sprite_data::type() const
 
 ff::rect_float ff::sprite_data::texture_rect() const
 {
-    ff::point_int texture_size = this->view_->texture()->size();
+    ff::point_int texture_size = this->view_->view_texture()->size();
     return (this->texture_uv_ * texture_size.cast<float>()).normalize();
 }
 

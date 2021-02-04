@@ -15,6 +15,7 @@ namespace ff
         virtual void advance_animation(ff::push_back_base<ff::animation_event>* events) = 0;
         virtual void render_animation(ff::renderer_base& render, const ff::transform& transform) const = 0;
         virtual float animation_frame() const = 0;
+        virtual const ff::animation_base* animation() const = 0;
     };
 
     std::shared_ptr<ff::animation_player_base> create_animation_player(

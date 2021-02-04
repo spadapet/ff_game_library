@@ -95,6 +95,9 @@
     <ClCompile Include="source\dx11_texture_view_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\palette_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -205,6 +208,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_texture_view_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\palette_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

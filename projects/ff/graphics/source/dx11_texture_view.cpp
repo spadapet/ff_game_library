@@ -1,5 +1,9 @@
 #include "pch.h"
+#include "dx11_texture.h"
 #include "dx11_texture_view.h"
+#include "graphics.h"
+#include "renderer_base.h"
+#include "texture_util.h"
 
 ff::dx11_texture_view::dx11_texture_view(
     const std::shared_ptr<dx11_texture_o>& texture,
@@ -8,18 +12,110 @@ ff::dx11_texture_view::dx11_texture_view(
     size_t mip_start,
     size_t mip_count)
     : texture_(texture)
+    , sprite_data_("", this, ff::rect_float(0, 0, 1, 1), ff::rect_float(ff::point_float::zeros(), texture->size().cast<float>()), texture->sprite_type())
     , array_start_(array_start)
-    , array_count_(array_count)
+    , array_count_(array_count ? array_count : texture->array_size() - array_start)
     , mip_start_(mip_start)
-    , mip_count_(mip_count)
-{}
-
-const std::shared_ptr<ff::dx11_texture_o>& ff::dx11_texture_view::texture() const
+    , mip_count_(mip_count ? mip_count : texture->mip_count() - mip_start)
 {
-    return this->texture_;
+    ID3D11Texture2D* texture_2d = texture->texture();
+    if (texture_2d)
+    {
+        D3D11_TEXTURE2D_DESC texture_desc;
+        texture_2d->GetDesc(&texture_desc);
+
+        D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{};
+        view_desc.Format = texture_desc.Format;
+        view_desc.ViewDimension = ff::internal::default_dimension(texture_desc);
+
+        switch (view_desc.ViewDimension)
+        {
+            case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+                view_desc.Texture2DMSArray.FirstArraySlice = static_cast<UINT>(this->array_start_);
+                view_desc.Texture2DMSArray.ArraySize = static_cast<UINT>(this->array_count_);
+                break;
+
+            case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+                view_desc.Texture2DArray.FirstArraySlice = static_cast<UINT>(this->array_start_);
+                view_desc.Texture2DArray.ArraySize = static_cast<UINT>(this->array_count_);
+                view_desc.Texture2DArray.MostDetailedMip = static_cast<UINT>(this->mip_start_);
+                view_desc.Texture2DArray.MipLevels = static_cast<UINT>(this->mip_count_);
+                break;
+
+            case D3D_SRV_DIMENSION_TEXTURE2D:
+                view_desc.Texture2D.MostDetailedMip = static_cast<UINT>(this->mip_start_);
+                view_desc.Texture2D.MipLevels = static_cast<UINT>(this->mip_count_);
+                break;
+        }
+
+        HRESULT hr = ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture_2d, &view_desc, this->view_.GetAddressOf());
+        assert(SUCCEEDED(hr));
+    }
+}
+
+ff::dx11_texture_view::operator bool() const
+{
+    return this->view_;
 }
 
 bool ff::dx11_texture_view::reset()
 {
-    return false;
+    *this = dx11_texture_view(this->texture_, this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
+    return *this;
+}
+
+const ff::dx11_texture_o* ff::dx11_texture_view::view_texture() const
+{
+    return this->texture_.get();
+}
+
+ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
+{
+    return this->view_.Get();
+}
+
+const ff::sprite_data& ff::dx11_texture_view::sprite_data() const
+{
+    return this->sprite_data_;
+}
+
+float ff::dx11_texture_view::frame_length() const
+{
+    return 0.0f;
+}
+
+float ff::dx11_texture_view::frames_per_second() const
+{
+    return 0.0f;
+}
+
+void ff::dx11_texture_view::frame_events(float start, float end, bool include_start, ff::push_back_base<ff::animation_event>& events)
+{}
+
+void ff::dx11_texture_view::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
+{
+    render.draw_sprite(this->sprite_data_, transform);
+}
+
+ff::value_ptr ff::dx11_texture_view::frame_value(size_t value_id, float frame, const ff::dict* params)
+{
+    return ff::value_ptr();
+}
+
+void ff::dx11_texture_view::advance_animation(ff::push_back_base<ff::animation_event>* events)
+{}
+
+void ff::dx11_texture_view::render_animation(ff::renderer_base& render, const ff::transform& transform) const
+{
+    render.draw_sprite(this->sprite_data_, transform);
+}
+
+float ff::dx11_texture_view::animation_frame() const
+{
+    return 0.0f;
+}
+
+const ff::animation_base* ff::dx11_texture_view::animation() const
+{
+    return this;
 }
