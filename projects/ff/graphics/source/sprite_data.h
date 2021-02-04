@@ -8,6 +8,7 @@ namespace ff
     class sprite_data
     {
     public:
+        sprite_data();
         sprite_data(
             std::string_view name,
             ff::dx11_texture_view_base* view,
@@ -19,6 +20,7 @@ namespace ff
 
         sprite_data& operator=(sprite_data&& other) noexcept = default;
         sprite_data& operator=(const sprite_data & other) = default;
+        operator bool() const;
 
         std::string_view name() const;
         ff::dx11_texture_view_base* view() const;

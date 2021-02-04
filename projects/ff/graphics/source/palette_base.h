@@ -7,7 +7,7 @@ namespace ff
     class palette_base
     {
     public:
-        virtual ~palette_base() = 0;
+        virtual ~palette_base() = default;
 
         virtual size_t current_row() const = 0;
         virtual ff::palette_data* data() = 0;

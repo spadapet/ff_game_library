@@ -5,9 +5,6 @@
 #include "saved_data.h"
 #include "stream.h"
 
-ff::saved_data_base::~saved_data_base()
-{}
-
 std::shared_ptr<ff::reader_base> ff::saved_data_base::loaded_reader() const
 {
     return std::make_shared<data_reader>(this->loaded_data());

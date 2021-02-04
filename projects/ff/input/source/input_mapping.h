@@ -21,7 +21,7 @@ namespace ff
     class input_mapping_def
     {
     public:
-        virtual ~input_mapping_def() = 0;
+        virtual ~input_mapping_def() = default;
 
         virtual const std::vector<input_event_def>& events() const = 0;
         virtual const std::vector<input_value_def>& values() const = 0;

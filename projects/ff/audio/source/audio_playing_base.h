@@ -6,7 +6,7 @@ namespace ff
     class audio_playing_base : public ff::internal::audio_child_base
     {
     public:
-        virtual ~audio_playing_base() = 0;
+        virtual ~audio_playing_base() = default;
 
         virtual bool playing() const = 0;
         virtual bool paused() const = 0;

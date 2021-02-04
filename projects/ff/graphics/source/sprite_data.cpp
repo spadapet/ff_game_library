@@ -2,6 +2,15 @@
 #include "dx11_texture.h"
 #include "dx11_texture_view_base.h"
 #include "sprite_data.h"
+#include "sprite_type.h"
+
+ff::sprite_data::sprite_data()
+    : name_("")
+    , view_(nullptr)
+    , texture_uv_(0, 0, 0, 0)
+    , world_(0, 0, 0, 0)
+    , type_(ff::sprite_type::unknown)
+{}
 
 ff::sprite_data::sprite_data(std::string_view name, ff::dx11_texture_view_base* view, ff::rect_float texture_uv, ff::rect_float world, ff::sprite_type type)
     : name_(name)
@@ -10,6 +19,11 @@ ff::sprite_data::sprite_data(std::string_view name, ff::dx11_texture_view_base* 
     , world_(world)
     , type_(type)
 {}
+
+ff::sprite_data::operator bool() const
+{
+    return this->view_ != nullptr;
+}
 
 std::string_view ff::sprite_data::name() const
 {

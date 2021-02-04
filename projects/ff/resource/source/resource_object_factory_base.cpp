@@ -5,9 +5,6 @@ ff::resource_object_factory_base::resource_object_factory_base(std::string_view 
     : name_(name)
 {}
 
-ff::resource_object_factory_base::~resource_object_factory_base()
-{}
-
 std::string_view ff::resource_object_factory_base::name() const
 {
     return this->name_;

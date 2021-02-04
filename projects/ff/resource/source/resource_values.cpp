@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "resource_values.h"
 
-ff::resource_value_provider::~resource_value_provider()
-{}
-
 ff::resource_values_o::resource_values_o(const ff::dict& dict)
 {
     this->populate_user_languages();

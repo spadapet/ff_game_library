@@ -3,9 +3,6 @@
 #include "file.h"
 #include "stream.h"
 
-ff::data_base::~data_base()
-{}
-
 ff::data_static::data_static(const void* data, size_t size)
     : data_(reinterpret_cast<const uint8_t*>(data))
     , size_(size)

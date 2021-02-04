@@ -9,7 +9,7 @@ namespace ff
     {
     public:
         resource_object_factory_base(std::string_view name);
-        virtual ~resource_object_factory_base() = 0;
+        virtual ~resource_object_factory_base() = default;
 
         std::string_view name() const;
 

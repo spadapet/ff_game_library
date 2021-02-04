@@ -11,7 +11,7 @@ ff::animation_player::animation_player(const std::shared_ptr<ff::animation_base>
     , advances(0)
 {}
 
-void ff::animation_player::advance_animation(ff::push_back_base<ff::animation_event>* events)
+void ff::animation_player::advance_animation(ff::push_base<ff::animation_event>* events)
 {
     bool first_advance = !this->advances;
     float begin_frame = this->frame;

@@ -2,9 +2,6 @@
 #include "dxgi_util.h"
 #include "texture_metadata.h"
 
-ff::texture_metadata_base::~texture_metadata_base()
-{}
-
 ff::texture_metadata_o::texture_metadata_o(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
     : size_(size)
     , mip_count_(mip_count)

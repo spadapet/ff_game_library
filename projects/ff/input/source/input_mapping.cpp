@@ -2,9 +2,6 @@
 #include "input_mapping.h"
 #include "input_vk.h"
 
-ff::input_mapping_def::~input_mapping_def()
-{}
-
 bool ff::input_event::started() const
 {
     return this->count == 1;

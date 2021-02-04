@@ -7,7 +7,7 @@ namespace ff
     class data_base
     {
     public:
-        virtual ~data_base() = 0;
+        virtual ~data_base() = default;
 
         virtual size_t size() const = 0;
         virtual const uint8_t* data() const = 0;

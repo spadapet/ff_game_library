@@ -89,7 +89,7 @@ float ff::dx11_texture_view::frames_per_second() const
     return 0.0f;
 }
 
-void ff::dx11_texture_view::frame_events(float start, float end, bool include_start, ff::push_back_base<ff::animation_event>& events)
+void ff::dx11_texture_view::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
 void ff::dx11_texture_view::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
@@ -102,7 +102,7 @@ ff::value_ptr ff::dx11_texture_view::frame_value(size_t value_id, float frame, c
     return ff::value_ptr();
 }
 
-void ff::dx11_texture_view::advance_animation(ff::push_back_base<ff::animation_event>* events)
+void ff::dx11_texture_view::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
 void ff::dx11_texture_view::render_animation(ff::renderer_base& render, const ff::transform& transform) const

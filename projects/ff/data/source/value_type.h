@@ -11,7 +11,7 @@ namespace ff
     {
     public:
         value_type(std::string_view name);
-        virtual ~value_type() = 0;
+        virtual ~value_type() = default;
 
         // types
         virtual size_t size_of() const = 0;

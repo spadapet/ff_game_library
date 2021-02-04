@@ -11,7 +11,7 @@ namespace ff
     class stream_base
     {
     public:
-        virtual ~stream_base() = 0;
+        virtual ~stream_base() = default;
 
         virtual size_t size() const = 0;
         virtual size_t pos() const = 0;

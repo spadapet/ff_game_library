@@ -81,12 +81,6 @@ static void destroy_mastering_voice()
     }
 }
 
-ff::internal::audio_child_base::~audio_child_base()
-{}
-
-ff::audio_playing_base::~audio_playing_base()
-{}
-
 bool ff::audio::internal::init()
 {
     ::MFStartup(MF_VERSION);

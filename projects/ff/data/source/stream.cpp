@@ -208,9 +208,6 @@ namespace ff::internal
     };
 }
 
-ff::stream_base::~stream_base()
-{}
-
 ff::data_reader::data_reader(const std::shared_ptr<data_base>& data)
     : data(data)
     , data_pos(0)

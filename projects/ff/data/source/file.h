@@ -5,11 +5,11 @@ namespace ff
     class file_base
     {
     protected:
-        file_base();
+        file_base() = default;
         file_base(const std::filesystem::path& path);
         file_base(file_base&& other) noexcept;
         file_base(const file_base& other) = delete;
-        virtual ~file_base() = 0;
+        virtual ~file_base() = default;
 
     public:
         size_t size() const;

@@ -7,7 +7,7 @@ namespace ff
     class resource_object_provider
     {
     public:
-        virtual ~resource_object_provider() = 0;
+        virtual ~resource_object_provider() = default;
 
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) = 0;
         virtual std::vector<std::string_view> resource_object_names() const = 0;
@@ -16,7 +16,7 @@ namespace ff
     class resource_object_loader : public resource_object_provider
     {
     public:
-        virtual ~resource_object_loader() = 0;
+        virtual ~resource_object_loader() = default;
 
         virtual std::shared_ptr<ff::resource> flush_resource(const std::shared_ptr<ff::resource>& value) = 0;
         virtual void flush_all_resources() = 0;

@@ -10,12 +10,6 @@
 
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
-ff::resource_object_provider::~resource_object_provider()
-{}
-
-ff::resource_object_loader::~resource_object_loader()
-{}
-
 ff::resource_objects_o::resource_objects_o(const ff::dict& dict)
     : localized_value_provider_(nullptr)
     , done_loading_event(ff::create_event(true))

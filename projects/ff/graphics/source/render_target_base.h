@@ -7,7 +7,7 @@ namespace ff
     class render_target_base : public ff::internal::graphics_child_base
     {
     public:
-        virtual ~render_target_base() = 0;
+        virtual ~render_target_base() = default;
 
         virtual DXGI_FORMAT format() const = 0;
         virtual ff::window_size size() const = 0;

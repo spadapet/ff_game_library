@@ -7,9 +7,6 @@ static std::vector<std::unique_ptr<ff::resource_object_factory_base>> factories;
 static std::unordered_map<std::string_view, const ff::resource_object_factory_base*> name_to_factory;
 static std::unordered_map<std::type_index, const ff::resource_object_factory_base*> type_to_factory;
 
-ff::resource_object_base::~resource_object_base()
-{}
-
 const ff::resource_object_factory_base* ff::resource_object_base::get_factory(std::string_view name)
 {
     auto i = ::name_to_factory.find(name);

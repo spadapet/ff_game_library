@@ -15,7 +15,7 @@ ff::dx11_texture_o::dx11_texture_o(ff::point_int size, const std::shared_ptr<ff:
 {
 }
 
-ff::dx11_texture_o::dx11_texture_o(DirectX::ScratchImage&& data, const std::shared_ptr<ff::palette_base>& palette)
+ff::dx11_texture_o::dx11_texture_o(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<ff::palette_base>& palette)
 {
 }
 
@@ -122,7 +122,7 @@ float ff::dx11_texture_o::frames_per_second() const
     return 0.0f;
 }
 
-void ff::dx11_texture_o::frame_events(float start, float end, bool include_start, ff::push_back_base<ff::animation_event>& events)
+void ff::dx11_texture_o::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {
 }
 
@@ -135,7 +135,7 @@ ff::value_ptr ff::dx11_texture_o::frame_value(size_t value_id, float frame, cons
     return ff::value_ptr();
 }
 
-void ff::dx11_texture_o::advance_animation(ff::push_back_base<ff::animation_event>* events)
+void ff::dx11_texture_o::advance_animation(ff::push_base<ff::animation_event>* events)
 {
 }
 

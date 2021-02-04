@@ -62,9 +62,6 @@
     <ClCompile Include="source\dx11_depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\render_target_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\dx11_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -74,28 +71,10 @@
     <ClCompile Include="source\dx11_texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\sprite_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\animation_player.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\renderer_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\animation_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\animation_player_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_texture_view_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\sprite_data.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\palette_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>

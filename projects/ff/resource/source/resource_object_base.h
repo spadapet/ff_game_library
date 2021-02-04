@@ -8,7 +8,7 @@ namespace ff
     class resource_object_base : public std::enable_shared_from_this<resource_object_base>
     {
     public:
-        virtual ~resource_object_base() = 0;
+        virtual ~resource_object_base() = default;
 
         template<class T>
         static bool register_factory(std::string_view name)

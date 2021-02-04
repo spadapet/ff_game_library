@@ -11,9 +11,6 @@ ff::value_type::value_type(std::string_view name)
     this->lookup_id = static_cast<uint32_t>(ff::hash_func(hash_name.str()));
 }
 
-ff::value_type::~value_type()
-{}
-
 std::string_view ff::value_type::type_name() const
 {
     return this->name;

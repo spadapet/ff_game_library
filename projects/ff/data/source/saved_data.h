@@ -19,7 +19,7 @@ namespace ff
     class saved_data_base
     {
     public:
-        virtual ~saved_data_base() = 0;
+        virtual ~saved_data_base() = default;
 
         virtual std::shared_ptr<reader_base> saved_reader() const = 0;
         virtual std::shared_ptr<data_base> saved_data() const = 0;

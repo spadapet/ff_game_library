@@ -5,12 +5,12 @@
 #include "animation_player_base.h"
 #include "graphics_child_base.h"
 #include "sprite_base.h"
+#include "sprite_data.h"
 #include "texture_metadata.h"
 
 namespace ff
 {
     class palette_base;
-    enum class sprite_type;
 
     class dx11_texture_o
         : public ff::internal::graphics_child_base
@@ -25,7 +25,7 @@ namespace ff
         dx11_texture_o(const std::filesystem::path& path, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
         dx11_texture_o(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
         dx11_texture_o(ff::point_int size, const std::shared_ptr<ff::palette_base>& palette, size_t array_size = 1, size_t sample_count = 1);
-        dx11_texture_o(DirectX::ScratchImage&& data, const std::shared_ptr<ff::palette_base>& palette = nullptr);
+        dx11_texture_o(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<ff::palette_base>& palette = nullptr);
         dx11_texture_o(const dx11_texture_o& other, DXGI_FORMAT new_format, size_t new_mip_count);
         dx11_texture_o(const dx11_texture_o& other);
         dx11_texture_o(dx11_texture_o&& other) noexcept = default;
@@ -64,12 +64,12 @@ namespace ff
         // animation_base
         virtual float frame_length() const override;
         virtual float frames_per_second() const override;
-        virtual void frame_events(float start, float end, bool include_start, ff::push_back_base<ff::animation_event>& events) override;
+        virtual void frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events) override;
         virtual void render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params = nullptr) override;
         virtual ff::value_ptr frame_value(size_t value_id, float frame, const ff::dict* params = nullptr) override;
 
         // animation_player_base
-        virtual void advance_animation(ff::push_back_base<ff::animation_event>* events) override;
+        virtual void advance_animation(ff::push_base<ff::animation_event>* events) override;
         virtual void render_animation(ff::renderer_base& render, const ff::transform& transform) const override;
         virtual float animation_frame() const override;
         virtual const ff::animation_base* animation() const override;
@@ -78,7 +78,11 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
+        Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
         std::shared_ptr<ff::palette_base> palette_;
+        std::shared_ptr<DirectX::ScratchImage> _scratch;
+        ff::sprite_data sprite_data_;
     };
 }
 

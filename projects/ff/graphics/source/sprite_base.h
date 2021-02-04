@@ -7,7 +7,7 @@ namespace ff
     class sprite_base
     {
     public:
-        virtual ~sprite_base() = 0;
+        virtual ~sprite_base() = default;
 
         virtual const ff::sprite_data& sprite_data() const = 0;
     };

@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "file.h"
 
-ff::file_base::file_base()
-{}
-
 ff::file_base::file_base(const std::filesystem::path& path)
     : path_(path)
 {}
@@ -11,10 +8,6 @@ ff::file_base::file_base(const std::filesystem::path& path)
 ff::file_base::file_base(file_base&& other) noexcept
     : path_(std::move(other.path_))
     , handle_(std::move(other.handle_))
-{
-}
-
-ff::file_base::~file_base()
 {
 }
 
