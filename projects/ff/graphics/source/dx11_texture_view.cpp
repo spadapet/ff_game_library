@@ -13,3 +13,8 @@ ff::dx11_texture_view::dx11_texture_view(
     , mip_start_(mip_start)
     , mip_count_(mip_count)
 {}
+
+const std::shared_ptr<ff::dx11_texture_o>& ff::dx11_texture_view::texture() const
+{
+    return this->texture_;
+}

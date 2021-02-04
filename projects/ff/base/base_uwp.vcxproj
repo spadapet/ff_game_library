@@ -48,6 +48,7 @@
     <ClInclude Include="source\memory.h" />
     <ClInclude Include="source\point.h" />
     <ClInclude Include="source\pool_allocator.h" />
+    <ClInclude Include="source\push_back.h" />
     <ClInclude Include="source\rect.h" />
     <ClInclude Include="source\signal.h" />
     <ClInclude Include="source\string.h" />

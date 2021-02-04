@@ -36,6 +36,7 @@
     <ClInclude Include="source\at_scope.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\log.h" />
+    <ClInclude Include="source\push_back.h" />
     <ClInclude Include="source\signal.h" />
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\flags.h" />

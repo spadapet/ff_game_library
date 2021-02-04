@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.h"
+#include "source/animation_base.h"
+#include "source/animation_player.h"
 #include "source/color.h"
 #include "source/data_blob.h"
 #include "source/dx_operators.h"
@@ -24,6 +26,8 @@
 #include "source/render_target_base.h"
 #include "source/render_target_window_base.h"
 #include "source/shader.h"
+#include "source/sprite_base.h"
+#include "source/sprite_data.h"
 #include "source/sprite_type.h"
 #include "source/texture_metadata.h"
 #include "source/texture_util.h"

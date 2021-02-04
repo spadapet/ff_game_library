@@ -1,8 +1,12 @@
 #pragma once
 
+#include "graphics_child_base.h"
+
 namespace ff
 {
-    class dx11_texture_o : public ff::resource_object_base
+    class dx11_texture_o
+        : public ff::resource_object_base
+        , public ff::internal::graphics_child_base
     {
     public:
         dx11_texture_o();
@@ -19,8 +23,12 @@ namespace ff
         size_t sample_count() const;
         DXGI_FORMAT format() const;
 
+        // resource_object_base
         virtual ff::dict resource_get_siblings(const std::shared_ptr<resource>& self) const override;
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
+
+        // graphics_child_base
+        virtual bool reset() override;
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;

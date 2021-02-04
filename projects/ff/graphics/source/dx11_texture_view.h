@@ -1,10 +1,12 @@
 #pragma once
 
+#include "graphics_child_base.h"
+
 namespace ff
 {
     class dx11_texture_o;
 
-    class dx11_texture_view
+    class dx11_texture_view : public ff::internal::graphics_child_base
     {
     public:
         dx11_texture_view(const std::shared_ptr<dx11_texture_o>& texture, size_t array_start, size_t array_count, size_t mip_start, size_t mip_count);
@@ -13,6 +15,11 @@ namespace ff
 
         dx11_texture_view& operator=(dx11_texture_view&& other) noexcept = default;
         dx11_texture_view& operator=(const dx11_texture_view & other) = delete;
+
+        const std::shared_ptr<dx11_texture_o>& texture() const;
+
+        // graphics_child_base
+        virtual bool reset() override;
 
     private:
         std::shared_ptr<dx11_texture_o> texture_;

@@ -156,6 +156,9 @@
     <ClInclude Include="source\at_scope.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\push_back.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

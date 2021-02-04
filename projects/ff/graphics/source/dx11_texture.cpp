@@ -14,6 +14,11 @@ bool ff::dx11_texture_o::resource_save_to_file(const std::filesystem::path& dire
     return false;
 }
 
+bool ff::dx11_texture_o::reset()
+{
+    return false;
+}
+
 bool ff::dx11_texture_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     return false;

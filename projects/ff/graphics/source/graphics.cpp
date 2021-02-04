@@ -267,10 +267,8 @@ bool ff::graphics::reset(bool force)
         std::stable_sort(sorted_children.begin(), sorted_children.end(),
             [](const ff::internal::graphics_child_base* lhs, const ff::internal::graphics_child_base* rhs)
             {
-                return lhs->reset_pritory() < rhs->reset_pritory();
+                return lhs->reset_pritory() > rhs->reset_pritory();
             });
-
-        std::reverse(sorted_children.begin(), sorted_children.end());
 
         for (ff::internal::graphics_child_base* child : sorted_children)
         {
