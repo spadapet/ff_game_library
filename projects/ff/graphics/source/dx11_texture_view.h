@@ -20,10 +20,11 @@ namespace ff
     {
     public:
         dx11_texture_view(const std::shared_ptr<dx11_texture_o>& texture, size_t array_start, size_t array_count, size_t mip_start, size_t mip_count);
-        dx11_texture_view(dx11_texture_view&& other) noexcept = default;
+        dx11_texture_view(dx11_texture_view&& other) noexcept;
         dx11_texture_view(const dx11_texture_view& other) = delete;
+        virtual ~dx11_texture_view() override;
 
-        dx11_texture_view& operator=(dx11_texture_view&& other) noexcept = default;
+        dx11_texture_view& operator=(dx11_texture_view&& other) noexcept;
         dx11_texture_view& operator=(const dx11_texture_view& other) = delete;
         operator bool() const;
 
@@ -32,7 +33,7 @@ namespace ff
 
         // dx11_texture_view_base
         virtual const dx11_texture_o* view_texture() const override;
-        virtual ID3D11ShaderResourceView* view() const override;
+        virtual ID3D11ShaderResourceView* view() override;
 
         // sprite_base
         virtual const ff::sprite_data& sprite_data() const override;
@@ -51,6 +52,8 @@ namespace ff
         virtual const ff::animation_base* animation() const override;
 
     private:
+        void fix_sprite_data();
+
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
         std::shared_ptr<dx11_texture_o> texture_;
         ff::sprite_data sprite_data_;

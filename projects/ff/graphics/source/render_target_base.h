@@ -1,10 +1,8 @@
 #pragma once
 
-#include "graphics_child_base.h"
-
 namespace ff
 {
-    class render_target_base : public ff::internal::graphics_child_base
+    class render_target_base
     {
     public:
         virtual ~render_target_base() = default;

@@ -12,7 +12,6 @@ ff::dx11_texture_view::dx11_texture_view(
     size_t mip_start,
     size_t mip_count)
     : texture_(texture)
-    , sprite_data_("", this, ff::rect_float(0, 0, 1, 1), ff::rect_float(ff::point_float::zeros(), texture->size().cast<float>()), texture->sprite_type())
     , array_start_(array_start)
     , array_count_(array_count ? array_count : texture->array_size() - array_start)
     , mip_start_(mip_start)
@@ -51,6 +50,47 @@ ff::dx11_texture_view::dx11_texture_view(
         HRESULT hr = ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture_2d, &view_desc, this->view_.GetAddressOf());
         assert(SUCCEEDED(hr));
     }
+
+    this->fix_sprite_data();
+
+    ff::graphics::internal::add_child(this);
+}
+
+ff::dx11_texture_view::dx11_texture_view(dx11_texture_view&& other) noexcept
+    : view_(std::move(other.view_))
+    , texture_(std::move(other.texture_))
+    , array_start_(other.array_start_)
+    , array_count_(other.array_count_)
+    , mip_start_(other.mip_start_)
+    , mip_count_(other.mip_count_)
+{
+    this->fix_sprite_data();
+    other.sprite_data_ = ff::sprite_data();
+
+    ff::graphics::internal::add_child(this);
+}
+
+ff::dx11_texture_view::~dx11_texture_view()
+{
+    ff::graphics::internal::remove_child(this);
+}
+
+ff::dx11_texture_view& ff::dx11_texture_view::operator=(dx11_texture_view&& other) noexcept
+{
+    if (this != &other)
+    {
+        this->view_ = std::move(other.view_);
+        this->texture_ = std::move(other.texture_);
+        this->array_start_ = other.array_start_;
+        this->array_count_ = other.array_count_;
+        this->mip_start_ = other.mip_start_;
+        this->mip_count_ = other.mip_count_;
+
+        this->fix_sprite_data();
+        other.sprite_data_ = ff::sprite_data();
+    }
+
+    return *this;
 }
 
 ff::dx11_texture_view::operator bool() const
@@ -69,7 +109,7 @@ const ff::dx11_texture_o* ff::dx11_texture_view::view_texture() const
     return this->texture_.get();
 }
 
-ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
+ID3D11ShaderResourceView* ff::dx11_texture_view::view()
 {
     return this->view_.Get();
 }
@@ -118,4 +158,12 @@ float ff::dx11_texture_view::animation_frame() const
 const ff::animation_base* ff::dx11_texture_view::animation() const
 {
     return this;
+}
+
+void ff::dx11_texture_view::fix_sprite_data()
+{
+    this->sprite_data_ = ff::sprite_data("", this,
+        ff::rect_float(0, 0, 1, 1),
+        ff::rect_float(ff::point_float::zeros(), this->texture_->size().cast<float>()),
+        this->texture_->sprite_type());
 }
