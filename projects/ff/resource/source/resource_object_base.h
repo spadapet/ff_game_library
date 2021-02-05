@@ -5,7 +5,7 @@ namespace ff
     class resource;
     class resource_object_factory_base;
 
-    class resource_object_base : public std::enable_shared_from_this<resource_object_base>
+    class resource_object_base
     {
     public:
         virtual ~resource_object_base() = default;

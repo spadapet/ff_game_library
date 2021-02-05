@@ -31,7 +31,7 @@ namespace audio_test
             ff::load_resources_result result = ff::load_resources_from_json(json_source, temp_path, true);
             Assert::IsTrue(result.status);
 
-            ff::resource_objects_o res(result.dict);
+            ff::resource_objects res(result.dict);
             ff::auto_resource<ff::audio_effect_base> music_res = res.get_resource_object("test_music");
             Assert::IsTrue(music_res.valid());
             std::shared_ptr<ff::audio_effect_base> music = music_res.object();

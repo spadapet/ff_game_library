@@ -9,13 +9,13 @@ namespace ff::internal
 
 namespace ff
 {
-    class music_o
+    class music
         : public ff::audio_effect_base
         , public ff::resource_object_base
     {
     public:
-        music_o(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop);
-        virtual ~music_o() override;
+        music(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop);
+        virtual ~music() override;
 
         virtual void reset() override;
         virtual std::shared_ptr<audio_playing_base> play(bool start_now, float volume, float speed) override;
@@ -30,7 +30,7 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        ff::auto_resource<ff::file_o> file;
+        ff::auto_resource<ff::resource_file> file;
         float volume;
         float speed;
         bool loop;
@@ -41,10 +41,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class music_factory : public ff::resource_object_factory<ff::music_o>
+    class music_factory : public ff::resource_object_factory<ff::music>
     {
     public:
-        using ff::resource_object_factory<ff::music_o>::resource_object_factory;
+        using ff::resource_object_factory<ff::music>::resource_object_factory;
 
         virtual std::shared_ptr<ff::resource_object_base> load_from_source(const ff::dict& dict, ff::resource_load_context& context) const override;
         virtual std::shared_ptr<ff::resource_object_base> load_from_cache(const ff::dict& dict) const override;

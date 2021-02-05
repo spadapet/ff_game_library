@@ -7,7 +7,7 @@
 #include "sprite_type.h"
 #include "texture_util.h"
 
-ff::dx11_texture_o::dx11_texture_o(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count)
+ff::dx11_texture::dx11_texture(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     DirectX::ScratchImage palette;
     DirectX::ScratchImage data = ff::internal::load_texture_data(path, new_format, new_mip_count, &palette);
@@ -29,7 +29,7 @@ ff::dx11_texture_o::dx11_texture_o(const std::filesystem::path& path, DXGI_FORMA
     ff::graphics::internal::add_child(this);
 }
 
-ff::dx11_texture_o::dx11_texture_o(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
+ff::dx11_texture::dx11_texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
 {
     if (format == DXGI_FORMAT_UNKNOWN)
     {
@@ -66,7 +66,7 @@ ff::dx11_texture_o::dx11_texture_o(ff::point_int size, DXGI_FORMAT format, size_
     ff::graphics::internal::add_child(this);
 }
 
-ff::dx11_texture_o::dx11_texture_o(
+ff::dx11_texture::dx11_texture(
     const std::shared_ptr<DirectX::ScratchImage>& data,
     const std::shared_ptr<DirectX::ScratchImage>& palette,
     ff::sprite_type sprite_type)
@@ -78,9 +78,9 @@ ff::dx11_texture_o::dx11_texture_o(
     ff::graphics::internal::add_child(this);
 }
 
-ff::dx11_texture_o::dx11_texture_o(const dx11_texture_o& other, DXGI_FORMAT new_format, size_t new_mip_count)
+ff::dx11_texture::dx11_texture(const dx11_texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
 {
-    std::shared_ptr<DirectX::ScratchImage> data = other.capture();
+    std::shared_ptr<DirectX::ScratchImage> data = other.data();
     ff::sprite_type sprite_type = ff::sprite_type::unknown;
 
     if (data && data->GetImageCount())
@@ -103,7 +103,7 @@ ff::dx11_texture_o::dx11_texture_o(const dx11_texture_o& other, DXGI_FORMAT new_
     ff::graphics::internal::add_child(this);
 }
 
-ff::dx11_texture_o::dx11_texture_o(dx11_texture_o&& other) noexcept
+ff::dx11_texture::dx11_texture(dx11_texture&& other) noexcept
     : texture_(std::move(other.texture_))
     , view_(std::move(other.view_))
     , data_(std::move(other.data_))
@@ -115,12 +115,12 @@ ff::dx11_texture_o::dx11_texture_o(dx11_texture_o&& other) noexcept
     ff::graphics::internal::add_child(this);
 }
 
-ff::dx11_texture_o::~dx11_texture_o()
+ff::dx11_texture::~dx11_texture()
 {
     ff::graphics::internal::remove_child(this);
 }
 
-ff::dx11_texture_o& ff::dx11_texture_o::operator=(dx11_texture_o&& other) noexcept
+ff::dx11_texture& ff::dx11_texture::operator=(dx11_texture&& other) noexcept
 {
     if (this != &other)
     {
@@ -136,7 +136,7 @@ ff::dx11_texture_o& ff::dx11_texture_o::operator=(dx11_texture_o&& other) noexce
     return *this;
 }
 
-ff::point_int ff::dx11_texture_o::size() const
+ff::point_int ff::dx11_texture::size() const
 {
     if (this->data_)
     {
@@ -155,7 +155,7 @@ ff::point_int ff::dx11_texture_o::size() const
     return ff::point_int::zeros();
 }
 
-size_t ff::dx11_texture_o::mip_count() const
+size_t ff::dx11_texture::mip_count() const
 {
     if (this->data_)
     {
@@ -174,7 +174,7 @@ size_t ff::dx11_texture_o::mip_count() const
     return 0;
 }
 
-size_t ff::dx11_texture_o::array_size() const
+size_t ff::dx11_texture::array_size() const
 {
     if (this->data_)
     {
@@ -193,7 +193,7 @@ size_t ff::dx11_texture_o::array_size() const
     return 0;
 }
 
-size_t ff::dx11_texture_o::sample_count() const
+size_t ff::dx11_texture::sample_count() const
 {
     if (this->data_)
     {
@@ -211,7 +211,7 @@ size_t ff::dx11_texture_o::sample_count() const
     return 1;
 }
 
-DXGI_FORMAT ff::dx11_texture_o::format() const
+DXGI_FORMAT ff::dx11_texture::format() const
 {
     if (this->data_)
     {
@@ -230,17 +230,27 @@ DXGI_FORMAT ff::dx11_texture_o::format() const
     return DXGI_FORMAT_UNKNOWN;
 }
 
-ff::dx11_texture_o::operator bool() const
+ff::dx11_texture::operator bool() const
 {
     return this->texture_ || (this->data_ && this->data_->GetImageCount());
 }
 
-ff::sprite_type ff::dx11_texture_o::sprite_type() const
+ff::sprite_type ff::dx11_texture::sprite_type() const
 {
     return this->sprite_data_.type();
 }
 
-ID3D11Texture2D* ff::dx11_texture_o::texture()
+std::shared_ptr<DirectX::ScratchImage> ff::dx11_texture::data() const
+{
+    return this->data_;
+}
+
+std::shared_ptr<DirectX::ScratchImage> ff::dx11_texture::palette() const
+{
+    return this->palette_;
+}
+
+ID3D11Texture2D* ff::dx11_texture::texture() const
 {
     if (!this->texture_ && this->data_)
     {
@@ -250,7 +260,7 @@ ID3D11Texture2D* ff::dx11_texture_o::texture()
     return this->texture_.Get();
 }
 
-void ff::dx11_texture_o::update(
+void ff::dx11_texture::update(
     size_t array_index,
     size_t mip_index,
     const ff::rect_int& rect,
@@ -260,39 +270,33 @@ void ff::dx11_texture_o::update(
     // TODO
 }
 
-std::shared_ptr<DirectX::ScratchImage> ff::dx11_texture_o::capture() const
-{
-    // TODO
-    return std::shared_ptr<DirectX::ScratchImage>();
-}
-
-ff::dict ff::dx11_texture_o::resource_get_siblings(const std::shared_ptr<resource>& self) const
+ff::dict ff::dx11_texture::resource_get_siblings(const std::shared_ptr<resource>& self) const
 {
     // TODO
     return ff::dict();
 }
 
-bool ff::dx11_texture_o::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
+bool ff::dx11_texture::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
     // TODO
     return false;
 }
 
-bool ff::dx11_texture_o::reset()
+bool ff::dx11_texture::reset()
 {
     *this = this->data_
-        ? ff::dx11_texture_o(this->data_, this->palette_, this->sprite_type())
-        : ff::dx11_texture_o(this->size(), this->format(), this->mip_count(), this->array_size(), this->sample_count());
+        ? ff::dx11_texture(this->data_, this->palette_, this->sprite_type())
+        : ff::dx11_texture(this->size(), this->format(), this->mip_count(), this->array_size(), this->sample_count());
 
     return *this;
 }
 
-const ff::dx11_texture_o* ff::dx11_texture_o::view_texture() const
+const ff::dx11_texture* ff::dx11_texture::view_texture() const
 {
     return this;
 }
 
-ID3D11ShaderResourceView* ff::dx11_texture_o::view()
+ID3D11ShaderResourceView* ff::dx11_texture::view() const
 {
     if (!this->view_)
     {
@@ -302,59 +306,59 @@ ID3D11ShaderResourceView* ff::dx11_texture_o::view()
     return this->view_.Get();
 }
 
-const ff::sprite_data& ff::dx11_texture_o::sprite_data() const
+const ff::sprite_data& ff::dx11_texture::sprite_data() const
 {
     return this->sprite_data_;
 }
 
-float ff::dx11_texture_o::frame_length() const
+float ff::dx11_texture::frame_length() const
 {
     return 0.0f;
 }
 
-float ff::dx11_texture_o::frames_per_second() const
+float ff::dx11_texture::frames_per_second() const
 {
     return 0.0f;
 }
 
-void ff::dx11_texture_o::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
+void ff::dx11_texture::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::dx11_texture_o::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::dx11_texture::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
 {
     render.draw_sprite(this->sprite_data_, transform);
 }
 
-ff::value_ptr ff::dx11_texture_o::frame_value(size_t value_id, float frame, const ff::dict* params)
+ff::value_ptr ff::dx11_texture::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     return ff::value_ptr();
 }
 
-void ff::dx11_texture_o::advance_animation(ff::push_base<ff::animation_event>* events)
+void ff::dx11_texture::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::dx11_texture_o::render_animation(ff::renderer_base& render, const ff::transform& transform) const
+void ff::dx11_texture::render_animation(ff::renderer_base& render, const ff::transform& transform) const
 {
     render.draw_sprite(this->sprite_data_, transform);
 }
 
-float ff::dx11_texture_o::animation_frame() const
+float ff::dx11_texture::animation_frame() const
 {
     return 0.0f;
 }
 
-const ff::animation_base* ff::dx11_texture_o::animation() const
+const ff::animation_base* ff::dx11_texture::animation() const
 {
     return this;
 }
 
-bool ff::dx11_texture_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::dx11_texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     // TODO
     return false;
 }
 
-void ff::dx11_texture_o::fix_sprite_data(ff::sprite_type sprite_type)
+void ff::dx11_texture::fix_sprite_data(ff::sprite_type sprite_type)
 {
     this->sprite_data_ = ff::sprite_data("", this,
         ff::rect_float(0, 0, 1, 1),

@@ -86,7 +86,7 @@ namespace ff::internal
     };
 }
 
-ff::internal::music_playing::music_playing(music_o* owner)
+ff::internal::music_playing::music_playing(ff::music* owner)
     : owner(owner)
     , state(state_t::invalid)
     , media_state(media_state_t::none)
@@ -114,7 +114,7 @@ ff::internal::music_playing::~music_playing()
     ff::audio::internal::remove_playing(this);
 }
 
-bool ff::internal::music_playing::init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop)
+bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, bool start_now, float volume, float speed, bool loop)
 {
     assert(this->state == state_t::invalid);
 
@@ -723,7 +723,7 @@ std::shared_ptr<ff::internal::music_playing> ff::internal::music_playing::on_mus
         ff::internal::destroy_voice_async(source);
     }
 
-    ff::music_o* owner = this->owner;
+    ff::music* owner = this->owner;
     if (owner)
     {
         this->owner = nullptr;

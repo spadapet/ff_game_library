@@ -11,7 +11,7 @@ static void delete_audio_effect(ff::audio_playing_base* value)
     ::audio_effect_pool.delete_obj(static_cast<ff::internal::audio_effect_playing*>(value));
 }
 
-ff::audio_effect_o::audio_effect_o(
+ff::audio_effect::audio_effect(
     const std::shared_ptr<ff::resource>& file_resource,
     size_t start,
     size_t length,
@@ -33,18 +33,18 @@ ff::audio_effect_o::audio_effect_o(
     ff::audio::internal::add_child(this);
 }
 
-ff::audio_effect_o::~audio_effect_o()
+ff::audio_effect::~audio_effect()
 {
     this->stop();
 
     ff::audio::internal::remove_child(this);
 }
 
-void ff::audio_effect_o::reset()
+void ff::audio_effect::reset()
 {
 }
 
-std::shared_ptr<ff::audio_playing_base> ff::audio_effect_o::play(bool start_now, float volume, float speed)
+std::shared_ptr<ff::audio_playing_base> ff::audio_effect::play(bool start_now, float volume, float speed)
 {
     IXAudio2* xaudio = ff::audio::internal::xaudio();
     IXAudio2Voice* xaudio_voice = ff::audio::internal::xaudio_voice(ff::audio::voice_type::effects);
@@ -98,7 +98,7 @@ std::shared_ptr<ff::audio_playing_base> ff::audio_effect_o::play(bool start_now,
     return effect_ptr;
 }
 
-bool ff::audio_effect_o::playing() const
+bool ff::audio_effect::playing() const
 {
     for (const auto& i : this->playing_)
     {
@@ -111,7 +111,7 @@ bool ff::audio_effect_o::playing() const
     return false;
 }
 
-void ff::audio_effect_o::stop()
+void ff::audio_effect::stop()
 {
     std::vector<std::shared_ptr<ff::internal::audio_effect_playing>> playing;
     std::swap(playing, this->playing_);
@@ -123,17 +123,17 @@ void ff::audio_effect_o::stop()
     }
 }
 
-const WAVEFORMATEX& ff::audio_effect_o::format() const
+const WAVEFORMATEX& ff::audio_effect::format() const
 {
     return this->format_;
 }
 
-const std::shared_ptr<ff::data_base> ff::audio_effect_o::data() const
+const std::shared_ptr<ff::data_base> ff::audio_effect::data() const
 {
     return this->data_;
 }
 
-std::shared_ptr<ff::internal::audio_effect_playing> ff::audio_effect_o::remove_playing(ff::internal::audio_effect_playing* playing)
+std::shared_ptr<ff::internal::audio_effect_playing> ff::audio_effect::remove_playing(ff::internal::audio_effect_playing* playing)
 {
     for (auto i = this->playing_.cbegin(); i != this->playing_.cend(); ++i)
     {
@@ -149,7 +149,7 @@ std::shared_ptr<ff::internal::audio_effect_playing> ff::audio_effect_o::remove_p
     return nullptr;
 }
 
-bool ff::audio_effect_o::resource_load_complete(bool from_source)
+bool ff::audio_effect::resource_load_complete(bool from_source)
 {
     std::shared_ptr<ff::saved_data_base> file_saved_data = this->file.object() ? this->file->saved_data() : nullptr;
     std::shared_ptr<ff::reader_base> reader = file_saved_data ? file_saved_data->loaded_reader() : nullptr;
@@ -159,7 +159,7 @@ bool ff::audio_effect_o::resource_load_complete(bool from_source)
     return this->data_ != nullptr && this->format_.wFormatTag != 0;
 }
 
-std::vector<std::shared_ptr<ff::resource>> ff::audio_effect_o::resource_get_dependencies() const
+std::vector<std::shared_ptr<ff::resource>> ff::audio_effect::resource_get_dependencies() const
 {
     return std::vector<std::shared_ptr<resource>>
     {
@@ -167,7 +167,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::audio_effect_o::resource_get_depe
     };
 }
 
-bool ff::audio_effect_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::audio_effect::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set<ff::resource>("file", this->file.resource());
     dict.set<size_t>("start", this->start);
@@ -195,7 +195,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::lo
     float volume = dict.get<float>("volume", 1.0f);
     float speed = dict.get<float>("speed", 1.0f);
 
-    return std::make_shared<audio_effect_o>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
+    return std::make_shared<audio_effect>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::load_from_cache(const ff::dict& dict) const
@@ -209,5 +209,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::audio_effect_factory::lo
     float volume = dict.get<float>("volume", 1.0f);
     float speed = dict.get<float>("speed", 1.0f);
 
-    return std::make_shared<audio_effect_o>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
+    return std::make_shared<audio_effect>(file, start, length, loop_start, loop_length, loop_count, volume, speed);
 }

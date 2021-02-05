@@ -10,7 +10,7 @@ static void delete_music(ff::audio_playing_base* value)
     ::music_pool.delete_obj(static_cast<ff::internal::music_playing*>(value));
 }
 
-ff::music_o::music_o(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop)
+ff::music::music(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop)
     : file(file_resource)
     , volume(volume)
     , speed(speed)
@@ -19,18 +19,18 @@ ff::music_o::music_o(const std::shared_ptr<ff::resource>& file_resource, float v
     ff::audio::internal::add_child(this);
 }
 
-ff::music_o::~music_o()
+ff::music::~music()
 {
     this->stop();
 
     ff::audio::internal::remove_child(this);
 }
 
-void ff::music_o::reset()
+void ff::music::reset()
 {
 }
 
-std::shared_ptr<ff::audio_playing_base> ff::music_o::play(bool start_now, float volume, float speed)
+std::shared_ptr<ff::audio_playing_base> ff::music::play(bool start_now, float volume, float speed)
 {
     std::shared_ptr<ff::internal::music_playing> playing = std::make_shared<ff::internal::music_playing>(this);
     if (playing->init(this->file.object(), start_now, this->volume * volume, this->speed * speed, this->loop))
@@ -42,7 +42,7 @@ std::shared_ptr<ff::audio_playing_base> ff::music_o::play(bool start_now, float 
     return nullptr;
 }
 
-bool ff::music_o::playing() const
+bool ff::music::playing() const
 {
     for (const auto& i : this->playing_)
     {
@@ -55,7 +55,7 @@ bool ff::music_o::playing() const
     return false;
 }
 
-void ff::music_o::stop()
+void ff::music::stop()
 {
     std::vector<std::shared_ptr<ff::internal::music_playing>> playing;
     std::swap(playing, this->playing_);
@@ -67,7 +67,7 @@ void ff::music_o::stop()
     }
 }
 
-std::shared_ptr<ff::internal::music_playing> ff::music_o::remove_playing(ff::internal::music_playing* playing)
+std::shared_ptr<ff::internal::music_playing> ff::music::remove_playing(ff::internal::music_playing* playing)
 {
     for (auto i = this->playing_.cbegin(); i != this->playing_.cend(); ++i)
     {
@@ -83,7 +83,7 @@ std::shared_ptr<ff::internal::music_playing> ff::music_o::remove_playing(ff::int
     return nullptr;
 }
 
-std::vector<std::shared_ptr<ff::resource>> ff::music_o::resource_get_dependencies() const
+std::vector<std::shared_ptr<ff::resource>> ff::music::resource_get_dependencies() const
 {
     return std::vector<std::shared_ptr<resource>>
     {
@@ -91,7 +91,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::music_o::resource_get_dependencie
     };
 }
 
-bool ff::music_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::music::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set<ff::resource>("file", this->file.resource());
     dict.set<float>("volume", this->volume);
@@ -113,5 +113,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::music_factory::load_from
     float speed = dict.get<float>("speed", 1.0f);
     bool loop = dict.get<float>("loop");
 
-    return std::make_shared<music_o>(file, volume, speed, loop);
+    return std::make_shared<music>(file, volume, speed, loop);
 }

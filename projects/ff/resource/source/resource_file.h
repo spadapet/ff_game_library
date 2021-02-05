@@ -5,10 +5,10 @@
 
 namespace ff
 {
-    class file_o : public ff::resource_object_base
+    class resource_file : public ff::resource_object_base
     {
     public:
-        file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
+        resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
         const std::shared_ptr<ff::saved_data_base>& saved_data() const;
 
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
@@ -25,10 +25,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class file_factory : public ff::resource_object_factory<file_o>
+    class resource_file_factory : public ff::resource_object_factory<resource_file>
     {
     public:
-        using ff::resource_object_factory<file_o>::resource_object_factory;
+        using ff::resource_object_factory<resource_file>::resource_object_factory;
 
         virtual std::shared_ptr<resource_object_base> load_from_source(const ff::dict& dict, resource_load_context& context) const override;
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;

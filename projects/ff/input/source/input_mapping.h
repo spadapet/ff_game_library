@@ -72,12 +72,12 @@ namespace ff
         std::vector<input_vk const*> devices;
     };
 
-    class input_mapping_o
+    class input_mapping
         : public ff::input_mapping_def
         , public ff::resource_object_base
     {
     public:
-        input_mapping_o(std::vector<input_event_def>&& events, std::vector<input_value_def>&& values);
+        input_mapping(std::vector<input_event_def>&& events, std::vector<input_value_def>&& values);
 
         virtual const std::vector<input_event_def>& events() const override;
         virtual const std::vector<input_value_def>& values() const override;
@@ -93,10 +93,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class input_mapping_factory : public ff::resource_object_factory<ff::input_mapping_o>
+    class input_mapping_factory : public ff::resource_object_factory<ff::input_mapping>
     {
     public:
-        using ff::resource_object_factory<ff::input_mapping_o>::resource_object_factory;
+        using ff::resource_object_factory<ff::input_mapping>::resource_object_factory;
 
         virtual std::shared_ptr<ff::resource_object_base> load_from_source(const ff::dict& dict, ff::resource_load_context& context) const override;
         virtual std::shared_ptr<ff::resource_object_base> load_from_cache(const ff::dict& dict) const override;

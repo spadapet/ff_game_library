@@ -3,7 +3,7 @@
 
 namespace ff
 {
-    class music_o;
+    class music;
 }
 
 namespace ff::internal
@@ -16,10 +16,10 @@ namespace ff::internal
         , public IXAudio2VoiceCallback
     {
     public:
-        music_playing(music_o* owner);
+        music_playing(ff::music* owner);
         virtual ~music_playing() override;
 
-        bool init(std::shared_ptr<ff::file_o> file, bool start_now, float volume, float speed, bool loop);
+        bool init(std::shared_ptr<ff::resource_file> file, bool start_now, float volume, float speed, bool loop);
         void clear_owner();
 
         enum class state_t
@@ -92,7 +92,7 @@ namespace ff::internal
         };
 
         mutable std::recursive_mutex mutex;
-        music_o* owner;
+        ff::music* owner;
         state_t state;
         media_state_t media_state;
         LONGLONG duration_; // in 100-nanosecond units
@@ -101,7 +101,7 @@ namespace ff::internal
         ff::timer fade_timer;
         ff::win_handle async_event; // set when there is no async action running
         std::list<buffer_info> buffer_infos;
-        std::shared_ptr<ff::file_o> file;
+        std::shared_ptr<ff::resource_file> file;
         Microsoft::WRL::ComPtr<IMFSourceReader> media_reader;
         Microsoft::WRL::ComPtr<ff::internal::source_reader_callback> media_callback;
         float speed;

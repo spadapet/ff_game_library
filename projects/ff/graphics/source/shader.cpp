@@ -138,7 +138,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
 }
 
 ff::shader_o::shader_o(std::shared_ptr<ff::saved_data_base> saved_data)
-    : file_o(saved_data, ".shader", true)
+    : resource_file(saved_data, ".shader", true)
 {}
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
@@ -173,10 +173,10 @@ std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_fro
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_cache(const ff::dict& dict) const
 {
-    const ff::resource_object_factory_base* file_factory = ff::resource_object_base::get_factory(typeid(ff::file_o));
-    if (file_factory)
+    const ff::resource_object_factory_base* resource_file_factory = ff::resource_object_base::get_factory(typeid(ff::resource_file));
+    if (resource_file_factory)
     {
-        std::shared_ptr<ff::file_o> file = std::dynamic_pointer_cast<ff::file_o>(file_factory->load_from_cache(dict));
+        std::shared_ptr<ff::resource_file> file = std::dynamic_pointer_cast<ff::resource_file>(resource_file_factory->load_from_cache(dict));
         if (file)
         {
             return std::make_shared<ff::shader_o>(file->saved_data());

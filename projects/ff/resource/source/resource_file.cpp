@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "file_o.h"
+#include "resource_file.h"
 #include "resource_load_context.h"
 
-ff::file_o::file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
+ff::resource_file::resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
     : saved_data_(saved_data)
     , file_extension(file_extension)
     , compress(compress)
@@ -10,12 +10,12 @@ ff::file_o::file_o(std::shared_ptr<ff::saved_data_base> saved_data, std::string_
     assert(this->saved_data_);
 }
 
-const std::shared_ptr<ff::saved_data_base>& ff::file_o::saved_data() const
+const std::shared_ptr<ff::saved_data_base>& ff::resource_file::saved_data() const
 {
     return this->saved_data_;
 }
 
-bool ff::file_o::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
+bool ff::resource_file::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
     std::filesystem::path path = (directory_path / name).replace_extension(this->file_extension);
     size_t size = this->saved_data_->loaded_size();
@@ -23,7 +23,7 @@ bool ff::file_o::resource_save_to_file(const std::filesystem::path& directory_pa
     return copied_size == size;
 }
 
-bool ff::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_file::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     allow_compress = this->compress;
 
@@ -34,7 +34,7 @@ bool ff::file_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
     return true;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::internal::file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     std::filesystem::path path = dict.get<std::string>("file");
     if (path.empty())
@@ -67,14 +67,14 @@ std::shared_ptr<ff::resource_object_base> ff::internal::file_factory::load_from_
     }
 
     bool compress = dict.get<bool>("compress", default_compress);
-    return std::make_shared<file_o>(saved_data, file_extension, compress);
+    return std::make_shared<resource_file>(saved_data, file_extension, compress);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::internal::file_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::load_from_cache(const ff::dict& dict) const
 {
     auto saved_data = dict.get<ff::saved_data_base>("data");
     std::string file_extension = dict.get<std::string>("extension");
     bool compress = dict.get<bool>("compress", true);
 
-    return saved_data ? std::make_shared<file_o>(saved_data, file_extension, compress) : nullptr;
+    return saved_data ? std::make_shared<resource_file>(saved_data, file_extension, compress) : nullptr;
 }

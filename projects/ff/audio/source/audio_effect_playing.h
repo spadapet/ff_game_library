@@ -3,7 +3,7 @@
 
 namespace ff
 {
-    class audio_effect_o;
+    class audio_effect;
 }
 
 namespace ff::internal
@@ -13,7 +13,7 @@ namespace ff::internal
         , public IXAudio2VoiceCallback
     {
     public:
-        audio_effect_playing(audio_effect_o* owner);
+        audio_effect_playing(audio_effect* owner);
         virtual ~audio_effect_playing() override;
 
         void init(IXAudio2SourceVoice* source, bool start_now);
@@ -51,7 +51,7 @@ namespace ff::internal
         virtual void __stdcall OnVoiceError(void* pBufferContext, HRESULT error) override;
 
     private:
-        audio_effect_o* owner;
+        audio_effect* owner;
         std::shared_ptr<ff::data_base> data;
         IXAudio2SourceVoice* source;
         bool paused_;

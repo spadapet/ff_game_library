@@ -2,9 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\file_o.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\resource.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -38,13 +35,13 @@
     <ClCompile Include="source\resource_load_context.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\resource_file.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource_api.h" />
-    <ClInclude Include="source\file_o.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\resource.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -82,6 +79,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\auto_resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_file.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

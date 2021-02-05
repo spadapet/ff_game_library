@@ -6,7 +6,7 @@
 #include "texture_util.h"
 
 ff::dx11_texture_view::dx11_texture_view(
-    const std::shared_ptr<dx11_texture_o>& texture,
+    const std::shared_ptr<dx11_texture>& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_start,
@@ -104,12 +104,12 @@ bool ff::dx11_texture_view::reset()
     return *this;
 }
 
-const ff::dx11_texture_o* ff::dx11_texture_view::view_texture() const
+const ff::dx11_texture* ff::dx11_texture_view::view_texture() const
 {
     return this->texture_.get();
 }
 
-ID3D11ShaderResourceView* ff::dx11_texture_view::view()
+ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
 {
     return this->view_.Get();
 }

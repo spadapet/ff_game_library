@@ -2,7 +2,7 @@
 #include "dxgi_util.h"
 #include "texture_metadata.h"
 
-ff::texture_metadata_o::texture_metadata_o(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
+ff::texture_metadata::texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
     : size_(size)
     , mip_count_(mip_count)
     , array_size_(array_size)
@@ -10,32 +10,32 @@ ff::texture_metadata_o::texture_metadata_o(ff::point_int size, size_t mip_count,
     , format_(format)
 {}
 
-ff::point_int ff::texture_metadata_o::size() const
+ff::point_int ff::texture_metadata::size() const
 {
     return this->size_;
 }
 
-size_t ff::texture_metadata_o::mip_count() const
+size_t ff::texture_metadata::mip_count() const
 {
     return this->mip_count_;
 }
 
-size_t ff::texture_metadata_o::array_size() const
+size_t ff::texture_metadata::array_size() const
 {
     return this->array_size_;
 }
 
-size_t ff::texture_metadata_o::sample_count() const
+size_t ff::texture_metadata::sample_count() const
 {
     return this->sample_count_;
 }
 
-DXGI_FORMAT ff::texture_metadata_o::format() const
+DXGI_FORMAT ff::texture_metadata::format() const
 {
     return this->format_;
 }
 
-bool ff::texture_metadata_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::texture_metadata::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     // The idea is to get to this metadata as fast as possible, no compression
     allow_compress = false;
@@ -51,7 +51,7 @@ bool ff::texture_metadata_o::save_to_cache(ff::dict& dict, bool& allow_compress)
 
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
-    return std::make_shared<ff::texture_metadata_o>(
+    return std::make_shared<ff::texture_metadata>(
         dict.get<ff::point_int>("size"),
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),
@@ -61,7 +61,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory
 
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_cache(const ff::dict& dict) const
 {
-    return std::make_shared<ff::texture_metadata_o>(
+    return std::make_shared<ff::texture_metadata>(
         dict.get<ff::point_int>("size"),
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),

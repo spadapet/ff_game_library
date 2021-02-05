@@ -4,7 +4,7 @@
 #include "audio_effect_playing.h"
 #include "destroy_voice.h"
 
-ff::internal::audio_effect_playing::audio_effect_playing(audio_effect_o* owner)
+ff::internal::audio_effect_playing::audio_effect_playing(audio_effect* owner)
     : owner(owner)
     , data(owner->data())
     , source(nullptr)
@@ -77,7 +77,7 @@ void ff::internal::audio_effect_playing::advance()
             ff::internal::destroy_voice_async(source);
         }
 
-        ff::audio_effect_o* owner = this->owner;
+        ff::audio_effect* owner = this->owner;
         if (owner)
         {
             this->owner = nullptr;

@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    class shader_o : public ff::file_o
+    class shader_o : public ff::resource_file
     {
     public:
         shader_o(std::shared_ptr<ff::saved_data_base> saved_data);

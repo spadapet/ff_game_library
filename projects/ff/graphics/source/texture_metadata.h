@@ -14,12 +14,12 @@ namespace ff
         virtual DXGI_FORMAT format() const = 0;
     };
 
-    class texture_metadata_o
+    class texture_metadata
         : public ff::resource_object_base
         , public ff::texture_metadata_base
     {
     public:
-        texture_metadata_o(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format);
+        texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format);
 
         virtual ff::point_int size() const override;
         virtual size_t mip_count() const override;
@@ -41,10 +41,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class texture_metadata_factory : public ff::resource_object_factory<texture_metadata_o>
+    class texture_metadata_factory : public ff::resource_object_factory<texture_metadata>
     {
     public:
-        using ff::resource_object_factory<texture_metadata_o>::resource_object_factory;
+        using ff::resource_object_factory<texture_metadata>::resource_object_factory;
 
         virtual std::shared_ptr<resource_object_base> load_from_source(const ff::dict& dict, resource_load_context& context) const override;
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;

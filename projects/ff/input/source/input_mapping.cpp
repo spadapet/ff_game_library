@@ -273,22 +273,22 @@ void ff::input_event_provider::push_stop_event(input_event_progress& event)
     }
 }
 
-ff::input_mapping_o::input_mapping_o(std::vector<input_event_def>&& events, std::vector<input_value_def>&& values)
+ff::input_mapping::input_mapping(std::vector<input_event_def>&& events, std::vector<input_value_def>&& values)
     : events_(std::move(events))
     , values_(std::move(values))
 {}
 
-const std::vector<ff::input_event_def>& ff::input_mapping_o::events() const
+const std::vector<ff::input_event_def>& ff::input_mapping::events() const
 {
     return this->events_;
 }
 
-const std::vector<ff::input_value_def>& ff::input_mapping_o::values() const
+const std::vector<ff::input_value_def>& ff::input_mapping::values() const
 {
     return this->values_;
 }
 
-bool ff::input_mapping_o::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::input_mapping::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set<size_t>("events_size", this->events_.size());
     dict.set_bytes("events", this->events_.data(), ff::vector_byte_size(this->events_));
@@ -555,7 +555,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::input_mapping_factory::l
     if (::parse_event_defs(dict.get<ff::dict>("events"), event_defs) &&
         ::parse_event_defs(dict.get<ff::dict>("values"), value_defs))
     {
-        return std::make_shared<ff::input_mapping_o>(std::move(event_defs), ::map_events_to_values(value_defs));
+        return std::make_shared<ff::input_mapping>(std::move(event_defs), ::map_events_to_values(value_defs));
     }
 
     assert(false);
@@ -587,5 +587,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::input_mapping_factory::l
         }
     }
 
-    return std::make_shared<ff::input_mapping_o>(std::move(events), std::move(values));
+    return std::make_shared<ff::input_mapping>(std::move(events), std::move(values));
 }

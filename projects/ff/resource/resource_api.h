@@ -2,9 +2,9 @@
 
 #include "pch.h"
 #include "source/auto_resource.h"
-#include "source/file_o.h"
 #include "source/init.h"
 #include "source/resource.h"
+#include "source/resource_file.h"
 #include "source/resource_load.h"
 #include "source/resource_load_context.h"
 #include "source/resource_object_base.h"
