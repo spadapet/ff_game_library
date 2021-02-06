@@ -53,7 +53,11 @@ std::filesystem::path ff::filesystem::user_directory_path()
 std::filesystem::path ff::filesystem::to_lower(const std::filesystem::path& path)
 {
     std::wstring wstr = path.native();
+
+    wstr.push_back(0);
     ::_wcslwr_s(wstr.data(), static_cast<DWORD>(wstr.size()));
+    wstr.pop_back();
+
     return std::filesystem::path(wstr);
 }
 

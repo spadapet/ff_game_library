@@ -137,7 +137,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
     return nullptr;
 }
 
-ff::shader_o::shader_o(std::shared_ptr<ff::saved_data_base> saved_data)
+ff::shader::shader(std::shared_ptr<ff::saved_data_base> saved_data)
     : resource_file(saved_data, ".shader", true)
 {}
 
@@ -168,7 +168,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_fro
     }
 
     auto shader_saved_data = std::make_shared<ff::saved_data_static>(shader_data, shader_data->size(), ff::saved_data_type::none);
-    return std::make_shared<ff::shader_o>(shader_saved_data);
+    return std::make_shared<ff::shader>(shader_saved_data);
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_cache(const ff::dict& dict) const
@@ -179,7 +179,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_fro
         std::shared_ptr<ff::resource_file> file = std::dynamic_pointer_cast<ff::resource_file>(resource_file_factory->load_from_cache(dict));
         if (file)
         {
-            return std::make_shared<ff::shader_o>(file->saved_data());
+            return std::make_shared<ff::shader>(file->saved_data());
         }
     }
 

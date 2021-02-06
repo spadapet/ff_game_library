@@ -31,9 +31,9 @@ namespace graphics_test
             Assert::IsTrue(result.status);
 
             ff::resource_objects res(result.dict);
-            ff::auto_resource<ff::shader_o> shader_res = res.get_resource_object("test_shader");
+            ff::auto_resource<ff::shader> shader_res = res.get_resource_object("test_shader");
             Assert::IsTrue(shader_res.valid());
-            std::shared_ptr<ff::shader_o> shader = shader_res.object();
+            std::shared_ptr<ff::shader> shader = shader_res.object();
             Assert::IsNotNull(shader.get());
             Assert::IsTrue(shader->saved_data() && shader->saved_data()->saved_size());
         }

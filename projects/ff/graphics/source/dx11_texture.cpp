@@ -432,15 +432,18 @@ bool ff::dx11_texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
         return false;
     }
 
-    if (this->palette_ && SUCCEEDED(DirectX::SaveToDDSMemory(
-        this->palette_->GetImages(), this->palette_->GetImageCount(), this->palette_->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
+    if (this->palette_)
     {
-        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::internal::data_blob_dxtex>(std::move(blob));
-        dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
-    }
-    else
-    {
-        return false;
+        if (SUCCEEDED(DirectX::SaveToDDSMemory(
+            this->palette_->GetImages(), this->palette_->GetImageCount(), this->palette_->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
+        {
+            std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::internal::data_blob_dxtex>(std::move(blob));
+            dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
+        }
+        else
+        {
+            return false;
+        }
     }
 
     return true;
