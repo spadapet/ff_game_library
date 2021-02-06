@@ -28,6 +28,7 @@ namespace ff
         static thread_dispatch* get(thread_dispatch_type type = thread_dispatch_type::none);
 
         void post(std::function<void()>&& func, bool run_if_current_thread = false);
+        void send(std::function<void()>&& func);
         void flush();
         bool current_thread() const;
         bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE);

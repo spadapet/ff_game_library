@@ -121,6 +121,27 @@ void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current
     }
 }
 
+void ff::thread_dispatch::send(std::function<void()>&& func)
+{
+    if (this->current_thread())
+    {
+        func();
+    }
+    else
+    {
+        ff::win_handle event = ff::create_event();
+        std::function<void()> func_2 = std::move(func);
+
+        this->post([&event, &func_2]()
+        {
+            func_2();
+            ::SetEvent(event);
+        });
+
+        ff::wait_for_handle(event);
+    }
+}
+
 void ff::thread_dispatch::flush()
 {
     this->flush(false);

@@ -161,9 +161,14 @@ bool ff::internal::palette_format(DXGI_FORMAT format)
     return format == DXGI_FORMAT_R8_UINT;
 }
 
+bool ff::internal::has_alpha(DXGI_FORMAT format)
+{
+    return DirectX::HasAlpha(format);
+}
+
 bool ff::internal::supports_pre_multiplied_alpha(DXGI_FORMAT format)
 {
-    return !ff::internal::compressed_format(format) && ff::internal::color_format(format) && DirectX::HasAlpha(format);
+    return !ff::internal::compressed_format(format) && ff::internal::color_format(format) && ff::internal::has_alpha(format);
 }
 
 DXGI_FORMAT ff::internal::parse_texture_format(std::string_view format_name)

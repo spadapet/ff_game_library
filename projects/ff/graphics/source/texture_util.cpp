@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "dxgi_util.h"
 #include "graphics.h"
 #include "palette_data.h"
 #include "png_image.h"
@@ -50,7 +51,7 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
         new_format = scratch_final.GetMetadata().format;
     }
 
-    if (new_format == DXGI_FORMAT_R8_UINT && palette_scratch)
+    if (ff::internal::palette_format(new_format) && palette_scratch)
     {
         std::unique_ptr<DirectX::ScratchImage> palette_scratch_2 = png.pallete();
         if (palette_scratch_2)
@@ -59,21 +60,7 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
         }
     }
 
-    if (DirectX::IsCompressed(new_format))
-    {
-        // Compressed images have size restrictions. Upon failure, just use RGB
-        size_t width = scratch_final.GetMetadata().width;
-        size_t height = scratch_final.GetMetadata().height;
-
-        if (width % 4 || height % 4)
-        {
-            new_format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        }
-        else if (new_mip_count != 1 && (ff::math::nearest_power_of_two(width) != width || ff::math::nearest_power_of_two(height) != height))
-        {
-            new_format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        }
-    }
+    new_format = ff::internal::fix_texture_format(new_format, scratch_final.GetMetadata().width, scratch_final.GetMetadata().height, new_mip_count);
 
     if (new_mip_count != 1)
     {
@@ -93,7 +80,7 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
         scratch_final = std::move(scratch_mips);
     }
 
-    if (DirectX::IsCompressed(new_format))
+    if (ff::internal::compressed_format(new_format))
     {
         DirectX::ScratchImage scratch_new;
         if (FAILED(DirectX::Compress(
@@ -136,7 +123,7 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
 static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     DirectX::ScratchImage scratch_final;
-    if (new_format != DXGI_FORMAT_R8G8B8A8_UNORM || new_mip_count > 1)
+    if (new_format != ff::internal::PALETTE_FORMAT || new_mip_count > 1)
     {
         assert(false);
         return scratch_final;
@@ -149,7 +136,7 @@ static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path,
         return scratch_final;
     }
 
-    if (FAILED(scratch_final.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, ff::constants::palette_size, 1, 1, 1)))
+    if (FAILED(scratch_final.Initialize2D(ff::internal::PALETTE_FORMAT, ff::constants::palette_size, 1, 1, 1)))
     {
         assert(false);
         return scratch_final;
@@ -228,183 +215,213 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_te
     return view;
 }
 
-DirectX::ScratchImage ff::internal::load_texture_data(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count, DirectX::ScratchImage* palette_scratch)
+std::shared_ptr<DirectX::ScratchImage> ff::internal::load_texture_data(
+    const std::filesystem::path& path,
+    DXGI_FORMAT new_format,
+    size_t new_mip_count,
+    std::shared_ptr<DirectX::ScratchImage>& palette)
 {
+    DirectX::ScratchImage scratch_data;
+    DirectX::ScratchImage scratch_palette;
+
     std::string path_ext = ff::filesystem::to_lower(path.extension()).string();
     if (path_ext == ".pal")
     {
-        return ::load_texture_pal(path, new_format, new_mip_count);
+        scratch_data = ::load_texture_pal(path, new_format, new_mip_count);
     }
     else if (path_ext == ".png")
     {
-        return ::load_texture_png(path, new_format, new_mip_count, palette_scratch);
+        scratch_data = ::load_texture_png(path, new_format, new_mip_count, &scratch_palette);
     }
-    else
+
+    if (scratch_palette.GetImageCount())
     {
-        assert(false);
-        return DirectX::ScratchImage();
+        palette = std::make_shared<DirectX::ScratchImage>(std::move(scratch_palette));
     }
+
+    if (scratch_data.GetImageCount())
+    {
+        return std::make_shared<DirectX::ScratchImage>(std::move(scratch_data));
+    }
+
+    assert(false);
+    return nullptr;
 }
 
-DirectX::ScratchImage ff::internal::convert_texture_data(const DirectX::ScratchImage& data, DXGI_FORMAT format, size_t mips)
+std::shared_ptr<DirectX::ScratchImage> ff::internal::convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count)
 {
+    if (!data || !data->GetImageCount())
+    {
+        return nullptr;
+    }
+
+    new_format = ff::internal::fix_texture_format(new_format, data->GetMetadata().width, data->GetMetadata().height, new_mip_count);
+
+    if (data->GetMetadata().format == new_format && data->GetMetadata().mipLevels == new_mip_count)
+    {
+        return data;
+    }
+
     DirectX::ScratchImage scratch_final;
-    if (!data.GetImageCount() || FAILED(scratch_final.InitializeFromImage(*data.GetImages())))
+    if (FAILED(scratch_final.InitializeFromImage(*data->GetImages())))
     {
         assert(false);
-        return DirectX::ScratchImage();
+        return nullptr;
     }
 
-    if (DirectX::IsCompressed(format))
+    if (ff::internal::compressed_format(scratch_final.GetMetadata().format))
+    {
+        DirectX::ScratchImage scratch_rgb;
+        if (FAILED(DirectX::Decompress(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            scratch_rgb)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_rgb);
+    }
+    else if (scratch_final.GetMetadata().format != DXGI_FORMAT_R8G8B8A8_UNORM)
+    {
+        DirectX::ScratchImage scratch_rgb;
+        if (FAILED(DirectX::Convert(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DirectX::TEX_FILTER_DEFAULT,
+            0, // threshold
+            scratch_rgb)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_rgb);
+    }
+
+    if (new_mip_count != 1)
+    {
+        DirectX::ScratchImage scratch_mips;
+        if (FAILED(DirectX::GenerateMipMaps(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DirectX::TEX_FILTER_DEFAULT,
+            new_mip_count,
+            scratch_mips)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_mips);
+    }
+
+    if (ff::internal::compressed_format(new_format))
+    {
+        DirectX::ScratchImage scratch_new;
+        if (FAILED(DirectX::Compress(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            new_format,
+            DirectX::TEX_COMPRESS_DEFAULT,
+            0, // alpharef
+            scratch_new)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_new);
+    }
+    else if (new_format != scratch_final.GetMetadata().format)
+    {
+        DirectX::ScratchImage scratch_new;
+        if (FAILED(DirectX::Convert(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            new_format,
+            DirectX::TEX_FILTER_DEFAULT,
+            0, // threshold
+            scratch_new)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_new);
+    }
+
+    return scratch_final.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch_final)) : nullptr;
+}
+
+DXGI_FORMAT ff::internal::fix_texture_format(DXGI_FORMAT format, size_t texture_width, size_t texture_height, size_t mip_count)
+{
+    if (format == DXGI_FORMAT_UNKNOWN)
+    {
+        format = ff::internal::DEFAULT_FORMAT;
+    }
+    else if (ff::internal::compressed_format(format))
     {
         // Compressed images have size restrictions. Upon failure, just use RGB
-        size_t width = scratch_final.GetMetadata().width;
-        size_t height = scratch_final.GetMetadata().height;
-
-        if (width % 4 || height % 4)
+        if (texture_width % 4 || texture_height % 4)
         {
-            format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            format = ff::internal::DEFAULT_FORMAT;
         }
-        else if (mips != 1 && (ff::math::nearest_power_of_two(width) != width || ff::math::nearest_power_of_two(height) != height))
+        else if (mip_count > 1 && (ff::math::nearest_power_of_two(texture_width) != texture_width || ff::math::nearest_power_of_two(texture_height) != texture_height))
         {
-            format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            format = ff::internal::DEFAULT_FORMAT;
         }
     }
 
-    if (scratch_final.GetMetadata().format != format || scratch_final.GetMetadata().mipLevels != mips)
-    {
-        if (DirectX::IsCompressed(scratch_final.GetMetadata().format))
-        {
-            DirectX::ScratchImage scratchRgb;
-            if (FAILED(DirectX::Decompress(
-                scratch_final.GetImages(),
-                scratch_final.GetImageCount(),
-                scratch_final.GetMetadata(),
-                DXGI_FORMAT_R8G8B8A8_UNORM,
-                scratchRgb)))
-            {
-                assert(false);
-                return DirectX::ScratchImage();
-            }
-
-            scratch_final = std::move(scratchRgb);
-        }
-        else if (scratch_final.GetMetadata().format != DXGI_FORMAT_R8G8B8A8_UNORM)
-        {
-            DirectX::ScratchImage scratchRgb;
-            if (FAILED(DirectX::Convert(
-                scratch_final.GetImages(),
-                scratch_final.GetImageCount(),
-                scratch_final.GetMetadata(),
-                DXGI_FORMAT_R8G8B8A8_UNORM,
-                DirectX::TEX_FILTER_DEFAULT,
-                0, // threshold
-                scratchRgb)))
-            {
-                assert(false);
-                return DirectX::ScratchImage();
-            }
-
-            scratch_final = std::move(scratchRgb);
-        }
-
-        if (mips != 1)
-        {
-            DirectX::ScratchImage scratch_mips;
-            if (FAILED(DirectX::GenerateMipMaps(
-                scratch_final.GetImages(),
-                scratch_final.GetImageCount(),
-                scratch_final.GetMetadata(),
-                DirectX::TEX_FILTER_DEFAULT,
-                mips,
-                scratch_mips)))
-            {
-                assert(false);
-                return DirectX::ScratchImage();
-            }
-
-            scratch_final = std::move(scratch_mips);
-        }
-
-        if (DirectX::IsCompressed(format))
-        {
-            DirectX::ScratchImage scratch_new;
-            if (FAILED(DirectX::Compress(
-                scratch_final.GetImages(),
-                scratch_final.GetImageCount(),
-                scratch_final.GetMetadata(),
-                format,
-                DirectX::TEX_COMPRESS_DEFAULT,
-                0, // alpharef
-                scratch_new)))
-            {
-                assert(false);
-                return DirectX::ScratchImage();
-            }
-
-            scratch_final = std::move(scratch_new);
-        }
-        else if (format != scratch_final.GetMetadata().format)
-        {
-            DirectX::ScratchImage scratch_new;
-            if (FAILED(DirectX::Convert(
-                scratch_final.GetImages(),
-                scratch_final.GetImageCount(),
-                scratch_final.GetMetadata(),
-                format,
-                DirectX::TEX_FILTER_DEFAULT,
-                0, // threshold
-                scratch_new)))
-            {
-                assert(false);
-                return DirectX::ScratchImage();
-            }
-
-            scratch_final = std::move(scratch_new);
-        }
-    }
-
-    return scratch_final;
+    return format;
 }
 
 ff::sprite_type ff::internal::get_sprite_type(const DirectX::ScratchImage& scratch, const ff::rect_size* rect)
 {
-    DirectX::ScratchImage alphaScratch;
-    const DirectX::Image* alphaImage = nullptr;
-    size_t alphaGap = 1;
+    DirectX::ScratchImage alpha_scratch;
+    const DirectX::Image* alpha_image = nullptr;
+    size_t alpha_gap = 1;
     DXGI_FORMAT format = scratch.GetMetadata().format;
 
-    if (format == DXGI_FORMAT_R8_UINT)
+    if (ff::internal::palette_format(format))
     {
         return ff::sprite_type::opaque_palette;
     }
-    else if (!DirectX::HasAlpha(format))
+    else if (!ff::internal::has_alpha(format))
     {
         return ff::sprite_type::opaque;
     }
     else if (format == DXGI_FORMAT_A8_UNORM)
     {
-        alphaImage = scratch.GetImages();
+        alpha_image = scratch.GetImages();
     }
     else if (format == DXGI_FORMAT_R8G8B8A8_UNORM || format == DXGI_FORMAT_B8G8R8A8_UNORM)
     {
-        alphaImage = scratch.GetImages();
-        alphaGap = 4;
+        alpha_image = scratch.GetImages();
+        alpha_gap = 4;
     }
-    else if (DirectX::IsCompressed(format))
+    else if (ff::internal::compressed_format(format))
     {
         if (FAILED(DirectX::Decompress(
             scratch.GetImages(),
             scratch.GetImageCount(),
             scratch.GetMetadata(),
             DXGI_FORMAT_A8_UNORM,
-            alphaScratch)))
+            alpha_scratch)))
         {
             assert(false);
             return ff::sprite_type::unknown;
         }
 
-        alphaImage = alphaScratch.GetImages();
+        alpha_image = alpha_scratch.GetImages();
     }
     else
     {
@@ -413,13 +430,13 @@ ff::sprite_type ff::internal::get_sprite_type(const DirectX::ScratchImage& scrat
             scratch.GetMetadata(),
             DXGI_FORMAT_A8_UNORM,
             DirectX::TEX_FILTER_DEFAULT,
-            0, alphaScratch)))
+            0, alpha_scratch)))
         {
             assert(false);
             return ff::sprite_type::unknown;
         }
 
-        alphaImage = alphaScratch.GetImages();
+        alpha_image = alpha_scratch.GetImages();
     }
 
     ff::sprite_type newType = ff::sprite_type::opaque;
@@ -428,8 +445,8 @@ ff::sprite_type ff::internal::get_sprite_type(const DirectX::ScratchImage& scrat
 
     for (size_t y = rect->top; y < rect->bottom && newType == ff::sprite_type::opaque; y++)
     {
-        const uint8_t* alpha = alphaImage->pixels + y * alphaImage->rowPitch + rect->left + alphaGap - 1;
-        for (size_t x = rect->left; x < rect->right; x++, alpha += alphaGap)
+        const uint8_t* alpha = alpha_image->pixels + y * alpha_image->rowPitch + rect->left + alpha_gap - 1;
+        for (size_t x = rect->left; x < rect->right; x++, alpha += alpha_gap)
         {
             if (*alpha && *alpha != 0xFF)
             {

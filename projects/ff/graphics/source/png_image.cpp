@@ -231,7 +231,7 @@ void ff::png_image_reader::on_png_read(uint8_t* data, size_t size)
     this->read_pos += size;
 }
 
-ff::png_image_writer::png_image_writer(ff::data_writer& writer)
+ff::png_image_writer::png_image_writer(ff::writer_base& writer)
     : writer(writer)
 {
     this->png = ::png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &png_image_writer::png_error_callback, &png_image_writer::png_warning_callback);

@@ -54,7 +54,7 @@ namespace ff
     class png_image_writer
     {
     public:
-        png_image_writer(ff::data_writer& writer);
+        png_image_writer(ff::writer_base& writer);
         ~png_image_writer();
 
         bool write(const DirectX::Image& image, const DirectX::Image* palette_image);
@@ -78,7 +78,7 @@ namespace ff
         std::string error_;
 
         // Writing
-        ff::data_writer& writer;
+        ff::writer_base& writer;
         std::vector<BYTE*> rows;
     };
 }
