@@ -13,5 +13,6 @@ namespace ff::internal
     std::shared_ptr<DirectX::ScratchImage> convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count);
     DXGI_FORMAT fix_texture_format(DXGI_FORMAT format, size_t texture_width, size_t texture_height, size_t mip_count);
     ff::sprite_type get_sprite_type(const DirectX::ScratchImage& scratch, const ff::rect_size* rect = nullptr);
-    D3D_SRV_DIMENSION default_dimension(const D3D11_TEXTURE2D_DESC& desc);
+    D3D_SRV_DIMENSION default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc);
+    D3D11_RTV_DIMENSION default_render_dimension(const D3D11_TEXTURE2D_DESC& desc);
 }

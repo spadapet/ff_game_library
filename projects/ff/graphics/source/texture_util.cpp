@@ -157,7 +157,7 @@ static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path,
     return scratch_final;
 }
 
-D3D_SRV_DIMENSION ff::internal::default_dimension(const D3D11_TEXTURE2D_DESC& desc)
+D3D_SRV_DIMENSION ff::internal::default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc)
 {
     if (desc.ArraySize > 1)
     {
@@ -173,6 +173,22 @@ D3D_SRV_DIMENSION ff::internal::default_dimension(const D3D11_TEXTURE2D_DESC& de
     }
 }
 
+D3D11_RTV_DIMENSION ff::internal::default_render_dimension(const D3D11_TEXTURE2D_DESC& desc)
+{
+    if (desc.ArraySize > 1)
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY
+            : D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+    }
+    else
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D11_RTV_DIMENSION_TEXTURE2DMS
+            : D3D11_RTV_DIMENSION_TEXTURE2D;
+    }
+}
+
 Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_texture_view(ID3D11Texture2D* texture)
 {
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
@@ -183,7 +199,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_te
 
         D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{};
         view_desc.Format = texture_desc.Format;
-        view_desc.ViewDimension = ff::internal::default_dimension(texture_desc);
+        view_desc.ViewDimension = ff::internal::default_shader_dimension(texture_desc);
 
         switch (view_desc.ViewDimension)
         {

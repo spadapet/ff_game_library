@@ -77,6 +77,9 @@
     <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx11_render_target_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -153,13 +156,13 @@
     <ClInclude Include="source\dx11_depth.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\render_target_base.h">
+    <ClInclude Include="source\dx11_render_target_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_texture.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\render_target_window_base.h">
+    <ClInclude Include="source\dx11_render_target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_metadata.h">
@@ -190,6 +193,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_render_target_texture.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

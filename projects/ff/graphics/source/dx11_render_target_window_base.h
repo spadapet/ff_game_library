@@ -1,10 +1,10 @@
 #pragma once
 
-#include "render_target_base.h"
+#include "dx11_render_target_base.h"
 
 namespace ff
 {
-    class render_target_window_base : public render_target_base
+    class dx11_render_target_window_base : public dx11_render_target_base
     {
     public:
         virtual bool present(bool vsync) = 0;

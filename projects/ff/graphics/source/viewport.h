@@ -2,8 +2,6 @@
 
 namespace ff
 {
-    class render_target_base;
-
     class viewport
     {
     public:

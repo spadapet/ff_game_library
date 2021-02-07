@@ -25,7 +25,7 @@ ff::dx11_texture_view::dx11_texture_view(
 
         D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{};
         view_desc.Format = texture_desc.Format;
-        view_desc.ViewDimension = ff::internal::default_dimension(texture_desc);
+        view_desc.ViewDimension = ff::internal::default_shader_dimension(texture_desc);
 
         switch (view_desc.ViewDimension)
         {
