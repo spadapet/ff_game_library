@@ -2,6 +2,9 @@
 
 namespace ff
 {
+    /// <summary>
+    /// Base class for pushing items into any collection
+    /// </summary>
     template<class T>
     class push_base
     {
@@ -12,6 +15,9 @@ namespace ff
         virtual void push(T&& value) const = 0;
     };
 
+    /// <summary>
+    /// Implements push_base for any collection with a push_back() function
+    /// </summary>
     template<class T>
     class push_back_collection: public push_base<typename T::value_type>
     {

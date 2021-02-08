@@ -19,7 +19,7 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
     std::filesystem::path name = path_canon.filename().replace_extension();
 
     std::ostringstream str;
-    str << name << "." << ff::hash_func(path_canon_lower) << (debug ? ".debug" : "") << ".pack";
+    str << name << "." << ff::stable_hash_func(path_canon_lower) << (debug ? ".debug" : "") << ".pack";
     std::filesystem::path cache_path = ff::filesystem::user_directory_path();
     return (cache_path /= "cached_resources") /= str.str();
 }

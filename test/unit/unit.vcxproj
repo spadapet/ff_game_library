@@ -22,9 +22,6 @@
     <ClCompile Include="source\audio\effect_test.cpp" />
     <ClCompile Include="source\audio\music_test.cpp" />
     <ClCompile Include="source\base\fixed_test.cpp" />
-    <ClCompile Include="source\base\forward_list_test.cpp" />
-    <ClCompile Include="source\base\hash_set_test.cpp" />
-    <ClCompile Include="source\base\list_test.cpp" />
     <ClCompile Include="source\base\point_test.cpp" />
     <ClCompile Include="source\base\pool_allocator_test.cpp" />
     <ClCompile Include="source\base\rect_test.cpp" />
@@ -32,7 +29,6 @@
     <ClCompile Include="source\base\string_test.cpp" />
     <ClCompile Include="source\base\thread_dispatch_test.cpp" />
     <ClCompile Include="source\base\thread_pool_test.cpp" />
-    <ClCompile Include="source\base\unordered_map_perf.cpp" />
     <ClCompile Include="source\base\uuid_test.cpp" />
     <ClCompile Include="source\base\vector_test.cpp" />
     <ClCompile Include="source\base\window_test.cpp" />

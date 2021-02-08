@@ -37,7 +37,7 @@ static Microsoft::WRL::ComPtr<IDXGIAdapterX> fix_adapter(IDXGIFactoryX* dxgi, Mi
 
 size_t ff::internal::get_adapters_hash(IDXGIFactoryX* factory)
 {
-    ff::vector<LUID, 32> luids;
+    ff::stack_vector<LUID, 32> luids;
 
     Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
     for (UINT i = 0; SUCCEEDED(factory->EnumAdapters(i, &adapter)); i++, adapter.Reset())
@@ -49,12 +49,12 @@ size_t ff::internal::get_adapters_hash(IDXGIFactoryX* factory)
         }
     }
 
-    return !luids.empty() ? ff::hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
+    return !luids.empty() ? ff::stable_hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
 }
 
 size_t ff::internal::get_adapter_outputs_hash(IDXGIFactoryX* dxgi, IDXGIAdapterX* card)
 {
-    ff::vector<HMONITOR, 32> monitors;
+    ff::stack_vector<HMONITOR, 32> monitors;
     Microsoft::WRL::ComPtr<IDXGIAdapterX> card_x = ::fix_adapter(dxgi, card);
 
     Microsoft::WRL::ComPtr<IDXGIOutput> output;
@@ -67,7 +67,7 @@ size_t ff::internal::get_adapter_outputs_hash(IDXGIFactoryX* dxgi, IDXGIAdapterX
         }
     }
 
-    return !monitors.empty() ? ff::hash_bytes(monitors.data(), ff::vector_byte_size(monitors)) : 0;
+    return !monitors.empty() ? ff::stable_hash_bytes(monitors.data(), ff::vector_byte_size(monitors)) : 0;
 }
 
 std::vector<Microsoft::WRL::ComPtr<IDXGIOutputX>> ff::internal::get_adapter_outputs(IDXGIFactoryX* dxgi, IDXGIAdapterX* card)

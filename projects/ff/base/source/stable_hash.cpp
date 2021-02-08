@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "hash.h"
+#include "stable_hash.h"
 
 // By Bob Jenkins, 2006. bob_jenkins@burtleburtle.net. You may use this
 // code any way you wish, private, educational, or commercial. It's free.
@@ -46,7 +46,7 @@ inline constexpr static void final_hash_mix(uint32_t& a, uint32_t& b, uint32_t& 
     c ^= b; c -= ::rotate_bits(b, 24);
 }
 
-size_t ff::hash_bytes(const void* data, size_t size) noexcept
+size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
 {
     uint32_t a = 0x9e3779b9 + static_cast<uint32_t>(size);
     uint32_t b = a;

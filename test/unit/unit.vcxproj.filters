@@ -5,15 +5,6 @@
     <ClCompile Include="source\base\fixed_test.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
-    <ClCompile Include="source\base\forward_list_test.cpp">
-      <Filter>source\base</Filter>
-    </ClCompile>
-    <ClCompile Include="source\base\hash_set_test.cpp">
-      <Filter>source\base</Filter>
-    </ClCompile>
-    <ClCompile Include="source\base\list_test.cpp">
-      <Filter>source\base</Filter>
-    </ClCompile>
     <ClCompile Include="source\base\point_test.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
@@ -24,9 +15,6 @@
       <Filter>source\base</Filter>
     </ClCompile>
     <ClCompile Include="source\base\string_test.cpp">
-      <Filter>source\base</Filter>
-    </ClCompile>
-    <ClCompile Include="source\base\unordered_map_perf.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
     <ClCompile Include="source\base\uuid_test.cpp">

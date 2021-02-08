@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="ff::vector&lt;*&gt;">
+  <Type Name="ff::stack_vector&lt;*&gt;">
     <DisplayString>{{size={item_size}}}</DisplayString>
     <Expand>
       <Item Name="[size]">item_size</Item>
@@ -10,28 +10,6 @@
         <Size>item_size</Size>
         <ValuePointer>item_data</ValuePointer>
       </ArrayItems>
-    </Expand>
-  </Type>
-
-  <Type Name="ff::forward_list&lt;*&gt;">
-    <DisplayString>{{ff::forward_list}}</DisplayString>
-    <Expand>
-      <LinkedListItems>
-        <HeadPointer>head_node</HeadPointer>
-        <NextPointer>next</NextPointer>
-        <ValueNode>value</ValueNode>
-      </LinkedListItems>
-    </Expand>
-  </Type>
-
-  <Type Name="ff::list&lt;*&gt;">
-    <DisplayString>{{ff::list}}</DisplayString>
-    <Expand>
-      <LinkedListItems>
-        <HeadPointer>head_node</HeadPointer>
-        <NextPointer>next</NextPointer>
-        <ValueNode>value</ValueNode>
-      </LinkedListItems>
     </Expand>
   </Type>
 

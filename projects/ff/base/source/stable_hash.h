@@ -2,22 +2,22 @@
 
 namespace ff
 {
-    size_t hash_bytes(const void* data, size_t size) noexcept;
+    size_t stable_hash_bytes(const void* data, size_t size) noexcept;
 
     /// <summary>
     /// Replacement for std::hash that is always stable, the hashes could be persisted.
     /// </summary>
     template<class T>
-    struct hash
+    struct stable_hash
     {
         size_t operator()(const T& value) const noexcept
         {
-            return ff::hash_bytes(&value, sizeof(T));
+            return ff::stable_hash_bytes(&value, sizeof(T));
         }
     };
 
     template<>
-    struct hash<std::type_index>
+    struct stable_hash<std::type_index>
     {
         size_t operator()(const std::type_index& value) const noexcept
         {
@@ -26,29 +26,29 @@ namespace ff
     };
 
     template<class Elem, class Traits>
-    struct hash<std::basic_string_view<Elem, Traits>>
+    struct stable_hash<std::basic_string_view<Elem, Traits>>
     {
         size_t operator()(const std::basic_string_view<Elem, Traits>& value) const noexcept
         {
-            return ff::hash_bytes(value.data(), value.size() * sizeof(Elem));
+            return ff::stable_hash_bytes(value.data(), value.size() * sizeof(Elem));
         }
     };
 
     template<class Elem, class Traits, class Alloc>
-    struct hash<std::basic_string<Elem, Traits, Alloc>>
+    struct stable_hash<std::basic_string<Elem, Traits, Alloc>>
     {
         size_t operator()(const std::basic_string<Elem, Traits, Alloc>& value) const noexcept
         {
-            return ff::hash_bytes(value.data(), value.size() * sizeof(Elem));
+            return ff::stable_hash_bytes(value.data(), value.size() * sizeof(Elem));
         }
     };
 
     template<>
-    struct hash<std::filesystem::path>
+    struct stable_hash<std::filesystem::path>
     {
         size_t operator()(const std::filesystem::path& value) const noexcept
         {
-            return ff::hash<std::wstring>()(value.native());
+            return ff::stable_hash<std::wstring>()(value.native());
         }
     };
 
@@ -65,9 +65,9 @@ namespace ff
     };
 
     template<class T>
-    size_t hash_func(const T& value)
+    size_t stable_hash_func(const T& value)
     {
-        return ff::hash<T>()(value);
+        return ff::stable_hash<T>()(value);
     }
 }
 

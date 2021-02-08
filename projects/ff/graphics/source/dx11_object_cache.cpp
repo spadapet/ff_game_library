@@ -4,7 +4,7 @@
 
 size_t ff::dx11_object_cache::hash_data::operator()(const std::shared_ptr<ff::data_base>& value) const
 {
-    return (value && value->size()) ? ff::hash_bytes(value->data(), value->size()) : 0;
+    return (value && value->size()) ? ff::stable_hash_bytes(value->data(), value->size()) : 0;
 }
 
 bool ff::dx11_object_cache::equals_data::operator()(const std::shared_ptr<ff::data_base>& lhs, const std::shared_ptr<ff::data_base>& rhs) const
@@ -273,7 +273,7 @@ ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(const std::shared_ptr
 {
     ID3D11InputLayout* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> value;
-    size_t layout_hash = ff::hash_bytes(layout, sizeof(D3D11_INPUT_ELEMENT_DESC) * count);
+    size_t layout_hash = ff::stable_hash_bytes(layout, sizeof(D3D11_INPUT_ELEMENT_DESC) * count);
 
     auto iter = this->layouts.find(layout_hash);
     if (iter != this->layouts.cend())

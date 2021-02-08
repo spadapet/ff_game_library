@@ -8,7 +8,7 @@ namespace graphics_test
         TEST_METHOD(texture_resource)
         {
             std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "texture_test";
-            ff::at_scope cleanup([&temp_path]()
+            ff::end_scope_action cleanup([&temp_path]()
                 {
                     std::error_code ec;
                     std::filesystem::remove_all(temp_path, ec);

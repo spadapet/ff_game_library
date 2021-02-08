@@ -5,16 +5,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\hash.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\memory.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\timer.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\vector.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\string.cpp">
@@ -53,10 +47,13 @@
     <ClCompile Include="source\math.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\at_scope.cpp">
+    <ClCompile Include="source\window.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\window.cpp">
+    <ClCompile Include="source\stable_hash.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\end_scope_action.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,25 +68,10 @@
     <ClInclude Include="source\pool_allocator.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\vector.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\forward_list.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\type_helper.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\list.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\fixed.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\hash.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\hash_set.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\memory.h">
@@ -102,18 +84,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\timer.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\unordered_map.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\unordered_multimap.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\unordered_multiset.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\unordered_set.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\string.h">
@@ -153,10 +123,16 @@
     <ClInclude Include="source\log.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\at_scope.h">
+    <ClInclude Include="source\push_back.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\push_back.h">
+    <ClInclude Include="source\stable_hash.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stack_vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\end_scope_action.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

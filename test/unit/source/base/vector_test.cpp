@@ -7,8 +7,8 @@ namespace base_test
     public:
         TEST_METHOD(swap_alloc)
         {
-            ff::vector<int> v1{ 1, 2, 3, 4, 5, 6, 7, 8 };
-            ff::vector<int> v2{ 10, 20, 30, 40 };
+            ff::stack_vector<int> v1{ 1, 2, 3, 4, 5, 6, 7, 8 };
+            ff::stack_vector<int> v2{ 10, 20, 30, 40 };
 
             const int* d1 = v1.data();
             const int* d2 = v2.data();
@@ -29,10 +29,10 @@ namespace base_test
 
         TEST_METHOD(count_alloc)
         {
-            ff::vector<int> v1(7);
-            ff::vector<int> v2(7, 2);
-            ff::vector<int> v3(v2);
-            ff::vector<int> v4(v2.cbegin(), v2.cend());
+            ff::stack_vector<int> v1(7);
+            ff::stack_vector<int> v2(7, 2);
+            ff::stack_vector<int> v3(v2);
+            ff::stack_vector<int> v4(v2.cbegin(), v2.cend());
 
             std::memcpy(v1.data(), v2.data(), sizeof(int) * v2.size());
             Assert::IsTrue(v1 == v2);
@@ -46,9 +46,9 @@ namespace base_test
 
         TEST_METHOD(iterators)
         {
-            ff::vector<int> v1{ 1, 2, 3, 4, 5, 6 };
-            const ff::vector<int> v2{ 1, 2, 3, 4, 5, 6 };
-            ff::vector<int> v3(v1.crbegin(), v1.crend());
+            ff::stack_vector<int> v1{ 1, 2, 3, 4, 5, 6 };
+            const ff::stack_vector<int> v2{ 1, 2, 3, 4, 5, 6 };
+            ff::stack_vector<int> v3(v1.crbegin(), v1.crend());
 
             Assert::AreEqual(1, *v2.begin());
             Assert::AreEqual(3, *(v2.begin() + 2));
@@ -65,14 +65,14 @@ namespace base_test
             Assert::AreEqual(v1.data(), &*v1.begin());
             Assert::AreEqual(v1.size(), static_cast<size_t>(std::distance(v1.cbegin(), v1.cend())));
 
-            Assert::IsTrue(v3 == ff::vector<int>{ 6, 5, 4, 3, 2, 1 });
+            Assert::IsTrue(v3 == ff::stack_vector<int>{ 6, 5, 4, 3, 2, 1 });
         }
 
         TEST_METHOD(insert_item)
         {
-            ff::vector<std::pair<int, char>, 6> v1{ { 1, 'a' }, { 2, 'b' }, { 3, 'c' }, { 4, 'd' } };
-            ff::vector<std::pair<int, char>, 6> v2{ { 1, 'a' }, { 8, 'h' }, { 7, 'g' }, { 2, 'b' }, { 3, 'c' }, { 4, 'd' }, { 5, 'e' } };
-            ff::vector<std::pair<int, char>, 6> v3{ { 1, 'a' }, { 5, 'e' } };
+            ff::stack_vector<std::pair<int, char>, 6> v1{ { 1, 'a' }, { 2, 'b' }, { 3, 'c' }, { 4, 'd' } };
+            ff::stack_vector<std::pair<int, char>, 6> v2{ { 1, 'a' }, { 8, 'h' }, { 7, 'g' }, { 2, 'b' }, { 3, 'c' }, { 4, 'd' }, { 5, 'e' } };
+            ff::stack_vector<std::pair<int, char>, 6> v3{ { 1, 'a' }, { 5, 'e' } };
 
             Assert::AreEqual<size_t>(6, v1.capacity());
 

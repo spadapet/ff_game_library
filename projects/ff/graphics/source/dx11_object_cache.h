@@ -44,10 +44,10 @@ namespace ff
             bool operator()(const std::shared_ptr<ff::data_base>& lhs, const std::shared_ptr<ff::data_base>& rhs) const;
         };
 
-        std::unordered_map<D3D11_BLEND_DESC, Microsoft::WRL::ComPtr<ID3D11BlendState>, ff::hash<D3D11_BLEND_DESC>> blend_states;
-        std::unordered_map<D3D11_DEPTH_STENCIL_DESC, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>, ff::hash<D3D11_DEPTH_STENCIL_DESC>> depth_states;
-        std::unordered_map<D3D11_RASTERIZER_DESC, Microsoft::WRL::ComPtr<ID3D11RasterizerState>, ff::hash<D3D11_RASTERIZER_DESC>> raster_states;
-        std::unordered_map<D3D11_SAMPLER_DESC, Microsoft::WRL::ComPtr<ID3D11SamplerState>, ff::hash<D3D11_SAMPLER_DESC>> sampler_states;
+        std::unordered_map<D3D11_BLEND_DESC, Microsoft::WRL::ComPtr<ID3D11BlendState>, ff::stable_hash<D3D11_BLEND_DESC>> blend_states;
+        std::unordered_map<D3D11_DEPTH_STENCIL_DESC, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>, ff::stable_hash<D3D11_DEPTH_STENCIL_DESC>> depth_states;
+        std::unordered_map<D3D11_RASTERIZER_DESC, Microsoft::WRL::ComPtr<ID3D11RasterizerState>, ff::stable_hash<D3D11_RASTERIZER_DESC>> raster_states;
+        std::unordered_map<D3D11_SAMPLER_DESC, Microsoft::WRL::ComPtr<ID3D11SamplerState>, ff::stable_hash<D3D11_SAMPLER_DESC>> sampler_states;
         std::unordered_map<std::shared_ptr<ff::data_base>, Microsoft::WRL::ComPtr<IUnknown>, typename hash_data, typename equals_data> shaders;
         std::unordered_map<size_t, Microsoft::WRL::ComPtr<ID3D11InputLayout>, ff::no_hash<size_t>> layouts;
         std::unordered_set<std::shared_ptr<ff::resource>> resources;

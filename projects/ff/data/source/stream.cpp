@@ -134,7 +134,7 @@ namespace ff::internal
 
             if (bytes_read)
             {
-                ff::vector<uint8_t, 1024> buffer;
+                ff::stack_vector<uint8_t, 1024> buffer;
                 buffer.resize(bytes_read);
                 if (this->reader->read(buffer.data(), bytes_read) != bytes_read)
                 {

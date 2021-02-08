@@ -2,6 +2,9 @@
 
 namespace ff
 {
+    /// <summary>
+    /// Automatically calls add_ref() and release_ref() on the given object
+    /// </summary>
     template<class T>
     class intrusive_ptr
     {

@@ -30,28 +30,19 @@ namespace ff::internal
         }
     };
 
-    class vector_allocator_base
-    {
-    protected:
-        static void* new_bytes(size_t size_requested, size_t alignment, size_t& size_allocated);
-        static void delete_bytes(void* data, size_t size_requested_or_allocated);
-    };
-
     template<class T>
-    class vector_allocator : private vector_allocator_base
+    class vector_allocator
     {
     protected:
         static void deallocate(T* const ptr, const size_t count)
         {
-            vector_allocator_base::delete_bytes(ptr, sizeof(T) * count);
+            ::_aligned_free(ptr);
         }
 
         static T* allocate(const size_t count, size_t& count_allocated)
         {
-            size_t size_allocated;
-            T* data = static_cast<T*>(vector_allocator_base::new_bytes(sizeof(T) * count, alignof(T), size_allocated));
-            count_allocated = size_allocated / sizeof(T);
-            return data;
+            count_allocated = ff::math::nearest_power_of_two(std::max<size_t>(count, 16));
+            return reinterpret_cast<T*>(::_aligned_malloc(sizeof(T) * count_allocated, alignof(T)));
         }
     };
 }
@@ -62,19 +53,18 @@ namespace ff
     /// Replacement class for std::vector
     /// </summary>
     /// <remarks>
-    /// This is a replacement for the std::vector class, but it allows stack storage
-    /// before memory is allocated. Also, no memory is ever allocated until the first insertion.
+    /// This is a replacement for the std::vector class, but it fills stack storage before memory is allocated.
     /// </remarks>
     /// <typeparam name="T">Item type</typeparam>
     /// <typeparam name="StackSize">Initial buffer size on the stack</typeparam>
     template<class T, size_t StackSize = 0>
-    class vector
+    class stack_vector
         : private ff::internal::vector_stack_storage<T, StackSize>
         , private ff::internal::vector_allocator<T>
         , private ff::internal::type_helper
     {
     public:
-        using this_type = typename vector<T, StackSize>;
+        using this_type = typename stack_vector<T, StackSize>;
         using value_type = typename T;
         using reference = typename T&;
         using const_reference = typename const T&;
@@ -88,50 +78,50 @@ namespace ff
         using reverse_iterator = typename std::reverse_iterator<iterator>;
         using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
 
-        vector() noexcept
+        stack_vector() noexcept
             : data_(this->get_stack_items())
             , capacity_(StackSize)
             , size_(0)
         {}
 
-        vector(size_type count, const T& value)
-            : vector()
+        stack_vector(size_type count, const T& value)
+            : stack_vector()
         {
             this->assign(count, value);
         }
 
-        explicit vector(size_type count)
-            : vector()
+        explicit stack_vector(size_type count)
+            : stack_vector()
         {
             this->resize(count);
         }
 
         template<class InputIt, std::enable_if_t<ff::internal::is_iterator_t<InputIt>, int> = 0>
-        vector(InputIt first, InputIt last)
-            : vector()
+        stack_vector(InputIt first, InputIt last)
+            : stack_vector()
         {
             this->assign(first, last);
         }
 
-        vector(const this_type& other)
-            : vector()
+        stack_vector(const this_type& other)
+            : stack_vector()
         {
             this->assign(other.cbegin(), other.cend());
         }
 
-        vector(this_type&& other) noexcept
-            : vector()
+        stack_vector(this_type&& other) noexcept
+            : stack_vector()
         {
             *this = std::move(other);
         }
 
-        vector(std::initializer_list<T> init)
-            : vector()
+        stack_vector(std::initializer_list<T> init)
+            : stack_vector()
         {
             this->assign(init);
         }
 
-        ~vector()
+        ~stack_vector()
         {
             this->clear();
             this->deallocate_item_data();
@@ -577,9 +567,9 @@ namespace ff
     };
 
     template<class T, size_t StackSize>
-    size_t vector_byte_size(const ff::vector<T, StackSize>& vec)
+    size_t vector_byte_size(const ff::stack_vector<T, StackSize>& vec)
     {
-        return vec.size() * sizeof(typename ff::vector<T, StackSize>::value_type);
+        return vec.size() * sizeof(typename ff::stack_vector<T, StackSize>::value_type);
     }
 
     template<class T, class Alloc>
@@ -596,37 +586,37 @@ namespace ff
 }
 
 template<class T, size_t StackSize>
-bool operator==(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator==(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return lhs.size() == rhs.size() && std::equal(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
 template<class T, size_t StackSize>
-bool operator!=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator!=(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return !(lhs == rhs);
 }
 
 template<class T, size_t StackSize>
-bool operator<(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator<(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return std::lexicographical_compare(lhs.cbegin(), lhs.cend(), rhs.cbegin(), rhs.cend());
 }
 
 template<class T, size_t StackSize>
-bool operator<=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator<=(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return !(rhs < lhs);
 }
 
 template<class T, size_t StackSize>
-bool operator>(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator>(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return rhs < lhs;
 }
 
 template<class T, size_t StackSize>
-bool operator>=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSize>& rhs)
+bool operator>=(const ff::stack_vector<T, StackSize>& lhs, const ff::stack_vector<T, StackSize>& rhs)
 {
     return !(lhs < rhs);
 }
@@ -634,7 +624,7 @@ bool operator>=(const ff::vector<T, StackSize>& lhs, const ff::vector<T, StackSi
 namespace std
 {
     template<class T, size_t StackSize>
-    void swap(ff::vector<T, StackSize>& lhs, ff::vector<T, StackSize>& rhs) noexcept(noexcept(lhs.swap(rhs)))
+    void swap(ff::stack_vector<T, StackSize>& lhs, ff::stack_vector<T, StackSize>& rhs) noexcept(noexcept(lhs.swap(rhs)))
     {
         lhs.swap(rhs);
     }

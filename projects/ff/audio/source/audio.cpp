@@ -14,7 +14,7 @@ static std::vector<ff::audio_playing_base*> audio_playing;
 static std::vector<ff::audio_playing_base*> audio_paused;
 
 template<class T>
-static void get_copy(ff::vector<T*, 64>& dest, const std::vector<T*>& src)
+static void get_copy(ff::stack_vector<T*, 64>& dest, const std::vector<T*>& src)
 {
     std::lock_guard lock(::audio_mutex);
     dest.resize(src.size());
@@ -52,7 +52,7 @@ static bool init_mastering_voice()
 
 static void destroy_mastering_voice()
 {
-    ff::vector<ff::internal::audio_child_base*, 64> audio_children_copy;
+    ff::stack_vector<ff::internal::audio_child_base*, 64> audio_children_copy;
     ::get_copy(audio_children_copy, ::audio_children);
 
     for (ff::internal::audio_child_base* child : audio_children_copy)
@@ -227,7 +227,7 @@ void ff::audio::advance_effects()
         ::init_mastering_voice();
     }
 
-    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
+    ff::stack_vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
     for (ff::audio_playing_base* playing : audio_playing_copy)
@@ -238,7 +238,7 @@ void ff::audio::advance_effects()
 
 void ff::audio::stop_effects()
 {
-    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
+    ff::stack_vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
     for (ff::audio_playing_base* playing : audio_playing_copy)
@@ -249,8 +249,8 @@ void ff::audio::stop_effects()
 
 void ff::audio::pause_effects()
 {
-    ff::vector<ff::audio_playing_base*, 64> new_paused;
-    ff::vector<ff::audio_playing_base*, 64> audio_playing_copy;
+    ff::stack_vector<ff::audio_playing_base*, 64> new_paused;
+    ff::stack_vector<ff::audio_playing_base*, 64> audio_playing_copy;
     ::get_copy(audio_playing_copy, ::audio_playing);
 
     for (ff::audio_playing_base* playing : audio_playing_copy)

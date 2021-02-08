@@ -8,7 +8,7 @@ ff::value_type::value_type(std::string_view name)
 {
     std::ostringstream hash_name;
     hash_name << name << "," << name.size();
-    this->lookup_id = static_cast<uint32_t>(ff::hash_func(hash_name.str()));
+    this->lookup_id = static_cast<uint32_t>(ff::stable_hash_func(hash_name.str()));
 }
 
 std::string_view ff::value_type::type_name() const

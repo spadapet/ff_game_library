@@ -148,7 +148,7 @@ private:
     std::vector<std::string> errors_;
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
-    std::unordered_set<std::filesystem::path, ff::hash<std::filesystem::path>> paths_;
+    std::unordered_set<std::filesystem::path, ff::stable_hash<std::filesystem::path>> paths_;
     bool debug_;
 };
 
@@ -235,7 +235,7 @@ protected:
             values_pushed = true;
         }
 
-        ff::at_scope pop_values([values_pushed, this]()
+        ff::end_scope_action pop_values([values_pushed, this]()
             {
                 if (values_pushed)
                 {
