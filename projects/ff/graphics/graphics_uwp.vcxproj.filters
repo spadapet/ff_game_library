@@ -80,6 +80,12 @@
     <ClCompile Include="source\dx11_render_target_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx11_render_target_window_desktop.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_render_target_window_uwp.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -196,6 +202,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_render_target_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_render_target_window_desktop.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_render_target_window_uwp.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

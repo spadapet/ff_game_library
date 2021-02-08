@@ -20,6 +20,8 @@
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dx11_render_target_texture.cpp" />
+    <ClCompile Include="source\dx11_render_target_window_desktop.cpp" />
+    <ClCompile Include="source\dx11_render_target_window_uwp.cpp" />
     <ClCompile Include="source\dx11_texture.cpp" />
     <ClCompile Include="source\dx11_texture_view.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
@@ -52,6 +54,8 @@
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dx11_render_target_texture.h" />
+    <ClInclude Include="source\dx11_render_target_window_desktop.h" />
+    <ClInclude Include="source\dx11_render_target_window_uwp.h" />
     <ClInclude Include="source\dx11_texture.h" />
     <ClInclude Include="source\dx11_texture_view.h" />
     <ClInclude Include="source\dx11_texture_view_base.h" />

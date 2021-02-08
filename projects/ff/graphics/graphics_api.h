@@ -15,6 +15,8 @@
 #include "source/dx11_render_target_base.h"
 #include "source/dx11_render_target_texture.h"
 #include "source/dx11_render_target_window_base.h"
+#include "source/dx11_render_target_window_desktop.h"
+#include "source/dx11_render_target_window_uwp.h"
 #include "source/dx11_texture.h"
 #include "source/dx11_texture_view.h"
 #include "source/dx11_texture_view_base.h"
