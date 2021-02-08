@@ -288,9 +288,9 @@ size_t ff::graphics::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
     size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
     assert(fixed_sample_count == sample_count);
 
-    UINT levels;
-    while (fixed_sample_count > 1 && FAILED(ff::graphics::internal::dx11_device()->CheckMultisampleQualityLevels(
-        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels)
+    UINT levels = 0;
+    while (fixed_sample_count > 1 && (FAILED(ff::graphics::internal::dx11_device()->CheckMultisampleQualityLevels(
+        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels))
     {
         fixed_sample_count /= 2;
     }

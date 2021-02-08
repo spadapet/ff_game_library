@@ -5,6 +5,14 @@
 #include "texture_util.h"
 
 ff::dx11_render_target_texture::dx11_render_target_texture(
+    ff::dx11_texture&& texture,
+    size_t array_start,
+    size_t array_count,
+    size_t mip_level)
+    : dx11_render_target_texture(std::make_shared<ff::dx11_texture>(std::move(texture)), array_start, array_count, mip_level)
+{}
+
+ff::dx11_render_target_texture::dx11_render_target_texture(
     const std::shared_ptr<ff::dx11_texture>& texture,
     size_t array_start,
     size_t array_count,
