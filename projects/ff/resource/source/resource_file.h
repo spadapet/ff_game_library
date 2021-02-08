@@ -8,8 +8,15 @@ namespace ff
     class resource_file : public ff::resource_object_base
     {
     public:
+#if !UWP_APP
+        resource_file(std::string_view file_extension, HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name);
+#endif
+        resource_file(const std::filesystem::path& path);
         resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
+
+        std::shared_ptr<ff::data_base> loaded_data() const;
         const std::shared_ptr<ff::saved_data_base>& saved_data() const;
+        const std::string& file_extension() const;
 
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
 
@@ -18,7 +25,7 @@ namespace ff
 
     private:
         std::shared_ptr<ff::saved_data_base> saved_data_;
-        std::string file_extension;
+        std::string file_extension_;
         bool compress;
     };
 }

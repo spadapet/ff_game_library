@@ -56,7 +56,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),
         dict.get<size_t>("sample_count"),
-        ff::internal::parse_texture_format(dict.get<std::string>("format")));
+        ff::internal::parse_format(dict.get<std::string>("format")));
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_cache(const ff::dict& dict) const

@@ -171,7 +171,7 @@ bool ff::internal::supports_pre_multiplied_alpha(DXGI_FORMAT format)
     return !ff::internal::compressed_format(format) && ff::internal::color_format(format) && ff::internal::has_alpha(format);
 }
 
-DXGI_FORMAT ff::internal::parse_texture_format(std::string_view format_name)
+DXGI_FORMAT ff::internal::parse_format(std::string_view format_name)
 {
     DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 
@@ -213,5 +213,27 @@ DXGI_FORMAT ff::internal::parse_texture_format(std::string_view format_name)
     }
 
     assert(format != DXGI_FORMAT_UNKNOWN);
+    return format;
+}
+
+DXGI_FORMAT ff::internal::fix_format(DXGI_FORMAT format, size_t texture_width, size_t texture_height, size_t mip_count)
+{
+    if (format == DXGI_FORMAT_UNKNOWN)
+    {
+        format = ff::internal::DEFAULT_FORMAT;
+    }
+    else if (ff::internal::compressed_format(format))
+    {
+        // Compressed images have size restrictions. Upon failure, just use RGB
+        if (texture_width % 4 || texture_height % 4)
+        {
+            format = ff::internal::DEFAULT_FORMAT;
+        }
+        else if (mip_count > 1 && (ff::math::nearest_power_of_two(texture_width) != texture_width || ff::math::nearest_power_of_two(texture_height) != texture_height))
+        {
+            format = ff::internal::DEFAULT_FORMAT;
+        }
+    }
+
     return format;
 }

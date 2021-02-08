@@ -17,40 +17,7 @@ ff::dx11_texture_view::dx11_texture_view(
     , mip_start_(mip_start)
     , mip_count_(mip_count ? mip_count : texture->mip_count() - mip_start)
 {
-    ID3D11Texture2D* texture_2d = texture->texture();
-    if (texture_2d)
-    {
-        D3D11_TEXTURE2D_DESC texture_desc;
-        texture_2d->GetDesc(&texture_desc);
-
-        D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{};
-        view_desc.Format = texture_desc.Format;
-        view_desc.ViewDimension = ff::internal::default_shader_dimension(texture_desc);
-
-        switch (view_desc.ViewDimension)
-        {
-            case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-                view_desc.Texture2DMSArray.FirstArraySlice = static_cast<UINT>(this->array_start_);
-                view_desc.Texture2DMSArray.ArraySize = static_cast<UINT>(this->array_count_);
-                break;
-
-            case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-                view_desc.Texture2DArray.FirstArraySlice = static_cast<UINT>(this->array_start_);
-                view_desc.Texture2DArray.ArraySize = static_cast<UINT>(this->array_count_);
-                view_desc.Texture2DArray.MostDetailedMip = static_cast<UINT>(this->mip_start_);
-                view_desc.Texture2DArray.MipLevels = static_cast<UINT>(this->mip_count_);
-                break;
-
-            case D3D_SRV_DIMENSION_TEXTURE2D:
-                view_desc.Texture2D.MostDetailedMip = static_cast<UINT>(this->mip_start_);
-                view_desc.Texture2D.MipLevels = static_cast<UINT>(this->mip_count_);
-                break;
-        }
-
-        HRESULT hr = ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture_2d, &view_desc, this->view_.GetAddressOf());
-        assert(SUCCEEDED(hr));
-    }
-
+    this->view_ = ff::internal::create_shader_view(texture->texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
     this->fix_sprite_data();
 
     ff::graphics::internal::add_child(this);

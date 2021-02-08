@@ -13,5 +13,6 @@ namespace ff::string
     bool starts_with(std::string_view str, std::string_view str_start);
     bool ends_with(std::string_view str, std::string_view str_end);
 
+    std::string to_lower(std::string_view str);
     std::vector<std::string_view> split(std::string_view str, std::string_view delims);
 }

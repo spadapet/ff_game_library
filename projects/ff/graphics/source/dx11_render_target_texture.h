@@ -15,7 +15,7 @@ namespace ff
         dx11_render_target_texture(const std::shared_ptr<ff::dx11_texture>& texture, size_t array_start, size_t array_count, size_t mip_level);
         dx11_render_target_texture(dx11_render_target_texture&& other) noexcept = default;
         dx11_render_target_texture(const dx11_render_target_texture& other) = delete;
-        virtual ~dx11_render_target_texture() = default;
+        virtual ~dx11_render_target_texture() override;
 
         dx11_render_target_texture& operator=(dx11_render_target_texture&& other) noexcept = default;
         dx11_render_target_texture& operator=(const dx11_render_target_texture & other) = delete;

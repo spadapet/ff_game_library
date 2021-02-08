@@ -21,7 +21,7 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        dx11_texture(const std::filesystem::path& path, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
+        dx11_texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
         dx11_texture(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
         dx11_texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::sprite_type sprite_type = ff::sprite_type::unknown);
         dx11_texture(const dx11_texture& other, DXGI_FORMAT new_format, size_t new_mip_count);

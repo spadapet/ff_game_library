@@ -75,6 +75,17 @@ bool ff::string::ends_with(std::string_view str, std::string_view str_end)
     return str.size() >= str_end.size() && !str.compare(str.size() - str_end.size(), str_end.size(), str_end);
 }
 
+std::string ff::string::to_lower(std::string_view str)
+{
+    std::string result(str);
+
+    result.push_back(0);
+    ::_strlwr_s(result.data(), static_cast<DWORD>(result.size()));
+    result.pop_back();
+
+    return result;
+}
+
 std::vector<std::string_view> ff::string::split(std::string_view str, std::string_view delims)
 {
     std::vector<std::string_view> tokens;

@@ -21,18 +21,22 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const Direc
     return nullptr;
 }
 
-static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count, DirectX::ScratchImage* palette_scratch)
+static DirectX::ScratchImage load_texture_png(
+    const ff::resource_file& resource_file,
+    DXGI_FORMAT new_format,
+    size_t new_mip_count,
+    DirectX::ScratchImage& palette_scratch)
 {
     DirectX::ScratchImage scratch_final;
 
-    ff::file_mem_mapped png_file(path);
-    if (!png_file)
+    std::shared_ptr<ff::data_base> data = resource_file.loaded_data();
+    if (!data || !data->size())
     {
         assert(false);
         return scratch_final;
     }
 
-    ff::png_image_reader png(png_file.data(), png_file.size());
+    ff::png_image_reader png(data->data(), data->size());
     {
         std::unique_ptr<DirectX::ScratchImage> scratch_temp = png.read(new_format);
         if (scratch_temp)
@@ -51,16 +55,16 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
         new_format = scratch_final.GetMetadata().format;
     }
 
-    if (ff::internal::palette_format(new_format) && palette_scratch)
+    if (ff::internal::palette_format(new_format))
     {
         std::unique_ptr<DirectX::ScratchImage> palette_scratch_2 = png.pallete();
         if (palette_scratch_2)
         {
-            *palette_scratch = std::move(*palette_scratch_2);
+            palette_scratch = std::move(*palette_scratch_2);
         }
     }
 
-    new_format = ff::internal::fix_texture_format(new_format, scratch_final.GetMetadata().width, scratch_final.GetMetadata().height, new_mip_count);
+    new_format = ff::internal::fix_format(new_format, scratch_final.GetMetadata().width, scratch_final.GetMetadata().height, new_mip_count);
 
     if (new_mip_count != 1)
     {
@@ -120,7 +124,7 @@ static DirectX::ScratchImage load_texture_png(const std::filesystem::path& path,
     return scratch_final;
 }
 
-static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count)
+static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     DirectX::ScratchImage scratch_final;
     if (new_format != ff::internal::PALETTE_FORMAT || new_mip_count > 1)
@@ -129,8 +133,8 @@ static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path,
         return scratch_final;
     }
 
-    ff::file_mem_mapped pal_file(path);
-    if (!pal_file || !pal_file.size() || (pal_file.size() % 3) != 0)
+    std::shared_ptr<ff::data_base> data = resource_file.loaded_data();
+    if (!data || !data->size() || (data->size() % 3) != 0)
     {
         assert(false);
         return scratch_final;
@@ -146,7 +150,7 @@ static DirectX::ScratchImage load_texture_pal(const std::filesystem::path& path,
     uint8_t* dest = image->pixels;
     std::memset(dest, 0, ff::constants::palette_row_bytes);
 
-    for (const uint8_t* start = pal_file.data(), *end = start + pal_file.size(), *cur = start; cur < end; cur += 3, dest += 4)
+    for (const uint8_t* start = data->data(), *end = start + data->size(), *cur = start; cur < end; cur += 3, dest += 4)
     {
         dest[0] = cur[0]; // R
         dest[1] = cur[1]; // G
@@ -189,7 +193,12 @@ D3D11_RTV_DIMENSION ff::internal::default_render_dimension(const D3D11_TEXTURE2D
     }
 }
 
-Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_texture_view(ID3D11Texture2D* texture)
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_shader_view(
+    ID3D11Texture2D* texture,
+    size_t array_start,
+    size_t array_count,
+    size_t mip_start,
+    size_t mip_count)
 {
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
     if (texture)
@@ -204,24 +213,68 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_te
         switch (view_desc.ViewDimension)
         {
             case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-                view_desc.Texture2DMSArray.ArraySize = texture_desc.ArraySize;
+                view_desc.Texture2DMSArray.FirstArraySlice = static_cast<UINT>(array_start);
+                view_desc.Texture2DMSArray.ArraySize = array_count ? static_cast<UINT>(array_count) : texture_desc.ArraySize - view_desc.Texture2DMSArray.FirstArraySlice;
                 break;
 
             case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-                view_desc.Texture2DArray.ArraySize = texture_desc.ArraySize;
-                view_desc.Texture2DArray.MipLevels = texture_desc.MipLevels;
-                break;
-
-            case D3D_SRV_DIMENSION_TEXTURE2DMS:
-                // nothing to define
+                view_desc.Texture2DArray.FirstArraySlice = static_cast<UINT>(array_start);
+                view_desc.Texture2DArray.ArraySize = array_count ? static_cast<UINT>(array_count) : texture_desc.ArraySize - view_desc.Texture2DMSArray.FirstArraySlice;
+                view_desc.Texture2DArray.MostDetailedMip = static_cast<UINT>(mip_start);
+                view_desc.Texture2DArray.MipLevels = mip_count ? static_cast<UINT>(mip_count) : texture_desc.MipLevels - view_desc.Texture2DArray.MostDetailedMip;
                 break;
 
             case D3D_SRV_DIMENSION_TEXTURE2D:
-                view_desc.Texture2D.MipLevels = texture_desc.MipLevels;
+                view_desc.Texture2D.MostDetailedMip = static_cast<UINT>(mip_start);
+                view_desc.Texture2D.MipLevels = mip_count ? static_cast<UINT>(mip_count) : texture_desc.MipLevels - view_desc.Texture2DArray.MostDetailedMip;
                 break;
         }
 
-        if (FAILED(ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture, &view_desc, &view)))
+        if (FAILED(ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture, &view_desc, view.GetAddressOf())))
+        {
+            assert(false);
+            return nullptr;
+        }
+    }
+
+    return view;
+}
+
+Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::internal::create_render_view(
+    ID3D11Texture2D* texture,
+    size_t array_start,
+    size_t array_count,
+    size_t mip_level)
+{
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view;
+    if (texture)
+    {
+        D3D11_TEXTURE2D_DESC texture_desc;
+        texture->GetDesc(&texture_desc);
+
+        D3D11_RENDER_TARGET_VIEW_DESC view_desc{};
+        view_desc.Format = texture_desc.Format;
+        view_desc.ViewDimension = ff::internal::default_render_dimension(texture_desc);
+
+        switch (view_desc.ViewDimension)
+        {
+            case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+                view_desc.Texture2DMSArray.FirstArraySlice = static_cast<UINT>(array_start);
+                view_desc.Texture2DMSArray.ArraySize = array_count ? static_cast<UINT>(array_count) : texture_desc.ArraySize - view_desc.Texture2DMSArray.FirstArraySlice;
+                break;
+
+            case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+                view_desc.Texture2DArray.FirstArraySlice = static_cast<UINT>(array_start);
+                view_desc.Texture2DArray.ArraySize = array_count ? static_cast<UINT>(array_count) : texture_desc.ArraySize - view_desc.Texture2DMSArray.FirstArraySlice;
+                view_desc.Texture2DArray.MipSlice = static_cast<UINT>(mip_level);
+                break;
+
+            case D3D_SRV_DIMENSION_TEXTURE2D:
+                view_desc.Texture2D.MipSlice = static_cast<UINT>(mip_level);
+                break;
+        }
+
+        if (FAILED(ff::graphics::internal::dx11_device()->CreateRenderTargetView(texture, &view_desc, view.GetAddressOf())))
         {
             assert(false);
             return nullptr;
@@ -232,7 +285,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_default_te
 }
 
 std::shared_ptr<DirectX::ScratchImage> ff::internal::load_texture_data(
-    const std::filesystem::path& path,
+    const ff::resource_file& resource_file,
     DXGI_FORMAT new_format,
     size_t new_mip_count,
     std::shared_ptr<DirectX::ScratchImage>& palette)
@@ -240,14 +293,14 @@ std::shared_ptr<DirectX::ScratchImage> ff::internal::load_texture_data(
     DirectX::ScratchImage scratch_data;
     DirectX::ScratchImage scratch_palette;
 
-    std::string path_ext = ff::filesystem::to_lower(path.extension()).string();
+    std::string path_ext = resource_file.file_extension();
     if (path_ext == ".pal")
     {
-        scratch_data = ::load_texture_pal(path, new_format, new_mip_count);
+        scratch_data = ::load_texture_pal(resource_file, new_format, new_mip_count);
     }
     else if (path_ext == ".png")
     {
-        scratch_data = ::load_texture_png(path, new_format, new_mip_count, &scratch_palette);
+        scratch_data = ::load_texture_png(resource_file, new_format, new_mip_count, scratch_palette);
     }
 
     if (scratch_palette.GetImageCount())
@@ -271,7 +324,7 @@ std::shared_ptr<DirectX::ScratchImage> ff::internal::convert_texture_data(const 
         return nullptr;
     }
 
-    new_format = ff::internal::fix_texture_format(new_format, data->GetMetadata().width, data->GetMetadata().height, new_mip_count);
+    new_format = ff::internal::fix_format(new_format, data->GetMetadata().width, data->GetMetadata().height, new_mip_count);
 
     if (data->GetMetadata().format == new_format && data->GetMetadata().mipLevels == new_mip_count)
     {
@@ -376,28 +429,6 @@ std::shared_ptr<DirectX::ScratchImage> ff::internal::convert_texture_data(const 
     }
 
     return scratch_final.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch_final)) : nullptr;
-}
-
-DXGI_FORMAT ff::internal::fix_texture_format(DXGI_FORMAT format, size_t texture_width, size_t texture_height, size_t mip_count)
-{
-    if (format == DXGI_FORMAT_UNKNOWN)
-    {
-        format = ff::internal::DEFAULT_FORMAT;
-    }
-    else if (ff::internal::compressed_format(format))
-    {
-        // Compressed images have size restrictions. Upon failure, just use RGB
-        if (texture_width % 4 || texture_height % 4)
-        {
-            format = ff::internal::DEFAULT_FORMAT;
-        }
-        else if (mip_count > 1 && (ff::math::nearest_power_of_two(texture_width) != texture_width || ff::math::nearest_power_of_two(texture_height) != texture_height))
-        {
-            format = ff::internal::DEFAULT_FORMAT;
-        }
-    }
-
-    return format;
 }
 
 ff::sprite_type ff::internal::get_sprite_type(const DirectX::ScratchImage& scratch, const ff::rect_size* rect)

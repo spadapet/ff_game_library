@@ -11,9 +11,9 @@
 #include "texture_metadata.h"
 #include "texture_util.h"
 
-ff::dx11_texture::dx11_texture(const std::filesystem::path& path, DXGI_FORMAT new_format, size_t new_mip_count)
+ff::dx11_texture::dx11_texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
-    this->data_ = ff::internal::load_texture_data(path, new_format, new_mip_count, this->palette_);
+    this->data_ = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
     this->fix_sprite_data(this->data_ ? ff::internal::get_sprite_type(*this->data_) : ff::sprite_type::unknown);
 
     ff::graphics::internal::add_child(this);
@@ -21,7 +21,7 @@ ff::dx11_texture::dx11_texture(const std::filesystem::path& path, DXGI_FORMAT ne
 
 ff::dx11_texture::dx11_texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
 {
-    format = ff::internal::fix_texture_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
+    format = ff::internal::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 
     if (size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
     {
@@ -363,7 +363,7 @@ ID3D11ShaderResourceView* ff::dx11_texture::view() const
 {
     if (!this->view_)
     {
-        this->view_ = ff::internal::create_default_texture_view(this->texture());
+        this->view_ = ff::internal::create_shader_view(this->texture());
     }
 
     return this->view_.Get();
@@ -462,7 +462,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
     bool pma = dict.get<bool>("pma");
     size_t mip_count = dict.get<size_t>("mips", 1);
     std::filesystem::path full_file = dict.get<std::string>("file");
-    DXGI_FORMAT format = ff::internal::parse_texture_format(dict.get<std::string>("format", std::string("rgbs32")));
+    DXGI_FORMAT format = ff::internal::parse_format(dict.get<std::string>("format", std::string("rgbs32")));
 
     if (format != DXGI_FORMAT_UNKNOWN)
     {
