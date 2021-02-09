@@ -39,7 +39,7 @@ ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<
     }
 
     CD3D11_BUFFER_DESC desc(static_cast<UINT>(size), bind_flags, usage, cpu_flags);
-    HRESULT hr = ff::graphics::internal::dx11_device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, this->buffer_.GetAddressOf());
+    HRESULT hr = ff::graphics::dx11_device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, this->buffer_.GetAddressOf());
     assert(SUCCEEDED(hr));
 }
 
@@ -96,8 +96,8 @@ void* ff::dx11_buffer::map(size_t size)
             std::swap(*this, new_buffer);
         }
 
-        this->mapped_device = ff::graphics::internal::dx11_device();
-        return ff::graphics::internal::dx11_device_state().map(this->buffer_.Get(), D3D11_MAP_WRITE_DISCARD);
+        this->mapped_device = ff::graphics::dx11_device();
+        return ff::graphics::dx11_device_state().map(this->buffer_.Get(), D3D11_MAP_WRITE_DISCARD);
     }
 
     assert(false);
@@ -108,7 +108,7 @@ void ff::dx11_buffer::unmap()
 {
     if (this->mapped_device)
     {
-        ff::graphics::internal::dx11_device_state().unmap(this->buffer_.Get());
+        ff::graphics::dx11_device_state().unmap(this->buffer_.Get());
         this->mapped_device.Reset();
     }
 }

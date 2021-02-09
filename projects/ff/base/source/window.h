@@ -17,6 +17,9 @@ namespace ff
 
     struct window_size
     {
+        bool operator==(const ff::window_size& other) const;
+        bool operator!=(const ff::window_size& other) const;
+
         ff::point_int rotated_pixel_size() const;
 
         ff::point_int pixel_size;
@@ -49,6 +52,8 @@ namespace ff
         using handle_type = typename Windows::UI::Core::CoreWindow^;
 
         Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel() const;
+        Windows::Graphics::Display::DisplayInformation^ display_info() const;
+        Windows::UI::ViewManagement::ApplicationView^ application_view() const;
 
         ff::signal_sink<bool, Windows::Gaming::Input::Gamepad^>& gamepad_message_sink();
         void notify_gamepad_message(bool added, Windows::Gaming::Input::Gamepad^ gamepad);
@@ -83,7 +88,8 @@ namespace ff
     private:
 #if UWP_APP
         Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
-        Windows::Graphics::Display::DisplayInformation^ display_info;
+        Windows::Graphics::Display::DisplayInformation^ display_info_;
+        Windows::UI::ViewManagement::ApplicationView^ application_view_;
         Platform::Object^ window_events;
         ff::signal<bool, Windows::Gaming::Input::Gamepad^> gamepad_message_signal;
         ff::signal<unsigned int, Windows::UI::Core::PointerEventArgs^> pointer_message_signal;

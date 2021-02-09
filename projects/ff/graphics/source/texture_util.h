@@ -12,5 +12,5 @@ namespace ff::internal
     D3D_SRV_DIMENSION default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc);
     D3D11_RTV_DIMENSION default_render_dimension(const D3D11_TEXTURE2D_DESC& desc);
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> create_shader_view(ID3D11Texture2D* texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> create_render_view(ID3D11Texture2D* texture, size_t array_start, size_t array_count, size_t mip_level);
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> create_render_view(ID3D11Texture2D* texture, size_t array_start = 0, size_t array_count = 1, size_t mip_level = 0);
 }

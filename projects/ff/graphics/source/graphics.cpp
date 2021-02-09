@@ -1,9 +1,29 @@
 #include "pch.h"
 #include "dx11_device_state.h"
 #include "dx11_object_cache.h"
+#include "dx11_render_target_window_base.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
+
+namespace
+{
+    enum class defer_flags_t
+    {
+        none = 0,
+
+        full_screen_false = 0x001,
+        full_screen_true = 0x002,
+        full_screen_bits = 0x00f,
+
+        validate_check = 0x010,
+        validate_force = 0x020,
+        validate_bits = 0x0f0,
+
+        swap_chain_size = 0x100,
+        swap_chain_bits = 0xf00,
+    };
+}
 
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory;
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
@@ -21,6 +41,9 @@ static size_t dxgi_adapter_outputs_hash;
 
 static std::recursive_mutex graphics_mutex;
 static std::vector<ff::internal::graphics_child_base*> graphics_children;
+static ff::dx11_render_target_window_base* defer_render_target;
+static ff::window_size defer_size;
+static ::defer_flags_t defer_flags;
 
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
 {
@@ -164,7 +187,7 @@ void ff::graphics::internal::remove_child(ff::internal::graphics_child_base* chi
     }
 }
 
-IDXGIFactoryX* ff::graphics::internal::dxgi_factory()
+IDXGIFactoryX* ff::graphics::dxgi_factory()
 {
     if (!::dxgi_factory->IsCurrent())
     {
@@ -174,52 +197,52 @@ IDXGIFactoryX* ff::graphics::internal::dxgi_factory()
     return ::dxgi_factory.Get();
 }
 
-IDWriteFactoryX* ff::graphics::internal::write_factory()
+IDWriteFactoryX* ff::graphics::write_factory()
 {
     return ::write_factory.Get();
 }
 
-IDWriteInMemoryFontFileLoader* ff::graphics::internal::write_font_loader()
+IDWriteInMemoryFontFileLoader* ff::graphics::write_font_loader()
 {
     return ::write_font_loader.Get();
 }
 
-IDXGIDeviceX* ff::graphics::internal::dxgi_device()
+IDXGIDeviceX* ff::graphics::dxgi_device()
 {
     return ::dxgi_device.Get();
 }
 
-IDXGIFactoryX* ff::graphics::internal::dxgi_factory_for_device()
+IDXGIFactoryX* ff::graphics::dxgi_factory_for_device()
 {
     return ::dxgi_factory_for_device.Get();
 }
 
-IDXGIAdapterX* ff::graphics::internal::dxgi_adapter_for_device()
+IDXGIAdapterX* ff::graphics::dxgi_adapter_for_device()
 {
     return ::dxgi_adapter_for_device.Get();
 }
 
-ID3D11DeviceX* ff::graphics::internal::dx11_device()
+ID3D11DeviceX* ff::graphics::dx11_device()
 {
     return ::dx11_device.Get();
 }
 
-ID3D11DeviceContextX* ff::graphics::internal::dx11_device_context()
+ID3D11DeviceContextX* ff::graphics::dx11_device_context()
 {
     return ::dx11_device_context.Get();
 }
 
-D3D_FEATURE_LEVEL ff::graphics::internal::dx11_feature_level()
+D3D_FEATURE_LEVEL ff::graphics::dx11_feature_level()
 {
     return ::dx11_feature_level;
 }
 
-ff::dx11_device_state& ff::graphics::internal::dx11_device_state()
+ff::dx11_device_state& ff::graphics::dx11_device_state()
 {
     return *::dx11_device_state;
 }
 
-ff::dx11_object_cache& ff::graphics::internal::dx11_object_cache()
+ff::dx11_object_cache& ff::graphics::dx11_object_cache()
 {
     return *::dx11_object_cache;
 }
@@ -234,7 +257,7 @@ bool ff::graphics::reset(bool force)
         }
         else if (!::dxgi_factory->IsCurrent())
         {
-            Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory_latest = ff::graphics::internal::dxgi_factory();
+            Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory_latest = ff::graphics::dxgi_factory();
 
             if (::dxgi_adapters_hash != ff::internal::get_adapters_hash(dxgi_factory_latest.Get()))
             {
@@ -267,7 +290,7 @@ bool ff::graphics::reset(bool force)
         std::stable_sort(sorted_children.begin(), sorted_children.end(),
             [](const ff::internal::graphics_child_base* lhs, const ff::internal::graphics_child_base* rhs)
             {
-                return lhs->reset_pritory() > rhs->reset_pritory();
+                return lhs->reset_priority() > rhs->reset_priority();
             });
 
         for (ff::internal::graphics_child_base* child : sorted_children)
@@ -283,17 +306,90 @@ bool ff::graphics::reset(bool force)
     return status;
 }
 
-size_t ff::graphics::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+static void flush_graphics_commands()
 {
-    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
-    assert(fixed_sample_count == sample_count);
-
-    UINT levels = 0;
-    while (fixed_sample_count > 1 && (FAILED(ff::graphics::internal::dx11_device()->CheckMultisampleQualityLevels(
-        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels))
+    while (::defer_flags != ::defer_flags_t::none)
     {
-        fixed_sample_count /= 2;
-    }
+        auto lock = std::make_unique<std::lock_guard<std::recursive_mutex>>(::graphics_mutex);
 
-    return std::max<size_t>(fixed_sample_count, 1);
+        if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
+        {
+            bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
+            ff::dx11_render_target_window_base* target = ::defer_render_target;
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
+            lock.reset();
+
+            if (target && target->allow_full_screen())
+            {
+                target->full_screen(full_screen);
+            }
+        }
+        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::validate_bits))
+        {
+            bool force = ff::flags::has(::defer_flags, ::defer_flags_t::validate_force);
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
+            lock.reset();
+
+            ff::graphics::reset(force);
+        }
+        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
+        {
+            ff::window_size size = ::defer_size;
+            ff::dx11_render_target_window_base* target = ::defer_render_target;
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
+            ::defer_size = ff::window_size{};
+            lock.reset();
+
+            if (target)
+            {
+                target->size(size);
+            }
+        }
+    }
+}
+
+static void post_flush_graphics_commands()
+{
+    ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
+}
+
+void ff::graphics::defer::set_render_target(ff::dx11_render_target_window_base* target)
+{
+    std::lock_guard lock(::graphics_mutex);
+    assert(!::defer_render_target || !target);
+    ::defer_render_target = target;
+}
+
+void ff::graphics::defer::validate_device(bool force)
+{
+    std::lock_guard lock(::graphics_mutex);
+
+    ::defer_flags = ff::flags::set(
+        ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
+        force ? ::defer_flags_t::validate_force : ::defer_flags_t::validate_check);
+
+    ::post_flush_graphics_commands();
+}
+
+void ff::graphics::defer::full_screen(bool value)
+{
+    std::lock_guard lock(::graphics_mutex);
+
+    ::defer_flags = ff::flags::set(
+        ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
+        value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
+
+    ::post_flush_graphics_commands();
+}
+
+void ff::graphics::defer::resize_render_target(const ff::window_size& size)
+{
+    std::lock_guard lock(::graphics_mutex);
+
+    ::defer_flags = ff::flags::set(
+        ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits),
+        ::defer_flags_t::swap_chain_size);
+    ::defer_size = size;
+
+    ::post_flush_graphics_commands();
 }

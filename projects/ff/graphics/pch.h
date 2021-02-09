@@ -7,6 +7,10 @@
 #include <dwrite_3.h>
 #include <dxgi1_6.h>
 
+#if UWP_APP
+#include <windows.ui.xaml.media.dxinterop.h>
+#endif
+
 // Vendor
 #include <directxtex/DirectXTex/DirectXTex.h>
 #include <libpng/png.h>

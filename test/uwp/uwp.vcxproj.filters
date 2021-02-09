@@ -48,6 +48,9 @@
     <Page Include="source\test_input_devices.xaml">
       <Filter>source</Filter>
     </Page>
+    <Page Include="source\test_swap_chain.xaml">
+      <Filter>source</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="app.xaml" />

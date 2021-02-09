@@ -33,9 +33,9 @@ ff::dx11_texture::dx11_texture(ff::point_int size, DXGI_FORMAT format, size_t mi
         desc.Format = format;
         desc.MipLevels = static_cast<UINT>(mip_count);
         desc.ArraySize = static_cast<UINT>(array_size);
-        desc.SampleDesc.Count = static_cast<UINT>(ff::graphics::fix_sample_count(format, sample_count));
+        desc.SampleDesc.Count = static_cast<UINT>(ff::internal::fix_sample_count(format, sample_count));
 
-        HRESULT hr = ff::graphics::internal::dx11_device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
+        HRESULT hr = ff::graphics::dx11_device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
         assert(SUCCEEDED(hr));
     }
 
@@ -226,9 +226,9 @@ std::shared_ptr<DirectX::ScratchImage> ff::dx11_texture::data() const
         ID3D11Texture2D* texture = this->texture_.Get();
 
         // Can't use the device context on background threads
-        ff::thread_dispatch::get(ff::thread_dispatch_type::game)->send([&scratch, texture]()
+        ff::thread_dispatch::get_game()->send([&scratch, texture]()
             {
-                DirectX::CaptureTexture(ff::graphics::internal::dx11_device(), ff::graphics::internal::dx11_device_context(), texture, scratch);
+                DirectX::CaptureTexture(ff::graphics::dx11_device(), ff::graphics::dx11_device_context(), texture, scratch);
             });
 
         return scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch)) : nullptr;
@@ -289,9 +289,9 @@ bool ff::dx11_texture::update(
             UINT subresource = ::D3D11CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), static_cast<UINT>(this->mip_count()));
             ID3D11Texture2D* texture = this->texture_.Get();
 
-            ff::thread_dispatch::get(ff::thread_dispatch_type::game)->send([texture, subresource, box, data, row_pitch]()
+            ff::thread_dispatch::get_game()->send([texture, subresource, box, data, row_pitch]()
                 {
-                    ff::graphics::internal::dx11_device_state().update_subresource(
+                    ff::graphics::dx11_device_state().update_subresource(
                         texture, subresource, &box, data, static_cast<UINT>(row_pitch), 0);
                 });
 

@@ -18,8 +18,11 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
 {
 #if UWP_APP
     Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
-    this->dispatcher = window->Dispatcher;
-    this->handler = ref new Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
+    if (window)
+    {
+        this->dispatcher = window->Dispatcher;
+        this->handler = ref new Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
+    }
 #endif
 
     switch (type)
@@ -90,6 +93,16 @@ ff::thread_dispatch* ff::thread_dispatch::get(thread_dispatch_type type)
     }
 }
 
+ff::thread_dispatch* ff::thread_dispatch::get_main()
+{
+    return ff::thread_dispatch::get(ff::thread_dispatch_type::main);
+}
+
+ff::thread_dispatch* ff::thread_dispatch::get_game()
+{
+    return ff::thread_dispatch::get(ff::thread_dispatch_type::game);
+}
+
 void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current_thread)
 {
     if (!this || (run_if_current_thread && this->current_thread()))
@@ -156,15 +169,17 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
 {
     std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
     handles_vector.push_back(this->pending_event);
+    ULONGLONG cur_tick = ::GetTickCount64();
+    ULONGLONG end_tick = cur_tick + timeout_ms;
 
-    while (true)
+    while (end_tick >= cur_tick)
     {
+        DWORD wait_ms = (timeout_ms != INFINITE) ? static_cast<DWORD>(end_tick - cur_tick) : INFINITE;
+        DWORD wait_size = static_cast<DWORD>(handles_vector.size());
 #if UWP_APP
-        DWORD result = ::WaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
-            FALSE, static_cast<DWORD>(timeout_ms), TRUE);
+        DWORD result = ::WaitForMultipleObjectsEx(wait_size, handles_vector.data(), FALSE, wait_ms, TRUE);
 #else
-        DWORD result = ::MsgWaitForMultipleObjectsEx(static_cast<DWORD>(handles_vector.size()), handles_vector.data(),
-            static_cast<DWORD>(timeout_ms), QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
+        DWORD result = ::MsgWaitForMultipleObjectsEx(wait_size, handles_vector.data(), wait_ms, QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
 #endif
         switch (result)
         {
@@ -198,7 +213,15 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
 #if !UWP_APP
         ff::handle_messages();
 #endif
+        if (cur_tick == end_tick)
+        {
+            break;
+        }
+
+        cur_tick = ::GetTickCount64();
     }
+
+    return false;
 }
 
 bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms)
@@ -222,6 +245,14 @@ bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t cou
 
 void ff::thread_dispatch::flush(bool force)
 {
+#if !UWP_APP
+    if (ff::thread_dispatch::get_main() != this)
+    {
+        // background threads might only call flush to pump messages
+        ff::handle_messages();
+    }
+#endif
+
     if (force || this->current_thread())
     {
         std::forward_list<std::function<void()>> funcs;
@@ -257,7 +288,10 @@ void ff::thread_dispatch::flush(bool force)
 void ff::thread_dispatch::post_flush()
 {
 #if UWP_APP
-    this->dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
+    if (this->dispatcher)
+    {
+        this->dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
+    }
 #else
     ::PostMessage(this->message_window, WM_USER, 0, 0);
 #endif

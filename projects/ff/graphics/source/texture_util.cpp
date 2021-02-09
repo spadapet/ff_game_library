@@ -11,7 +11,7 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const Direc
     Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
 
     if (data.GetImageCount() &&
-        SUCCEEDED(DirectX::CreateTexture(ff::graphics::internal::dx11_device(), data.GetImages(), data.GetImageCount(), data.GetMetadata(), &resource)) &&
+        SUCCEEDED(DirectX::CreateTexture(ff::graphics::dx11_device(), data.GetImages(), data.GetImageCount(), data.GetMetadata(), &resource)) &&
         SUCCEEDED(resource.As(&texture)))
     {
         return texture;
@@ -230,7 +230,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_shader_vie
                 break;
         }
 
-        if (FAILED(ff::graphics::internal::dx11_device()->CreateShaderResourceView(texture, &view_desc, view.GetAddressOf())))
+        if (FAILED(ff::graphics::dx11_device()->CreateShaderResourceView(texture, &view_desc, view.GetAddressOf())))
         {
             assert(false);
             return nullptr;
@@ -274,7 +274,7 @@ Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::internal::create_render_view(
                 break;
         }
 
-        if (FAILED(ff::graphics::internal::dx11_device()->CreateRenderTargetView(texture, &view_desc, view.GetAddressOf())))
+        if (FAILED(ff::graphics::dx11_device()->CreateRenderTargetView(texture, &view_desc, view.GetAddressOf())))
         {
             assert(false);
             return nullptr;

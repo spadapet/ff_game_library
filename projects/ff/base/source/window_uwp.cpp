@@ -69,6 +69,10 @@ internal:
             ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::PointerEventArgs^>(
                 this, &main_window_events::pointer_wheel_changed);
 
+        this->tokens[i++] = this->core_window->Dispatcher->AcceleratorKeyActivated +=
+            ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreDispatcher^, Windows::UI::Core::AcceleratorKeyEventArgs^>(
+                this, &main_window_events::accelerator_key_down);
+
         this->tokens[i++] = this->display_info->DpiChanged +=
             ref new Windows::Foundation::TypedEventHandler<Windows::Graphics::Display::DisplayInformation^, Platform::Object^>(
                 this, &main_window_events::dpi_changed);
@@ -111,6 +115,7 @@ public:
         this->core_window->PointerPressed -= this->tokens[i++];
         this->core_window->PointerReleased -= this->tokens[i++];
         this->core_window->PointerWheelChanged -= this->tokens[i++];
+        this->core_window->Dispatcher->AcceleratorKeyActivated -= this->tokens[i++];
         this->display_info->DpiChanged -= this->tokens[i++];
         this->display_info->DisplayContentsInvalidated -= this->tokens[i++];
         this->display_info->OrientationChanged -= this->tokens[i++];
@@ -141,6 +146,7 @@ private:
 
     void closed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args)
     {
+        this->main_window->notify_message(WM_CLOSE, 0, 0);
         this->main_window->notify_message(WM_DESTROY, 0, 0);
     }
 
@@ -160,13 +166,28 @@ private:
 
     void key_down_or_up(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args)
     {
-        WPARAM wp = static_cast<WPARAM>(args->VirtualKey);
-        LPARAM lp = static_cast<LPARAM>(args->KeyStatus.RepeatCount);
-        lp |= static_cast<LPARAM>(args->KeyStatus.ScanCode & 0xFF) << 16;
-        lp |= (args->KeyStatus.IsExtendedKey ? 1 : 0) << 24;
-        lp |= (args->KeyStatus.WasKeyDown ? 1 : 0) << 30;
+        this->notify_key_message(args->VirtualKey, args->KeyStatus);
+    }
 
-        this->main_window->notify_message(args->KeyStatus.IsKeyReleased ? WM_KEYUP : WM_KEYDOWN, wp, lp);
+    void accelerator_key_down(Windows::UI::Core::CoreDispatcher^ sender, Windows::UI::Core::AcceleratorKeyEventArgs^ args)
+    {
+        this->notify_key_message(args->VirtualKey, args->KeyStatus);
+    }
+
+    void notify_key_message(Windows::System::VirtualKey key, Windows::UI::Core::CorePhysicalKeyStatus status)
+    {
+        WPARAM wp = static_cast<WPARAM>(key);
+        LPARAM lp = static_cast<LPARAM>(status.RepeatCount);
+        lp |= static_cast<LPARAM>(status.ScanCode & 0xFF) << 16;
+        lp |= (status.IsExtendedKey ? 1 : 0) << 24;
+        lp |= (status.IsMenuKeyDown ? 1 : 0) << 29;
+        lp |= (status.WasKeyDown ? 1 : 0) << 30;
+
+        UINT msg = status.IsMenuKeyDown
+            ? (status.IsKeyReleased ? WM_SYSKEYUP : WM_SYSKEYDOWN)
+            : (status.IsKeyReleased ? WM_KEYUP : WM_KEYDOWN);
+
+        this->main_window->notify_message(msg, wp, lp);
     }
 
     void pointer_capture_lost(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
@@ -233,16 +254,17 @@ private:
     ff::window* main_window;
     Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
     Windows::Graphics::Display::DisplayInformation^ display_info;
-    std::array<Windows::Foundation::EventRegistrationToken, 19> tokens;
+    std::array<Windows::Foundation::EventRegistrationToken, 20> tokens;
 };
 
 static ff::window* main_window = nullptr;
 
 ff::window::window(ff::window_type type)
     : core_window(Windows::UI::Core::CoreWindow::GetForCurrentThread())
-    , display_info(Windows::Graphics::Display::DisplayInformation::GetForCurrentView())
-    , window_events(ref new main_window_events(this, this->core_window.Get(), this->display_info))
-    , dpi_scale_(this->display_info->LogicalDpi / 96.0)
+    , display_info_(Windows::Graphics::Display::DisplayInformation::GetForCurrentView())
+    , application_view_(Windows::UI::ViewManagement::ApplicationView::GetForCurrentView())
+    , window_events(ref new main_window_events(this, this->core_window.Get(), this->display_info_))
+    , dpi_scale_(this->display_info_->LogicalDpi / 96.0)
     , active_(this->core_window->ActivationMode != Windows::UI::Core::CoreWindowActivationMode::Deactivated)
     , visible_(this->core_window->Visible)
 {
@@ -304,6 +326,16 @@ Windows::UI::Xaml::Controls::SwapChainPanel^ ff::window::swap_chain_panel() cons
     return nullptr;
 }
 
+Windows::Graphics::Display::DisplayInformation^ ff::window::display_info() const
+{
+    return this->display_info_;
+}
+
+Windows::UI::ViewManagement::ApplicationView^ ff::window::application_view() const
+{
+    return this->application_view_;
+}
+
 ff::signal_sink<bool, Windows::Gaming::Input::Gamepad^>& ff::window::gamepad_message_sink()
 {
     return this->gamepad_message_signal;
@@ -363,7 +395,7 @@ void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
             break;
 
         case WM_DPICHANGED:
-            this->dpi_scale_ = this->display_info->LogicalDpi / 96.0;
+            this->dpi_scale_ = this->display_info_->LogicalDpi / 96.0;
             break;
     }
 
@@ -396,8 +428,8 @@ ff::window_size ff::window::size()
     ff::window_size size{};
     size.dpi_scale = this->dpi_scale();
     size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<int>();
-    size.native_rotation = ::get_rotation(this->display_info->NativeOrientation);
-    size.current_rotation = ::get_rotation(this->display_info->CurrentOrientation);
+    size.native_rotation = ::get_rotation(this->display_info_->NativeOrientation);
+    size.current_rotation = ::get_rotation(this->display_info_->CurrentOrientation);
 
     return size;
 }
@@ -424,7 +456,7 @@ bool ff::window::focused()
 
 bool ff::window::close()
 {
-    Windows::UI::ViewManagement::ApplicationView::GetForCurrentView()->TryConsolidateAsync();
+    this->application_view_->TryConsolidateAsync();
     return true;
 }
 

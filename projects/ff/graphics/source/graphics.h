@@ -4,6 +4,7 @@ namespace ff
 {
     class dx11_device_state;
     class dx11_object_cache;
+    class dx11_render_target_window_base;
 }
 
 namespace ff::internal
@@ -14,16 +15,6 @@ namespace ff::internal
 namespace ff::graphics
 {
     bool reset(bool force);
-    size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
-}
-
-namespace ff::graphics::internal
-{
-    bool init();
-    void destroy();
-
-    void add_child(ff::internal::graphics_child_base* child);
-    void remove_child(ff::internal::graphics_child_base* child);
 
     IDXGIFactoryX* dxgi_factory();
     IDWriteFactoryX* write_factory();
@@ -38,4 +29,21 @@ namespace ff::graphics::internal
 
     ff::dx11_device_state& dx11_device_state();
     ff::dx11_object_cache& dx11_object_cache();
+}
+
+namespace ff::graphics::defer
+{
+    void set_render_target(ff::dx11_render_target_window_base* target);
+    void validate_device(bool force);
+    void full_screen(bool value);
+    void resize_render_target(const ff::window_size& size);
+}
+
+namespace ff::graphics::internal
+{
+    bool init();
+    void destroy();
+
+    void add_child(ff::internal::graphics_child_base* child);
+    void remove_child(ff::internal::graphics_child_base* child);
 }

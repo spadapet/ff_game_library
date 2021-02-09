@@ -19,6 +19,9 @@
     <ClInclude Include="source\test_input_devices.xaml.h">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="source\test_swap_chain.xaml.h">
+      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="app.xaml">
@@ -30,6 +33,7 @@
     <Page Include="source\test_input_devices.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="source\test_swap_chain.xaml" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -57,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="source\test_input_devices.xaml.cpp">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="source\test_swap_chain.xaml.cpp">
+      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

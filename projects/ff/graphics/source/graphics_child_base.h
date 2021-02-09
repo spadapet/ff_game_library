@@ -8,6 +8,6 @@ namespace ff::internal
         virtual ~graphics_child_base() = default;
 
         virtual bool reset() = 0;
-        virtual int reset_pritory() const;
+        virtual int reset_priority() const;
     };
 }

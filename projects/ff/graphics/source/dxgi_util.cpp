@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "graphics.h"
 #include "dxgi_util.h"
 
 static bool software_adapter(IDXGIAdapterX* adapter)
@@ -86,6 +87,27 @@ std::vector<Microsoft::WRL::ComPtr<IDXGIOutputX>> ff::internal::get_adapter_outp
     }
 
     return outputs;
+}
+
+DXGI_MODE_ROTATION ff::internal::get_dxgi_rotation(int dmod)
+{
+    switch (dmod)
+    {
+        default:
+        case DMDO_DEFAULT:
+            return DXGI_MODE_ROTATION_IDENTITY;
+
+        case DMDO_90:
+            return DXGI_MODE_ROTATION_ROTATE90;
+
+        case DMDO_180:
+            return DXGI_MODE_ROTATION_ROTATE180;
+
+        case DMDO_270:
+            return DXGI_MODE_ROTATION_ROTATE270;
+    }
+
+    return DXGI_MODE_ROTATION();
 }
 
 // This method determines the rotation between the display device's native orientation and the
@@ -236,4 +258,19 @@ DXGI_FORMAT ff::internal::fix_format(DXGI_FORMAT format, size_t texture_width, s
     }
 
     return format;
+}
+
+size_t ff::internal::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+{
+    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
+    assert(fixed_sample_count == sample_count);
+
+    UINT levels = 0;
+    while (fixed_sample_count > 1 && (FAILED(ff::graphics::dx11_device()->CheckMultisampleQualityLevels(
+        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels))
+    {
+        fixed_sample_count /= 2;
+    }
+
+    return std::max<size_t>(fixed_sample_count, 1);
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "dx11_depth.h"
 #include "dx11_device_state.h"
+#include "dxgi_util.h"
 #include "graphics.h"
 
 static const DXGI_FORMAT DEPTH_STENCIL_FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -20,7 +21,7 @@ ff::dx11_depth::dx11_depth(const ff::point_int& size, size_t sample_count)
     texture_desc.Width = static_cast<UINT>(std::max(size.x, 1));
     texture_desc.Height = static_cast<UINT>(std::max(size.y, 1));
     texture_desc.MipLevels = 1;
-    texture_desc.SampleDesc.Count = static_cast<UINT>(ff::graphics::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count));
+    texture_desc.SampleDesc.Count = static_cast<UINT>(ff::internal::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count));
     texture_desc.Usage = D3D11_USAGE_DEFAULT;
 
     D3D11_DEPTH_STENCIL_VIEW_DESC view_desc{};
@@ -28,8 +29,8 @@ ff::dx11_depth::dx11_depth(const ff::point_int& size, size_t sample_count)
     view_desc.ViewDimension = (texture_desc.SampleDesc.Count > 1) ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 
     bool status =
-        SUCCEEDED(ff::graphics::internal::dx11_device()->CreateTexture2D(&texture_desc, nullptr, this->texture_.GetAddressOf())) &&
-        SUCCEEDED(ff::graphics::internal::dx11_device()->CreateDepthStencilView(this->texture(), &view_desc, this->view_.GetAddressOf()));
+        SUCCEEDED(ff::graphics::dx11_device()->CreateTexture2D(&texture_desc, nullptr, this->texture_.GetAddressOf())) &&
+        SUCCEEDED(ff::graphics::dx11_device()->CreateDepthStencilView(this->texture(), &view_desc, this->view_.GetAddressOf()));
     assert(status);
 }
 
@@ -76,22 +77,22 @@ size_t ff::dx11_depth::sample_count() const
 
 void ff::dx11_depth::clear(float depth, BYTE stencil) const
 {
-    ff::graphics::internal::dx11_device_state().clear_depth_stencil(this->view(), true, true, depth, stencil);
+    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), true, true, depth, stencil);
 }
 
 void ff::dx11_depth::clear_depth(float depth) const
 {
-    ff::graphics::internal::dx11_device_state().clear_depth_stencil(this->view(), true, false, depth, 0);
+    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), true, false, depth, 0);
 }
 
 void ff::dx11_depth::clear_stencil(BYTE stencil) const
 {
-    ff::graphics::internal::dx11_device_state().clear_depth_stencil(this->view(), false, true, 0, stencil);
+    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), false, true, 0, stencil);
 }
 
 void ff::dx11_depth::discard() const
 {
-    ff::graphics::internal::dx11_device_context()->DiscardView1(this->view(), nullptr, 0);
+    ff::graphics::dx11_device_context()->DiscardView1(this->view(), nullptr, 0);
 }
 
 ID3D11Texture2D* ff::dx11_depth::texture() const

@@ -111,7 +111,7 @@ bool ff::wait_for_handle(HANDLE handle, size_t timeout_ms)
 
 bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
 {
-    ff::thread_dispatch* dispatch = ff::thread_dispatch::get(ff::thread_dispatch_type::none);
+    ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
     if (dispatch)
     {
         return dispatch->wait_for_any_handle(handles, count, completed_index, timeout_ms);
@@ -149,7 +149,7 @@ bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& comple
 
 bool ff::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms)
 {
-    ff::thread_dispatch* dispatch = ff::thread_dispatch::get(ff::thread_dispatch_type::none);
+    ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
     if (dispatch)
     {
         return dispatch->wait_for_all_handles(handles, count, timeout_ms);
