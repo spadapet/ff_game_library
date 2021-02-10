@@ -12,12 +12,31 @@ ff::sprite_data::sprite_data()
     , type_(ff::sprite_type::unknown)
 {}
 
-ff::sprite_data::sprite_data(std::string_view name, ff::dx11_texture_view_base* view, ff::rect_float texture_uv, ff::rect_float world, ff::sprite_type type)
+ff::sprite_data::sprite_data(
+    std::string_view name,
+    ff::dx11_texture_view_base* view,
+    ff::rect_float texture_uv,
+    ff::rect_float world,
+    ff::sprite_type type)
     : name_(name)
     , view_(view)
     , texture_uv_(texture_uv)
     , world_(world)
-    , type_(type)
+    , type_(type == ff::sprite_type::unknown ? view->view_texture()->sprite_type() : type)
+{}
+
+ff::sprite_data::sprite_data(
+    std::string_view name,
+    ff::dx11_texture_view_base* view,
+    ff::rect_float rect,
+    ff::point_float handle,
+    ff::point_float scale,
+    ff::sprite_type type)
+    : name_(name)
+    , view_(view)
+    , texture_uv_(rect / view->view_texture()->size().cast<float>())
+    , world_(-handle * scale, (rect.size() - handle) * scale)
+    , type_(type == ff::sprite_type::unknown ? view->view_texture()->sprite_type() : type)
 {}
 
 ff::sprite_data::operator bool() const

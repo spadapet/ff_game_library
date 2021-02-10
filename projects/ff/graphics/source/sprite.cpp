@@ -1,0 +1,61 @@
+#include "pch.h"
+#include "renderer_base.h"
+#include "sprite.h"
+
+ff::sprite::sprite(const std::shared_ptr<ff::dx11_texture_view_base>& view, const ff::sprite_data& sprite_data)
+    : name(sprite_data.name())
+    , view(view)
+    , sprite_data_(this->name, this->view.get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
+{}
+
+ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::dx11_texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::sprite_type type)
+    : name(std::move(name))
+    , view(view)
+    , sprite_data_(this->name, this->view.get(), rect, handle, scale, type)
+{}
+
+const ff::sprite_data& ff::sprite::sprite_data() const
+{
+    return this->sprite_data_;
+}
+
+float ff::sprite::frame_length() const
+{
+    return 0.0f;
+}
+
+float ff::sprite::frames_per_second() const
+{
+    return 0.0f;
+}
+
+void ff::sprite::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
+{}
+
+void ff::sprite::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
+{
+    render.draw_sprite(this->sprite_data_, transform);
+}
+
+ff::value_ptr ff::sprite::frame_value(size_t value_id, float frame, const ff::dict* params)
+{
+    return nullptr;
+}
+
+void ff::sprite::advance_animation(ff::push_base<ff::animation_event>* events)
+{}
+
+void ff::sprite::render_animation(ff::renderer_base& render, const ff::transform& transform) const
+{
+    render.draw_sprite(this->sprite_data_, transform);
+}
+
+float ff::sprite::animation_frame() const
+{
+    return 0.0f;
+}
+
+const ff::animation_base* ff::sprite::animation() const
+{
+    return this;
+}

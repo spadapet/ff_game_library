@@ -15,6 +15,13 @@ namespace ff
             ff::rect_float texture_uv,
             ff::rect_float world,
             ff::sprite_type type);
+        sprite_data(
+            std::string_view name,
+            ff::dx11_texture_view_base* view,
+            ff::rect_float rect,
+            ff::point_float handle,
+            ff::point_float scale,
+            ff::sprite_type type);
         sprite_data(sprite_data&& other) noexcept = default;
         sprite_data(const sprite_data& other) = default;
 

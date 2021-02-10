@@ -83,6 +83,15 @@
     <ClCompile Include="source\dx11_render_target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\sprite.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sprite_list.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sprite_resource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -202,6 +211,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_render_target_window.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_list.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_resource.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

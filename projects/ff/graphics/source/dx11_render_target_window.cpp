@@ -90,7 +90,9 @@ bool ff::dx11_render_target_window::size(const ff::window_size& size)
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.rotated_pixel_size().cast<UINT>();
     this->cached_size = size;
+#if UWP_APP
     this->cached_full_screen_uwp = false;
+#endif
 
     if (this->swap_chain && old_size != size) // on game thread
     {
