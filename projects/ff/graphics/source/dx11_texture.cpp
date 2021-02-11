@@ -369,6 +369,11 @@ ID3D11ShaderResourceView* ff::dx11_texture::view() const
     return this->view_.Get();
 }
 
+std::string_view ff::dx11_texture::name() const
+{
+    return "";
+}
+
 const ff::sprite_data& ff::dx11_texture::sprite_data() const
 {
     return this->sprite_data_;
@@ -451,7 +456,7 @@ bool ff::dx11_texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
 
 void ff::dx11_texture::fix_sprite_data(ff::sprite_type sprite_type)
 {
-    this->sprite_data_ = ff::sprite_data("", this,
+    this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
         ff::rect_float(ff::point_float::zeros(), this->size().cast<float>()),
         sprite_type);

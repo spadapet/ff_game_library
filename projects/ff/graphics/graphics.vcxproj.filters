@@ -92,6 +92,9 @@
     <ClCompile Include="source\sprite_resource.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\sprite_optimizer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -220,6 +223,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite_resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_optimizer.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

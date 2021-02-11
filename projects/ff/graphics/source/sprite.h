@@ -15,7 +15,7 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        sprite(const std::shared_ptr<ff::dx11_texture_view_base>& view, const ff::sprite_data& sprite_data);
+        sprite(std::string&& name, const std::shared_ptr<ff::dx11_texture_view_base>& view, const ff::sprite_data& sprite_data);
         sprite(std::string&& name, const std::shared_ptr<ff::dx11_texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::sprite_type type);
         sprite(sprite&& other) noexcept = default;
         sprite(const sprite& other) = default;
@@ -24,6 +24,7 @@ namespace ff
         sprite& operator=(const sprite& other) = default;
 
         // sprite_base
+        virtual std::string_view name() const override;
         virtual const ff::sprite_data& sprite_data() const override;
 
         // animation_base
@@ -40,7 +41,7 @@ namespace ff
         virtual const ff::animation_base* animation() const override;
 
     private:
-        std::string name;
+        std::string name_;
         std::shared_ptr<ff::dx11_texture_view_base> view;
         ff::sprite_data sprite_data_;
     };

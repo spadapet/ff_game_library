@@ -36,6 +36,7 @@
 #include "source/sprite_base.h"
 #include "source/sprite_data.h"
 #include "source/sprite_list.h"
+#include "source/sprite_optimizer.h"
 #include "source/sprite_resource.h"
 #include "source/sprite_type.h"
 #include "source/texture_metadata.h"

@@ -34,6 +34,7 @@
     <ClCompile Include="source\sprite.cpp" />
     <ClCompile Include="source\sprite_data.cpp" />
     <ClCompile Include="source\sprite_list.cpp" />
+    <ClCompile Include="source\sprite_optimizer.cpp" />
     <ClCompile Include="source\sprite_resource.cpp" />
     <ClCompile Include="source\texture_metadata.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
@@ -78,6 +79,7 @@
     <ClInclude Include="source\sprite_base.h" />
     <ClInclude Include="source\sprite_data.h" />
     <ClInclude Include="source\sprite_list.h" />
+    <ClInclude Include="source\sprite_optimizer.h" />
     <ClInclude Include="source\sprite_resource.h" />
     <ClInclude Include="source\sprite_type.h" />
     <ClInclude Include="source\dx11_texture.h" />

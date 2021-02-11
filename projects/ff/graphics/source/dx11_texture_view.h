@@ -19,7 +19,7 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        dx11_texture_view(const std::shared_ptr<dx11_texture>& texture, size_t array_start, size_t array_count, size_t mip_start, size_t mip_count);
+        dx11_texture_view(const std::shared_ptr<dx11_texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
         dx11_texture_view(dx11_texture_view&& other) noexcept;
         dx11_texture_view(const dx11_texture_view& other) = delete;
         virtual ~dx11_texture_view() override;
@@ -36,6 +36,7 @@ namespace ff
         virtual ID3D11ShaderResourceView* view() const override;
 
         // sprite_base
+        virtual std::string_view name() const override;
         virtual const ff::sprite_data& sprite_data() const override;
 
         // animation_base

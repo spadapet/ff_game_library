@@ -10,13 +10,11 @@ namespace ff
     public:
         sprite_data();
         sprite_data(
-            std::string_view name,
             ff::dx11_texture_view_base* view,
             ff::rect_float texture_uv,
             ff::rect_float world,
             ff::sprite_type type);
         sprite_data(
-            std::string_view name,
             ff::dx11_texture_view_base* view,
             ff::rect_float rect,
             ff::point_float handle,
@@ -29,7 +27,6 @@ namespace ff
         sprite_data& operator=(const sprite_data & other) = default;
         operator bool() const;
 
-        std::string_view name() const;
         ff::dx11_texture_view_base* view() const;
         const ff::rect_float& texture_uv() const;
         const ff::rect_float& world() const;
@@ -40,7 +37,6 @@ namespace ff
         ff::point_float handle() const;
 
     private:
-        std::string_view name_;
         ff::dx11_texture_view_base* view_;
         ff::rect_float texture_uv_;
         ff::rect_float world_;

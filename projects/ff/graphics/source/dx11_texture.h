@@ -59,6 +59,7 @@ namespace ff
         virtual ID3D11ShaderResourceView* view() const override;
 
         // sprite_base
+        virtual std::string_view name() const override;
         virtual const ff::sprite_data& sprite_data() const override;
 
         // animation_base

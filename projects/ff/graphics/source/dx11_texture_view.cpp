@@ -81,6 +81,11 @@ ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
     return this->view_.Get();
 }
 
+std::string_view ff::dx11_texture_view::name() const
+{
+    return "";
+}
+
 const ff::sprite_data& ff::dx11_texture_view::sprite_data() const
 {
     return this->sprite_data_;
@@ -129,7 +134,7 @@ const ff::animation_base* ff::dx11_texture_view::animation() const
 
 void ff::dx11_texture_view::fix_sprite_data()
 {
-    this->sprite_data_ = ff::sprite_data("", this,
+    this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
         ff::rect_float(ff::point_float::zeros(), this->texture_->size().cast<float>()),
         this->texture_->sprite_type());

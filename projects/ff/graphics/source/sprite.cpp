@@ -2,17 +2,22 @@
 #include "renderer_base.h"
 #include "sprite.h"
 
-ff::sprite::sprite(const std::shared_ptr<ff::dx11_texture_view_base>& view, const ff::sprite_data& sprite_data)
-    : name(sprite_data.name())
+ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::dx11_texture_view_base>& view, const ff::sprite_data& sprite_data)
+    : name_(std::move(name))
     , view(view)
-    , sprite_data_(this->name, this->view.get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
+    , sprite_data_(this->view.get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
 {}
 
 ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::dx11_texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::sprite_type type)
-    : name(std::move(name))
+    : name_(std::move(name))
     , view(view)
-    , sprite_data_(this->name, this->view.get(), rect, handle, scale, type)
+    , sprite_data_(this->view.get(), rect, handle, scale, type)
 {}
+
+std::string_view ff::sprite::name() const
+{
+    return this->name_;
+}
 
 const ff::sprite_data& ff::sprite::sprite_data() const
 {

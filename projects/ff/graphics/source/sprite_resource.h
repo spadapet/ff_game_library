@@ -24,6 +24,7 @@ namespace ff
         sprite_resource& operator=(const sprite_resource& other) = default;
 
         // sprite_base
+        virtual std::string_view name() const override;
         virtual const ff::sprite_data& sprite_data() const override;
 
         // animation_base
@@ -47,7 +48,7 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        std::string name;
+        std::string name_;
         ff::auto_resource<ff::sprite_base> source;
         const ff::sprite_data* sprite_data_;
     };

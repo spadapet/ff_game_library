@@ -5,10 +5,15 @@
 static ff::sprite_data empty_sprite_data{};
 
 ff::sprite_resource::sprite_resource(std::string&& name, const std::shared_ptr<ff::resource>& source)
-    : name(std::move(name))
+    : name_(std::move(name))
     , source(source)
     , sprite_data_(&::empty_sprite_data)
 {}
+
+std::string_view ff::sprite_resource::name() const
+{
+    return this->name_;
+}
 
 const ff::sprite_data& ff::sprite_resource::sprite_data() const
 {
@@ -59,7 +64,13 @@ const ff::animation_base* ff::sprite_resource::animation() const
 bool ff::sprite_resource::resource_load_complete(bool from_source)
 {
     std::shared_ptr<ff::sprite_base> source_sprite = this->source.object();
-    this->sprite_data_ = source_sprite ? &source_sprite->sprite_data() : &::empty_sprite_data;
+    if (source_sprite)
+    {
+        this->sprite_data_ = &source_sprite->sprite_data();
+        return true;
+    }
+
+    assert(false);
     return false;
 }
 
@@ -74,7 +85,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::sprite_resource::resource_get_dep
 bool ff::sprite_resource::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set<ff::resource>("source", this->source.resource());
-    dict.set<std::string>("name", this->name);
+    dict.set<std::string>("name", this->name_);
     return true;
 }
 
