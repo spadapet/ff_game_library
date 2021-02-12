@@ -49,7 +49,7 @@ namespace ff
 
     private:
         std::string name_;
-        ff::auto_resource<ff::sprite_base> source;
+        ff::auto_resource<ff::resource_object_base> source;
         const ff::sprite_data* sprite_data_;
     };
 }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "renderer_base.h"
+#include "sprite_list.h"
 #include "sprite_resource.h"
 
 static ff::sprite_data empty_sprite_data{};
@@ -63,10 +64,17 @@ const ff::animation_base* ff::sprite_resource::animation() const
 
 bool ff::sprite_resource::resource_load_complete(bool from_source)
 {
-    std::shared_ptr<ff::sprite_base> source_sprite = this->source.object();
+    std::shared_ptr<ff::sprite_base> source_sprite = std::dynamic_pointer_cast<ff::sprite_base>(this->source.object());
     if (source_sprite)
     {
         this->sprite_data_ = &source_sprite->sprite_data();
+        return true;
+    }
+
+    std::shared_ptr<ff::sprite_list> source_sprite_list = std::dynamic_pointer_cast<ff::sprite_list>(this->source.object());
+    if (source_sprite_list && source_sprite_list->get(this->name_))
+    {
+        this->sprite_data_ = &source_sprite_list->get(this->name_)->sprite_data();
         return true;
     }
 
