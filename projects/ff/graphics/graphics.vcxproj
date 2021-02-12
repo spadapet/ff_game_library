@@ -28,6 +28,7 @@
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
+    <ClCompile Include="source\palette_data.cpp" />
     <ClCompile Include="source\png_image.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\dx11_texture.cpp" />

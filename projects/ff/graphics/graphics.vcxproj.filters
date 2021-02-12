@@ -95,6 +95,9 @@
     <ClCompile Include="source\sprite_optimizer.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\palette_data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
