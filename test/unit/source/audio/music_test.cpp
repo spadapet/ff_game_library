@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "source/utility.h"
 
 namespace audio_test
 {
@@ -7,33 +8,17 @@ namespace audio_test
     public:
         TEST_METHOD(music_resource)
         {
-            std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "music_test";
-            ff::end_scope_action cleanup([&temp_path]()
-                {
-                    std::error_code ec;
-                    std::filesystem::remove_all(temp_path, ec);
-                });
-
-            // Create test WAV file
-            {
-                std::filesystem::path mp3_path = temp_path / "test.mp3";
-                auto mp3_data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_MUSIC));
-                ff::stream_copy(ff::file_writer(mp3_path), ff::data_reader(mp3_data), mp3_data->size());
-            }
-
-            std::string json_source =
+            std::string_view json_source =
                 "{\n"
                 "    'test_mp3': { 'res:type': 'file', 'file': 'file:test.mp3' },\n"
                 "    'test_music': { 'res:type': 'music', 'file': 'ref:test_mp3' }\n"
                 "}\n";
-            std::replace(json_source.begin(), json_source.end(), '\'', '\"');
+            auto result = ff::test::create_resources(json_source);
+            auto& res = std::get<0>(result);
 
-            ff::load_resources_result result = ff::load_resources_from_json(json_source, temp_path, true);
-            Assert::IsTrue(result.status);
-
-            ff::resource_objects res(result.dict);
-            ff::auto_resource<ff::audio_effect_base> music_res = res.get_resource_object("test_music");
+            ff::auto_resource<ff::audio_effect_base> music_res = res->get_resource_object("test_music");
             Assert::IsTrue(music_res.valid());
+
             std::shared_ptr<ff::audio_effect_base> music = music_res.object();
             Assert::IsNotNull(music.get());
 

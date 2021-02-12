@@ -42,6 +42,7 @@
     <ClCompile Include="source\data\value_test.cpp" />
     <ClCompile Include="source\graphics\buffer_test.cpp" />
     <ClCompile Include="source\graphics\depth_test.cpp" />
+    <ClCompile Include="source\graphics\palette_test.cpp" />
     <ClCompile Include="source\graphics\render_target_test.cpp" />
     <ClCompile Include="source\graphics\shader_test.cpp" />
     <ClCompile Include="source\graphics\sprite_test.cpp" />
@@ -52,10 +53,12 @@
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\resource\resource_persist_test.cpp" />
     <ClCompile Include="source\resource\resource_values_test.cpp" />
+    <ClCompile Include="source\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\resource.h" />
+    <ClInclude Include="source\utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\projects\ff\audio\audio.vcxproj">

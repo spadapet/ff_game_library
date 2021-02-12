@@ -98,7 +98,7 @@
     <ClCompile Include="source\palette_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\palette.cpp">
+    <ClCompile Include="source\palette_cycle.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -234,7 +234,7 @@
     <ClInclude Include="source\sprite_optimizer.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\palette.h">
+    <ClInclude Include="source\palette_cycle.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -16,7 +16,9 @@ namespace ff
         : public ff::resource_object_base
         , public ff::palette_base
     {
+    public:
         palette_data(DirectX::ScratchImage&& scratch, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
+        palette_data(std::shared_ptr<ff::dx11_texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
         palette_data(palette_data&& other) noexcept = default;
         palette_data(const palette_data& other) = delete;
 
@@ -27,7 +29,7 @@ namespace ff
         size_t row_size() const;
         size_t row_hash(size_t index) const;
         const std::shared_ptr<ff::dx11_texture> texture();
-        const uint8_t* remap(std::string_view name) const;
+        std::shared_ptr<ff::data_base> remap(std::string_view name) const;
 
         // palette_base
         virtual size_t current_row() const override;

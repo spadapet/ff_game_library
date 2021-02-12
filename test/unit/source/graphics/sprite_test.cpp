@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "source/utility.h"
 
 namespace graphics_test
 {
@@ -7,21 +8,7 @@ namespace graphics_test
     public:
         TEST_METHOD(sprite_list_resource)
         {
-            std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "sprite_list_test";
-            ff::end_scope_action cleanup([&temp_path]()
-                {
-                    std::error_code ec;
-                    std::filesystem::remove_all(temp_path, ec);
-                });
-
-            // Create test file
-            {
-                std::filesystem::path texture_path = temp_path / "test_texture.png";
-                auto texture_data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_TEXTURE));
-                ff::stream_copy(ff::file_writer(texture_path), ff::data_reader(texture_data), texture_data->size());
-            }
-
-            std::string json_source =
+            std::string_view json_source =
                 "{\n"
                 "    'test_sprites': { 'res:type': 'sprites', 'optimize': false, 'format': 'bc3', 'mips': '4',\n"
                 "        'sprites': {\n"
@@ -30,16 +17,13 @@ namespace graphics_test
                 "        }\n"
                 "    }\n"
                 "}\n";
-            std::replace(json_source.begin(), json_source.end(), '\'', '\"');
+            auto result = ff::test::create_resources(json_source);
+            auto& res = std::get<0>(result);
 
-            ff::load_resources_result result = ff::load_resources_from_json(json_source, temp_path, true);
-            Assert::IsTrue(result.status);
-
-            ff::resource_objects res(result.dict);
-            ff::auto_resource<ff::sprite_list> sprites_res = res.get_resource_object("test_sprites");
+            ff::auto_resource<ff::sprite_list> sprites_res = res->get_resource_object("test_sprites");
             Assert::IsTrue(sprites_res.valid());
-            std::shared_ptr<ff::sprite_list> sprites = sprites_res.object();
 
+            std::shared_ptr<ff::sprite_list> sprites = sprites_res.object();
             Assert::IsNotNull(sprites.get());
             Assert::IsTrue(sprites->size() == 5);
             Assert::IsNotNull(sprites->get(0)->sprite_data().view());

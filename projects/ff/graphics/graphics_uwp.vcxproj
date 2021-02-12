@@ -30,7 +30,7 @@
     <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
-    <ClCompile Include="source\palette.cpp" />
+    <ClCompile Include="source\palette_cycle.cpp" />
     <ClCompile Include="source\palette_data.cpp" />
     <ClCompile Include="source\png_image.cpp" />
     <ClCompile Include="source\shader.cpp" />
@@ -72,8 +72,8 @@
     <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
-    <ClInclude Include="source\palette.h" />
     <ClInclude Include="source\palette_base.h" />
+    <ClInclude Include="source\palette_cycle.h" />
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
     <ClInclude Include="source\renderer_base.h" />

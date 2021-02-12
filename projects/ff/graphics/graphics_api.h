@@ -28,6 +28,7 @@
 #include "source/matrix.h"
 #include "source/matrix_stack.h"
 #include "source/palette_base.h"
+#include "source/palette_cycle.h"
 #include "source/palette_data.h"
 #include "source/png_image.h"
 #include "source/renderer_base.h"
