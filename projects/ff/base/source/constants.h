@@ -6,6 +6,7 @@
 namespace ff::constants
 {
     const bool debug_build = static_cast<bool>(DEBUG);
+    const size_t invalid_size = static_cast<size_t>(-1);
 
     /// <summary>
     /// Fixed amount of times per second that the game loop advances

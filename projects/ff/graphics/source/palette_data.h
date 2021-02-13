@@ -17,6 +17,7 @@ namespace ff
         , public ff::palette_base
     {
     public:
+        palette_data(DirectX::ScratchImage&& scratch);
         palette_data(DirectX::ScratchImage&& scratch, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
         palette_data(std::shared_ptr<ff::dx11_texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
         palette_data(palette_data&& other) noexcept = default;

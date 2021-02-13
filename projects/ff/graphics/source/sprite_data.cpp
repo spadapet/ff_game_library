@@ -19,7 +19,7 @@ ff::sprite_data::sprite_data(
     : view_(view)
     , texture_uv_(texture_uv)
     , world_(world)
-    , type_(type == ff::sprite_type::unknown ? view->view_texture()->sprite_type() : type)
+    , type_((type == ff::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
 {}
 
 ff::sprite_data::sprite_data(
@@ -31,7 +31,7 @@ ff::sprite_data::sprite_data(
     : view_(view)
     , texture_uv_(rect / view->view_texture()->size().cast<float>())
     , world_(-handle * scale, (rect.size() - handle) * scale)
-    , type_(type == ff::sprite_type::unknown ? view->view_texture()->sprite_type() : type)
+    , type_((type == ff::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
 {}
 
 ff::sprite_data::operator bool() const

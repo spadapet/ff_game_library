@@ -4,6 +4,10 @@
 #include "palette_data.h"
 #include "texture_util.h"
 
+ff::palette_data::palette_data(DirectX::ScratchImage&& scratch)
+    : palette_data(std::move(scratch), std::unordered_map<std::string, std::shared_ptr<ff::data_base>>())
+{}
+
 ff::palette_data::palette_data(DirectX::ScratchImage&& scratch, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap)
     : name_to_remap(std::move(name_to_remap))
 {

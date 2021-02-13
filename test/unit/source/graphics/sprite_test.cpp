@@ -10,7 +10,7 @@ namespace graphics_test
         {
             std::string_view json_source =
                 "{\n"
-                "    'test_sprites': { 'res:type': 'sprites', 'optimize': false, 'format': 'bc3', 'mips': '4',\n"
+                "    'test_sprites': { 'res:type': 'sprites', 'optimize': true, 'format': 'bc3', 'mips': '4',\n"
                 "        'sprites': {\n"
                 "            'one': { 'file': 'file:test_texture.png', 'pos': [ 16, 16 ], 'size': [ 16, 16 ], 'handle': [ 8, 8 ] },\n"
                 "            'two': { 'file': 'file:test_texture.png', 'pos': [ 16, 32 ], 'size': [ 8, 8 ], 'handle': [ 4, 4 ], 'repeat': 4 }\n"
