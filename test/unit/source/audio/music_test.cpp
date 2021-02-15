@@ -8,12 +8,12 @@ namespace audio_test
     public:
         TEST_METHOD(music_resource)
         {
-            std::string_view json_source =
-                "{\n"
-                "    'test_mp3': { 'res:type': 'file', 'file': 'file:test.mp3' },\n"
-                "    'test_music': { 'res:type': 'music', 'file': 'ref:test_mp3' }\n"
-                "}\n";
-            auto result = ff::test::create_resources(json_source);
+            auto result = ff::test::create_resources(R"(
+                {
+                    "test_mp3": { "res:type": "file", "file": "file:test.mp3" },
+                    "test_music": { "res:type": "music", "file": "ref:test_mp3" }
+                }
+            )");
             auto& res = std::get<0>(result);
 
             ff::auto_resource<ff::audio_effect_base> music_res = res->get_resource_object("test_music");

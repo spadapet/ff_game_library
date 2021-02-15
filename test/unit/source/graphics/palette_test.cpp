@@ -8,13 +8,13 @@ namespace graphics_test
     public:
         TEST_METHOD(palette_resource)
         {
-            std::string_view json_source =
-                "{\n"
-                "    'test_palette': { 'res:type': 'palette', 'file': 'file:test_texture.png',\n"
-                "        'remaps': { 'foo': [ [ 100, 200 ], [ 16, 32 ] ] }\n"
-                "    }\n"
-                "}\n";
-            auto result = ff::test::create_resources(json_source);
+            auto result = ff::test::create_resources(R"(
+                {
+                    "test_palette": { "res:type": "palette", "file": "file:test_texture.png",
+                        "remaps": { "foo": [ [ 100, 200 ], [ 16, 32 ] ] }
+                    }
+                }
+            )");
             auto& res = std::get<0>(result);
 
             ff::auto_resource<ff::palette_data> palette_data_res = res->get_resource_object("test_palette");

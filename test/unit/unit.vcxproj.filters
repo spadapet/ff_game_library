@@ -107,6 +107,9 @@
     <ClCompile Include="source\utility.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\graphics\font_test.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

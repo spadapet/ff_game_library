@@ -12,24 +12,24 @@ std::tuple<std::unique_ptr<ff::resource_objects>, ff::end_scope_action> ff::test
 
     // Create test files
     {
-        std::filesystem::path path = temp_path / "test_texture.png";
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_TEXTURE));
-        ff::stream_copy(ff::file_writer(path), ff::data_reader(data), data->size());
+        ff::stream_copy(ff::file_writer(temp_path / "test_texture.png"), ff::data_reader(data), data->size());
     }
     {
-        std::filesystem::path path = temp_path / "test_effect.wav";
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_EFFECT));
-        ff::stream_copy(ff::file_writer(path), ff::data_reader(data), data->size());
+        ff::stream_copy(ff::file_writer(temp_path / "test_effect.wav"), ff::data_reader(data), data->size());
     }
     {
-        std::filesystem::path path = temp_path / "test.mp3";
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_MUSIC));
-        ff::stream_copy(ff::file_writer(path), ff::data_reader(data), data->size());
+        ff::stream_copy(ff::file_writer(temp_path / "test.mp3"), ff::data_reader(data), data->size());
     }
     {
-        std::filesystem::path path = temp_path / "test_shader.hlsl";
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_SHADER));
-        ff::stream_copy(ff::file_writer(path), ff::data_reader(data), data->size());
+        ff::stream_copy(ff::file_writer(temp_path / "test_shader.hlsl"), ff::data_reader(data), data->size());
+    }
+    {
+        auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_FONT));
+        ff::stream_copy(ff::file_writer(temp_path / "test_font.ttf"), ff::data_reader(data), data->size());
     }
 
     std::string json_string(json_source);

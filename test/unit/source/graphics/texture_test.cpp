@@ -8,11 +8,11 @@ namespace graphics_test
     public:
         TEST_METHOD(texture_resource)
         {
-            std::string_view json_source =
-                "{\n"
-                "    'test_texture': { 'res:type': 'texture', 'file': 'file:test_texture.png', 'format': 'bc3', 'mips': '4' }\n"
-                "}\n";
-            auto result = ff::test::create_resources(json_source);
+            auto result = ff::test::create_resources(R"(
+                {
+                    "test_texture": { "res:type": "texture", "file": "file:test_texture.png", "format": "bc3", "mips": "4" }
+                }
+            )");
             auto& res = std::get<0>(result);
 
             ff::auto_resource<ff::dx11_texture> texture_res = res->get_resource_object("test_texture");

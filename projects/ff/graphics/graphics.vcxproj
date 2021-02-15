@@ -22,6 +22,7 @@
     <ClCompile Include="source\dx11_render_target_window.cpp" />
     <ClCompile Include="source\dx11_texture_view.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
+    <ClCompile Include="source\font_data.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\graphics_child_base.cpp" />
     <ClCompile Include="source\init.cpp" />
@@ -35,6 +36,7 @@
     <ClCompile Include="source\dx11_texture.cpp" />
     <ClCompile Include="source\sprite.cpp" />
     <ClCompile Include="source\sprite_data.cpp" />
+    <ClCompile Include="source\sprite_font.cpp" />
     <ClCompile Include="source\sprite_list.cpp" />
     <ClCompile Include="source\sprite_optimizer.cpp" />
     <ClCompile Include="source\sprite_resource.cpp" />
@@ -65,6 +67,7 @@
     <ClInclude Include="source\dx11_texture_view_base.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
+    <ClInclude Include="source\font_data.h" />
     <ClInclude Include="source\graphics.h" />
     <ClInclude Include="source\graphics_child_base.h" />
     <ClInclude Include="source\graphics_counters.h" />
@@ -81,6 +84,7 @@
     <ClInclude Include="source\sprite.h" />
     <ClInclude Include="source\sprite_base.h" />
     <ClInclude Include="source\sprite_data.h" />
+    <ClInclude Include="source\sprite_font.h" />
     <ClInclude Include="source\sprite_list.h" />
     <ClInclude Include="source\sprite_optimizer.h" />
     <ClInclude Include="source\sprite_resource.h" />

@@ -10,264 +10,266 @@ static const int TEXTURE_SIZE_MAX = 1024;
 static const int TEXTURE_SIZE_MIN = 128;
 static const int TEXTURE_GRID_SIZE = 8;
 
-// Info about where each sprite came from and where it's going
-struct optimized_sprite_info
+namespace
 {
-    optimized_sprite_info(const ff::sprite_base* sprite, size_t sprite_index)
-        : sprite(sprite)
-        , dest_sprite_type(ff::sprite_type::unknown)
-        , source_rect(sprite->sprite_data().texture_rect().cast<int>())
-        , dest_rect{}
-        , sprite_index(sprite_index)
-        , dest_texture(ff::constants::invalid_size)
-    {}
-
-    optimized_sprite_info(optimized_sprite_info&& other) noexcept = default;
-    optimized_sprite_info(const optimized_sprite_info& other) = default;
-
-    optimized_sprite_info& operator=(optimized_sprite_info&& other) noexcept = default;
-    optimized_sprite_info& operator=(const optimized_sprite_info& other) = default;
-
-    bool operator<(const optimized_sprite_info& other) const
+    // Info about where each sprite came from and where it's going
+    struct optimized_sprite_info
     {
-        if (this->source_rect.height() == other.source_rect.height())
+        optimized_sprite_info(const ff::sprite_base* sprite, size_t sprite_index)
+            : sprite(sprite)
+            , dest_sprite_type(ff::sprite_type::unknown)
+            , source_rect(sprite->sprite_data().texture_rect().cast<int>())
+            , dest_rect{}
+            , sprite_index(sprite_index)
+            , dest_texture(ff::constants::invalid_size)
+        {}
+
+        optimized_sprite_info(optimized_sprite_info&& other) noexcept = default;
+        optimized_sprite_info(const optimized_sprite_info& other) = default;
+
+        optimized_sprite_info& operator=(optimized_sprite_info&& other) noexcept = default;
+        optimized_sprite_info& operator=(const optimized_sprite_info& other) = default;
+
+        bool operator<(const optimized_sprite_info& other) const
         {
-            if (this->source_rect.width() == other.source_rect.width())
+            if (this->source_rect.height() == other.source_rect.height())
             {
-                if (this->source_rect.top == other.source_rect.top)
+                if (this->source_rect.width() == other.source_rect.width())
                 {
-                    if (this->source_rect.left == other.source_rect.left)
+                    if (this->source_rect.top == other.source_rect.top)
                     {
-                        return this->sprite->sprite_data().view() < other.sprite->sprite_data().view();
+                        if (this->source_rect.left == other.source_rect.left)
+                        {
+                            return this->sprite->sprite_data().view() < other.sprite->sprite_data().view();
+                        }
+
+                        return this->source_rect.left < other.source_rect.left;
                     }
 
-                    return this->source_rect.left < other.source_rect.left;
+                    return this->source_rect.top < other.source_rect.top;
                 }
 
-                return this->source_rect.top < other.source_rect.top;
+                // larger comes first
+                return this->source_rect.width() > other.source_rect.width();
             }
 
             // larger comes first
-            return this->source_rect.width() > other.source_rect.width();
+            return this->source_rect.height() > other.source_rect.height();
         }
 
-        // larger comes first
-        return this->source_rect.height() > other.source_rect.height();
-    }
+        const ff::sprite_base* sprite;
+        ff::sprite_type dest_sprite_type;
+        ff::rect_int source_rect;
+        ff::rect_int dest_rect;
+        size_t sprite_index;
+        size_t dest_texture;
+    };
 
-    const ff::sprite_base* sprite;
-    ff::sprite_type dest_sprite_type;
-    ff::rect_int source_rect;
-    ff::rect_int dest_rect;
-    size_t sprite_index;
-    size_t dest_texture;
-};
-
-// Cached RGBA original texture
-struct original_texture_info
-{
-    std::shared_ptr<ff::dx11_texture> rgb_texture;
-    std::shared_ptr<DirectX::ScratchImage> rgb_scratch;
-};
-
-// Destination texture RGBA (_texture) and final converted texture (_finalTexture)
-struct optimized_texture_info
-{
-    optimized_texture_info(ff::point_int size)
-        : size(size)
-        , row_left{}
-        , row_right{}
+    // Cached RGBA original texture
+    struct original_texture_info
     {
-        // Column indexes must fit within a byte (even one beyond the last column)
-        assert(::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE < 256 && this->row_left.size() == this->row_right.size());
-    }
+        std::shared_ptr<ff::dx11_texture> rgb_texture;
+        std::shared_ptr<DirectX::ScratchImage> rgb_scratch;
+    };
 
-    optimized_texture_info(const optimized_texture_info& other) = default;
-    optimized_texture_info(optimized_texture_info&& other) noexcept = default;
-
-    optimized_texture_info& operator=(const optimized_texture_info& other) = default;
-    optimized_texture_info& operator=(optimized_texture_info && other) noexcept = default;
-
-    ff::rect_int find_placement(ff::point_int placement_size)
+    // Destination texture RGBA (_texture) and final converted texture (_finalTexture)
+    struct optimized_texture_info
     {
-        ff::point_int dest_pos(-1, -1);
-
-        if (placement_size.x > 0 && placement_size.x <= this->size.x && placement_size.y > 0 && placement_size.y <= this->size.y)
+        optimized_texture_info(ff::point_int size)
+            : size(size)
+            , row_left{}
+            , row_right{}
         {
-            ff::point_int cell_size(
-                (placement_size.x + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE,
-                (placement_size.y + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE);
+            // Column indexes must fit within a byte (even one beyond the last column)
+            assert(::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE < 256 && this->row_left.size() == this->row_right.size());
+        }
 
-            for (int y = 0; y + cell_size.y <= this->size.y / ::TEXTURE_GRID_SIZE; y++)
+        optimized_texture_info(const optimized_texture_info& other) = default;
+        optimized_texture_info(optimized_texture_info&& other) noexcept = default;
+
+        optimized_texture_info& operator=(const optimized_texture_info& other) = default;
+        optimized_texture_info& operator=(optimized_texture_info&& other) noexcept = default;
+
+        ff::rect_int find_placement(ff::point_int placement_size)
+        {
+            ff::point_int dest_pos(-1, -1);
+
+            if (placement_size.x > 0 && placement_size.x <= this->size.x && placement_size.y > 0 && placement_size.y <= this->size.y)
             {
-                for (int attempt = 0; attempt < 2; attempt++)
-                {
-                    // Try to put the sprite as far left as possible in each row
-                    int x;
+                ff::point_int cell_size(
+                    (placement_size.x + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE,
+                    (placement_size.y + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE);
 
-                    if (attempt)
+                for (int y = 0; y + cell_size.y <= this->size.y / ::TEXTURE_GRID_SIZE; y++)
+                {
+                    for (int attempt = 0; attempt < 2; attempt++)
                     {
-                        x = this->row_right[y];
+                        // Try to put the sprite as far left as possible in each row
+                        int x;
+
+                        if (attempt)
+                        {
+                            x = this->row_right[y];
 
 #if FORCE_GAP
-                        if (x)
-                        {
-                            // don't touch the previous sprite
-                            x++;
-                        }
+                            if (x)
+                            {
+                                // don't touch the previous sprite
+                                x++;
+                            }
 #endif
+                        }
+                        else
+                        {
+                            x = this->row_left[y];
+#if FORCE_GAP
+                            x -= cell_size.x + 1;
+#else
+                            x -= cell_size.x;
+#endif
+                        }
+
+                        if (x >= 0 && x + cell_size.x <= this->size.x / ::TEXTURE_GRID_SIZE)
+                        {
+                            bool found = true;
+
+#if FORCE_GAP
+                            // Look for intersection with another sprite
+                            for (int check_y = y + cell_size.y; check_y >= y - 1; check_y--)
+                            {
+                                if (check_y >= 0 &&
+                                    check_y < this->size.y / TEXTURE_GRID_SIZE &&
+                                    check_y < _countof(this->row_right) &&
+                                    this->row_right[check_y] &&
+                                    this->row_right[check_y] + 1 > x &&
+                                    x + cell_size.x + 1 > this->row_left[check_y])
+                                {
+                                    found = false;
+                                    break;
+                                }
+                            }
+#else
+                            // Look for intersection with another sprite
+                            for (int check_y = y + cell_size.y - 1; check_y >= y; check_y--)
+                            {
+                                if (check_y >= 0 &&
+                                    check_y < this->size.y / ::TEXTURE_GRID_SIZE &&
+                                    check_y < this->row_right.size() &&
+                                    this->row_right[check_y] &&
+                                    this->row_right[check_y] > x &&
+                                    x + cell_size.x > this->row_left[check_y])
+                                {
+                                    found = false;
+                                    break;
+                                }
+                            }
+#endif
+
+                            // Prefer positions further to the left
+                            if (found && (dest_pos.x == -1 || dest_pos.x > x * ::TEXTURE_GRID_SIZE))
+                            {
+                                dest_pos = ff::point_int(x * ::TEXTURE_GRID_SIZE, y * ::TEXTURE_GRID_SIZE);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return (dest_pos.x == -1)
+                ? ff::rect_int(0, 0, 0, 0)
+                : ff::rect_int(dest_pos.x, dest_pos.y, dest_pos.x + placement_size.x, dest_pos.y + placement_size.y);
+        }
+
+        bool place_rect(ff::rect_int rect)
+        {
+            ff::rect_int rect_cells(
+                rect.left / ::TEXTURE_GRID_SIZE,
+                rect.top / ::TEXTURE_GRID_SIZE,
+                (rect.right + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE,
+                (rect.bottom + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE);
+
+            if (!(rect.left >= 0 && rect.right <= this->size.x &&
+                rect.top >= 0 && rect.bottom <= this->size.y &&
+                rect.width() > 0 &&
+                rect.height() > 0))
+            {
+                assert(false);
+                return false;
+            }
+
+            // Validate that the sprite doesn't overlap anything
+
+#if FORCE_GAP
+            for (int y = rect_cells.top - 1; y <= rect_cells.bottom; y++)
+            {
+                if (y >= 0 && y < this->size.y / ::TEXTURE_GRID_SIZE && y < this->row_right.size())
+                {
+                    // Must be a one cell gap between sprites
+                    if (this->row_right[y] &&
+                        this->row_right[y] + 1 > rect_cells.left &&
+                        rect_cells.right + 1 > this->row_left[y])
+                    {
+                        assert(false);
+                        return false;
+                    }
+                }
+            }
+#else
+            for (int y = rect_cells.top; y < rect_cells.bottom; y++)
+            {
+                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
+                {
+                    // Must be a one cell gap between sprites
+                    if (this->row_right[y] &&
+                        this->row_right[y] > rect_cells.left &&
+                        rect_cells.right > this->row_left[y])
+                    {
+                        assert(false);
+                        return false;
+                    }
+                }
+            }
+#endif
+            // Invalidate the space taken up by the new sprite
+
+            for (int y = rect_cells.top; y < rect_cells.bottom; y++)
+            {
+                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
+                {
+                    if (this->row_right[y])
+                    {
+                        this->row_left[y] = std::min<BYTE>(this->row_left[y], rect_cells.left);
+                        this->row_right[y] = std::max<BYTE>(this->row_right[y], rect_cells.right);
                     }
                     else
                     {
-                        x = this->row_left[y];
-#if FORCE_GAP
-                        x -= cell_size.x + 1;
-#else
-                        x -= cell_size.x;
-#endif
-                    }
-
-                    if (x >= 0 && x + cell_size.x <= this->size.x / ::TEXTURE_GRID_SIZE)
-                    {
-                        bool found = true;
-
-#if FORCE_GAP
-                        // Look for intersection with another sprite
-                        for (int check_y = y + cell_size.y; check_y >= y - 1; check_y--)
-                        {
-                            if (check_y >= 0 &&
-                                check_y < this->size.y / TEXTURE_GRID_SIZE &&
-                                check_y < _countof(this->row_right) &&
-                                this->row_right[check_y] &&
-                                this->row_right[check_y] + 1 > x &&
-                                x + cell_size.x + 1 > this->row_left[check_y])
-                            {
-                                found = false;
-                                break;
-                            }
-                        }
-#else
-                        // Look for intersection with another sprite
-                        for (int check_y = y + cell_size.y - 1; check_y >= y; check_y--)
-                        {
-                            if (check_y >= 0 &&
-                                check_y < this->size.y / ::TEXTURE_GRID_SIZE &&
-                                check_y < this->row_right.size() &&
-                                this->row_right[check_y] &&
-                                this->row_right[check_y] > x &&
-                                x + cell_size.x > this->row_left[check_y])
-                            {
-                                found = false;
-                                break;
-                            }
-                        }
-#endif
-
-                        // Prefer positions further to the left
-                        if (found && (dest_pos.x == -1 || dest_pos.x > x * ::TEXTURE_GRID_SIZE))
-                        {
-                            dest_pos = ff::point_int(x * ::TEXTURE_GRID_SIZE, y * ::TEXTURE_GRID_SIZE);
-                        }
+                        this->row_left[y] = rect_cells.left;
+                        this->row_right[y] = rect_cells.right;
                     }
                 }
             }
+
+            return true;
         }
 
-        return (dest_pos.x == -1)
-            ? ff::rect_int(0, 0, 0, 0)
-            : ff::rect_int(dest_pos.x, dest_pos.y, dest_pos.x + placement_size.x, dest_pos.y + placement_size.y);
-    }
+        ff::point_int size;
+        DirectX::ScratchImage scratch_texture;
+        std::shared_ptr<ff::dx11_texture> final_texture;
 
-    bool place_rect(ff::rect_int rect)
-    {
-        ff::rect_int rect_cells(
-            rect.left / ::TEXTURE_GRID_SIZE,
-            rect.top / ::TEXTURE_GRID_SIZE,
-            (rect.right + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE,
-            (rect.bottom + ::TEXTURE_GRID_SIZE - 1) / ::TEXTURE_GRID_SIZE);
-
-        if (!(rect.left >= 0 && rect.right <= this->size.x &&
-            rect.top >= 0 && rect.bottom <= this->size.y &&
-            rect.width() > 0 &&
-            rect.height() > 0))
-        {
-            assert(false);
-            return false;
-        }
-
-        // Validate that the sprite doesn't overlap anything
-
-#if FORCE_GAP
-        for (int y = rect_cells.top - 1; y <= rect_cells.bottom; y++)
-        {
-            if (y >= 0 && y < this->size.y / ::TEXTURE_GRID_SIZE && y < this->row_right.size())
-            {
-                // Must be a one cell gap between sprites
-                if (this->row_right[y] &&
-                    this->row_right[y] + 1 > rect_cells.left &&
-                    rect_cells.right + 1 > this->row_left[y])
-                {
-                    assert(false);
-                    return false;
-                }
-            }
-        }
-#else
-        for (int y = rect_cells.top; y < rect_cells.bottom; y++)
-        {
-            if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
-            {
-                // Must be a one cell gap between sprites
-                if (this->row_right[y] &&
-                    this->row_right[y] > rect_cells.left &&
-                    rect_cells.right > this->row_left[y])
-                {
-                    assert(false);
-                    return false;
-                }
-            }
-        }
-#endif
-
-        // Invalidate the space taken up by the new sprite
-
-        for (int y = rect_cells.top; y < rect_cells.bottom; y++)
-        {
-            if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
-            {
-                if (this->row_right[y])
-                {
-                    this->row_left[y] = std::min<BYTE>(this->row_left[y], rect_cells.left);
-                    this->row_right[y] = std::max<BYTE>(this->row_right[y], rect_cells.right);
-                }
-                else
-                {
-                    this->row_left[y] = rect_cells.left;
-                    this->row_right[y] = rect_cells.right;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    ff::point_int size;
-    DirectX::ScratchImage scratch_texture;
-    std::shared_ptr<ff::dx11_texture> final_texture;
-
-private:
-    std::array<uint8_t, ::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE> row_left;
-    std::array<uint8_t, ::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE> row_right;
-};
+    private:
+        std::array<uint8_t, ::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE> row_left;
+        std::array<uint8_t, ::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE> row_right;
+    };
+}
 
 // Returns true when all done (sprites will still be placed when false is returned)
-static bool place_sprites(std::vector<optimized_sprite_info>& sprites, std::vector<optimized_texture_info>& texture_infos, size_t start_texture)
+static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::vector<optimized_texture_info>& texture_infos, size_t start_texture)
 {
     size_t sprites_done = 0;
 
     for (size_t i = 0; i < sprites.size(); i++)
     {
-        optimized_sprite_info& sprite = sprites[i];
+        ::optimized_sprite_info& sprite = sprites[i];
         bool reuse_previous = (i > 0) && !(sprite < sprites[i - 1]) && !(sprites[i - 1] < sprite);
 
         if (reuse_previous)
@@ -301,7 +303,7 @@ static bool place_sprites(std::vector<optimized_sprite_info>& sprites, std::vect
                 // Look for empty space in an existing texture
                 for (size_t h = start_texture; h < texture_infos.size(); h++)
                 {
-                    optimized_texture_info& texture = texture_infos[h];
+                    ::optimized_texture_info& texture = texture_infos[h];
 
                     if (texture.size.x <= ::TEXTURE_SIZE_MAX &&
                         texture.size.y <= ::TEXTURE_SIZE_MAX)
@@ -329,9 +331,9 @@ static bool place_sprites(std::vector<optimized_sprite_info>& sprites, std::vect
     return sprites_done == sprites.size();
 }
 
-static std::vector<optimized_sprite_info> create_sprite_infos(const std::vector<const ff::sprite_base*>& original_sprites)
+static std::vector<::optimized_sprite_info> create_sprite_infos(const std::vector<const ff::sprite_base*>& original_sprites)
 {
-    std::vector<optimized_sprite_info> sprite_infos;
+    std::vector<::optimized_sprite_info> sprite_infos;
     sprite_infos.reserve(original_sprites.size());
 
     for (size_t i = 0; i < original_sprites.size(); i++)
@@ -344,11 +346,11 @@ static std::vector<optimized_sprite_info> create_sprite_infos(const std::vector<
 
 static bool create_original_textures(
     DXGI_FORMAT format,
-    const std::vector<optimized_sprite_info>& sprite_infos,
-    std::unordered_map<const ff::dx11_texture*, original_texture_info>& original_textures,
+    const std::vector<::optimized_sprite_info>& sprite_infos,
+    std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
     std::shared_ptr<DirectX::ScratchImage>& palette_data)
 {
-    for (const optimized_sprite_info& sprite_info : sprite_infos)
+    for (const ::optimized_sprite_info& sprite_info : sprite_infos)
     {
         const ff::dx11_texture* texture = sprite_info.sprite->sprite_data().view()->view_texture();
         if (!palette_data)
@@ -365,7 +367,7 @@ static bool create_original_textures(
             }
 
             DXGI_FORMAT capture_format = ff::internal::color_format(format) ? ff::internal::DEFAULT_FORMAT : format;
-            original_texture_info texure_info;
+            ::original_texture_info texure_info;
             texure_info.rgb_texture = std::make_shared<ff::dx11_texture>(*texture, capture_format, 1);
             if (!texure_info.rgb_texture)
             {
@@ -387,7 +389,7 @@ static bool create_original_textures(
     return true;
 }
 
-static bool compute_optimized_sprites(std::vector<optimized_sprite_info>& sprites, std::vector<optimized_texture_info>& texture_infos)
+static bool compute_optimized_sprites(std::vector<::optimized_sprite_info>& sprites, std::vector<::optimized_texture_info>& texture_infos)
 {
     for (bool done = false; !done && sprites.size(); )
     {
@@ -404,7 +406,7 @@ static bool compute_optimized_sprites(std::vector<optimized_sprite_info>& sprite
                 // Remove this texture and use a bigger one instead
                 texture_infos.pop_back();
 
-                for (optimized_sprite_info& sprite : sprites)
+                for (::optimized_sprite_info& sprite : sprites)
                 {
                     if (sprite.dest_texture != ff::constants::invalid_size)
                     {
@@ -426,11 +428,11 @@ static bool compute_optimized_sprites(std::vector<optimized_sprite_info>& sprite
     return true;
 }
 
-static bool create_optimized_textures(DXGI_FORMAT format, std::vector<optimized_texture_info>& texture_infos)
+static bool create_optimized_textures(DXGI_FORMAT format, std::vector<::optimized_texture_info>& texture_infos)
 {
     format = ff::internal::color_format(format) ? ff::internal::DEFAULT_FORMAT : format;
 
-    for (optimized_texture_info& texture : texture_infos)
+    for (::optimized_texture_info& texture : texture_infos)
     {
         if (FAILED(texture.scratch_texture.Initialize2D(format, texture.size.x, texture.size.y, 1, 1)))
         {
@@ -445,11 +447,11 @@ static bool create_optimized_textures(DXGI_FORMAT format, std::vector<optimized_
 }
 
 static bool copy_optimized_sprites(
-    std::vector<optimized_sprite_info>& sprite_infos,
-    std::unordered_map<const ff::dx11_texture*, original_texture_info>& original_textures,
-    std::vector<optimized_texture_info>& texture_infos)
+    std::vector<::optimized_sprite_info>& sprite_infos,
+    std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
+    std::vector<::optimized_texture_info>& texture_infos)
 {
-    for (optimized_sprite_info& sprite : sprite_infos)
+    for (::optimized_sprite_info& sprite : sprite_infos)
     {
         auto iter = original_textures.find(sprite.sprite->sprite_data().view()->view_texture());
         if (sprite.dest_texture >= texture_infos.size() || iter == original_textures.cend())
@@ -458,7 +460,7 @@ static bool copy_optimized_sprites(
             return false;
         }
 
-        original_texture_info& original_info = iter->second;
+        ::original_texture_info& original_info = iter->second;
         sprite.dest_sprite_type = ff::internal::get_sprite_type(*original_info.rgb_scratch, &sprite.source_rect.cast<size_t>());
 
         bool status = SUCCEEDED(DirectX::CopyRectangle(
@@ -481,10 +483,10 @@ static bool copy_optimized_sprites(
 static bool convert_final_textures(
     DXGI_FORMAT format,
     size_t mip_count,
-    std::vector<optimized_texture_info>& texture_infos,
+    std::vector<::optimized_texture_info>& texture_infos,
     const std::shared_ptr<DirectX::ScratchImage>& palette_scratch)
 {
-    for (optimized_texture_info& texure_info : texture_infos)
+    for (::optimized_texture_info& texure_info : texture_infos)
     {
         std::shared_ptr<ff::dx11_texture> rgb_texture = std::make_shared<ff::dx11_texture>(
             std::make_shared<DirectX::ScratchImage>(std::move(texure_info.scratch_texture)), palette_scratch);
@@ -506,13 +508,13 @@ static bool convert_final_textures(
 }
 
 static bool create_final_sprites(
-    const std::vector<optimized_sprite_info>& sprite_infos,
-    std::vector<optimized_texture_info>& texture_infos,
+    const std::vector<::optimized_sprite_info>& sprite_infos,
+    std::vector<::optimized_texture_info>& texture_infos,
     std::vector<ff::sprite>& new_sprites)
 {
     new_sprites.reserve(sprite_infos.size());
 
-    for (const optimized_sprite_info& sprite_info : sprite_infos)
+    for (const ::optimized_sprite_info& sprite_info : sprite_infos)
     {
         new_sprites.emplace_back(
             std::string(sprite_info.sprite->name()),
@@ -536,12 +538,12 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
         return new_sprites;
     }
 
-    std::vector<optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
+    std::vector<::optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
     std::sort(sprite_infos.begin(), sprite_infos.end());
 
-    std::unordered_map<const ff::dx11_texture*, original_texture_info> original_textures;
+    std::unordered_map<const ff::dx11_texture*, ::original_texture_info> original_textures;
     std::shared_ptr<DirectX::ScratchImage> scratch_palette;
-    std::vector<optimized_texture_info> texture_infos;
+    std::vector<::optimized_texture_info> texture_infos;
 
     if (!::create_original_textures(new_format, sprite_infos, original_textures, scratch_palette) ||
         !::compute_optimized_sprites(sprite_infos, texture_infos) ||
@@ -552,7 +554,7 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
     }
 
     // Go back to the original order
-    std::sort(sprite_infos.begin(), sprite_infos.end(), [](const optimized_sprite_info& info1, const optimized_sprite_info& info2)
+    std::sort(sprite_infos.begin(), sprite_infos.end(), [](const ::optimized_sprite_info& info1, const ::optimized_sprite_info& info2)
         {
             return info1.sprite_index < info2.sprite_index;
         });
@@ -569,8 +571,8 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
 
 static bool create_outline_sprites(
     DXGI_FORMAT format,
-    std::vector<optimized_sprite_info>& sprite_infos,
-    const std::unordered_map<const ff::dx11_texture*, original_texture_info>& original_textures,
+    std::vector<::optimized_sprite_info>& sprite_infos,
+    const std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
     std::vector<std::shared_ptr<ff::dx11_texture>>& outline_textures,
     std::vector<ff::sprite>& outline_sprite_list,
     const std::shared_ptr<DirectX::ScratchImage>& palette_data)
@@ -596,8 +598,8 @@ static bool create_outline_sprites(
         DirectX::ScratchImage outline_scratch;
         if (FAILED(outline_scratch.Initialize2D(
             use_palette ? DXGI_FORMAT_R8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM,
-            src_rect.width() + 2,
-            src_rect.height() + 2,
+            static_cast<size_t>(src_rect.width()) + 2,
+            static_cast<size_t>(src_rect.height()) + 2,
             1, 1)))
         {
             assert(false);
@@ -680,7 +682,7 @@ std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<const ff
         return new_sprites;
     }
 
-    std::vector<optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
+    std::vector<::optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
     std::vector<std::shared_ptr<ff::dx11_texture>> outline_textures;
     std::unordered_map<const ff::dx11_texture*, ::original_texture_info> original_textures;
     std::shared_ptr<DirectX::ScratchImage> palette_data;
