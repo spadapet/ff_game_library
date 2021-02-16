@@ -6,7 +6,7 @@
 
 bool ff::load_bytes(reader_base& reader, void* data, size_t size)
 {
-    return reader.read(data, size) && ff::load_padding(reader, size);
+    return reader.read(data, size) == size && ff::load_padding(reader, size);
 }
 
 bool ff::load_bytes(reader_base& reader, size_t size, std::shared_ptr<data_base>& data)
