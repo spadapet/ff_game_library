@@ -147,7 +147,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         ff::point_float pos;
         ff::point_float size;
 
-        if (pos_rect != ff::rect_float::zeros())
+        if (pos_rect != ff::rect_float{})
         {
             pos = pos_rect.top_left();
             size = pos_rect.size();
@@ -161,7 +161,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         ff::point_float offset = sprite_dict.get<ff::point_float>("offset", ff::point_float(size.x, 0));
         std::filesystem::path full_file = sprite_dict.get<std::string>("file");
         ff::point_float handle = sprite_dict.get<ff::point_float>("handle");
-        ff::point_float scale = sprite_dict.get<ff::point_float>("scale", ff::point_float::ones());
+        ff::point_float scale = sprite_dict.get<ff::point_float>("scale", ff::point_float(1, 1));
         size_t repeat = sprite_dict.get<size_t>("repeat", 1);
 
         std::shared_ptr<ff::dx11_texture_view_base> texture_view;
@@ -188,7 +188,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
             texture_views.try_emplace(std::wstring(full_file.native()), texture_view);
         }
 
-        if (size == ff::point_float::zeros() && handle == ff::point_float::zeros())
+        if (size == ff::point_float{} && handle == ff::point_float{})
         {
             size = texture_view->view_texture()->size().cast<float>();
         }

@@ -94,8 +94,8 @@ void ff::pointer_device::advance()
     this->mouse = this->pending_mouse;
     this->touches = this->pending_touches;
 
-    this->pending_mouse.pos_relative = ff::point_double::zeros();
-    this->pending_mouse.wheel_scroll = ff::point_double::zeros();
+    this->pending_mouse.pos_relative = ff::point_double{};
+    this->pending_mouse.wheel_scroll = ff::point_double{};
 
     std::memset(this->pending_mouse.press_count, 0, sizeof(this->pending_mouse.press_count));
     std::memset(this->pending_mouse.release_count, 0, sizeof(this->pending_mouse.release_count));

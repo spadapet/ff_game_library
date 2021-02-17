@@ -12,8 +12,7 @@ namespace ff
         using this_type = point_t<T>;
         using data_type = T;
 
-        static constexpr T value_zero = static_cast<T>(0);
-        static constexpr T value_one = static_cast<T>(1);
+        static constexpr T value_zero = T{};
 
         point_t() = default;
 
@@ -22,16 +21,6 @@ namespace ff
         point_t(T x, T y)
             : x(x), y(y)
         {}
-
-        static this_type zeros()
-        {
-            return this_type(this_type::value_zero, this_type::value_zero);
-        }
-
-        static this_type ones()
-        {
-            return this_type(this_type::value_one, this_type::value_one);
-        }
 
         this_type swap() const
         {

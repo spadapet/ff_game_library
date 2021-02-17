@@ -53,6 +53,7 @@ namespace ff
 
     private:
         bool init_sprites();
+        ff::point_float internal_draw_text(ff::renderer_base* render, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const;
 
         static const size_t MAX_GLYPH_COUNT = 0x10000;
 

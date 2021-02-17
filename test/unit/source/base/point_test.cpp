@@ -11,13 +11,13 @@ namespace base_test
             Assert::AreEqual(2, pt.x);
             Assert::AreEqual(4, pt.y);
 
-            pt = ff::point_int::zeros();
+            pt = ff::point_int{};
             Assert::AreEqual(0, pt.x);
             Assert::AreEqual(0, pt.y);
 
-            pt = ff::point_int::ones();
+            pt = ff::point_int(1, 2);
             Assert::AreEqual(1, pt.x);
-            Assert::AreEqual(1, pt.y);
+            Assert::AreEqual(2, pt.y);
         }
 
         TEST_METHOD(operators)

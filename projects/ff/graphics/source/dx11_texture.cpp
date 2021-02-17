@@ -130,7 +130,7 @@ ff::point_int ff::dx11_texture::size() const
     }
 
     assert(false);
-    return ff::point_int::zeros();
+    return ff::point_int{};
 }
 
 size_t ff::dx11_texture::mip_count() const
@@ -458,7 +458,7 @@ void ff::dx11_texture::fix_sprite_data(ff::sprite_type sprite_type)
 {
     this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
-        ff::rect_float(ff::point_float::zeros(), this->size().cast<float>()),
+        ff::rect_float(ff::point_float{}, this->size().cast<float>()),
         sprite_type);
 }
 

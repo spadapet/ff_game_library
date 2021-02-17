@@ -310,7 +310,7 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
                     {
                         sprite.dest_rect = texture.find_placement(sprite.source_rect.size());
 
-                        if (sprite.dest_rect != ff::rect_int::zeros())
+                        if (sprite.dest_rect != ff::rect_int{})
                         {
                             bool success = texture.place_rect(sprite.dest_rect);
                             assert(success);
@@ -413,7 +413,7 @@ static bool compute_optimized_sprites(std::vector<::optimized_sprite_info>& spri
                         if (sprite.dest_texture == texture_info)
                         {
                             sprite.dest_texture = ff::constants::invalid_size;
-                            sprite.dest_rect = ff::rect_int::zeros();
+                            sprite.dest_rect = ff::rect_int{};
                         }
                         else if (sprite.dest_texture > texture_info)
                         {
@@ -611,7 +611,7 @@ static bool create_outline_sprites(
         const DirectX::Image& src_image = *texture_info.rgb_scratch->GetImages();
         const DirectX::Image& dest_image = *outline_scratch.GetImages();
 
-        for (ff::point_int xy(src_rect.left, src_rect.top), dest_xy = ff::point_int::zeros(); xy.y < src_rect.bottom; xy.y++, dest_xy.y++)
+        for (ff::point_int xy(src_rect.left, src_rect.top), dest_xy = ff::point_int{}; xy.y < src_rect.bottom; xy.y++, dest_xy.y++)
         {
             const uint8_t* src_row = src_image.pixels + src_image.rowPitch * xy.y + src_rect.left * pixel_size;
 
@@ -663,8 +663,8 @@ static bool create_outline_sprites(
         outline_sprite_list.emplace_back(
             std::string(sprite_info.sprite->name()),
             std::shared_ptr<ff::dx11_texture_view_base>(outline_texture),
-            ff::rect_float(ff::point_float::zeros(), outline_texture->size().cast<float>()),
-            sprite_data.handle() + ff::point_float::ones(),
+            ff::rect_float(ff::point_float{}, outline_texture->size().cast<float>()),
+            sprite_data.handle() + ff::point_float(1, 1),
             sprite_data.scale(),
             ff::sprite_type::unknown);
     }

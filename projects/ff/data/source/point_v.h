@@ -25,12 +25,12 @@ namespace ff::type
 
         static ff::value* get_static_value(const point_type& value)
         {
-            return value == point_type::zeros() ? this_type::get_static_default_value() : nullptr;
+            return value == point_type{} ? this_type::get_static_default_value() : nullptr;
         }
 
         static ff::value* get_static_default_value()
         {
-            static this_type default_value = point_type::zeros();
+            static this_type default_value = point_type{};
             return &default_value;
         }
 

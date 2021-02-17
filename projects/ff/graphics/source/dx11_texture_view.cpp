@@ -136,6 +136,6 @@ void ff::dx11_texture_view::fix_sprite_data()
 {
     this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
-        ff::rect_float(ff::point_float::zeros(), this->texture_->size().cast<float>()),
+        ff::rect_float(ff::point_float{}, this->texture_->size().cast<float>()),
         this->texture_->sprite_type());
 }

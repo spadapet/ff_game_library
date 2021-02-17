@@ -5,7 +5,7 @@ namespace ff
     class viewport
     {
     public:
-        viewport(ff::point_int aspect, ff::rect_int padding = ff::rect_int::zeros());
+        viewport(ff::point_int aspect, ff::rect_int padding = {});
 
         ff::rect_int view(ff::point_int target_size);
 

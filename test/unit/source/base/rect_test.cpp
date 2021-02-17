@@ -7,18 +7,24 @@ namespace base_test
     public:
         TEST_METHOD(construct)
         {
-            ff::rect_int rt(2, 4, 8, 16);
-            Assert::AreEqual(2, rt.left);
-            Assert::AreEqual(4, rt.top);
-            Assert::AreEqual(8, rt.right);
-            Assert::AreEqual(16, rt.bottom);
+            ff::rect_int ri(2, 4, 8, 16);
+            Assert::AreEqual(2, ri.left);
+            Assert::AreEqual(4, ri.top);
+            Assert::AreEqual(8, ri.right);
+            Assert::AreEqual(16, ri.bottom);
 
-            rt = ff::rect_int::zeros();
-            Assert::AreEqual(0, rt.left);
-            Assert::AreEqual(0, rt.top);
-            Assert::AreEqual(0, rt.right);
-            Assert::AreEqual(0, rt.bottom);
-            Assert::IsTrue(rt == ff::rect_int::zeros());
+            ri = ff::rect_int{};
+            Assert::AreEqual(0, ri.left);
+            Assert::AreEqual(0, ri.top);
+            Assert::AreEqual(0, ri.right);
+            Assert::AreEqual(0, ri.bottom);
+            Assert::IsTrue(ri == ff::rect_int{});
+
+            ff::rect_fixed rf{};
+            Assert::IsTrue(ff::i32f8_t(0) == rf.left);
+            Assert::IsTrue(ff::i32f8_t(0) ==  rf.top);
+            Assert::IsTrue(ff::i32f8_t(0) ==  rf.right);
+            Assert::IsTrue(ff::i32f8_t(0) ==  rf.bottom);
         }
 
         TEST_METHOD(operators)

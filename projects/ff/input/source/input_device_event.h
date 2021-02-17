@@ -30,7 +30,7 @@ namespace ff
     struct input_device_event
     {
         input_device_event();
-        input_device_event(input_device_event_type type, unsigned int id = 0, int count = 0, ff::point_int pos = ff::point_int::zeros());
+        input_device_event(input_device_event_type type, unsigned int id = 0, int count = 0, ff::point_int pos = {});
 
         input_device_event_type type;
         unsigned int id;

@@ -41,6 +41,10 @@ namespace graphics_test
             Assert::IsNotNull(font.get());
             Assert::IsTrue(*font);
             Assert::IsTrue(font->line_spacing() > 16.25 && font->line_spacing() < 16.5);
+
+            ff::point_float size = font->measure_text("Hello, this is text.\r\nAnother line.", ff::point_float(1, 1));
+            Assert::IsTrue(size.x > 95 && size.x < 95.5);
+            Assert::IsTrue(size.y > 32.5 && size.y < 33);
         }
     };
 }

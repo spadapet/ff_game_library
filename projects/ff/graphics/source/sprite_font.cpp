@@ -1,11 +1,48 @@
 #include "pch.h"
+#include "color.h"
 #include "dx11_texture.h"
 #include "font_data.h"
 #include "graphics.h"
+#include "renderer_base.h"
 #include "sprite.h"
 #include "sprite_font.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
+#include "transform.h"
+
+static bool text_contains_outline_control(std::wstring_view text)
+{
+    static const std::wstring controls =
+    {
+        static_cast<wchar_t>(ff::sprite_font_control::outline_color),
+        static_cast<wchar_t>(ff::sprite_font_control::outline_palette_color),
+    };
+
+    return text.find_first_of(controls) != std::wstring_view::npos;
+}
+
+static std::wstring_view to_wstring(std::string_view text, std::array<wchar_t, 2048>& wtext_array, std::wstring& wtext_string)
+{
+    if (!text.empty())
+    {
+        int wcount = ::MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wtext_array.data(), static_cast<int>(wtext_array.size()));
+        if (wcount)
+        {
+            return std::wstring_view(wtext_array.data(), static_cast<size_t>(wcount));
+        }
+        else if (::GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+        {
+            wtext_string = ff::string::to_wstring(text);
+            return wtext_string;
+        }
+        else
+        {
+            assert(false);
+        }
+    }
+
+    return L"";
+}
 
 ff::sprite_font::sprite_font(const std::shared_ptr<ff::resource>& font_data_resource, float size, int outline_thickness, bool anti_alias)
     : glyphs{}
@@ -37,7 +74,7 @@ ff::sprite_font::sprite_font(
 
 ff::sprite_font::operator bool() const
 {
-    return this->sprites != nullptr;
+    return this->font_data && this->sprites;
 }
 
 ff::point_float ff::sprite_font::draw_text(
@@ -47,14 +84,34 @@ ff::point_float ff::sprite_font::draw_text(
     const DirectX::XMFLOAT4& outline_color,
     ff::sprite_font_options options) const
 {
-    // TODO
-    return ff::point_float();
+    std::array<wchar_t, 2048> wtext_array;
+    std::wstring wtext_string;
+    std::wstring_view wtext = ::to_wstring(text, wtext_array, wtext_string);
+    ff::point_float size{};
+
+    if ((outline_color.w > 0 || ::text_contains_outline_control(wtext)) && !ff::flags::has(options, ff::sprite_font_options::no_outline) && this->outline_sprites)
+    {
+        ff::transform outline_transform = transform;
+        outline_transform.color = outline_color;
+        size = this->internal_draw_text(render, this->outline_sprites.get(), wtext, outline_transform, options);
+        render->nudge_depth();
+    }
+
+    if (!ff::flags::has(options, ff::sprite_font_options::no_text))
+    {
+        size = this->internal_draw_text(render, this->sprites.get(), wtext, transform, options);
+    }
+
+    return size;
 }
 
 ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_float scale) const
 {
-    // TODO
-    return ff::point_float();
+    std::array<wchar_t, 2048> wtext_array;
+    std::wstring wtext_string;
+    std::wstring_view wtext = ::to_wstring(text, wtext_array, wtext_string);
+
+    return this->internal_draw_text(nullptr, nullptr, wtext, ff::transform::identity(), ff::sprite_font_options::no_control);
 }
 
 float ff::sprite_font::line_spacing() const
@@ -225,7 +282,7 @@ bool ff::sprite_font::init_sprites()
             {
                 // Filled up this texture, make a new one
 
-                staging_pos = ff::point_int::zeros();
+                staging_pos = ff::point_int{};
                 staging_row_height = 0;
 
                 staging_scratches.push_back(std::move(staging_scratch));
@@ -300,7 +357,7 @@ bool ff::sprite_font::init_sprites()
 
     for (const sprite_info& info : sprite_infos)
     {
-        sprite_vector.emplace_back("", textures[info.texture_index], info.pos, info.handle, ff::point_float::ones(), ff::sprite_type::unknown);
+        sprite_vector.emplace_back("", textures[info.texture_index], info.pos, info.handle, ff::point_float(1, 1), ff::sprite_type::unknown);
     }
 
     for (const ff::sprite& sprite : sprite_vector)
@@ -324,6 +381,112 @@ bool ff::sprite_font::init_sprites()
     }
 
     return true;
+}
+
+ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const
+{
+    IDWriteFontFaceX* font_face = this->font_data ? this->font_data->font_face() : nullptr;
+    if (!font_face || text.empty() || transform.scale.x * transform.scale.y == 0.0f)
+    {
+        return {};
+    }
+
+    bool has_kerning = font_face->HasKerningPairs();
+    DWRITE_FONT_METRICS1 fm{};
+    font_face->GetMetrics(&fm);
+
+    float design_unit_size = this->size / fm.designUnitsPerEm;
+    ff::point_float scaled_design_unit_size = transform.scale * design_unit_size;
+    ff::transform base_pos = transform;
+    base_pos.position.y += fm.ascent * scaled_design_unit_size.y;
+    ff::point_float max_pos(transform.position.x, transform.position.y + (fm.ascent + fm.descent) * scaled_design_unit_size.y);
+    float line_spacing = (fm.ascent + fm.descent + fm.lineGap) * scaled_design_unit_size.y;
+
+    if (render)
+    {
+        render->push_no_overlap();
+    }
+
+    for (const wchar_t* ch = text.data(), *ch_end = ch + text.size(); ch != ch_end; )
+    {
+        if (*ch == '\r' || *ch == '\n')
+        {
+            ch += (*ch == '\r' && ch + 1 != ch_end && ch[1] == '\n') ? 2 : 1;
+            base_pos.position = ff::point_float(transform.position.x, base_pos.position.y + line_spacing);
+            max_pos.y += line_spacing;
+            continue;
+        }
+        else if (*ch >= static_cast<wchar_t>(ff::sprite_font_control::none) && *ch <= static_cast<wchar_t>(ff::sprite_font_control::after_last))
+        {
+            ff::sprite_font_control control = static_cast<ff::sprite_font_control>(*ch++);
+            DirectX::XMFLOAT4 color;
+
+            switch (control)
+            {
+                case ff::sprite_font_control::outline_color:
+                case ff::sprite_font_control::text_color:
+                    color.x = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
+                    color.y = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
+                    color.z = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
+                    color.w = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
+
+                    if (!ff::flags::has(options, ff::sprite_font_options::no_control))
+                    {
+                        if ((control == ff::sprite_font_control::outline_color && sprites == this->outline_sprites.get()) ||
+                            (control == ff::sprite_font_control::text_color && sprites == this->sprites.get()))
+                        {
+                            base_pos.color = color;
+                        }
+                    }
+                    break;
+
+                case ff::sprite_font_control::outline_palette_color:
+                case ff::sprite_font_control::text_palette_color:
+                    ff::palette_index_to_color((ch != ch_end) ? static_cast<int>(*ch++) : 0, color);
+
+                    if (!ff::flags::has(options, ff::sprite_font_options::no_control))
+                    {
+                        if ((control == ff::sprite_font_control::outline_palette_color && sprites == this->outline_sprites.get()) ||
+                            (control == ff::sprite_font_control::text_palette_color && sprites == this->sprites.get()))
+                        {
+                            base_pos.color = color;
+                        }
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            const ff::sprite_font::char_and_glyph_info& glyph = this->glyphs[this->glyphs[*ch].char_to_glyph];
+
+            if (render && sprites && glyph.glyph_to_sprite && glyph.glyph_to_sprite < sprites->size())
+            {
+                render->draw_sprite(sprites->get(static_cast<size_t>(glyph.glyph_to_sprite))->sprite_data(), base_pos);
+            }
+
+            base_pos.position.x += glyph.glyph_width * base_pos.scale.x;
+            max_pos.x = std::max(max_pos.x, base_pos.position.x);
+
+            if (has_kerning && ch + 1 != ch_end)
+            {
+                uint16_t two_glyphs[2] = { ch[0], ch[1] };
+                int two_design_kerns[2];
+                if (SUCCEEDED(font_face->GetKerningPairAdjustments(2, two_glyphs, two_design_kerns)))
+                {
+                    base_pos.position.x += two_design_kerns[0] * scaled_design_unit_size.x;
+                }
+            }
+
+            ch++;
+        }
+    }
+
+    if (render)
+    {
+        render->pop_no_overlap();
+    }
+
+    return max_pos - transform.position;
 }
 
 std::vector<std::shared_ptr<ff::resource>> ff::sprite_font::resource_get_dependencies() const

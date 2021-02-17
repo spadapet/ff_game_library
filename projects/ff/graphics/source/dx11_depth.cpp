@@ -7,7 +7,7 @@
 static const DXGI_FORMAT DEPTH_STENCIL_FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 ff::dx11_depth::dx11_depth(size_t sample_count)
-    : dx11_depth(ff::point_int::ones(), sample_count)
+    : dx11_depth(ff::point_int(1, 1), sample_count)
 {}
 
 ff::dx11_depth::dx11_depth(const ff::point_int& size, size_t sample_count)

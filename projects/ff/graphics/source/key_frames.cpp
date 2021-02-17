@@ -342,8 +342,8 @@ ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame&
         }
         else if (lhs.value->is_type<ff::point_float>())
         {
-            ff::rect_float v1(lhs.value->get<ff::point_float>(), ff::point_float::zeros());
-            ff::rect_float v2(other.value->get<ff::point_float>(), ff::point_float::zeros());
+            ff::rect_float v1(lhs.value->get<ff::point_float>(), ff::point_float{});
+            ff::rect_float v2(other.value->get<ff::point_float>(), ff::point_float{});
 
             ff::rect_float output;
             DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(&output),

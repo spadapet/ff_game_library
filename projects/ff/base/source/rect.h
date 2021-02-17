@@ -13,7 +13,7 @@ namespace ff
         using point_type = point_t<T>;
         using data_type = T;
 
-        static constexpr T value_zero = static_cast<T>(0);
+        static constexpr T value_zero = T{};
         static constexpr T value_two = static_cast<T>(2);
 
         rect_t() = default;
@@ -257,7 +257,7 @@ namespace ff
 
             if (rect.left > rect.right || rect.top > rect.bottom)
             {
-                return this_type::zeros();
+                return this_type{};
             }
 
             return rect;

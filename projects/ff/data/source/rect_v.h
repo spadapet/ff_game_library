@@ -25,12 +25,12 @@ namespace ff::type
 
         static ff::value* get_static_value(const rect_type& value)
         {
-            return value == rect_type::zeros() ? this_type::get_static_default_value() : nullptr;
+            return value == rect_type{} ? this_type::get_static_default_value() : nullptr;
         }
 
         static ff::value* get_static_default_value()
         {
-            static this_type default_value = rect_type::zeros();
+            static this_type default_value = rect_type{};
             return &default_value;
         }
 
