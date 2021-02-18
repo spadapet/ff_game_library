@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "data_blob.h"
+#include "draw_base.h"
 #include "dx11_device_state.h"
 #include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "png_image.h"
-#include "renderer_base.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
 #include "texture_metadata.h"
@@ -392,9 +392,9 @@ float ff::dx11_texture::frames_per_second() const
 void ff::dx11_texture::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::dx11_texture::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::dx11_texture::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
-    render.draw_sprite(this->sprite_data_, transform);
+    draw.draw_sprite(this->sprite_data_, transform);
 }
 
 ff::value_ptr ff::dx11_texture::frame_value(size_t value_id, float frame, const ff::dict* params)
@@ -405,9 +405,9 @@ ff::value_ptr ff::dx11_texture::frame_value(size_t value_id, float frame, const 
 void ff::dx11_texture::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::dx11_texture::render_animation(ff::renderer_base& render, const ff::transform& transform) const
+void ff::dx11_texture::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
 {
-    render.draw_sprite(this->sprite_data_, transform);
+    draw.draw_sprite(this->sprite_data_, transform);
 }
 
 float ff::dx11_texture::animation_frame() const

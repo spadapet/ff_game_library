@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "dx11_device_state.h"
 #include "dx11_object_cache.h"
-#include "dx11_render_target_window_base.h"
+#include "dx11_target_window_base.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
@@ -41,7 +41,7 @@ static size_t dxgi_adapter_outputs_hash;
 
 static std::recursive_mutex graphics_mutex;
 static std::vector<ff::internal::graphics_child_base*> graphics_children;
-static ff::dx11_render_target_window_base* defer_render_target;
+static ff::dx11_target_window_base* defer_target;
 static ff::window_size defer_size;
 static ::defer_flags_t defer_flags;
 
@@ -315,7 +315,7 @@ static void flush_graphics_commands()
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
         {
             bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::dx11_render_target_window_base* target = ::defer_render_target;
+            ff::dx11_target_window_base* target = ::defer_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
             lock.reset();
 
@@ -335,7 +335,7 @@ static void flush_graphics_commands()
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
             ff::window_size size = ::defer_size;
-            ff::dx11_render_target_window_base* target = ::defer_render_target;
+            ff::dx11_target_window_base* target = ::defer_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
             ::defer_size = ff::window_size{};
             lock.reset();
@@ -353,11 +353,11 @@ static void post_flush_graphics_commands()
     ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
 }
 
-void ff::graphics::defer::set_render_target(ff::dx11_render_target_window_base* target)
+void ff::graphics::defer::set_target(ff::dx11_target_window_base* target)
 {
     std::lock_guard lock(::graphics_mutex);
-    assert(!::defer_render_target || !target);
-    ::defer_render_target = target;
+    assert(!::defer_target || !target);
+    ::defer_target = target;
 }
 
 void ff::graphics::defer::validate_device(bool force)
@@ -382,7 +382,7 @@ void ff::graphics::defer::full_screen(bool value)
     ::post_flush_graphics_commands();
 }
 
-void ff::graphics::defer::resize_render_target(const ff::window_size& size)
+void ff::graphics::defer::resize_target(const ff::window_size& size)
 {
     std::lock_guard lock(::graphics_mutex);
 

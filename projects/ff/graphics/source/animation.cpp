@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "animation.h"
 #include "color.h"
+#include "draw_base.h"
 #include "matrix_stack.h"
-#include "renderer_base.h"
 #include "transform.h"
 
 ff::animation::animation()
@@ -56,7 +56,7 @@ void ff::animation::frame_events(float start, float end, bool include_start, ff:
     }
 }
 
-void ff::animation::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     if (!ff::animation_keys::adjust_frame(frame, 0.0f, this->frame_length_, this->method))
     {
@@ -64,15 +64,15 @@ void ff::animation::render_frame(ff::renderer_base& render, const ff::transform&
     }
 
     bool push_transform = (transform.rotation != 0);
-    const ff::transform& render_transform = push_transform ? ff::transform::identity() : transform;
+    const ff::transform& draw_transform = push_transform ? ff::transform::identity() : transform;
 
     if (push_transform)
     {
-        render.world_matrix_stack().push();
+        draw.world_matrix_stack().push();
 
         DirectX::XMFLOAT4X4 matrix;
         DirectX::XMStoreFloat4x4(&matrix, transform.matrix());
-        render.world_matrix_stack().transform(matrix);
+        draw.world_matrix_stack().transform(matrix);
     }
 
     for (const ff::animation::visual_info& info : this->visuals)
@@ -89,14 +89,14 @@ void ff::animation::render_frame(ff::renderer_base& render, const ff::transform&
             continue;
         }
 
-        ff::transform visual_transform = render_transform;
+        ff::transform visual_transform = draw_transform;
 
         if (info.position_keys)
         {
             ff::value_ptr value = info.position_keys->get_value(visual_frame, params)->try_convert<ff::point_float>();
             if (value)
             {
-                visual_transform.position += value->get<ff::point_float>() * render_transform.scale;
+                visual_transform.position += value->get<ff::point_float>() * draw_transform.scale;
             }
         }
 
@@ -140,13 +140,13 @@ void ff::animation::render_frame(ff::renderer_base& render, const ff::transform&
         for (auto& anim_visual : *visuals)
         {
             float visual_anim_frame = (this->frames_per_second_ != 0.0f) ? visual_frame * anim_visual->frames_per_second() / this->frames_per_second_ : 0.0f;
-            anim_visual->render_frame(render, visual_transform, visual_anim_frame, params);
+            anim_visual->draw_frame(draw, visual_transform, visual_anim_frame, params);
         }
     }
 
     if (push_transform)
     {
-        render.world_matrix_stack().pop();
+        draw.world_matrix_stack().pop();
     }
 }
 

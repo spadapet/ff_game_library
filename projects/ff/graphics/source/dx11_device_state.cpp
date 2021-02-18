@@ -200,7 +200,7 @@ void ff::dx11_device_state::update_discard(ID3D11Resource* buffer, const void* d
     }
 }
 
-void ff::dx11_device_state::clear_render_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color)
+void ff::dx11_device_state::clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color)
 {
     if (this->context)
     {

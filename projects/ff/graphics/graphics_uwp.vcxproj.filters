@@ -77,12 +77,6 @@
     <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_render_target_texture.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_render_target_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -108,6 +102,12 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\font_file.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_target_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -186,13 +186,7 @@
     <ClInclude Include="source\dx11_depth.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_render_target_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\dx11_texture.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_render_target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_metadata.h">
@@ -213,9 +207,6 @@
     <ClInclude Include="source\sprite_data.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\renderer_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\animation_player_base.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -223,12 +214,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_render_target_texture.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_render_target_window.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite.h">
@@ -253,6 +238,21 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\font_file.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_target_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_target_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_target_window.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -20,8 +20,8 @@
     <ClCompile Include="source\dx11_device_state.cpp" />
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
-    <ClCompile Include="source\dx11_render_target_texture.cpp" />
-    <ClCompile Include="source\dx11_render_target_window.cpp" />
+    <ClCompile Include="source\dx11_target_texture.cpp" />
+    <ClCompile Include="source\dx11_target_window.cpp" />
     <ClCompile Include="source\dx11_texture_view.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\font_file.cpp" />
@@ -62,10 +62,10 @@
     <ClInclude Include="source\dx11_device_state.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
-    <ClInclude Include="source\dx11_render_target_base.h" />
-    <ClInclude Include="source\dx11_render_target_texture.h" />
-    <ClInclude Include="source\dx11_render_target_window_base.h" />
-    <ClInclude Include="source\dx11_render_target_window.h" />
+    <ClInclude Include="source\dx11_target_base.h" />
+    <ClInclude Include="source\dx11_target_texture.h" />
+    <ClInclude Include="source\dx11_target_window_base.h" />
+    <ClInclude Include="source\dx11_target_window.h" />
     <ClInclude Include="source\dx11_texture_view.h" />
     <ClInclude Include="source\dx11_texture_view_base.h" />
     <ClInclude Include="source\dxgi_util.h" />
@@ -81,7 +81,7 @@
     <ClInclude Include="source\palette_base.h" />
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
-    <ClInclude Include="source\renderer_base.h" />
+    <ClInclude Include="source\draw_base.h" />
     <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\sprite.h" />
     <ClInclude Include="source\sprite_base.h" />

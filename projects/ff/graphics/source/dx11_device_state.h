@@ -24,7 +24,7 @@ namespace ff
         void* map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map = nullptr);
         void unmap(ID3D11Resource* buffer);
         void update_discard(ID3D11Resource* buffer, const void* data, size_t size);
-        void clear_render_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color);
+        void clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color);
         void clear_depth_stencil(ID3D11DepthStencilView* view, bool clear_depth, bool clear_stencil, float depth, BYTE stencil);
         void update_subresource(ID3D11Resource* dest, UINT dest_subresource, const D3D11_BOX* dest_box, const void* src_data, UINT src_row_pitch, UINT src_depth_pitch);
         void copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* srcResource, UINT src_subresource, const D3D11_BOX* src_box);

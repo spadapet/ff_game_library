@@ -1,32 +1,32 @@
 #pragma once
 
-#include "dx11_render_target_window_base.h"
+#include "dx11_target_window_base.h"
 #include "graphics_child_base.h"
 
 namespace ff
 {
-    class dx11_render_target_window
-        : public ff::dx11_render_target_window_base
+    class dx11_target_window
+        : public ff::dx11_target_window_base
         , public ff::internal::graphics_child_base
     {
     public:
-        dx11_render_target_window();
-        dx11_render_target_window(ff::window* window);
-        dx11_render_target_window(dx11_render_target_window&& other) noexcept = delete;
-        dx11_render_target_window(const dx11_render_target_window& other) = delete;
-        virtual ~dx11_render_target_window() override;
+        dx11_target_window();
+        dx11_target_window(ff::window* window);
+        dx11_target_window(dx11_target_window&& other) noexcept = delete;
+        dx11_target_window(const dx11_target_window& other) = delete;
+        virtual ~dx11_target_window() override;
 
-        dx11_render_target_window& operator=(dx11_render_target_window&& other) noexcept = delete;
-        dx11_render_target_window& operator=(const dx11_render_target_window& other) = delete;
+        dx11_target_window& operator=(dx11_target_window&& other) noexcept = delete;
+        dx11_target_window& operator=(const dx11_target_window& other) = delete;
         operator bool() const;
 
-        // dx11_render_target_base
+        // dx11_target_base
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
         virtual ID3D11Texture2D* texture() override;
         virtual ID3D11RenderTargetView* view() override;
 
-        // dx11_render_target_window_base
+        // dx11_target_window_base
         virtual bool present(bool vsync) override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;

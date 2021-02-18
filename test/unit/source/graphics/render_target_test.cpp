@@ -7,7 +7,7 @@ namespace graphics_test
     public:
         TEST_METHOD(target_texture)
         {
-            ff::dx11_render_target_texture target{ ff::dx11_texture(ff::point_int(256, 256)) };
+            ff::dx11_target_texture target{ ff::dx11_texture(ff::point_int(256, 256)) };
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::internal::DEFAULT_FORMAT);
@@ -16,21 +16,21 @@ namespace graphics_test
 
         TEST_METHOD(target_window)
         {
-            ff::dx11_render_target_window target;
+            ff::dx11_target_window target;
 
             Assert::IsNotNull(target.view());
             Assert::IsNotNull(target.texture());
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());
 
-            ff::graphics::dx11_device_state().clear_render_target(target.view(), ff::color::magenta());
+            ff::graphics::dx11_device_state().clear_target(target.view(), ff::color::magenta());
             Assert::IsTrue(target.present(false));
 
             Assert::IsTrue(target.reset());
             Assert::IsNotNull(target.view());
             Assert::IsNotNull(target.texture());
 
-            ff::graphics::dx11_device_state().clear_render_target(target.view(), ff::color::yellow());
+            ff::graphics::dx11_device_state().clear_target(target.view(), ff::color::yellow());
             Assert::IsTrue(target.present(false));
         }
     };

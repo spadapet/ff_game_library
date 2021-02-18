@@ -15,7 +15,7 @@ namespace test_uwp
 
         ff::init_main_window init_main_window;
         ff::init_graphics init_graphics;
-        std::unique_ptr<ff::dx11_render_target_window> render_target;
+        std::unique_ptr<ff::dx11_target_window> target;
 
         ff::win_handle stop_thread;
         ff::win_handle thread_stopped;

@@ -4,7 +4,7 @@ namespace ff
 {
     class dx11_device_state;
     class dx11_object_cache;
-    class dx11_render_target_window_base;
+    class dx11_target_window_base;
 }
 
 namespace ff::internal
@@ -33,10 +33,10 @@ namespace ff::graphics
 
 namespace ff::graphics::defer
 {
-    void set_render_target(ff::dx11_render_target_window_base* target);
+    void set_target(ff::dx11_target_window_base* target);
     void validate_device(bool force);
     void full_screen(bool value);
-    void resize_render_target(const ff::window_size& size);
+    void resize_target(const ff::window_size& size);
 }
 
 namespace ff::graphics::internal

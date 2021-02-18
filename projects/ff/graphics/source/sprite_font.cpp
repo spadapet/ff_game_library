@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "color.h"
+#include "draw_base.h"
 #include "dx11_texture.h"
 #include "font_file.h"
 #include "graphics.h"
-#include "renderer_base.h"
 #include "sprite.h"
 #include "sprite_font.h"
 #include "sprite_list.h"
@@ -78,7 +78,7 @@ ff::sprite_font::operator bool() const
 }
 
 ff::point_float ff::sprite_font::draw_text(
-    ff::renderer_base* render,
+    ff::draw_base* draw,
     std::string_view text,
     const ff::transform& transform,
     const DirectX::XMFLOAT4& outline_color,
@@ -93,13 +93,13 @@ ff::point_float ff::sprite_font::draw_text(
     {
         ff::transform outline_transform = transform;
         outline_transform.color = outline_color;
-        size = this->internal_draw_text(render, this->outline_sprites.get(), wtext, outline_transform, options);
-        render->nudge_depth();
+        size = this->internal_draw_text(draw, this->outline_sprites.get(), wtext, outline_transform, options);
+        draw->nudge_depth();
     }
 
     if (!ff::flags::has(options, ff::sprite_font_options::no_text))
     {
-        size = this->internal_draw_text(render, this->sprites.get(), wtext, transform, options);
+        size = this->internal_draw_text(draw, this->sprites.get(), wtext, transform, options);
     }
 
     return size;
@@ -383,7 +383,7 @@ bool ff::sprite_font::init_sprites()
     return true;
 }
 
-ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const
+ff::point_float ff::sprite_font::internal_draw_text(ff::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const
 {
     IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (!font_face || text.empty() || transform.scale.x * transform.scale.y == 0.0f)
@@ -402,9 +402,9 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, c
     ff::point_float max_pos(transform.position.x, transform.position.y + (fm.ascent + fm.descent) * scaled_design_unit_size.y);
     float line_spacing = (fm.ascent + fm.descent + fm.lineGap) * scaled_design_unit_size.y;
 
-    if (render)
+    if (draw)
     {
-        render->push_no_overlap();
+        draw->push_no_overlap();
     }
 
     for (const wchar_t* ch = text.data(), *ch_end = ch + text.size(); ch != ch_end; )
@@ -459,9 +459,9 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, c
         {
             const ff::sprite_font::char_and_glyph_info& glyph = this->glyphs[this->glyphs[*ch].char_to_glyph];
 
-            if (render && sprites && glyph.glyph_to_sprite && glyph.glyph_to_sprite < sprites->size())
+            if (draw && sprites && glyph.glyph_to_sprite && glyph.glyph_to_sprite < sprites->size())
             {
-                render->draw_sprite(sprites->get(static_cast<size_t>(glyph.glyph_to_sprite))->sprite_data(), base_pos);
+                draw->draw_sprite(sprites->get(static_cast<size_t>(glyph.glyph_to_sprite))->sprite_data(), base_pos);
             }
 
             base_pos.position.x += glyph.glyph_width * base_pos.scale.x;
@@ -481,9 +481,9 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, c
         }
     }
 
-    if (render)
+    if (draw)
     {
-        render->pop_no_overlap();
+        draw->pop_no_overlap();
     }
 
     return max_pos - transform.position;

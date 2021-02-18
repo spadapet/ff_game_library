@@ -2,10 +2,10 @@
 
 namespace ff
 {
-    class dx11_render_target_base
+    class dx11_target_base
     {
     public:
-        virtual ~dx11_render_target_base() = default;
+        virtual ~dx11_target_base() = default;
 
         virtual DXGI_FORMAT format() const = 0;
         virtual ff::window_size size() const = 0;
