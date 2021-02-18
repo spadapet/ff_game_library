@@ -183,11 +183,6 @@ bool ff::value::is_same_type(const value* other) const
     return this && other && this->type() == other->type();
 }
 
-const void* ff::value::try_cast(std::type_index type_index) const
-{
-    return this ? this->type()->try_cast(this, type_index) : nullptr;
-}
-
 ff::value_ptr ff::value::try_convert(std::type_index type_index) const
 {
     if (!this || this->is_type(type_index))

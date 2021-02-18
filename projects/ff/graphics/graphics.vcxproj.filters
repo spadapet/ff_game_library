@@ -107,6 +107,9 @@
     <ClCompile Include="source\sprite_font.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\animation.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -247,6 +250,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite_font.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\animation.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

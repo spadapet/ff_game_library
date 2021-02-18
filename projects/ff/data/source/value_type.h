@@ -24,7 +24,6 @@ namespace ff
         virtual bool equals(const value* val1, const value* val2) const;
 
         // convert
-        virtual const void* try_cast(const value* val, std::type_index type) const;
         virtual value_ptr try_convert_to(const value* val, std::type_index type) const;
         virtual value_ptr try_convert_from(const value* other) const;
 

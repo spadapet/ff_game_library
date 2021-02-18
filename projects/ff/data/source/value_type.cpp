@@ -26,11 +26,6 @@ bool ff::value_type::equals(const value* val1, const value* val2) const
     return false;
 }
 
-const void* ff::value_type::try_cast(const value* val, std::type_index type) const
-{
-    return nullptr;
-}
-
 ff::value_ptr ff::value_type::try_convert_to(const value* val, std::type_index type) const
 {
     return nullptr;

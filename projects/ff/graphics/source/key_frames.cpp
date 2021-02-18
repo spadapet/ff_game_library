@@ -17,7 +17,12 @@ ff::key_frames::key_frames()
     , method(method_t::none)
 {}
 
-ff::value_ptr ff::key_frames::get_value(float frame, const ff::dict* params)
+ff::key_frames::operator bool() const
+{
+    return !this->keys.empty();
+}
+
+ff::value_ptr ff::key_frames::get_value(float frame, const ff::dict* params) const
 {
     if (this->keys.size() && this->adjust_frame(frame, this->start_, this->length_, this->method))
     {
@@ -36,7 +41,7 @@ ff::value_ptr ff::key_frames::get_value(float frame, const ff::dict* params)
             const key_frame& next_key = *key_iter;
 
             float time = (frame - prev_key.frame) / (next_key.frame - prev_key.frame);
-            return this->interpolate(prev_key, next_key, time, params);
+            return ff::key_frames::interpolate(prev_key, next_key, time, params);
         }
     }
 
@@ -198,7 +203,7 @@ bool ff::key_frames::load_from_source_internal(std::string_view name, const ff::
     this->start_ = dict.get<float>("start", this->keys.size() ? this->keys[0].frame : 0.0f);
     this->length_ = dict.get<float>("length", this->keys.size() ? this->keys.back().frame : 0.0f);
     this->default_value = ::convert_key_value(dict.get("default"));
-    this->method = ff::key_frames::load_method(dict, false);
+    this->method = ff::key_frames::load_method(dict, true);
 
     if (this->length_ < 0.0f)
     {
@@ -373,11 +378,11 @@ ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame&
     return value;
 }
 
-ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool from_cache)
+ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool from_source)
 {
     method_t method = method_t::none;
 
-    if (from_cache || dict.get("method")->is_type<int>())
+    if (!from_source || dict.get("method")->is_type<int>())
     {
         method = dict.get_enum<method_t>("method");
     }

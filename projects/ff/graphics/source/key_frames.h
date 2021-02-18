@@ -8,7 +8,11 @@ namespace ff
         key_frames(const key_frames& other) = default;
         key_frames(key_frames&& other) noexcept = default;
 
-        ff::value_ptr get_value(float frame, const ff::dict* params = nullptr);
+        key_frames& operator=(const key_frames& other) = default;
+        key_frames& operator=(key_frames && other) noexcept = default;
+        operator bool() const;
+
+        ff::value_ptr get_value(float frame, const ff::dict* params = nullptr) const;
         float start() const;
         float length() const;
         const std::string& name() const;
@@ -33,7 +37,7 @@ namespace ff
             default = bounds_none | interpolate_linear,
         };
 
-        static method_t load_method(const ff::dict& dict, bool from_cache);
+        static method_t load_method(const ff::dict& dict, bool from_source);
         static bool adjust_frame(float& frame, float start, float length, method_t method);
 
     private:
@@ -50,7 +54,7 @@ namespace ff
         key_frames();
         bool load_from_cache_internal(const ff::dict& dict);
         bool load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context);
-        ff::value_ptr interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params);
+        static ff::value_ptr interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params);
 
         std::string name_;
         std::vector<key_frame> keys;

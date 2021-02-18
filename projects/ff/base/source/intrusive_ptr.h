@@ -138,3 +138,15 @@ namespace ff
         T* value;
     };
 }
+
+namespace std
+{
+    template<typename T>
+    struct hash<ff::intrusive_ptr<T>>
+    {
+        size_t operator()(const ff::intrusive_ptr<T>& value) const noexcept
+        {
+            return std::hash<T*>()(value.get());
+        }
+    };
+}

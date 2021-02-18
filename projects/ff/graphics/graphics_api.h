@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.h"
+#include "source/animation.h"
 #include "source/animation_base.h"
 #include "source/animation_player.h"
 #include "source/animation_player_base.h"

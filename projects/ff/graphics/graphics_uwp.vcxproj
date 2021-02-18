@@ -11,6 +11,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\animation.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
@@ -50,6 +51,7 @@
   <ItemGroup>
     <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\animation.h" />
     <ClInclude Include="source\animation_base.h" />
     <ClInclude Include="source\animation_player.h" />
     <ClInclude Include="source\animation_player_base.h" />
