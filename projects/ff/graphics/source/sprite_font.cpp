@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "color.h"
 #include "dx11_texture.h"
-#include "font_data.h"
+#include "font_file.h"
 #include "graphics.h"
 #include "renderer_base.h"
 #include "sprite.h"
@@ -44,16 +44,16 @@ static std::wstring_view to_wstring(std::string_view text, std::array<wchar_t, 2
     return L"";
 }
 
-ff::sprite_font::sprite_font(const std::shared_ptr<ff::resource>& font_data_resource, float size, int outline_thickness, bool anti_alias)
+ff::sprite_font::sprite_font(const std::shared_ptr<ff::resource>& font_file_resource, float size, int outline_thickness, bool anti_alias)
     : glyphs{}
-    , font_data_resource(font_data_resource)
+    , font_file_resource(font_file_resource)
     , size(size)
     , outline_thickness(outline_thickness)
     , anti_alias(anti_alias)
 {}
 
 ff::sprite_font::sprite_font(
-    const std::shared_ptr<ff::resource>& font_data_resource,
+    const std::shared_ptr<ff::resource>& font_file_resource,
     float size,
     int outline_thickness,
     bool anti_alias,
@@ -63,7 +63,7 @@ ff::sprite_font::sprite_font(
     : sprites(sprites)
     , outline_sprites(outline_sprites)
     , glyphs{}
-    , font_data_resource(font_data_resource)
+    , font_file_resource(font_file_resource)
     , size(size)
     , outline_thickness(outline_thickness)
     , anti_alias(anti_alias)
@@ -74,7 +74,7 @@ ff::sprite_font::sprite_font(
 
 ff::sprite_font::operator bool() const
 {
-    return this->font_data && this->sprites;
+    return this->font_file && this->sprites;
 }
 
 ff::point_float ff::sprite_font::draw_text(
@@ -116,7 +116,7 @@ ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_f
 
 float ff::sprite_font::line_spacing() const
 {
-    IDWriteFontFaceX* font_face = this->font_data ? this->font_data->font_face() : nullptr;
+    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     assert(font_face);
 
     if (font_face)
@@ -131,13 +131,13 @@ float ff::sprite_font::line_spacing() const
 
 bool ff::sprite_font::resource_load_complete(bool from_source)
 {
-    this->font_data = this->font_data_resource.object();
+    this->font_file = this->font_file_resource.object();
     return !from_source || this->init_sprites();
 }
 
 bool ff::sprite_font::init_sprites()
 {
-    IDWriteFontFaceX* font_face = this->font_data ? this->font_data->font_face() : nullptr;
+    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (this->size <= 0.0f || this->size > 200.0f || !font_face)
     {
         return false;
@@ -385,7 +385,7 @@ bool ff::sprite_font::init_sprites()
 
 ff::point_float ff::sprite_font::internal_draw_text(ff::renderer_base* render, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const
 {
-    IDWriteFontFaceX* font_face = this->font_data ? this->font_data->font_face() : nullptr;
+    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (!font_face || text.empty() || transform.scale.x * transform.scale.y == 0.0f)
     {
         return {};
@@ -493,7 +493,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::sprite_font::resource_get_depende
 {
     return std::vector<std::shared_ptr<resource>>
     {
-        this->font_data_resource.resource()
+        this->font_file_resource.resource()
     };
 }
 
@@ -503,7 +503,7 @@ bool ff::sprite_font::save_to_cache(ff::dict& dict, bool& allow_compress) const
     if (*this && ff::resource_object_base::save_to_cache_typed(*this->sprites, sprites_dict, allow_compress) &&
         (!this->outline_sprites || ff::resource_object_base::save_to_cache_typed(*this->outline_sprites, sprites_dict, allow_compress)))
     {
-        dict.set<ff::resource>("data", this->font_data_resource.resource());
+        dict.set<ff::resource>("data", this->font_file_resource.resource());
         dict.set<float>("size", this->size);
         dict.set<int>("outline", this->outline_thickness);
         dict.set<bool>("aa", this->anti_alias);
@@ -519,14 +519,14 @@ bool ff::sprite_font::save_to_cache(ff::dict& dict, bool& allow_compress) const
 
 std::shared_ptr<ff::resource_object_base> ff::internal::sprite_font_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
-    std::shared_ptr<ff::resource> font_data_resource = dict.get<ff::resource>("data");
+    std::shared_ptr<ff::resource> font_file_resource = dict.get<ff::resource>("data");
     float size = dict.get<float>("size");
     int outline_thickness = dict.get<int>("outline");
     bool anti_alias = dict.get<bool>("aa");
 
-    if (font_data_resource)
+    if (font_file_resource)
     {
-        return std::make_shared<ff::sprite_font>(font_data_resource, size, outline_thickness, anti_alias);
+        return std::make_shared<ff::sprite_font>(font_file_resource, size, outline_thickness, anti_alias);
     }
 
     assert(false);
@@ -535,7 +535,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_font_factory::loa
 
 std::shared_ptr<ff::resource_object_base> ff::internal::sprite_font_factory::load_from_cache(const ff::dict& dict) const
 {
-    std::shared_ptr<ff::resource> font_data_resource = dict.get<ff::resource>("data");
+    std::shared_ptr<ff::resource> font_file_resource = dict.get<ff::resource>("data");
     float size = dict.get<float>("size");
     int outline_thickness = dict.get<int>("outline");
     bool anti_alias = dict.get<bool>("aa");
@@ -543,9 +543,9 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_font_factory::loa
     std::shared_ptr<ff::sprite_list> sprites = std::dynamic_pointer_cast<ff::sprite_list>(dict.get<ff::resource_object_base>("sprites"));
     std::shared_ptr<ff::sprite_list> outline_sprites = std::dynamic_pointer_cast<ff::sprite_list>(dict.get<ff::resource_object_base>("outline_sprites"));
 
-    if (font_data_resource && glyphs_data && sprites)
+    if (font_file_resource && glyphs_data && sprites)
     {
-        return std::make_shared<ff::sprite_font>(font_data_resource, size, outline_thickness, anti_alias, sprites, outline_sprites, glyphs_data);
+        return std::make_shared<ff::sprite_font>(font_file_resource, size, outline_thickness, anti_alias, sprites, outline_sprites, glyphs_data);
     }
 
     assert(false);

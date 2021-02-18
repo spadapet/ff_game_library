@@ -1,28 +1,23 @@
 #include "pch.h"
-#include "key_frames.h"
+#include "animation_keys.h"
 
-bool ff::key_frames::key_frame::operator<(const key_frame& other) const
+bool ff::animation_keys::key_frame::operator<(const key_frame& other) const
 {
     return this->frame < other.frame;
 }
 
-bool ff::key_frames::key_frame::operator<(float frame) const
+bool ff::animation_keys::key_frame::operator<(float frame) const
 {
     return this->frame < frame;
 }
 
-ff::key_frames::key_frames()
+ff::animation_keys::animation_keys()
     : start_(0)
     , length_(0)
     , method(method_t::none)
 {}
 
-ff::key_frames::operator bool() const
-{
-    return !this->keys.empty();
-}
-
-ff::value_ptr ff::key_frames::get_value(float frame, const ff::dict* params) const
+ff::value_ptr ff::animation_keys::get_value(float frame, const ff::dict* params) const
 {
     if (this->keys.size() && this->adjust_frame(frame, this->start_, this->length_, this->method))
     {
@@ -41,41 +36,41 @@ ff::value_ptr ff::key_frames::get_value(float frame, const ff::dict* params) con
             const key_frame& next_key = *key_iter;
 
             float time = (frame - prev_key.frame) / (next_key.frame - prev_key.frame);
-            return ff::key_frames::interpolate(prev_key, next_key, time, params);
+            return ff::animation_keys::interpolate(prev_key, next_key, time, params);
         }
     }
 
     return this->default_value && !this->default_value->is_type<nullptr_t>() ? this->default_value : nullptr;
 }
 
-float ff::key_frames::start() const
+float ff::animation_keys::start() const
 {
     return this->start_;
 }
 
-float ff::key_frames::length() const
+float ff::animation_keys::length() const
 {
     return this->length_;
 }
 
-const std::string& ff::key_frames::name() const
+const std::string& ff::animation_keys::name() const
 {
     return this->name_;
 }
 
-ff::key_frames ff::key_frames::load_from_source(std::string_view name, const ff::dict& dict, ff::resource_load_context& context)
+ff::animation_keys ff::animation_keys::load_from_source(std::string_view name, const ff::dict& dict, ff::resource_load_context& context)
 {
-    key_frames frames;
-    return frames.load_from_source_internal(name, dict, context) ? frames : key_frames();
+    animation_keys frames;
+    return frames.load_from_source_internal(name, dict, context) ? frames : animation_keys();
 }
 
-ff::key_frames ff::key_frames::load_from_cache(const ff::dict& dict)
+ff::animation_keys ff::animation_keys::load_from_cache(const ff::dict& dict)
 {
-    key_frames frames;
-    return frames.load_from_cache_internal(dict) ? frames : key_frames();
+    animation_keys frames;
+    return frames.load_from_cache_internal(dict) ? frames : animation_keys();
 }
 
-ff::dict ff::key_frames::save_to_cache() const
+ff::dict ff::animation_keys::save_to_cache() const
 {
     ff::dict dict;
 
@@ -107,7 +102,7 @@ ff::dict ff::key_frames::save_to_cache() const
     return dict;
 }
 
-bool ff::key_frames::load_from_cache_internal(const ff::dict& dict)
+bool ff::animation_keys::load_from_cache_internal(const ff::dict& dict)
 {
     this->name_ = dict.get<std::string>("name");
     this->method = dict.get_enum<method_t>("method");
@@ -163,7 +158,7 @@ static ff::value_ptr convert_key_value(ff::value_ptr value)
     return value ? value : ff::value::create<nullptr_t>();
 }
 
-bool ff::key_frames::load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context)
+bool ff::animation_keys::load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context)
 {
     float tension = dict.get<float>("tension");
     tension = (1.0f - tension) / 2.0f;
@@ -203,7 +198,7 @@ bool ff::key_frames::load_from_source_internal(std::string_view name, const ff::
     this->start_ = dict.get<float>("start", this->keys.size() ? this->keys[0].frame : 0.0f);
     this->length_ = dict.get<float>("length", this->keys.size() ? this->keys.back().frame : 0.0f);
     this->default_value = ::convert_key_value(dict.get("default"));
-    this->method = ff::key_frames::load_method(dict, true);
+    this->method = ff::animation_keys::load_method(dict, true);
 
     if (this->length_ < 0.0f)
     {
@@ -265,7 +260,7 @@ bool ff::key_frames::load_from_source_internal(std::string_view name, const ff::
     return true;
 }
 
-ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params)
+ff::value_ptr ff::animation_keys::interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params)
 {
     ff::value_ptr value = lhs.value;
 
@@ -378,7 +373,7 @@ ff::value_ptr ff::key_frames::interpolate(const key_frame& lhs, const key_frame&
     return value;
 }
 
-ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool from_source)
+ff::animation_keys::method_t ff::animation_keys::load_method(const ff::dict& dict, bool from_source)
 {
     method_t method = method_t::none;
 
@@ -405,7 +400,7 @@ ff::key_frames::method_t ff::key_frames::load_method(const ff::dict& dict, bool 
     return method;
 }
 
-bool ff::key_frames::adjust_frame(float& frame, float start, float length, ff::key_frames::method_t method)
+bool ff::animation_keys::adjust_frame(float& frame, float start, float length, ff::animation_keys::method_t method)
 {
     if (frame < start)
     {
@@ -443,7 +438,7 @@ bool ff::key_frames::adjust_frame(float& frame, float start, float length, ff::k
     return true;
 }
 
-ff::create_key_frames::create_key_frames(std::string_view name, float start, float length, key_frames::method_t method, ff::value_ptr default_value)
+ff::create_animation_keys::create_animation_keys(std::string_view name, float start, float length, animation_keys::method_t method, ff::value_ptr default_value)
 {
     this->dict.set<std::string>("name", std::string(name));
     this->dict.set<float>("start", start);
@@ -452,7 +447,7 @@ ff::create_key_frames::create_key_frames(std::string_view name, float start, flo
     this->dict.set("default", default_value);
 }
 
-void ff::create_key_frames::add_frame(float frame, ff::value_ptr value)
+void ff::create_animation_keys::add_frame(float frame, ff::value_ptr value)
 {
     ff::dict dict;
     dict.set<float>("frame", frame);
@@ -461,14 +456,14 @@ void ff::create_key_frames::add_frame(float frame, ff::value_ptr value)
     this->values.push_back(ff::value::create<ff::dict>(std::move(dict)));
 }
 
-ff::key_frames ff::create_key_frames::create() const
+ff::animation_keys ff::create_animation_keys::create() const
 {
     std::string name;
     ff::dict dict = this->create_source_dict(name);
-    return key_frames::load_from_source(name, dict, ff::resource_load_context::null());
+    return animation_keys::load_from_source(name, dict, ff::resource_load_context::null());
 }
 
-ff::dict ff::create_key_frames::create_source_dict(std::string& name) const
+ff::dict ff::create_animation_keys::create_source_dict(std::string& name) const
 {
     name = this->dict.get<std::string>("name");
 

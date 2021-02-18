@@ -19,6 +19,7 @@ namespace ff::constants
     /// Each time the game advances, this fixed amount of time has passed
     /// </summary>
     const double seconds_per_advance = 1.0 / 60.0;
+    const float seconds_per_advance_f = 1.0f / 60.0f;
 
     const double pi = 3.1415926535897932384626433832795; ///< PI
     const double pi2 = 6.283185307179586476925286766559; ///< 2 * PI

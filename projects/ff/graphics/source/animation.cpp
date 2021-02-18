@@ -6,13 +6,10 @@
 #include "transform.h"
 
 ff::animation::animation()
-{
-}
-
-ff::animation::operator bool() const
-{
-    return true;
-}
+    : frame_length_(0)
+    , frames_per_second_(0)
+    , method(ff::animation_keys::method_t::none)
+{}
 
 float ff::animation::frame_length() const
 {
@@ -31,7 +28,7 @@ void ff::animation::frame_events(float start, float end, bool include_start, ff:
         return;
     }
 
-    bool loop = ff::flags::has(this->method, ff::key_frames::method_t::bounds_loop);
+    bool loop = ff::flags::has(this->method, ff::animation_keys::method_t::bounds_loop);
     if (loop)
     {
         float length = end - start;
@@ -61,7 +58,7 @@ void ff::animation::frame_events(float start, float end, bool include_start, ff:
 
 void ff::animation::render_frame(ff::renderer_base& render, const ff::transform& transform, float frame, const ff::dict* params)
 {
-    if (!ff::key_frames::adjust_frame(frame, 0.0f, this->frame_length_, this->method))
+    if (!ff::animation_keys::adjust_frame(frame, 0.0f, this->frame_length_, this->method))
     {
         return;
     }
@@ -81,7 +78,7 @@ void ff::animation::render_frame(ff::renderer_base& render, const ff::transform&
     for (const ff::animation::visual_info& info : this->visuals)
     {
         float visual_frame = frame - info.start;
-        if (!ff::key_frames::adjust_frame(visual_frame, 0.0f, info.length, info.method))
+        if (!ff::animation_keys::adjust_frame(visual_frame, 0.0f, info.length, info.method))
         {
             continue;
         }
@@ -229,7 +226,7 @@ ff::dict ff::animation::save_keys_to_cache() const
 
     for (auto& i : this->keys)
     {
-        const ff::key_frames& key = i.second;
+        const ff::animation_keys& key = i.second;
         dict.set<ff::dict>(key.name(), key.save_to_cache());
     }
 
@@ -240,7 +237,7 @@ bool ff::animation::load(const ff::dict& dict, bool from_source, ff::resource_lo
 {
     this->frame_length_ = dict.get<float>("length");
     this->frames_per_second_ = dict.get<float>("fps");
-    this->method = ff::key_frames::load_method(dict, from_source);
+    this->method = ff::animation_keys::load_method(dict, from_source);
 
     return this->load_keys(dict.get<ff::dict>("keys"), from_source, context) &&
         this->load_visuals(dict.get<std::vector<ff::value_ptr>>("visuals"), from_source, context) &&
@@ -260,6 +257,8 @@ bool ff::animation::load_events(const std::vector<ff::value_ptr>& values, bool f
             event.frame = dict.get<float>("frame");
             event.event_name = dict.get<std::string>("name");
             event.params = dict.get<ff::dict>("params");
+
+            assert(!event.event_name.empty());
 
             this->events.push_back(std::move(event));
         }
@@ -288,7 +287,7 @@ bool ff::animation::load_visuals(const std::vector<ff::value_ptr>& values, bool 
             info.start = dict.get<float>("start");
             info.length = dict.get<float>("length", std::max(this->frame_length_ - info.start, 0.0f));
             info.speed = dict.get<float>("speed", 1.0f);
-            info.method = ff::key_frames::load_method(dict, from_source);
+            info.method = ff::animation_keys::load_method(dict, from_source);
 
             std::string visual_keys = dict.get<std::string>("visual");
             std::string color_keys = dict.get<std::string>("color");
@@ -327,15 +326,9 @@ bool ff::animation::load_keys(const ff::dict& values, bool from_source, ff::reso
     for (auto& i : values)
     {
         ff::dict dict = i.second->get<ff::dict>();
-        ff::key_frames keys = from_source
-            ? ff::key_frames::load_from_source(i.first, dict, context)
-            : ff::key_frames::load_from_cache(dict);
-
-        if (!keys)
-        {
-            assert(false);
-            return false;
-        }
+        ff::animation_keys keys = from_source
+            ? ff::animation_keys::load_from_source(i.first, dict, context)
+            : ff::animation_keys::load_from_cache(dict);
 
         this->keys.try_emplace(ff::stable_hash_func(i.first), std::move(keys));
     }
@@ -398,13 +391,13 @@ bool ff::animation::save_to_cache(ff::dict& dict, bool& allow_compress) const
 std::shared_ptr<ff::resource_object_base> ff::internal::animation_factory::load_from_source(const ff::dict& dict, ff::resource_load_context& context) const
 {
     auto result = std::make_shared<ff::animation>();
-    return result->load(dict, true, context) && *result ? result : nullptr;
+    return result->load(dict, true, context) ? result : nullptr;
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::animation_factory::load_from_cache(const ff::dict& dict) const
 {
     auto result = std::make_shared<ff::animation>();
-    return result->load(dict, false, ff::resource_load_context::null()) && *result ? result : nullptr;
+    return result->load(dict, false, ff::resource_load_context::null()) ? result : nullptr;
 }
 
 bool ff::animation::visual_info::operator<(const ff::animation::visual_info& other) const
@@ -415,4 +408,61 @@ bool ff::animation::visual_info::operator<(const ff::animation::visual_info& oth
 bool ff::animation::event_info::operator<(const ff::animation::event_info& other) const
 {
     return this->frame < other.frame;
+}
+
+ff::create_animation::create_animation(float length, float frames_per_second, ff::animation_keys::method_t method)
+{
+    this->dict.set<float>("length", length);
+    this->dict.set<float>("fps", frames_per_second);
+    this->dict.set_enum("method", method);
+}
+
+void ff::create_animation::add_keys(const ff::create_animation_keys& key)
+{
+    std::string name;
+    ff::dict dict = key.create_source_dict(name);
+    this->keys.set<ff::dict>(name, std::move(dict));
+}
+
+void ff::create_animation::add_event(float frame, std::string_view name, const ff::dict* params)
+{
+    ff::dict dict;
+    dict.set<float>("frame", frame);
+    dict.set<std::string>("name", std::string(name));
+
+    if (params)
+    {
+        dict.set<ff::dict>("params", ff::dict(*params));
+    }
+
+    this->events.push_back(ff::value::create<ff::dict>(std::move(dict)));
+}
+
+void ff::create_animation::add_visual(float start, float length, float speed, ff::animation_keys::method_t method, std::string_view visual_keys, std::string_view color_keys, std::string_view position_keys, std::string_view scale_keys, std::string_view rotate_keys)
+{
+    ff::dict dict;
+    dict.set<float>("start", start);
+    dict.set<float>("length", length);
+    dict.set<float>("speed", speed);
+    dict.set_enum("method", method);
+    dict.set<std::string>("visual", std::string(visual_keys));
+    dict.set<std::string>("color", std::string(color_keys));
+    dict.set<std::string>("position", std::string(position_keys));
+    dict.set<std::string>("scale", std::string(scale_keys));
+    dict.set<std::string>("rotate", std::string(rotate_keys));
+
+    this->visuals.push_back(ff::value::create<ff::dict>(std::move(dict)));
+}
+
+std::shared_ptr<ff::animation> ff::create_animation::create() const
+{
+    ff::dict dict = this->dict;
+    dict.set<ff::dict>("keys", ff::dict(this->keys));
+    dict.set<std::vector<ff::value_ptr>>("visuals", std::vector<ff::value_ptr>(this->visuals));
+    dict.set<std::vector<ff::value_ptr>>("events", std::vector<ff::value_ptr>(this->events));
+
+    const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(typeid(ff::animation));
+    assert(factory);
+
+    return factory ? std::dynamic_pointer_cast<ff::animation>(factory->load_from_source(dict, ff::resource_load_context::null())) : nullptr;
 }

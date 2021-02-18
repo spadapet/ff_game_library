@@ -6,19 +6,19 @@ namespace graphics_test
     TEST_CLASS(font_test)
     {
     public:
-        TEST_METHOD(font_data_resource)
+        TEST_METHOD(font_file_resource)
         {
             auto result = ff::test::create_resources(R"(
                 {
-                    "test_font": { "res:type": "font_data", "file": "file:test_font.ttf" }
+                    "test_font": { "res:type": "font_file", "file": "file:test_font.ttf" }
                 }
             )");
             auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::font_data> ttf_res = res->get_resource_object("test_font");
+            ff::auto_resource<ff::font_file> ttf_res = res->get_resource_object("test_font");
             Assert::IsTrue(ttf_res.valid());
 
-            std::shared_ptr<ff::font_data> ttf = ttf_res.object();
+            std::shared_ptr<ff::font_file> ttf = ttf_res.object();
             Assert::IsNotNull(ttf.get());
             Assert::IsTrue(*ttf);
             Assert::IsNotNull(ttf->font_face());
@@ -28,7 +28,7 @@ namespace graphics_test
         {
             auto result = ff::test::create_resources(R"(
                 {
-                    "test_font": { "res:type": "font_data", "file": "file:test_font.ttf" },
+                    "test_font": { "res:type": "font_file", "file": "file:test_font.ttf" },
                     "test_sprite_font": { "res:type": "font", "data": "ref:test_font", "size": 12 }
                 }
             )");

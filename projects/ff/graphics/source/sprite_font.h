@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    class font_data;
+    class font_file;
     class renderer_base;
     class sprite_list;
     struct transform;
@@ -29,8 +29,8 @@ namespace ff
     class sprite_font : public ff::resource_object_base
     {
     public:
-        sprite_font(const std::shared_ptr<ff::resource>& font_data_resource, float size, int outline_thickness, bool anti_alias);
-        sprite_font(const std::shared_ptr<ff::resource>& font_data_resource, float size, int outline_thickness, bool anti_alias,
+        sprite_font(const std::shared_ptr<ff::resource>& font_file_resource, float size, int outline_thickness, bool anti_alias);
+        sprite_font(const std::shared_ptr<ff::resource>& font_file_resource, float size, int outline_thickness, bool anti_alias,
             const std::shared_ptr<ff::sprite_list>& sprites,
             const std::shared_ptr<ff::sprite_list>& outline_sprites,
             const std::shared_ptr<ff::data_base>& glyphs_data);
@@ -68,8 +68,8 @@ namespace ff
         std::shared_ptr<ff::sprite_list> outline_sprites;
         std::array<char_and_glyph_info, ff::sprite_font::MAX_GLYPH_COUNT> glyphs;
 
-        ff::auto_resource<ff::font_data> font_data_resource;
-        std::shared_ptr<ff::font_data> font_data;
+        ff::auto_resource<ff::font_file> font_file_resource;
+        std::shared_ptr<ff::font_file> font_file;
         float size;
         int outline_thickness;
         bool anti_alias;

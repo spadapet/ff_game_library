@@ -11,6 +11,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\animation.cpp" />
+    <ClCompile Include="source\animation_keys.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
@@ -23,11 +24,10 @@
     <ClCompile Include="source\dx11_render_target_window.cpp" />
     <ClCompile Include="source\dx11_texture_view.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
-    <ClCompile Include="source\font_data.cpp" />
+    <ClCompile Include="source\font_file.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\graphics_child_base.cpp" />
     <ClCompile Include="source\init.cpp" />
-    <ClCompile Include="source\key_frames.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\palette_cycle.cpp" />
@@ -52,6 +52,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\animation.h" />
     <ClInclude Include="source\animation_base.h" />
+    <ClInclude Include="source\animation_keys.h" />
     <ClInclude Include="source\animation_player.h" />
     <ClInclude Include="source\animation_player_base.h" />
     <ClInclude Include="source\color.h" />
@@ -69,12 +70,11 @@
     <ClInclude Include="source\dx11_texture_view_base.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
-    <ClInclude Include="source\font_data.h" />
+    <ClInclude Include="source\font_file.h" />
     <ClInclude Include="source\graphics.h" />
     <ClInclude Include="source\graphics_child_base.h" />
     <ClInclude Include="source\graphics_counters.h" />
     <ClInclude Include="source\init.h" />
-    <ClInclude Include="source\key_frames.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
     <ClInclude Include="source\palette_cycle.h" />

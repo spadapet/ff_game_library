@@ -1,7 +1,7 @@
 #pragma once
 
 #include "animation_base.h"
-#include "key_frames.h"
+#include "animation_keys.h"
 
 namespace ff::internal
 {
@@ -10,6 +10,8 @@ namespace ff::internal
 
 namespace ff
 {
+    class create_animation;
+
     class animation
         : public ff::animation_base
         , public ff::resource_object_base
@@ -21,7 +23,6 @@ namespace ff
 
         animation& operator=(animation&& other) noexcept = default;
         animation& operator=(const animation & other) = delete;
-        operator bool() const;
 
         // animation_base
         virtual float frame_length() const override;
@@ -43,12 +44,12 @@ namespace ff
             float start;
             float length;
             float speed;
-            ff::key_frames::method_t method;
-            const ff::key_frames* visual_keys;
-            const ff::key_frames* color_keys;
-            const ff::key_frames* position_keys;
-            const ff::key_frames* scale_keys;
-            const ff::key_frames* rotate_keys;
+            ff::animation_keys::method_t method;
+            const ff::animation_keys* visual_keys;
+            const ff::animation_keys* color_keys;
+            const ff::animation_keys* position_keys;
+            const ff::animation_keys* scale_keys;
+            const ff::animation_keys* rotate_keys;
         };
 
         struct event_info
@@ -74,11 +75,43 @@ namespace ff
 
         float frame_length_;
         float frames_per_second_;
-        ff::key_frames::method_t method;
+        ff::animation_keys::method_t method;
         std::vector<visual_info> visuals;
         std::vector<event_info> events;
-        std::unordered_map<size_t, ff::key_frames, ff::no_hash<size_t>> keys;
+        std::unordered_map<size_t, ff::animation_keys, ff::no_hash<size_t>> keys;
         mutable std::unordered_map<ff::value_ptr, ff::animation::cached_visuals_t> cached_visuals;
+    };
+
+    class create_animation
+    {
+    public:
+        create_animation(float length, float frames_per_second = ff::constants::advances_per_second_f, ff::animation_keys::method_t method = ff::animation_keys::method_t::default);
+        create_animation(create_animation&& other) noexcept = default;
+        create_animation(const create_animation& other) = default;
+
+        create_animation& operator=(create_animation&& other) noexcept = default;
+        create_animation& operator=(const create_animation & other) = default;
+
+        void add_keys(const ff::create_animation_keys& key);
+        void add_event(float frame, std::string_view name, const ff::dict* params = nullptr);
+        void add_visual(
+            float start,
+            float length,
+            float speed,
+            ff::animation_keys::method_t method,
+            std::string_view visual_keys,
+            std::string_view color_keys,
+            std::string_view position_keys,
+            std::string_view scale_keys,
+            std::string_view rotate_keys);
+
+        std::shared_ptr<ff::animation> create() const;
+
+    private:
+        ff::dict dict;
+        ff::dict keys;
+        std::vector<ff::value_ptr> events;
+        std::vector<ff::value_ptr> visuals;
     };
 }
 

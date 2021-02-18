@@ -11,9 +11,6 @@
     <ClCompile Include="source\matrix.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\key_frames.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\matrix_stack.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -101,13 +98,16 @@
     <ClCompile Include="source\palette_cycle.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\font_data.cpp">
+    <ClCompile Include="source\font_file.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\sprite_font.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\animation.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\animation_keys.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -121,9 +121,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\matrix.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\key_frames.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\matrix_stack.h">
@@ -246,13 +243,16 @@
     <ClInclude Include="source\palette_cycle.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\font_data.h">
+    <ClInclude Include="source\font_file.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite_font.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\animation.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\animation_keys.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

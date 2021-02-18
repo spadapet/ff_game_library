@@ -7,7 +7,7 @@ namespace ff
     class animation_player : public ff::animation_player_base
     {
     public:
-        animation_player(const std::shared_ptr<ff::animation_base>& animation, float start_frame, float speed, const ff::dict* params);
+        animation_player(const std::shared_ptr<ff::animation_base>& animation, float start_frame = 0, float speed = 1, const ff::dict* params = nullptr);
         animation_player(animation_player&& other) noexcept = default;
         animation_player(const animation_player& other) = default;
 

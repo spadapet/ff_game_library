@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "font_data.h"
+#include "font_file.h"
 #include "graphics.h"
 
-ff::font_data::font_data(std::shared_ptr<ff::data_base> data, size_t index, bool bold, bool italic)
+ff::font_file::font_file(std::shared_ptr<ff::data_base> data, size_t index, bool bold, bool italic)
     : ff::resource_file(std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none), ".ttf", true)
     , index_(index)
     , bold_(bold)
@@ -28,32 +28,32 @@ ff::font_data::font_data(std::shared_ptr<ff::data_base> data, size_t index, bool
     }
 }
 
-ff::font_data::operator bool() const
+ff::font_file::operator bool() const
 {
     return this->font_face_;
 }
 
-bool ff::font_data::bold() const
+bool ff::font_file::bold() const
 {
     return this->bold_;
 }
 
-bool ff::font_data::italic() const
+bool ff::font_file::italic() const
 {
     return this->italic_;
 }
 
-size_t ff::font_data::index() const
+size_t ff::font_file::index() const
 {
     return this->index_;
 }
 
-IDWriteFontFaceX* ff::font_data::font_face()
+IDWriteFontFaceX* ff::font_file::font_face()
 {
     return this->font_face_.Get();
 }
 
-bool ff::font_data::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::font_file::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     if (ff::resource_file::save_to_cache(dict, allow_compress))
     {
@@ -66,7 +66,7 @@ bool ff::font_data::save_to_cache(ff::dict& dict, bool& allow_compress) const
     return false;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::internal::font_data_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::font_file_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     size_t index = dict.get<size_t>("index");
     bool bold = dict.get<bool>("bold");
@@ -74,10 +74,10 @@ std::shared_ptr<ff::resource_object_base> ff::internal::font_data_factory::load_
 
     std::filesystem::path file_path = dict.get<std::string>("file");
     std::shared_ptr<ff::data_mem_mapped> data = std::make_shared<ff::data_mem_mapped>(file_path);
-    return data->valid() ? std::make_shared<ff::font_data>(data, index, bold, italic) : nullptr;
+    return data->valid() ? std::make_shared<ff::font_file>(data, index, bold, italic) : nullptr;
 }
 
-std::shared_ptr<ff::resource_object_base> ff::internal::font_data_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::font_file_factory::load_from_cache(const ff::dict& dict) const
 {
     const ff::resource_object_factory_base* resource_file_factory = ff::resource_object_base::get_factory(typeid(ff::resource_file));
     if (resource_file_factory)
@@ -89,7 +89,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::font_data_factory::load_
             bool bold = dict.get<bool>("bold");
             bool italic = dict.get<bool>("italic");
 
-            return std::make_shared<ff::font_data>(file->loaded_data(), index, bold, italic);
+            return std::make_shared<ff::font_file>(file->loaded_data(), index, bold, italic);
         }
     }
 

@@ -2,23 +2,22 @@
 
 namespace ff
 {
-    class key_frames
+    class animation_keys
     {
     public:
-        key_frames(const key_frames& other) = default;
-        key_frames(key_frames&& other) noexcept = default;
+        animation_keys(const animation_keys& other) = default;
+        animation_keys(animation_keys&& other) noexcept = default;
 
-        key_frames& operator=(const key_frames& other) = default;
-        key_frames& operator=(key_frames && other) noexcept = default;
-        operator bool() const;
+        animation_keys& operator=(const animation_keys& other) = default;
+        animation_keys& operator=(animation_keys && other) noexcept = default;
 
         ff::value_ptr get_value(float frame, const ff::dict* params = nullptr) const;
         float start() const;
         float length() const;
         const std::string& name() const;
 
-        static key_frames load_from_source(std::string_view name, const ff::dict& dict, ff::resource_load_context& context);
-        static key_frames load_from_cache(const ff::dict& dict);
+        static animation_keys load_from_source(std::string_view name, const ff::dict& dict, ff::resource_load_context& context);
+        static animation_keys load_from_cache(const ff::dict& dict);
         ff::dict save_to_cache() const;
 
         enum class method_t
@@ -51,7 +50,7 @@ namespace ff
             ff::value_ptr tangent_value;
         };
 
-        key_frames();
+        animation_keys();
         bool load_from_cache_internal(const ff::dict& dict);
         bool load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context);
         static ff::value_ptr interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params);
@@ -64,15 +63,15 @@ namespace ff
         method_t method;
     };
 
-    class create_key_frames
+    class create_animation_keys
     {
     public:
-        create_key_frames(std::string_view name, float start, float length, key_frames::method_t method = key_frames::method_t::default, ff::value_ptr default_value = nullptr);
-        create_key_frames(const create_key_frames& other) = default;
-        create_key_frames(create_key_frames&& other) noexcept = default;
+        create_animation_keys(std::string_view name, float start, float length, animation_keys::method_t method = animation_keys::method_t::default, ff::value_ptr default_value = nullptr);
+        create_animation_keys(const create_animation_keys& other) = default;
+        create_animation_keys(create_animation_keys&& other) noexcept = default;
 
         void add_frame(float frame, ff::value_ptr value);
-        key_frames create() const;
+        animation_keys create() const;
         ff::dict create_source_dict(std::string& name) const;
 
     private:
