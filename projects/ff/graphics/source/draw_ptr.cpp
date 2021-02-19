@@ -23,7 +23,7 @@ void ff::draw_ptr::reset()
 {
     if (this->draw)
     {
-        this->draw->draw_end();
+        this->draw->end_draw();
         this->draw = nullptr;
     }
 }

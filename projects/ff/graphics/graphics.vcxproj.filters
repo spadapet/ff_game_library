@@ -116,7 +116,7 @@
     <ClCompile Include="source\draw_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_draw.cpp">
+    <ClCompile Include="source\draw_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -267,7 +267,7 @@
     <ClInclude Include="source\draw_ptr.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_draw.h">
+    <ClInclude Include="source\draw_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

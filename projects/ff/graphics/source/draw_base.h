@@ -11,14 +11,14 @@ namespace ff
     class draw_base
     {
     public:
-        using custom_context_func = typename std::function<bool(std::type_index vertex_type, bool opaque_only)>;
+        using custom_context_func = typename std::function<bool(const std::type_info& vertex_type, bool opaque_only)>;
 
         virtual ~draw_base() = default;
 
-        virtual void draw_end() = 0;
+        virtual void end_draw() = 0;
 
-        virtual void draw_sprite(const sprite_data& sprite, const ff::transform& transform) = 0;
-        virtual void draw_sprite(const sprite_data& sprite, const ff::pixel_transform& transform);
+        virtual void draw_sprite(const ff::sprite_data& sprite, const ff::transform& transform) = 0;
+        void draw_sprite(const ff::sprite_data& sprite, const ff::pixel_transform& transform);
 
         virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness = false) = 0;
         virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
@@ -58,7 +58,7 @@ namespace ff
         void draw_palette_outline_rectangle(const ff::rect_fixed& rect, int color, ff::fixed_int thickness);
         void draw_palette_outline_circle(const ff::point_fixed& center, ff::fixed_int radius, int color, ff::fixed_int thickness);
 
-        virtual matrix_stack& world_matrix_stack() = 0;
+        virtual ff::matrix_stack& world_matrix_stack() = 0;
         virtual void nudge_depth() = 0;
 
         virtual void push_palette(ff::palette_base* palette) = 0;
