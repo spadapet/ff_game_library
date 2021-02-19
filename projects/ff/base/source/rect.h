@@ -572,5 +572,14 @@ namespace ff
     using rect_float = rect_t<float>;
     using rect_double = rect_t<double>;
     using rect_size = rect_t<size_t>;
-    using rect_fixed = rect_t<ff::i32f8_t>;
+    using rect_fixed = rect_t<ff::fixed_int>;
+}
+
+namespace std
+{
+    template<class T>
+    static ff::rect_t<T> floor(const ff::rect_t<T>& value)
+    {
+        return ff::rect_t<T>(std::floor(value.left), std::floor(value.top), std::floor(value.right), std::floor(value.bottom));
+    }
 }

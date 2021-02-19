@@ -61,7 +61,7 @@ ff::pixel_transform::pixel_transform()
     , color(1.0f, 1.0f, 1.0f, 1.0f)
 {}
 
-ff::pixel_transform::pixel_transform(ff::point_fixed position, ff::point_fixed scale, ff::i32f8_t rotation, const DirectX::XMFLOAT4& color)
+ff::pixel_transform::pixel_transform(ff::point_fixed position, ff::point_fixed scale, ff::fixed_int rotation, const DirectX::XMFLOAT4& color)
     : position(position)
     , scale(scale)
     , rotation(rotation)
@@ -69,17 +69,17 @@ ff::pixel_transform::pixel_transform(ff::point_fixed position, ff::point_fixed s
 {}
 
 ff::pixel_transform::pixel_transform(const transform& other)
-    : position(other.position.cast<ff::i32f8_t>())
-    , scale(other.scale.cast<ff::i32f8_t>())
+    : position(other.position.cast<ff::fixed_int>())
+    , scale(other.scale.cast<ff::fixed_int>())
     , rotation(other.rotation)
     , color(other.color)
 {}
 
 ff::pixel_transform& ff::pixel_transform::operator=(const transform& other)
 {
-    this->position = other.position.cast<ff::i32f8_t>();
-    this->scale = other.scale.cast<ff::i32f8_t>();
-    this->rotation = ff::i32f8_t(other.rotation);
+    this->position = other.position.cast<ff::fixed_int>();
+    this->scale = other.scale.cast<ff::fixed_int>();
+    this->rotation = ff::fixed_int(other.rotation);
     this->color = other.color;
 
     return *this;
@@ -97,6 +97,15 @@ DirectX::XMMATRIX ff::pixel_transform::matrix() const
         DirectX::XMVectorSet(0, 0, 0, 0), // rotation center
         this->rotation_radians(),
         DirectX::XMVectorSet(this->position.x, this->position.y, 0, 0));
+}
+
+DirectX::XMMATRIX ff::pixel_transform::matrix_floor() const
+{
+    return DirectX::XMMatrixAffineTransformation2D(
+        DirectX::XMVectorSet(this->scale.x, this->scale.y, 1, 1),
+        DirectX::XMVectorSet(0, 0, 0, 0), // rotation center
+        this->rotation_radians(),
+        DirectX::XMVectorSet(std::floor(this->position.x), std::floor(this->position.y), 0, 0));
 }
 
 float ff::pixel_transform::rotation_radians() const

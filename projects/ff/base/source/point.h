@@ -143,5 +143,14 @@ namespace ff
     using point_float = point_t<float>;
     using point_double = point_t<double>;
     using point_size = point_t<size_t>;
-    using point_fixed = point_t<ff::i32f8_t>;
+    using point_fixed = point_t<ff::fixed_int>;
+}
+
+namespace std
+{
+    template<class T>
+    static ff::point_t<T> floor(const ff::point_t<T>& value)
+    {
+        return ff::point_t<T>(std::floor(value.x), std::floor(value.y));
+    }
 }

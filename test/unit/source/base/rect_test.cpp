@@ -21,10 +21,10 @@ namespace base_test
             Assert::IsTrue(ri == ff::rect_int{});
 
             ff::rect_fixed rf{};
-            Assert::IsTrue(ff::i32f8_t(0) == rf.left);
-            Assert::IsTrue(ff::i32f8_t(0) ==  rf.top);
-            Assert::IsTrue(ff::i32f8_t(0) ==  rf.right);
-            Assert::IsTrue(ff::i32f8_t(0) ==  rf.bottom);
+            Assert::IsTrue(ff::fixed_int(0) == rf.left);
+            Assert::IsTrue(ff::fixed_int(0) ==  rf.top);
+            Assert::IsTrue(ff::fixed_int(0) ==  rf.right);
+            Assert::IsTrue(ff::fixed_int(0) ==  rf.bottom);
         }
 
         TEST_METHOD(operators)

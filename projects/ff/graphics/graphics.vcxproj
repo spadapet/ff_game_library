@@ -15,9 +15,12 @@
     <ClCompile Include="source\animation_player.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
+    <ClCompile Include="source\draw_base.cpp" />
+    <ClCompile Include="source\draw_ptr.cpp" />
     <ClCompile Include="source\dx11_buffer.cpp" />
     <ClCompile Include="source\dx11_depth.cpp" />
     <ClCompile Include="source\dx11_device_state.cpp" />
+    <ClCompile Include="source\dx11_draw.cpp" />
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dx11_target_texture.cpp" />
@@ -57,9 +60,11 @@
     <ClInclude Include="source\animation_player_base.h" />
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
+    <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\dx11_buffer.h" />
     <ClInclude Include="source\dx11_depth.h" />
     <ClInclude Include="source\dx11_device_state.h" />
+    <ClInclude Include="source\dx11_draw.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dx11_target_base.h" />

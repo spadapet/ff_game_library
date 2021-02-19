@@ -29,7 +29,7 @@ namespace ff
     struct pixel_transform
     {
         pixel_transform();
-        pixel_transform(ff::point_fixed position, ff::point_fixed scale = ff::point_fixed(1, 1), ff::i32f8_t rotation = 0, const DirectX::XMFLOAT4& color = ff::color::white());
+        pixel_transform(ff::point_fixed position, ff::point_fixed scale = ff::point_fixed(1, 1), ff::fixed_int rotation = 0, const DirectX::XMFLOAT4& color = ff::color::white());
         pixel_transform(const transform& other);
         pixel_transform(const pixel_transform& other) = default;
 
@@ -38,11 +38,12 @@ namespace ff
 
         static const pixel_transform& identity();
         DirectX::XMMATRIX matrix() const;
+        DirectX::XMMATRIX matrix_floor() const;
         float rotation_radians() const;
 
         ff::point_fixed position;
         ff::point_fixed scale;
-        ff::i32f8_t rotation; // degrees CCW
+        ff::fixed_int rotation; // degrees CCW
         DirectX::XMFLOAT4 color;
     };
 }

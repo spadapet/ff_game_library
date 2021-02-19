@@ -38,7 +38,7 @@ ff::value_ptr ff::type::double_type::try_convert_to(const ff::value* val, std::t
 
     if (type == typeid(ff::type::fixed_v))
     {
-        return ff::value::create<ff::i32f8_t>(src);
+        return ff::value::create<ff::fixed_int>(src);
     }
 
     if (type == typeid(ff::type::float_v))

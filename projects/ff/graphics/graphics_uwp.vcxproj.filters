@@ -110,6 +110,15 @@
     <ClCompile Include="source\dx11_target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\draw_ptr.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\draw_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_draw.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -253,6 +262,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_target_window_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_draw.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

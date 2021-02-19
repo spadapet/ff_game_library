@@ -250,7 +250,7 @@ namespace ff
         T data;
     };
 
-    using i32f8_t = fixed_t<int32_t, int64_t, 8>;
+    using fixed_int = typename fixed_t<int32_t, int64_t, 8>;
 }
 
 namespace std

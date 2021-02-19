@@ -7,16 +7,16 @@
 #include "size_v.h"
 #include "string_v.h"
 
-ff::type::fixed_v::fixed_v(ff::i32f8_t value)
+ff::type::fixed_v::fixed_v(ff::fixed_int value)
     : value(value)
 {}
 
-ff::i32f8_t ff::type::fixed_v::get() const
+ff::fixed_int ff::type::fixed_v::get() const
 {
     return this->value;
 }
 
-ff::value* ff::type::fixed_v::get_static_value(ff::i32f8_t value)
+ff::value* ff::type::fixed_v::get_static_value(ff::fixed_int value)
 {
     return !value ? fixed_v::get_static_default_value() : nullptr;
 }
@@ -29,7 +29,7 @@ ff::value* ff::type::fixed_v::get_static_default_value()
 
 ff::value_ptr ff::type::fixed_type::try_convert_to(const ff::value* val, std::type_index type) const
 {
-    ff::i32f8_t src = val->get<ff::i32f8_t>();
+    ff::fixed_int src = val->get<ff::fixed_int>();
 
     if (type == typeid(ff::type::bool_v))
     {
@@ -51,7 +51,7 @@ ff::value_ptr ff::type::fixed_type::try_convert_to(const ff::value* val, std::ty
         return ff::value::create<int>(src);
     }
 
-    if (type == typeid(ff::type::size_v) && src >= ff::i32f8_t(0))
+    if (type == typeid(ff::type::size_v) && src >= ff::fixed_int(0))
     {
         return ff::value::create<size_t>(static_cast<size_t>(static_cast<int>(src)));
     }

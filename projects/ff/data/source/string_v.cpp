@@ -96,7 +96,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
         double val = std::strtod(start, &end);
         if (end > start && !*end)
         {
-            return ff::value::create<ff::i32f8_t>(val);
+            return ff::value::create<ff::fixed_int>(val);
         }
     }
 
@@ -164,7 +164,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
         ff::point_double point;
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg ]%n", &point.x, &point.y, &chars_read) == 2 && chars_read == src.size())
         {
-            return ff::value::create<ff::point_fixed>(point.cast<ff::i32f8_t>());
+            return ff::value::create<ff::point_fixed>(point.cast<ff::fixed_int>());
         }
     }
 
@@ -200,7 +200,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
         ff::rect_double rect;
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg, %lg, %lg ]%n", &rect.left, &rect.top, &rect.right, &rect.bottom, &chars_read) == 4 && chars_read == src.size())
         {
-            return ff::value::create<ff::rect_fixed>(rect.cast<ff::i32f8_t>());
+            return ff::value::create<ff::rect_fixed>(rect.cast<ff::fixed_int>());
         }
     }
 
