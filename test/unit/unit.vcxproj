@@ -21,6 +21,7 @@
     </ClCompile>
     <ClCompile Include="source\audio\effect_test.cpp" />
     <ClCompile Include="source\audio\music_test.cpp" />
+    <ClCompile Include="source\base\filesystem_test.cpp" />
     <ClCompile Include="source\base\fixed_test.cpp" />
     <ClCompile Include="source\base\point_test.cpp" />
     <ClCompile Include="source\base\pool_allocator_test.cpp" />

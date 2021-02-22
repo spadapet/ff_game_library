@@ -11,14 +11,15 @@
 
 static const std::string& get_cached_string(std::string_view str)
 {
-    static std::unordered_map<std::string_view, std::string> map;
+    static std::forward_list<std::string> string_list;
+    static std::unordered_map<std::string_view, const std::string&> string_map;
     static std::shared_mutex mutex;
 
     // Check if it's cached already
     {
         std::shared_lock lock(mutex);
-        auto i = map.find(str);
-        if (i != map.cend())
+        auto i = string_map.find(str);
+        if (i != string_map.cend())
         {
             return i->second;
         }
@@ -26,9 +27,9 @@ static const std::string& get_cached_string(std::string_view str)
 
     // Add to the cache
     {
-        std::string new_str(str);
         std::unique_lock lock(mutex);
-        return map.try_emplace(new_str, std::move(new_str)).first->second;
+        const std::string& new_str = string_list.emplace_front(str);
+        return string_map.try_emplace(new_str, new_str).first->second;
     }
 }
 

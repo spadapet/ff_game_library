@@ -10,7 +10,7 @@ namespace audio_test
         {
             auto result = ff::test::create_resources(R"(
                 {
-                    "test_mp3": { "res:type": "file", "file": "file:test.mp3" },
+                    "test_mp3": { "res:type": "file", "file": "file:test_music.mp3" },
                     "test_music": { "res:type": "music", "file": "ref:test_mp3" }
                 }
             )");

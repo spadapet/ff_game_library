@@ -1,10 +1,27 @@
 ﻿#include "pch.h"
 #include "utility.h"
 
+static std::filesystem::path get_temp_path()
+{
+    return ff::filesystem::temp_directory_path() / "ff.unit.test";
+}
+
+void ff::test::remove_temp_path()
+{
+    std::filesystem::path temp_path = get_temp_path();
+
+    std::error_code ec;
+    if (std::filesystem::exists(temp_path, ec))
+    {
+        std::filesystem::remove_all(::get_temp_path(), ec);
+    }
+}
+
 std::tuple<std::unique_ptr<ff::resource_objects>, ff::end_scope_action> ff::test::create_resources(std::string_view json_source)
 {
-    std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / std::to_string(ff::stable_hash_func(json_source));
-    ff::end_scope_action cleanup([&temp_path]()
+    std::filesystem::path temp_path = ::get_temp_path() / std::to_string(ff::stable_hash_func(json_source));
+    ff::log::write_debug(std::string("Temp path: " + ff::string::to_string(temp_path.native())));
+    ff::end_scope_action cleanup([temp_path]()
         {
             std::error_code ec;
             std::filesystem::remove_all(temp_path, ec);
@@ -21,7 +38,7 @@ std::tuple<std::unique_ptr<ff::resource_objects>, ff::end_scope_action> ff::test
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_MUSIC));
-        ff::stream_copy(ff::file_writer(temp_path / "test.mp3"), ff::data_reader(data), data->size());
+        ff::stream_copy(ff::file_writer(temp_path / "test_music.mp3"), ff::data_reader(data), data->size());
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_SHADER));

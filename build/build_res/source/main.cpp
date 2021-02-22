@@ -2,63 +2,13 @@
 
 static std::vector<std::string> get_command_line()
 {
-    std::vector<std::string> tokens;
-    std::wstring token;
-    wchar_t quote = 0;
-
-    for (const wchar_t* sz = ::GetCommandLine(); sz && *sz; sz++)
-    {
-        if (!quote)
-        {
-            if (::iswspace(*sz))
-            {
-                // end of a token
-                if (!token.empty())
-                {
-                    tokens.push_back(ff::string::to_string(token));
-                    token.clear();
-                }
-            }
-            else if (*sz == '\"' || *sz == '\'')
-            {
-                // start of a string
-                quote = *sz;
-            }
-            else
-            {
-                token += *sz;
-            }
-        }
-        else
-        {
-            // inside of a quoted string
-
-            if (*sz == quote)
-            {
-                // the string has ended
-                quote = 0;
-            }
-            else
-            {
-                token += *sz;
-            }
-        }
-    }
-
-    if (!token.empty())
-    {
-        // save the last token
-
-        tokens.push_back(ff::string::to_string(token));
-        token.clear();
-    }
-
-    return tokens;
+    std::wstring_view command_line(::GetCommandLine());
+    return ff::string::split_command_line(ff::string::to_string(command_line));
 }
 
-static void ShowUsage()
+static void show_usage()
 {
-    std::cerr << "Resource packer usage:" << std::endl;
+    std::cerr << "ff.build_res.exe usage:" << std::endl;
     std::cerr << "    respack.exe -in \"input file\" [-out \"output file\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
     std::cerr << "    respack.exe -dump \"pack file\"" << std::endl;
 }
@@ -68,31 +18,23 @@ static bool test_load_resources(const ff::dict& dict)
 #ifdef _DEBUG
     dict.debug_print();
 
-    ff::ComPtr<ff::IResources> resources;
-    assertRetVal(ff::CreateResources(nullptr, dict, &resources), false);
+    ff::resource_objects resources(dict);
+    std::forward_list<ff::auto_resource_value> values;
 
-    ff::Vector<ff::AutoResourceValue> values;
-    ff::Vector<ff::String> names = dict.GetAllNames();
-
-    for (ff::StringRef name : names)
+    for (std::string_view name : resources.resource_object_names())
     {
-        if (name != L"Values" && std::wcsncmp(name.c_str(), L"res:", 4))
-        {
-            values.Push(ff::AutoResourceValue(resources, name));
-        }
+        values.emplace_front(resources.get_resource_object(name));
     }
 
-    for (ff::AutoResourceValue& value : values)
-    {
-        value.Flush();
-    }
+    resources.flush_all_resources();
 
-    for (ff::AutoResourceValue& value : values)
+    for (auto& value : values)
     {
-        if (!value.GetValue() || value.GetValue()->IsType<ff::NullValue>())
+        if (!value.valid() || value.value()->is_type<nullptr_t>())
         {
-            std::wcerr << L"Failed to create resource object: " << value.GetName() << std::endl;
-            assertRetVal(false, false);
+            std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
+            assert(false);
+            return false;
         }
     }
 #endif
@@ -100,57 +42,70 @@ static bool test_load_resources(const ff::dict& dict)
     return true;
 }
 
-static bool CompileResourcePack(ff::StringRef inputFile, ff::StringRef outputFile, bool debug)
+static bool compile_resource_pack(const std::filesystem::path& input_file, const std::filesystem::path& output_file, bool debug)
 {
-    ff::Vector<ff::String> errors;
-    ff::dict dict = ff::LoadResourcesFromFile(inputFile, debug, errors);
-
-    if (errors.Size())
+    ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
+    if (!result.status || !::test_load_resources(result.dict))
     {
-        for (ff::String error : errors)
+        for (auto& error : result.errors)
         {
-            std::wcerr << error << std::endl;
+            std::cerr << error << std::endl;
         }
 
-        assertRetVal(false, false);
+        assert(false);
+        return false;
     }
 
-    assertRetVal(::test_load_resources(dict), false);
-    assertRetVal(ff::SaveResourceCacheToFile(dict, outputFile), false);
+    ff::file_writer writer(output_file);
+    if (!writer || !result.dict.save(writer))
+    {
+        assert(false);
+        return false;
+    }
 
     return true;
 }
 
-class SaveTextureVisitor : public ff::DictVisitorBase
+class save_texture_visitor : public ff::dict_visitor_base
 {
 public:
-    SaveTextureVisitor()
-        : _path(ff::GetTempDirectory())
+    save_texture_visitor()
+        : path(ff::filesystem::temp_directory_path() / "ff.build_res.dump")
     {
-        verify(_globals.Startup(ff::AppGlobalsFlags::GraphicsAndAudio));
-
-        ff::AppendPathTail(_path, ff::String(L"ResPackDump"));
-        verify(ff::CreateDirectory(_path));
+        std::error_code ec;
+        std::filesystem::create_directories(this->path, ec);
     }
 
-    ~SaveTextureVisitor()
+    ~save_texture_visitor()
     {
-        if (ff::DirectoryExists(_path))
+        std::error_code ec;
+        if (std::filesystem::exists(this->path))
         {
-            ::ShellExecute(nullptr, L"open", _path.c_str(), nullptr, _path.c_str(), SW_SHOWDEFAULT);
+            const wchar_t* path_str = this->path.native().c_str();
+            ::ShellExecute(nullptr, L"open", path_str, nullptr, path_str, SW_SHOWDEFAULT);
         }
     }
 
 protected:
-    virtual ff::ValuePtr TransformDict(const ff::dict& dict) override
+    virtual ff::value_ptr transform_dict(const ff::dict& dict) override
     {
-        ff::ValuePtrT<ff::StringValue> typeValue = dict.GetValue(ff::RES_TYPE);
-        if (typeValue)
+        ff::value_ptr type_value = dict.get(ff::internal::RES_TYPE)->try_convert<std::string>();
+        if (type_value)
         {
-            const ff::ModuleClassInfo* typeInfo = ff::ProcessGlobals::Get()->GetModules().FindClassInfo(typeValue.GetValue());
+            const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type_value->get<std::string>());
+            if (factory)
+            {
+                auto resource_object = factory->load_from_cache(dict);
+                if (resource_object)
+                {
+                    resource_object->resource_save_to_file(this->path, );
+                }
+            }
+
+            const ff::ModuleClassInfo* typeInfo = ff::ProcessGlobals::Get()->GetModules().FindClassInfo(type_value.GetValue());
             if (typeInfo)
             {
-                ff::String name(L"value");
+                ff::String name("value");
                 ff::dict resourceDict;
                 resourceDict.Set<ff::DictValue>(name, ff::dict(dict));
 
@@ -162,11 +117,11 @@ protected:
                     ff::String file = _path;
                     ff::AppendPathTail(file, ff::CleanFileName(GetPath()) + saver->GetFileExtension());
 
-                    std::wcout << L"Saving: " << file.c_str() << std::endl;
+                    std::wcout << "Saving: " << file.c_str() << std::endl;
 
                     if (!saver->SaveToFile(file))
                     {
-                        AddError(ff::String::format_new(L"Failed to save resource to file: %s", file.c_str()));
+                        AddError(ff::String::format_new("Failed to save resource to file: %s", file.c_str()));
                     }
                 }
             }
@@ -176,22 +131,21 @@ protected:
     }
 
 private:
-    ff::String _path;
-    ff::DesktopGlobals _globals;
+    std::filesystem::path path;
 };
 
 static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
 {
     if (!ff::FileExists(dumpFile))
     {
-        std::wcerr << L"File doesn't exist: " << dumpFile << std::endl;
+        std::cerr << "File doesn't exist: " << dumpFile << std::endl;
         return 1;
     }
 
     ff::ComPtr<ff::IData> dumpData;
     if (!ff::ReadWholeFileMemMapped(dumpFile, &dumpData))
     {
-        std::wcerr << L"Can't read file: " << dumpFile << std::endl;
+        std::cerr << "Can't read file: " << dumpFile << std::endl;
         return 2;
     }
 
@@ -199,7 +153,7 @@ static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
     ff::ComPtr<ff::IDataReader> dumpReader;
     if (!ff::CreateDataReader(dumpData, 0, &dumpReader) || !ff::LoadDict(dumpReader, dumpDict))
     {
-        std::wcerr << L"Can't load file: " << dumpFile << std::endl;
+        std::cerr << "Can't load file: " << dumpFile << std::endl;
         return 3;
     }
 
@@ -210,7 +164,7 @@ static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
 
     if (dumpBin)
     {
-        SaveTextureVisitor visitor;
+        save_texture_visitor visitor;
         ff::Vector<ff::String> errors;
         visitor.VisitDict(dumpDict, errors);
 
@@ -218,7 +172,7 @@ static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
         {
             for (ff::StringRef error : errors)
             {
-                std::wcerr << error.c_str() << std::endl;
+                std::cerr << error.c_str() << std::endl;
             }
 
             return 4;
@@ -233,7 +187,7 @@ static void LoadSiblingParseTypes()
     ff::Vector<ff::String> dirs;
     ff::Vector<ff::String> files;
     ff::String dir = ff::GetExecutableDirectory();
-    ff::StaticString parseTypes(L".parsetypes.dll");
+    ff::StaticString parseTypes(".parsetypes.dll");
 
     if (ff::GetDirectoryContents(dir, dirs, files))
     {
@@ -249,7 +203,7 @@ static void LoadSiblingParseTypes()
 
                 if (::LoadLibrary(loadFile.c_str()))
                 {
-                    std::wcout << L"ResPack: Loaded: " << file << std::endl;
+                    std::wcout << "ResPack: Loaded: " << file << std::endl;
                 }
             }
         }
@@ -264,8 +218,8 @@ int main(int argc, char *argv[])
 
     ff::Vector<ff::String> args = ff::TokenizeCommandLine();
     ff::Vector<ff::String> refs;
-    ff::String inputFile;
-    ff::String outputFile;
+    ff::String input_file;
+    ff::String output_file;
     ff::String dumpFile;
     bool debug = false;
     bool force = false;
@@ -276,78 +230,78 @@ int main(int argc, char *argv[])
     {
         ff::StringRef arg = args[i];
 
-        if (arg == L"-in" && i + 1 < args.Size())
+        if (arg == "-in" && i + 1 < args.Size())
         {
-            inputFile = ff::GetCurrentDirectory();
-            ff::AppendPathTail(inputFile, args[++i]);
+            input_file = ff::GetCurrentDirectory();
+            ff::AppendPathTail(input_file, args[++i]);
         }
-        else if (arg == L"-out" && i + 1 < args.Size())
+        else if (arg == "-out" && i + 1 < args.Size())
         {
-            outputFile = ff::GetCurrentDirectory();
-            ff::AppendPathTail(outputFile, args[++i]);
+            output_file = ff::GetCurrentDirectory();
+            ff::AppendPathTail(output_file, args[++i]);
         }
-        else if (arg == L"-ref" && i + 1 < args.Size())
+        else if (arg == "-ref" && i + 1 < args.Size())
         {
             ff::String file = ff::GetCurrentDirectory();
             ff::AppendPathTail(file, args[++i]);
             refs.Push(file);
         }
-        else if ((arg == L"-dump" || arg == L"-dumpbin") && i + 1 < args.Size())
+        else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.Size())
         {
-            dumpBin = (arg == L"-dumpbin");
+            dumpBin = (arg == "-dumpbin");
             dumpFile = ff::GetCurrentDirectory();
             ff::AppendPathTail(dumpFile, args[++i]);
         }
-        else if (arg == L"-debug")
+        else if (arg == "-debug")
         {
             debug = true;
         }
-        else if (arg == L"-force")
+        else if (arg == "-force")
         {
             force = true;
         }
-        else if (arg == L"-verbose")
+        else if (arg == "-verbose")
         {
             verbose = true;
         }
         else
         {
-            ShowUsage();
+            show_usage();
             return 1;
         }
     }
 
     if (dumpFile.size())
     {
-        if (inputFile.size() || outputFile.size())
+        if (input_file.size() || output_file.size())
         {
-            ShowUsage();
+            show_usage();
             return 1;
         }
 
         return DumpFile(dumpFile, dumpBin);
     }
 
-    if (inputFile.empty())
+    if (input_file.empty())
     {
-        ShowUsage();
+        show_usage();
         return 1;
     }
 
-    if (outputFile.empty())
+    if (output_file.empty())
     {
-        outputFile = inputFile;
-        ff::ChangePathExtension(outputFile, ff::String(L"pack"));
+        output_file = input_file;
+        ff::ChangePathExtension(output_file, ff::String("pack"));
     }
 
-    if (!ff::FileExists(inputFile))
+    if (!ff::FileExists(input_file))
     {
-        std::wcerr << L"ResPack: File doesn't exist: " << inputFile << std::endl;
+        std::cerr << "ResPack: File doesn't exist: " << input_file << std::endl;
         return 2;
     }
 
-    bool skipped = !force && ff::IsResourceCacheUpToDate(inputFile, outputFile, debug);
-    std::wcout << inputFile << L" -> " << outputFile << (skipped ? L" (skipped)" : L"") << std::endl;
+    bool skipped = !force && ff::IsResourceCacheUpToDate(input_file, output_file, debug);
+    std::wcout << input_file << " -> " << output_file << (skipped ? " (skipped)" : "") << std::endl;
 
     if (skipped)
     {
@@ -363,12 +317,12 @@ int main(int argc, char *argv[])
         {
             if (verbose)
             {
-                std::wcout << L"ResPack: Loaded: " << file << std::endl;
+                std::wcout << "ResPack: Loaded: " << file << std::endl;
             }
         }
         else
         {
-            std::wcerr << L"ResPack: Reference file doesn't exist: " << file << std::endl;
+            std::cerr << "ResPack: Reference file doesn't exist: " << file << std::endl;
             return 3;
         }
     }
@@ -377,24 +331,24 @@ int main(int argc, char *argv[])
     ff::DesktopGlobals desktopGlobals;
     if (!desktopGlobals.Startup(ff::AppGlobalsFlags::GraphicsAndAudio))
     {
-        std::wcerr << L"ResPack: Failed to initialize app globals" << std::endl;
+        std::cerr << "ResPack: Failed to initialize app globals" << std::endl;
         return 4;
     }
 
-    if (!::CompileResourcePack(inputFile, outputFile, debug))
+    if (!::compile_resource_pack(input_file, output_file, debug))
     {
-        std::wcerr << L"ResPack: FAILED" << std::endl;
+        std::cerr << "ResPack: FAILED" << std::endl;
         return 5;
     }
 
     if (verbose)
     {
         std::wcout <<
-            L"ResPack: Time: " <<
+            "ResPack: Time: " <<
             std::fixed <<
             std::setprecision(3) <<
             timer.Tick() <<
-            L"s (" << inputFile << L")" <<
+            "s (" << input_file << ")" <<
             std::endl;
     }
 

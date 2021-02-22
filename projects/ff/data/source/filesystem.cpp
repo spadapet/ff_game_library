@@ -61,6 +61,77 @@ std::filesystem::path ff::filesystem::to_lower(const std::filesystem::path& path
     return std::filesystem::path(wstr);
 }
 
+std::filesystem::path ff::filesystem::clean_file_name(const std::filesystem::path& path)
+{
+    std::string new_string = ff::string::to_string(path.native());
+    const std::string_view replace_char = R"(<>:"/\|?*)";
+    const std::string_view replace_with = R"(()-'--_--)";
+
+    for (char& ch : new_string)
+    {
+        if ((ch >= 0 && ch < ' ') || ch == 0x7F)
+        {
+            ch = ' ';
+        }
+        else
+        {
+            size_t i = replace_char.find(ch);
+            if (i != std::string_view::npos)
+            {
+                ch = replace_with[i];
+            }
+        }
+    }
+
+    std::filesystem::path new_path;
+    {
+        std::ostringstream new_stream;
+        for (std::string_view token : ff::string::split(new_string, " "))
+        {
+            if (new_stream.tellp() > 0)
+            {
+                new_stream << " ";
+            }
+
+            new_stream << token;
+        }
+
+        new_path = ff::string::to_wstring(new_stream.str());
+    }
+
+    std::filesystem::path extension = new_path.extension();
+    new_path.replace_extension();
+
+    if (!::_wcsicmp(new_path.c_str(), L"AUX") ||
+        !::_wcsicmp(new_path.c_str(), L"CLOCK$") ||
+        !::_wcsicmp(new_path.c_str(), L"COM1") ||
+        !::_wcsicmp(new_path.c_str(), L"COM2") ||
+        !::_wcsicmp(new_path.c_str(), L"COM3") ||
+        !::_wcsicmp(new_path.c_str(), L"COM4") ||
+        !::_wcsicmp(new_path.c_str(), L"COM5") ||
+        !::_wcsicmp(new_path.c_str(), L"COM6") ||
+        !::_wcsicmp(new_path.c_str(), L"COM7") ||
+        !::_wcsicmp(new_path.c_str(), L"COM8") ||
+        !::_wcsicmp(new_path.c_str(), L"COM9") ||
+        !::_wcsicmp(new_path.c_str(), L"CON") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT1") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT2") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT3") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT4") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT5") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT6") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT7") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT8") ||
+        !::_wcsicmp(new_path.c_str(), L"LPT9") ||
+        !::_wcsicmp(new_path.c_str(), L"NUL") ||
+        !::_wcsicmp(new_path.c_str(), L"PRN"))
+    {
+        new_path = new_path.native() + L"_file";
+    }
+
+    return new_path.replace_extension(extension);
+}
+
 bool ff::filesystem::read_text_file(const std::filesystem::path& path, std::string& text)
 {
     file_mem_mapped mm(path);

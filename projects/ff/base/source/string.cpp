@@ -106,3 +106,57 @@ std::vector<std::string_view> ff::string::split(std::string_view str, std::strin
 
     return tokens;
 }
+
+std::vector<std::string> ff::string::split_command_line(std::string_view str)
+{
+    std::vector<std::string> tokens;
+    std::string token;
+    char quote = 0;
+
+    for (char ch : str)
+    {
+        if (!quote)
+        {
+            if (std::isspace(ch))
+            {
+                // end of a token
+                if (!token.empty())
+                {
+                    tokens.push_back(std::move(token));
+                }
+            }
+            else if (ch == '\"' || ch == '\'')
+            {
+                // start of a string
+                quote = ch;
+            }
+            else
+            {
+                token += ch;
+            }
+        }
+        else
+        {
+            // inside of a quoted string
+
+            if (ch == quote)
+            {
+                // the string has ended
+                quote = 0;
+            }
+            else
+            {
+                token += ch;
+            }
+        }
+    }
+
+    if (!token.empty())
+    {
+        // save the last token
+
+        tokens.push_back(std::move(token));
+    }
+
+    return tokens;
+}
