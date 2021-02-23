@@ -22,6 +22,7 @@
 
 // Windows
 #include <Windows.h>
+#include <ShlObj.h>
 
 // UWP
 #if UWP_APP

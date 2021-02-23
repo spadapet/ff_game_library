@@ -56,6 +56,9 @@
     <ClCompile Include="source\window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -133,6 +136,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\push_back.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

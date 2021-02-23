@@ -8,9 +8,14 @@ static std::vector<std::string> get_command_line()
 
 static void show_usage()
 {
-    std::cerr << "ff.build_res.exe usage:" << std::endl;
-    std::cerr << "    respack.exe -in \"input file\" [-out \"output file\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
-    std::cerr << "    respack.exe -dump \"pack file\"" << std::endl;
+    std::cerr << "Command line options:" << std::endl;
+    std::cerr << "  1) ff.build_res.exe -in \"input file\" [-out \"output file\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
+    std::cerr << "  2) ff.build_res.exe -dump \"pack file\"" << std::endl;
+    std::cerr << "  3) ff.build_res.exe -dumpbin \"pack file\"" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "NOTES:" << std::endl;
+    std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'." << std::endl;
+    std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it." << std::endl;
 }
 
 static bool test_load_resources(const ff::dict& dict)
@@ -66,22 +71,22 @@ static bool compile_resource_pack(const std::filesystem::path& input_file, const
     return true;
 }
 
-class save_texture_visitor : public ff::dict_visitor_base
+class save_to_file_visitor : public ff::dict_visitor_base
 {
 public:
-    save_texture_visitor()
-        : path(ff::filesystem::temp_directory_path() / "ff.build_res.dump")
+    save_to_file_visitor()
+        : root_path(ff::filesystem::temp_directory_path() / "ff_game_engine" / "dumpbin")
     {
         std::error_code ec;
-        std::filesystem::create_directories(this->path, ec);
+        std::filesystem::create_directories(this->root_path, ec);
     }
 
-    ~save_texture_visitor()
+    ~save_to_file_visitor()
     {
         std::error_code ec;
-        if (std::filesystem::exists(this->path))
+        if (std::filesystem::exists(this->root_path))
         {
-            const wchar_t* path_str = this->path.native().c_str();
+            const wchar_t* path_str = this->root_path.native().c_str();
             ::ShellExecute(nullptr, L"open", path_str, nullptr, path_str, SW_SHOWDEFAULT);
         }
     }
@@ -89,90 +94,69 @@ public:
 protected:
     virtual ff::value_ptr transform_dict(const ff::dict& dict) override
     {
-        ff::value_ptr type_value = dict.get(ff::internal::RES_TYPE)->try_convert<std::string>();
-        if (type_value)
+        std::string type_name = dict.get<std::string>(ff::internal::RES_TYPE);
+        const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type_name);
+        std::shared_ptr<ff::resource_object_base> resource_object = factory ? factory->load_from_cache(dict) : nullptr;
+
+        if (resource_object)
         {
-            const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type_value->get<std::string>());
-            if (factory)
+            std::filesystem::path name = ff::filesystem::clean_file_name(ff::filesystem::to_path(this->path()));
+            if (!resource_object->resource_save_to_file(this->root_path, ff::filesystem::to_string(name)))
             {
-                auto resource_object = factory->load_from_cache(dict);
-                if (resource_object)
-                {
-                    resource_object->resource_save_to_file(this->path, );
-                }
-            }
-
-            const ff::ModuleClassInfo* typeInfo = ff::ProcessGlobals::Get()->GetModules().FindClassInfo(type_value.GetValue());
-            if (typeInfo)
-            {
-                ff::String name("value");
-                ff::dict resourceDict;
-                resourceDict.Set<ff::DictValue>(name, ff::dict(dict));
-
-                ff::ComPtr<ff::IResources> resources;
-                ff::ComPtr<ff::IResourceSaveFile> saver;
-                if (ff::CreateResources(&_globals, resourceDict, &resources) &&
-                    resources->FlushResource(resources->GetResource(name))->QueryObject(__uuidof(ff::IResourceSaveFile), (void**)&saver))
-                {
-                    ff::String file = _path;
-                    ff::AppendPathTail(file, ff::CleanFileName(GetPath()) + saver->GetFileExtension());
-
-                    std::wcout << "Saving: " << file.c_str() << std::endl;
-
-                    if (!saver->SaveToFile(file))
-                    {
-                        AddError(ff::String::format_new("Failed to save resource to file: %s", file.c_str()));
-                    }
-                }
+                std::ostringstream str;
+                str << "Failed to save resource to file: " << this->path();
+                this->add_error(str.str());
             }
         }
 
-        return ff::DictVisitorBase::TransformDict(dict);
+        return ff::dict_visitor_base::transform_dict(dict);
     }
 
 private:
-    std::filesystem::path path;
+    std::filesystem::path root_path;
 };
 
-static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
+static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bin)
 {
-    if (!ff::FileExists(dumpFile))
+    std::error_code ec;
+    if (!std::filesystem::exists(dump_source_file))
     {
-        std::cerr << "File doesn't exist: " << dumpFile << std::endl;
+        std::cerr << "File doesn't exist: " << dump_source_file << std::endl;
         return 1;
     }
 
-    ff::ComPtr<ff::IData> dumpData;
-    if (!ff::ReadWholeFileMemMapped(dumpFile, &dumpData))
+    ff::file_reader reader(dump_source_file);
+    if (!reader)
     {
-        std::cerr << "Can't read file: " << dumpFile << std::endl;
+        std::cerr << "Can't read file: " << dump_source_file << std::endl;
         return 2;
     }
 
-    ff::dict dumpDict;
-    ff::ComPtr<ff::IDataReader> dumpReader;
-    if (!ff::CreateDataReader(dumpData, 0, &dumpReader) || !ff::LoadDict(dumpReader, dumpDict))
+    ff::dict dict;
+    if (!ff::dict::load(reader, dict))
     {
-        std::cerr << "Can't load file: " << dumpFile << std::endl;
+        std::cerr << "Can't load file: " << dump_source_file << std::endl;
         return 3;
     }
 
-    ff::Log log;
-    log.SetConsoleOutput(true);
-
-    ff::DumpDict(dumpFile, dumpDict, &log, false);
-
-    if (dumpBin)
+    // console print
     {
-        save_texture_visitor visitor;
-        ff::Vector<ff::String> errors;
-        visitor.VisitDict(dumpDict, errors);
+        std::ostringstream dict_str;
+        dict.print(dict_str);
+        std::cout << dict_str.str();
+    }
 
-        if (errors.Size())
+    if (dump_bin)
+    {
+        ::save_to_file_visitor visitor;
+        std::vector<std::string> errors;
+        visitor.visit_dict(dict, errors);
+
+        if (!errors.empty())
         {
-            for (ff::StringRef error : errors)
+            for (auto& error : errors)
             {
-                std::cerr << error.c_str() << std::endl;
+                std::cerr << error << std::endl;
             }
 
             return 4;
@@ -182,75 +166,50 @@ static int DumpFile(ff::StringRef dumpFile, bool dumpBin)
     return 0;
 }
 
-static void LoadSiblingParseTypes()
+int main()
 {
-    ff::Vector<ff::String> dirs;
-    ff::Vector<ff::String> files;
-    ff::String dir = ff::GetExecutableDirectory();
-    ff::StaticString parseTypes(".parsetypes.dll");
+    ff::timer timer;
+    ff::init_input init_input;
+    ff::init_audio init_audio;
+    ff::init_graphics init_graphics;
 
-    if (ff::GetDirectoryContents(dir, dirs, files))
+    if (!init_graphics || !init_audio || !init_input)
     {
-        for (ff::String file : files)
-        {
-            if (file.size() > parseTypes.GetString().size() && !::_wcsnicmp(
-                file.data() + file.size() - parseTypes.GetString().size(),
-                parseTypes.GetString().c_str(),
-                parseTypes.GetString().size()))
-            {
-                ff::String loadFile = dir;
-                ff::AppendPathTail(loadFile, file);
-
-                if (::LoadLibrary(loadFile.c_str()))
-                {
-                    std::wcout << "ResPack: Loaded: " << file << std::endl;
-                }
-            }
-        }
+        std::cerr << "ff.build_res: Failed to initialize" << std::endl;
+        return 5;
     }
-}
 
-int main(int argc, char *argv[])
-{
-    std::unique_ptr<ff::init_input> init_input;
-    std::unique_ptr<ff::init_audio> init_audio;
-    std::unique_ptr<ff::init_graphics> init_graphics;
-
-    ff::Vector<ff::String> args = ff::TokenizeCommandLine();
-    ff::Vector<ff::String> refs;
-    ff::String input_file;
-    ff::String output_file;
-    ff::String dumpFile;
+    std::vector<std::filesystem::path> refs;
+    std::filesystem::path input_file;
+    std::filesystem::path output_file;
+    std::filesystem::path dump_source_file;
     bool debug = false;
     bool force = false;
     bool verbose = false;
-    bool dumpBin = false;
+    bool dump_bin = false;
 
-    for (size_t i = 1; i < args.Size(); i++)
+    std::vector<std::string> args = ff::string::split_command_line();
+    for (size_t i = 1; i < args.size(); i++)
     {
-        ff::StringRef arg = args[i];
+        std::string_view arg = args[i];
 
-        if (arg == "-in" && i + 1 < args.Size())
+        if (arg == "-in" && i + 1 < args.size())
         {
-            input_file = ff::GetCurrentDirectory();
-            ff::AppendPathTail(input_file, args[++i]);
+            input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
-        else if (arg == "-out" && i + 1 < args.Size())
+        else if (arg == "-out" && i + 1 < args.size())
         {
-            output_file = ff::GetCurrentDirectory();
-            ff::AppendPathTail(output_file, args[++i]);
+            output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
-        else if (arg == "-ref" && i + 1 < args.Size())
+        else if (arg == "-ref" && i + 1 < args.size())
         {
-            ff::String file = ff::GetCurrentDirectory();
-            ff::AppendPathTail(file, args[++i]);
-            refs.Push(file);
+            std::filesystem::path file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            refs.push_back(file);
         }
-        else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.Size())
+        else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.size())
         {
-            dumpBin = (arg == "-dumpbin");
-            dumpFile = ff::GetCurrentDirectory();
-            ff::AppendPathTail(dumpFile, args[++i]);
+            dump_bin = (arg == "-dumpbin");
+            dump_source_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
         else if (arg == "-debug")
         {
@@ -266,88 +225,91 @@ int main(int argc, char *argv[])
         }
         else
         {
-            show_usage();
+            ::show_usage();
             return 1;
         }
     }
 
-    if (dumpFile.size())
+    if (!dump_source_file.empty())
     {
-        if (input_file.size() || output_file.size())
+        if (!input_file.empty() || !output_file.empty())
         {
-            show_usage();
+            ::show_usage();
             return 1;
         }
 
-        return DumpFile(dumpFile, dumpBin);
+        return ::dump_file(dump_source_file, dump_bin);
     }
 
     if (input_file.empty())
     {
-        show_usage();
+        ::show_usage();
         return 1;
     }
 
     if (output_file.empty())
     {
         output_file = input_file;
-        ff::ChangePathExtension(output_file, ff::String("pack"));
+        output_file.replace_extension(".pack");
     }
 
-    if (!ff::FileExists(input_file))
+    std::error_code ec;
+    if (!std::filesystem::exists(input_file, ec))
     {
-        std::cerr << "ResPack: File doesn't exist: " << input_file << std::endl;
+        std::cerr << "ff.build_res: File doesn't exist: " << input_file << std::endl;
         return 2;
     }
 
-    bool skipped = !force && ff::IsResourceCacheUpToDate(input_file, output_file, debug);
-    std::wcout << input_file << " -> " << output_file << (skipped ? " (skipped)" : "") << std::endl;
+    bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
+    std::cout << input_file << " -> " << output_file << (skipped ? " (skipped)" : "") << std::endl;
 
     if (skipped)
     {
         return 0;
     }
 
-    ::LoadSiblingParseTypes();
-
-    for (ff::StringRef file : refs)
+    // Load referenced DLLs
+    for (auto& ref : refs)
     {
-        HMODULE mod = ::LoadLibrary(file.c_str());
+        HMODULE mod = ::LoadLibrary(ref.c_str());
         if (mod)
         {
+            typedef void (*ff_init_t)();
+            ff_init_t init_func = reinterpret_cast<ff_init_t>(::GetProcAddress(mod, "ff_init"));
+
             if (verbose)
             {
-                std::wcout << "ResPack: Loaded: " << file << std::endl;
+                std::cout << "ff.build_res: Loaded: " << ref << std::endl;
             }
+
+            if (!init_func)
+            {
+                std::cerr << "ff.build_res: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
+                return 3;
+            }
+
+            init_func();
         }
         else
         {
-            std::cerr << "ResPack: Reference file doesn't exist: " << file << std::endl;
-            return 3;
+            std::cerr << "ff.build_res: Failed to load reference: " << ref << std::endl;
+            return 4;
         }
-    }
-
-    ff::Timer timer;
-    ff::DesktopGlobals desktopGlobals;
-    if (!desktopGlobals.Startup(ff::AppGlobalsFlags::GraphicsAndAudio))
-    {
-        std::cerr << "ResPack: Failed to initialize app globals" << std::endl;
-        return 4;
     }
 
     if (!::compile_resource_pack(input_file, output_file, debug))
     {
-        std::cerr << "ResPack: FAILED" << std::endl;
-        return 5;
+        std::cerr << "ff.build_res: Compile failed" << std::endl;
+        return 6;
     }
 
     if (verbose)
     {
-        std::wcout <<
-            "ResPack: Time: " <<
+        std::cout <<
+            "ff.build_res: Time: " <<
             std::fixed <<
             std::setprecision(3) <<
-            timer.Tick() <<
+            timer.tick() <<
             "s (" << input_file << ")" <<
             std::endl;
     }

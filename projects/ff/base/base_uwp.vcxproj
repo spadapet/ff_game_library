@@ -12,6 +12,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\end_scope_action.cpp" />
+    <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\log.cpp" />
     <ClCompile Include="source\math.cpp" />
@@ -34,6 +35,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\end_scope_action.h" />
+    <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\flags.h" />
     <ClInclude Include="source\init.h" />

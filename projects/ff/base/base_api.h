@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "source/constants.h"
 #include "source/end_scope_action.h"
+#include "source/filesystem.h"
 #include "source/fixed.h"
 #include "source/flags.h"
 #include "source/init.h"

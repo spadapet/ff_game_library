@@ -15,5 +15,6 @@ namespace ff::string
 
     std::string to_lower(std::string_view str);
     std::vector<std::string_view> split(std::string_view str, std::string_view delims);
+    std::vector<std::string> split_command_line();
     std::vector<std::string> split_command_line(std::string_view str);
 }

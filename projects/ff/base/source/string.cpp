@@ -107,6 +107,15 @@ std::vector<std::string_view> ff::string::split(std::string_view str, std::strin
     return tokens;
 }
 
+std::vector<std::string> ff::string::split_command_line()
+{
+#if !UWP_APP
+    return ff::string::split_command_line(ff::string::to_string(::GetCommandLine()));
+#else
+    return {};
+#endif
+}
+
 std::vector<std::string> ff::string::split_command_line(std::string_view str)
 {
     std::vector<std::string> tokens;

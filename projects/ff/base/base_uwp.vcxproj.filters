@@ -56,6 +56,9 @@
     <ClCompile Include="source\end_scope_action.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -133,6 +136,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\end_scope_action.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
