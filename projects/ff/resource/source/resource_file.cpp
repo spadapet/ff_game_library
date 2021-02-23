@@ -41,7 +41,7 @@ ff::resource_file::resource_file(const std::filesystem::path& path)
         size = 0;
     }
 
-    this->saved_data_ = std::make_shared<ff::saved_data_file>(path, 0, size, size, ff::saved_data_type::none);
+    this->saved_data_ = std::make_shared<ff::saved_data_file>(path, 0, static_cast<size_t>(size), static_cast<size_t>(size), ff::saved_data_type::none);
 }
 
 ff::resource_file::resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
@@ -69,7 +69,10 @@ const std::string& ff::resource_file::file_extension() const
 
 bool ff::resource_file::resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const
 {
-    std::filesystem::path path = (directory_path / name).replace_extension(this->file_extension_);
+    std::string temp_name(name);
+    temp_name += this->file_extension_;
+
+    std::filesystem::path path = directory_path / ff::filesystem::to_path(temp_name);
     size_t size = this->saved_data_->loaded_size();
     size_t copied_size = ff::stream_copy(ff::file_writer(path), *this->saved_data_->loaded_reader(), size);
     return copied_size == size;

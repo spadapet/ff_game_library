@@ -154,7 +154,7 @@ namespace
                             {
                                 if (check_y >= 0 &&
                                     check_y < this->size.y / ::TEXTURE_GRID_SIZE &&
-                                    check_y < this->row_right.size() &&
+                                    static_cast<size_t>(check_y) < this->row_right.size() &&
                                     this->row_right[check_y] &&
                                     this->row_right[check_y] > x &&
                                     x + cell_size.x > this->row_left[check_y])
@@ -217,7 +217,7 @@ namespace
 #else
             for (int y = rect_cells.top; y < rect_cells.bottom; y++)
             {
-                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
+                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && static_cast<size_t>(y) < this->row_right.size())
                 {
                     // Must be a one cell gap between sprites
                     if (this->row_right[y] &&
@@ -234,7 +234,7 @@ namespace
 
             for (int y = rect_cells.top; y < rect_cells.bottom; y++)
             {
-                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && y < this->row_right.size())
+                if (y >= 0 && y < this->size.y / TEXTURE_GRID_SIZE && static_cast<size_t>(y) < this->row_right.size())
                 {
                     if (this->row_right[y])
                     {

@@ -17,12 +17,12 @@ ff::keyboard_device::~keyboard_device()
 
 bool ff::keyboard_device::pressing(int vk) const
 {
-    return vk >= 0 && vk < this->state.pressing.size() && this->state.pressing[vk];
+    return vk >= 0 && static_cast<size_t>(vk) < this->state.pressing.size() && this->state.pressing[vk];
 }
 
 int ff::keyboard_device::press_count(int vk) const
 {
-    return (vk >= 0 && vk < this->state.press_count.size()) ? this->state.press_count[vk] : 0;
+    return (vk >= 0 && static_cast<size_t>(vk) < this->state.press_count.size()) ? this->state.press_count[vk] : 0;
 }
 
 std::string ff::keyboard_device::text() const

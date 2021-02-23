@@ -232,7 +232,7 @@ ff::value_ptr ff::dict_visitor_base::transform_value(ff::value_ptr value)
 
     if (dict_val)
     {
-        output_value = this->transform_dict(value->get<ff::dict>());
+        output_value = this->transform_dict(dict_val->get<ff::dict>());
     }
     else if (value->is_type<ff::value_vector>())
     {

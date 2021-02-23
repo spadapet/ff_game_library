@@ -1,0 +1,121 @@
+{
+  "ff.shader.line_vs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "vs_4_0",
+    "entry": "line_vs"
+  },
+
+  "ff.shader.circle_vs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "vs_4_0",
+    "entry": "circle_vs"
+  },
+
+  "ff.shader.triangle_vs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "vs_4_0",
+    "entry": "triangle_vs"
+  },
+
+  "ff.shader.sprite_vs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "vs_4_0",
+    "entry": "sprite_vs"
+  },
+
+  "ff.shader.line_gs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "gs_4_0",
+    "entry": "line_gs"
+  },
+
+  "ff.shader.circle_gs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "gs_4_0",
+    "entry": "circle_gs"
+  },
+
+  "ff.shader.triangle_gs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "gs_4_0",
+    "entry": "triangle_gs"
+  },
+
+  "ff.shader.sprite_gs":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "gs_4_0",
+    "entry": "sprite_gs"
+  },
+
+  "ff.shader.color_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "color_ps"
+  },
+
+  "ff.shader.palette_out_color_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "palette_out_color_ps"
+  },
+
+  "ff.shader.sprite_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "sprite_ps"
+  },
+
+  "ff.shader.sprite_palette_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "sprite_palette_ps"
+  },
+
+  "ff.shader.sprite_alpha_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "sprite_alpha_ps"
+  },
+
+  "ff.shader.palette_out_sprite_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "palette_out_sprite_ps"
+  },
+
+  "ff.shader.palette_out_sprite_palette_ps":
+  {
+    "res:type": "shader",
+    "file": "file:shaders.hlsl",
+    "target": "ps_4_0",
+    "entry": "palette_out_sprite_palette_ps"
+  }
+}

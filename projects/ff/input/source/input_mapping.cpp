@@ -96,11 +96,11 @@ bool ff::input_event_provider::advance(double delta_time)
 
                 if (hold_time >= 0)
                 {
-                    int total_events = 1;
+                    size_t total_events = 1;
 
                     if (event_progress.repeat_seconds > 0)
                     {
-                        total_events += static_cast<int>(std::floor(hold_time / event_progress.repeat_seconds));
+                        total_events += static_cast<size_t>(std::floor(hold_time / event_progress.repeat_seconds));
                     }
 
                     while (event_progress.event_count < total_events)

@@ -33,7 +33,7 @@ ff::value* ff::type::int_v::get_static_value(int value)
             std::lock_guard lock(mutex);
             if (!did_init)
             {
-                for (int i = 0; i < values.size(); i++)
+                for (int i = 0; i < static_cast<int>(values.size()); i++)
                 {
                     values[i].value = i - 128;
                 }

@@ -112,5 +112,13 @@
       <Project>{4976a08a-4cd9-4e6c-9da7-e549d6f2295f}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\ff.graphics.res.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>
