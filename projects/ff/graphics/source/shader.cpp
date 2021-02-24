@@ -89,7 +89,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
     HRESULT hr = ::D3DCompile(
         file_data->data(),
         file_data->size(),
-        file_path.string().c_str(),
+        ff::filesystem::to_string(file_path).c_str(),
         defines_vector.data(),
         &shader_include,
         std::string(entry).c_str(),

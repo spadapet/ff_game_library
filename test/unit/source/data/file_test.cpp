@@ -13,7 +13,7 @@ namespace data_test
             // write
             {
                 int i = -128;
-                ff::file_write fw(path.string());
+                ff::file_write fw(ff::filesystem::to_string(path));
                 Assert::IsTrue(fw);
                 fw.write(&i, sizeof(i));
             }
@@ -21,7 +21,7 @@ namespace data_test
             // read
             {
                 int i = 0;
-                ff::file_read fr(path.string());
+                ff::file_read fr(ff::filesystem::to_string(path));
                 Assert::IsTrue(fr);
                 fr.read(&i, sizeof(i));
                 Assert::AreEqual(-128, i);
@@ -34,7 +34,7 @@ namespace data_test
 
             // mem map
             {
-                ff::file_read fr(path.string());
+                ff::file_read fr(ff::filesystem::to_string(path));
                 ff::file_mem_mapped fm(std::move(fr));
                 Assert::IsTrue(fm);
                 Assert::AreEqual(sizeof(int), fm.size());

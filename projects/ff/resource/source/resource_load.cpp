@@ -85,7 +85,7 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
         {
             // Add the text file to the list of input files
             std::vector<std::string> files = result.dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
-            files.push_back(path.string());
+            files.push_back(ff::filesystem::to_string(path));
             result.dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(files));
 
             if (use_cache)

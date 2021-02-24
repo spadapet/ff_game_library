@@ -205,7 +205,7 @@ protected:
                     this->add_error(str.str());
                 }
 
-                value = ff::value::create<std::string>(full_path.string());
+                value = ff::value::create<std::string>(ff::filesystem::to_string(full_path));
             }
         }
 
@@ -676,7 +676,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
         for (const std::filesystem::path& path : paths)
         {
-            path_strings.push_back(path.string());
+            path_strings.push_back(ff::filesystem::to_string(path));
         }
 
         dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(path_strings));

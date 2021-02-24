@@ -261,7 +261,7 @@ int main()
     }
 
     bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
-    std::cout << input_file << " -> " << output_file << (skipped ? " (skipped)" : "") << std::endl;
+    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
 
     if (skipped)
     {

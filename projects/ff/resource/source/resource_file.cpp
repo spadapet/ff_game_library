@@ -4,7 +4,7 @@
 
 static bool default_compress(const std::filesystem::path& path)
 {
-    std::string extension = ff::filesystem::to_lower(path.extension()).string();
+    std::string extension = ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
 
     if (extension == ".mp3" ||
         extension == ".png" ||
@@ -29,7 +29,7 @@ ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE inst
 #endif
 
 ff::resource_file::resource_file(const std::filesystem::path& path)
-    : file_extension_(ff::filesystem::to_lower(path.extension()).string())
+    : file_extension_(ff::filesystem::to_string(ff::filesystem::to_lower(path.extension())))
     , compress(::default_compress(path))
 {
     std::error_code ec;
@@ -112,7 +112,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::l
     size_t size = static_cast<size_t>(max_size);
     auto saved_data = std::make_shared<ff::saved_data_file>(path, 0, size, size, ff::saved_data_type::none);
 
-    std::string file_extension = ff::filesystem::to_lower(path.extension()).string();
+    std::string file_extension = ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
     bool compress = dict.get<bool>("compress", ::default_compress(path));
     return std::make_shared<resource_file>(saved_data, file_extension, compress);
 }

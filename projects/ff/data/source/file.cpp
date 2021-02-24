@@ -106,8 +106,7 @@ void ff::file_base::handle(win_handle&& file_handle)
 ff::file_read::file_read(const std::filesystem::path& path)
     : file_base(path)
 {
-    std::wstring wpath = ff::string::to_wstring(path.string());
-    win_handle file_handle(::CreateFile2(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr));
+    win_handle file_handle(::CreateFile2(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr));
     assert(file_handle);
     this->handle(std::move(file_handle));
 }
@@ -155,8 +154,7 @@ ff::file_write::file_write(const std::filesystem::path& path, bool append)
         std::filesystem::create_directories(parent_path, ec);
     }
 
-    std::wstring wpath = ff::string::to_wstring(path.string());
-    win_handle file_handle(::CreateFile2(wpath.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr));
+    win_handle file_handle(::CreateFile2(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr));
     assert(file_handle);
     this->handle(std::move(file_handle));
 
