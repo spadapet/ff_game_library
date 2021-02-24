@@ -38,7 +38,7 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
         return false;
     }
 
-    auto data = std::make_shared<ff::data_mem_mapped>(ff::file_mem_mapped(path));
+    auto data = std::make_shared<ff::data_mem_mapped>(path);
     if (!data->valid() || !ff::dict::load(ff::data_reader(data), dict))
     {
         return false;
@@ -47,7 +47,7 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
     std::vector<std::string> file_refs = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
     for (const std::string& file_ref : file_refs)
     {
-        std::filesystem::path path_ref(file_ref);
+        std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
         if (!std::filesystem::exists(path_ref, ec))
         {
             // cache is out of data
@@ -55,7 +55,7 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
         }
 
         std::filesystem::file_time_type file_ref_time = std::filesystem::last_write_time(path_ref, ec);
-        if (file_ref_time == std::filesystem::file_time_type::min() || file_ref_time < time)
+        if (file_ref_time == std::filesystem::file_time_type::min() || time < file_ref_time)
         {
             // cache is out of data
             return false;

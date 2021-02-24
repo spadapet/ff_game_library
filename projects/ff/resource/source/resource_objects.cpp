@@ -10,6 +10,29 @@
 
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
+static std::vector<std::shared_ptr<ff::data_base>> global_resource_datas;
+static std::unique_ptr<ff::resource_objects> global_resources;
+static std::mutex global_resources_mutex;
+
+static std::unique_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas)
+{
+    ff::dict resource_dict;
+
+    for (auto& data : ::global_resource_datas)
+    {
+        ff::dict dict;
+        if (!ff::dict::load(ff::data_reader(data), dict))
+        {
+            assert(false);
+            continue;
+        }
+
+        resource_dict.set(dict, false);
+    }
+
+    return std::make_unique<ff::resource_objects>(resource_dict);
+}
+
 ff::resource_objects::resource_objects(const ff::dict& dict)
     : localized_value_provider_(nullptr)
     , done_loading_event(ff::create_event(true))
@@ -34,6 +57,35 @@ ff::resource_objects::~resource_objects()
 const ff::resource_object_factory_base* ff::resource_objects::factory()
 {
     return ff::resource_object_base::get_factory(ff::internal::RES_FACTORY_NAME);
+}
+
+void ff::resource_objects::register_global_dict(std::shared_ptr<ff::data_base> data)
+{
+    std::lock_guard lock(::global_resources_mutex);
+    assert(!::global_resources); // don't 
+    ::global_resource_datas.push_back(data);
+}
+
+ff::resource_objects& ff::resource_objects::global()
+{
+    if (!::global_resources)
+    {
+        std::lock_guard lock(::global_resources_mutex);
+        if (!::global_resources)
+        {
+            ::global_resources = ::create_global_resources(::global_resource_datas);
+            ::global_resource_datas.clear();
+        }
+    }
+
+    return *::global_resources;
+}
+
+void ff::resource_objects::reset_global()
+{
+    std::lock_guard lock(::global_resources_mutex);
+    ::global_resource_datas.clear();
+    ::global_resources.reset();
 }
 
 static std::shared_ptr<ff::resource> create_null_resource(std::string_view name, ff::resource_object_loader* loading_owner = nullptr)

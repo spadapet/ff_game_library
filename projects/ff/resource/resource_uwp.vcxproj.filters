@@ -38,6 +38,9 @@
     <ClCompile Include="source\resource_file.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\auto_resource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

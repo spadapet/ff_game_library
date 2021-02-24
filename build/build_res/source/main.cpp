@@ -9,7 +9,7 @@ static std::vector<std::string> get_command_line()
 static void show_usage()
 {
     std::cerr << "Command line options:" << std::endl;
-    std::cerr << "  1) ff.build_res.exe -in \"input file\" [-out \"output file\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
+    std::cerr << "  1) ff.build_res.exe -in \"input file\" [-out \"output file\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
     std::cerr << "  2) ff.build_res.exe -dump \"pack file\"" << std::endl;
     std::cerr << "  3) ff.build_res.exe -dumpbin \"pack file\"" << std::endl;
     std::cerr << std::endl;
@@ -47,7 +47,43 @@ static bool test_load_resources(const ff::dict& dict)
     return true;
 }
 
-static bool compile_resource_pack(const std::filesystem::path& input_file, const std::filesystem::path& output_file, bool debug)
+static bool write_header(const std::vector<uint8_t>& data, std::ostream& output)
+{
+    const size_t bytes_per_line = 64;
+    const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+    output << R"(namespace ff::build_res
+{
+    static const uint8_t bytes[] =
+    {
+    )";
+
+    for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
+    {
+        output << "    ";
+
+        for (size_t i = 0, count = std::min<size_t>(bytes_per_line, end - cur); i < count; i++)
+        {
+            output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
+        }
+
+        output << std::endl << "    ";
+    }
+
+    output << R"(};
+
+    static constexpr size_t byte_size = sizeof(bytes);
+}
+)";
+
+    return true;
+}
+
+static bool compile_resource_pack(
+    const std::filesystem::path& input_file,
+    const std::filesystem::path& output_file,
+    const std::filesystem::path& header_file,
+    bool debug)
 {
     ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
     if (!result.status || !::test_load_resources(result.dict))
@@ -61,11 +97,35 @@ static bool compile_resource_pack(const std::filesystem::path& input_file, const
         return false;
     }
 
-    ff::file_writer writer(output_file);
-    if (!writer || !result.dict.save(writer))
+    auto data = std::make_shared<std::vector<uint8_t>>();
+    data->reserve(1 << 22); // 4MB buffer
     {
-        assert(false);
-        return false;
+        ff::data_writer data_writer(data);
+        if (!result.dict.save(data_writer))
+        {
+            assert(false);
+            return false;
+        }
+    }
+
+    if (!output_file.empty())
+    {
+        ff::file_writer writer(output_file);
+        if (!writer || writer.write(data->data(), data->size()) != data->size())
+        {
+            assert(false);
+            return false;
+        }
+    }
+
+    if (!header_file.empty())
+    {
+        std::ofstream header_stream(header_file);
+        if (!header_stream || !::write_header(*data, header_stream))
+        {
+            assert(false);
+            return false;
+        }
     }
 
     return true;
@@ -182,6 +242,7 @@ int main()
     std::vector<std::filesystem::path> refs;
     std::filesystem::path input_file;
     std::filesystem::path output_file;
+    std::filesystem::path header_file;
     std::filesystem::path dump_source_file;
     bool debug = false;
     bool force = false;
@@ -200,6 +261,10 @@ int main()
         else if (arg == "-out" && i + 1 < args.size())
         {
             output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+        }
+        else if (arg == "-header" && i + 1 < args.size())
+        {
+            header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
         else if (arg == "-ref" && i + 1 < args.size())
         {
@@ -297,7 +362,7 @@ int main()
         }
     }
 
-    if (!::compile_resource_pack(input_file, output_file, debug))
+    if (!::compile_resource_pack(input_file, output_file, header_file, debug))
     {
         std::cerr << "ff.build_res: Compile failed" << std::endl;
         return 6;

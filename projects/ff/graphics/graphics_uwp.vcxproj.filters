@@ -280,11 +280,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\ff.graphics.res.json">
-      <Filter>assets</Filter>
-    </None>
     <None Include="assets\shaders.hlsl">
       <Filter>assets</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.graphics.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
   </ItemGroup>
 </Project>

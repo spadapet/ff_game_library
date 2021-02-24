@@ -26,6 +26,9 @@ namespace ff
         ~resource_objects();
 
         static const resource_object_factory_base* factory();
+        static void register_global_dict(std::shared_ptr<ff::data_base> data);
+        static resource_objects& global();
+        static void reset_global();
 
         resource_objects& operator=(resource_objects&& other) noexcept = delete;
         resource_objects& operator=(const resource_objects& other) = delete;

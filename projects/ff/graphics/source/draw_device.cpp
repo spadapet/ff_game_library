@@ -1,7 +1,12 @@
 #include "pch.h"
 #include "draw_device.h"
+#include "dx11_device_state.h"
+#include "dx11_fixed_state.h"
+#include "dx11_object_cache.h"
+#include "dx11_texture_view_base.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
+#include "matrix_stack.h"
 #include "palette_data.h"
 #include "shader.h"
 
@@ -40,6 +45,24 @@ static size_t DEFAULT_PALETTE_REMAP_HASH = ff::stable_hash_bytes(::DEFAULT_PALET
 
 namespace
 {
+    enum class last_depth_type
+    {
+        none,
+        nudged,
+
+        line,
+        circle,
+        triangle,
+        sprite,
+
+        line_no_overlap,
+        circle_no_overlap,
+        triangle_no_overlap,
+        sprite_no_overlap,
+
+        start_no_overlap = line_no_overlap,
+    };
+
     enum class geometry_bucket_type
     {
         lines,
@@ -57,7 +80,6 @@ namespace
         first_alpha = lines_alpha,
     };
 
-#if 0
     class geometry_bucket
     {
     private:
@@ -68,12 +90,12 @@ namespace
             size_t item_align,
             const D3D11_INPUT_ELEMENT_DESC* element_desc,
             size_t element_count)
-            : bucket_type(bucket_type)
-            , item_type(&item_type)
-            , item_size(item_size)
+            : bucket_type_(bucket_type)
+            , item_type_(&item_type)
+            , item_size_(item_size)
             , item_align(item_align)
-            , render_start(0)
-            , render_count(0)
+            , render_start_(0)
+            , render_count_(0)
             , data_start(nullptr)
             , data_cur(nullptr)
             , data_end(nullptr)
@@ -83,9 +105,9 @@ namespace
 
     public:
         template<typename T, geometry_bucket_type BucketType>
-        static geometry_bucket New()
+        static geometry_bucket create()
         {
-            return geometry_bucket(BucketType, typeid(T), sizeof(T), alignof(T), T::GetLayout11().data(), T::GetLayout11().size());
+            return geometry_bucket(BucketType, typeid(T), sizeof(T), alignof(T), T::layout().data(), T::layout().size());
         }
 
         geometry_bucket(geometry_bucket&& rhs)
@@ -100,12 +122,12 @@ namespace
             , ps_palette_out(std::move(rhs.ps_palette_out))
             , element_desc(rhs.element_desc)
             , element_count(rhs.element_count)
-            , bucket_type(rhs.bucket_type)
-            , item_type(rhs.item_type)
-            , item_size(rhs.item_size)
+            , bucket_type_(rhs.bucket_type_)
+            , item_type_(rhs.item_type_)
+            , item_size_(rhs.item_size_)
             , item_align(rhs.item_align)
-            , render_start(0)
-            , render_count(0)
+            , render_start_(0)
+            , render_count_(0)
             , data_start(rhs.data_start)
             , data_cur(rhs.data_cur)
             , data_end(rhs.data_end)
@@ -117,135 +139,140 @@ namespace
 
         ~geometry_bucket()
         {
-            _aligned_free(this->data_start);
+            ::_aligned_free(this->data_start);
         }
 
-        // Input strings must be static
-        void Reset(const wchar_t* vsRes, const wchar_t* gsRes, const wchar_t* psRes, const wchar_t* psPaletteOutRes)
+        void reset(std::string_view vs_res, std::string_view gs_res, std::string_view ps_res, std::string_view ps_palette_out_res)
         {
-            Reset();
+            this->reset();
 
-            ff::IResourceAccess* resources = ff::GetThisModule().GetResources();
-            this->vs_res.Init(resources, ff::String::from_static(vsRes));
-            this->gs_res.Init(resources, ff::String::from_static(gsRes));
-            this->ps_res.Init(resources, ff::String::from_static(psRes));
-            this->ps_palette_out_res.Init(resources, ff::String::from_static(psPaletteOutRes));
+            this->vs_res = ff::resource_objects::global().get_resource_object(vs_res);
+            this->gs_res = ff::resource_objects::global().get_resource_object(gs_res);
+            this->ps_res = ff::resource_objects::global().get_resource_object(ps_res);
+            this->ps_palette_out_res = ff::resource_objects::global().get_resource_object(ps_palette_out_res);
         }
 
-        void Reset()
+        void reset()
         {
-            this->layout = nullptr;
-            this->vs = nullptr;
-            this->gs = nullptr;
-            this->ps = nullptr;
-            this->ps_palette_out = nullptr;
+            this->layout.Reset();
+            this->vs.Reset();
+            this->gs.Reset();
+            this->ps.Reset();
+            this->ps_palette_out.Reset();
 
-            _aligned_free(this->data_start);
+            ::_aligned_free(this->data_start);
             this->data_start = nullptr;
             this->data_cur = nullptr;
             this->data_end = nullptr;
         }
 
-        void Apply(ff::GraphContext11& context, ff::GraphStateCache11& cache, ID3D11Buffer* geometryBuffer, bool paletteOut) const
+        void apply(ID3D11Buffer* geometry_buffer, bool palette_out) const
         {
-            const_cast<geometry_bucket*>(this)->CreateShaders(cache, paletteOut);
+            const_cast<geometry_bucket*>(this)->create_shaders(palette_out);
 
-            context.SetVertexIA(geometryBuffer, GetItemByteSize(), 0);
-            context.SetLayoutIA(this->layout);
-            context.SetVS(this->vs);
-            context.SetGS(this->gs);
-            context.SetPS(paletteOut ? this->ps_palette_out : this->ps);
+            ff::dx11_device_state& state = ff::graphics::dx11_device_state();
+            state.set_vertex_ia(geometry_buffer, item_size(), 0);
+            state.set_layout_ia(this->layout.Get());
+            state.set_vs(this->vs.Get());
+            state.set_gs(this->gs.Get());
+            state.set_ps(palette_out ? this->ps_palette_out.Get() : this->ps.Get());
         }
 
-        void* Add(const void* data = nullptr)
+        void* add(const void* data = nullptr)
         {
             if (this->data_cur == this->data_end)
             {
-                size_t curSize = this->data_end - this->data_start;
-                size_t newSize = std::max<size_t>(curSize * 2, this->item_size * 64);
-                this->data_start = (uint8_t*)_aligned_realloc(this->data_start, newSize, this->item_align);
-                this->data_cur = this->data_start + curSize;
-                this->data_end = this->data_start + newSize;
+                size_t cur_size = this->data_end - this->data_start;
+                size_t new_size = std::max<size_t>(cur_size * 2, this->item_size_ * 64);
+                this->data_start = (uint8_t*)_aligned_realloc(this->data_start, new_size, this->item_align);
+                this->data_cur = this->data_start + cur_size;
+                this->data_end = this->data_start + new_size;
             }
 
             if (data)
             {
-                std::memcpy(this->data_cur, data, this->item_size);
+                std::memcpy(this->data_cur, data, this->item_size_);
             }
 
             void* result = this->data_cur;
-            this->data_cur += this->item_size;
+            this->data_cur += this->item_size_;
             return result;
         }
 
-        size_t GetItemByteSize() const
+        size_t item_size() const
         {
-            return this->item_size;
+            return this->item_size_;
         }
 
-        const std::type_info& GetItemType() const
+        const std::type_info& item_type() const
         {
-            return *this->item_type;
+            return *this->item_type_;
         }
 
-        geometry_bucket_type GetBucketType() const
+        geometry_bucket_type bucket_type() const
         {
-            return this->bucket_type;
+            return this->bucket_type_;
         }
 
-        size_t GetCount() const
+        size_t count() const
         {
-            return (this->data_cur - this->data_start) / this->item_size;
+            return (this->data_cur - this->data_start) / this->item_size_;
         }
 
-        void ClearItems()
+        void clear_items()
         {
             this->data_cur = this->data_start;
         }
 
-        size_t GetByteSize() const
+        size_t byte_size() const
         {
             return this->data_cur - this->data_start;
         }
 
-        const void* GetData() const
+        const uint8_t* data() const
         {
             return this->data_start;
         }
 
-        void SetRenderStart(size_t renderStart)
+        void render_start(size_t start)
         {
-            this->render_start = renderStart;
-            this->render_count = GetCount();
+            this->render_start_ = start;
+            this->render_count_ = this->count();
         }
 
-        size_t GetRenderStart() const
+        size_t render_start() const
         {
-            return this->render_start;
+            return this->render_start_;
         }
 
-        size_t GetRenderCount() const
+        size_t render_count() const
         {
-            return this->render_count;
+            return this->render_count_;
         }
 
     private:
-        void CreateShaders(ff::GraphStateCache11& cache, bool paletteOut)
+        void create_shaders(bool palette_out)
         {
             if (!this->vs)
             {
-                this->vs = cache.GetVertexShaderAndInputLayout(ff::GetThisModule().GetResources(), this->vs_res.GetName(), this->layout, this->element_desc, this->element_count);
+                this->vs = ff::graphics::dx11_object_cache().get_vertex_shader_and_input_layout(
+                    ff::resource_objects::global(),
+                    this->vs_res.resource()->name(),
+                    this->layout, this->element_desc, this->element_count);
             }
 
             if (!this->gs)
             {
-                this->gs = cache.GetGeometryShader(ff::GetThisModule().GetResources(), this->gs_res.GetName());
+                this->gs = ff::graphics::dx11_object_cache().get_geometry_shader(
+                    ff::resource_objects::global(), this->gs_res.resource()->name());
             }
 
-            ff::ComPtr<ID3D11PixelShader>& ps = paletteOut ? this->ps_palette_out : this->ps;
+            Microsoft::WRL::ComPtr<ID3D11PixelShader>& ps = palette_out ? this->ps_palette_out : this->ps;
             if (!ps)
             {
-                ps = cache.GetPixelShader(ff::GetThisModule().GetResources(), paletteOut ? this->ps_palette_out_res.GetName() : this->ps_res.GetName());
+                ps = ff::graphics::dx11_object_cache().get_pixel_shader(
+                    ff::resource_objects::global(),
+                    palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
             }
         }
 
@@ -263,17 +290,42 @@ namespace
         const D3D11_INPUT_ELEMENT_DESC* element_desc;
         size_t element_count;
 
-        geometry_bucket_type bucket_type;
-        const std::type_info* item_type;
-        size_t item_size;
+        geometry_bucket_type bucket_type_;
+        const std::type_info* item_type_;
+        size_t item_size_;
         size_t item_align;
-        size_t render_start;
-        size_t render_count;
+        size_t render_start_;
+        size_t render_count_;
         uint8_t* data_start;
         uint8_t* data_cur;
         uint8_t* data_end;
     };
-#endif
+
+    struct alpha_geometry_entry
+    {
+        const geometry_bucket* bucket;
+        size_t index;
+        float depth;
+    };
+
+    struct geometry_shader_constants_0
+    {
+        DirectX::XMFLOAT4X4 projection;
+        ff::point_float view_size;
+        ff::point_float view_scale;
+        float z_offset;
+        float padding[3];
+    };
+
+    struct geometry_shader_constants_1
+    {
+        std::vector<DirectX::XMFLOAT4X4> model;
+    };
+
+    struct pixel_shader_constants_0
+    {
+        std::array<ff::rect_float, ::MAX_TEXTURES_USING_PALETTE> texture_palette_sizes;
+    };
 
     class draw_device_internal
         : public ff::draw_device
@@ -352,12 +404,106 @@ namespace
         virtual void pop_texture_sampler() override;
 
     private:
+        void destroy();
+        bool init();
+
+        void matrix_changing(const ff::matrix_stack& matrix_stack);
+        void matrix_changed(const ff::matrix_stack& matrix_stack);
+
+        void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);
+
+        void init_geometry_constant_buffers_0(ff::dx11_target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect);
+        void update_geometry_constant_buffers_0();
+        void update_geometry_constant_buffers_1();
+        void update_pixel_constant_buffers_0();
+        void update_palette_texture();
+        void set_shader_input();
+
+        void flush();
+        bool create_geometry_buffer();
+        void draw_opaque_geometry();
+        void draw_alpha_geometry();
+        void post_flush();
+
+        bool is_rendering() const;
+        float nudge_depth(::last_depth_type depth_type);
+        unsigned int get_world_matrix_index();
+        unsigned int get_world_matrix_index_no_flush();
+        unsigned int get_texture_index_no_flush(const ff::dx11_texture_view_base& texture_view, bool use_palette);
+        unsigned int get_palette_index_no_flush();
+        unsigned int get_palette_remap_index_no_flush();
+        int remap_palette_index(int color);
+        void get_world_matrix_and_texture_index(const ff::dx11_texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index);
+        void get_world_matrix_and_texture_indexes(ff::dx11_texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index);
+        void add_geometry(const void* data, ::geometry_bucket_type bucket_type, float depth);
+        void* add_geometry(::geometry_bucket_type bucket_type, float depth);
+
+        ff::dx11_fixed_state create_opaque_draw_state();
+        ff::dx11_fixed_state create_alpha_draw_state();
+        ff::dx11_fixed_state create_pre_multiplied_alpha_draw_state();
+        ::geometry_bucket get_geometry_bucket(::geometry_bucket_type type);
+
         enum class state_t
         {
             invalid,
             valid,
             drawing,
         } state;
+
+        // Constant data for shaders
+        Microsoft::WRL::ComPtr<ID3D11Buffer> _geometryBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Buffer> _geometryConstantsBuffer0;
+        Microsoft::WRL::ComPtr<ID3D11Buffer> _geometryConstantsBuffer1;
+        Microsoft::WRL::ComPtr<ID3D11Buffer> _pixelConstantsBuffer0;
+        ::geometry_shader_constants_0 _geometryConstants0;
+        ::geometry_shader_constants_1 _geometryConstants1;
+        ::pixel_shader_constants_0 _pixelConstants0;
+        size_t _geometryConstantsHash0;
+        size_t _geometryConstantsHash1;
+        size_t _pixelConstantsHash0;
+
+        // Render state
+        std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> _samplerStack;
+        ff::dx11_fixed_state _opaqueState;
+        ff::dx11_fixed_state _alphaState;
+        ff::dx11_fixed_state _premultipliedAlphaState;
+        std::vector<ff::draw_base::custom_context_func> _customContextStack;
+
+        // Matrixes
+        DirectX::XMFLOAT4X4 _viewMatrix;
+        ff::matrix_stack _worldMatrixStack;
+        std::unordered_set<DirectX::XMFLOAT4X4, unsigned int, ff::stable_hash<DirectX::XMFLOAT4X4>> _worldMatrixToIndex;
+        unsigned int _worldMatrixIndex;
+
+        // Textures
+        std::array<ff::dx11_texture_view_base*, ::MAX_TEXTURES> _textures;
+        std::array<ff::dx11_texture_view_base*, ::MAX_TEXTURES_USING_PALETTE> _texturesUsingPalette;
+        size_t _textureCount;
+        size_t _texturesUsingPaletteCount;
+
+        // Palettes
+        bool _targetRequiresPalette;
+
+        std::vector<ff::palette_base*> _paletteStack;
+        std::shared_ptr<ff::dx11_texture> _paletteTexture;
+        std::array<size_t, ::MAX_PALETTES> _paletteTextureHashes;
+        std::unordered_map<size_t, std::pair<ff::palette_base*, unsigned int>, ff::no_hash<size_t>> _paletteToIndex;
+        unsigned int _paletteIndex;
+
+        std::vector<std::pair<const unsigned char*, size_t>> _paletteRemapStack;
+        std::shared_ptr<ff::dx11_texture> _paletteRemapTexture;
+        std::array<size_t, ::MAX_PALETTE_REMAPS> _paletteRemapTextureHashes;
+        std::unordered_map<size_t, std::pair<const unsigned char*, unsigned int>, ff::no_hash<size_t>> _paletteRemapToIndex;
+        unsigned int _paletteRemapIndex;
+
+        // Render data
+        std::vector<::alpha_geometry_entry> _alphaGeometry;
+        std::array<::geometry_bucket, static_cast<size_t>(::geometry_bucket_type::count)> _geometryBuckets;
+        ::last_depth_type _lastDepthType;
+        float _drawDepth;
+        int _forceNoOverlap;
+        int _forceOpaque;
+        int _forcePMA;
     };
 }
 

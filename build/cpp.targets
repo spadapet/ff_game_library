@@ -10,9 +10,9 @@
 
     <ItemGroup>
       <ResJson>
-        <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.build_res.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
-        <Outputs>$(GeneratedFilesDir)%(Filename).pack</Outputs>
-        <TreatOutputAsContent Condition=" '$(AppType)' == 'UWP' ">true</TreatOutputAsContent>
+        <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.build_res.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
+        <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h</Outputs>
+        <TreatOutputAsContent Condition=" '$(AppType)' == 'UWP' ">false</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>
       </ResJson>
     </ItemGroup>

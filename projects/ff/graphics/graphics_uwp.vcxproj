@@ -113,7 +113,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\ff.graphics.res.json" />
+    <ResJson Include="assets\ff.graphics.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders.hlsl">

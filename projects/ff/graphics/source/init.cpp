@@ -11,6 +11,16 @@
 #include "shader.h"
 #include "texture_metadata.h"
 
+namespace shaders
+{
+#include "ff.graphics.res.h"
+
+    std::shared_ptr<::ff::data_base> get_shaders_data()
+    {
+        return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
+    }
+}
+
 static bool init_graphics_status;
 
 namespace
@@ -29,6 +39,8 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::sprite_font_factory>("font");
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
+
+            ff::resource_objects::register_global_dict(::shaders::get_shaders_data());
 
             ::init_graphics_status = ff::graphics::internal::init();
         }

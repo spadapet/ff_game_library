@@ -51,7 +51,6 @@
     <ClCompile Include="source\viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="assets\resource.h" />
     <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\animation.h" />
@@ -121,9 +120,6 @@
     <None Include="assets\shaders.hlsl">
       <FileType>Document</FileType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="assets\ff.graphics.rc" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

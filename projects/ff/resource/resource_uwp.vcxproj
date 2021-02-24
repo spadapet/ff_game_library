@@ -11,6 +11,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\auto_resource.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\resource.cpp" />
     <ClCompile Include="source\resource_file.cpp" />

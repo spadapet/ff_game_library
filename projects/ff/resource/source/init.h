@@ -6,6 +6,7 @@ namespace ff
     {
     public:
         init_resource();
+        ~init_resource();
 
         operator bool() const;
 

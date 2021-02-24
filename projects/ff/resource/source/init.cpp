@@ -24,6 +24,11 @@ ff::init_resource::init_resource()
     } init;
 }
 
+ff::init_resource::~init_resource()
+{
+    ff::resource_objects::reset_global();
+}
+
 ff::init_resource::operator bool() const
 {
     return this->init_data;
