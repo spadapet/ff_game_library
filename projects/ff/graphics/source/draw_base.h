@@ -44,7 +44,7 @@ namespace ff
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness = false) = 0;
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness = false) = 0;
 
-        void draw_linestrip(const ff::point_fixed* points, size_t count, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
+        void draw_line_strip(const ff::point_fixed* points, size_t count, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
         void draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
         void draw_filled_rectangle(const ff::rect_fixed& rect, const DirectX::XMFLOAT4& color);
         void draw_filled_circle(const ff::point_fixed& center, ff::fixed_int radius, const DirectX::XMFLOAT4& color);

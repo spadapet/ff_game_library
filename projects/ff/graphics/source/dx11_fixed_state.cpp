@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "dx11_device_state.h"
 #include "dx11_fixed_state.h"
+#include "graphics.h"
 
 ff::dx11_fixed_state::dx11_fixed_state()
     : blend_factor(1, 1, 1, 1)
@@ -8,7 +9,12 @@ ff::dx11_fixed_state::dx11_fixed_state()
     , stencil(0)
 {}
 
-void ff::dx11_fixed_state::apply(dx11_device_state& context) const
+void ff::dx11_fixed_state::apply() const
+{
+    this->apply(ff::graphics::dx11_device_state());
+}
+
+void ff::dx11_fixed_state::apply(ff::dx11_device_state& context) const
 {
     if (this->raster)
     {

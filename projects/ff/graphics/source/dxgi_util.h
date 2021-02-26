@@ -4,6 +4,7 @@ namespace ff::internal
 {
     const DXGI_FORMAT DEFAULT_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
     const DXGI_FORMAT PALETTE_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+    const DXGI_FORMAT PALETTE_INDEX_FORMAT = DXGI_FORMAT_R8_UNORM;
 
     size_t get_adapters_hash(IDXGIFactoryX* factory);
     size_t get_adapter_outputs_hash(IDXGIFactoryX* dxgi, IDXGIAdapterX* card);

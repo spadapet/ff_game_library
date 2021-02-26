@@ -283,7 +283,7 @@ namespace ff
             return point_type(this->right, this->top);
         }
 
-        point_type botom_left() const
+        point_type bottom_left() const
         {
             return point_type(this->left, this->bottom);
         }
@@ -363,22 +363,42 @@ namespace ff
             return rect;
         }
 
-        this_type deflate(T x, T y, T x2 = x, T y2 = y) const
+        this_type deflate(T x, T y) const
+        {
+            return this->deflate(x, y, x, y);
+        }
+
+        this_type deflate(T x, T y, T x2, T y2) const
         {
             return this_type(this->left + x, this->top + y, this->right - x2, this->bottom - y2).normalize();
         }
 
-        this_type deflate(const point_type& top_left, const point_type& bottom_right = top_left) const
+        this_type deflate(const point_type& corners) const
+        {
+            return this->deflate(corners.x, corners.y, corners.x, corners.y);
+        }
+
+        this_type deflate(const point_type& top_left, const point_type& bottom_right) const
         {
             return this->deflate(top_left.x, top_left.y, bottom_right.x, bottom_right.y);
         }
 
-        this_type inflate(T x, T y, T x2 = x, T y2 = y) const
+        this_type inflate(T x, T y) const
+        {
+            return this->inflate(x, y, x, y);
+        }
+
+        this_type inflate(T x, T y, T x2, T y2) const
         {
             return this_type(this->left - x, this->top - y, this->right + x2, this->bottom + y2).normalize();
         }
 
-        this_type inflate(const point_type& top_left, const point_type& bottom_right = top_left) const
+        this_type inflate(const point_type& corners) const
+        {
+            return this->inflate(corners.x, corners.y, corners.x, corners.y);
+        }
+
+        this_type inflate(const point_type& top_left, const point_type& bottom_right) const
         {
             return this->inflate(top_left.x, top_left.y, bottom_right.x, bottom_right.y);
         }

@@ -13,6 +13,7 @@ namespace ff
         dx11_fixed_state& operator=(dx11_fixed_state&& rhs) noexcept = default;
         dx11_fixed_state& operator=(const dx11_fixed_state& rhs) = default;
 
+        void apply() const;
         void apply(dx11_device_state& context) const;
 
         Microsoft::WRL::ComPtr<ID3D11RasterizerState> raster;
