@@ -5,7 +5,7 @@ ff::auto_resource_value::auto_resource_value(const std::shared_ptr<ff::resource>
     : resource_(resource)
 {}
 
-ff::auto_resource_value& ff::auto_resource_value::operator=(const std::shared_ptr<ff::resource>&resource)
+ff::auto_resource_value& ff::auto_resource_value::operator=(const std::shared_ptr<ff::resource>& resource)
 {
     this->resource_ = resource;
     return *this;
@@ -13,7 +13,7 @@ ff::auto_resource_value& ff::auto_resource_value::operator=(const std::shared_pt
 
 bool ff::auto_resource_value::valid() const
 {
-    return this->resource_ != nullptr;
+    return this->resource_ && this->resource_->value() && !this->resource_->value()->is_type<nullptr_t>();
 }
 
 const std::shared_ptr<ff::resource>& ff::auto_resource_value::resource() const

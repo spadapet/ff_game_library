@@ -8,6 +8,30 @@
     <ClCompile Include="source\ui.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\utility.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stream.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource_cache.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\xaml_provider.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\font_provider.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_provider.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\render_target.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -16,6 +40,30 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\ui.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\utility.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stream.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_cache.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\xaml_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\font_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_provider.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\render_target.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

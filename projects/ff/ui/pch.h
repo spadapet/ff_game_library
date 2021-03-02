@@ -1,5 +1,7 @@
 #pragma once
 
+#include <NoesisPCH.h>
+
 // FF
 #include <ff/base/base_api.h>
 #include <ff/data/data_api.h>

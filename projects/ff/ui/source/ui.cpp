@@ -10,12 +10,12 @@ static void destroy_noesis()
 {
 }
 
-bool ff::ui::internal::init()
+bool ff::internal::ui::init()
 {
     return ::init_noesis();
 }
 
-void ff::ui::internal::destroy()
+void ff::internal::ui::destroy()
 {
     ::destroy_noesis();
 }

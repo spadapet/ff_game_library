@@ -25,12 +25,12 @@ namespace
         {
             ff::resource_objects::register_global_dict(::shaders::get_shaders_data());
 
-            ::init_ui_status = ff::ui::internal::init();
+            ::init_ui_status = ff::internal::ui::init();
         }
 
         ~one_time_init_ui()
         {
-            ff::ui::internal::destroy();
+            ff::internal::ui::destroy();
             ::init_ui_status = false;
         }
     };
