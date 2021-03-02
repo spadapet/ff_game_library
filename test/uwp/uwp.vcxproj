@@ -8,6 +8,11 @@
     <RootNamespace>test_uwp</RootNamespace>
   </PropertyGroup>
   <Import Project="..\..\build\cpp.props" />
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalLibraryDirectories>$(NoesisLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="app.xaml.h">
@@ -84,6 +89,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\resource\resource_uwp.vcxproj">
       <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\ui\ui_uwp.vcxproj">
+      <Project>{279176cb-1db1-40ea-aa60-1a0469e8a6d8}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />

@@ -12,7 +12,7 @@
       <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;$(NoesisLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -82,6 +82,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\resource\resource.vcxproj">
       <Project>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\projects\ff\ui\ui.vcxproj">
+      <Project>{8147a742-08ac-49fd-8c51-3956e1a65e16}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

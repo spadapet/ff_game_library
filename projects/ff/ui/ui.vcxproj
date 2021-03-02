@@ -15,12 +15,37 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\ui.h" />
+    <ClInclude Include="ui_api.h" />
   </ItemGroup>
   <ItemGroup>
+    <ResJson Include="assets\ff.ui.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\clear_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\quad_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\resolve_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shader_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shader_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

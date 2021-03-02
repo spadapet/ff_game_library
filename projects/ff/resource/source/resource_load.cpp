@@ -14,7 +14,8 @@ std::string_view ff::internal::RES_PREFIX("res:");
 
 static std::filesystem::path get_cache_path(const std::filesystem::path& source_path, bool debug)
 {
-    std::filesystem::path path_canon = std::filesystem::canonical(source_path);
+    std::error_code ec;
+    std::filesystem::path path_canon = std::filesystem::weakly_canonical(source_path, ec);
     std::filesystem::path path_canon_lower = ff::filesystem::to_lower(path_canon);
     std::filesystem::path name = path_canon.filename().replace_extension();
 

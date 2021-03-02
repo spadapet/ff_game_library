@@ -1,0 +1,706 @@
+{
+  "Noesis.Quad_VS":
+  {
+    "res:type": "shader",
+    "file": "file:quad_vs.hlsl",
+    "target": "vs_4_0"
+  },
+  "Noesis.Clear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:clear_ps.hlsl",
+    "target": "ps_4_0"
+  },
+  "Noesis.Resolve2_PS":
+  {
+    "res:type": "shader",
+    "file": "file:resolve_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "NUM_SAMPLES": "2"
+    }
+  },
+  "Noesis.Resolve4_PS":
+  {
+    "res:type": "shader",
+    "file": "file:resolve_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "NUM_SAMPLES": "4"
+    }
+  },
+  "Noesis.Resolve8_PS":
+  {
+    "res:type": "shader",
+    "file": "file:resolve_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "NUM_SAMPLES": "8"
+    }
+  },
+  "Noesis.Resolve16_PS":
+  {
+    "res:type": "shader",
+    "file": "file:resolve_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "NUM_SAMPLES": "16"
+    }
+  },
+  "Noesis.Pos_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1"
+    }
+  },
+  "Noesis.PosColor_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_COLOR": "1"
+    }
+  },
+  "Noesis.PosTex0_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_UV0": "1"
+    }
+  },
+  "Noesis.PosColorCoverage_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_COLOR": "1",
+      "HAS_COVERAGE": "1"
+    }
+  },
+  "Noesis.PosTex0Coverage_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_UV0": "1",
+      "HAS_COVERAGE": "1"
+    }
+  },
+  "Noesis.PosColorTex1_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1"
+    }
+  },
+  "Noesis.PosColorTex1Tex2_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "HAS_UV2": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1Tex2_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "HAS_UV2": "1"
+    }
+  },
+  "Noesis.PosColorTex1_SDF_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "GEN_ST1": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1_SDF_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "HAS_POSITION": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "GEN_ST1": "1"
+    }
+  },
+  "Noesis.RGBA_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_RGBA": "1"
+    }
+  },
+  "Noesis.Mask_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_MASK": "1"
+    }
+  },
+  "Noesis.PathSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_SOLID": "1"
+    }
+  },
+  "Noesis.PathLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_LINEAR": "1"
+    }
+  },
+  "Noesis.PathRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_RADIAL": "1"
+    }
+  },
+  "Noesis.PathPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_PATTERN": "1"
+    }
+  },
+  "Noesis.PathAASolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_AA_SOLID": "1"
+    }
+  },
+  "Noesis.PathAALinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_AA_LINEAR": "1"
+    }
+  },
+  "Noesis.PathAARadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_AA_RADIAL": "1"
+    }
+  },
+  "Noesis.PathAAPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_PATH_AA_PATTERN": "1"
+    }
+  },
+  "Noesis.SDFSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_SOLID": "1"
+    }
+  },
+  "Noesis.SDFLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_LINEAR": "1"
+    }
+  },
+  "Noesis.SDFRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_RADIAL": "1"
+    }
+  },
+  "Noesis.SDFPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_PATTERN": "1"
+    }
+  },
+  "Noesis.SDFLCDSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_LCD_SOLID": "1"
+    }
+  },
+  "Noesis.SDFLCDLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_LCD_LINEAR": "1"
+    }
+  },
+  "Noesis.SDFLCDRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_LCD_RADIAL": "1"
+    }
+  },
+  "Noesis.SDFLCDPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_SDF_LCD_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageOpacitySolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_OPACITY_SOLID": "1"
+    }
+  },
+  "Noesis.ImageOpacityLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_OPACITY_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageOpacityRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_OPACITY_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageOpacityPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_OPACITY_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageShadow35V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_35V": "1"
+    }
+  },
+  "Noesis.ImageShadow63V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_63V": "1"
+    }
+  },
+  "Noesis.ImageShadow127V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_127V": "1"
+    }
+  },
+  "Noesis.ImageShadow35HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_35H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageShadow35HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_35H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageShadow35HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_35H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageShadow35HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_35H_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageShadow63HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_63H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageShadow63HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_63H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageShadow63HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_63H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageShadow63HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_63H_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageShadow127HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_127H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageShadow127HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_127H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageShadow127HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_127H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageShadow127HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_SHADOW_127H_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageBlur35V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_35V": "1"
+    }
+  },
+  "Noesis.ImageBlur63V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_63V": "1"
+    }
+  },
+  "Noesis.ImageBlur127V_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_127V": "1"
+    }
+  },
+  "Noesis.ImageBlur35HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_35H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageBlur35HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_35H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageBlur35HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_35H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageBlur35HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_35H_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageBlur63HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_63H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageBlur63HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_63H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageBlur63HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_63H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageBlur63HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_63H_PATTERN": "1"
+    }
+  },
+  "Noesis.ImageBlur127HSolid_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_127H_SOLID": "1"
+    }
+  },
+  "Noesis.ImageBlur127HLinear_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_127H_LINEAR": "1"
+    }
+  },
+  "Noesis.ImageBlur127HRadial_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_127H_RADIAL": "1"
+    }
+  },
+  "Noesis.ImageBlur127HPattern_PS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_ps.hlsl",
+    "target": "ps_4_0",
+    "defines":
+    {
+      "EFFECT_IMAGE_BLUR_127H_PATTERN": "1"
+    }
+  }
+}

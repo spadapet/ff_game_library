@@ -41,14 +41,15 @@
 
     <!-- Noesis -->
     <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.3.0.6\content\</NoesisRoot>
-    <NoesisLib Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\noesis.lib</NoesisLib>
-    <NoesisLib Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\windows_x86_64\noesis.lib</NoesisLib>
-    <NoesisLib Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\uwp_x86\noesis.lib</NoesisLib>
-    <NoesisLib Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\uwp_x86_64\noesis.lib</NoesisLib>
+    <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\</NoesisLibDir>
+    <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
+    <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\uwp_x86\</NoesisLibDir>
+    <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\uwp_x86_64\</NoesisLibDir>
+    <NoesisLib>$(NoesisLibDir)noesis.lib</NoesisLib>
     <NoesisDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\windows_x86\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\windows_x86_64\noesis.dll</NoesisDll>
-    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)Bin\uwp_x86\noesis.dll</NoesisDll>
-    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)Bin\uwp_x86_64\noesis.dll</NoesisDll>
+    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\uwp_x86\noesis.dll</NoesisDll>
+    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\uwp_x86_64\noesis.dll</NoesisDll>
   </PropertyGroup>
 
   <!-- Property pages -->
