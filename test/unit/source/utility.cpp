@@ -17,7 +17,7 @@ void ff::test::remove_temp_path()
     }
 }
 
-std::tuple<std::unique_ptr<ff::resource_objects>, ff::end_scope_action> ff::test::create_resources(std::string_view json_source)
+std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::end_scope_action> ff::test::create_resources(std::string_view json_source)
 {
     std::filesystem::path temp_path = ::get_temp_path() / std::to_string(ff::stable_hash_func(json_source));
     ff::log::write_debug(std::string("Temp path: " + ff::string::to_string(temp_path.native())));
@@ -56,5 +56,5 @@ std::tuple<std::unique_ptr<ff::resource_objects>, ff::end_scope_action> ff::test
     Assert::IsTrue(result.status);
     Assert::IsFalse(result.dict.empty());
 
-    return std::make_tuple(std::make_unique<ff::resource_objects>(result.dict), std::move(cleanup));
+    return std::make_tuple(std::make_unique<ff::resource_objects>(result.dict), std::move(temp_path), std::move(cleanup));
 }

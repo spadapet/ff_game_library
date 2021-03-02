@@ -22,6 +22,8 @@ namespace ff
         dx11_target_texture& operator=(const dx11_target_texture & other) = delete;
         operator bool() const;
 
+        const std::shared_ptr<ff::dx11_texture>& shared_texture() const;
+
         // dx11_target_base
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;

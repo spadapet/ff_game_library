@@ -25,7 +25,7 @@ namespace graphics_test
 
             Assert::IsTrue(buffer);
             Assert::IsTrue(buffer.writable());
-            Assert::AreEqual<size_t>(4, buffer.size());
+            Assert::AreEqual<size_t>(16, buffer.size());
             Assert::IsTrue(buffer.type() == D3D11_BIND_INDEX_BUFFER);
 
             void* data = buffer.map(ff::array_byte_size(ints));

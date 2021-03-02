@@ -12,17 +12,18 @@
       <ResJson>
         <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.build_res.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
         <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h</Outputs>
+        <ContentOutputs>$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
         <TreatOutputAsContent Condition=" '$(AppType)' == 'UWP' ">false</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>
       </ResJson>
     </ItemGroup>
 
     <PropertyGroup>
-      <AdditionalContentFiles>@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('Outputs'));$(AdditionalContentFiles)</AdditionalContentFiles>
+      <AdditionalContentFiles>@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'));$(AdditionalContentFiles)</AdditionalContentFiles>
     </PropertyGroup>
   </Target>
 
-  <Target Name="ResJsonBuild" Condition=" '@(ResJson)' != '' " BeforeTargets="ResourceCompile" DependsOnTargets="ResJsonPrepareForBuild">
+  <Target Name="ResJsonBuild" Condition=" '@(ResJson)' != '' " BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild">
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 

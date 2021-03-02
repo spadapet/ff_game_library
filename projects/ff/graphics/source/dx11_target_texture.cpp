@@ -37,6 +37,11 @@ ff::dx11_target_texture::operator bool() const
     return this->view_;
 }
 
+const std::shared_ptr<ff::dx11_texture>& ff::dx11_target_texture::shared_texture() const
+{
+    return this->texture_;
+}
+
 DXGI_FORMAT ff::dx11_target_texture::format() const
 {
     return this->texture_->format();

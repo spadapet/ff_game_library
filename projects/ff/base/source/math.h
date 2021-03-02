@@ -55,7 +55,8 @@ namespace ff::math
     template<class T>
     constexpr T nearest_power_of_two(T num)
     {
-        num -= (num != static_cast<T>(0));
+        T not_zero = (num != static_cast<T>(0));
+        num -= not_zero;
 
         num |= num >> 1;
         num |= num >> 2;
@@ -76,7 +77,7 @@ namespace ff::math
             num |= num >> 32;
         }
 
-        return num + 1;
+        return num + not_zero;
     }
 
     template<class T>

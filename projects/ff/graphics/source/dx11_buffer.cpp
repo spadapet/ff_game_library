@@ -3,7 +3,7 @@
 #include "dx11_device_state.h"
 #include "graphics.h"
 
-static const size_t MIN_BUFFER_SIZE = 4;
+static const size_t MIN_BUFFER_SIZE = 16;
 
 ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type)
     : dx11_buffer(type, 0)
