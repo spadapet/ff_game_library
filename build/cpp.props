@@ -40,7 +40,7 @@
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
 
     <!-- Noesis -->
-    <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.3.0.6\content\</NoesisRoot>
+    <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.3.0.10\content\</NoesisRoot>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\</NoesisLibDir>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
     <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\uwp_x86\</NoesisLibDir>
