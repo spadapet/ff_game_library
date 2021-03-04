@@ -26,10 +26,13 @@
     <ClCompile Include="source\texture_provider.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\utility.cpp">
+    <ClCompile Include="source\xaml_provider.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\xaml_provider.cpp">
+    <ClCompile Include="source\key_map.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\render_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -60,10 +63,13 @@
     <ClInclude Include="source\texture_provider.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\utility.h">
+    <ClInclude Include="source\xaml_provider.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\xaml_provider.h">
+    <ClInclude Include="source\key_map.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\render_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

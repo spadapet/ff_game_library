@@ -12,7 +12,7 @@ TEST_MODULE_INITIALIZE(module_init)
     ::init_graphics = std::make_unique<ff::init_graphics>();
     ::init_main_window = std::make_unique<ff::init_main_window>("Unit Tests", false);
     ::init_input = std::make_unique<ff::init_input>();
-    ::init_ui = std::make_unique<ff::init_ui>();
+    ::init_ui = std::make_unique<ff::init_ui>(ff::init_ui_params());
 
     Assert::IsTrue(*::init_audio);
     Assert::IsTrue(*::init_graphics);

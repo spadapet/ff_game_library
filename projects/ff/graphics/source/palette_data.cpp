@@ -51,7 +51,7 @@ size_t ff::palette_data::row_hash(size_t index) const
     return this->row_hashes[index];
 }
 
-const std::shared_ptr<ff::dx11_texture> ff::palette_data::texture()
+const std::shared_ptr<ff::dx11_texture> ff::palette_data::texture() const
 {
     return this->texture_;
 }
@@ -67,7 +67,7 @@ size_t ff::palette_data::current_row() const
     return 0;
 }
 
-ff::palette_data* ff::palette_data::data()
+const ff::palette_data* ff::palette_data::data() const
 {
     return this;
 }

@@ -17,12 +17,12 @@ namespace ff
         ID3D11RasterizerState* get_rasterize_state(const D3D11_RASTERIZER_DESC& desc);
         ID3D11SamplerState* get_sampler_state(const D3D11_SAMPLER_DESC& desc);
 
-        ID3D11VertexShader* get_vertex_shader(ff::resource_object_provider& resources, std::string_view resource_name);
-        ID3D11VertexShader* get_vertex_shader_and_input_layout(ff::resource_object_provider& resources, std::string_view resource_name, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count);
-        ID3D11GeometryShader* get_geometry_shader(ff::resource_object_provider& resources, std::string_view resource_name);
-        ID3D11GeometryShader* get_geometry_shader_stream_output(ff::resource_object_provider& resources, std::string_view resource_name, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride);
-        ID3D11PixelShader* get_pixel_shader(ff::resource_object_provider& resources, std::string_view resource_name);
-        ID3D11InputLayout* get_input_layout(ff::resource_object_provider& resources, std::string_view vertex_shader_resource_name, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count);
+        ID3D11VertexShader* get_vertex_shader(std::string_view resource_name);
+        ID3D11VertexShader* get_vertex_shader_and_input_layout(std::string_view resource_name, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count);
+        ID3D11GeometryShader* get_geometry_shader(std::string_view resource_name);
+        ID3D11GeometryShader* get_geometry_shader_stream_output(std::string_view resource_name, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride);
+        ID3D11PixelShader* get_pixel_shader(std::string_view resource_name);
+        ID3D11InputLayout* get_input_layout(std::string_view vertex_shader_resource_name, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count);
 
         ID3D11VertexShader* get_vertex_shader(const std::shared_ptr<ff::data_base>& shader_data);
         ID3D11VertexShader* get_vertex_shader_and_input_layout(const std::shared_ptr<ff::data_base>& shader_data, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count);

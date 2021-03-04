@@ -29,12 +29,12 @@ namespace ff
 
         size_t row_size() const;
         size_t row_hash(size_t index) const;
-        const std::shared_ptr<ff::dx11_texture> texture();
+        const std::shared_ptr<ff::dx11_texture> texture() const;
         std::shared_ptr<ff::data_base> remap(std::string_view name) const;
 
         // palette_base
         virtual size_t current_row() const override;
-        virtual ff::palette_data* data() override;
+        virtual const ff::palette_data* data() const override;
         virtual const uint8_t* index_remap() const override;
         virtual size_t index_remap_hash() const override;
 

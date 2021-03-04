@@ -27,7 +27,7 @@ size_t ff::palette_cycle::current_row() const
     return this->current_row_;
 }
 
-ff::palette_data* ff::palette_cycle::data()
+const ff::palette_data* ff::palette_cycle::data() const
 {
     return this->data_.get();
 }

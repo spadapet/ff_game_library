@@ -2,11 +2,11 @@
 #include "render_target.h"
 #include "texture.h"
 
-ff::internal::ui::render_target::render_target(size_t width, size_t height, size_t samples, bool sRGB, std::string_view name)
+ff::internal::ui::render_target::render_target(size_t width, size_t height, size_t samples, bool srgb, std::string_view name)
     : name_(name)
 {
     ff::point_int size = ff::point_size(width, height).cast<int>();
-    DXGI_FORMAT format = sRGB ? ff::internal::DEFAULT_FORMAT_SRGB : ff::internal::DEFAULT_FORMAT;
+    DXGI_FORMAT format = srgb ? ff::internal::DEFAULT_FORMAT_SRGB : ff::internal::DEFAULT_FORMAT;
 
     this->msaa_texture_ = std::make_shared<ff::dx11_texture>(size, format, 1, 1, samples);
     this->msaa_target_ = std::make_shared<ff::dx11_target_texture>(this->msaa_texture_);

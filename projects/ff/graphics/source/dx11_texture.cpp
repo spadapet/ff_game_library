@@ -266,7 +266,7 @@ bool ff::dx11_texture::update(
         size_t row_pitch, slice_pitch;
         DirectX::ComputePitch(this->format(), width, height, row_pitch, slice_pitch);
 
-        if (!this->texture_ && this->data_)
+        if (this->data_)
         {
             DirectX::Image image{};
             image.width = width;
@@ -283,7 +283,8 @@ bool ff::dx11_texture::update(
                 static_cast<size_t>(rect.left),
                 static_cast<size_t>(rect.top)));
         }
-        else if (this->texture_)
+
+        if (this->texture_)
         {
             CD3D11_BOX box(static_cast<UINT>(rect.left), static_cast<UINT>(rect.top), 0, static_cast<UINT>(rect.right), static_cast<UINT>(rect.bottom), 1);
             UINT subresource = ::D3D11CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), static_cast<UINT>(this->mip_count()));

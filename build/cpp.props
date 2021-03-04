@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <VsRelease Condition=" '$(VsRelease)' == '' ">16</VsRelease>
-    <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">18362</WinSdkRelease10>
+    <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <FFRoot>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>

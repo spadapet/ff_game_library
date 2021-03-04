@@ -8,7 +8,7 @@
     <ClCompile Include="source\ui.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\utility.cpp">
+    <ClCompile Include="source\key_map.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\stream.cpp">
@@ -32,6 +32,9 @@
     <ClCompile Include="source\render_target.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\render_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,7 +45,7 @@
     <ClInclude Include="source\ui.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\utility.h">
+    <ClInclude Include="source\key_map.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\stream.h">
@@ -64,6 +67,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\render_target.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\render_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

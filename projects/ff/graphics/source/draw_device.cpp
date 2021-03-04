@@ -273,24 +273,18 @@ namespace
         {
             if (!this->vs)
             {
-                this->vs = ff::graphics::dx11_object_cache().get_vertex_shader_and_input_layout(
-                    ff::resource_objects::global(),
-                    this->vs_res.resource()->name(),
-                    this->layout, this->element_desc, this->element_count);
+                this->vs = ff::graphics::dx11_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
             }
 
             if (!this->gs)
             {
-                this->gs = ff::graphics::dx11_object_cache().get_geometry_shader(
-                    ff::resource_objects::global(), this->gs_res.resource()->name());
+                this->gs = ff::graphics::dx11_object_cache().get_geometry_shader(this->gs_res.resource()->name());
             }
 
             Microsoft::WRL::ComPtr<ID3D11PixelShader>& ps = palette_out ? this->ps_palette_out : this->ps;
             if (!ps)
             {
-                ps = ff::graphics::dx11_object_cache().get_pixel_shader(
-                    ff::resource_objects::global(),
-                    palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
+                ps = ff::graphics::dx11_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
             }
         }
 
@@ -537,23 +531,6 @@ static ff::dx11_fixed_state create_pre_multiplied_alpha_draw_state()
     state.raster = ::get_no_cull_raster_state();
 
     return state;
-}
-
-template<typename T>
-static ID3D11VertexShader* get_vertex_shader_and_iInput_layout(std::string_view name, Microsoft::WRL::ComPtr<ID3D11InputLayout>& layout)
-{
-    ff::graphics::dx11_object_cache().get_vertex_shader_and_input_layout(
-        ff::resource_objects::global(), name, layout, T::layout().data(), T::layout().size());
-}
-
-static ID3D11GeometryShader* get_geometry_shader(std::string_view name)
-{
-    return ff::graphics::dx11_object_cache().get_geometry_shader(ff::resource_objects::global(), name);
-}
-
-static ID3D11PixelShader* get_pixel_shader(std::string_view name)
-{
-    return ff::graphics::dx11_object_cache().get_pixel_shader(ff::resource_objects::global(), name);
 }
 
 static ff::rect_float get_rotated_view_rect(ff::dx11_target_base& target, const ff::rect_float& view_rect)
@@ -1414,7 +1391,7 @@ namespace
                     {
                         unsigned int index = iter.second.second;
                         size_t palette_row = palette->current_row();
-                        ff::palette_data* palette_date = palette->data();
+                        const ff::palette_data* palette_date = palette->data();
                         size_t row_hash = palette_date->row_hash(palette_row);
 
                         if (this->palette_texture_hashes[index] != row_hash)

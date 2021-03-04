@@ -21,7 +21,7 @@ namespace ff
 
         // palette_base
         virtual size_t current_row() const override;
-        virtual ff::palette_data* data() override;
+        virtual const ff::palette_data* data() const override;
         virtual const uint8_t* index_remap() const override;
         virtual size_t index_remap_hash() const override;
 
