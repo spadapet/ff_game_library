@@ -81,7 +81,7 @@ static void destroy_mastering_voice()
     }
 }
 
-bool ff::audio::internal::init()
+bool ff::internal::audio::init()
 {
     ::MFStartup(MF_VERSION);
 
@@ -98,20 +98,20 @@ bool ff::audio::internal::init()
     return ::init_mastering_voice();
 }
 
-void ff::audio::internal::destroy()
+void ff::internal::audio::destroy()
 {
     ::destroy_mastering_voice();
     ::xaudio2.Reset();
     ::MFShutdown();
 }
 
-void ff::audio::internal::add_child(ff::internal::audio_child_base* child)
+void ff::internal::audio::add_child(ff::internal::audio_child_base* child)
 {
     std::lock_guard lock(::audio_mutex);
     ::audio_children.push_back(child);
 }
 
-void ff::audio::internal::remove_child(ff::internal::audio_child_base* child)
+void ff::internal::audio::remove_child(ff::internal::audio_child_base* child)
 {
     std::lock_guard lock(::audio_mutex);
     auto i = std::find(::audio_children.cbegin(), ::audio_children.cend(), child);
@@ -121,9 +121,9 @@ void ff::audio::internal::remove_child(ff::internal::audio_child_base* child)
     }
 }
 
-void ff::audio::internal::add_playing(ff::audio_playing_base* child)
+void ff::internal::audio::add_playing(ff::audio_playing_base* child)
 {
-    ff::audio::internal::add_child(child);
+    ff::internal::audio::add_child(child);
 
     std::lock_guard lock(::audio_mutex);
     ::audio_playing.push_back(child);
@@ -134,9 +134,9 @@ void ff::audio::internal::add_playing(ff::audio_playing_base* child)
     }
 }
 
-void ff::audio::internal::remove_playing(ff::audio_playing_base* child)
+void ff::internal::audio::remove_playing(ff::audio_playing_base* child)
 {
-    ff::audio::internal::remove_child(child);
+    ff::internal::audio::remove_child(child);
 
     std::lock_guard lock(::audio_mutex);
 
@@ -153,23 +153,23 @@ void ff::audio::internal::remove_playing(ff::audio_playing_base* child)
     }
 }
 
-IXAudio2* ff::audio::internal::xaudio()
+IXAudio2* ff::internal::audio::xaudio()
 {
     return ::xaudio2.Get();
 }
 
-IXAudio2Voice* ff::audio::internal::xaudio_voice(voice_type type)
+IXAudio2Voice* ff::internal::audio::xaudio_voice(ff::audio::voice_type type)
 {
     switch (type)
     {
-        case voice_type::effects:
+        case ff::audio::voice_type::effects:
             return ::effect_voice;
 
-        case voice_type::music:
+        case ff::audio::voice_type::music:
             return ::music_voice;
 
         default:
-        case voice_type::master:
+        case ff::audio::voice_type::master:
             return ::master_voice;
     }
 }
@@ -196,7 +196,7 @@ float ff::audio::volume(voice_type type)
 {
     float volume = 1;
 
-    IXAudio2Voice* voice = ff::audio::internal::xaudio_voice(type);
+    IXAudio2Voice* voice = ff::internal::audio::xaudio_voice(type);
     if (voice)
     {
         voice->GetVolume(&volume);
@@ -207,7 +207,7 @@ float ff::audio::volume(voice_type type)
 
 void ff::audio::volume(voice_type type, float volume)
 {
-    IXAudio2Voice* voice = ff::audio::internal::xaudio_voice(type);
+    IXAudio2Voice* voice = ff::internal::audio::xaudio_voice(type);
     if (voice)
     {
         volume = std::max<float>(0, volume);

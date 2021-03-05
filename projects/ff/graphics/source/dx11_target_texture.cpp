@@ -24,12 +24,12 @@ ff::dx11_target_texture::dx11_target_texture(
 {
     this->view_ = ff::internal::create_target_view(texture->texture(), this->array_start, this->array_count, this->mip_level);
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_target_texture::~dx11_target_texture()
 {
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_target_texture::operator bool() const

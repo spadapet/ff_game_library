@@ -14,12 +14,12 @@ namespace
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::input_mapping_factory>("input");
 
-            ::init_input_status = ff::input::internal::init();
+            ::init_input_status = ff::internal::input::init();
         }
 
         ~one_time_init_input()
         {
-            ff::input::internal::destroy();
+            ff::internal::input::destroy();
             ::init_input_status = false;
         }
     };

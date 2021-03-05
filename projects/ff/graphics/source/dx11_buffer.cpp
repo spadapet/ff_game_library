@@ -20,7 +20,7 @@ ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, std::shared_ptr<ff::data_base
 ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable)
     : initial_data(initial_data)
 {
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 
     UINT bind_flags = type;
     UINT cpu_flags = writable ? D3D11_CPU_ACCESS_WRITE : 0;
@@ -47,7 +47,7 @@ ff::dx11_buffer::~dx11_buffer()
 {
     this->unmap();
 
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_buffer::operator bool() const

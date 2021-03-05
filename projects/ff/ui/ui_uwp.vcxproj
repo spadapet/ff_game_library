@@ -9,7 +9,7 @@
   <Import Project="..\..\..\build\cpp.props" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -26,6 +26,7 @@
     <ClCompile Include="source\texture.cpp" />
     <ClCompile Include="source\texture_provider.cpp" />
     <ClCompile Include="source\ui.cpp" />
+    <ClCompile Include="source\view.cpp" />
     <ClCompile Include="source\xaml_provider.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +41,7 @@
     <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_provider.h" />
     <ClInclude Include="source\ui.h" />
+    <ClInclude Include="source\view.h" />
     <ClInclude Include="source\xaml_provider.h" />
     <ClInclude Include="ui_api.h" />
   </ItemGroup>
@@ -65,6 +67,23 @@
     <None Include="assets\shader_vs.hlsl">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\vendor\noesis_interactivity_uwp.vcxproj">
+      <Project>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\base\base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\data\data_uwp.vcxproj">
+      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\input\input_uwp.vcxproj">
+      <Project>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\resource\resource_uwp.vcxproj">
+      <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

@@ -715,13 +715,13 @@ namespace
         {
             this->reset();
 
-            ff::graphics::internal::add_child(this);
+            ff::internal::graphics::add_child(this);
         }
 
         virtual ~draw_device_internal() override
         {
             assert(this->state != ::draw_device_internal::state_t::drawing);
-            ff::graphics::internal::remove_child(this);
+            ff::internal::graphics::remove_child(this);
         }
 
         draw_device_internal(draw_device_internal&& other) noexcept = delete;

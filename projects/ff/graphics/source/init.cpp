@@ -45,12 +45,12 @@ namespace
 
             ff::resource_objects::register_global_dict(::shaders::get_shaders_data());
 
-            ::init_graphics_status = ff::graphics::internal::init();
+            ::init_graphics_status = ff::internal::graphics::init();
         }
 
         ~one_time_init_grahics()
         {
-            ff::graphics::internal::destroy();
+            ff::internal::graphics::destroy();
             ::init_graphics_status = false;
         }
     };

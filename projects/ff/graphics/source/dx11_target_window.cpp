@@ -22,7 +22,7 @@ ff::dx11_target_window::dx11_target_window(ff::window* window)
 {
     this->size(this->window->size());
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 
     if (this->main_window)
     {
@@ -42,7 +42,7 @@ ff::dx11_target_window::~dx11_target_window()
         ff::graphics::defer::set_target(nullptr);
     }
 
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_target_window::operator bool() const

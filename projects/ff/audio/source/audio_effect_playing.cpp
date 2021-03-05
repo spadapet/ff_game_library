@@ -11,14 +11,14 @@ ff::internal::audio_effect_playing::audio_effect_playing(audio_effect* owner)
     , paused_(true)
     , done(false)
 {
-    ff::audio::internal::add_playing(this);
+    ff::internal::audio::add_playing(this);
 }
 
 ff::internal::audio_effect_playing::~audio_effect_playing()
 {
     this->reset();
 
-    ff::audio::internal::remove_playing(this);
+    ff::internal::audio::remove_playing(this);
 }
 
 void ff::internal::audio_effect_playing::init(IXAudio2SourceVoice* source, bool start_now)

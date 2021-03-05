@@ -39,7 +39,7 @@ namespace ff::graphics::defer
     void resize_target(const ff::window_size& size);
 }
 
-namespace ff::graphics::internal
+namespace ff::internal::graphics
 {
     bool init();
     void destroy();

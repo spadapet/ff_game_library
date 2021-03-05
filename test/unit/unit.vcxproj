@@ -9,7 +9,12 @@
   <Import Project="..\..\build\cpp.props" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;$(NoesisRoot)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+        $(VCInstallDir)UnitTest\include;
+        $(NoesisRoot)Include;
+        $(NoesisRoot)Src\Packages\App\Interactivity\Include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;$(NoesisLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -85,6 +90,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\ui\ui.vcxproj">
       <Project>{8147a742-08ac-49fd-8c51-3956e1a65e16}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vendor\noesis_interactivity.vcxproj">
+      <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

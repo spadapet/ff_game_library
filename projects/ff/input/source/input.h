@@ -17,7 +17,7 @@ namespace ff::input
     size_t gamepad_count();
 }
 
-namespace ff::input::internal
+namespace ff::internal::input
 {
     bool init();
     void destroy();

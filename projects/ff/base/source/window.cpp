@@ -17,3 +17,9 @@ ff::point_int ff::window_size::rotated_pixel_size() const
         ? this->pixel_size.swap()
         : this->pixel_size;
 }
+
+int ff::window_size::rotated_degrees_from_native() const
+{
+    int rotation = (this->current_rotation < this->native_rotation ? this->current_rotation + 4 : this->current_rotation) - this->native_rotation;
+    return rotation * 90;
+}

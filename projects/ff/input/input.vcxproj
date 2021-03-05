@@ -34,5 +34,16 @@
     <ClInclude Include="source\keyboard_device.h" />
     <ClInclude Include="source\pointer_device.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\base\base.vcxproj">
+      <Project>{dfdbd2c1-61cb-4606-8e52-85b65c9aaef2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\data\data.vcxproj">
+      <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\resource\resource.vcxproj">
+      <Project>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

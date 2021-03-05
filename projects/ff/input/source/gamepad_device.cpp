@@ -25,12 +25,12 @@ ff::gamepad_device::gamepad_device(gamepad_type gamepad)
     , check_connected(0)
     , connected_(true)
 {
-    ff::input::internal::add_device(this);
+    ff::internal::input::add_device(this);
 }
 
 ff::gamepad_device::~gamepad_device()
 {
-    ff::input::internal::remove_device(this);
+    ff::internal::input::remove_device(this);
 }
 
 ff::gamepad_device::gamepad_type ff::gamepad_device::gamepad() const

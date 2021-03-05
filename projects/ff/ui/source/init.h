@@ -25,6 +25,7 @@ namespace ff
         operator bool() const;
 
     private:
+        ff::init_input init_input;
         ff::init_graphics init_graphics;
     };
 }

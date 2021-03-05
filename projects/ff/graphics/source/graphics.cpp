@@ -161,23 +161,23 @@ static void destroy_dx11()
     ::dxgi_factory.Reset();
 }
 
-bool ff::graphics::internal::init()
+bool ff::internal::graphics::init()
 {
     return ::init_dx11();
 }
 
-void ff::graphics::internal::destroy()
+void ff::internal::graphics::destroy()
 {
     ::destroy_dx11();
 }
 
-void ff::graphics::internal::add_child(ff::internal::graphics_child_base* child)
+void ff::internal::graphics::add_child(ff::internal::graphics_child_base* child)
 {
     std::lock_guard lock(::graphics_mutex);
     ::graphics_children.push_back(child);
 }
 
-void ff::graphics::internal::remove_child(ff::internal::graphics_child_base* child)
+void ff::internal::graphics::remove_child(ff::internal::graphics_child_base* child)
 {
     std::lock_guard lock(::graphics_mutex);
     auto i = std::find(::graphics_children.cbegin(), ::graphics_children.cend(), child);

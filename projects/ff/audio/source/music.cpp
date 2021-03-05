@@ -16,14 +16,14 @@ ff::music::music(const std::shared_ptr<ff::resource>& file_resource, float volum
     , speed(speed)
     , loop(loop)
 {
-    ff::audio::internal::add_child(this);
+    ff::internal::audio::add_child(this);
 }
 
 ff::music::~music()
 {
     this->stop();
 
-    ff::audio::internal::remove_child(this);
+    ff::internal::audio::remove_child(this);
 }
 
 void ff::music::reset()

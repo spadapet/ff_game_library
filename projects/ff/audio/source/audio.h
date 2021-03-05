@@ -31,7 +31,7 @@ namespace ff::audio
     void resume_effects();
 }
 
-namespace ff::audio::internal
+namespace ff::internal::audio
 {
     bool init();
     void destroy();
@@ -42,5 +42,5 @@ namespace ff::audio::internal
     void remove_playing(ff::audio_playing_base* child);
 
     IXAudio2* xaudio();
-    IXAudio2Voice* xaudio_voice(voice_type type);
+    IXAudio2Voice* xaudio_voice(ff::audio::voice_type type);
 }

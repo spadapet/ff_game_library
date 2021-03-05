@@ -116,12 +116,9 @@ DXGI_MODE_ROTATION ff::internal::get_display_rotation(DXGI_MODE_ROTATION native_
 {
     DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
 
-    // Note: NativeOrientation can only be Landscape or Portrait even though
-    // the DisplayOrientations enum has other values.
     switch (native_orientation)
     {
-        case DXGI_MODE_ROTATION_IDENTITY:
-        case DXGI_MODE_ROTATION_ROTATE180:
+        default:
             switch (current_orientation)
             {
                 case DXGI_MODE_ROTATION_IDENTITY:

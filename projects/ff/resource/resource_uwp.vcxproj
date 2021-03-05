@@ -43,5 +43,13 @@
     <ClInclude Include="source\resource_values.h" />
     <ClInclude Include="source\resource_value_provider.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\base\base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\data\data_uwp.vcxproj">
+      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

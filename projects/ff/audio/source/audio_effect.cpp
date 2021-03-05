@@ -30,14 +30,14 @@ ff::audio_effect::audio_effect(
     , volume(volume)
     , speed(speed)
 {
-    ff::audio::internal::add_child(this);
+    ff::internal::audio::add_child(this);
 }
 
 ff::audio_effect::~audio_effect()
 {
     this->stop();
 
-    ff::audio::internal::remove_child(this);
+    ff::internal::audio::remove_child(this);
 }
 
 void ff::audio_effect::reset()
@@ -46,8 +46,8 @@ void ff::audio_effect::reset()
 
 std::shared_ptr<ff::audio_playing_base> ff::audio_effect::play(bool start_now, float volume, float speed)
 {
-    IXAudio2* xaudio = ff::audio::internal::xaudio();
-    IXAudio2Voice* xaudio_voice = ff::audio::internal::xaudio_voice(ff::audio::voice_type::effects);
+    IXAudio2* xaudio = ff::internal::audio::xaudio();
+    IXAudio2Voice* xaudio_voice = ff::internal::audio::xaudio_voice(ff::audio::voice_type::effects);
     if (!xaudio || !xaudio_voice)
     {
         return nullptr;

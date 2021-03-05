@@ -1,0 +1,53 @@
+#pragma once
+
+namespace ff
+{
+    class ui_view
+    {
+    public:
+        ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alias, bool sub_pixel_rendering);
+        virtual ~ui_view();
+
+        void destroy();
+        void advance();
+        void pre_render();
+        void render(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect = nullptr);
+
+        Noesis::IView* internal_view() const;
+        Noesis::FrameworkElement* content() const;
+        Noesis::Visual* hit_test(ff::point_float screen_pos) const;
+        Noesis::Cursor cursor() const;
+        void cursor(Noesis::Cursor cursor);
+        void size(const ff::window_size& value);
+        ff::point_float screen_to_content(ff::point_float pos) const;
+        ff::point_float content_to_screen(ff::point_float pos) const;
+
+        void set_view_to_screen_transform(ff::point_float pos, ff::point_float scale);
+        void set_view_to_screen_transform(const DirectX::XMMATRIX& matrix);
+        ff::point_float screen_to_view(ff::point_float pos) const;
+        ff::point_float view_to_screen(ff::point_float pos) const;
+
+        void focused(bool focus);
+        bool focused() const;
+        void enabled(bool value);
+        bool enabled() const;
+        void block_input_below(bool block);
+        bool block_input_below() const;
+
+    protected:
+        bool render_begin(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect);
+
+    private:
+        DirectX::XMMATRIX* matrix;
+        bool focused_;
+        bool enabled_;
+        bool block_input_below_;
+        double counter;
+        Noesis::Cursor cursor_;
+        Noesis::Ptr<Noesis::Grid> view_grid;
+        Noesis::Ptr<Noesis::Viewbox> view_box;
+        Noesis::Ptr<Noesis::IView> internal_view_;
+        Noesis::Ptr<Noesis::RotateTransform> rotate_transform;
+        Noesis::Ptr<Noesis::FrameworkElement> content_;
+    };
+}

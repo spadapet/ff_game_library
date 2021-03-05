@@ -16,12 +16,12 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::audio_effect_factory>("effect");
             ff::resource_object_base::register_factory<ff::internal::music_factory>("music");
 
-            ::init_audio_status = ff::audio::internal::init();
+            ::init_audio_status = ff::internal::audio::init();
         }
 
         ~one_time_init_audio()
         {
-            ff::audio::internal::destroy();
+            ff::internal::audio::destroy();
             ::init_audio_status = false;
         }
     };

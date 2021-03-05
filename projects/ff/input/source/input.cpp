@@ -132,7 +132,7 @@ void gamepad_removed(Windows::Gaming::Input::Gamepad^ gamepad)
 }
 #endif
 
-bool ff::input::internal::init()
+bool ff::internal::input::init()
 {
     assert(ff::window::main());
 
@@ -182,7 +182,7 @@ bool ff::input::internal::init()
     return true;
 }
 
-void ff::input::internal::destroy()
+void ff::internal::input::destroy()
 {
     ::main_window_connections.clear();
     ::gamepads.clear();
@@ -191,7 +191,7 @@ void ff::input::internal::destroy()
     ::combined_devices_.reset();
 }
 
-void ff::input::internal::add_device(ff::input_device_base* device)
+void ff::internal::input::add_device(ff::input_device_base* device)
 {
     ::all_devices.try_emplace(device, device->event_sink().connect([](ff::input_device_event event)
         {
@@ -199,7 +199,7 @@ void ff::input::internal::add_device(ff::input_device_base* device)
         }));
 }
 
-void ff::input::internal::remove_device(ff::input_device_base* device)
+void ff::internal::input::remove_device(ff::input_device_base* device)
 {
     ::all_devices.erase(device);
 }

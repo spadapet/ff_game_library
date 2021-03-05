@@ -119,7 +119,7 @@ ff::internal::ui::render_device::render_device(bool srgb)
     , texture_dimensions_cb_hash(0)
     , null_textures{}
 {
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 
 #ifdef _DEBUG
     this->empty_texture_rgb = std::make_shared<ff::dx11_texture>(ff::point_int(1, 1));
@@ -137,7 +137,7 @@ ff::internal::ui::render_device::render_device(bool srgb)
 
 ff::internal::ui::render_device::~render_device()
 {
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 const Noesis::DeviceCaps& ff::internal::ui::render_device::GetCaps() const

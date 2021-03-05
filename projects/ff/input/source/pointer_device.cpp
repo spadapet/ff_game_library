@@ -24,12 +24,12 @@ ff::pointer_device::pointer_device()
     : mouse{}
     , pending_mouse{}
 {
-    ff::input::internal::add_device(this);
+    ff::internal::input::add_device(this);
 }
 
 ff::pointer_device::~pointer_device()
 {
-    ff::input::internal::remove_device(this);
+    ff::internal::input::remove_device(this);
 }
 
 bool ff::pointer_device::in_window() const

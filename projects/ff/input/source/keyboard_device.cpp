@@ -7,12 +7,12 @@ ff::keyboard_device::keyboard_device()
     : state{}
     , pending_state{}
 {
-    ff::input::internal::add_device(this);
+    ff::internal::input::add_device(this);
 }
 
 ff::keyboard_device::~keyboard_device()
 {
-    ff::input::internal::remove_device(this);
+    ff::internal::input::remove_device(this);
 }
 
 bool ff::keyboard_device::pressing(int vk) const

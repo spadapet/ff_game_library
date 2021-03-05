@@ -16,7 +16,7 @@ ff::dx11_texture::dx11_texture(const ff::resource_file& resource_file, DXGI_FORM
     this->data_ = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
     this->fix_sprite_data(this->data_ ? ff::internal::get_sprite_type(*this->data_) : ff::sprite_type::unknown);
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture::dx11_texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
@@ -45,7 +45,7 @@ ff::dx11_texture::dx11_texture(ff::point_int size, DXGI_FORMAT format, size_t mi
 
     this->fix_sprite_data(sprite_type);
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture::dx11_texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::sprite_type sprite_type)
@@ -54,7 +54,7 @@ ff::dx11_texture::dx11_texture(const std::shared_ptr<DirectX::ScratchImage>& dat
 {
     this->fix_sprite_data(sprite_type == ff::sprite_type::unknown && this->data_ ? ff::internal::get_sprite_type(*this->data_) : sprite_type);
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture::dx11_texture(const dx11_texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
@@ -78,7 +78,7 @@ ff::dx11_texture::dx11_texture(const dx11_texture& other, DXGI_FORMAT new_format
 
     this->fix_sprite_data(sprite_type);
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture::dx11_texture(dx11_texture&& other) noexcept
@@ -90,12 +90,12 @@ ff::dx11_texture::dx11_texture(dx11_texture&& other) noexcept
     this->fix_sprite_data(other.sprite_data_.type());
     other.sprite_data_ = ff::sprite_data();
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture::~dx11_texture()
 {
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_texture& ff::dx11_texture::operator=(dx11_texture&& other) noexcept

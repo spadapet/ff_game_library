@@ -9,6 +9,9 @@
   </PropertyGroup>
   <Import Project="..\..\build\cpp.props" />
   <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(NoesisLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -92,6 +95,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\ui\ui_uwp.vcxproj">
       <Project>{279176cb-1db1-40ea-aa60-1a0469e8a6d8}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vendor\noesis_interactivity_uwp.vcxproj">
+      <Project>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />

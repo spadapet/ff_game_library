@@ -35,6 +35,9 @@
     <ClCompile Include="source\render_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\view.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -70,6 +73,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\render_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\view.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

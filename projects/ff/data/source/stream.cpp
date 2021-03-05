@@ -3,7 +3,7 @@
 #include "saved_data.h"
 #include "stream.h"
 
-namespace ff::internal
+namespace
 {
     class reader_stream : public IStream
     {
@@ -424,5 +424,5 @@ size_t ff::stream_copy(writer_base& writer, reader_base& reader, size_t size, si
 
 Microsoft::WRL::ComPtr<IStream> ff::get_stream(const std::shared_ptr<reader_base>& reader)
 {
-    return reader ? Microsoft::WRL::ComPtr<IStream>(new ff::internal::reader_stream(reader)) : nullptr;
+    return reader ? Microsoft::WRL::ComPtr<IStream>(new ::reader_stream(reader)) : nullptr;
 }

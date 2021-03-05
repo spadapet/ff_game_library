@@ -11,13 +11,13 @@ namespace
         destroy_voice_work(IXAudio2SourceVoice* source)
             : source(source)
         {
-            ff::audio::internal::add_child(this);
+            ff::internal::audio::add_child(this);
         }
 
         virtual ~destroy_voice_work() override
         {
             this->reset();
-            ff::audio::internal::remove_child(this);
+            ff::internal::audio::remove_child(this);
         }
 
         virtual void reset() override

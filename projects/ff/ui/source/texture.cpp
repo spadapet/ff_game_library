@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "texture.h"
 
+NS_IMPLEMENT_REFLECTION_(ff::internal::ui::texture);
+
 ff::internal::ui::texture::texture(const std::shared_ptr<ff::resource>& resource, const std::shared_ptr<ff::dx11_texture>& placeholder_texture, std::string_view name)
     : resource(resource)
     , placeholder_texture(placeholder_texture)

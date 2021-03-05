@@ -103,7 +103,7 @@ ff::internal::music_playing::music_playing(ff::music* owner)
     , loop(false)
     , start_playing(false)
 {
-    ff::audio::internal::add_playing(this);
+    ff::internal::audio::add_playing(this);
 }
 
 ff::internal::music_playing::~music_playing()
@@ -111,14 +111,14 @@ ff::internal::music_playing::~music_playing()
     this->reset();
     this->media_callback->clear_owner();
 
-    ff::audio::internal::remove_playing(this);
+    ff::internal::audio::remove_playing(this);
 }
 
 bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, bool start_now, float volume, float speed, bool loop)
 {
     assert(this->state == state_t::invalid);
 
-    if (file && file->saved_data() && ff::audio::internal::xaudio() && ff::audio::internal::xaudio_voice(ff::audio::voice_type::music))
+    if (file && file->saved_data() && ff::internal::audio::xaudio() && ff::internal::audio::xaudio_voice(ff::audio::voice_type::music))
     {
         this->state = state_t::init;
         this->file = file;
@@ -635,14 +635,14 @@ bool ff::internal::music_playing::async_init()
     }
 
     XAUDIO2_SEND_DESCRIPTOR send_desc{};
-    send_desc.pOutputVoice = ff::audio::internal::xaudio_voice(ff::audio::voice_type::music);
+    send_desc.pOutputVoice = ff::internal::audio::xaudio_voice(ff::audio::voice_type::music);
 
     XAUDIO2_VOICE_SENDS sends{};
     sends.SendCount = 1;
     sends.pSends = &send_desc;
 
     IXAudio2SourceVoice* source = nullptr;
-    HRESULT hr = ff::audio::internal::xaudio()->CreateSourceVoice(&source, wave_format, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this, &sends);
+    HRESULT hr = ff::internal::audio::xaudio()->CreateSourceVoice(&source, wave_format, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this, &sends);
 
     ::CoTaskMemFree(wave_format);
     wave_format = nullptr;

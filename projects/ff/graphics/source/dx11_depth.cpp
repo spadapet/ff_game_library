@@ -12,7 +12,7 @@ ff::dx11_depth::dx11_depth(size_t sample_count)
 
 ff::dx11_depth::dx11_depth(const ff::point_int& size, size_t sample_count)
 {
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 
     D3D11_TEXTURE2D_DESC texture_desc{};
     texture_desc.ArraySize = 1;
@@ -36,7 +36,7 @@ ff::dx11_depth::dx11_depth(const ff::point_int& size, size_t sample_count)
 
 ff::dx11_depth::~dx11_depth()
 {
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_depth::operator bool() const

@@ -20,7 +20,7 @@ ff::dx11_texture_view::dx11_texture_view(
     this->view_ = ff::internal::create_shader_view(texture->texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
     this->fix_sprite_data();
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture_view::dx11_texture_view(dx11_texture_view&& other) noexcept
@@ -34,12 +34,12 @@ ff::dx11_texture_view::dx11_texture_view(dx11_texture_view&& other) noexcept
     this->fix_sprite_data();
     other.sprite_data_ = ff::sprite_data();
 
-    ff::graphics::internal::add_child(this);
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx11_texture_view::~dx11_texture_view()
 {
-    ff::graphics::internal::remove_child(this);
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx11_texture_view& ff::dx11_texture_view::operator=(dx11_texture_view&& other) noexcept
