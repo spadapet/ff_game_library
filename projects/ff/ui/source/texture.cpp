@@ -28,7 +28,7 @@ const std::string& ff::internal::ui::texture::name() const
 
 const std::shared_ptr<ff::dx11_texture>& ff::internal::ui::texture::internal_texture() const
 {
-    auto texture = this->resource.valid() ? this->resource.object() : this->static_texture;
+    auto& texture = this->resource.valid() ? this->resource.object() : this->static_texture;
     return texture ? texture : this->placeholder_texture;
 
 }

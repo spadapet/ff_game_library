@@ -41,6 +41,7 @@ static size_t dxgi_adapter_outputs_hash;
 
 static std::recursive_mutex graphics_mutex;
 static std::vector<ff::internal::graphics_child_base*> graphics_children;
+static ff::signal<ff::internal::graphics_child_base*> removed_child;
 static ff::dx11_target_window_base* defer_target;
 static ff::window_size defer_size;
 static ::defer_flags_t defer_flags;
@@ -184,6 +185,7 @@ void ff::internal::graphics::remove_child(ff::internal::graphics_child_base* chi
     if (i != ::graphics_children.cend())
     {
         ::graphics_children.erase(i);
+        ::removed_child.notify(child);
     }
 }
 
@@ -293,9 +295,18 @@ bool ff::graphics::reset(bool force)
                 return lhs->reset_priority() > rhs->reset_priority();
             });
 
+        ff::signal_connection connection = ::removed_child.connect([&sorted_children](ff::internal::graphics_child_base* child)
+            {
+                auto i = std::find(sorted_children.begin(), sorted_children.end(), child);
+                if (i != sorted_children.end())
+                {
+                    *i = nullptr;
+                }
+            });
+
         for (ff::internal::graphics_child_base* child : sorted_children)
         {
-            if (!child->reset())
+            if (child && !child->reset())
             {
                 status = false;
             }

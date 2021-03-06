@@ -20,6 +20,7 @@ namespace ff
         Noesis::Cursor cursor() const;
         void cursor(Noesis::Cursor cursor);
         void size(const ff::window_size& value);
+        void size(ff::dx11_target_window_base& target);
         ff::point_float screen_to_content(ff::point_float pos) const;
         ff::point_float content_to_screen(ff::point_float pos) const;
 
@@ -44,6 +45,7 @@ namespace ff
         bool enabled_;
         bool block_input_below_;
         double counter;
+        ff::signal_connection target_size_changed;
         Noesis::Cursor cursor_;
         Noesis::Ptr<Noesis::Grid> view_grid;
         Noesis::Ptr<Noesis::Viewbox> view_box;

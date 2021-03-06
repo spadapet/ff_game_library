@@ -94,6 +94,17 @@ void ff::ui_view::size(const ff::window_size& value)
     this->internal_view_->SetSize(static_cast<uint32_t>(value.pixel_size.x), static_cast<uint32_t>(value.pixel_size.y));
 }
 
+void ff::ui_view::size(ff::dx11_target_window_base& target)
+{
+    ff::dx11_target_base& target_base = target;
+    this->size(target_base.size());
+
+    this->target_size_changed = target.size_changed().connect([this](ff::window_size target_size)
+        {
+            this->size(target_size);
+        });
+}
+
 ff::point_float ff::ui_view::screen_to_content(ff::point_float pos) const
 {
     pos = this->screen_to_view(pos);

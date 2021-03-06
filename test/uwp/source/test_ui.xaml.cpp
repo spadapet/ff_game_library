@@ -40,12 +40,34 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 {
     ff::thread_pool::get()->add_thread([this]()
         {
-            ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
-            this->init_ui = std::make_unique<ff::init_ui>(::get_init_ui_params());
+            const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
+            ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
+            ff::init_ui init_ui(::get_init_ui_params());
             ff::dx11_target_window target;
             ff::dx11_depth depth;
             ff::ui_view view("overlay.xaml");
+
+            view.size(target);
+            {
+                Noesis::Button* button = view.content()->FindName<Noesis::Button>("button");
+                Noesis::Storyboard* anim = view.content()->FindResource<Noesis::Storyboard>("RotateAnim");
+
+                if (button && anim)
+                {
+                    button->Click() += [anim](Noesis::BaseComponent*, const Noesis::RoutedEventArgs&)
+                    {
+                        if (anim->IsPlaying())
+                        {
+                            anim->Stop();
+                        }
+                        else
+                        {
+                            anim->Begin();
+                        }
+                    };
+                }
+            }
 
             do
             {
@@ -56,7 +78,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 ff::ui::state_rendering();
                 view.pre_render();
 
-                ff::graphics::dx11_device_state().clear_target(target.view(), ff::color::black());
+                ff::graphics::dx11_device_state().clear_target(target.view(), bg_color);
                 view.render(target, depth);
 
                 ff::ui::state_rendered();
@@ -64,7 +86,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
                 thread_dispatch.flush();
             }
-            while (!ff::wait_for_handle(this->stop_thread, 100));
+            while (!ff::wait_for_handle(this->stop_thread, 64));
 
             ::SetEvent(this->thread_stopped);
         });

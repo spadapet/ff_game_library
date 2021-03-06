@@ -163,22 +163,20 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
     DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? ff::internal::DEFAULT_FORMAT_SRGB : ff::internal::DEFAULT_FORMAT);
     std::shared_ptr<ff::dx11_texture> texture;
 
+    DirectX::ScratchImage scratch;
+    if (FAILED(scratch.Initialize2D(format2, width, height, 1, mip_count)))
+    {
+        assert(false);
+        return nullptr;
+    }
+
     if (data == nullptr)
     {
-        ff::point_int size = ff::point_t<uint32_t>(width, height).cast<int>();
-
-        texture = std::make_shared<ff::dx11_texture>(size, format2, mip_count);
+        std::memset(scratch.GetPixels(), 0, scratch.GetPixelsSize());
     }
     else
     {
         const uint32_t bpp = (format == DXGI_FORMAT_R8_UNORM) ? 1 : 4;
-
-        DirectX::ScratchImage scratch;
-        if (FAILED(scratch.Initialize2D(format2, width, height, 1, mip_count)))
-        {
-            assert(false);
-            return nullptr;
-        }
 
         for (size_t i = 0; i < mip_count; i++)
         {
@@ -193,9 +191,9 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
                 std::memcpy(dest, source, bpp * image->width);
             }
         }
-
-        texture = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
     }
+
+    texture = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
 
     return *new ff::internal::ui::texture(texture, name);
 }
@@ -203,7 +201,7 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
 void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data)
 {
     ff::dx11_texture* texture2 = ff::internal::ui::texture::get(texture)->internal_texture().get();
-    texture2->update(0, static_cast<size_t>(level), ff::rect_t<uint32_t>(x, y, x + width, y + height).cast<int>(), data, texture2->format());
+    texture2->update(0, static_cast<size_t>(level), ff::rect_t<uint32_t>(x, y, x + width, y + height).cast<int>(), data, texture2->format(), true);
 }
 
 void ff::internal::ui::render_device::BeginRender(bool offscreen)

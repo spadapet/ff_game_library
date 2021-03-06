@@ -257,7 +257,8 @@ bool ff::dx11_texture::update(
     size_t mip_index,
     const ff::rect_int& rect,
     const void* data,
-    DXGI_FORMAT data_format) const
+    DXGI_FORMAT data_format,
+    bool update_local_cache)
 {
     if (this->format() == data_format)
     {
@@ -266,8 +267,19 @@ bool ff::dx11_texture::update(
         size_t row_pitch, slice_pitch;
         DirectX::ComputePitch(this->format(), width, height, row_pitch, slice_pitch);
 
-        if (this->data_)
+        if (update_local_cache || !this->texture_)
         {
+            if (!this->data_)
+            {
+                this->data_ = this->data();
+
+                if (!this->data_)
+                {
+                    assert(false);
+                    return false;
+                }
+            }
+
             DirectX::Image image{};
             image.width = width;
             image.height = height;
@@ -276,12 +288,15 @@ bool ff::dx11_texture::update(
             image.slicePitch = slice_pitch;
             image.pixels = reinterpret_cast<uint8_t*>(const_cast<void*>(data));
 
-            return SUCCEEDED(DirectX::CopyRectangle(image,
+            if (FAILED(DirectX::CopyRectangle(image,
                 DirectX::Rect(0, 0, image.width, image.height),
                 *this->data_->GetImage(mip_index, array_index, 0),
                 DirectX::TEX_FILTER_DEFAULT,
                 static_cast<size_t>(rect.left),
-                static_cast<size_t>(rect.top)));
+                static_cast<size_t>(rect.top))))
+            {
+                assert(false);
+            }
         }
 
         if (this->texture_)
@@ -295,9 +310,9 @@ bool ff::dx11_texture::update(
                     ff::graphics::dx11_device_state().update_subresource(
                         texture, subresource, &box, data, static_cast<UINT>(row_pitch), 0);
                 });
-
-            return true;
         }
+
+        return true;
     }
 
     return false;

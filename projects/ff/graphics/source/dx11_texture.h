@@ -38,7 +38,7 @@ namespace ff
         std::shared_ptr<DirectX::ScratchImage> palette() const;
         ID3D11Texture2D* texture() const;
 
-        bool update(size_t array_index, size_t mip_index, const ff::rect_int& rect, const void* data, DXGI_FORMAT data_format) const;
+        bool update(size_t array_index, size_t mip_index, const ff::rect_int& rect, const void* data, DXGI_FORMAT data_format, bool update_local_cache);
 
         // resource_object_base
         virtual ff::dict resource_get_siblings(const std::shared_ptr<resource>& self) const override;

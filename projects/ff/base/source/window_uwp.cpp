@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "log.h"
 #include "thread_dispatch.h"
 #include "window.h"
 
@@ -167,12 +168,18 @@ private:
 
     void key_down_or_up(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args)
     {
-        this->notify_key_message(args->VirtualKey, args->KeyStatus);
+        if (!args->KeyStatus.IsMenuKeyDown)
+        {
+            this->notify_key_message(args->VirtualKey, args->KeyStatus);
+        }
     }
 
     void accelerator_key_down(Windows::UI::Core::CoreDispatcher^ sender, Windows::UI::Core::AcceleratorKeyEventArgs^ args)
     {
-        this->notify_key_message(args->VirtualKey, args->KeyStatus);
+        if (args->KeyStatus.IsMenuKeyDown)
+        {
+            this->notify_key_message(args->VirtualKey, args->KeyStatus);
+        }
     }
 
     void notify_key_message(Windows::System::VirtualKey key, Windows::UI::Core::CorePhysicalKeyStatus status)
