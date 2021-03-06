@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "thread_dispatch.h"
 #include "window.h"
 
 #if UWP_APP
@@ -423,13 +424,16 @@ static int get_rotation(Windows::Graphics::Display::DisplayOrientations orientat
 
 ff::window_size ff::window::size()
 {
-    Windows::Foundation::Rect bounds = this->core_window->Bounds;
-
     ff::window_size size{};
-    size.dpi_scale = this->dpi_scale();
-    size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<int>();
-    size.native_rotation = ::get_rotation(this->display_info_->NativeOrientation);
-    size.current_rotation = ::get_rotation(this->display_info_->CurrentOrientation);
+
+    ff::thread_dispatch::get_main()->send([this, &size]()
+        {
+            Windows::Foundation::Rect bounds = this->core_window->Bounds;
+            size.dpi_scale = this->dpi_scale();
+            size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<int>();
+            size.native_rotation = ::get_rotation(this->display_info_->NativeOrientation);
+            size.current_rotation = ::get_rotation(this->display_info_->CurrentOrientation);
+        });
 
     return size;
 }

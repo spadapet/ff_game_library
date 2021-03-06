@@ -44,6 +44,8 @@ void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xa
                 thread_dispatch.flush();
             }
             while (!ff::wait_for_handle(this->stop_thread, 100));
+
+            ::SetEvent(this->thread_stopped);
         });
 }
 

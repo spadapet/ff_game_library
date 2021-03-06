@@ -30,6 +30,9 @@
     <ClInclude Include="source\test_swap_chain.xaml.h">
       <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="source\test_ui.xaml.h">
+      <DependentUpon>source\test_ui.xaml</DependentUpon>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="app.xaml">
@@ -42,20 +45,36 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="source\test_swap_chain.xaml" />
+    <None Include="ui_assets\application_resources.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\overlay.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\NoesisTheme.Brushes.LightBlue.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\NoesisTheme.Colors.Light.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\NoesisTheme.Fonts.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\NoesisTheme.LightBlue.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\NoesisTheme.Styles.xaml">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="$(NoesisDll)">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <Page Include="source\test_ui.xaml" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Assets\LockScreenLogo.scale-200.png" />
-    <Image Include="Assets\SplashScreen.scale-200.png" />
-    <Image Include="Assets\Square150x150Logo.scale-200.png" />
-    <Image Include="Assets\Square44x44Logo.scale-200.png" />
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Image Include="Assets\StoreLogo.png" />
-    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app.xaml.cpp">
@@ -72,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="source\test_swap_chain.xaml.cpp">
       <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="source\test_ui.xaml.cpp">
+      <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +121,30 @@
     <ProjectReference Include="..\..\vendor\noesis_interactivity_uwp.vcxproj">
       <Project>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="app_images\LockScreenLogo.scale-200.png" />
+    <Image Include="app_images\SplashScreen.scale-200.png" />
+    <Image Include="app_images\Square150x150Logo.scale-200.png" />
+    <Image Include="app_images\Square44x44Logo.scale-200.png" />
+    <Image Include="app_images\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Image Include="app_images\StoreLogo.png" />
+    <Image Include="app_images\Wide310x150Logo.scale-200.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="ui_assets\assets.xaml.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ui_assets\theme\PT Root UI_Bold.otf">
+      <DeploymentContent>false</DeploymentContent>
+      <FileType>Document</FileType>
+    </None>
+    <None Include="ui_assets\theme\PT Root UI_Regular.otf">
+      <DeploymentContent>false</DeploymentContent>
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

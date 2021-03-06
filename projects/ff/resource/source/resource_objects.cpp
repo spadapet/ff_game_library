@@ -38,15 +38,7 @@ ff::resource_objects::resource_objects(const ff::dict& dict)
     , done_loading_event(ff::create_event(true))
     , loading_count(0)
 {
-    for (std::string_view name : dict.child_names())
-    {
-        if (!ff::string::starts_with(name, ff::internal::RES_PREFIX))
-        {
-            resource_object_info info;
-            info.dict_value = dict.get(name);
-            this->resource_object_infos.try_emplace(name, std::move(info));
-        }
-    }
+    this->add_resources(dict);
 }
 
 ff::resource_objects::~resource_objects()
@@ -62,8 +54,19 @@ const ff::resource_object_factory_base* ff::resource_objects::factory()
 void ff::resource_objects::register_global_dict(std::shared_ptr<ff::data_base> data)
 {
     std::lock_guard lock(::global_resources_mutex);
-    assert(!::global_resources); // don't 
-    ::global_resource_datas.push_back(data);
+
+    if (::global_resources)
+    {
+        ff::dict dict;
+        if (ff::dict::load(ff::data_reader(data), dict))
+        {
+            ::global_resources->add_resources(dict);
+        }
+    }
+    else
+    {
+        ::global_resource_datas.push_back(data);
+    }
 }
 
 ff::resource_objects& ff::resource_objects::global()
@@ -96,12 +99,12 @@ static std::shared_ptr<ff::resource> create_null_resource(std::string_view name,
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
 {
+    std::lock_guard lock(this->mutex);
     std::shared_ptr<ff::resource> value;
 
     auto iter = this->resource_object_infos.find(name);
     if (iter != this->resource_object_infos.cend())
     {
-        std::lock_guard lock(this->mutex);
         resource_object_info& info = iter->second;
         value = info.weak_value.lock();
 
@@ -134,6 +137,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
 
 std::vector<std::string_view> ff::resource_objects::resource_object_names() const
 {
+    std::lock_guard lock(this->mutex);
     std::vector<std::string_view> names;
     names.reserve(this->resource_object_infos.size());
 
@@ -202,12 +206,29 @@ void ff::resource_objects::localized_value_provider(const resource_value_provide
 
 bool ff::resource_objects::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
+    std::lock_guard lock(this->mutex);
+
     for (auto& i : this->resource_object_infos)
     {
         dict.set(i.first, i.second.dict_value);
     }
 
     return true;
+}
+
+void ff::resource_objects::add_resources(const ff::dict& dict)
+{
+    std::lock_guard lock(this->mutex);
+
+    for (std::string_view name : dict.child_names())
+    {
+        if (!ff::string::starts_with(name, ff::internal::RES_PREFIX))
+        {
+            resource_object_info info;
+            info.dict_value = dict.get(name);
+            this->resource_object_infos.try_emplace(name, std::move(info));
+        }
+    }
 }
 
 void ff::resource_objects::update_resource_object_info(resource_object_info& info, std::shared_ptr<ff::resource> new_value)

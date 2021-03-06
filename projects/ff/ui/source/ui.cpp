@@ -114,7 +114,7 @@ static void noesis_dealloc(void* user, void* ptr)
     return std::free(ptr);
 }
 
-static size_t NoesisAllocSize(void* user, void* ptr)
+static size_t noesis_alloc_size(void* user, void* ptr)
 {
     size_t size = _msize(ptr);
 #if DEBUG_MEM_ALLOC
@@ -138,7 +138,7 @@ static Noesis::MemoryCallbacks memory_callbacks =
     ::noesis_alloc,
     ::noesis_realloc,
     ::noesis_dealloc,
-    ::NoesisAllocSize,
+    ::noesis_alloc_size,
 };
 
 static void update_cursor_callback(void* user, Noesis::IView* internal_view, Noesis::Cursor cursor)
@@ -226,8 +226,9 @@ static bool init_noesis()
     // Default font
     {
         const char* default_fonts = !::ui_params.default_font.empty() ? ::ui_params.default_font.c_str() : "Segoe UI";
+        float default_size = ::ui_params.default_font_size > 0.0f ? ::ui_params.default_font_size : 12.0f;
         Noesis::GUI::SetFontFallbacks(&default_fonts, 1);
-        Noesis::GUI::SetFontDefaultProperties(::ui_params.default_font_size, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
+        Noesis::GUI::SetFontDefaultProperties(default_size, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
     }
 
     // Application resources
@@ -387,12 +388,12 @@ void ff::internal::ui::on_focus_view(ff::ui_view* view, bool focused)
     }
 }
 
-void ff::internal::ui::state_advance()
+void ff::ui::state_advance()
 {
     ff::internal::ui::global_resource_cache()->advance();
 }
 
-void ff::internal::ui::state_advance_input()
+void ff::ui::state_advance_input()
 {
     std::vector<ff::input_device_event> device_events;
     {
@@ -561,14 +562,14 @@ void ff::internal::ui::state_advance_input()
     }
 }
 
-void ff::internal::ui::state_rendering()
+void ff::ui::state_rendering()
 {
     // on_render_view will need to be called again for each view actually rendered
     ::input_views.clear();
     ::rendered_views.clear();
 }
 
-void ff::internal::ui::state_rendered()
+void ff::ui::state_rendered()
 {
     // Fix focus among all views that were actually rendered
 

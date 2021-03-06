@@ -1,0 +1,55 @@
+{
+  "application_resources.xaml":
+  {
+    "res:type": "file",
+    "file": "file:application_resources.xaml"
+  },
+
+  "overlay.xaml":
+  {
+    "res:type": "file",
+    "file": "file:overlay.xaml"
+  },
+
+  "NoesisTheme.Brushes.LightBlue.xaml":
+  {
+    "res:type": "file",
+    "file": "file:Theme/NoesisTheme.Brushes.LightBlue.xaml"
+  },
+
+  "NoesisTheme.Colors.Light.xaml":
+  {
+    "res:type": "file",
+    "file": "file:Theme/NoesisTheme.Colors.Light.xaml"
+  },
+
+  "NoesisTheme.Fonts.xaml":
+  {
+    "res:type": "file",
+    "file": "file:Theme/NoesisTheme.Fonts.xaml"
+  },
+
+  "NoesisTheme.LightBlue.xaml":
+  {
+    "res:type": "file",
+    "file": "file:Theme/NoesisTheme.LightBlue.xaml"
+  },
+
+  "NoesisTheme.Styles.xaml":
+  {
+    "res:type": "file",
+    "file": "file:Theme/NoesisTheme.Styles.xaml"
+  },
+
+  "#Fonts/PT Root UI_Regular.otf":
+  {
+    "res:type": "file",
+    "file": "file:Theme/PT Root UI_Regular.otf"
+  },
+
+  "#Fonts/PT Root UI_Bold.otf":
+  {
+    "res:type": "file",
+    "file": "file:Theme/PT Root UI_Bold.otf"
+  }
+}

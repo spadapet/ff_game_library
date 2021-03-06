@@ -38,6 +38,18 @@
     <ClCompile Include="source\view.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\converters.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\delegate_command.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\notify_property_changed_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\set_panel_child_focus_action.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -76,6 +88,18 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\view.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\converters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\delegate_command.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\notify_property_changed_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\set_panel_child_focus_action.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

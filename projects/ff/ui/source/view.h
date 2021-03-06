@@ -5,7 +5,8 @@ namespace ff
     class ui_view
     {
     public:
-        ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alias, bool sub_pixel_rendering);
+        ui_view(std::string_view xaml_file, bool per_pixel_anti_alias = false, bool sub_pixel_rendering = false);
+        ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alias = false, bool sub_pixel_rendering = false);
         virtual ~ui_view();
 
         void destroy();

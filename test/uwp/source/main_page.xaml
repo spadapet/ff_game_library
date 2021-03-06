@@ -12,5 +12,6 @@
         <TextBlock>What to do?</TextBlock>
         <Button Content="Test input devices" Click="test_input_devices" />
         <Button Content="Test swap chain" Click="test_swap_chain" />
+        <Button Content="Test NoesisGUI" Click="test_ui" />
     </StackPanel>
 </Page>

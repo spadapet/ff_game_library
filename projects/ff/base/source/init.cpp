@@ -10,6 +10,8 @@ namespace
     struct one_time_init_base
     {
         one_time_init_base()
+            : thread_dispatch(ff::thread_dispatch_type::main)
+            , thread_pool(ff::thread_pool_type::main)
         {
 #if !UWP_APP
             if (!::IsMouseInPointerEnabled())

@@ -63,10 +63,11 @@ namespace ff
             std::unique_ptr<resource_object_loading_info> loading_info;
         };
 
+        void add_resources(const ff::dict& dict);
         void update_resource_object_info(resource_object_info& info, std::shared_ptr<ff::resource> new_value);
         ff::value_ptr create_resource_objects(resource_object_info& info, ff::value_ptr value);
 
-        std::recursive_mutex mutex;
+        mutable std::recursive_mutex mutex;
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
         ff::resource_value_provider const* localized_value_provider_;
         ff::win_handle done_loading_event;

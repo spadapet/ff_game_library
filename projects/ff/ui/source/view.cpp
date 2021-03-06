@@ -3,6 +3,10 @@
 #include "ui.h"
 #include "view.h"
 
+ff::ui_view::ui_view(std::string_view xaml_file, bool per_pixel_anti_alias, bool sub_pixel_rendering)
+    : ui_view(Noesis::GUI::LoadXaml<Noesis::FrameworkElement>(std::string(xaml_file).c_str()), per_pixel_anti_alias, sub_pixel_rendering)
+{}
+
 ff::ui_view::ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alias, bool sub_pixel_rendering)
     : matrix(new DirectX::XMMATRIX[2])
     , focused_(false)
@@ -16,6 +20,8 @@ ff::ui_view::ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alia
     , rotate_transform(Noesis::MakePtr<Noesis::RotateTransform>())
     , content_(content)
 {
+    assert(content);
+
     this->matrix[0] = DirectX::XMMatrixIdentity();
     this->matrix[1] = DirectX::XMMatrixIdentity();
 
