@@ -11,10 +11,16 @@ namespace ff
         operator bool() const;
     };
 
+    struct init_main_window_params
+    {
+        std::string_view title;
+        bool visible;
+    };
+
     class init_main_window
     {
     public:
-        init_main_window(std::string_view title, bool visible);
+        init_main_window(const ff::init_main_window_params& params);
         ~init_main_window();
 
         operator bool() const;

@@ -2,7 +2,7 @@
 
 void run_input_device_events()
 {
-    ff::init_input init_input;
+    ff::init_input init_input(ff::init_main_window_params{ "Test window", true });
 
     std::mutex mutex;
     ff::win_handle done_event = ff::create_event();

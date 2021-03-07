@@ -36,11 +36,12 @@ namespace
 static std::atomic_int init_ui_refs;
 static std::unique_ptr<one_time_init_ui> init_ui_data;
 
-ff::init_ui::init_ui(const init_ui_params& params)
+ff::init_ui::init_ui(const ff::init_ui_params& ui_params, const ff::init_main_window_params& window_params)
+    : init_input(window_params)
 {
-    if (::init_ui_refs.fetch_add(1) == 0)
+    if (::init_ui_refs.fetch_add(1) == 0 && this->init_graphics && this->init_input)
     {
-        ::init_ui_data = std::make_unique<one_time_init_ui>(params);
+        ::init_ui_data = std::make_unique<one_time_init_ui>(ui_params);
     }
 }
 
@@ -54,5 +55,5 @@ ff::init_ui::~init_ui()
 
 ff::init_ui::operator bool() const
 {
-    return this->init_graphics && ::init_ui_status;
+    return this->init_graphics && this->init_input && ::init_ui_status;
 }

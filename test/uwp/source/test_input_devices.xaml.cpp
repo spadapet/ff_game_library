@@ -2,6 +2,7 @@
 #include "test_input_devices.xaml.h"
 
 test_uwp::test_input_devices::test_input_devices()
+    : init_input(ff::init_main_window_params{})
 {
     this->InitializeComponent();
 }

@@ -96,8 +96,7 @@ void ff::ui_view::size(const ff::window_size& value)
 
 void ff::ui_view::size(ff::dx11_target_window_base& target)
 {
-    ff::dx11_target_base& target_base = target;
-    this->size(target_base.size());
+    this->size(target.size());
 
     this->target_size_changed = target.size_changed().connect([this](ff::window_size target_size)
         {

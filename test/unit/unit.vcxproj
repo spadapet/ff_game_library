@@ -70,6 +70,9 @@
     <ClInclude Include="source\utility.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\projects\ff\application\application.vcxproj">
+      <Project>{376073e9-ea4d-4513-941c-906ca968c6c3}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\audio\audio.vcxproj">
       <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
     </ProjectReference>
@@ -99,4 +102,7 @@
     <ResourceCompile Include="source\resource.rc" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(NoesisDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
+  </Target>
 </Project>

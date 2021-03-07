@@ -34,12 +34,12 @@ namespace
 
     struct one_time_init_main_window
     {
-        one_time_init_main_window(std::string_view title, bool visible)
+        one_time_init_main_window(const ff::init_main_window_params& params)
 #if UWP_APP
             : main_window(ff::window_type::main)
 #else
-            : main_window(ff::window::create_blank(ff::window_type::main, title, nullptr,
-                WS_OVERLAPPEDWINDOW | (visible ? WS_VISIBLE : 0), 0,
+            : main_window(ff::window::create_blank(ff::window_type::main, params.title, nullptr,
+                WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT))
 #endif
         {}
@@ -75,11 +75,11 @@ ff::init_base::operator bool() const
     return true;
 }
 
-ff::init_main_window::init_main_window(std::string_view title, bool visible)
+ff::init_main_window::init_main_window(const ff::init_main_window_params& params)
 {
     if (::init_main_window_refs.fetch_add(1) == 0)
     {
-        ::init_main_window_data = std::make_unique<one_time_init_main_window>(title, visible);
+        ::init_main_window_data = std::make_unique<one_time_init_main_window>(params);
     }
 }
 

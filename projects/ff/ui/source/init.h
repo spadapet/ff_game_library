@@ -19,7 +19,7 @@ namespace ff
     class init_ui
     {
     public:
-        init_ui(const init_ui_params& params);
+        init_ui(const ff::init_ui_params& ui_params, const ff::init_main_window_params& window_params);
         ~init_ui();
 
         operator bool() const;

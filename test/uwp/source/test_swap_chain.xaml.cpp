@@ -2,7 +2,7 @@
 #include "test_swap_chain.xaml.h"
 
 test_uwp::test_swap_chain::test_swap_chain()
-    : init_main_window("", true)
+    : init_main_window(ff::init_main_window_params{})
     , stop_thread(ff::create_event())
     , thread_stopped(ff::create_event())
 {

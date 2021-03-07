@@ -5,7 +5,7 @@ namespace ff
     class init_input
     {
     public:
-        init_input();
+        init_input(const ff::init_main_window_params& params);
         ~init_input();
 
         operator bool() const;

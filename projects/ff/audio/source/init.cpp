@@ -32,7 +32,7 @@ static std::unique_ptr<one_time_init_audio> init_audio_data;
 
 ff::init_audio::init_audio()
 {
-    if (::init_audio_refs.fetch_add(1) == 0)
+    if (::init_audio_refs.fetch_add(1) == 0 && this->init_resource)
     {
         ::init_audio_data = std::make_unique<one_time_init_audio>();
     }

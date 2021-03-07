@@ -45,4 +45,7 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(NoesisDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
+  </Target>
 </Project>

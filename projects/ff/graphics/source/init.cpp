@@ -61,7 +61,7 @@ static std::unique_ptr<one_time_init_grahics> init_graphics_data;
 
 ff::init_graphics::init_graphics()
 {
-    if (::init_graphics_refs.fetch_add(1) == 0)
+    if (::init_graphics_refs.fetch_add(1) == 0 && this->init_resource)
     {
         ::init_graphics_data = std::make_unique<one_time_init_grahics>();
     }
