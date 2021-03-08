@@ -8,6 +8,9 @@
     <ClCompile Include="source\app.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\settings.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -15,6 +18,16 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\app.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="application_api.h" />
+    <ClInclude Include="source\app_time.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\frame_time.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\settings.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

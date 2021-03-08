@@ -51,12 +51,21 @@ std::filesystem::path ff::filesystem::temp_directory_path()
 #endif
 }
 
-std::filesystem::path ff::filesystem::user_directory_path()
+std::filesystem::path ff::filesystem::user_local_path()
 {
 #if UWP_APP
     return ff::string::to_string(Windows::Storage::ApplicationData::Current->LocalFolder->Path);
 #else
     return ::append_ff_game_engine_directory(::get_known_directory(FOLDERID_LocalAppData, true));
+#endif
+}
+
+std::filesystem::path ff::filesystem::user_roaming_path()
+{
+#if UWP_APP
+    return ff::string::to_string(Windows::Storage::ApplicationData::Current->RoamingFolder->Path);
+#else
+    return ::append_ff_game_engine_directory(::get_known_directory(FOLDERID_RoamingAppData, true));
 #endif
 }
 

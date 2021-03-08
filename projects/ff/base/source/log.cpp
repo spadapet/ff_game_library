@@ -9,6 +9,13 @@ void ff::log::write(std::string_view text)
 #endif
 }
 
+void ff::log::write(std::ostringstream& str)
+{
+#ifdef _DEBUG
+    ff::log::write_debug(str);
+#endif
+}
+
 void ff::log::write_debug(std::string_view text)
 {
 #ifdef _DEBUG

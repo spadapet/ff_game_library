@@ -20,12 +20,16 @@
     </ClCompile>
     <ClCompile Include="source\app.cpp" />
     <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\settings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application_api.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app.h" />
+    <ClInclude Include="source\app_time.h" />
+    <ClInclude Include="source\frame_time.h" />
     <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\settings.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\audio\audio.vcxproj">

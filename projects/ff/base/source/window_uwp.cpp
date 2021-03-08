@@ -15,6 +15,14 @@ internal:
     {
         size_t i = 0;
 
+        this->tokens[i++] = Windows::ApplicationModel::Core::CoreApplication::Suspending +=
+            ref new Windows::Foundation::EventHandler<Windows::ApplicationModel::SuspendingEventArgs^>(
+                this, &main_window_events::app_suspending);
+
+        this->tokens[i++] = Windows::ApplicationModel::Core::CoreApplication::Resuming +=
+            ref new Windows::Foundation::EventHandler<Platform::Object^>(
+                this, &main_window_events::app_resuming);
+
         this->tokens[i++] = this->core_window->Activated +=
             ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow^, Windows::UI::Core::WindowActivatedEventArgs^>(
                 this, &main_window_events::active_changed);
@@ -103,6 +111,8 @@ public:
     {
         size_t i = 0;
 
+        Windows::ApplicationModel::Core::CoreApplication::Suspending -= this->tokens[i++];
+        Windows::ApplicationModel::Core::CoreApplication::Resuming -= this->tokens[i++];
         this->core_window->Activated -= this->tokens[i++];
         this->core_window->VisibilityChanged -= this->tokens[i++];
         this->core_window->SizeChanged -= this->tokens[i++];
@@ -128,6 +138,23 @@ public:
     }
 
 private:
+    void app_suspending(Platform::Object^ sender, Windows::ApplicationModel::SuspendingEventArgs^ args)
+    {
+        Windows::ApplicationModel::SuspendingDeferral^ deferral = args->SuspendingOperation->GetDeferral();
+
+        ff::thread_dispatch::get_main()->post([deferral, main_window = this->main_window]()
+        {
+            main_window->notify_message(WM_POWERBROADCAST, PBT_APMSUSPEND, 0);
+            deferral->Complete();
+        });
+    }
+
+    void app_resuming(Platform::Object^ sender, Platform::Object^ arg)
+    {
+        this->main_window->notify_message(WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC, 0);
+        this->main_window->notify_message(WM_POWERBROADCAST, PBT_APMRESUMESUSPEND, 0);
+    }
+
     void active_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowActivatedEventArgs^ args)
     {
         WPARAM active = args->WindowActivationState != Windows::UI::Core::CoreWindowActivationState::Deactivated;
@@ -262,7 +289,7 @@ private:
     ff::window* main_window;
     Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
     Windows::Graphics::Display::DisplayInformation^ display_info;
-    std::array<Windows::Foundation::EventRegistrationToken, 20> tokens;
+    std::array<Windows::Foundation::EventRegistrationToken, 22> tokens;
 };
 
 static ff::window* main_window = nullptr;
