@@ -169,3 +169,23 @@ std::vector<std::string> ff::string::split_command_line(std::string_view str)
 
     return tokens;
 }
+
+std::string ff::string::date()
+{
+    SYSTEMTIME st;
+    ::GetLocalTime(&st);
+
+    std::ostringstream str;
+    str << std::setfill('0') << std::setw(2) << st.wMonth << '/' << std::setw(2) << st.wDay << '/' << std::setw(4) << st.wYear;
+    return str.str();
+}
+
+std::string ff::string::time()
+{
+    SYSTEMTIME st;
+    ::GetLocalTime(&st);
+
+    std::ostringstream str;
+    str << std::setfill('0') << std::setw(2) << st.wHour << ':' << std::setw(2) << st.wMinute << ':' << std::setw(2) << st.wSecond;
+    return str.str();
+}

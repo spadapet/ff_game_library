@@ -201,6 +201,7 @@ static bool init_noesis()
     ::error_handler = Noesis::SetErrorHandler(::noesis_error_handler);
     ::log_handler = Noesis::SetLogHandler(::noesis_log_handler);
     Noesis::SetMemoryCallbacks(::memory_callbacks);
+    Noesis::GUI::DisableInspector();
     Noesis::GUI::Init(::ui_params.noesis_license_name.c_str(), ::ui_params.noesis_license_key.c_str());
 
     // Callbacks

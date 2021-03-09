@@ -2,17 +2,27 @@
 #include "log.h"
 #include "string.h"
 
-void ff::log::write(std::string_view text)
+static std::ostream* file_stream;
+
+void ff::log::file(std::ostream* file_stream)
 {
-#ifdef _DEBUG
-    ff::log::write_debug(text);
-#endif
+    ::file_stream = file_stream;
 }
 
-void ff::log::write(std::ostringstream& str)
+void ff::log::write(std::string_view text)
 {
+    std::ostringstream str;
+    str << ff::string::date() << ' ' << ff::string::time() << ': ' << text << std::endl;
+
+    std::string str2 = str.str();
+
+    if (::file_stream)
+    {
+        *::file_stream << str2;
+    }
+
 #ifdef _DEBUG
-    ff::log::write_debug(str);
+    ::OutputDebugString(ff::string::to_wstring(str2).c_str());
 #endif
 }
 

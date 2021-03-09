@@ -10,7 +10,7 @@ static std::filesystem::path settings_path()
 {
     std::ostringstream name;
     name << ff::app_name() << ff::constants::bits_build << "bit settings.bin";
-    return ff::filesystem::user_roaming_path() / name.str();
+    return ff::filesystem::user_roaming_path() / ff::app_name() / name.str();
 }
 
 static void clear_settings()
@@ -41,7 +41,7 @@ void ff::internal::app::load_settings()
         std::ostringstream str;
         str << "App load settings: " << ff::filesystem::to_string(settings_path) << std::endl;
         ::named_settings.print(str);
-        ff::log::write(str);
+        ff::log::write(str.str());
     }
 
     ::settings_changed = false;
@@ -56,7 +56,7 @@ bool ff::internal::app::save_settings()
         std::ostringstream str;
         str << "App save settings: " << ff::filesystem::to_string(settings_path) << std::endl;
         ::named_settings.print(str);
-        ff::log::write(str);
+        ff::log::write(str.str());
 
         if (!::named_settings.save(ff::file_writer(settings_path)))
         {

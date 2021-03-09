@@ -11,6 +11,9 @@
     <ClCompile Include="source\settings.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -28,6 +31,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\settings.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\state.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

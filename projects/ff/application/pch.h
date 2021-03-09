@@ -1,5 +1,8 @@
 #pragma once
 
+// C++
+#include <fstream>
+
 // FF
 #include <ff/audio/audio_api.h>
 #include <ff/base/base_api.h>

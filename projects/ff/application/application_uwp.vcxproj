@@ -22,6 +22,7 @@
     <ClCompile Include="source\app.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\settings.cpp" />
+    <ClCompile Include="source\state.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application_api.h" />
@@ -31,6 +32,7 @@
     <ClInclude Include="source\frame_time.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\settings.h" />
+    <ClInclude Include="source\state.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\audio\audio_uwp.vcxproj">
