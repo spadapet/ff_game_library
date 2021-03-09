@@ -14,6 +14,18 @@
     <ClCompile Include="source\state.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\state_list.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\state_wrapper.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ui_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ui_view_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -34,6 +46,18 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\state_list.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\state_wrapper.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ui_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ui_view_state.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

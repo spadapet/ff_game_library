@@ -71,7 +71,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
             do
             {
-                ff::ui::state_advance();
+                ff::ui::state_advance_time();
                 ff::ui::state_advance_input();
                 view.advance();
 

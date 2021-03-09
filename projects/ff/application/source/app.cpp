@@ -5,6 +5,7 @@
 #include "init.h"
 #include "settings.h"
 #include "state.h"
+#include "ui_state.h"
 
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
@@ -17,6 +18,12 @@ static std::unique_ptr<ff::dx11_depth> depth;
 static std::shared_ptr<ff::state> game_state;
 static bool window_visible;
 static std::atomic<const wchar_t*> window_cursor;
+
+static std::shared_ptr<ff::state> create_game_state()
+{
+    // TODO: Add ui_state, debug_state, default game state...
+    return nullptr;
+}
 
 static void start_game_thread()
 {}
@@ -49,13 +56,13 @@ static void update_window_visible()
 static void update_window_cursor()
 {
     const wchar_t* cursor = nullptr;
-    switch (::game_state ? ::game_state->cursor() : ff::cursor_t::default)
+    switch (::game_state ? ::game_state->cursor() : ff::state::cursor_t::default)
     {
         default:
             cursor = IDC_ARROW;
             break;
 
-        case ff::cursor_t::hand:
+        case ff::state::cursor_t::hand:
             cursor = IDC_HAND;
             break;
     }
@@ -130,13 +137,17 @@ static void handle_window_message(ff::window_message& message)
     }
 }
 
+static std::filesystem::path log_file_path()
+{
+    return ff::filesystem::user_roaming_path() / ff::app_name() / "log.txt";
+}
+
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
     ::app_params = params;
     assert(!::app_params.name.empty());
 
-    std::filesystem::path log_file_path = ff::filesystem::user_roaming_path() / ff::app_name() / "log.txt";
-    ::log_file = std::make_unique<std::ofstream>(log_file_path);
+    ::log_file = std::make_unique<std::ofstream>(::log_file_path());
     ff::log::file(::log_file.get());
     ff::log::write("App init");
 

@@ -13,7 +13,7 @@ namespace ff::ui
     const std::vector<ff::ui_view*>& rendered_views();
 
     // These notifications must be called at the right time (just use application's ui_state class to do it automatically)
-    void state_advance();
+    void state_advance_time();
     void state_advance_input();
     void state_rendering();
     void state_rendered();

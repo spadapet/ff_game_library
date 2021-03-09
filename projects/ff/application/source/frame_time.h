@@ -2,13 +2,6 @@
 
 namespace ff
 {
-    enum class advance_type
-    {
-        running,
-        single_step,
-        stopped,
-    };
-
     struct frame_time_t
     {
         static const size_t max_advance_count = 4;

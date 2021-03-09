@@ -389,7 +389,7 @@ void ff::internal::ui::on_focus_view(ff::ui_view* view, bool focused)
     }
 }
 
-void ff::ui::state_advance()
+void ff::ui::state_advance_time()
 {
     ff::internal::ui::global_resource_cache()->advance();
 }

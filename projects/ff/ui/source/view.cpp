@@ -13,6 +13,7 @@ ff::ui_view::ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alia
     , enabled_(true)
     , block_input_below_(false)
     , counter(0)
+    , current_size{}
     , cursor_(Noesis::Cursor_Arrow)
     , view_grid(Noesis::MakePtr<Noesis::Grid>())
     , view_box(Noesis::MakePtr<Noesis::Viewbox>())
@@ -86,12 +87,16 @@ void ff::ui_view::cursor(Noesis::Cursor cursor)
 
 void ff::ui_view::size(const ff::window_size& value)
 {
-    ff::point_float dip_size = value.rotated_pixel_size().cast<float>() / static_cast<float>(value.dpi_scale);
+    if (value != this->current_size)
+    {
+        ff::point_float dip_size = value.rotated_pixel_size().cast<float>() / static_cast<float>(value.dpi_scale);
 
-    this->rotate_transform->SetAngle(static_cast<float>(value.rotated_degrees_from_native()));
-    this->view_grid->SetWidth(dip_size.x);
-    this->view_grid->SetHeight(dip_size.y);
-    this->internal_view_->SetSize(static_cast<uint32_t>(value.pixel_size.x), static_cast<uint32_t>(value.pixel_size.y));
+        this->current_size = value;
+        this->rotate_transform->SetAngle(static_cast<float>(value.rotated_degrees_from_native()));
+        this->view_grid->SetWidth(dip_size.x);
+        this->view_grid->SetHeight(dip_size.y);
+        this->internal_view_->SetSize(static_cast<uint32_t>(value.pixel_size.x), static_cast<uint32_t>(value.pixel_size.y));
+    }
 }
 
 void ff::ui_view::size(ff::dx11_target_window_base& target)

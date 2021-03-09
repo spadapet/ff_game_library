@@ -7,3 +7,7 @@
 #include "source/init.h"
 #include "source/settings.h"
 #include "source/state.h"
+#include "source/state_list.h"
+#include "source/state_wrapper.h"
+#include "source/ui_state.h"
+#include "source/ui_view_state.h"

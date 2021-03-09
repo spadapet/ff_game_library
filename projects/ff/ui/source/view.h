@@ -46,6 +46,7 @@ namespace ff
         bool block_input_below_;
         double counter;
         ff::signal_connection target_size_changed;
+        ff::window_size current_size;
         Noesis::Cursor cursor_;
         Noesis::Ptr<Noesis::Grid> view_grid;
         Noesis::Ptr<Noesis::Viewbox> view_box;
