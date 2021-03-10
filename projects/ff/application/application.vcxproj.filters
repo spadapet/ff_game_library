@@ -26,6 +26,15 @@
     <ClCompile Include="source\ui_view_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\debug_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\debug_pages.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\debug_counter_pages.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -58,6 +67,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\ui_view_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\debug_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\debug_pages.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\debug_counter_pages.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
