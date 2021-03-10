@@ -1,10 +1,9 @@
 #pragma once
 
+#include "state.h"
+
 namespace ff
 {
-    class state;
-    enum class advance_type;
-
     struct init_app_params
     {
         std::string name;
@@ -12,7 +11,7 @@ namespace ff
         std::function<void()> game_thread_finished_func;
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func;
         std::function<double()> get_time_scale_func;
-        std::function<ff::advance_type()> get_advance_type_func;
+        std::function<ff::state::advance_t()> get_advance_type_func;
     };
 
     class init_app

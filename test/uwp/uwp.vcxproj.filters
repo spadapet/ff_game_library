@@ -36,6 +36,9 @@
     <Page Include="source\test_ui.xaml">
       <Filter>source</Filter>
     </Page>
+    <Page Include="source\test_app.xaml">
+      <Filter>source</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="app.xaml" />
@@ -91,6 +94,7 @@
     <None Include="ui_assets\theme\PT Root UI_Bold.otf">
       <Filter>ui_assets\theme</Filter>
     </None>
+    <None Include="$(NoesisDll)" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="ui_assets\assets.xaml.res.json">

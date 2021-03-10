@@ -197,7 +197,7 @@ void ff::internal::music_playing::advance()
         this->fade_timer.tick();
 
         float abs_fade_scale = std::abs(this->fade_scale);
-        this->fade_volume = ff::math::clamp(static_cast<float>(this->fade_timer.get_seconds() * abs_fade_scale), 0.0f, 1.0f);
+        this->fade_volume = ff::math::clamp(static_cast<float>(this->fade_timer.seconds() * abs_fade_scale), 0.0f, 1.0f);
 
         bool fade_done = (this->fade_volume >= 1);
         bool fade_out = (this->fade_scale < 0);

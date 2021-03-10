@@ -13,5 +13,6 @@ namespace test_uwp
         void test_input_devices(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args);
         void test_swap_chain(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args);
         void test_ui(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args);
+        void test_app(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args);
     };
 }

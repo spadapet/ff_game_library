@@ -21,6 +21,8 @@ void ff::log::write(std::string_view text)
         *::file_stream << str2;
     }
 
+    std::cerr << str2;
+
 #ifdef _DEBUG
     ::OutputDebugString(ff::string::to_wstring(str2).c_str());
 #endif

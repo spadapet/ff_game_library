@@ -4,7 +4,25 @@
 
 ff::state_list::state_list(std::vector<std::shared_ptr<ff::state>>&& states)
     : states(std::move(states))
-{}
+{
+    for (size_t i = 0; i < this->states.size(); )
+    {
+        if (!this->states[i])
+        {
+            this->states.erase(this->states.cbegin() + i);
+        }
+        else
+        {
+            auto wrapper = std::dynamic_pointer_cast<ff::state_wrapper>(this->states[i]);
+            if (!wrapper)
+            {
+                this->states[i] = std::make_shared<ff::state_wrapper>(this->states[i]);
+            }
+
+            i++;
+        }
+    }
+}
 
 void ff::state_list::push(std::shared_ptr<ff::state> state)
 {

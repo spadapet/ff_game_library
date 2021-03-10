@@ -5,6 +5,7 @@
 #include <ppltasks.h>
 
 // FF
+#include <ff/application/application_api.h>
 #include <ff/audio/audio_api.h>
 #include <ff/base/base_api.h>
 #include <ff/data/data_api.h>

@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "main_page.xaml.h"
+#include "test_app.xaml.h"
 #include "test_input_devices.xaml.h"
 #include "test_swap_chain.xaml.h"
 #include "test_ui.xaml.h"
@@ -22,4 +23,9 @@ void test_uwp::main_page::test_swap_chain(Platform::Object^ sender, Windows::UI:
 void test_uwp::main_page::test_ui(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
 {
     Windows::UI::Xaml::Window::Current->Content = ref new test_uwp::test_ui();
+}
+
+void test_uwp::main_page::test_app(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+{
+    Windows::UI::Xaml::Window::Current->Content = ref new test_uwp::test_app();
 }

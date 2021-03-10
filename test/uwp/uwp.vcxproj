@@ -24,6 +24,9 @@
     <ClInclude Include="source\main_page.xaml.h">
       <DependentUpon>source\main_page.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="source\test_app.xaml.h">
+      <DependentUpon>source\test_app.xaml</DependentUpon>
+    </ClInclude>
     <ClInclude Include="source\test_input_devices.xaml.h">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClInclude>
@@ -41,6 +44,7 @@
     <Page Include="source\main_page.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="source\test_app.xaml" />
     <Page Include="source\test_input_devices.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -86,6 +90,9 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\test_app.xaml.cpp">
+      <DependentUpon>source\test_app.xaml</DependentUpon>
+    </ClCompile>
     <ClCompile Include="source\test_input_devices.xaml.cpp">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClCompile>
@@ -97,6 +104,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\projects\ff\application\application_uwp.vcxproj">
+      <Project>{513b0ebc-4a6b-455f-b190-7864f3092778}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\projects\ff\audio\audio_uwp.vcxproj">
       <Project>{e3bf3073-8da5-4d8a-954b-9ce0bfc04a16}</Project>
     </ProjectReference>
