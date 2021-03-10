@@ -65,6 +65,8 @@ bool ff::dx11_depth::size(const ff::point_int& size)
         *this = std::move(new_depth);
     }
 
+    this->clear(0, 0);
+
     return true;
 }
 

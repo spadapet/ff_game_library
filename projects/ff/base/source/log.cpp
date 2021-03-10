@@ -12,20 +12,18 @@ void ff::log::file(std::ostream* file_stream)
 void ff::log::write(std::string_view text)
 {
     std::ostringstream str;
-    str << ff::string::date() << ' ' << ff::string::time() << ': ' << text << std::endl;
+    str << ff::string::date() << ' ' << ff::string::time() << ": " << text;
 
     std::string str2 = str.str();
 
     if (::file_stream)
     {
-        *::file_stream << str2;
+        *::file_stream << str2 << std::endl;
     }
 
-    std::cerr << str2;
+    std::cerr << str2 << std::endl;
 
-#ifdef _DEBUG
-    ::OutputDebugString(ff::string::to_wstring(str2).c_str());
-#endif
+    ff::log::write_debug(str);
 }
 
 void ff::log::write_debug(std::string_view text)

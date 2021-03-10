@@ -36,6 +36,7 @@
     <ClInclude Include="source\test_ui.xaml.h">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="source\utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="app.xaml">
@@ -102,6 +103,7 @@
     <ClCompile Include="source\test_ui.xaml.cpp">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClCompile>
+    <ClCompile Include="source\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\projects\ff\application\application_uwp.vcxproj">

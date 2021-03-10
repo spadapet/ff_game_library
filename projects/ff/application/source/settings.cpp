@@ -8,9 +8,13 @@ static bool settings_changed;
 
 static std::filesystem::path settings_path()
 {
+    std::error_code ec;
+    std::filesystem::path app_path = ff::filesystem::user_roaming_path() / ff::app_name();
+    std::filesystem::create_directories(app_path, ec);
+
     std::ostringstream name;
     name << ff::app_name() << ff::constants::bits_build << "bit settings.bin";
-    return ff::filesystem::user_roaming_path() / ff::app_name() / name.str();
+    return app_path / name.str();
 }
 
 static void clear_settings()

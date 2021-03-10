@@ -1,32 +1,6 @@
 ﻿#include "pch.h"
 #include "test_ui.xaml.h"
-
-namespace
-{
-    namespace xaml_resources
-    {
-#include "assets.xaml.res.h"
-
-        std::shared_ptr<::ff::data_base> get_xaml_resources()
-        {
-            return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
-        }
-    }
-}
-
-static const ff::init_ui_params& get_init_ui_params()
-{
-    static ff::init_ui_params params{};
-    params.application_resources_name = "application_resources.xaml";
-    params.noesis_license_name = "f5025c38-29c4-476b-b18f-243889e0f620";
-    params.noesis_license_key = "QGqAfWEjgH1W30rm8mPp8YBWStYGDaN8gOIWIuxUmo3bAY6n";
-    params.register_components_func = []()
-    {
-        ff::resource_objects::register_global_dict(::xaml_resources::get_xaml_resources());
-    };
-
-    return params;
-}
+#include "utility.h"
 
 test_uwp::test_ui::test_ui()
     : init_main_window(ff::init_main_window_params{})
@@ -43,7 +17,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
-            ff::init_ui init_ui(::get_init_ui_params(), ff::init_main_window_params{});
+            ff::init_ui init_ui(test_uwp::get_init_ui_params(), test_uwp::get_init_main_window_params());
             ff::dx11_target_window target;
             ff::dx11_depth depth;
             ff::ui_view view("overlay.xaml");

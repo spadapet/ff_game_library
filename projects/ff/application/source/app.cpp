@@ -413,7 +413,10 @@ static void handle_window_message(ff::window_message& message)
 
 static std::filesystem::path log_file_path()
 {
-    return ff::filesystem::user_roaming_path() / ff::app_name() / "log.txt";
+    std::error_code ec;
+    std::filesystem::path app_path = ff::filesystem::user_roaming_path() / ff::app_name();
+    std::filesystem::create_directories(app_path, ec);
+    return app_path / "log.txt";
 }
 
 bool ff::internal::app::init(const ff::init_app_params& params)
