@@ -17,7 +17,7 @@ void test_uwp::test_app::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rou
         return ::time_scale;
     };
 
-    this->init_app = std::make_unique<ff::init_app>(app_params, test_uwp::get_init_ui_params(), test_uwp::get_init_main_window_params());
+    this->init_app = std::make_unique<ff::init_app>(app_params, test_uwp::get_init_ui_params());
 }
 
 void test_uwp::test_app::unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)

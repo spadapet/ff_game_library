@@ -20,9 +20,6 @@
     <ClCompile Include="source\state_wrapper.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\ui_state.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\ui_view_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -32,7 +29,7 @@
     <ClCompile Include="source\debug_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\debug_counter_pages.cpp">
+    <ClCompile Include="source\filesystem.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -63,9 +60,6 @@
     <ClInclude Include="source\state_wrapper.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\ui_state.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\ui_view_state.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -75,7 +69,7 @@
     <ClInclude Include="source\debug_state.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\debug_counter_pages.h">
+    <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

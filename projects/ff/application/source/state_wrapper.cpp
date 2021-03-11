@@ -37,6 +37,16 @@ ff::state_wrapper& ff::state_wrapper::operator=(std::shared_ptr<ff::state> state
     return *this;
 }
 
+ff::state_wrapper::operator bool() const
+{
+    return this->state ? true : false;
+}
+
+void ff::state_wrapper::reset()
+{
+    *this = std::shared_ptr<ff::state>();
+}
+
 std::shared_ptr<ff::state> ff::state_wrapper::advance_time()
 {
     if (this->state)

@@ -20,15 +20,14 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\app.cpp" />
-    <ClCompile Include="source\debug_counter_pages.cpp" />
     <ClCompile Include="source\debug_pages.cpp" />
     <ClCompile Include="source\debug_state.cpp" />
+    <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\settings.cpp" />
     <ClCompile Include="source\state.cpp" />
     <ClCompile Include="source\state_list.cpp" />
     <ClCompile Include="source\state_wrapper.cpp" />
-    <ClCompile Include="source\ui_state.cpp" />
     <ClCompile Include="source\ui_view_state.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,16 +35,15 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app.h" />
     <ClInclude Include="source\app_time.h" />
-    <ClInclude Include="source\debug_counter_pages.h" />
     <ClInclude Include="source\debug_pages.h" />
     <ClInclude Include="source\debug_state.h" />
+    <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\frame_time.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\settings.h" />
     <ClInclude Include="source\state.h" />
     <ClInclude Include="source\state_list.h" />
     <ClInclude Include="source\state_wrapper.h" />
-    <ClInclude Include="source\ui_state.h" />
     <ClInclude Include="source\ui_view_state.h" />
   </ItemGroup>
   <ItemGroup>

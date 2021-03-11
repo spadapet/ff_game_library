@@ -24,8 +24,8 @@ namespace
 static std::atomic_int init_app_refs;
 static std::unique_ptr<one_time_init_app> init_app_data;
 
-ff::init_app::init_app(const ff::init_app_params& app_params, const ff::init_ui_params& ui_params, const ff::init_main_window_params& window_params)
-    : init_ui(ui_params, window_params)
+ff::init_app::init_app(const ff::init_app_params& app_params, const ff::init_ui_params& ui_params)
+    : init_ui(ui_params)
 {
     if (::init_app_refs.fetch_add(1) == 0 && this->init_audio && this->init_ui)
     {

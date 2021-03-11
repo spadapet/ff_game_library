@@ -28,8 +28,8 @@ namespace
 static std::atomic_int init_input_refs;
 static std::unique_ptr<one_time_init_input> init_input_data;
 
-ff::init_input::init_input(const ff::init_main_window_params& params)
-    : init_main_window(params)
+ff::init_input::init_input()
+    : init_main_window(ff::init_main_window_params{})
 {
     if (::init_input_refs.fetch_add(1) == 0 && this->init_resource && this->init_main_window)
     {

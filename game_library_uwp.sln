@@ -11,6 +11,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{B9D9077F
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{47627E0A-97AB-443C-858F-58FE0484F0D6}"
+	ProjectSection(SolutionItems) = preProject
+		projects\ff\all_api.h = projects\ff\all_api.h
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vendor", "vendor", "{D0A3E049-D71B-4C7E-BE9B-065830246EC0}"
 EndProject

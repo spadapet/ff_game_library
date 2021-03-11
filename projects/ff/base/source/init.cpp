@@ -44,6 +44,13 @@ namespace
 #endif
         {}
 
+        ~one_time_init_main_window()
+        {
+            // in case any background work depends on the main window
+            ff::thread_pool::get()->flush();
+            ff::thread_dispatch::get_main()->flush();
+        }
+
     private:
         ff::window main_window;
     };

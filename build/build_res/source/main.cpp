@@ -229,7 +229,7 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
 int main()
 {
     ff::timer timer;
-    ff::init_input init_input(ff::init_main_window_params{});
+    ff::init_input init_input;
     ff::init_audio init_audio;
     ff::init_graphics init_graphics;
 

@@ -8,6 +8,9 @@
     <ClCompile Include="source\input_device_events.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\test_app.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -19,5 +22,10 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\resource.rc">
+      <Filter>source</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

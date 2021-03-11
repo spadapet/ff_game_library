@@ -7,7 +7,7 @@ namespace ff
     class state_wrapper : public ff::state
     {
     public:
-        state_wrapper() = delete;
+        state_wrapper() = default;
         state_wrapper(state_wrapper&& other) noexcept = default;
         state_wrapper(const state_wrapper& other) = delete;
         state_wrapper(std::shared_ptr<ff::state> state);
@@ -15,6 +15,9 @@ namespace ff
         state_wrapper& operator=(state_wrapper&& other) noexcept = default;
         state_wrapper& operator=(const state_wrapper& other) = delete;
         state_wrapper& operator=(std::shared_ptr<ff::state> state);
+        operator bool() const;
+
+        void reset();
 
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;

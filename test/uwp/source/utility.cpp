@@ -36,8 +36,3 @@ ff::init_app_params test_uwp::get_init_app_params()
     params.name = "Test app";
     return params;
 }
-
-ff::init_main_window_params test_uwp::get_init_main_window_params()
-{
-    return ff::init_main_window_params{};
-}

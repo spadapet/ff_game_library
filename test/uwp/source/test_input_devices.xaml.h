@@ -14,6 +14,7 @@ namespace test_uwp
         void unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args);
         void handle_input_event(const ff::input_device_event& event);
 
+        ff::init_main_window init_main_window;
         ff::init_input init_input;
         ff::signal_connection input_connection;
         ff::input_device_event last_event{};

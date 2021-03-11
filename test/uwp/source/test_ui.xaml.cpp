@@ -17,7 +17,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
-            ff::init_ui init_ui(test_uwp::get_init_ui_params(), test_uwp::get_init_main_window_params());
+            ff::init_ui init_ui(test_uwp::get_init_ui_params());
             ff::dx11_target_window target;
             ff::dx11_depth depth;
             ff::ui_view view("overlay.xaml");

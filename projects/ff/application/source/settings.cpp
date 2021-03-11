@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "app.h"
+#include "filesystem.h"
 #include "settings.h"
 
 static std::recursive_mutex mutex;
@@ -8,13 +9,9 @@ static bool settings_changed;
 
 static std::filesystem::path settings_path()
 {
-    std::error_code ec;
-    std::filesystem::path app_path = ff::filesystem::user_roaming_path() / ff::app_name();
-    std::filesystem::create_directories(app_path, ec);
-
     std::ostringstream name;
-    name << ff::app_name() << ff::constants::bits_build << "bit settings.bin";
-    return app_path / name.str();
+    name << "settings_" << ff::constants::bits_build << "_bit.bin";
+    return ff::filesystem::app_roaming_path() / name.str();
 }
 
 static void clear_settings()
@@ -45,6 +42,12 @@ void ff::internal::app::load_settings()
         std::ostringstream str;
         str << "App load settings: " << ff::filesystem::to_string(settings_path) << std::endl;
         ::named_settings.print(str);
+        ff::log::write(str.str());
+    }
+    else
+    {
+        std::ostringstream str;
+        str << "No settings file: " << ff::filesystem::to_string(settings_path);
         ff::log::write(str.str());
     }
 

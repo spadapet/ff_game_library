@@ -36,8 +36,7 @@ namespace
 static std::atomic_int init_ui_refs;
 static std::unique_ptr<one_time_init_ui> init_ui_data;
 
-ff::init_ui::init_ui(const ff::init_ui_params& ui_params, const ff::init_main_window_params& window_params)
-    : init_input(window_params)
+ff::init_ui::init_ui(const ff::init_ui_params& ui_params)
 {
     if (::init_ui_refs.fetch_add(1) == 0 && this->init_graphics && this->init_input)
     {

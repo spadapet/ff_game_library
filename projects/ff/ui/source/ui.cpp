@@ -47,7 +47,7 @@ static void noesis_log_handler(const char* filename, uint32_t line, uint32_t lev
 
     std::ostringstream str;
     str << "[NOESIS/" << channel2 << "/" << log_level << "] " << message2;
-    ff::log::write_debug(str);
+    ff::log::write(str.str());
 
     if (::log_handler)
     {
@@ -129,7 +129,7 @@ static void noesis_dump_mem_usage()
 {
     std::ostringstream str;
     str << "[NOESIS/Mem] Now: " << Noesis::GetAllocatedMemory() << ", Total: " << Noesis::GetAllocatedMemoryAccum();
-    ff::log::write_debug(str);
+    ff::log::write(str.str());
 }
 
 static Noesis::MemoryCallbacks memory_callbacks =

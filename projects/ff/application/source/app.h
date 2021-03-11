@@ -15,4 +15,8 @@ namespace ff::internal::app
 {
     bool init(const ff::init_app_params& params);
     void destroy();
+
+    std::filesystem::path app_roaming_path();
+    std::filesystem::path app_local_path();
+    std::filesystem::path app_temp_path();
 }

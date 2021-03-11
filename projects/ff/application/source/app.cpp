@@ -2,21 +2,52 @@
 #include "app.h"
 #include "app_time.h"
 #include "debug_state.h"
+#include "filesystem.h"
 #include "frame_time.h"
 #include "init.h"
 #include "settings.h"
 #include "state_list.h"
 #include "state_wrapper.h"
-#include "ui_state.h"
 
 namespace
 {
     enum class game_thread_state_t
     {
+        none,
         stopped,
         running,
         pausing,
         paused
+    };
+
+    class ui_state : public ff::state
+    {
+    public:
+        virtual std::shared_ptr<ff::state> advance_time() override
+        {
+            ff::ui::state_advance_time();
+            return nullptr;
+        }
+
+        virtual void advance_input() override
+        {
+            ff::ui::state_advance_input();
+        }
+
+        virtual void frame_rendering(ff::state::advance_t type) override
+        {
+            ff::ui::state_rendering();
+        }
+
+        virtual void frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth) override
+        {
+            ff::ui::state_rendered();
+        }
+
+        virtual ff::state::status_t status() override
+        {
+            return ff::state::status_t::ignore;
+        }
     };
 }
 
@@ -26,20 +57,20 @@ static ff::frame_time_t frame_time;
 static ff::timer timer;
 static ff::win_handle game_thread_event;
 static ff::signal_connection window_message_connection;
+static ff::state_wrapper game_state;
 static std::unique_ptr<std::ofstream> log_file;
 static std::unique_ptr<ff::dx11_target_window> target;
 static std::unique_ptr<ff::dx11_depth> depth;
-static std::shared_ptr<ff::state> game_state;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
+static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
-static std::atomic<const wchar_t*> window_cursor;
 
 static void frame_advance_input()
 {
     ff::thread_dispatch::get_game()->flush();
     ff::input::combined_devices().advance();
-    ::game_state->advance_input();
+    ::game_state.advance_input();
 }
 
 static ff::state::advance_t frame_start_timer()
@@ -61,7 +92,7 @@ static ff::state::advance_t frame_start_timer()
     ::frame_time.advance_count = 0;
     ::frame_time.flip_time = ::timer.last_tick_stored_raw_time();
 
-    ::game_state->frame_started(advance_type);
+    ::game_state.frame_started(advance_type);
 
     return advance_type;
 }
@@ -128,7 +159,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type)
 static void frame_update_cursor()
 {
     const wchar_t* cursor = nullptr;
-    switch (::game_state ? ::game_state->cursor() : ff::state::cursor_t::default)
+    switch (::game_state.cursor())
     {
         default:
             cursor = IDC_ARROW;
@@ -166,16 +197,15 @@ static void frame_update_cursor()
 
 static void frame_render(ff::state::advance_t advance_type)
 {
-    ::game_state->frame_rendering(advance_type);
-
     ff::graphics::dx11_device_state().clear_target(::target->view(), ff::color::black());
-    ::game_state->render(*::target, *::depth);
+    ::game_state.frame_rendering(advance_type);
+    ::game_state.render(*::target, *::depth);
 
     ::frame_time.render_time = ::timer.current_stored_raw_time();
     ::frame_time.graphics_counters = ff::graphics::dx11_device_state().reset_counters();
     ::app_time.render_count++;
 
-    ::game_state->frame_rendered(advance_type, *::target, *::depth);
+    ::game_state.frame_rendered(advance_type, *::target, *::depth);
 }
 
 static void frame_advance_and_render()
@@ -190,7 +220,7 @@ static void frame_advance_and_render()
             ::frame_advance_input();
         }
 
-        ::game_state->advance_time();
+        ::game_state.advance_time();
 
         if (::frame_time.advance_count > 0 && ::frame_time.advance_count <= ::frame_time.advance_times.size())
         {
@@ -204,45 +234,57 @@ static void frame_advance_and_render()
 
 static void ensure_game_state()
 {
-    if (::app_params.game_thread_finished_func)
+    if (::app_params.game_thread_started_func)
     {
-        ::app_params.game_thread_finished_func();
+        ::app_params.game_thread_started_func();
     }
 
     if (!::game_state)
     {
         std::vector<std::shared_ptr<ff::state>> states;
+        states.push_back(std::make_shared<::ui_state>());
+        states.push_back(::app_params.create_initial_state_func ? ::app_params.create_initial_state_func() : nullptr);
         states.push_back(std::make_shared<ff::debug_state>());
-
-        if (::app_params.create_initial_state_func)
-        {
-            auto initial_state = ::app_params.create_initial_state_func();
-            if (initial_state)
-            {
-                states.push_back(initial_state);
-            }
-        }
 
         ::game_state = std::make_shared<ff::state_wrapper>(std::make_shared<ff::state_list>(std::move(states)));
     }
 
-    ::game_state->load_settings();
+    ::game_state.load_settings();
     ::frame_reset_timer();
 }
 
 static void start_game_state()
 {
-    ::game_thread_state = ::game_thread_state_t::running;
-    ::frame_reset_timer();
+    if (::game_thread_state != ::game_thread_state_t::stopped)
+    {
+        ::game_thread_state = ::game_thread_state_t::running;
+        ::frame_reset_timer();
+    }
 }
 
 static void pause_game_state()
 {
-    ::game_thread_state = ::game_thread_state_t::paused;
-    ::game_state->save_settings();
+    if (::game_thread_state != ::game_thread_state_t::stopped)
+    {
+        ::game_thread_state = ::game_thread_state_t::paused;
+        ::game_state.save_settings();
 
-    ff::graphics::dx11_device_state().clear();
-    ff::graphics::dxgi_device()->Trim();
+        ff::graphics::dx11_device_state().clear();
+        ff::graphics::dxgi_device()->Trim();
+    }
+}
+
+static void stop_game_state()
+{
+    ff::log::write("Game state stopped");
+
+    ::game_thread_state = ::game_thread_state_t::stopped;
+
+    ff::thread_dispatch::get_main()->post([]()
+    {
+        ff::window::main()->close();
+    });
+
 }
 
 static void game_thread()
@@ -254,9 +296,9 @@ static void game_thread()
 
     while (::game_thread_state != ::game_thread_state_t::stopped)
     {
-        if (::game_state->status() == ff::state::status_t::dead)
+        if (::game_state.status() == ff::state::status_t::dead)
         {
-            ::game_thread_state = ::game_thread_state_t::stopped;
+            ::stop_game_state();
         }
         else if (::game_thread_state == ::game_thread_state_t::pausing)
         {
@@ -284,7 +326,6 @@ static void game_thread()
         ::app_params.game_thread_finished_func();
     }
 
-    ::game_state->save_settings();
     ::game_state.reset();
     ::game_thread_dispatch.reset();
     ::SetEvent(::game_thread_event);
@@ -292,14 +333,14 @@ static void game_thread()
 
 static void start_game_thread()
 {
-    ff::log::write("Start game thread");
-
     if (::game_thread_dispatch)
     {
+        ff::log::write("Start game thread");
         ::game_thread_dispatch->post(::start_game_state);
     }
-    else
+    else if (::game_thread_state != ::game_thread_state_t::stopped)
     {
+        ff::log::write("Unpause game thread");
         ::game_thread_state = ::game_thread_state_t::running;
         ff::thread_pool::get()->add_thread(::game_thread);
         ff::wait_for_event_and_reset(::game_thread_event);
@@ -413,10 +454,88 @@ static void handle_window_message(ff::window_message& message)
 
 static std::filesystem::path log_file_path()
 {
-    std::error_code ec;
-    std::filesystem::path app_path = ff::filesystem::user_roaming_path() / ff::app_name();
-    std::filesystem::create_directories(app_path, ec);
-    return app_path / "log.txt";
+    std::ostringstream name;
+    name << "log_" << ff::constants::bits_build << "_bit.txt";
+    return ff::filesystem::app_local_path() / name.str();
+}
+
+static void init_app_name()
+{
+    if (::app_params.name.empty())
+    {
+#if UWP_APP
+        ::app_params.name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
+#else
+        std::array<wchar_t, 2048> wpath;
+        DWORD size = static_cast<DWORD>(wpath.size());
+        if ((size = ::GetModuleFileName(nullptr, wpath.data(), size)) != 0)
+        {
+            std::wstring wstr(std::wstring_view(wpath.data(), static_cast<size_t>(size)));
+
+            DWORD handle, version_size;
+            if ((version_size = ::GetFileVersionInfoSize(wstr.c_str(), &handle)) != 0)
+            {
+                std::vector<uint8_t> version_bytes;
+                version_bytes.resize(static_cast<size_t>(version_size));
+
+                if (::GetFileVersionInfo(wstr.c_str(), 0, version_size, version_bytes.data()))
+                {
+                    wchar_t* product_name = nullptr;
+                    UINT product_name_size = 0;
+
+                    if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product_name), &product_name_size) && product_name_size > 1)
+                    {
+                        ::app_params.name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
+                    }
+                }
+            }
+
+            if (::app_params.name.empty())
+            {
+                std::filesystem::path path = ff::filesystem::to_path(ff::string::to_string(wstr));
+                ::app_params.name = ff::filesystem::to_string(path.stem());
+            }
+        }
+#endif
+    }
+
+    if (::app_params.name.empty())
+    {
+        // fallback
+        ::app_params.name = "App";
+    }
+}
+
+static void init_log()
+{
+    std::filesystem::path path = ::log_file_path();
+    ::log_file = std::make_unique<std::ofstream>(path);
+    ff::log::file(::log_file.get());
+
+    std::ostringstream str;
+    str << "App init (" << ff::app_name() << ")";
+    ff::log::write(str.str());
+
+    str.str(std::string());
+    str.clear();
+    str << "Log: " << ff::filesystem::to_string(path);
+    ff::log::write(str.str());
+}
+
+static void destroy_log()
+{
+    ff::log::write("App destroyed");
+    ff::log::file(nullptr);
+    ::log_file.reset();
+}
+
+static void init_window()
+{
+#if !UWP_APP
+    ::SetWindowText(*ff::window::main(), ff::string::to_wstring(ff::app_name()).c_str());
+    ::ShowWindow(*ff::window::main(), SW_SHOWDEFAULT);
+#endif
+    ::update_window_visible();
 }
 
 bool ff::internal::app::init(const ff::init_app_params& params)
@@ -424,12 +543,8 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::SetThreadDescription(::GetCurrentThread(), L"ff::user_interface");
 
     ::app_params = params;
-    assert(!::app_params.name.empty());
-
-    ::log_file = std::make_unique<std::ofstream>(::log_file_path());
-    ff::log::file(::log_file.get());
-    ff::log::write("App init");
-
+    ::init_app_name();
+    ::init_log();
     ::frame_time = ff::frame_time_t{};
     ::app_time = ff::app_time_t{};
     ::app_time.time_scale = 1.0;
@@ -439,7 +554,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::depth = std::make_unique<ff::dx11_depth>(::target->size().pixel_size);
 
     ff::internal::app::load_settings();
-    ff::thread_dispatch::get_main()->post(::update_window_visible);
+    ff::thread_dispatch::get_main()->post(::init_window);
 
     return true;
 }
@@ -451,15 +566,13 @@ void ff::internal::app::destroy()
     ::target.reset();
     ::window_message_connection.disconnect();
     ::game_thread_event.close();
-
-    ff::log::write("App destroyed");
-    ff::log::file(nullptr);
-    ::log_file.reset();
+    ::destroy_log();
 }
 
 const std::string& ff::app_name()
 {
-    return ::app_params.name;
+    static std::string default_name;
+    return !::app_params.name.empty() ? ::app_params.name : default_name;
 }
 
 const ff::app_time_t& ff::app_time()

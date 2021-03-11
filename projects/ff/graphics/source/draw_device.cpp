@@ -661,6 +661,7 @@ static bool setup_render_target(ff::dx11_target_base& target, ff::dx11_depth* de
         {
             if (depth->size(target.size().pixel_size))
             {
+                depth->clear(0, 0);
                 depth_view = depth->view();
             }
 

@@ -23,6 +23,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "projects\ff\ui\ui.vcxproj", "{8147A742-08AC-49FD-8C51-3956E1A65E16}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "projects", "projects", "{E6221A0E-B343-4514-99B8-746425C6D617}"
+	ProjectSection(SolutionItems) = preProject
+		projects\ff\all_api.h = projects\ff\all_api.h
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{6C0FBA16-C7F0-403D-90A2-D12F9AC0196F}"
 EndProject
