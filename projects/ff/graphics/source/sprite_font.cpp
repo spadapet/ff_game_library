@@ -501,7 +501,7 @@ bool ff::sprite_font::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     ff::dict sprites_dict, outline_sprites_dict;
     if (*this && ff::resource_object_base::save_to_cache_typed(*this->sprites, sprites_dict, allow_compress) &&
-        (!this->outline_sprites || ff::resource_object_base::save_to_cache_typed(*this->outline_sprites, sprites_dict, allow_compress)))
+        (!this->outline_sprites || ff::resource_object_base::save_to_cache_typed(*this->outline_sprites, outline_sprites_dict, allow_compress)))
     {
         dict.set<ff::resource>("data", this->font_file_resource.resource());
         dict.set<float>("size", this->size);

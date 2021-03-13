@@ -10,7 +10,7 @@ static bool settings_changed;
 static std::filesystem::path settings_path()
 {
     std::ostringstream name;
-    name << "settings_" << ff::constants::bits_build << "_bit.bin";
+    name << "settings_" << ff::constants::bits_build << ".bin";
     return ff::filesystem::app_roaming_path() / name.str();
 }
 

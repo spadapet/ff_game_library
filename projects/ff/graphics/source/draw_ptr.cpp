@@ -4,9 +4,7 @@
 
 ff::draw_ptr::draw_ptr(ff::draw_base* draw)
     : draw(draw)
-{
-    assert(*this);
-}
+{}
 
 ff::draw_ptr::draw_ptr(draw_ptr&& other) noexcept
     : draw(other.draw)

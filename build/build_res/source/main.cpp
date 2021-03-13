@@ -161,12 +161,7 @@ protected:
         if (resource_object)
         {
             std::filesystem::path name = ff::filesystem::clean_file_name(ff::filesystem::to_path(this->path()));
-            if (!resource_object->resource_save_to_file(this->root_path, ff::filesystem::to_string(name)))
-            {
-                std::ostringstream str;
-                str << "Failed to save resource to file: " << this->path();
-                this->add_error(str.str());
-            }
+            resource_object->resource_save_to_file(this->root_path, ff::filesystem::to_string(name));
         }
 
         return ff::dict_visitor_base::transform_dict(dict);

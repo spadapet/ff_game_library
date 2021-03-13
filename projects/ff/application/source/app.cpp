@@ -335,12 +335,12 @@ static void start_game_thread()
 {
     if (::game_thread_dispatch)
     {
-        ff::log::write("Start game thread");
+        ff::log::write("Unpause game thread");
         ::game_thread_dispatch->post(::start_game_state);
     }
     else if (::game_thread_state != ::game_thread_state_t::stopped)
     {
-        ff::log::write("Unpause game thread");
+        ff::log::write("Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
         ff::thread_pool::get()->add_thread(::game_thread);
         ff::wait_for_event_and_reset(::game_thread_event);
@@ -349,10 +349,10 @@ static void start_game_thread()
 
 static void pause_game_thread()
 {
-    ff::log::write("Pause game thread");
-
     if (::game_thread_dispatch)
     {
+        ff::log::write("Pause game thread");
+
         ::game_thread_dispatch->post([]()
             {
                 if (::game_thread_state == ::game_thread_state_t::running)
@@ -373,10 +373,10 @@ static void pause_game_thread()
 
 static void stop_game_thread()
 {
-    ff::log::write("Stop game thread");
-
     if (::game_thread_dispatch)
     {
+        ff::log::write("Stop game thread");
+
         ::game_thread_dispatch->post([]()
             {
                 ::game_thread_state = ::game_thread_state_t::stopped;
@@ -455,7 +455,7 @@ static void handle_window_message(ff::window_message& message)
 static std::filesystem::path log_file_path()
 {
     std::ostringstream name;
-    name << "log_" << ff::constants::bits_build << "_bit.txt";
+    name << "log_" << ff::constants::bits_build << ".txt";
     return ff::filesystem::app_local_path() / name.str();
 }
 
