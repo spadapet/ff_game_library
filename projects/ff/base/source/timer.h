@@ -28,6 +28,7 @@ namespace ff
         int64_t last_tick_raw_time() const;
         static int64_t current_raw_time();
         static int64_t raw_frequency_static();
+        static double raw_frequency_double_static();
         int64_t raw_frequency() const;
         double raw_frequency_double() const;
 

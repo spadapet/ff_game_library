@@ -140,6 +140,12 @@ int64_t ff::timer::raw_frequency_static()
     return value;
 }
 
+double ff::timer::raw_frequency_double_static()
+{
+    static const double value = static_cast<double>(ff::timer::raw_frequency_static());
+    return value;
+}
+
 int64_t ff::timer::raw_frequency() const
 {
     return this->frequency;

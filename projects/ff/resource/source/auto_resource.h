@@ -10,6 +10,7 @@ namespace ff
     public:
         auto_resource_value() = default;
         auto_resource_value(const std::shared_ptr<ff::resource>& resource);
+        auto_resource_value(std::string_view resource_name);
         auto_resource_value(auto_resource_value&& other) noexcept = default;
         auto_resource_value(const auto_resource_value& other) = default;
 

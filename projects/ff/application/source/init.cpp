@@ -6,10 +6,22 @@ static bool init_app_status;
 
 namespace
 {
+    namespace assets
+    {
+#include "ff.assets.res.h"
+
+        std::shared_ptr<::ff::data_base> get_assets_data()
+        {
+            return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
+        }
+    }
+
     struct one_time_init_app
     {
         one_time_init_app(const ff::init_app_params& params)
         {
+            ff::resource_objects::register_global_dict(::assets::get_assets_data());
+
             ::init_app_status = ff::internal::app::init(params);
         }
 

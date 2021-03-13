@@ -40,7 +40,7 @@ namespace ff
     class input_event_provider
     {
     public:
-        input_event_provider(const input_mapping_def& mapping, std::vector<input_vk const*>&& devices);
+        input_event_provider(const input_mapping_def& mapping, std::vector<ff::input_vk const*>&& devices);
 
         bool advance(double delta_time);
 
@@ -69,7 +69,7 @@ namespace ff
         std::unordered_multimap<size_t, input_event_progress> event_id_to_progress;
         std::unordered_multimap<size_t, int> value_id_to_vk;
         std::vector<input_event> events_;
-        std::vector<input_vk const*> devices;
+        std::vector<ff::input_vk const*> devices;
     };
 
     class input_mapping
