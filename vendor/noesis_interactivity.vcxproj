@@ -62,8 +62,8 @@
     <ClCompile Include="$(InteractivityRoot)Src\TriggerActionCollection.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\TriggerBase.Interactivity.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\TriggerCollection.cpp" />
-    <ClCompile Include="..\packages\ffui.3.0.10\content\Src\Packages\App\Interactivity\Src\DataEventTrigger.cpp" />
-    <ClCompile Include="..\packages\ffui.3.0.10\content\Src\Packages\App\Interactivity\Src\LoadContentAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\DataEventTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\LoadContentAction.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(InteractivityRoot)Src\ComparisonLogic.h" />
