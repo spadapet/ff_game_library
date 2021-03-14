@@ -69,5 +69,15 @@
       <Project>{279176cb-1db1-40ea-aa60-1a0469e8a6d8}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="assets\debug_font.ttf">
+      <DeploymentContent>false</DeploymentContent>
+    </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.assets.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
   <Import Project="$(FFRoot)build\cpp.targets" />
 </Project>

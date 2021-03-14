@@ -77,5 +77,18 @@
     <Filter Include="source">
       <UniqueIdentifier>{ebcdae68-8e2f-42c6-8e18-730446be9339}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{7109ff90-04cf-47e0-8343-09272ce4f78c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="assets\debug_font.ttf">
+      <Filter>assets</Filter>
+    </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.assets.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
   </ItemGroup>
 </Project>
