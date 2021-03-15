@@ -6,7 +6,6 @@ namespace ff
 {
     struct init_app_params
     {
-        std::string name;
         std::function<void()> game_thread_started_func;
         std::function<void()> game_thread_finished_func;
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func;

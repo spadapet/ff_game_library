@@ -4,6 +4,7 @@
 #if !UWP_APP
 
 static bool got_quit_message = false;
+static int exit_code;
 
 static void handle_message(::MSG& msg)
 {
@@ -43,18 +44,21 @@ bool ff::handle_messages()
         else
         {
             ::got_quit_message = true;
+            ::exit_code = static_cast<int>(msg.wParam);
         }
     }
 
     return !::got_quit_message;
 }
 
-void ff::handle_messages_until_quit()
+int ff::handle_messages_until_quit()
 {
     for (bool quit = ::got_quit_message; !quit; )
     {
         quit = !::wait_for_message();
     }
+
+    return ::exit_code;
 }
 
 #endif

@@ -58,6 +58,7 @@ static ff::timer timer;
 static ff::win_handle game_thread_event;
 static ff::signal_connection window_message_connection;
 static ff::state_wrapper game_state;
+static std::string app_name;
 static std::unique_ptr<std::ofstream> log_file;
 static std::unique_ptr<ff::dx11_target_window> target;
 static std::unique_ptr<ff::dx11_depth> depth;
@@ -461,10 +462,10 @@ static std::filesystem::path log_file_path()
 
 static void init_app_name()
 {
-    if (::app_params.name.empty())
+    if (::app_name.empty())
     {
 #if UWP_APP
-        ::app_params.name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
+        ::app_name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
 #else
         std::array<wchar_t, 2048> wpath;
         DWORD size = static_cast<DWORD>(wpath.size());
@@ -485,24 +486,24 @@ static void init_app_name()
 
                     if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product_name), &product_name_size) && product_name_size > 1)
                     {
-                        ::app_params.name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
+                        ::app_name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
                     }
                 }
             }
 
-            if (::app_params.name.empty())
+            if (::app_name.empty())
             {
                 std::filesystem::path path = ff::filesystem::to_path(ff::string::to_string(wstr));
-                ::app_params.name = ff::filesystem::to_string(path.stem());
+                ::app_name = ff::filesystem::to_string(path.stem());
             }
         }
 #endif
     }
 
-    if (::app_params.name.empty())
+    if (::app_name.empty())
     {
         // fallback
-        ::app_params.name = "App";
+        ::app_name = "App";
     }
 }
 
@@ -571,8 +572,7 @@ void ff::internal::app::destroy()
 
 const std::string& ff::app_name()
 {
-    static std::string default_name;
-    return !::app_params.name.empty() ? ::app_params.name : default_name;
+    return ::app_name;
 }
 
 const ff::app_time_t& ff::app_time()
