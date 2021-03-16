@@ -38,8 +38,8 @@ namespace ff
         virtual std::shared_ptr<ff::resource> flush_resource(const std::shared_ptr<ff::resource>& value) override;
         virtual void flush_all_resources() override;
 
-        const resource_value_provider* localized_value_provider() const;
-        void localized_value_provider(const resource_value_provider* value);
+        const std::shared_ptr<ff::resource_value_provider>& localized_value_provider() const;
+        void localized_value_provider(std::shared_ptr<ff::resource_value_provider> value);
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
@@ -69,7 +69,7 @@ namespace ff
 
         mutable std::recursive_mutex mutex;
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
-        ff::resource_value_provider const* localized_value_provider_;
+        std::shared_ptr<ff::resource_value_provider> localized_value_provider_;
         ff::win_handle done_loading_event;
         size_t loading_count;
     };

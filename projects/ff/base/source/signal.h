@@ -46,12 +46,36 @@ namespace ff
             *handler = handler_type();
         }
     };
+
+    template<>
+    class signal_sink<void>
+    {
+    public:
+        using handler_type = typename std::function<void()>;
+        using this_type = signal_sink<void>;
+
+        signal_connection connect(handler_type&& func)
+        {
+            void* cookie = &this->handlers.emplace_front(std::move(func));
+            return signal_connection(&this_type::disconnect_func, cookie);
+        }
+
+    protected:
+        std::forward_list<handler_type> handlers;
+
+    private:
+        static void disconnect_func(void* cookie)
+        {
+            handler_type* handler = reinterpret_cast<handler_type*>(cookie);
+            *handler = handler_type();
+        }
+    };
 }
 
-namespace ff::internal
+namespace ff
 {
     template<class... Args>
-    class signal_site : public signal_sink<Args...>
+    class signal : public signal_sink<Args...>
     {
     public:
         void notify(Args... args)
@@ -71,15 +95,26 @@ namespace ff::internal
             }
         }
     };
-}
-
-namespace ff
-{
-    template<class... Args>
-    class signal : public ff::internal::signal_site<Args...>
-    {};
 
     template<>
-    class signal<void> : public ff::internal::signal_site<>
-    {};
+    class signal<void> : public signal_sink<void>
+    {
+    public:
+        void notify()
+        {
+            for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
+            {
+                if (*i)
+                {
+                    (*i)();
+                }
+
+                if (!*i)
+                {
+                    this->handlers.erase_after(prev);
+                    i = prev;
+                }
+            }
+        }
+    };
 }

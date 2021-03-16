@@ -34,8 +34,7 @@ static std::unique_ptr<ff::resource_objects> create_global_resources(const std::
 }
 
 ff::resource_objects::resource_objects(const ff::dict& dict)
-    : localized_value_provider_(nullptr)
-    , done_loading_event(ff::create_event(true))
+    : done_loading_event(ff::create_event(true))
     , loading_count(0)
 {
     this->add_resources(dict);
@@ -194,12 +193,12 @@ void ff::resource_objects::flush_all_resources()
     assert(!this->loading_count);
 }
 
-const ff::resource_value_provider* ff::resource_objects::localized_value_provider() const
+const std::shared_ptr<ff::resource_value_provider>& ff::resource_objects::localized_value_provider() const
 {
     return this->localized_value_provider_;
 }
 
-void ff::resource_objects::localized_value_provider(const resource_value_provider* value)
+void ff::resource_objects::localized_value_provider(std::shared_ptr<ff::resource_value_provider> value)
 {
     this->localized_value_provider_ = value;
 }
