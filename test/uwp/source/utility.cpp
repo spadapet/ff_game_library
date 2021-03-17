@@ -33,6 +33,5 @@ ff::init_ui_params test_uwp::get_init_ui_params()
 ff::init_app_params test_uwp::get_init_app_params()
 {
     ff::init_app_params params{};
-    params.name = "Test app";
     return params;
 }

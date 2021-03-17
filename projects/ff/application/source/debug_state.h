@@ -82,5 +82,5 @@ namespace ff
 
     void add_debug_pages(ff::debug_pages_base* pages);
     void remove_debug_pages(ff::debug_pages_base* pages);
-    ff::signal_sink<>& custom_debug_sink();
+    ff::signal_sink<void>& custom_debug_sink();
 }

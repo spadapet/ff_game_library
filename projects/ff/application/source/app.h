@@ -9,14 +9,11 @@ namespace ff
     const std::string& app_name();
     const ff::app_time_t& app_time();
     const ff::frame_time_t& frame_time();
+    ff::dx11_target_window* render_target();
 }
 
 namespace ff::internal::app
 {
     bool init(const ff::init_app_params& params);
     void destroy();
-
-    std::filesystem::path app_roaming_path();
-    std::filesystem::path app_local_path();
-    std::filesystem::path app_temp_path();
 }

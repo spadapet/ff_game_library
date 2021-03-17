@@ -584,3 +584,8 @@ const ff::frame_time_t& ff::frame_time()
 {
     return ::frame_time;
 }
+
+ff::dx11_target_window* ff::render_target()
+{
+    return ::target.get();
+}
