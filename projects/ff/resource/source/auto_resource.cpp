@@ -7,12 +7,18 @@ ff::auto_resource_value::auto_resource_value(const std::shared_ptr<ff::resource>
 {}
 
 ff::auto_resource_value::auto_resource_value(std::string_view resource_name)
-    : auto_resource_value(ff::resource_objects::global().get_resource_object(resource_name))
+    : auto_resource_value(ff::resource_objects::global()->get_resource_object(resource_name))
 {}
 
 ff::auto_resource_value& ff::auto_resource_value::operator=(const std::shared_ptr<ff::resource>& resource)
 {
     this->resource_ = resource;
+    return *this;
+}
+
+ff::auto_resource_value& ff::auto_resource_value::operator=(std::string_view resource_name)
+{
+    *this = ff::auto_resource_value(resource_name);
     return *this;
 }
 

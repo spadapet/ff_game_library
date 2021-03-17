@@ -41,23 +41,21 @@ ff::value_ptr ff::type::value_vector_type::load(reader_base& reader) const
     if (ff::load(reader, size))
     {
         ff::value_vector vec;
-        if (size)
-        {
-            vec.reserve(size);
-            for (size_t i = 0; i < size; i++)
-            {
-                value_ptr child = ff::value::load_typed(reader);
-                if (!child)
-                {
-                    assert(false);
-                    return nullptr;
-                }
+        vec.reserve(size);
 
-                vec.push_back(std::move(child));
+        for (size_t i = 0; i < size; i++)
+        {
+            value_ptr child = ff::value::load_typed(reader);
+            if (!child)
+            {
+                assert(false);
+                return nullptr;
             }
 
-            return ff::value::create<ff::value_vector>(std::move(vec));
+            vec.push_back(std::move(child));
         }
+
+        return ff::value::create<ff::value_vector>(std::move(vec));
     }
 
     assert(false);

@@ -10,7 +10,7 @@ namespace
     {
 #include "ff.ui.res.h"
 
-        std::shared_ptr<::ff::data_base> get_shaders_data()
+        static std::shared_ptr<::ff::data_base> get_shaders_data()
         {
             return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
         }

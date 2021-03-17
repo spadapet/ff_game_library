@@ -3,6 +3,7 @@
 
 std::string_view ff::internal::RES_FILES("res:files");
 std::string_view ff::internal::RES_IMPORT("res:import");
+std::string_view ff::internal::RES_SOURCE("res:source");
 std::string_view ff::internal::RES_TEMPLATE("res:template");
 std::string_view ff::internal::RES_TYPE("res:type");
 std::string_view ff::internal::RES_VALUES("res:values");
@@ -84,6 +85,9 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
         result = ff::load_resources_from_json(text, base_path, debug);
         if (result.status)
         {
+            // Remember the source
+            result.dict.set<std::string>(ff::internal::RES_SOURCE, ff::filesystem::to_string(path));
+
             // Add the text file to the list of input files
             std::vector<std::string> files = result.dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
             files.push_back(ff::filesystem::to_string(path));

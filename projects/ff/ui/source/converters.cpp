@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "converters.h"
 
-NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_visible_converter, "ff.ui.BoolToVisibleConverter")
+NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_visible_converter, "ff.bool_to_visible_converter")
 {}
 
 bool ff::ui::bool_to_visible_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
@@ -16,7 +16,7 @@ bool ff::ui::bool_to_visible_converter::TryConvert(Noesis::BaseComponent* value,
     return false;
 }
 
-NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_collapsed_converter, "ff.ui.BoolToCollapsedConverter")
+NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_collapsed_converter, "ff.bool_to_collapsed_converter")
 {}
 
 bool ff::ui::bool_to_collapsed_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
@@ -31,7 +31,7 @@ bool ff::ui::bool_to_collapsed_converter::TryConvert(Noesis::BaseComponent* valu
     return false;
 }
 
-NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_object_converter, "ff.BoolToObjectConverter")
+NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_object_converter, "ff.bool_to_object_converter")
 {
     NsProp("TrueValue", &bool_to_object_converter::true_value, &bool_to_object_converter::true_value);
     NsProp("FalseValue", &bool_to_object_converter::false_value, &bool_to_object_converter::false_value);

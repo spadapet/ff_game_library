@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "set_panel_child_focus_action.h"
 
-NS_IMPLEMENT_REFLECTION_(ff::ui::set_panel_child_focus_action, "ff.ui.SetPanelChildFocusAction")
+NS_IMPLEMENT_REFLECTION_(ff::ui::set_panel_child_focus_action, "ff.set_panel_child_focus_action")
 
 Noesis::Ptr<Noesis::Freezable> ff::ui::set_panel_child_focus_action::CreateInstanceCore() const
 {

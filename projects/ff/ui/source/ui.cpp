@@ -289,12 +289,22 @@ bool ff::internal::ui::init(const ff::init_ui_params& params)
             ::device_events.push_back(event);
         });
 
-    return ::init_noesis();
+    return true;
 }
 
 void ff::internal::ui::destroy()
 {
     ::device_events_connection.disconnect();
+}
+
+void ff::internal::ui::init_game_thread()
+{
+    bool status = ::init_noesis();
+    assert(status);
+}
+
+void ff::internal::ui::destroy_game_thread()
+{
     ::destroy_noesis();
 }
 

@@ -17,6 +17,7 @@ namespace ff
         auto_resource_value& operator=(auto_resource_value&& other) noexcept = default;
         auto_resource_value& operator=(const auto_resource_value& other) = default;
         auto_resource_value& operator=(const std::shared_ptr<ff::resource>& resource);
+        auto_resource_value& operator=(std::string_view resource_name);
 
         bool valid() const;
         const std::shared_ptr<ff::resource>& resource() const;

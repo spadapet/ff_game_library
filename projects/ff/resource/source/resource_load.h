@@ -4,6 +4,7 @@ namespace ff::internal
 {
     extern std::string_view RES_FILES;
     extern std::string_view RES_IMPORT;
+    extern std::string_view RES_SOURCE;
     extern std::string_view RES_TEMPLATE;
     extern std::string_view RES_TYPE;
     extern std::string_view RES_VALUES;

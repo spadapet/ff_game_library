@@ -11,20 +11,36 @@
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
 static std::vector<std::shared_ptr<ff::data_base>> global_resource_datas;
-static std::unique_ptr<ff::resource_objects> global_resources;
+static std::shared_ptr<ff::resource_objects> global_resources;
 static std::mutex global_resources_mutex;
+static ff::signal<void> rebuilt_global_signal;
 
-static std::unique_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas)
+static std::shared_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas, bool from_source)
 {
     ff::dict resource_dict;
 
-    for (auto& data : ::global_resource_datas)
+    for (auto& data : datas)
     {
         ff::dict dict;
         if (!ff::dict::load(ff::data_reader(data), dict))
         {
             assert(false);
             continue;
+        }
+
+        if (from_source)
+        {
+            std::filesystem::path source_path = ff::filesystem::to_path(dict.get<std::string>(ff::internal::RES_SOURCE));
+            if (!source_path.empty())
+            {
+                ff::load_resources_result result = ff::load_resources_from_file(source_path, true, ff::constants::debug_build);
+                assert(result.status);
+
+                if (result.status)
+                {
+                    dict = std::move(result.dict);
+                }
+            }
         }
 
         resource_dict.set(dict, false);
@@ -54,6 +70,8 @@ void ff::resource_objects::register_global_dict(std::shared_ptr<ff::data_base> d
 {
     std::lock_guard lock(::global_resources_mutex);
 
+    ::global_resource_datas.push_back(data);
+
     if (::global_resources)
     {
         ff::dict dict;
@@ -62,25 +80,18 @@ void ff::resource_objects::register_global_dict(std::shared_ptr<ff::data_base> d
             ::global_resources->add_resources(dict);
         }
     }
-    else
-    {
-        ::global_resource_datas.push_back(data);
-    }
 }
 
-ff::resource_objects& ff::resource_objects::global()
+std::shared_ptr<ff::resource_objects> ff::resource_objects::global()
 {
+    std::lock_guard lock(::global_resources_mutex);
+
     if (!::global_resources)
     {
-        std::lock_guard lock(::global_resources_mutex);
-        if (!::global_resources)
-        {
-            ::global_resources = ::create_global_resources(::global_resource_datas);
-            ::global_resource_datas.clear();
-        }
+        ::global_resources = ::create_global_resources(::global_resource_datas, false);
     }
 
-    return *::global_resources;
+    return ::global_resources;
 }
 
 void ff::resource_objects::reset_global()
@@ -88,6 +99,36 @@ void ff::resource_objects::reset_global()
     std::lock_guard lock(::global_resources_mutex);
     ::global_resource_datas.clear();
     ::global_resources.reset();
+}
+
+void ff::resource_objects::rebuild_global_async()
+{
+    std::vector<std::shared_ptr<ff::data_base>> datas;
+    {
+        std::lock_guard lock(::global_resources_mutex);
+        datas = ::global_resource_datas;
+    }
+
+    ff::thread_pool::get()->add_task([datas]()
+        {
+            std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
+
+            ff::thread_dispatch::get_game()->post([global_resources]()
+                {
+                    if (global_resources)
+                    {
+                        std::lock_guard lock(::global_resources_mutex);
+                        ::global_resources = global_resources;
+                    }
+
+                    ::rebuilt_global_signal.notify();
+                });
+        });
+}
+
+ff::signal_sink<void>& ff::resource_objects::rebuilt_global_sink()
+{
+    return ::rebuilt_global_signal;
 }
 
 static std::shared_ptr<ff::resource> create_null_resource(std::string_view name, ff::resource_object_loader* loading_owner = nullptr)

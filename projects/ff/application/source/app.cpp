@@ -233,8 +233,10 @@ static void frame_advance_and_render()
     ::frame_update_cursor();
 }
 
-static void ensure_game_state()
+static void init_game_thread()
 {
+    ff::internal::ui::init_game_thread();
+
     if (::app_params.game_thread_started_func)
     {
         ::app_params.game_thread_started_func();
@@ -252,6 +254,18 @@ static void ensure_game_state()
 
     ::game_state.load_settings();
     ::frame_reset_timer();
+}
+
+static void destroy_game_thread()
+{
+    ::game_state.reset();
+
+    if (::app_params.game_thread_finished_func)
+    {
+        ::app_params.game_thread_finished_func();
+    }
+
+    ff::internal::ui::destroy_game_thread();
 }
 
 static void start_game_state()
@@ -293,7 +307,7 @@ static void game_thread()
     ::SetThreadDescription(::GetCurrentThread(), L"ff::game_loop");
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
     ::SetEvent(::game_thread_event);
-    ::ensure_game_state();
+    ::init_game_thread();
 
     while (::game_thread_state != ::game_thread_state_t::stopped)
     {
@@ -322,12 +336,7 @@ static void game_thread()
         }
     }
 
-    if (::app_params.game_thread_finished_func)
-    {
-        ::app_params.game_thread_finished_func();
-    }
-
-    ::game_state.reset();
+    ::destroy_game_thread();
     ::game_thread_dispatch.reset();
     ::SetEvent(::game_thread_event);
 }
@@ -389,21 +398,26 @@ static void stop_game_thread()
     ff::internal::app::save_settings();
 }
 
-static void update_window_visible()
+static void update_window_visible(bool force)
 {
-    bool visible = ff::window::main()->visible();
-
-    if (::window_visible != visible)
+    static bool allowed = false;
+    if (allowed || force)
     {
-        ::window_visible = visible;
+        allowed = true;
+        bool visible = ff::window::main()->visible();
 
-        if (visible)
+        if (::window_visible != visible)
         {
-            ::start_game_thread();
-        }
-        else
-        {
-            ::pause_game_thread();
+            ::window_visible = visible;
+
+            if (visible)
+            {
+                ::start_game_thread();
+            }
+            else
+            {
+                ::pause_game_thread();
+            }
         }
     }
 }
@@ -413,7 +427,7 @@ static void handle_window_message(ff::window_message& message)
     switch (message.msg)
     {
         case WM_SIZE:
-            ::update_window_visible();
+            ::update_window_visible(false);
             break;
 
         case WM_DESTROY:
@@ -536,7 +550,7 @@ static void init_window()
     ::SetWindowText(*ff::window::main(), ff::string::to_wstring(ff::app_name()).c_str());
     ::ShowWindow(*ff::window::main(), SW_SHOWDEFAULT);
 #endif
-    ::update_window_visible();
+    ::update_window_visible(true);
 }
 
 bool ff::internal::app::init(const ff::init_app_params& params)
@@ -585,7 +599,7 @@ const ff::frame_time_t& ff::frame_time()
     return ::frame_time;
 }
 
-ff::dx11_target_window* ff::render_target()
+ff::dx11_target_window& ff::app_render_target()
 {
-    return ::target.get();
+    return *::target;
 }
