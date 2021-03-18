@@ -18,6 +18,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
             ff::init_ui init_ui(test_uwp::get_init_ui_params());
+            ff::internal::ui::init_game_thread();
             ff::dx11_target_window target;
             ff::dx11_depth depth;
             ff::ui_view view("overlay.xaml");
@@ -62,6 +63,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             }
             while (!ff::wait_for_handle(this->stop_thread, 64));
 
+            ff::internal::ui::destroy_game_thread();
             ::SetEvent(this->thread_stopped);
         });
 }

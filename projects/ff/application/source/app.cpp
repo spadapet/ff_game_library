@@ -266,6 +266,7 @@ static void destroy_game_thread()
     }
 
     ff::internal::ui::destroy_game_thread();
+    ff::internal::app::clear_settings();
 }
 
 static void start_game_state()

@@ -14,7 +14,7 @@ static std::filesystem::path settings_path()
     return ff::filesystem::app_roaming_path() / name.str();
 }
 
-static void clear_settings()
+void ff::internal::app::clear_settings()
 {
     std::lock_guard lock(::mutex);
 
@@ -28,7 +28,7 @@ static void clear_settings()
 void ff::internal::app::load_settings()
 {
     std::lock_guard lock(::mutex);
-    ::clear_settings();
+    ff::internal::app::clear_settings();
 
     std::error_code ec;
     std::filesystem::path settings_path = ::settings_path();

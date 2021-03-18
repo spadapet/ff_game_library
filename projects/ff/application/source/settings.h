@@ -8,6 +8,7 @@ namespace ff
 
 namespace ff::internal::app
 {
+    void clear_settings();
     void load_settings();
     bool save_settings();
 }
