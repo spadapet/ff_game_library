@@ -47,6 +47,11 @@ void ff::state_wrapper::reset()
     *this = std::shared_ptr<ff::state>();
 }
 
+const std::shared_ptr<ff::state>& ff::state_wrapper::wrapped_state() const
+{
+    return this->state;
+}
+
 std::shared_ptr<ff::state> ff::state_wrapper::advance_time()
 {
     if (this->state)

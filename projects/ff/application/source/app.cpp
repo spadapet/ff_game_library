@@ -175,10 +175,10 @@ static void frame_update_cursor()
     {
         ::window_cursor = cursor;
 
-        ff::thread_dispatch::get_main()->post([cursor]()
+        ff::thread_dispatch::get_main()->post([]()
             {
 #if UWP_APP
-                Windows::UI::Core::CoreCursorType core_cursor_type = (cursor == IDC_HAND)
+                Windows::UI::Core::CoreCursorType core_cursor_type = (::window_cursor.load() == IDC_HAND)
                     ? Windows::UI::Core::CoreCursorType::Hand
                     : Windows::UI::Core::CoreCursorType::Arrow;
 
@@ -189,7 +189,7 @@ static void frame_update_cursor()
                     ::WindowFromPoint(pos) == *ff::window::main() &&
                     ::SendMessage(*ff::window::main(), WM_NCHITTEST, 0, MAKELPARAM(pos.x, pos.y)) == HTCLIENT)
                 {
-                    ::SetCursor(::LoadCursor(nullptr, cursor));
+                    ::SetCursor(::LoadCursor(nullptr, ::window_cursor.load()));
                 }
 #endif
             });

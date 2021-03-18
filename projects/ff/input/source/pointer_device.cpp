@@ -15,7 +15,6 @@ static bool is_valid_button(int vk_button)
             return true;
 
         default:
-            assert(false);
             return false;
     }
 }

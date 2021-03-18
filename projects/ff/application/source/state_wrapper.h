@@ -18,6 +18,7 @@ namespace ff
         operator bool() const;
 
         void reset();
+        const std::shared_ptr<ff::state>& wrapped_state() const;
 
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;

@@ -99,7 +99,7 @@ void ff::debug_state::advance_input()
         this->input_events = std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::move(input_devices));
     }
 
-    if (!this->input_events->advance(ff::constants::advances_per_second))
+    if (!this->input_events->advance())
     {
         return;
     }
@@ -227,7 +227,7 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dx11_target_
 
 ff::state::status_t ff::debug_state::status()
 {
-    return ff::state::status_t::alive; // TODO: ignore;
+    return ff::state::status_t::ignore;
 }
 
 size_t ff::debug_state::debug_page_count() const
