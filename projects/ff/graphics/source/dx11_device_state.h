@@ -27,7 +27,7 @@ namespace ff
         void clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color);
         void clear_depth_stencil(ID3D11DepthStencilView* view, bool clear_depth, bool clear_stencil, float depth, BYTE stencil);
         void update_subresource(ID3D11Resource* dest, UINT dest_subresource, const D3D11_BOX* dest_box, const void* src_data, UINT src_row_pitch, UINT src_depth_pitch);
-        void copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* srcResource, UINT src_subresource, const D3D11_BOX* src_box);
+        void copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* src_resource, UINT src_subresource, const D3D11_BOX* src_box);
 
         void set_vertex_ia(ID3D11Buffer* value, size_t stride, size_t offset);
         void set_index_ia(ID3D11Buffer* value, DXGI_FORMAT format, size_t offset);

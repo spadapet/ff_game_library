@@ -755,11 +755,11 @@ namespace
             // Palette
             this->palette_stack.push_back(nullptr);
             this->palette_texture = std::make_shared<ff::dx11_texture>(
-                ff::point_int(ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::internal::PALETTE_FORMAT));
+                ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::internal::PALETTE_FORMAT);
 
             this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
             this->palette_remap_texture = std::make_shared<ff::dx11_texture>(
-                ff::point_int(ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::internal::PALETTE_INDEX_FORMAT));
+                ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::internal::PALETTE_INDEX_FORMAT);
 
             // States
             this->sampler_stack.push_back(::get_texture_sampler_state(D3D11_FILTER_MIN_MAG_MIP_POINT));
@@ -1392,16 +1392,16 @@ namespace
                     {
                         unsigned int index = iter.second.second;
                         size_t palette_row = palette->current_row();
-                        const ff::palette_data* palette_date = palette->data();
-                        size_t row_hash = palette_date->row_hash(palette_row);
+                        const ff::palette_data* palette_data = palette->data();
+                        size_t row_hash = palette_data->row_hash(palette_row);
 
                         if (this->palette_texture_hashes[index] != row_hash)
                         {
                             this->palette_texture_hashes[index] = row_hash;
-                            ID3D11Resource* srcResource = palette_date->texture()->texture();
+                            ID3D11Resource* src_resource = palette_data->texture()->texture();
                             box.top = static_cast<UINT>(palette_row);
                             box.bottom = box.top + 1;
-                            ff::graphics::dx11_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, srcResource, 0, &box);
+                            ff::graphics::dx11_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
                         }
                     }
                 }

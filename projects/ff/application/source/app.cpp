@@ -266,7 +266,6 @@ static void destroy_game_thread()
     }
 
     ff::internal::ui::destroy_game_thread();
-    ff::internal::app::clear_settings();
 }
 
 static void start_game_state()
@@ -379,6 +378,7 @@ static void pause_game_thread()
         ff::wait_for_event_and_reset(::game_thread_event);
     }
 
+    // Just in case the app gets killed while paused
     ff::internal::app::save_settings();
 }
 
@@ -395,8 +395,6 @@ static void stop_game_thread()
 
         ff::wait_for_event_and_reset(::game_thread_event);
     }
-
-    ff::internal::app::save_settings();
 }
 
 static void update_window_visible(bool force)
@@ -578,6 +576,9 @@ bool ff::internal::app::init(const ff::init_app_params& params)
 void ff::internal::app::destroy()
 {
     ::stop_game_thread();
+    ff::internal::app::save_settings();
+    ff::internal::app::clear_settings();
+
     ::depth.reset();
     ::target.reset();
     ::window_message_connection.disconnect();

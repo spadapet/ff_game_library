@@ -227,11 +227,11 @@ void ff::dx11_device_state::update_subresource(ID3D11Resource* dest, UINT dest_s
     }
 }
 
-void ff::dx11_device_state::copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* srcResource, UINT src_subresource, const D3D11_BOX* src_box)
+void ff::dx11_device_state::copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* src_resource, UINT src_subresource, const D3D11_BOX* src_box)
 {
     if (this->context)
     {
-        this->context->CopySubresourceRegion(dest_resource, dest_subresource, dest_x, dest_y, dest_z, srcResource, src_subresource, src_box);
+        this->context->CopySubresourceRegion(dest_resource, dest_subresource, dest_x, dest_y, dest_z, src_resource, src_subresource, src_box);
         this->counters.copy++;
     }
 }
