@@ -37,6 +37,14 @@ namespace ff
         using auto_resource_value::valid;
         using auto_resource_value::resource;
 
+        auto_resource(const auto_resource_value& other)
+            : auto_resource_value(other)
+        {}
+
+        auto_resource(auto_resource_value&& other) noexcept
+            : auto_resource_value(std::move(other))
+        {}
+
         const std::shared_ptr<T>& object()
         {
             if (this->valid())
