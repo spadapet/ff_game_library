@@ -99,10 +99,10 @@ namespace ff::math
     float random_range(float start, float after_end);
 
     template<class T, class ExpandedT, T FixedCount>
-    int random_range(ff::fixed_t<T, ExpandedT, FixedCount> start, ff::fixed_t<T, ExpandedT, FixedCount> end)
+    ff::fixed_t<T, ExpandedT, FixedCount> random_range(ff::fixed_t<T, ExpandedT, FixedCount> start, ff::fixed_t<T, ExpandedT, FixedCount> end)
     {
         using f_t = typename ff::fixed_t<T, ExpandedT, FixedCount>;
-        return f_t::from_raw(random_range(start.get_raw(), end.get_raw()));
+        return f_t::from_raw(ff::math::random_range(start.get_raw(), end.get_raw()));
     }
 
     template<typename T>

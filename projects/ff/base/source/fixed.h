@@ -36,6 +36,10 @@ namespace ff
             : fixed_t(static_cast<int>(data))
         {}
 
+        constexpr fixed_t(size_t data)
+            : fixed_t(static_cast<int>(data))
+        {}
+
         operator T() const
         {
             return this->data >> this_type::fixed_count;

@@ -32,6 +32,11 @@ namespace ff
             return this_type(std::abs(this->x), std::abs(this->y));
         }
 
+        T length_squared() const
+        {
+            return this->x * this->x + this->y * this->y;
+        }
+
         template<class T2>
         point_t<T2> cast() const
         {

@@ -320,7 +320,7 @@ namespace ff
                 this->top_left(),
                 this->top_right(),
                 this->bottom_right(),
-                this->botom_left(),
+                this->bottom_left(),
             };
 
             return corners;
