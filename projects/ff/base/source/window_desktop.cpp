@@ -121,7 +121,7 @@ ff::window ff::window::create_blank(window_type type, std::string_view window_na
         CS_DBLCLKS,
         ff::get_hinstance(),
         ::LoadCursor(nullptr, IDC_ARROW),
-        nullptr, // brush
+        (HBRUSH)::GetStockObject(BLACK_BRUSH),
         0, // menu
         nullptr, // large icon
         nullptr)) // small icon
