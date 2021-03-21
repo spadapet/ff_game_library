@@ -8,13 +8,15 @@
   <Import Project="..\build\cpp.props" />
   <PropertyGroup>
     <InteractivityRoot>$(NoesisRoot)Src\Packages\App\Interactivity\</InteractivityRoot>
+    <MediaElementRoot>$(NoesisRoot)Src\Packages\App\MediaElement\</MediaElementRoot>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>NS_APP_INTERACTIVITY_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NS_APP_INTERACTIVITY_API=;NS_APP_MEDIAELEMENT_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisRoot)Include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(InteractivityRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MediaElementRoot)Include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -64,6 +66,10 @@
     <ClCompile Include="$(InteractivityRoot)Src\TriggerCollection.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\DataEventTrigger.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\LoadContentAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\MediaActions.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\App.MediaElement.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\MediaElement.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\MediaPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(InteractivityRoot)Src\ComparisonLogic.h" />

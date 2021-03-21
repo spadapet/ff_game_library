@@ -176,10 +176,12 @@ static void software_keyboard_callback(void* user, Noesis::UIElement* focused, b
     // Not implemented
 }
 
+extern "C" void NsInitPackageAppMediaElement();
 extern "C" void NsRegisterReflectionAppInteractivity();
 
 static void register_components()
 {
+    ::NsInitPackageAppMediaElement();
     ::NsRegisterReflectionAppInteractivity();
 
     Noesis::RegisterComponent<ff::ui::bool_to_collapsed_converter>();
