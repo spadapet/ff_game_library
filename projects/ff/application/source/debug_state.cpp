@@ -190,9 +190,10 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dx11_target_
     {
         case ff::state::advance_t::stopped:
             {
-                ff::point_float target_size = target.size().rotated_pixel_size().cast<float>();
-                ff::rect_float target_rect = target_size;
-                ff::rect_float scaled_target_rect = target_size / static_cast<float>(target.size().dpi_scale);
+                ff::window_size size = target.size();
+                ff::point_float rotated_size = size.rotated_pixel_size().cast<float>();
+                ff::rect_float target_rect(0, 0, rotated_size.x, rotated_size.y);
+                ff::rect_float scaled_target_rect = target_rect / static_cast<float>(target.size().dpi_scale);
 
                 ff::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, scaled_target_rect);
                 if (draw)

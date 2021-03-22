@@ -24,18 +24,9 @@ namespace ff
             : left(left), top(top), right(right), bottom(bottom)
         {}
 
-        rect_t(const point_type& pt)
-            : left(pt.x), top(pt.y), right(pt.x), bottom(pt.y)
-        {}
-
         rect_t(const point_type& top_left, const point_type& bottom_right)
             : left(top_left.x), top(top_left.y), right(bottom_right.x), bottom(bottom_right.y)
         {}
-
-        static this_type zeros()
-        {
-            return this_type(value_zero, value_zero, value_zero, value_zero);
-        }
 
         template<class T2>
         rect_t<T2> cast() const

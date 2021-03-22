@@ -338,5 +338,16 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
                 msg.handled = true;
             }
             break;
+
+        case WM_DPICHANGED:
+            {
+                const RECT* rect = reinterpret_cast<const RECT*>(msg.lp);
+                ::SetWindowPos(msg.hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+                    SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+
+                msg.result = 0;
+                msg.handled = true;
+            }
+            break;
     }
 }

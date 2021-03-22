@@ -194,6 +194,11 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
                     else if (size_result == count)
                     {
                         this->flush(false);
+
+                        if (!count)
+                        {
+                            return true;
+                        }
                     }
                     else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + count + 1)
                     {
