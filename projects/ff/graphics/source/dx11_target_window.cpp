@@ -299,6 +299,16 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
             }
             break;
 
+        case WM_WINDOWPOSCHANGED:
+            {
+                const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
+                if ((wp.flags & SWP_FRAMECHANGED) != 0)
+                {
+                    ff::graphics::defer::resize_target(this->window->size());
+                }
+            }
+            break;
+
         case WM_DESTROY:
             ff::thread_dispatch::get_game()->send([this]()
                 {
@@ -306,13 +316,6 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
                     this->was_full_screen_on_close = this->full_screen();
                     this->window = nullptr;
                 });
-            break;
-
-        case WM_KEYDOWN:
-            if (msg.wp == VK_LWIN || msg.wp == VK_RWIN)
-            {
-                ff::graphics::defer::full_screen(false);
-            }
             break;
 
         case WM_SYSKEYDOWN:
