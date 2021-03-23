@@ -299,16 +299,6 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
             }
             break;
 
-        case WM_WINDOWPOSCHANGED:
-            {
-                const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
-                if ((wp.flags & SWP_FRAMECHANGED) != 0)
-                {
-                    ff::graphics::defer::resize_target(this->window->size());
-                }
-            }
-            break;
-
         case WM_DESTROY:
             ff::thread_dispatch::get_game()->send([this]()
                 {
@@ -342,6 +332,17 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
             }
             break;
 
+#if !UWP_APP
+        case WM_WINDOWPOSCHANGED:
+            {
+                const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
+                if ((wp.flags & SWP_FRAMECHANGED) != 0)
+                {
+                    ff::graphics::defer::resize_target(this->window->size());
+                }
+            }
+            break;
+
         case WM_DPICHANGED:
             {
                 const RECT* rect = reinterpret_cast<const RECT*>(msg.lp);
@@ -352,5 +353,6 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
                 msg.handled = true;
             }
             break;
+#endif
     }
 }
