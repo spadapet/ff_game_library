@@ -16,7 +16,7 @@ ff::timer::timer()
 {
     ::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&this->frequency));
 
-    this->reset_time = this->current_raw_time();
+    this->reset_time = ff::timer::current_raw_time_static();
     this->start_time = this->reset_time;
     this->cur_time = this->reset_time;
     this->stored_time = this->reset_time;
@@ -27,7 +27,7 @@ double ff::timer::tick(double forced_offset)
 {
     double oldTime = this->seconds_;
 
-    this->cur_time = this->current_raw_time();
+    this->cur_time = ff::timer::current_raw_time_static();
     this->clock_seconds_ = (this->cur_time - this->reset_time) / this->frequency_double;
 
     if (forced_offset < 0)
@@ -66,7 +66,7 @@ double ff::timer::tick(double forced_offset)
 
 void ff::timer::reset()
 {
-    this->start_time = this->current_raw_time();
+    this->start_time = ff::timer::current_raw_time_static();
     this->cur_time = this->start_time;
     this->stored_time = this->start_time;
     this->tick_count_ = 0;
@@ -78,7 +78,7 @@ void ff::timer::reset()
     this->seconds_ = 0;
     this->pass_seconds = 0;
 
-    // _timeScale stays the same
+    // this->time_scale stays the same
 }
 
 double ff::timer::seconds() const
@@ -126,11 +126,11 @@ int64_t ff::timer::last_tick_raw_time() const
     return this->cur_time;
 }
 
-int64_t ff::timer::current_raw_time()
+int64_t ff::timer::current_raw_time_static()
 {
-    int64_t curTime;
-    ::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&curTime));
-    return curTime;
+    int64_t cur_time;
+    ::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&cur_time));
+    return cur_time;
 }
 
 int64_t ff::timer::raw_frequency_static()
@@ -171,9 +171,9 @@ int64_t ff::timer::last_tick_stored_raw_time()
 
 int64_t ff::timer::current_stored_raw_time()
 {
-    int64_t curTime = this->current_raw_time();
-    int64_t diff = curTime - this->stored_time;
-    this->stored_time = curTime;
+    int64_t cur_time = ff::timer::current_raw_time_static();
+    int64_t diff = cur_time - this->stored_time;
+    this->stored_time = cur_time;
 
     return diff;
 }

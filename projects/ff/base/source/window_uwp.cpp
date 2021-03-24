@@ -300,6 +300,7 @@ ff::window::window(ff::window_type type)
     , application_view_(Windows::UI::ViewManagement::ApplicationView::GetForCurrentView())
     , window_events(ref new main_window_events(this, this->core_window.Get(), this->display_info_))
     , dpi_scale_(this->display_info_->LogicalDpi / 96.0)
+    , allow_swap_chain_panel_(true)
     , active_(this->core_window->ActivationMode != Windows::UI::Core::CoreWindowActivationMode::Deactivated)
     , visible_(this->core_window->Visible)
 {
@@ -344,18 +345,31 @@ bool ff::window::operator!() const
     return false;
 }
 
+bool ff::window::allow_swap_chain_panel()
+{
+    return this->allow_swap_chain_panel_;
+}
+
+void ff::window::allow_swap_chain_panel(bool value)
+{
+    this->allow_swap_chain_panel_ = value;
+}
+
 Windows::UI::Xaml::Controls::SwapChainPanel^ ff::window::swap_chain_panel() const
 {
-    Windows::UI::Xaml::Window^ window = Windows::UI::Xaml::Window::Current;
-    if (window)
+    if (this->allow_swap_chain_panel_)
     {
-        Windows::UI::Xaml::Controls::Page^ page = dynamic_cast<Windows::UI::Xaml::Controls::Page^>(window->Content);
-        if (page)
+        Windows::UI::Xaml::Window^ window = Windows::UI::Xaml::Window::Current;
+        if (window)
         {
-            return dynamic_cast<Windows::UI::Xaml::Controls::SwapChainPanel^>(page->Content);
-        }
+            Windows::UI::Xaml::Controls::Page^ page = dynamic_cast<Windows::UI::Xaml::Controls::Page^>(window->Content);
+            if (page)
+            {
+                return dynamic_cast<Windows::UI::Xaml::Controls::SwapChainPanel^>(page->Content);
+            }
 
-        return dynamic_cast<Windows::UI::Xaml::Controls::SwapChainPanel^>(window->Content);
+            return dynamic_cast<Windows::UI::Xaml::Controls::SwapChainPanel^>(window->Content);
+        }
     }
 
     return nullptr;

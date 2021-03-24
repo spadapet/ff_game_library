@@ -1,7 +1,23 @@
 #include "pch.h"
 #include "win_msg.h"
 
-#if !UWP_APP
+#if UWP_APP
+
+bool ff::handle_messages()
+{
+    Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    window->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
+    return true;
+}
+
+int ff::handle_messages_until_quit()
+{
+    Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    window->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
+    return 0;
+}
+
+#else
 
 static bool got_quit_message = false;
 static int exit_code;

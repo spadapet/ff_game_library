@@ -52,6 +52,8 @@ namespace ff
 #if UWP_APP
         using handle_type = typename Windows::UI::Core::CoreWindow^;
 
+        bool allow_swap_chain_panel();
+        void allow_swap_chain_panel(bool value);
         Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel() const;
         Windows::Graphics::Display::DisplayInformation^ display_info() const;
         Windows::UI::ViewManagement::ApplicationView^ application_view() const;
@@ -95,6 +97,7 @@ namespace ff
         ff::signal<bool, Windows::Gaming::Input::Gamepad^> gamepad_message_signal;
         ff::signal<unsigned int, Windows::UI::Core::PointerEventArgs^> pointer_message_signal;
         double dpi_scale_;
+        bool allow_swap_chain_panel_;
         bool active_;
         bool visible_;
 #else

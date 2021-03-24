@@ -51,6 +51,7 @@ namespace ff
         bool main_window;
         bool was_full_screen_on_close;
 #if UWP_APP
+        bool use_xaml_composition;
         bool cached_full_screen_uwp;
         bool full_screen_uwp;
 #endif

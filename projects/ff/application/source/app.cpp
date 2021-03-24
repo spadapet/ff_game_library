@@ -51,6 +51,7 @@ namespace
     };
 }
 
+static int64_t raw_startup_time;
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::frame_time_t frame_time;
@@ -233,6 +234,19 @@ static void frame_advance_and_render()
     ::frame_update_cursor();
 }
 
+static void frame_presented()
+{
+    if (::raw_startup_time)
+    {
+        double seconds = (ff::timer::current_raw_time_static() - ::raw_startup_time) / ff::timer::raw_frequency_double_static();
+        ::raw_startup_time = 0;
+
+        std::ostringstream str;
+        str << "App startup time: " << std::fixed << std::setprecision(3) << seconds << "s";
+        ff::log::write(str.str());
+    }
+}
+
 static void init_game_thread()
 {
     ff::internal::ui::init_game_thread();
@@ -333,6 +347,8 @@ static void game_thread()
             {
                 ff::graphics::defer::validate_device(false);
             }
+
+            ::frame_presented();
         }
     }
 
@@ -361,12 +377,11 @@ static void pause_game_thread()
 {
     if (::game_thread_dispatch)
     {
-        ff::log::write("Pause game thread");
-
         ::game_thread_dispatch->post([]()
             {
                 if (::game_thread_state == ::game_thread_state_t::running)
                 {
+                    ff::log::write("Pause game thread");
                     ::game_thread_state = ::game_thread_state_t::pausing;
                 }
                 else
@@ -555,6 +570,9 @@ static void init_window()
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
     ::SetThreadDescription(::GetCurrentThread(), L"ff::user_interface");
+#if UWP_APP
+    ff::window::main()->allow_swap_chain_panel(params.use_swap_chain_panel);
+#endif
 
     ::app_params = params;
     ::init_app_name();
@@ -604,4 +622,9 @@ const ff::frame_time_t& ff::frame_time()
 ff::dx11_target_window& ff::app_render_target()
 {
     return *::target;
+}
+
+void ff::app_measure_startup_perf()
+{
+    ::raw_startup_time = ff::timer::current_raw_time_static();
 }

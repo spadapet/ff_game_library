@@ -16,6 +16,7 @@ ff::dx11_target_window::dx11_target_window(ff::window* window)
     , window_message_connection(window->message_sink().connect(std::bind(&dx11_target_window::handle_message, this, std::placeholders::_1)))
     , was_full_screen_on_close(false)
 #if UWP_APP
+    , use_xaml_composition(false)
     , cached_full_screen_uwp(false)
     , full_screen_uwp(false)
 #endif
@@ -131,7 +132,9 @@ bool ff::dx11_target_window::size(const ff::window_size& size)
                 if (this->window)
                 {
                     Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel = this->window->swap_chain_panel();
-                    if (swap_chain_panel)
+                    this->use_xaml_composition = (swap_chain_panel != nullptr);
+
+                    if (this->use_xaml_composition)
                     {
                         Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
 
@@ -178,7 +181,7 @@ bool ff::dx11_target_window::size(const ff::window_size& size)
         (!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(this->texture_.GetAddressOf())))) ||
         (!this->view_ && (this->view_ = ff::internal::create_target_view(this->texture_.Get())) == nullptr) ||
 #if UWP_APP
-        FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale)) ||
+        (this->use_xaml_composition && FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale))) ||
 #endif
         FAILED(this->swap_chain->SetRotation(display_rotation)))
     {
