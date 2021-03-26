@@ -339,7 +339,7 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
         case WM_WINDOWPOSCHANGED:
             {
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
-                if ((wp.flags & SWP_FRAMECHANGED) != 0)
+                if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
                 {
                     ff::graphics::defer::resize_target(this->window->size());
                 }

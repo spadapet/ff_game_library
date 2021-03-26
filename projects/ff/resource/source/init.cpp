@@ -26,7 +26,7 @@ ff::init_resource::init_resource()
 
 ff::init_resource::~init_resource()
 {
-    ff::resource_objects::reset_global();
+    ff::global_resources::reset();
 }
 
 ff::init_resource::operator bool() const

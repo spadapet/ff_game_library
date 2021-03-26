@@ -25,7 +25,7 @@ void ff::dict_visitor_base::add_error(std::string_view text)
     std::ostringstream str;
     str << ::GetCurrentThreadId() << "> " << this->path() << " : " << text;
 
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->errors.push_back(str.str());
 }
 
@@ -36,7 +36,7 @@ bool ff::dict_visitor_base::async_allowed(const ff::dict& dict)
 
 std::string ff::dict_visitor_base::path() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     auto iter = this->thread_to_path.find(::GetCurrentThreadId());
     if (iter == this->thread_to_path.cend())
     {
@@ -62,21 +62,21 @@ std::string ff::dict_visitor_base::path() const
 
 size_t ff::dict_visitor_base::path_depth() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     auto i = this->thread_to_path.find(::GetCurrentThreadId());
     return (i != this->thread_to_path.cend()) ? i->second.size() : 0;
 }
 
 void ff::dict_visitor_base::push_path(std::string_view name)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     auto iter = this->thread_to_path.try_emplace(::GetCurrentThreadId(), std::vector<std::string>()).first;
     iter->second.emplace_back(name);
 }
 
 void ff::dict_visitor_base::pop_path()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     auto iter = this->thread_to_path.find(::GetCurrentThreadId());
     if (iter != this->thread_to_path.cend())
     {
@@ -102,7 +102,7 @@ ff::value_ptr ff::dict_visitor_base::transform_root_value(ff::value_ptr value)
 
 void ff::dict_visitor_base::async_thread_started(DWORD main_thread_id)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     auto iter = this->thread_to_path.find(main_thread_id);
     if (iter != this->thread_to_path.cend())
     {
@@ -113,7 +113,7 @@ void ff::dict_visitor_base::async_thread_started(DWORD main_thread_id)
 
 void ff::dict_visitor_base::async_thread_done()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->thread_to_path.erase(::GetCurrentThreadId());
 }
 

@@ -28,7 +28,7 @@ std::shared_ptr<ff::resource> ff::internal::ui::resource_cache::get_resource_obj
     auto i = this->cache.find(name);
     if (i == this->cache.cend())
     {
-        auto value = ff::resource_objects::global()->get_resource_object(name);
+        auto value = ff::global_resources::get(name);
         entry_t entry{ std::make_unique<std::string>(name), value, 0 };
         std::string_view key = *entry.name;
         i = this->cache.try_emplace(key, std::move(entry)).first;
@@ -41,5 +41,5 @@ std::shared_ptr<ff::resource> ff::internal::ui::resource_cache::get_resource_obj
 
 std::vector<std::string_view> ff::internal::ui::resource_cache::resource_object_names() const
 {
-    return ff::resource_objects::global()->resource_object_names();
+    return ff::global_resources::get()->resource_object_names();
 }

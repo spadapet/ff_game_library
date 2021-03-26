@@ -32,7 +32,7 @@ std::string ff::keyboard_device::text() const
 
 void ff::keyboard_device::advance()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     this->state.pressing = this->pending_state.pressing;
     this->state.press_count = this->pending_state.press_count;
@@ -45,7 +45,7 @@ void ff::keyboard_device::kill_pending()
 {
     std::vector<ff::input_device_event> device_events;
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         for (size_t i = 0; i < this->pending_state.pressing.size(); i++)
         {
@@ -85,7 +85,7 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
 
                 if (!(message.lp & 0x40000000)) // wasn't already down
                 {
-                    std::lock_guard lock(this->mutex);
+                    std::scoped_lock lock(this->mutex);
 
                     if (this->pending_state.press_count[message.wp] != 0xFF)
                     {
@@ -102,7 +102,7 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
             {
                 this->device_event.notify(ff::input_device_event_key_press(static_cast<unsigned int>(message.wp), 0));
 
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 this->pending_state.pressing[message.wp] = 0;
             }
             break;
@@ -112,7 +112,7 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
             {
                 this->device_event.notify(ff::input_device_event_key_char(static_cast<wchar_t>(message.wp)));
 
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 this->pending_state.text.append(1, static_cast<wchar_t>(message.wp));
             }
             break;

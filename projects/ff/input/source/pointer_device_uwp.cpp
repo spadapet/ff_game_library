@@ -25,7 +25,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
         case WM_POINTERENTER:
             if (::is_mouse_event(args))
             {
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 this->pending_mouse.inside_window = true;
             }
             break;
@@ -33,7 +33,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
         case WM_POINTERLEAVE:
             if (::is_mouse_event(args))
             {
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 this->pending_mouse.inside_window = false;
             }
             break;
@@ -42,7 +42,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
             {
                 ff::input_device_event device_event;
                 {
-                    std::lock_guard lock(this->mutex);
+                    std::scoped_lock lock(this->mutex);
 
                     device_event = this->touch_moved(args->CurrentPoint);
 
@@ -63,7 +63,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
             {
                 ff::input_device_event device_event;
                 {
-                    std::lock_guard lock(this->mutex);
+                    std::scoped_lock lock(this->mutex);
 
                     device_event = this->touch_pressed(args->CurrentPoint);
 
@@ -84,7 +84,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
             {
                 ff::input_device_event device_event;
                 {
-                    std::lock_guard lock(this->mutex);
+                    std::scoped_lock lock(this->mutex);
 
                     device_event = this->touch_released(args->CurrentPoint);
 
@@ -112,7 +112,7 @@ void ff::pointer_device::notify_main_window_pointer_message(unsigned int msg, Wi
                 double dpi_scale = ff::window::main()->dpi_scale();
                 ff::point_double pos(point->Position.X * dpi_scale, point->Position.Y * dpi_scale);
 
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
 
                 if (args->CurrentPoint->Properties->IsHorizontalMouseWheel)
                 {

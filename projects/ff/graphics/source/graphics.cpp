@@ -174,13 +174,13 @@ void ff::internal::graphics::destroy()
 
 void ff::internal::graphics::add_child(ff::internal::graphics_child_base* child)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
     ::graphics_children.push_back(child);
 }
 
 void ff::internal::graphics::remove_child(ff::internal::graphics_child_base* child)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
     auto i = std::find(::graphics_children.cbegin(), ::graphics_children.cend(), child);
     if (i != ::graphics_children.cend())
     {
@@ -285,7 +285,7 @@ bool ff::graphics::reset(bool force)
 
         std::vector<ff::internal::graphics_child_base*> sorted_children;
         {
-            std::lock_guard lock(::graphics_mutex);
+            std::scoped_lock lock(::graphics_mutex);
             sorted_children = ::graphics_children;
         }
 
@@ -321,14 +321,14 @@ static void flush_graphics_commands()
 {
     while (::defer_flags != ::defer_flags_t::none)
     {
-        auto lock = std::make_unique<std::lock_guard<std::recursive_mutex>>(::graphics_mutex);
+        std::unique_lock lock(::graphics_mutex);
 
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
         {
             bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
             ff::dx11_target_window_base* target = ::defer_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
-            lock.reset();
+            lock.unlock();
 
             if (target && target->allow_full_screen())
             {
@@ -339,7 +339,7 @@ static void flush_graphics_commands()
         {
             bool force = ff::flags::has(::defer_flags, ::defer_flags_t::validate_force);
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
-            lock.reset();
+            lock.unlock();
 
             ff::graphics::reset(force);
         }
@@ -349,7 +349,7 @@ static void flush_graphics_commands()
             ff::dx11_target_window_base* target = ::defer_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
             ::defer_size = ff::window_size{};
-            lock.reset();
+            lock.unlock();
 
             if (target)
             {
@@ -366,14 +366,14 @@ static void post_flush_graphics_commands()
 
 void ff::graphics::defer::set_target(ff::dx11_target_window_base* target)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
     assert(!::defer_target || !target);
     ::defer_target = target;
 }
 
 void ff::graphics::defer::validate_device(bool force)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
 
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
@@ -384,7 +384,7 @@ void ff::graphics::defer::validate_device(bool force)
 
 void ff::graphics::defer::full_screen(bool value)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
 
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
@@ -395,7 +395,7 @@ void ff::graphics::defer::full_screen(bool value)
 
 void ff::graphics::defer::resize_target(const ff::window_size& size)
 {
-    std::lock_guard lock(::graphics_mutex);
+    std::scoped_lock lock(::graphics_mutex);
 
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits),

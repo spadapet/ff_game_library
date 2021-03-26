@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <Type Name="ff::fixed_t&lt;*&gt;">
+    <DisplayString>{data / 256.0}</DisplayString>
+  </Type>
+  
   <Type Name="ff::stack_vector&lt;*&gt;">
     <DisplayString>{{size={item_size}}}</DisplayString>
     <Expand>

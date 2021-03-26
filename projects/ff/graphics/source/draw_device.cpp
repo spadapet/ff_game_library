@@ -164,10 +164,10 @@ namespace
         {
             this->reset();
 
-            this->vs_res = ff::resource_objects::global()->get_resource_object(vs_res);
-            this->gs_res = ff::resource_objects::global()->get_resource_object(gs_res);
-            this->ps_res = ff::resource_objects::global()->get_resource_object(ps_res);
-            this->ps_palette_out_res = ff::resource_objects::global()->get_resource_object(ps_palette_out_res);
+            this->vs_res = ff::global_resources::get(vs_res);
+            this->gs_res = ff::global_resources::get(gs_res);
+            this->ps_res = ff::global_resources::get(ps_res);
+            this->ps_palette_out_res = ff::global_resources::get(ps_palette_out_res);
         }
 
         void reset()

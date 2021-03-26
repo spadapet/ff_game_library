@@ -12,6 +12,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\auto_resource.cpp" />
+    <ClCompile Include="source\global_resources.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\resource.cpp" />
     <ClCompile Include="source\resource_file.cpp" />
@@ -29,6 +30,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource_api.h" />
     <ClInclude Include="source\auto_resource.h" />
+    <ClInclude Include="source\global_resources.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\resource.h" />
     <ClInclude Include="source\resource_file.h" />

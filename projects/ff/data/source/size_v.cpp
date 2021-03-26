@@ -30,7 +30,7 @@ ff::value* ff::type::size_v::get_static_value(size_t value)
 
         if (!did_init)
         {
-            std::lock_guard lock(mutex);
+            std::scoped_lock lock(mutex);
             if (!did_init)
             {
                 for (size_t i = 0; i < values.size(); i++)

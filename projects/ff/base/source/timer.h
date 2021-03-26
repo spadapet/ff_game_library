@@ -25,13 +25,12 @@ namespace ff
         double time_scale() const;
         void time_scale(double scale);
 
-        int64_t last_tick_raw_time() const;
-        static int64_t current_raw_time_static();
-        static int64_t raw_frequency_static();
-        static double raw_frequency_double_static();
-        int64_t raw_frequency() const;
-        double raw_frequency_double() const;
+        static int64_t current_raw_time();
+        static int64_t raw_frequency();
+        static double raw_frequency_double();
+        static double seconds_between_raw(int64_t start, int64_t end);
 
+        int64_t last_tick_raw_time() const;
         void store_last_tick_raw_time();
         int64_t last_tick_stored_raw_time(); // updates the stored start time too
         int64_t current_stored_raw_time(); // updates the stored start time too
@@ -41,7 +40,6 @@ namespace ff
         int64_t start_time;
         int64_t cur_time;
         int64_t stored_time;
-        int64_t frequency;
 
         size_t tick_count_;
         size_t tps_second;
@@ -53,7 +51,6 @@ namespace ff
         double start_seconds;
         double seconds_;
         double clock_seconds_;
-        double frequency_double;
         double pass_seconds;
     };
 }

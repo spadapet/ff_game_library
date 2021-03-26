@@ -41,14 +41,14 @@ public:
     const ff::dict& values() const
     {
         static ff::dict empty_dict;
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         auto iter = this->thread_to_values.find(::GetCurrentThreadId());
         return iter != this->thread_to_values.cend() ? iter->second.back() : empty_dict;
     }
 
     ff::dict& push_values()
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         std::vector<ff::dict>& values = this->thread_to_values.try_emplace(::GetCurrentThreadId(), std::vector<ff::dict>()).first->second;
 
@@ -64,7 +64,7 @@ public:
 
     ff::dict& push_values_from_owner_thread(DWORD owner_thread_id)
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         ff::dict& dict = this->push_values();
         auto iter = this->thread_to_values.find(owner_thread_id);
@@ -79,7 +79,7 @@ public:
 
     void pop_values()
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         auto iter = this->thread_to_values.find(::GetCurrentThreadId());
         if (iter != this->thread_to_values.cend())
@@ -97,7 +97,7 @@ public:
     std::shared_ptr<ff::resource> set_reference(std::shared_ptr<ff::resource> res)
     {
         std::string name(res->name());
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         auto i = this->name_to_resource.find(name);
         if (i != this->name_to_resource.cend())
@@ -124,13 +124,13 @@ public:
         std::error_code ec;
         std::filesystem::path path_canon = std::filesystem::weakly_canonical(path, ec);
 
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         this->paths_.insert(std::move(path_canon));
     }
 
     std::vector<std::filesystem::path> paths() const
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         std::vector<std::filesystem::path> paths;
         paths.reserve(this->paths_.size());
@@ -485,7 +485,7 @@ private:
     {
         // See if it's already loading
         {
-            auto lock = std::make_unique<std::lock_guard<std::recursive_mutex>>(this->mutex);
+            std::unique_lock lock(this->mutex);
             if (this->obj_to_finished.find(obj) != this->obj_to_finished.cend())
             {
                 return true;
@@ -501,7 +501,7 @@ private:
                 }
 
                 ff::win_handle wait_handle = info.event_handle.duplicate();
-                lock.reset();
+                lock.unlock();
 
                 ff::wait_for_handle(wait_handle);
                 return true;
@@ -539,7 +539,7 @@ private:
 
         // Done
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
 
             auto iter = this->obj_to_currently_finishing.find(obj);
             ff::win_handle event_handle = std::move(iter->second.event_handle);

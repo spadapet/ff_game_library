@@ -287,7 +287,7 @@ bool ff::internal::ui::init(const ff::init_ui_params& params)
 
     ::device_events_connection = ff::input::combined_devices().event_sink().connect([](const ff::input_device_event& event)
         {
-            std::lock_guard lock(::device_events_mutex);
+            std::scoped_lock lock(::device_events_mutex);
             ::device_events.push_back(event);
         });
 
@@ -410,7 +410,7 @@ void ff::ui::state_advance_input()
 {
     std::vector<ff::input_device_event> device_events;
     {
-        std::lock_guard lock(::device_events_mutex);
+        std::scoped_lock lock(::device_events_mutex);
         std::swap(device_events, ::device_events);
     }
 

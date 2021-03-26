@@ -1,6 +1,16 @@
 #include "pch.h"
 #include "timer.h"
 
+static int64_t get_raw_frequency()
+{
+    LARGE_INTEGER value;
+    ::QueryPerformanceFrequency(&value);
+    return value.QuadPart;
+}
+
+static int64_t raw_frequency = ::get_raw_frequency();
+static double raw_frequency_d = static_cast<double>(::get_raw_frequency());
+
 ff::timer::timer()
     : tick_count_(0)
     , tps_second(0)
@@ -11,28 +21,24 @@ ff::timer::timer()
     , start_seconds(0)
     , seconds_(0)
     , clock_seconds_(0)
-    , frequency_double(0)
     , pass_seconds(0)
 {
-    ::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&this->frequency));
-
-    this->reset_time = ff::timer::current_raw_time_static();
+    this->reset_time = ff::timer::current_raw_time();
     this->start_time = this->reset_time;
     this->cur_time = this->reset_time;
     this->stored_time = this->reset_time;
-    this->frequency_double = static_cast<double>(this->frequency);
 }
 
 double ff::timer::tick(double forced_offset)
 {
     double oldTime = this->seconds_;
 
-    this->cur_time = ff::timer::current_raw_time_static();
-    this->clock_seconds_ = (this->cur_time - this->reset_time) / this->frequency_double;
+    this->cur_time = ff::timer::current_raw_time();
+    this->clock_seconds_ = (this->cur_time - this->reset_time) / ::raw_frequency_d;
 
     if (forced_offset < 0)
     {
-        this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) / this->frequency_double);
+        this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) / ::raw_frequency_d);
         this->pass_seconds = this->seconds_ - oldTime;
     }
     else
@@ -66,7 +72,7 @@ double ff::timer::tick(double forced_offset)
 
 void ff::timer::reset()
 {
-    this->start_time = ff::timer::current_raw_time_static();
+    this->start_time = ff::timer::current_raw_time();
     this->cur_time = this->start_time;
     this->stored_time = this->start_time;
     this->tick_count_ = 0;
@@ -121,39 +127,35 @@ void ff::timer::time_scale(double scale)
     }
 }
 
+// static
+int64_t ff::timer::current_raw_time()
+{
+    LARGE_INTEGER cur_time;
+    ::QueryPerformanceCounter(&cur_time);
+    return cur_time.QuadPart;
+}
+
+// static
+int64_t ff::timer::raw_frequency()
+{
+    return ::raw_frequency;
+}
+
+// static
+double ff::timer::raw_frequency_double()
+{
+    return ::raw_frequency_d;
+}
+
+// static
+double ff::timer::seconds_between_raw(int64_t start, int64_t end)
+{
+    return (end - start) / ::raw_frequency_d;
+}
+
 int64_t ff::timer::last_tick_raw_time() const
 {
     return this->cur_time;
-}
-
-int64_t ff::timer::current_raw_time_static()
-{
-    int64_t cur_time;
-    ::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&cur_time));
-    return cur_time;
-}
-
-int64_t ff::timer::raw_frequency_static()
-{
-    int64_t value;
-    ::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&value));
-    return value;
-}
-
-double ff::timer::raw_frequency_double_static()
-{
-    static const double value = static_cast<double>(ff::timer::raw_frequency_static());
-    return value;
-}
-
-int64_t ff::timer::raw_frequency() const
-{
-    return this->frequency;
-}
-
-double ff::timer::raw_frequency_double() const
-{
-    return this->frequency_double;
 }
 
 void ff::timer::store_last_tick_raw_time()
@@ -171,7 +173,7 @@ int64_t ff::timer::last_tick_stored_raw_time()
 
 int64_t ff::timer::current_stored_raw_time()
 {
-    int64_t cur_time = ff::timer::current_raw_time_static();
+    int64_t cur_time = ff::timer::current_raw_time();
     int64_t diff = cur_time - this->stored_time;
     this->stored_time = cur_time;
 

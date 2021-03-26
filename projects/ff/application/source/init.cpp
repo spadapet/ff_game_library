@@ -20,7 +20,7 @@ namespace
     {
         one_time_init_app(const ff::init_app_params& params)
         {
-            ff::resource_objects::register_global_dict(::assets::get_assets_data());
+            ff::global_resources::add(::assets::get_assets_data());
 
             ::init_app_status = ff::internal::app::init(params);
         }

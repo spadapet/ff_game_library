@@ -16,7 +16,7 @@ static std::filesystem::path settings_path()
 
 void ff::internal::app::clear_settings()
 {
-    std::lock_guard lock(::mutex);
+    std::scoped_lock lock(::mutex);
 
     if (!::named_settings.empty())
     {
@@ -27,7 +27,7 @@ void ff::internal::app::clear_settings()
 
 void ff::internal::app::load_settings()
 {
-    std::lock_guard lock(::mutex);
+    std::scoped_lock lock(::mutex);
     ff::internal::app::clear_settings();
 
     std::error_code ec;
@@ -56,7 +56,7 @@ void ff::internal::app::load_settings()
 
 bool ff::internal::app::save_settings()
 {
-    std::lock_guard lock(::mutex);
+    std::scoped_lock lock(::mutex);
     if (::settings_changed)
     {
         std::filesystem::path settings_path = ::settings_path();
@@ -79,13 +79,13 @@ bool ff::internal::app::save_settings()
 
 ff::dict ff::settings(std::string_view name)
 {
-    std::lock_guard lock(::mutex);
+    std::scoped_lock lock(::mutex);
     return ::named_settings.get<ff::dict>(name);
 }
 
 void ff::settings(std::string_view name, const ff::dict& dict)
 {
-    std::lock_guard lock(::mutex);
+    std::scoped_lock lock(::mutex);
 
     if (dict.empty())
     {

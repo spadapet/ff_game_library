@@ -30,7 +30,7 @@ ff::value* ff::type::int_v::get_static_value(int value)
 
         if (!did_init)
         {
-            std::lock_guard lock(mutex);
+            std::scoped_lock lock(mutex);
             if (!did_init)
             {
                 for (int i = 0; i < static_cast<int>(values.size()); i++)

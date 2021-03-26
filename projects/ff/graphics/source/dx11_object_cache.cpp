@@ -95,7 +95,7 @@ ID3D11SamplerState* ff::dx11_object_cache::get_sampler_state(const D3D11_SAMPLER
 
 ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader(std::string_view resource_name)
 {
-    ff::auto_resource<ff::resource_file> resource = ff::resource_objects::global()->get_resource_object(resource_name);
+    ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
     std::shared_ptr<ff::data_base> data = saved_data ? saved_data->loaded_data() : nullptr;
     ID3D11VertexShader* value = data ? this->get_vertex_shader(data) : nullptr;
@@ -116,7 +116,7 @@ ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader_and_input_layout(st
 
 ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(std::string_view resource_name)
 {
-    ff::auto_resource<ff::resource_file> resource = ff::resource_objects::global()->get_resource_object(resource_name);
+    ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
     std::shared_ptr<ff::data_base> data = saved_data ? saved_data->loaded_data() : nullptr;
     ID3D11GeometryShader* value = data ? this->get_geometry_shader(data) : nullptr;
@@ -131,7 +131,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(std::string_vie
 
 ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(std::string_view resource_name, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride)
 {
-    ff::auto_resource<ff::resource_file> resource = ff::resource_objects::global()->get_resource_object(resource_name);
+    ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
     std::shared_ptr<ff::data_base> data = saved_data ? saved_data->loaded_data() : nullptr;
     ID3D11GeometryShader* value = data ? this->get_geometry_shader_stream_output(data, layout, count, vertex_stride) : nullptr;
@@ -146,7 +146,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(s
 
 ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(std::string_view resource_name)
 {
-    ff::auto_resource<ff::resource_file> resource = ff::resource_objects::global()->get_resource_object(resource_name);
+    ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
     std::shared_ptr<ff::data_base> data = saved_data ? saved_data->loaded_data() : nullptr;
     ID3D11PixelShader* value = data ? this->get_pixel_shader(data) : nullptr;
@@ -161,7 +161,7 @@ ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(std::string_view reso
 
 ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(std::string_view vertex_shader_resource_name, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
 {
-    ff::auto_resource<ff::resource_file> resource = ff::resource_objects::global()->get_resource_object(vertex_shader_resource_name);
+    ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(vertex_shader_resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
     std::shared_ptr<ff::data_base> data = saved_data ? saved_data->loaded_data() : nullptr;
     ID3D11InputLayout* value = data ? this->get_input_layout(data, layout, count) : nullptr;

@@ -337,7 +337,7 @@ void ff::debug_state::update_stats()
         this->rps_counter = 0;
     }
 
-    const double freq_d = ff::timer::raw_frequency_double_static();
+    const double freq_d = ff::timer::raw_frequency_double();
 
     if (update_fast_numbers || !this->advance_count)
     {

@@ -83,7 +83,7 @@ const ff::pointer_touch_info& ff::pointer_device::touch_info(size_t index) const
 
 void ff::pointer_device::advance()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     for (internal_touch_info& info : this->pending_touches)
     {
@@ -105,7 +105,7 @@ void ff::pointer_device::kill_pending()
 {
     std::vector<ff::input_device_event> device_events;
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         for (size_t i = 0; i < mouse_info::BUTTON_COUNT; i++)
         {

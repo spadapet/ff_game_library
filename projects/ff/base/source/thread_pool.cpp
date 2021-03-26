@@ -27,7 +27,7 @@ ff::thread_pool::~thread_pool()
 {
     // Don't allow new tasks
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         this->destroyed = true;
     }
 
@@ -66,7 +66,7 @@ void ff::thread_pool::add_task(func_type&& func)
 
     if (this)
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         this->task_count++;
 
         if (!this->destroyed && ::TrySubmitThreadpoolCallback(&thread_pool::task_callback, pair, nullptr))
@@ -117,7 +117,7 @@ void ff::thread_pool::run_task(const func_type& func)
 
     if (this)
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         if (!--this->task_count)
         {
             ::SetEvent(this->no_tasks_event);

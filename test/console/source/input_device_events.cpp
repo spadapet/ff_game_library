@@ -12,7 +12,7 @@ void run_input_device_events()
 
     auto connection = ff::input::combined_devices().event_sink().connect([&mutex, &last_event](const ff::input_device_event& event)
         {
-            std::lock_guard lock(mutex);
+            std::scoped_lock lock(mutex);
             bool ignore = (event.type == ff::input_device_event_type::mouse_move ||
                 event.type == ff::input_device_event_type::touch_move) &&
                 event.type == last_event.type;

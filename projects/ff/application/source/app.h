@@ -10,7 +10,6 @@ namespace ff
     const ff::app_time_t& app_time();
     const ff::frame_time_t& frame_time();
     ff::dx11_target_window& app_render_target();
-    void app_measure_startup_perf();
 }
 
 namespace ff::internal::app

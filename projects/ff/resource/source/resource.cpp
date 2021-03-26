@@ -29,7 +29,7 @@ std::shared_ptr<ff::resource> ff::resource::new_resource() const
 
     if (this->new_resource_ != nullptr)
     {
-        std::lock_guard lock(::get_static_mutex());
+        std::scoped_lock lock(::get_static_mutex());
 
         if (this->new_resource_ != nullptr)
         {
@@ -49,13 +49,13 @@ void ff::resource::new_resource(const std::shared_ptr<resource>& new_value)
 {
     assert(new_value);
 
-    std::lock_guard lock(::get_static_mutex());
+    std::scoped_lock lock(::get_static_mutex());
     this->new_resource_ = new_value;
     this->loading_owner_ = nullptr;
 }
 
 ff::resource_object_loader* ff::resource::loading_owner()
 {
-    //std::lock_guard lock(::get_static_mutex());
+    //std::scoped_lock lock(::get_static_mutex());
     return this->loading_owner_;
 }

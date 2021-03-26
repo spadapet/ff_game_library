@@ -24,7 +24,7 @@ namespace
         {
             if (this->source)
             {
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 if (this->source)
                 {
                     this->source->DestroyVoice();

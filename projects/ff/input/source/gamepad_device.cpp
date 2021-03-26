@@ -81,14 +81,14 @@ void ff::gamepad_device::advance()
         this->check_connected--;
     }
 
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->update_pending_state(reading);
     this->state = this->pending_state;
 }
 
 void ff::gamepad_device::kill_pending()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->update_pending_state(reading_t{});
 }
 

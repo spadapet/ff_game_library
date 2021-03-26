@@ -57,25 +57,25 @@ namespace ff::internal
 
         void clear_owner()
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             this->owner = nullptr;
         }
 
         virtual HRESULT __stdcall OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample* pSample) override
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             return this->owner ? this->owner->OnReadSample(hrStatus, dwStreamIndex, dwStreamFlags, llTimestamp, pSample) : S_OK;
         }
 
         virtual HRESULT __stdcall OnFlush(DWORD dwStreamIndex) override
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             return this->owner ? this->owner->OnFlush(dwStreamIndex) : S_OK;
         }
 
         virtual HRESULT __stdcall OnEvent(DWORD dwStreamIndex, IMFMediaEvent* pEvent) override
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             return this->owner ? this->owner->OnEvent(dwStreamIndex, pEvent) : S_OK;
         }
 
@@ -146,7 +146,7 @@ bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, 
 
 void ff::internal::music_playing::clear_owner()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->owner = nullptr;
 }
 
@@ -154,7 +154,7 @@ void ff::internal::music_playing::reset()
 {
     ff::wait_for_handle(this->async_event);
 
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->source)
     {
@@ -168,19 +168,19 @@ void ff::internal::music_playing::reset()
 
 bool ff::internal::music_playing::playing() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     return this->state == state_t::playing || (this->state == state_t::init && this->start_playing);
 }
 
 bool ff::internal::music_playing::paused() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     return this->state == state_t::paused || (this->state == state_t::init && !this->start_playing);
 }
 
 bool ff::internal::music_playing::stopped() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     return this->state == state_t::done;
 }
 
@@ -223,7 +223,7 @@ void ff::internal::music_playing::advance()
     if (this->state == state_t::done)
     {
         std::shared_ptr<ff::internal::music_playing> keep_alive;
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         if (this->state == state_t::done)
         {
@@ -234,7 +234,7 @@ void ff::internal::music_playing::advance()
 
 void ff::internal::music_playing::stop()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->state != state_t::done)
     {
@@ -249,7 +249,7 @@ void ff::internal::music_playing::stop()
 
 void ff::internal::music_playing::pause()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->state == state_t::init)
     {
@@ -265,7 +265,7 @@ void ff::internal::music_playing::pause()
 
 void ff::internal::music_playing::resume()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->state == state_t::init)
     {
@@ -280,14 +280,14 @@ void ff::internal::music_playing::resume()
 
 double ff::internal::music_playing::duration() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     return this->duration_ / 10000000.0;
 }
 
 double ff::internal::music_playing::position() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     double pos = 0;
     bool use_desired_position = false;
 
@@ -332,7 +332,7 @@ double ff::internal::music_playing::position() const
 
 bool ff::internal::music_playing::position(double value)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->state == state_t::done)
     {
@@ -407,13 +407,13 @@ void ff::internal::music_playing::OnVoiceProcessingPassEnd()
 
 void ff::internal::music_playing::OnStreamEnd()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     this->state = state_t::done;
 }
 
 void ff::internal::music_playing::OnBufferStart(void* pBufferContext)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->buffer_infos.size() == ::MAX_BUFFERS)
     {
@@ -448,7 +448,7 @@ void ff::internal::music_playing::OnVoiceError(void* pBufferContext, HRESULT err
 
 HRESULT ff::internal::music_playing::OnReadSample(HRESULT hrStatus, DWORD dwStreamIndex, DWORD dwStreamFlags, LONGLONG llTimestamp, IMFSample* pSample)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->media_state != media_state_t::reading)
     {
@@ -527,7 +527,7 @@ HRESULT ff::internal::music_playing::OnReadSample(HRESULT hrStatus, DWORD dwStre
 
 HRESULT ff::internal::music_playing::OnFlush(DWORD dwStreamIndex)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     assert(this->media_state == media_state_t::flushing);
     this->media_state = media_state_t::none;
@@ -657,7 +657,7 @@ bool ff::internal::music_playing::async_init()
         return false;
     }
 
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     this->duration_ = static_cast<LONGLONG>(duration_value.uhVal.QuadPart);
 
@@ -690,7 +690,7 @@ bool ff::internal::music_playing::async_init()
 
 void ff::internal::music_playing::read_sample()
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
     HRESULT hr = E_FAIL;
 
     if (this->media_state == media_state_t::none)
@@ -714,7 +714,7 @@ void ff::internal::music_playing::read_sample()
 std::shared_ptr<ff::internal::music_playing> ff::internal::music_playing::on_music_done()
 {
     std::shared_ptr<music_playing> keep_alive;
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     IXAudio2SourceVoice* source = this->source;
     if (source)

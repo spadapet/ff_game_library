@@ -7,6 +7,8 @@
 #include "size_v.h"
 #include "string_v.h"
 
+using namespace ff::literals;
+
 ff::type::fixed_v::fixed_v(ff::fixed_int value)
     : value(value)
 {}
@@ -51,7 +53,7 @@ ff::value_ptr ff::type::fixed_type::try_convert_to(const ff::value* val, std::ty
         return ff::value::create<int>(src);
     }
 
-    if (type == typeid(ff::type::size_v) && src >= ff::fixed_int(0))
+    if (type == typeid(ff::type::size_v) && src >= 0_f)
     {
         return ff::value::create<size_t>(static_cast<size_t>(static_cast<int>(src)));
     }

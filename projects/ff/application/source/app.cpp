@@ -51,7 +51,7 @@ namespace
     };
 }
 
-static int64_t raw_startup_time;
+static int64_t raw_startup_time = ff::timer::current_raw_time();
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::frame_time_t frame_time;
@@ -238,7 +238,7 @@ static void frame_presented()
 {
     if (::raw_startup_time)
     {
-        double seconds = (ff::timer::current_raw_time_static() - ::raw_startup_time) / ff::timer::raw_frequency_double_static();
+        double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
         ::raw_startup_time = 0;
 
         std::ostringstream str;
@@ -622,9 +622,4 @@ const ff::frame_time_t& ff::frame_time()
 ff::dx11_target_window& ff::app_render_target()
 {
     return *::target;
-}
-
-void ff::app_measure_startup_perf()
-{
-    ::raw_startup_time = ff::timer::current_raw_time_static();
 }

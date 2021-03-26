@@ -48,7 +48,7 @@ ff::thread_dispatch::~thread_dispatch()
 {
     // Don't allow new dispatches
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
         this->destroyed = true;
     }
 
@@ -111,7 +111,7 @@ void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current
         return;
     }
 
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->mutex);
 
     if (this->destroyed)
     {
@@ -262,7 +262,7 @@ void ff::thread_dispatch::flush(bool force)
     {
         std::forward_list<std::function<void()>> funcs;
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             funcs = std::move(this->funcs);
         }
 
@@ -274,7 +274,7 @@ void ff::thread_dispatch::flush(bool force)
                 func();
             }
 
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
             funcs = std::move(this->funcs);
 
             if (funcs.empty())

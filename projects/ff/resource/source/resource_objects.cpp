@@ -8,45 +8,14 @@
 #include "resource_v.h"
 #include "resource_value_provider.h"
 
+#define DEBUG_RES 0 // DEBUG
+
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
-static std::vector<std::shared_ptr<ff::data_base>> global_resource_datas;
-static std::shared_ptr<ff::resource_objects> global_resources;
-static std::mutex global_resources_mutex;
-static ff::signal<void> rebuilt_global_signal;
-
-static std::shared_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas, bool from_source)
+static std::shared_ptr<ff::resource> create_null_resource(std::string_view name, ff::resource_object_loader* loading_owner = nullptr)
 {
-    ff::dict resource_dict;
-
-    for (auto& data : datas)
-    {
-        ff::dict dict;
-        if (!ff::dict::load(ff::data_reader(data), dict))
-        {
-            assert(false);
-            continue;
-        }
-
-        if (from_source)
-        {
-            std::filesystem::path source_path = ff::filesystem::to_path(dict.get<std::string>(ff::internal::RES_SOURCE));
-            if (!source_path.empty())
-            {
-                ff::load_resources_result result = ff::load_resources_from_file(source_path, true, ff::constants::debug_build);
-                assert(result.status);
-
-                if (result.status)
-                {
-                    dict = std::move(result.dict);
-                }
-            }
-        }
-
-        resource_dict.set(dict, false);
-    }
-
-    return std::make_unique<ff::resource_objects>(resource_dict);
+    ff::value_ptr null_value = ff::value::create<nullptr_t>();
+    return std::make_shared<ff::resource>(name, null_value, loading_owner);
 }
 
 ff::resource_objects::resource_objects(const ff::dict& dict)
@@ -61,85 +30,9 @@ ff::resource_objects::~resource_objects()
     this->flush_all_resources();
 }
 
-const ff::resource_object_factory_base* ff::resource_objects::factory()
-{
-    return ff::resource_object_base::get_factory(ff::internal::RES_FACTORY_NAME);
-}
-
-void ff::resource_objects::register_global_dict(std::shared_ptr<ff::data_base> data)
-{
-    std::lock_guard lock(::global_resources_mutex);
-
-    ::global_resource_datas.push_back(data);
-
-    if (::global_resources)
-    {
-        ff::dict dict;
-        if (ff::dict::load(ff::data_reader(data), dict))
-        {
-            ::global_resources->add_resources(dict);
-        }
-    }
-}
-
-std::shared_ptr<ff::resource_objects> ff::resource_objects::global()
-{
-    std::lock_guard lock(::global_resources_mutex);
-
-    if (!::global_resources)
-    {
-        ::global_resources = ::create_global_resources(::global_resource_datas, false);
-    }
-
-    return ::global_resources;
-}
-
-void ff::resource_objects::reset_global()
-{
-    std::lock_guard lock(::global_resources_mutex);
-    ::global_resource_datas.clear();
-    ::global_resources.reset();
-}
-
-void ff::resource_objects::rebuild_global_async()
-{
-    std::vector<std::shared_ptr<ff::data_base>> datas;
-    {
-        std::lock_guard lock(::global_resources_mutex);
-        datas = ::global_resource_datas;
-    }
-
-    ff::thread_pool::get()->add_task([datas]()
-        {
-            std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
-
-            ff::thread_dispatch::get_game()->post([global_resources]()
-                {
-                    if (global_resources)
-                    {
-                        std::lock_guard lock(::global_resources_mutex);
-                        ::global_resources = global_resources;
-                    }
-
-                    ::rebuilt_global_signal.notify();
-                });
-        });
-}
-
-ff::signal_sink<void>& ff::resource_objects::rebuilt_global_sink()
-{
-    return ::rebuilt_global_signal;
-}
-
-static std::shared_ptr<ff::resource> create_null_resource(std::string_view name, ff::resource_object_loader* loading_owner = nullptr)
-{
-    ff::value_ptr null_value = ff::value::create<nullptr_t>();
-    return std::make_shared<ff::resource>(name, null_value, loading_owner);
-}
-
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->resource_object_info_mutex);
     std::shared_ptr<ff::resource> value;
 
     auto iter = this->resource_object_infos.find(name);
@@ -150,23 +43,32 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
 
         if (!value)
         {
-            if (++this->loading_count == 1)
+            if (this->loading_count.fetch_add(1) == 0)
             {
                 ::ResetEvent(this->done_loading_event);
             }
 
             value = ::create_null_resource(name, this);
 
-            info.weak_value = value;
-            info.loading_info = std::make_unique<resource_object_loading_info>();
-            info.loading_info->original_value = value;
-            info.loading_info->event = ff::create_event();
+            auto loading_info = std::make_shared<resource_object_loading_info>();
+            loading_info->event = ff::create_event();
+            loading_info->original_value = value;
+            loading_info->blocked_count = 1;
+            loading_info->name = name;
+            loading_info->owner = &info;
 
-            std::string keep_name(name);
-            ff::thread_pool::get()->add_task([this, keep_name, &info]()
+            info.weak_value = value;
+            info.weak_loading_info = loading_info;
+
+#if DEBUG_RES
+            std::ostringstream str;
+            str << "[ff/res] Load: " << name;
+            ff::log::write_debug(str);
+#endif
+            ff::thread_pool::get()->add_task([this, loading_info]()
                 {
-                    ff::value_ptr new_value = this->create_resource_objects(info, info.dict_value);
-                    this->update_resource_object_info(info, std::make_shared<ff::resource>(keep_name, new_value));
+                    ff::value_ptr new_value = this->create_resource_objects(loading_info, loading_info->owner->dict_value);
+                    this->update_resource_object_info(loading_info, std::make_shared<ff::resource>(loading_info->name, new_value));
                     // no code here since the destructor may be running
                 });
         }
@@ -177,7 +79,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
 
 std::vector<std::string_view> ff::resource_objects::resource_object_names() const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->resource_object_info_mutex);
     std::vector<std::string_view> names;
     names.reserve(this->resource_object_infos.size());
 
@@ -194,18 +96,18 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
     ff::resource_object_loader* owner = value->loading_owner();
     if (owner == this)
     {
-        ff::timer timer;
+        int64_t start_time = ff::timer::current_raw_time();
         ff::win_handle load_event;
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->resource_object_info_mutex);
 
             auto i = this->resource_object_infos.find(value->name());
             if (i != this->resource_object_infos.cend())
             {
-                resource_object_info& info = i->second;
-                if (info.loading_info)
+                auto loading_info = i->second.weak_loading_info.lock();
+                if (loading_info)
                 {
-                    load_event = info.loading_info->event.duplicate();
+                    load_event = loading_info->event.duplicate();
                 }
             }
         }
@@ -214,11 +116,10 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
         {
             ff::wait_for_handle(load_event);
 
-            double seconds = timer.tick();
-
-#ifdef _DEBUG
+#if DEBUG_RES
+            double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
             std::ostringstream str;
-            str << "[ff/res] Blocked on resource: " << value->name() << " (" << std::setprecision(4) << seconds * 1000.0 << "ms)";
+            str << "[ff/res] Waited: " << value->name() << " (" << std::fixed << std::setprecision(1) << seconds * 1000.0 << "ms)";
             ff::log::write_debug(str);
 #endif
         }
@@ -231,7 +132,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
 void ff::resource_objects::flush_all_resources()
 {
     ff::wait_for_handle(this->done_loading_event);
-    assert(!this->loading_count);
+    assert(!this->loading_count.load());
 }
 
 const std::shared_ptr<ff::resource_value_provider>& ff::resource_objects::localized_value_provider() const
@@ -246,7 +147,7 @@ void ff::resource_objects::localized_value_provider(std::shared_ptr<ff::resource
 
 bool ff::resource_objects::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->resource_object_info_mutex);
 
     for (auto& i : this->resource_object_infos)
     {
@@ -258,7 +159,7 @@ bool ff::resource_objects::save_to_cache(ff::dict& dict, bool& allow_compress) c
 
 void ff::resource_objects::add_resources(const ff::dict& dict)
 {
-    std::lock_guard lock(this->mutex);
+    std::scoped_lock lock(this->resource_object_info_mutex);
 
     for (std::string_view name : dict.child_names())
     {
@@ -271,71 +172,72 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
     }
 }
 
-void ff::resource_objects::update_resource_object_info(resource_object_info& info, std::shared_ptr<ff::resource> new_value)
+void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, std::shared_ptr<ff::resource> new_value)
 {
-    // notify new object that loading is done
-    if (new_value)
-    {
-        this->mutex.lock();
-        bool done_loading = info.loading_info->child_infos.empty();
-        this->mutex.unlock();
+    std::unique_lock loading_lock(loading_info->mutex);
 
+    assert(loading_info->blocked_count > 0);
+    bool loading_done = loading_info->blocked_count > 0 && !--loading_info->blocked_count;
+
+#if DEBUG_RES
+    std::ostringstream str;
+    str << "[ff/res] Update: " << loading_info->name << " (" << loading_info->blocked_count << (loading_done ? ", done)" : ", blocked)");
+    ff::log::write_debug(str);
+#endif
+
+    if (loading_done)
+    {
         std::shared_ptr<ff::resource_object_base> new_obj = new_value->value()->get<ff::resource_object_base>();
-        if (done_loading && new_obj && !new_obj->resource_load_complete(false))
+        if (new_obj && !new_obj->resource_load_complete(false))
         {
             assert(false);
             new_value = ::create_null_resource(new_value->name());
         }
     }
 
-    std::lock_guard lock(this->mutex);
-    std::vector<resource_object_info*> parent_infos;
+    loading_info->final_value = new_value;
 
-    info.loading_info->final_value = new_value;
-
-    if (info.loading_info->child_infos.empty())
+    if (loading_done)
     {
-        std::shared_ptr<ff::resource> old_resource = info.weak_value.lock();
+        std::scoped_lock lock(this->resource_object_info_mutex);
+        std::shared_ptr<ff::resource> old_resource = loading_info->owner->weak_value.lock();
+
         if (old_resource)
         {
             old_resource->new_resource(new_value);
         }
 
-        info.weak_value = new_value;
+        loading_info->owner->weak_value = new_value;
+        loading_info->owner->weak_loading_info.reset();
 
-        ff::win_handle event = std::move(info.loading_info->event);
-        std::swap(parent_infos, info.loading_info->parent_infos);
-        info.loading_info.reset();
+        ::SetEvent(loading_info->event);
 
-        ::SetEvent(event);
-    }
-
-    for (resource_object_info* parent_info : parent_infos)
-    {
-        resource_object_loading_info& parent_loading_info = *parent_info->loading_info;
-        auto iter = std::find(parent_loading_info.child_infos.cbegin(), parent_loading_info.child_infos.cend(), &info);
-        if (iter != parent_loading_info.child_infos.cend())
+        for (auto parent_loading_info : loading_info->parent_loading_infos)
         {
-            parent_loading_info.child_infos.erase(iter);
-        }
-
-        if (parent_loading_info.child_infos.empty() && parent_loading_info.final_value)
-        {
-            this->update_resource_object_info(*parent_info, parent_loading_info.final_value);
+#if DEBUG_RES
+            std::ostringstream str;
+            str << "[ff/res] Unblocking: '" << parent_loading_info->name << "' unblocked by '" << loading_info->name << "'";
+            ff::log::write_debug(str);
+#endif
+            this->update_resource_object_info(parent_loading_info, parent_loading_info->final_value);
         }
     }
 
-    if (!info.loading_info)
+    loading_lock.unlock();
+
+    if (loading_done)
     {
-        assert(this->loading_count > 0);
-        if (this->loading_count && !--this->loading_count)
+        int old_loading_count = this->loading_count.fetch_sub(1);
+        assert(old_loading_count >= 1);
+
+        if (old_loading_count == 1)
         {
             ::SetEvent(this->done_loading_event);
         }
     }
 }
 
-ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info& info, ff::value_ptr value)
+ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value)
 {
     if (!value)
     {
@@ -356,7 +258,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
             std::vector<std::string_view> names = dict.child_names();
             for (std::string_view name : names)
             {
-                ff::value_ptr new_value = this->create_resource_objects(info, dict.get(name));
+                ff::value_ptr new_value = this->create_resource_objects(loading_info, dict.get(name));
                 dict.set(name, new_value);
             }
         }
@@ -376,7 +278,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
         std::vector<ff::value_ptr> vec = value->get<std::vector<ff::value_ptr>>();
         for (size_t i = 0; i < vec.size(); i++)
         {
-            vec[i] = this->create_resource_objects(info, vec[i]);
+            vec[i] = this->create_resource_objects(loading_info, vec[i]);
         }
 
         value = ff::value::create<std::vector<ff::value_ptr>>(std::move(vec));
@@ -392,15 +294,29 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
             std::string_view ref_name = str.substr(ff::internal::REF_PREFIX.size());
             std::shared_ptr<ff::resource> ref_value = this->get_resource_object(ref_name);
             {
-                std::lock_guard lock(this->mutex);
-                auto i = this->resource_object_infos.find(ref_name);
-                if (i != this->resource_object_infos.cend())
+                std::shared_ptr<resource_object_loading_info> ref_loading_info;
                 {
-                    resource_object_info& ref_info = i->second;
-                    if (ref_info.loading_info)
+                    std::scoped_lock lock(this->resource_object_info_mutex);
+                    auto i = this->resource_object_infos.find(ref_name);
+                    if (i != this->resource_object_infos.cend())
                     {
-                        info.loading_info->child_infos.push_back(&ref_info);
-                        ref_info.loading_info->parent_infos.push_back(&info);
+                        ref_loading_info = i->second.weak_loading_info.lock();
+                    }
+                }
+
+                if (ref_loading_info)
+                {
+                    std::scoped_lock locks(loading_info->mutex, ref_loading_info->mutex);
+
+                    if (ref_loading_info->blocked_count)
+                    {
+#if DEBUG_RES
+                        std::ostringstream str;
+                        str << "[ff/res] Blocking: '" << loading_info->name << "' blocked by '" << ref_loading_info->name << "'";
+                        ff::log::write_debug(str);
+#endif
+                        loading_info->blocked_count++;
+                        ref_loading_info->parent_loading_infos.push_back(loading_info);
                     }
                 }
             }
@@ -411,7 +327,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
         {
             std::string_view loc_name = str.substr(ff::internal::LOC_PREFIX.size());
             value = this->localized_value_provider() ? this->localized_value_provider()->get_resource_value(loc_name) : nullptr;
-#ifdef _DEBUG
+#if DEBUG_RES
             if (!value)
             {
                 std::ostringstream error;
@@ -425,7 +341,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(resource_object_info
     else if (value->is_type<ff::saved_data_base>())
     {
         // fully load and uncompress all saved data
-        value = this->create_resource_objects(info, value->try_convert<ff::data_base>());
+        value = this->create_resource_objects(loading_info, value->try_convert<ff::data_base>());
     }
 
     return value;

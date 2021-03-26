@@ -105,7 +105,7 @@ namespace ff
             ::PSLIST_ENTRY free_entry = nullptr;
             while (!free_entry && !(free_entry = ::InterlockedPopEntrySList(&this->free_list)))
             {
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
 
                 if (!(free_entry = ::InterlockedPopEntrySList(&this->free_list)))
                 {
@@ -138,7 +138,7 @@ namespace ff
         {
             if (!this->size)
             {
-                std::lock_guard lock(this->mutex);
+                std::scoped_lock lock(this->mutex);
                 if (!this->size)
                 {
                     ::InterlockedFlushSList(&this->free_list);
@@ -149,7 +149,7 @@ namespace ff
 
         void get_stats(size_t* size, size_t* allocated) const
         {
-            std::lock_guard lock(this->mutex);
+            std::scoped_lock lock(this->mutex);
 
             if (size)
             {

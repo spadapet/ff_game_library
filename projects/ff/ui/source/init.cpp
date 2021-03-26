@@ -20,7 +20,7 @@ namespace
     {
         one_time_init_ui(const ff::init_ui_params& params)
         {
-            ff::resource_objects::register_global_dict(::shaders::get_shaders_data());
+            ff::global_resources::add(::shaders::get_shaders_data());
 
             ::init_ui_status = ff::internal::ui::init(params);
         }

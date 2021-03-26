@@ -16,7 +16,7 @@ static std::vector<ff::audio_playing_base*> audio_paused;
 template<class T>
 static void get_copy(ff::stack_vector<T*, 64>& dest, const std::vector<T*>& src)
 {
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
     dest.resize(src.size());
 
     if (src.size())
@@ -107,13 +107,13 @@ void ff::internal::audio::destroy()
 
 void ff::internal::audio::add_child(ff::internal::audio_child_base* child)
 {
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
     ::audio_children.push_back(child);
 }
 
 void ff::internal::audio::remove_child(ff::internal::audio_child_base* child)
 {
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
     auto i = std::find(::audio_children.cbegin(), ::audio_children.cend(), child);
     if (i != ::audio_children.cend())
     {
@@ -125,7 +125,7 @@ void ff::internal::audio::add_playing(ff::audio_playing_base* child)
 {
     ff::internal::audio::add_child(child);
 
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
     ::audio_playing.push_back(child);
 
     if (child->paused())
@@ -138,7 +138,7 @@ void ff::internal::audio::remove_playing(ff::audio_playing_base* child)
 {
     ff::internal::audio::remove_child(child);
 
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
 
     auto i = std::find(::audio_paused.cbegin(), ::audio_paused.cend(), child);
     if (i != ::audio_paused.cend())
@@ -263,7 +263,7 @@ void ff::audio::pause_effects()
         }
     }
 
-    std::lock_guard lock(::audio_mutex);
+    std::scoped_lock lock(::audio_mutex);
 
     for (ff::audio_playing_base* paused : new_paused)
     {
@@ -278,7 +278,7 @@ void ff::audio::resume_effects()
 {
     std::vector<ff::audio_playing_base*> paused;
     {
-        std::lock_guard lock(::audio_mutex);
+        std::scoped_lock lock(::audio_mutex);
         std::swap(paused, ::audio_paused);
     }
 

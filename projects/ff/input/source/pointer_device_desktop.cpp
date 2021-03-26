@@ -60,7 +60,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
     ff::point_int mouse_pos(GET_X_LPARAM(message.lp), GET_Y_LPARAM(message.lp));
     ff::input_device_event device_event(ff::input_device_event_type::none);
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         switch (message.msg)
         {
@@ -261,7 +261,7 @@ void ff::pointer_device::pointer_message(const ff::window_message& message)
     std::vector<internal_touch_info>::iterator info;
     ff::pointer_touch_info event_info{};
     {
-        std::lock_guard lock(this->mutex);
+        std::scoped_lock lock(this->mutex);
 
         switch (message.msg)
         {

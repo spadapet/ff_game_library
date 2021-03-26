@@ -23,7 +23,8 @@ namespace resource_test
             Assert::IsTrue(result.status);
             Assert::IsTrue(result.errors.empty());
 
-            auto res = std::dynamic_pointer_cast<ff::resource_objects>(ff::resource_objects::factory()->load_from_cache(result.dict));
+            const ff::resource_object_factory_base* factory = ff::resource_objects::get_factory(ff::internal::RES_FACTORY_NAME);
+            auto res = std::dynamic_pointer_cast<ff::resource_objects>(factory->load_from_cache(result.dict));
             Assert::IsNotNull(res.get());
 
             ff::auto_resource<ff::resource_values> values = res->get_resource_object("values");

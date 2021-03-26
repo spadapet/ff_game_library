@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "source/auto_resource.h"
+#include "source/global_resources.h"
 #include "source/init.h"
 #include "source/resource.h"
 #include "source/resource_file.h"

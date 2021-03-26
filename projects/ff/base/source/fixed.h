@@ -257,6 +257,19 @@ namespace ff
     using fixed_int = typename fixed_t<int32_t, int64_t, 8>;
 }
 
+namespace ff::literals
+{
+    inline ff::fixed_int operator "" _f(unsigned long long val)
+    {
+        return ff::fixed_int(static_cast<size_t>(val));
+    }
+
+    inline ff::fixed_int operator "" _f(long double val)
+    {
+        return ff::fixed_int(static_cast<double>(val));
+    }
+}
+
 namespace std
 {
     template<class T, class ET, T FC>
