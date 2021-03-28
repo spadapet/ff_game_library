@@ -9,18 +9,13 @@ namespace
     namespace shaders
     {
 #include "ff.ui.res.h"
-
-        static std::shared_ptr<::ff::data_base> get_shaders_data()
-        {
-            return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
-        }
     }
 
     struct one_time_init_ui
     {
         one_time_init_ui(const ff::init_ui_params& params)
         {
-            ff::global_resources::add(::shaders::get_shaders_data());
+            ff::global_resources::add(::shaders::data());
 
             ::init_ui_status = ff::internal::ui::init(params);
         }

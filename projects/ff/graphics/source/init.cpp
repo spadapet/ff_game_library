@@ -16,11 +16,6 @@ namespace
     namespace shaders
     {
 #include "ff.graphics.res.h"
-
-        static std::shared_ptr<::ff::data_base> get_shaders_data()
-        {
-            return std::make_shared<::ff::data_static>(ff::build_res::bytes, ff::build_res::byte_size);
-        }
     }
 }
 
@@ -43,7 +38,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
-            ff::global_resources::add(::shaders::get_shaders_data());
+            ff::global_resources::add(::shaders::data());
 
             ::init_graphics_status = ff::internal::graphics::init();
         }

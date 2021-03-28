@@ -52,11 +52,13 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output)
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    output << R"(namespace ff::build_res
+    output << R"(namespace
 {
-    static const uint8_t bytes[] =
+    namespace internal
     {
-    )";
+        static constexpr uint8_t bytes[] =
+        {
+        )";
 
     for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
     {
@@ -67,12 +69,18 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output)
             output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
         }
 
-        output << std::endl << "    ";
+        output << std::endl << "        ";
     }
 
     output << R"(};
 
-    static constexpr size_t byte_size = sizeof(bytes);
+        static constexpr size_t byte_size = sizeof(bytes);
+    }
+
+    static std::shared_ptr<::ff::data_base> data()
+    {
+        return std::make_shared<::ff::data_static>(internal::bytes, internal::byte_size);
+    }
 }
 )";
 

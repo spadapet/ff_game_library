@@ -59,7 +59,8 @@ static ff::timer timer;
 static ff::win_handle game_thread_event;
 static ff::signal_connection window_message_connection;
 static ff::state_wrapper game_state;
-static std::string app_name;
+static std::string app_product_name;
+static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
 static std::unique_ptr<ff::dx11_target_window> target;
 static std::unique_ptr<ff::dx11_depth> depth;
@@ -490,10 +491,10 @@ static std::filesystem::path log_file_path()
 
 static void init_app_name()
 {
-    if (::app_name.empty())
+    if (::app_product_name.empty())
     {
 #if UWP_APP
-        ::app_name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
+        ::app_product_name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
 #else
         std::array<wchar_t, 2048> wpath;
         DWORD size = static_cast<DWORD>(wpath.size());
@@ -512,26 +513,34 @@ static void init_app_name()
                     wchar_t* product_name = nullptr;
                     UINT product_name_size = 0;
 
+                    wchar_t* internal_name = nullptr;
+                    UINT internal_name_size = 0;
+
                     if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product_name), &product_name_size) && product_name_size > 1)
                     {
-                        ::app_name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
+                        ::app_product_name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
+                    }
+
+                    if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\InternalName", reinterpret_cast<void**>(&internal_name), &internal_name_size) && internal_name_size > 1)
+                    {
+                        ::app_internal_name = ff::string::to_string(std::wstring_view(internal_name, static_cast<size_t>(internal_name_size) - 1));
                     }
                 }
             }
 
-            if (::app_name.empty())
+            if (::app_product_name.empty())
             {
                 std::filesystem::path path = ff::filesystem::to_path(ff::string::to_string(wstr));
-                ::app_name = ff::filesystem::to_string(path.stem());
+                ::app_product_name = ff::filesystem::to_string(path.stem());
             }
         }
 #endif
     }
 
-    if (::app_name.empty())
+    if (::app_product_name.empty())
     {
         // fallback
-        ::app_name = "App";
+        ::app_product_name = "App";
     }
 }
 
@@ -542,7 +551,7 @@ static void init_log()
     ff::log::file(::log_file.get());
 
     std::ostringstream str;
-    str << "App init (" << ff::app_name() << ")";
+    str << "App init (" << ff::app_product_name() << ")";
     ff::log::write(str.str());
 
     str.str(std::string());
@@ -561,7 +570,7 @@ static void destroy_log()
 static void init_window()
 {
 #if !UWP_APP
-    ::SetWindowText(*ff::window::main(), ff::string::to_wstring(ff::app_name()).c_str());
+    ::SetWindowText(*ff::window::main(), ff::string::to_wstring(ff::app_product_name()).c_str());
     ::ShowWindow(*ff::window::main(), SW_SHOWDEFAULT);
 #endif
     ::update_window_visible(true);
@@ -604,9 +613,14 @@ void ff::internal::app::destroy()
     ::destroy_log();
 }
 
-const std::string& ff::app_name()
+const std::string& ff::app_product_name()
 {
-    return ::app_name;
+    return ::app_product_name;
+}
+
+const std::string& ff::app_internal_name()
+{
+    return ::app_internal_name.empty() ? ff::app_product_name() : ::app_internal_name;
 }
 
 const ff::app_time_t& ff::app_time()

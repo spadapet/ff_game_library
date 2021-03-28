@@ -1,12 +1,6 @@
 #include "pch.h"
 #include "resource.h"
 
-static std::recursive_mutex& get_static_mutex() noexcept
-{
-    static std::recursive_mutex mutex;
-    return mutex;
-}
-
 ff::resource::resource(std::string_view name, ff::value_ptr value, resource_object_loader* loading_owner)
     : name_(name)
     , value_(value ? value : ff::value::create<nullptr_t>())
@@ -25,37 +19,34 @@ ff::value_ptr ff::resource::value() const
 
 std::shared_ptr<ff::resource> ff::resource::new_resource() const
 {
-    std::shared_ptr<ff::resource> new_value;
+    std::shared_ptr<ff::resource> new_resource;
 
-    if (this->new_resource_ != nullptr)
+    if (!this->loading_owner_.load())
     {
-        std::scoped_lock lock(::get_static_mutex());
-
-        if (this->new_resource_ != nullptr)
+        new_resource = this->new_resource_;
+        if (new_resource)
         {
-            new_value = this->new_resource_;
-
-            while (new_value->new_resource_ != nullptr)
+            std::shared_ptr<ff::resource> new_resource2 = new_resource->new_resource();
+            while (new_resource2)
             {
-                new_value = new_value->new_resource();
+                new_resource = new_resource2;
+                new_resource2 = new_resource2->new_resource();
             }
         }
     }
 
-    return new_value;
+    return new_resource;
 }
 
 void ff::resource::new_resource(const std::shared_ptr<resource>& new_value)
 {
     assert(new_value);
 
-    std::scoped_lock lock(::get_static_mutex());
     this->new_resource_ = new_value;
-    this->loading_owner_ = nullptr;
+    this->loading_owner_.store(nullptr);
 }
 
 ff::resource_object_loader* ff::resource::loading_owner()
 {
-    //std::scoped_lock lock(::get_static_mutex());
-    return this->loading_owner_;
+    return this->loading_owner_.load();
 }

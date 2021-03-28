@@ -24,6 +24,6 @@ namespace ff
         std::string name_;
         ff::value_ptr value_;
         std::shared_ptr<resource> new_resource_;
-        resource_object_loader* loading_owner_;
+        std::atomic<resource_object_loader*> loading_owner_;
     };
 }

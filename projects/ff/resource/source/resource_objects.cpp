@@ -8,7 +8,7 @@
 #include "resource_v.h"
 #include "resource_value_provider.h"
 
-#define DEBUG_RES 0 // DEBUG
+#define DEBUG_RES DEBUG // Level: 0, 1, or 2
 
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
@@ -60,7 +60,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
             info.weak_value = value;
             info.weak_loading_info = loading_info;
 
-#if DEBUG_RES
+#if DEBUG_RES > 1
             std::ostringstream str;
             str << "[ff/res] Load: " << name;
             ff::log::write_debug(str);
@@ -116,7 +116,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
         {
             ff::wait_for_handle(load_event);
 
-#if DEBUG_RES
+#if DEBUG_RES > 0
             double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
             std::ostringstream str;
             str << "[ff/res] Waited: " << value->name() << " (" << std::fixed << std::setprecision(1) << seconds * 1000.0 << "ms)";
@@ -179,7 +179,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
     assert(loading_info->blocked_count > 0);
     bool loading_done = loading_info->blocked_count > 0 && !--loading_info->blocked_count;
 
-#if DEBUG_RES
+#if DEBUG_RES > 1
     std::ostringstream str;
     str << "[ff/res] Update: " << loading_info->name << " (" << loading_info->blocked_count << (loading_done ? ", done)" : ", blocked)");
     ff::log::write_debug(str);
@@ -214,7 +214,9 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
 
         for (auto parent_loading_info : loading_info->parent_loading_infos)
         {
-#if DEBUG_RES
+            std::unique_lock loading_lock(parent_loading_info->mutex);
+
+#if DEBUG_RES > 1
             std::ostringstream str;
             str << "[ff/res] Unblocking: '" << parent_loading_info->name << "' unblocked by '" << loading_info->name << "'";
             ff::log::write_debug(str);
@@ -310,7 +312,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
 
                     if (ref_loading_info->blocked_count)
                     {
-#if DEBUG_RES
+#if DEBUG_RES > 1
                         std::ostringstream str;
                         str << "[ff/res] Blocking: '" << loading_info->name << "' blocked by '" << ref_loading_info->name << "'";
                         ff::log::write_debug(str);
@@ -327,7 +329,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
         {
             std::string_view loc_name = str.substr(ff::internal::LOC_PREFIX.size());
             value = this->localized_value_provider() ? this->localized_value_provider()->get_resource_value(loc_name) : nullptr;
-#if DEBUG_RES
+#if DEBUG_RES > 0
             if (!value)
             {
                 std::ostringstream error;
