@@ -7,7 +7,7 @@ ff::dx11_device_state::dx11_device_state()
     this->clear();
 }
 
-ff::dx11_device_state::dx11_device_state(ID3D11DeviceContext* context)
+ff::dx11_device_state::dx11_device_state(ID3D11DeviceContextX* context)
 {
     this->reset(context);
 }
@@ -64,7 +64,7 @@ void ff::dx11_device_state::clear()
     }
 }
 
-void ff::dx11_device_state::reset(ID3D11DeviceContext* context)
+void ff::dx11_device_state::reset(ID3D11DeviceContextX* context)
 {
     this->clear();
     this->context = context;

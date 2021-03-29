@@ -8,7 +8,7 @@ namespace ff
     {
     public:
         dx11_device_state();
-        dx11_device_state(ID3D11DeviceContext* context);
+        dx11_device_state(ID3D11DeviceContextX* context);
         dx11_device_state(dx11_device_state&& other) noexcept = delete;
         dx11_device_state(const dx11_device_state& other) = delete;
 
@@ -16,7 +16,7 @@ namespace ff
         dx11_device_state& operator=(const dx11_device_state& other) = delete;
 
         void clear();
-        void reset(ID3D11DeviceContext* context);
+        void reset(ID3D11DeviceContextX* context);
         void apply(dx11_device_state& dest);
         ff::graphics_counters reset_counters();
         void draw(size_t count, size_t start);
@@ -60,7 +60,7 @@ namespace ff
         const Microsoft::WRL::ComPtr<ID3D11DepthStencilView>& depth_view() const;
 
     private:
-        Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
+        Microsoft::WRL::ComPtr<ID3D11DeviceContextX> context;
         ff::graphics_counters counters;
 
         template<typename TShader>
