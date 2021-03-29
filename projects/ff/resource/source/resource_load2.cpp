@@ -685,6 +685,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
     ff::load_resources_result result{};
     result.status = true;
+    result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE);
     result.dict = std::move(dict);
     return result;
 }

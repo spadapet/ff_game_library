@@ -1,4 +1,6 @@
 {
+  "res:namespace": "assets::xaml",
+
   "application_resources.xaml":
   {
     "res:type": "file",

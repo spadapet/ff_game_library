@@ -3,6 +3,7 @@
 
 std::string_view ff::internal::RES_FILES("res:files");
 std::string_view ff::internal::RES_IMPORT("res:import");
+std::string_view ff::internal::RES_NAMESPACE("res:namespace");
 std::string_view ff::internal::RES_SOURCE("res:source");
 std::string_view ff::internal::RES_TEMPLATE("res:template");
 std::string_view ff::internal::RES_TYPE("res:type");

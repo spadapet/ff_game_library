@@ -47,12 +47,12 @@ static bool test_load_resources(const ff::dict& dict)
     return true;
 }
 
-static bool write_header(const std::vector<uint8_t>& data, std::ostream& output)
+static bool write_header(const std::vector<uint8_t>& data, std::ostream& output, std::string_view cpp_namespace)
 {
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    output << R"(namespace
+    output << "namespace { namespace " << cpp_namespace << R"(
 {
     namespace internal
     {
@@ -81,7 +81,7 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output)
     {
         return std::make_shared<::ff::data_static>(internal::bytes, internal::byte_size);
     }
-}
+} }
 )";
 
     return true;
@@ -129,7 +129,7 @@ static bool compile_resource_pack(
     if (!header_file.empty())
     {
         std::ofstream header_stream(header_file);
-        if (!header_stream || !::write_header(*data, header_stream))
+        if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
         {
             assert(false);
             return false;

@@ -2,20 +2,17 @@
 #include "init.h"
 #include "ui.h"
 
+#include "ff.ui.res.h"
+
 static bool init_ui_status;
 
 namespace
 {
-    namespace shaders
-    {
-#include "ff.ui.res.h"
-    }
-
     struct one_time_init_ui
     {
         one_time_init_ui(const ff::init_ui_params& params)
         {
-            ff::global_resources::add(::shaders::data());
+            ff::global_resources::add(::assets::ui::data());
 
             ::init_ui_status = ff::internal::ui::init(params);
         }

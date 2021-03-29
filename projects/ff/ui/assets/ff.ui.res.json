@@ -1,4 +1,6 @@
 {
+  "res:namespace": "assets::ui",
+
   "Noesis.Quad_VS":
   {
     "res:type": "shader",

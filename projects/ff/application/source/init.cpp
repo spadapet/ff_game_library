@@ -2,20 +2,17 @@
 #include "app.h"
 #include "init.h"
 
+#include "ff.assets.res.h"
+
 static bool init_app_status;
 
 namespace
 {
-    namespace assets
-    {
-#include "ff.assets.res.h"
-    }
-
     struct one_time_init_app
     {
         one_time_init_app(const ff::init_app_params& params)
         {
-            ff::global_resources::add(::assets::data());
+            ff::global_resources::add(::assets::app::data());
 
             ::init_app_status = ff::internal::app::init(params);
         }

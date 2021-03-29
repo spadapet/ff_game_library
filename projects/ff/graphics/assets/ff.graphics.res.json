@@ -1,4 +1,6 @@
 {
+  "res:namespace": "assets::graphics",
+
   "ff.shader.line_vs":
   {
     "res:type": "shader",

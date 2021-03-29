@@ -11,13 +11,7 @@
 #include "shader.h"
 #include "texture_metadata.h"
 
-namespace
-{
-    namespace shaders
-    {
 #include "ff.graphics.res.h"
-    }
-}
 
 static bool init_graphics_status;
 
@@ -38,7 +32,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
-            ff::global_resources::add(::shaders::data());
+            ff::global_resources::add(::assets::graphics::data());
 
             ::init_graphics_status = ff::internal::graphics::init();
         }

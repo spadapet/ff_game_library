@@ -4,6 +4,7 @@ namespace ff::internal
 {
     extern std::string_view RES_FILES;
     extern std::string_view RES_IMPORT;
+    extern std::string_view RES_NAMESPACE;
     extern std::string_view RES_SOURCE;
     extern std::string_view RES_TEMPLATE;
     extern std::string_view RES_TYPE;
@@ -21,6 +22,7 @@ namespace ff
     {
         bool status;
         std::vector<std::string> errors;
+        std::string namespace_;
         ff::dict dict;
     };
 

@@ -1,4 +1,6 @@
 {
+  "res:namespace": "assets::app",
+
   "ff.debug_font_file":
   {
     "res:type": "font_file",
