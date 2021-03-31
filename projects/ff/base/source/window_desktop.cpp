@@ -6,6 +6,9 @@
 #if !UWP_APP
 
 static ff::window* main_window = nullptr;
+static bool main_window_active = false;
+static bool main_window_focused = false;
+static bool main_window_visible = false;
 
 ff::window::window(window_type type)
     : hwnd(nullptr)
@@ -172,9 +175,41 @@ ff::signal_sink<ff::window_message&>& ff::window::message_sink()
     return this->message_signal;
 }
 
-void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
+void ff::window::notify_message(ff::window_message& message)
 {
-    ff::window_message message{ this->handle(), msg, wp, lp, 0, false };
+    if (this == ::main_window)
+    {
+        switch (message.msg)
+        {
+            case WM_ACTIVATE:
+                ::main_window_active = (message.wp != 0);
+                break;
+
+            case WM_SETFOCUS:
+                ::main_window_focused = true;
+                break;
+
+            case WM_KILLFOCUS:
+                ::main_window_focused = false;
+                break;
+
+            case WM_SIZE:
+                ::main_window_visible = (message.wp != SIZE_MINIMIZED);
+                break;
+
+            case WM_DPICHANGED:
+                {
+                    const RECT* rect = reinterpret_cast<const RECT*>(message.lp);
+                    ::SetWindowPos(message.hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+                        SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+
+                    message.result = 0;
+                    message.handled = true;
+                }
+                break;
+        }
+    }
+
     this->message_signal.notify(message);
 }
 
@@ -213,28 +248,17 @@ double ff::window::dpi_scale()
 
 bool ff::window::active()
 {
-    if (this->hwnd)
-    {
-        for (HWND active = ::GetForegroundWindow(); active; active = ::GetParent(active))
-        {
-            if (active == this->hwnd)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    return this == ::main_window && this->hwnd && ::main_window_active;
 }
 
 bool ff::window::visible()
 {
-    return this->hwnd && !::IsIconic(this->hwnd);
+    return this == ::main_window && this->hwnd && ::main_window_visible;
 }
 
 bool ff::window::focused()
 {
-    return this->hwnd && ::GetFocus() == this->hwnd;
+    return this == ::main_window && this->hwnd && ::main_window_focused;
 }
 
 bool ff::window::close()
@@ -284,8 +308,8 @@ LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     window* self = reinterpret_cast<window*>(::GetWindowLongPtr(hwnd, 0));
     if (self)
     {
-        window_message args = { hwnd, msg, wp, lp, 0, false };
-        self->message_signal.notify(args);
+        window_message message = { hwnd, msg, wp, lp, 0, false };
+        self->notify_message(message);
 
         if (msg == WM_NCDESTROY)
         {
@@ -297,9 +321,9 @@ LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             }
         }
 
-        if (args.handled)
+        if (message.handled)
         {
-            return args.result;
+            return message.result;
         }
     }
 

@@ -186,6 +186,8 @@ bool ff::gamepad_device::poll(reading_t& reading)
 
 void ff::gamepad_device::update_pending_state(const reading_t& reading)
 {
+    this->pending_state.reading = reading;
+
     for (size_t i = 0; i < reading.values.size(); i++)
     {
         if (reading.values[i] >= ::PRESS_VALUE)
@@ -205,7 +207,7 @@ void ff::gamepad_device::update_press_count(size_t index)
 {
     // UWP will already create key events for gamepads, so just do it for desktop
 #if UWP_APP
-    this->state.press_count[index] = this->state.pressing[index] ? this->state.press_count[index] + 1 : 0;
+    this->pending_state.press_count[index] = this->pending_state.pressing[index] ? this->pending_state.press_count[index] + 1 : 0;
 #else
     unsigned int vk = static_cast<unsigned int>(index) + VK_GAMEPAD_A;
     ff::input_device_event device_event{};

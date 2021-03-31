@@ -7,7 +7,9 @@ namespace ff
 {
     struct window_message
     {
+#if !UWP_APP
         const HWND hwnd;
+#endif
         const UINT msg;
         const WPARAM wp;
         const LPARAM lp;
@@ -78,8 +80,8 @@ namespace ff
         bool operator==(handle_type handle) const;
 
         static window* main();
-        ff::signal_sink<window_message&>& message_sink();
-        void notify_message(UINT msg, WPARAM wp, LPARAM lp);
+        ff::signal_sink<ff::window_message&>& message_sink();
+        void notify_message(ff::window_message& message);
 
         window_size size();
         double dpi_scale();

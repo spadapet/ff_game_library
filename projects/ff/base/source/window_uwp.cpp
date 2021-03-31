@@ -144,52 +144,55 @@ private:
 
         ff::thread_dispatch::get_main()->post([deferral, main_window = this->main_window]()
         {
-            main_window->notify_message(WM_POWERBROADCAST, PBT_APMSUSPEND, 0);
+            main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMSUSPEND });
             deferral->Complete();
         });
     }
 
     void app_resuming(Platform::Object^ sender, Platform::Object^ arg)
     {
-        this->main_window->notify_message(WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC, 0);
-        this->main_window->notify_message(WM_POWERBROADCAST, PBT_APMRESUMESUSPEND, 0);
+        this->main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC });
+        this->main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMRESUMESUSPEND });
     }
 
     void active_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowActivatedEventArgs^ args)
     {
         WPARAM active = args->WindowActivationState != Windows::UI::Core::CoreWindowActivationState::Deactivated;
-        this->main_window->notify_message(WM_ACTIVATEAPP, active, 0);
-        this->main_window->notify_message(active ? WM_SETFOCUS : WM_KILLFOCUS, 0, 0);
+        UINT focus_message = active ? WM_SETFOCUS : WM_KILLFOCUS;
+        this->main_window->notify_message(ff::window_message{ WM_ACTIVATEAPP, active });
+        this->main_window->notify_message(ff::window_message{ WM_ACTIVATE, active });
+        this->main_window->notify_message(ff::window_message{ focus_message });
     }
 
     void visiblity_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args)
     {
-        this->main_window->notify_message(WM_SHOWWINDOW, args->Visible, 0);
-        this->main_window->notify_message(WM_SIZE, args->Visible ? SIZE_RESTORED : SIZE_MINIMIZED, 0);
+        WPARAM size_wp = args->Visible ? SIZE_RESTORED : SIZE_MINIMIZED;
+        this->main_window->notify_message(ff::window_message{ WM_SHOWWINDOW, args->Visible });
+        this->main_window->notify_message(ff::window_message{ WM_SIZE, size_wp });
     }
 
     void size_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowSizeChangedEventArgs^ args)
     {
-        this->main_window->notify_message(WM_SIZE, SIZE_RESTORED, 0);
+        this->main_window->notify_message(ff::window_message{ WM_SIZE, SIZE_RESTORED });
     }
 
     void closed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args)
     {
-        this->main_window->notify_message(WM_CLOSE, 0, 0);
-        this->main_window->notify_message(WM_DESTROY, 0, 0);
+        this->main_window->notify_message(ff::window_message{ WM_CLOSE });
+        this->main_window->notify_message(ff::window_message{ WM_DESTROY });
     }
 
     void character_received(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CharacterReceivedEventArgs^ args)
     {
         if (args->KeyCode < 0x10000)
         {
-            this->main_window->notify_message(WM_CHAR, static_cast<WPARAM>(args->KeyCode), 0);
+            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>(args->KeyCode) });
         }
         else
         {
             unsigned int utf32 = args->KeyCode - 0x10000;
-            this->main_window->notify_message(WM_CHAR, static_cast<WPARAM>((utf32 / 0x400) + 0xd800), 0);
-            this->main_window->notify_message(WM_CHAR, static_cast<WPARAM>((utf32 % 0x400) + 0xdc00), 0);
+            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>((utf32 / 0x400) + 0xd800) });
+            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>((utf32 % 0x400) + 0xdc00) });
         }
     }
 
@@ -222,7 +225,7 @@ private:
             ? (status.IsKeyReleased ? WM_SYSKEYUP : WM_SYSKEYDOWN)
             : (status.IsKeyReleased ? WM_KEYUP : WM_KEYDOWN);
 
-        this->main_window->notify_message(msg, wp, lp);
+        this->main_window->notify_message(ff::window_message{ msg, wp, lp });
     }
 
     void pointer_capture_lost(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)
@@ -263,17 +266,17 @@ private:
     void dpi_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
         int dpi = static_cast<int>(display_info->LogicalDpi);
-        this->main_window->notify_message(WM_DPICHANGED, MAKEWPARAM(dpi, dpi), 0);
+        this->main_window->notify_message(ff::window_message{ WM_DPICHANGED, MAKEWPARAM(dpi, dpi) });
     }
 
     void display_invalidated(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
-        this->main_window->notify_message(WM_DISPLAYCHANGE, 0, 0);
+        this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
     }
 
     void orientation_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
-        this->main_window->notify_message(WM_DISPLAYCHANGE, 0, 0);
+        this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
     }
 
     void gamepad_added(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)
@@ -431,16 +434,16 @@ ff::signal_sink<ff::window_message&>& ff::window::message_sink()
     return this->message_signal;
 }
 
-void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
+void ff::window::notify_message(ff::window_message& message)
 {
-    switch (msg)
+    switch (message.msg)
     {
-        case WM_ACTIVATEAPP:
-            this->active_ = wp != 0;
+        case WM_ACTIVATE:
+            this->active_ = message.wp != 0;
             break;
 
         case WM_SHOWWINDOW:
-            this->visible_ = wp != 0;
+            this->visible_ = message.wp != 0;
             break;
 
         case WM_DPICHANGED:
@@ -448,7 +451,6 @@ void ff::window::notify_message(UINT msg, WPARAM wp, LPARAM lp)
             break;
     }
 
-    ff::window_message message{ nullptr, msg, wp, lp, 0, false };
     this->message_signal.notify(message);
 }
 

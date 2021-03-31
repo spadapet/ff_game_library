@@ -221,7 +221,7 @@ void circle_gs(point circle_geometry input[1], inout TriangleStream<color_pixel>
     matrix transform_matrix = mul(model_[input[0].world], projection_);
 
     float pixel_size = length(radius / view_scale_);
-    pixel_size = max(8, pixel_size);
+    pixel_size = max(64, pixel_size);
     pixel_size = min(440, pixel_size);
 
     uint points = ((uint)((pixel_size - 8) / 8) + 9) & ~(uint)1;
