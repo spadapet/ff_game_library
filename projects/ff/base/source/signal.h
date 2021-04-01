@@ -32,18 +32,24 @@ namespace ff
 
         signal_connection connect(handler_type&& func)
         {
-            void* cookie = &this->handlers.emplace_front(std::move(func));
+            void* cookie = &this->handlers.emplace_front(handler_entry{ std::move(func), false });
             return signal_connection(&this_type::disconnect_func, cookie);
         }
 
     protected:
-        std::forward_list<handler_type> handlers;
+        struct handler_entry
+        {
+            handler_type handler;
+            bool disconnected;
+        };
+
+        std::forward_list<handler_entry> handlers;
 
     private:
         static void disconnect_func(void* cookie)
         {
-            handler_type* handler = reinterpret_cast<handler_type*>(cookie);
-            *handler = handler_type();
+            handler_entry* handler = reinterpret_cast<handler_entry*>(cookie);
+            handler->disconnected = true;
         }
     };
 
@@ -56,18 +62,24 @@ namespace ff
 
         signal_connection connect(handler_type&& func)
         {
-            void* cookie = &this->handlers.emplace_front(std::move(func));
+            void* cookie = &this->handlers.emplace_front(handler_entry{ std::move(func), false });
             return signal_connection(&this_type::disconnect_func, cookie);
         }
 
     protected:
-        std::forward_list<handler_type> handlers;
+        struct handler_entry
+        {
+            handler_type handler;
+            bool disconnected;
+        };
+
+        std::forward_list<handler_entry> handlers;
 
     private:
         static void disconnect_func(void* cookie)
         {
-            handler_type* handler = reinterpret_cast<handler_type*>(cookie);
-            *handler = handler_type();
+            handler_entry* handler = reinterpret_cast<handler_entry*>(cookie);
+            handler->disconnected = true;
         }
     };
 }
@@ -82,12 +94,12 @@ namespace ff
         {
             for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
             {
-                if (*i)
+                if (!i->disconnected)
                 {
-                    (*i)(args...);
+                    i->handler(args...);
                 }
 
-                if (!*i)
+                if (i->disconnected)
                 {
                     this->handlers.erase_after(prev);
                     i = prev;
@@ -104,12 +116,12 @@ namespace ff
         {
             for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
             {
-                if (*i)
+                if (!i->disconnected)
                 {
-                    (*i)();
+                    i->handler();
                 }
 
-                if (!*i)
+                if (i->disconnected)
                 {
                     this->handlers.erase_after(prev);
                     i = prev;

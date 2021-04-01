@@ -36,12 +36,10 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
             assert(!::game_thread_dispatch);
             ::game_thread_dispatch = this;
             break;
-
-        case thread_dispatch_type::task:
-            assert(!::task_thread_dispatch);
-            ::task_thread_dispatch = this;
-            break;
     }
+
+    assert(!::task_thread_dispatch);
+    ::task_thread_dispatch = this;
 }
 
 ff::thread_dispatch::~thread_dispatch()

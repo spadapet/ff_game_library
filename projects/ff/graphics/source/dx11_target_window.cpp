@@ -303,12 +303,15 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_DESTROY:
+            this->window_message_connection.disconnect();
+
             ff::thread_dispatch::get_game()->send([this]()
                 {
-                    this->window_message_connection.disconnect();
                     this->was_full_screen_on_close = this->full_screen();
-                    this->window = nullptr;
+                    this->full_screen(false);
                 });
+
+            this->window = nullptr;
             break;
 
         case WM_SYSKEYDOWN:

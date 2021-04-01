@@ -21,8 +21,8 @@ static const size_t EVENT_TOGGLE_8 = ff::stable_hash_func("toggle8"sv);
 static const size_t EVENT_TOGGLE_9 = ff::stable_hash_func("toggle9"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
 
-static std::string_view DEBUG_TOGGLE_CHARTS = "Show FPS graph"sv;
-static std::string_view DEBUG_PAGE_NAME_0 = "Frame perf"sv;
+static std::string_view DEBUG_TOGGLE_CHARTS = "Show FPS graph";
+static std::string_view DEBUG_PAGE_NAME_0 = "Frame perf";
 
 static std::vector<ff::debug_pages_base*> debug_pages;
 static ff::signal<void> custom_debug_signal;
