@@ -35,7 +35,7 @@
     <ClCompile Include="source\render_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\view.cpp">
+    <ClCompile Include="source\ui_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\notify_property_changed_base.cpp">
@@ -87,7 +87,7 @@
     <ClInclude Include="source\render_device.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\view.h">
+    <ClInclude Include="source\ui_view.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\notify_property_changed_base.h">

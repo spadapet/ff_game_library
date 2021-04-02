@@ -10,9 +10,9 @@ namespace ff
         virtual ~ui_view();
 
         void destroy();
-        void advance();
-        void pre_render();
-        void render(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect = nullptr);
+        virtual void advance();
+        virtual void pre_render();
+        virtual void render(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect = nullptr);
 
         Noesis::IView* internal_view() const;
         Noesis::FrameworkElement* content() const;
@@ -37,7 +37,7 @@ namespace ff
         bool block_input_below() const;
 
     protected:
-        bool render_begin(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect);
+        virtual bool render_begin(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect);
 
     private:
         DirectX::XMMATRIX* matrix;

@@ -33,11 +33,6 @@ std::shared_ptr<ff::state> ff::ui_view_state::advance_time()
 
 void ff::ui_view_state::render(ff::dx11_target_base& target, ff::dx11_depth& depth)
 {
-    if (!this->target_override)
-    {
-        this->view_->size(target.size());
-    }
-
     this->view_->render(this->target_override ? *this->target_override : target, this->depth_override ? *this->depth_override : depth);
 }
 

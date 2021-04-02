@@ -15,7 +15,7 @@
 #include "source/texture.h"
 #include "source/texture_provider.h"
 #include "source/ui.h"
-#include "source/view.h"
+#include "source/ui_view.h"
 #include "source/xaml_provider.h"
 
 #pragma comment(lib, "noesis.lib")

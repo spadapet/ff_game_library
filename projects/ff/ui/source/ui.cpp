@@ -8,7 +8,7 @@
 #include "set_panel_child_focus_action.h"
 #include "texture_provider.h"
 #include "ui.h"
-#include "view.h"
+#include "ui_view.h"
 #include "xaml_provider.h"
 
 #define DEBUG_MEM_ALLOC 0
@@ -462,13 +462,22 @@ void ff::ui::state_advance_input()
                             handled = view->internal_view()->MouseButtonDown(pos.x, pos.y, ff::internal::ui::get_mouse_button(event.id));
                         }
 
+                        if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                        {
+                            view = nullptr;
+                        }
+
                         if (handled)
                         {
-                            view->focused(true);
+                            if (view)
+                            {
+                                view->focused(true);
+                            }
+
                             break;
                         }
 
-                        if (view->hit_test(posf))
+                        if (view && view->hit_test(posf))
                         {
                             break;
                         }
@@ -488,7 +497,12 @@ void ff::ui::state_advance_input()
                         break;
                     }
 
-                    if (view->hit_test(posf))
+                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    {
+                        view = nullptr;
+                    }
+
+                    if (view && view->hit_test(posf))
                     {
                         break;
                     }
@@ -540,13 +554,22 @@ void ff::ui::state_advance_input()
                         handled = view->internal_view()->TouchDown(pos.x, pos.y, event.id);
                     }
 
+                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    {
+                        view = nullptr;
+                    }
+
                     if (handled)
                     {
-                        view->focused(true);
+                        if (view)
+                        {
+                            view->focused(true);
+                        }
+
                         break;
                     }
 
-                    if (view->hit_test(posf))
+                    if (view && view->hit_test(posf))
                     {
                         break;
                     }
@@ -565,7 +588,12 @@ void ff::ui::state_advance_input()
                         break;
                     }
 
-                    if (view->hit_test(posf))
+                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    {
+                        view = nullptr;
+                    }
+
+                    if (view && view->hit_test(posf))
                     {
                         break;
                     }

@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "render_device.h"
 #include "ui.h"
-#include "view.h"
+#include "ui_view.h"
 
 ff::ui_view::ui_view(std::string_view xaml_file, bool per_pixel_anti_alias, bool sub_pixel_rendering)
     : ui_view(Noesis::GUI::LoadXaml<Noesis::FrameworkElement>(std::string(xaml_file).c_str()), per_pixel_anti_alias, sub_pixel_rendering)
@@ -259,4 +259,3 @@ bool ff::ui_view::render_begin(ff::dx11_target_base& target, ff::dx11_depth& dep
     assert(false);
     return false;
 }
-
