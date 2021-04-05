@@ -27,6 +27,14 @@ void ff::state::render(ff::dx11_target_base& target, ff::dx11_depth& depth)
     }
 }
 
+void ff::state::render()
+{
+    for (size_t i = 0; i < this->child_state_count(); i++)
+    {
+        this->child_state(i)->render();
+    }
+}
+
 void ff::state::frame_started(ff::state::advance_t type)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)

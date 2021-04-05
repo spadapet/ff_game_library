@@ -142,7 +142,7 @@ bool ff::dict::get_bytes(std::string_view name, void* data, size_t size) const
     return false;
 }
 
-std::vector<std::string_view> ff::dict::child_names() const
+std::vector<std::string_view> ff::dict::child_names(bool sorted) const
 {
     std::vector<std::string_view> names;
     names.reserve(this->size());
@@ -150,6 +150,11 @@ std::vector<std::string_view> ff::dict::child_names() const
     for (const auto& i : *this)
     {
         names.push_back(i.first);
+    }
+
+    if (sorted)
+    {
+        std::sort(names.begin(), names.end());
     }
 
     return names;

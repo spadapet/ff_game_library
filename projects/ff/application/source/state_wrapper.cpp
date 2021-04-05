@@ -79,6 +79,14 @@ void ff::state_wrapper::render(ff::dx11_target_base& target, ff::dx11_depth& dep
     }
 }
 
+void ff::state_wrapper::render()
+{
+    if (this->state)
+    {
+        this->state->render();
+    }
+}
+
 void ff::state_wrapper::frame_started(ff::state::advance_t type)
 {
     if (this->state)

@@ -33,7 +33,7 @@ namespace ff
         value_ptr get(std::string_view name) const;
         bool get_bytes(std::string_view name, void* data, size_t size) const;
 
-        std::vector<std::string_view> child_names() const;
+        std::vector<std::string_view> child_names(bool sorted = false) const;
         bool save(writer_base& writer) const;
         static bool load(reader_base& reader, dict& data);
         bool load_child_dicts();

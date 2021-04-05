@@ -23,6 +23,7 @@ namespace ff
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
         virtual void render(ff::dx11_target_base& target, ff::dx11_depth& depth) override;
+        virtual void render() override;
 
         virtual void frame_started(ff::state::advance_t type) override;
         virtual void frame_rendering(ff::state::advance_t type) override;
