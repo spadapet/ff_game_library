@@ -143,7 +143,7 @@ class save_to_file_visitor : public ff::dict_visitor_base
 {
 public:
     save_to_file_visitor()
-        : root_path(ff::filesystem::temp_directory_path() / "ff_game_engine" / "dumpbin")
+        : root_path(ff::filesystem::temp_directory_path() / "dumpbin")
     {
         std::error_code ec;
         std::filesystem::create_directories(this->root_path, ec);
@@ -162,17 +162,25 @@ public:
 protected:
     virtual ff::value_ptr transform_dict(const ff::dict& dict) override
     {
-        std::string type_name = dict.get<std::string>(ff::internal::RES_TYPE);
-        const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type_name);
-        std::shared_ptr<ff::resource_object_base> resource_object = factory ? factory->load_from_cache(dict) : nullptr;
+        ff::value_ptr new_value = ff::dict_visitor_base::transform_dict(dict);
+        ff::value_ptr new_dict_value = ff::type::try_get_dict_from_data(new_value);
 
-        if (resource_object)
+        if (new_dict_value)
         {
-            std::filesystem::path name = ff::filesystem::clean_file_name(ff::filesystem::to_path(this->path()));
-            resource_object->resource_save_to_file(this->root_path, ff::filesystem::to_string(name));
+            const ff::dict& new_dict = new_dict_value->get<ff::dict>();
+            std::string type_name = new_dict.get<std::string>(ff::internal::RES_TYPE);
+            const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type_name);
+            std::shared_ptr<ff::resource_object_base> resource_object = factory ? factory->load_from_cache(new_dict) : nullptr;
+
+            if (resource_object)
+            {
+                std::filesystem::path name = ff::filesystem::clean_file_name(ff::filesystem::to_path(this->path()));
+                resource_object->resource_save_to_file(this->root_path, ff::filesystem::to_string(name));
+                return ff::value::create<ff::resource_object_base>(resource_object);
+            }
         }
 
-        return ff::dict_visitor_base::transform_dict(dict);
+        return new_value;
     }
 
 private:
@@ -181,6 +189,10 @@ private:
 
 static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bin)
 {
+    ff::init_input init_input;
+    ff::init_audio init_audio;
+    ff::init_graphics init_graphics;
+
     std::error_code ec;
     if (!std::filesystem::exists(dump_source_file))
     {
@@ -196,7 +208,7 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
     }
 
     ff::dict dict;
-    if (!ff::dict::load(reader, dict))
+    if (!ff::dict::load(reader, dict) || !dict.load_child_dicts())
     {
         std::cerr << "Can't load file: " << dump_source_file << std::endl;
         return 3;
@@ -232,11 +244,9 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
 int main()
 {
     ff::timer timer;
-    ff::init_input init_input;
-    ff::init_audio init_audio;
-    ff::init_graphics init_graphics;
+    ff::init_resource init_resource;
 
-    if (!init_graphics || !init_audio || !init_input)
+    if (!init_resource)
     {
         std::cerr << "ff.build_res: Failed to initialize" << std::endl;
         return 5;
@@ -331,44 +341,52 @@ int main()
     bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
     std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
 
-    if (skipped)
+    if (!skipped)
     {
-        return 0;
-    }
+        ff::init_input init_input;
+        ff::init_audio init_audio;
+        ff::init_graphics init_graphics;
 
-    // Load referenced DLLs
-    for (auto& ref : refs)
-    {
-        HMODULE mod = ::LoadLibrary(ref.c_str());
-        if (mod)
+        if (!init_graphics || !init_audio || !init_input)
         {
-            typedef void (*ff_init_t)();
-            ff_init_t init_func = reinterpret_cast<ff_init_t>(::GetProcAddress(mod, "ff_init"));
-
-            if (verbose)
-            {
-                std::cout << "ff.build_res: Loaded: " << ref << std::endl;
-            }
-
-            if (!init_func)
-            {
-                std::cerr << "ff.build_res: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
-                return 3;
-            }
-
-            init_func();
+            std::cerr << "ff.build_res: Failed to initialize" << std::endl;
+            return 5;
         }
-        else
+
+        // Load referenced DLLs
+        for (auto& ref : refs)
         {
-            std::cerr << "ff.build_res: Failed to load reference: " << ref << std::endl;
-            return 4;
-        }
-    }
+            HMODULE mod = ::LoadLibrary(ref.c_str());
+            if (mod)
+            {
+                typedef void (*ff_init_t)();
+                ff_init_t init_func = reinterpret_cast<ff_init_t>(::GetProcAddress(mod, "ff_init"));
 
-    if (!::compile_resource_pack(input_file, output_file, header_file, debug))
-    {
-        std::cerr << "ff.build_res: Compile failed" << std::endl;
-        return 6;
+                if (verbose)
+                {
+                    std::cout << "ff.build_res: Loaded: " << ref << std::endl;
+                }
+
+                if (!init_func)
+                {
+                    std::cerr << "ff.build_res: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
+                    return 3;
+                }
+
+                init_func();
+            }
+            else
+            {
+                std::cerr << "ff.build_res: Failed to load reference: " << ref << std::endl;
+                return 4;
+            }
+        }
+
+        if (!::compile_resource_pack(input_file, output_file, header_file, debug))
+        {
+            std::cerr << "ff.build_res: Compile failed" << std::endl;
+            return 6;
+        }
     }
 
     if (verbose)

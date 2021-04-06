@@ -18,7 +18,7 @@ namespace
         optimized_sprite_info(const ff::sprite_base* sprite, size_t sprite_index)
             : sprite(sprite)
             , dest_sprite_type(ff::sprite_type::unknown)
-            , source_rect(sprite->sprite_data().texture_rect().cast<int>())
+            , source_rect(sprite->sprite_data().texture_rect().offset(0.5f, 0.5f).cast<int>())
             , dest_rect{}
             , sprite_index(sprite_index)
             , dest_texture(ff::constants::invalid_size)

@@ -180,7 +180,7 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
 
     while (!handles.empty())
     {
-        size_t handle_count = std::min<size_t>(MAXIMUM_WAIT_OBJECTS, handles.size());
+        size_t handle_count = std::min<size_t>(ff::thread_dispatch::maximum_wait_objects, handles.size());
         if (ff::wait_for_all_handles(handles.data(), handle_count))
         {
             handles.erase(handles.cbegin(), handles.cbegin() + handle_count);

@@ -165,6 +165,7 @@ bool ff::thread_dispatch::current_thread() const
 
 bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
 {
+    assert(count <= ff::thread_dispatch::maximum_wait_objects);
     std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
     handles_vector.push_back(this->pending_event);
     ULONGLONG cur_tick = ::GetTickCount64();
@@ -200,13 +201,17 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
                     }
                     else if (result >= WAIT_ABANDONED_0 && result < WAIT_ABANDONED_0 + count + 1)
                     {
+                        assert(false);
                         return false;
                     }
                 }
                 break;
 
             case WAIT_TIMEOUT:
+                return false;
+
             case WAIT_FAILED:
+                assert(false);
                 return false;
 
             case WAIT_IO_COMPLETION:
@@ -224,6 +229,7 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
         cur_tick = ::GetTickCount64();
     }
 
+    // timeout
     return false;
 }
 
