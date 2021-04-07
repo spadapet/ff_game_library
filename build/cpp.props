@@ -7,11 +7,7 @@
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>
     <PackagesRoot Condition=" '$(PackagesRoot)' == '' And '$(SolutionDir)' != '' ">$(SolutionDir)packages\</PackagesRoot>
-  </PropertyGroup>
 
-  <Import Condition=" Exists('$(DevRoot)build.props') " Project="$(DevRoot)build.props" />
-
-  <PropertyGroup>
     <!-- Project config -->
     <AppType Condition=" '$(AppType)' == '' ">Desktop</AppType>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
@@ -20,7 +16,11 @@
     <XPlatform Condition=" '$(Platform)' == 'Win32' ">x86</XPlatform>
     <APlatform>$(XPlatform)</APlatform>
     <APlatform Condition=" '$(Platform)' == 'x64' ">amd64</APlatform>
+  </PropertyGroup>
 
+  <Import Condition=" Exists('$(DevRoot)build.props') " Project="$(DevRoot)build.props" />
+
+  <PropertyGroup>
     <!-- Project properties -->
     <CharacterSet Condition=" '$(CharacterSet)' == '' ">Unicode</CharacterSet>
     <ConfigurationType Condition=" '$(ConfigurationType)' == '' ">Application</ConfigurationType>
