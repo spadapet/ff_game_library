@@ -7,7 +7,7 @@ namespace base_test
     public:
         TEST_METHOD(void_args)
         {
-            ff::signal<void> sig;
+            ff::signal<> sig;
             int i = 0;
 
             ff::signal_connection c1 = sig.connect([&i]()
@@ -54,6 +54,26 @@ namespace base_test
             sig.notify(100);
             sig.notify(50);
 
+            Assert::AreEqual(150, i);
+        }
+
+        TEST_METHOD(connection_outlives_signal)
+        {
+            auto sig = std::make_unique<ff::signal<int>>();
+            int i = 0;
+
+            ff::signal_connection c1 = sig->connect([&i](int a)
+                {
+                    i += a;
+                });
+
+            Assert::IsTrue(c1);
+
+            sig->notify(100);
+            sig->notify(50);
+            sig.reset();
+
+            Assert::IsFalse(c1);
             Assert::AreEqual(150, i);
         }
     };

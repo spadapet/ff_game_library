@@ -2,21 +2,19 @@
 #include "signal.h"
 
 ff::signal_connection::signal_connection()
-    : func(nullptr)
-    , cookie(nullptr)
+    : entry(nullptr)
 {}
 
-ff::signal_connection::signal_connection(disconnect_func func, void* cookie)
-    : func(func)
-    , cookie(cookie)
-{}
+ff::signal_connection::signal_connection(entry_t* entry)
+    : entry(nullptr)
+{
+    this->connect(entry);
+}
 
 ff::signal_connection::signal_connection(signal_connection&& other) noexcept
-    : func(other.func)
-    , cookie(other.cookie)
+    : entry(nullptr)
 {
-    other.func = nullptr;
-    other.cookie = nullptr;
+    *this = std::move(other);
 }
 
 ff::signal_connection::~signal_connection()
@@ -28,22 +26,34 @@ ff::signal_connection& ff::signal_connection::operator=(signal_connection&& othe
 {
     if (this != &other)
     {
-        this->disconnect();
-        this->func = other.func;
-        this->cookie = other.cookie;
-
-        other.func = nullptr;
-        other.cookie = nullptr;
+        this->connect(other.entry);
+        other.entry = nullptr;
     }
 
     return *this;
 }
 
+ff::signal_connection::operator bool() const
+{
+    return this->entry != nullptr;
+}
+
 void ff::signal_connection::disconnect()
 {
-    if (this->func)
+    this->connect(nullptr);
+}
+
+void ff::signal_connection::connect(entry_t* entry)
+{
+    if (this->entry)
     {
-        this->func(this->cookie);
-        this->func = nullptr;
+        this->entry->connection = nullptr;
+    }
+
+    this->entry = entry;
+
+    if (this->entry)
+    {
+        this->entry->connection = this;
     }
 }

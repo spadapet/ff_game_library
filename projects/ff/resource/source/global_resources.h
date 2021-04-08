@@ -14,5 +14,5 @@ namespace ff::global_resources
 
     void reset();
     void rebuild_async();
-    ff::signal_sink<void>& rebuilt_sink();
+    ff::signal_sink<>& rebuilt_sink();
 }

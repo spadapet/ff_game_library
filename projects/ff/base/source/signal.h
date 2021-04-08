@@ -5,126 +5,94 @@ namespace ff
     class signal_connection
     {
     public:
-        typedef void (*disconnect_func)(void*);
+        struct entry_t
+        {
+            signal_connection* connection;
+        };
 
         signal_connection();
-        signal_connection(disconnect_func func, void* cookie);
+        signal_connection(entry_t* entry);
         signal_connection(signal_connection&& other) noexcept;
         signal_connection(const signal_connection& other) = delete;
         ~signal_connection();
 
         signal_connection& operator=(signal_connection&& other) noexcept;
         signal_connection& operator=(const signal_connection& other) = delete;
+        operator bool() const;
 
         void disconnect();
 
     private:
-        disconnect_func func;
-        void* cookie;
+        void connect(entry_t* entry);
+
+        entry_t* entry;
     };
 
     template<class... Args>
     class signal_sink
     {
     public:
-        using handler_type = typename std::function<void(Args...)>;
-        using this_type = signal_sink<Args...>;
-
-        signal_connection connect(handler_type&& func)
+        ff::signal_connection connect(std::function<void(Args...)>&& func)
         {
-            void* cookie = &this->handlers.emplace_front(handler_entry{ std::move(func), false });
-            return signal_connection(&this_type::disconnect_func, cookie);
+            return ff::signal_connection(&this->handlers.emplace_front(std::move(func)));
         }
 
     protected:
-        struct handler_entry
+        struct handler_entry_t : public ff::signal_connection::entry_t
         {
-            handler_type handler;
-            bool disconnected;
+            handler_entry_t(std::function<void(Args...)>&& handler)
+                : ff::signal_connection::entry_t{}
+                , handler(std::move(handler))
+            {}
+
+            std::function<void(Args...)> handler;
         };
 
-        std::forward_list<handler_entry> handlers;
-
-    private:
-        static void disconnect_func(void* cookie)
-        {
-            handler_entry* handler = reinterpret_cast<handler_entry*>(cookie);
-            handler->disconnected = true;
-        }
+        std::forward_list<handler_entry_t> handlers;
+        int notify_nest_count{};
     };
 
-    template<>
-    class signal_sink<void>
-    {
-    public:
-        using handler_type = typename std::function<void()>;
-        using this_type = signal_sink<void>;
-
-        signal_connection connect(handler_type&& func)
-        {
-            void* cookie = &this->handlers.emplace_front(handler_entry{ std::move(func), false });
-            return signal_connection(&this_type::disconnect_func, cookie);
-        }
-
-    protected:
-        struct handler_entry
-        {
-            handler_type handler;
-            bool disconnected;
-        };
-
-        std::forward_list<handler_entry> handlers;
-
-    private:
-        static void disconnect_func(void* cookie)
-        {
-            handler_entry* handler = reinterpret_cast<handler_entry*>(cookie);
-            handler->disconnected = true;
-        }
-    };
-}
-
-namespace ff
-{
     template<class... Args>
     class signal : public signal_sink<Args...>
     {
     public:
-        void notify(Args... args)
+        ~signal()
         {
-            for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
+            for (auto& i : this->handlers)
             {
-                if (!i->disconnected)
+                if (i.connection)
                 {
-                    i->handler(args...);
-                }
-
-                if (i->disconnected)
-                {
-                    this->handlers.erase_after(prev);
-                    i = prev;
+                    i.connection->disconnect();
                 }
             }
         }
-    };
 
-    template<>
-    class signal<void> : public signal_sink<void>
-    {
-    public:
-        void notify()
+        void notify(Args... args)
         {
-            for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
-            {
-                if (!i->disconnected)
-                {
-                    i->handler();
-                }
+            bool saw_empty = false;
+            this->notify_nest_count++;
 
-                if (i->disconnected)
+            for (auto& i : this->handlers)
+            {
+                if (i.connection)
                 {
-                    this->handlers.erase_after(prev);
-                    i = prev;
+                    i.handler(args...);
+                }
+                else
+                {
+                    saw_empty = true;
+                }
+            }
+
+            if (!--this->notify_nest_count && saw_empty)
+            {
+                for (auto prev = this->handlers.cbefore_begin(), i = this->handlers.cbegin(); i != this->handlers.cend(); prev = i++)
+                {
+                    if (!i->connection)
+                    {
+                        this->handlers.erase_after(prev);
+                        i = prev;
+                    }
                 }
             }
         }

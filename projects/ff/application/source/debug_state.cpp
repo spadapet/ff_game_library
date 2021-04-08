@@ -25,7 +25,7 @@ static std::string_view DEBUG_TOGGLE_CHARTS = "Show FPS graph";
 static std::string_view DEBUG_PAGE_NAME_0 = "Frame perf";
 
 static std::vector<ff::debug_pages_base*> debug_pages;
-static ff::signal<void> custom_debug_signal;
+static ff::signal<> custom_debug_signal;
 
 void ff::add_debug_pages(ff::debug_pages_base* pages)
 {
@@ -44,7 +44,7 @@ void ff::remove_debug_pages(ff::debug_pages_base* pages)
     }
 }
 
-ff::signal_sink<void>& ff::custom_debug_sink()
+ff::signal_sink<>& ff::custom_debug_sink()
 {
     return ::custom_debug_signal;
 }

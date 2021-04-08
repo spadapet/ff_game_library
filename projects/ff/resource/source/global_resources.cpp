@@ -5,7 +5,7 @@
 static std::vector<std::shared_ptr<ff::data_base>> global_resource_datas;
 static std::shared_ptr<ff::resource_objects> global_resources;
 static std::mutex global_resources_mutex;
-static ff::signal<void> rebuilt_global_signal;
+static ff::signal<> rebuilt_global_signal;
 
 static std::shared_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas, bool from_source)
 {
@@ -106,7 +106,7 @@ void ff::global_resources::rebuild_async()
         });
 }
 
-ff::signal_sink<void>& ff::global_resources::rebuilt_sink()
+ff::signal_sink<>& ff::global_resources::rebuilt_sink()
 {
     return ::rebuilt_global_signal;
 }
