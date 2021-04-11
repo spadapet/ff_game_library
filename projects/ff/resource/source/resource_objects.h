@@ -34,8 +34,8 @@ namespace ff
         virtual std::shared_ptr<ff::resource> flush_resource(const std::shared_ptr<ff::resource>& value) override;
         virtual void flush_all_resources() override;
 
-        const std::shared_ptr<ff::resource_value_provider>& localized_value_provider() const;
-        void localized_value_provider(std::shared_ptr<ff::resource_value_provider> value);
+        void add_object_provider(std::shared_ptr<ff::resource_object_provider> value);
+        void add_value_provider(std::shared_ptr<ff::resource_value_provider> value);
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
@@ -67,10 +67,13 @@ namespace ff
         void add_resources(const ff::dict& dict);
         void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, std::shared_ptr<ff::resource> new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
+        ff::value_ptr get_localized_value(std::string_view name);
+        std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);
 
         mutable std::recursive_mutex resource_object_info_mutex;
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
-        std::shared_ptr<ff::resource_value_provider> localized_value_provider_;
+        std::vector<std::shared_ptr<ff::resource_object_provider>> object_providers;
+        std::vector<std::shared_ptr<ff::resource_value_provider>> value_providers;
         ff::win_handle done_loading_event;
         std::atomic<int> loading_count;
     };

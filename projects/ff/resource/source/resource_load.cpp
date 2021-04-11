@@ -41,8 +41,9 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
         return false;
     }
 
-    auto data = std::make_shared<ff::data_mem_mapped>(path);
-    if (!data->valid() || !ff::dict::load(ff::data_reader(data), dict))
+    // Read the whole file into memory so that the cache file isn't locked
+    auto data = ff::filesystem::read_binary_file(path);
+    if (!data || !ff::dict::load(ff::data_reader(data), dict))
     {
         return false;
     }

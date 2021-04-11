@@ -1,6 +1,29 @@
 #include "pch.h"
+#include "data.h"
 #include "file.h"
 #include "filesystem.h"
+
+std::shared_ptr<ff::data_base> ff::filesystem::read_binary_file(const std::filesystem::path& path)
+{
+    ff::file_read file(path);
+    if (file)
+    {
+        std::vector<uint8_t> bytes;
+        if (file.size())
+        {
+            bytes.resize(file.size());
+            if (file.read(bytes.data(), bytes.size()) != file.size())
+            {
+                assert(false);
+                return nullptr;
+            }
+        }
+
+        return std::make_shared<ff::data_vector>(std::move(bytes));
+    }
+
+    return nullptr;
+}
 
 bool ff::filesystem::read_text_file(const std::filesystem::path& path, std::string& text)
 {

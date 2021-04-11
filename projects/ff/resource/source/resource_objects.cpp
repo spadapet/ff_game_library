@@ -32,6 +32,25 @@ ff::resource_objects::~resource_objects()
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
 {
+    auto value = this->get_resource_object_here(name);
+    if (!value)
+    {
+        for (auto& i : this->object_providers)
+        {
+            value = i->get_resource_object(name);
+            if (value)
+            {
+                break;
+            }
+        }
+    }
+
+    assert(value);
+    return value;
+}
+
+std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std::string_view name)
+{
     std::scoped_lock lock(this->resource_object_info_mutex);
     std::shared_ptr<ff::resource> value;
 
@@ -135,14 +154,14 @@ void ff::resource_objects::flush_all_resources()
     assert(!this->loading_count.load());
 }
 
-const std::shared_ptr<ff::resource_value_provider>& ff::resource_objects::localized_value_provider() const
+void ff::resource_objects::add_object_provider(std::shared_ptr<ff::resource_object_provider> value)
 {
-    return this->localized_value_provider_;
+    this->object_providers.push_back(value);
 }
 
-void ff::resource_objects::localized_value_provider(std::shared_ptr<ff::resource_value_provider> value)
+void ff::resource_objects::add_value_provider(std::shared_ptr<ff::resource_value_provider> value)
 {
-    this->localized_value_provider_ = value;
+    this->value_providers.push_back(value);
 }
 
 bool ff::resource_objects::save_to_cache(ff::dict& dict, bool& allow_compress) const
@@ -328,7 +347,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
         else if (ff::string::starts_with(str, ff::internal::LOC_PREFIX))
         {
             std::string_view loc_name = str.substr(ff::internal::LOC_PREFIX.size());
-            value = this->localized_value_provider() ? this->localized_value_provider()->get_resource_value(loc_name) : nullptr;
+            value = this->get_localized_value(loc_name);
 #if DEBUG_RES > 0
             if (!value)
             {
@@ -347,6 +366,33 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
     }
 
     return value;
+}
+
+ff::value_ptr ff::resource_objects::get_localized_value(std::string_view name)
+{
+    for (auto& i : this->value_providers)
+    {
+        ff::value_ptr value = i->get_resource_value(name);
+        if (value)
+        {
+            return value;
+        }
+    }
+
+    for (auto& i : this->object_providers)
+    {
+        auto value_provider = std::dynamic_pointer_cast<ff::resource_value_provider>(i);
+        if (value_provider)
+        {
+            ff::value_ptr value = value_provider->get_resource_value(name);
+            if (value)
+            {
+                return value;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
