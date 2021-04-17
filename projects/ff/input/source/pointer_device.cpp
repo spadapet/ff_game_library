@@ -19,8 +19,12 @@ static bool is_valid_button(int vk_button)
     }
 }
 
-ff::pointer_device::pointer_device()
-    : mouse{}
+ff::pointer_device::pointer_device(ff::window* window)
+    : window(window)
+#if !UWP_APP
+    , window_connection(window->message_sink().connect(std::bind(&ff::pointer_device::handle_window_message, this, std::placeholders::_1)))
+#endif
+    , mouse{}
     , pending_mouse{}
 {
     ff::internal::input::add_device(this);
@@ -162,7 +166,7 @@ void ff::pointer_device::kill_pending()
 
 bool ff::pointer_device::connected() const
 {
-    return true;
+    return this->window && *this->window;
 }
 
 ff::signal_sink<const ff::input_device_event&>& ff::pointer_device::event_sink()

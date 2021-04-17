@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "flags.h"
 #include "string.h"
 #include "win_handle.h"
 #include "window.h"
@@ -6,12 +7,10 @@
 #if !UWP_APP
 
 static ff::window* main_window = nullptr;
-static bool main_window_active = false;
-static bool main_window_focused = false;
-static bool main_window_visible = false;
 
 ff::window::window(window_type type)
     : hwnd(nullptr)
+    , state(state_t::none)
 {
     if (type == window_type::main)
     {
@@ -48,6 +47,8 @@ ff::window& ff::window::operator=(window&& other) noexcept
         HWND hwnd = other.hwnd;
         other.reset(nullptr);
         this->reset(hwnd);
+        this->state = other.state;
+        other.state = state_t::none;
     }
 
     return *this;
@@ -177,37 +178,35 @@ ff::signal_sink<ff::window_message&>& ff::window::message_sink()
 
 void ff::window::notify_message(ff::window_message& message)
 {
-    if (this == ::main_window)
+    switch (message.msg)
     {
-        switch (message.msg)
-        {
-            case WM_ACTIVATE:
-                ::main_window_active = (message.wp != 0);
-                break;
+        case WM_ACTIVATE:
+            this->state = ff::flags::set(this->state, state_t::active, message.wp != 0);
+            break;
 
-            case WM_SETFOCUS:
-                ::main_window_focused = true;
-                break;
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+            this->state = ff::flags::set(this->state, state_t::focused, message.msg == WM_SETFOCUS);
+            break;
 
-            case WM_KILLFOCUS:
-                ::main_window_focused = false;
-                break;
+        case WM_SIZE:
+            this->state = ff::flags::set(this->state, state_t::iconic, message.wp == SIZE_MINIMIZED);
+            break;
 
-            case WM_SIZE:
-                ::main_window_visible = (message.wp != SIZE_MINIMIZED);
-                break;
+        case WM_SHOWWINDOW:
+            this->state = ff::flags::set(this->state, state_t::visible, message.wp != 0);
+            break;
 
-            case WM_DPICHANGED:
-                {
-                    const RECT* rect = reinterpret_cast<const RECT*>(message.lp);
-                    ::SetWindowPos(message.hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
-                        SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        case WM_DPICHANGED:
+            {
+                const RECT* rect = reinterpret_cast<const RECT*>(message.lp);
+                ::SetWindowPos(message.hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+                    SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
-                    message.result = 0;
-                    message.handled = true;
-                }
-                break;
-        }
+                message.result = 0;
+                message.handled = true;
+            }
+            break;
     }
 
     this->message_signal.notify(message);
@@ -248,17 +247,17 @@ double ff::window::dpi_scale()
 
 bool ff::window::active()
 {
-    return this == ::main_window && this->hwnd && ::main_window_active;
+    return this->hwnd && ff::flags::has(this->state, state_t::active);
 }
 
 bool ff::window::visible()
 {
-    return this == ::main_window && this->hwnd && ::main_window_visible;
+    return this->hwnd && ff::flags::has(this->state, state_t::visible) && !ff::flags::has(this->state, state_t::iconic);
 }
 
 bool ff::window::focused()
 {
-    return this == ::main_window && this->hwnd && ::main_window_focused;
+    return this->hwnd && ff::flags::has(this->state, state_t::focused);
 }
 
 bool ff::window::close()
@@ -280,6 +279,7 @@ void ff::window::reset(HWND hwnd)
     }
 
     this->hwnd = hwnd;
+    this->state = state_t::none;
 
     if (this->hwnd)
     {

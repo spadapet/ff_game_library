@@ -8,9 +8,17 @@
 static bool releasing_capture = false;
 
 void ff::pointer_device::notify_main_window_message(ff::window_message& message)
+{ }
+
+void ff::pointer_device::handle_window_message(ff::window_message& message)
 {
     switch (message.msg)
     {
+        case WM_DESTROY:
+            this->window_connection.disconnect();
+            this->window = nullptr;
+            break;
+
         case WM_MOUSELEAVE:
             this->mouse_message(message);
             break;

@@ -7,7 +7,7 @@ namespace ff
     class keyboard_device : public input_device_base
     {
     public:
-        keyboard_device();
+        keyboard_device(ff::window* window);
         virtual ~keyboard_device() override;
 
         std::string text() const;
@@ -33,7 +33,11 @@ namespace ff
             std::wstring text;
         };
 
+        void handle_window_message(ff::window_message& message);
+
         std::mutex mutex;
+        ff::window* window;
+        ff::signal_connection window_connection;
         ff::signal<const ff::input_device_event&> device_event;
         key_state state;
         key_state pending_state;

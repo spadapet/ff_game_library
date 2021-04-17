@@ -27,22 +27,18 @@ ff::dx11_target_window::dx11_target_window(ff::window* window)
 
     if (this->main_window)
     {
-        ff::graphics::defer::set_target(this);
+        ff::graphics::defer::set_full_screen_target(this);
     }
 }
 
 ff::dx11_target_window::~dx11_target_window()
 {
-    if (this->swap_chain)
+    if (this->main_window &&this->swap_chain)
     {
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
 
-    if (this->main_window)
-    {
-        ff::graphics::defer::set_target(nullptr);
-    }
-
+    ff::graphics::defer::remove_target(this);
     ff::internal::graphics::remove_child(this);
 }
 
@@ -254,14 +250,14 @@ bool ff::dx11_target_window::full_screen(bool value)
 bool ff::dx11_target_window::reset()
 {
     BOOL full_screen = FALSE;
-    if (this->swap_chain)
+    if (this->main_window && this->swap_chain)
     {
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
         this->swap_chain->GetFullscreenState(&full_screen, &output);
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
-        this->swap_chain.Reset();
     }
 
+    this->swap_chain.Reset();
     this->view_.Reset();
     this->texture_.Reset();
 
@@ -271,7 +267,7 @@ bool ff::dx11_target_window::reset()
         return false;
     }
 
-    if (this->swap_chain && full_screen)
+    if (this->main_window && this->swap_chain && full_screen)
     {
         this->swap_chain->SetFullscreenState(TRUE, nullptr);
     }
@@ -298,30 +294,33 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
         case WM_SIZE:
             if (msg.wp != SIZE_MINIMIZED)
             {
-                ff::graphics::defer::resize_target(this->window->size());
+                ff::graphics::defer::resize_target(this, this->window->size());
             }
             break;
 
         case WM_DESTROY:
             this->window_message_connection.disconnect();
 
-            ff::thread_dispatch::get_game()->send([this]()
-                {
-                    this->was_full_screen_on_close = this->full_screen();
-                    this->full_screen(false);
-                });
+            if (this->main_window)
+            {
+                ff::thread_dispatch::get_game()->send([this]()
+                    {
+                        this->was_full_screen_on_close = this->full_screen();
+                        this->full_screen(false);
+                    });
+            }
 
             this->window = nullptr;
             break;
 
         case WM_SYSKEYDOWN:
-            if (msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
+            if (this->main_window && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
                 ff::graphics::defer::full_screen(!this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }
-            else if (msg.wp == VK_BACK)
+            else if (this->main_window && msg.wp == VK_BACK)
             {
 #ifdef _DEBUG
                 ff::graphics::defer::validate_device(true);
@@ -330,7 +329,7 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSCHAR:
-            if (msg.wp == VK_RETURN)
+            if (this->main_window && msg.wp == VK_RETURN)
             {
                 // prevent a 'ding' sound when switching between modes
                 msg.result = 0;
@@ -340,11 +339,12 @@ void ff::dx11_target_window::handle_message(ff::window_message& msg)
 
 #if !UWP_APP
         case WM_WINDOWPOSCHANGED:
+            if (this->main_window)
             {
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
                 {
-                    ff::graphics::defer::resize_target(this->window->size());
+                    ff::graphics::defer::resize_target(this, this->window->size());
                 }
             }
             break;

@@ -18,7 +18,7 @@ namespace ff
     class pointer_device : public input_device_base
     {
     public:
-        pointer_device();
+        pointer_device(ff::window* window);
         virtual ~pointer_device() override;
 
         bool in_window() const;
@@ -81,6 +81,7 @@ namespace ff
         std::vector<internal_touch_info>::iterator find_touch_info(Windows::UI::Input::PointerPoint^ point, bool allow_create);
         void update_touch_info(internal_touch_info& info, Windows::UI::Input::PointerPoint^ point);
 #else
+        void handle_window_message(ff::window_message& message);
         void mouse_message(const ff::window_message& message);
         void pointer_message(const ff::window_message& message);
 
@@ -89,6 +90,8 @@ namespace ff
 #endif
 
         std::mutex mutex;
+        ff::window* window;
+        ff::signal_connection window_connection;
         mouse_info mouse;
         mouse_info pending_mouse;
         std::vector<internal_touch_info> touches;

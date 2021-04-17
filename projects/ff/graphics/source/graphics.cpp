@@ -42,8 +42,8 @@ static size_t dxgi_adapter_outputs_hash;
 static std::recursive_mutex graphics_mutex;
 static std::vector<ff::internal::graphics_child_base*> graphics_children;
 static ff::signal<ff::internal::graphics_child_base*> removed_child;
-static ff::dx11_target_window_base* defer_target;
-static ff::window_size defer_size;
+static ff::dx11_target_window_base* defer_full_screen_target;
+static std::vector<std::pair<ff::dx11_target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
 
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
@@ -326,7 +326,7 @@ static void flush_graphics_commands()
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
         {
             bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::dx11_target_window_base* target = ::defer_target;
+            ff::dx11_target_window_base* target = ::defer_full_screen_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
             lock.unlock();
 
@@ -345,15 +345,13 @@ static void flush_graphics_commands()
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
-            ff::window_size size = ::defer_size;
-            ff::dx11_target_window_base* target = ::defer_target;
+            std::vector<std::pair<ff::dx11_target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
-            ::defer_size = ff::window_size{};
             lock.unlock();
 
-            if (target)
+            for (const auto& i : defer_sizes)
             {
-                target->size(size);
+                i.first->size(i.second);
             }
         }
     }
@@ -364,11 +362,31 @@ static void post_flush_graphics_commands()
     ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
 }
 
-void ff::graphics::defer::set_target(ff::dx11_target_window_base* target)
+void ff::graphics::defer::set_full_screen_target(ff::dx11_target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
-    assert(!::defer_target || !target);
-    ::defer_target = target;
+    assert(!::defer_full_screen_target || !target);
+    ::defer_full_screen_target = target;
+}
+
+void ff::graphics::defer::remove_target(ff::dx11_target_window_base* target)
+{
+    std::scoped_lock lock(::graphics_mutex);
+    assert(target);
+
+    if (::defer_full_screen_target == target)
+    {
+        ::defer_full_screen_target = nullptr;
+    }
+
+    for (auto i = ::defer_sizes.cbegin(); i != ::defer_sizes.cend(); i++)
+    {
+        if (i->first == target)
+        {
+            ::defer_sizes.erase(i);
+            break;
+        }
+    }
 }
 
 void ff::graphics::defer::validate_device(bool force)
@@ -393,14 +411,33 @@ void ff::graphics::defer::full_screen(bool value)
     ::post_flush_graphics_commands();
 }
 
-void ff::graphics::defer::resize_target(const ff::window_size& size)
+void ff::graphics::defer::resize_target(ff::dx11_target_window_base* target, const ff::window_size& size)
 {
-    std::scoped_lock lock(::graphics_mutex);
+    assert(target);
+    if (target)
+    {
+        std::scoped_lock lock(::graphics_mutex);
 
-    ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits),
-        ::defer_flags_t::swap_chain_size);
-    ::defer_size = size;
+        ::defer_flags = ff::flags::set(
+            ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits),
+            ::defer_flags_t::swap_chain_size);
 
-    ::post_flush_graphics_commands();
+        bool found_match = false;
+        for (auto& i : ::defer_sizes)
+        {
+            if (i.first == target)
+            {
+                i.second = size;
+                found_match = true;
+                break;
+            }
+        }
+
+        if (!found_match)
+        {
+            ::defer_sizes.push_back(std::make_pair(target, size));
+        }
+
+        ::post_flush_graphics_commands();
+    }
 }

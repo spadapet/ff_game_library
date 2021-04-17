@@ -442,6 +442,7 @@ static void handle_window_message(ff::window_message& message)
     switch (message.msg)
     {
         case WM_SIZE:
+        case WM_SHOWWINDOW:
             ::update_window_visible(false);
             break;
 

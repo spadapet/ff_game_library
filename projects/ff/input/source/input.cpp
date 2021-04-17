@@ -137,19 +137,12 @@ bool ff::internal::input::init()
     assert(ff::window::main());
 
     ::combined_devices_ = std::make_unique<::combined_input_devices>();
-    ::keyboard = std::make_unique<ff::keyboard_device>();
-    ::pointer = std::make_unique<ff::pointer_device>();
-
-    ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect([](ff::window_message& message)
-        {
-            ::combined_devices_->notify_main_window_message(message);
-        }));
+    ::keyboard = std::make_unique<ff::keyboard_device>(ff::window::main());
+    ::pointer = std::make_unique<ff::pointer_device>(ff::window::main());
+    ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect(std::bind(&::combined_input_devices::notify_main_window_message, ::combined_devices_.get(), std::placeholders::_1)));
 
 #if UWP_APP
-    ::main_window_connections.emplace_back(ff::window::main()->pointer_message_sink().connect([](unsigned int msg, Windows::UI::Core::PointerEventArgs^ args)
-        {
-            ::pointer->notify_main_window_pointer_message(msg, args);
-        }));
+    ::main_window_connections.emplace_back(ff::window::main()->pointer_message_sink().connect(std::bind(&ff::pointer_device::notify_main_window_pointer_message, ::pointer.get(), std::placeholders::_1, std::placeholders::_2)));
 
     ::main_window_connections.emplace_back(ff::window::main()->gamepad_message_sink().connect([](bool added, Windows::Gaming::Input::Gamepad^ gamepad)
         {

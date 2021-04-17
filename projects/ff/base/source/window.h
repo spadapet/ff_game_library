@@ -108,7 +108,18 @@ namespace ff
 
         static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
+        // cache state on main thread to access from game thread
+        enum class state_t
+        {
+            none = 0,
+            active = 0x01,
+            focused = 0x02,
+            iconic = 0x04,
+            visible = 0x08,
+        };
+
         HWND hwnd;
+        state_t state;
 #endif
 
         ff::signal<window_message&> message_signal;

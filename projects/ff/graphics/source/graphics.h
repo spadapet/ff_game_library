@@ -33,10 +33,11 @@ namespace ff::graphics
 
 namespace ff::graphics::defer
 {
-    void set_target(ff::dx11_target_window_base* target);
+    void set_full_screen_target(ff::dx11_target_window_base* target);
+    void remove_target(ff::dx11_target_window_base* target);
     void validate_device(bool force);
     void full_screen(bool value);
-    void resize_target(const ff::window_size& size);
+    void resize_target(ff::dx11_target_window_base* target, const ff::window_size& size);
 }
 
 namespace ff::internal::graphics
