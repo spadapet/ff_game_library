@@ -75,7 +75,7 @@ namespace ff
             return this_type(this->x - other.x, this->y - other.y);
         }
 
-        this_type operator-()
+        this_type operator-() const
         {
             return this_type(-this->x, -this->y);
         }
