@@ -12,7 +12,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalIncludeDirectories>directxtex_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-  </ItemDefinitionGroup>	
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DirectXTex\DirectXTex\BC.cpp" />
     <ClCompile Include="DirectXTex\DirectXTex\BC4BC5.cpp" />

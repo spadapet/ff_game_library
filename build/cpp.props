@@ -153,6 +153,7 @@
       <PreprocessorDefinitions>_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4103</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' != 'Debug' ">
       <BufferSecurityCheck>false</BufferSecurityCheck>

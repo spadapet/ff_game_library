@@ -210,7 +210,7 @@ namespace ff
 
         bool contains(const point_type& point) const
         {
-            return point.x >= this->left && point.x < this->right&& point.y >= this->top && point.y < this->bottom;
+            return point.x >= this->left && point.x < this->right && point.y >= this->top && point.y < this->bottom;
         }
 
         bool touches(const point_type& point) const
