@@ -13,6 +13,8 @@ namespace ff
         end_scope_action& operator=(end_scope_action&& other) noexcept = default;
         end_scope_action& operator=(const end_scope_action& other) = delete;
 
+        void end_now();
+
     private:
         std::function<void()> func;
     };

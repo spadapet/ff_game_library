@@ -7,8 +7,14 @@ ff::end_scope_action::end_scope_action(std::function<void()>&& func)
 
 ff::end_scope_action::~end_scope_action()
 {
+    this->end_now();
+}
+
+void ff::end_scope_action::end_now()
+{
     if (this->func)
     {
-        this->func();
+        auto func = std::move(this->func);
+        func();
     }
 }
