@@ -29,6 +29,11 @@ void ff::animation_player::draw_animation(ff::draw_base& draw, const ff::transfo
     this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
 }
 
+void ff::animation_player::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+{
+    this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
+}
+
 float ff::animation_player::animation_frame() const
 {
     return this->frame;

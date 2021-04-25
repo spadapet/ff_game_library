@@ -41,4 +41,31 @@ namespace ff
     private:
         T& collection;
     };
+
+    /// <summary>
+    /// Implements push_base for any collection with a push_front() function
+    /// </summary>
+    template<class T>
+    class push_front_collection : public push_base<typename T::value_type>
+    {
+    public:
+        using value_type = typename T::value_type;
+
+        push_front_collection(T& collection)
+            : collection(collection)
+        {}
+
+        virtual void push(const value_type& value) const override
+        {
+            this->collection.push_front(value);
+        }
+
+        virtual void push(value_type&& value) const override
+        {
+            this->collection.push_front(std::move(value));
+        }
+
+    private:
+        T& collection;
+    };
 }

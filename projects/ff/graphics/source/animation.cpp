@@ -150,6 +150,11 @@ void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transfo
     }
 }
 
+void ff::animation::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+{
+    this->draw_frame(draw, ff::transform(transform), frame, params);
+}
+
 ff::value_ptr ff::animation::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     auto i = this->keys.find(value_id);

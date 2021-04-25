@@ -39,6 +39,11 @@ void ff::sprite_resource::draw_frame(ff::draw_base& draw, const ff::transform& t
     draw.draw_sprite(this->sprite_data(), transform);
 }
 
+void ff::sprite_resource::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+{
+    draw.draw_sprite(this->sprite_data(), transform);
+}
+
 ff::value_ptr ff::sprite_resource::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     return nullptr;
@@ -48,6 +53,11 @@ void ff::sprite_resource::advance_animation(ff::push_base<ff::animation_event>* 
 {}
 
 void ff::sprite_resource::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+{
+    draw.draw_sprite(this->sprite_data(), transform);
+}
+
+void ff::sprite_resource::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }

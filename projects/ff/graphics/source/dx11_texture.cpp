@@ -413,6 +413,11 @@ void ff::dx11_texture::draw_frame(ff::draw_base& draw, const ff::transform& tran
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
+void ff::dx11_texture::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+{
+    draw.draw_sprite(this->sprite_data_, transform);
+}
+
 ff::value_ptr ff::dx11_texture::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     return ff::value_ptr();
@@ -422,6 +427,11 @@ void ff::dx11_texture::advance_animation(ff::push_base<ff::animation_event>* eve
 {}
 
 void ff::dx11_texture::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+{
+    draw.draw_sprite(this->sprite_data_, transform);
+}
+
+void ff::dx11_texture::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
