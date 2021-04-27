@@ -102,7 +102,7 @@ namespace ff::math
     ff::fixed_t<T, ExpandedT, FixedCount> random_range(ff::fixed_t<T, ExpandedT, FixedCount> start, ff::fixed_t<T, ExpandedT, FixedCount> after_end)
     {
         using f_t = typename ff::fixed_t<T, ExpandedT, FixedCount>;
-        return f_t::from_raw(ff::math::random_range(start.get_raw(), after_end.get_raw() - 1));
+        return (start != after_end) ? f_t::from_raw(ff::math::random_range(start.get_raw(), after_end.get_raw() - 1)) : start;
     }
 
     template<typename T>
