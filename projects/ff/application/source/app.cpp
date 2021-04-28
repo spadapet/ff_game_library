@@ -155,6 +155,9 @@ static bool frame_advance_timer(ff::state::advance_t advance_type)
         ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance, 0.0);
         ::app_time.advance_count++;
         ::frame_time.advance_count++;
+
+        ff::random_sprite::advance_all();
+
         return true;
     }
 }

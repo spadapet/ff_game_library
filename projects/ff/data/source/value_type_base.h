@@ -112,11 +112,14 @@ namespace ff::internal
                 if (size)
                 {
                     vec.resize(size);
-                    if (ff::load_bytes(reader, vec.data(), ff::vector_byte_size(vec)))
+                    if (!ff::load_bytes(reader, vec.data(), ff::vector_byte_size(vec)))
                     {
-                        return ff::value::create<T>(std::move(vec));
+                        assert(false);
+                        return nullptr;
                     }
                 }
+
+                return ff::value::create<T>(std::move(vec));
             }
 
             assert(false);

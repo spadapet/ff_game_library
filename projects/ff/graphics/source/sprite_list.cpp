@@ -44,13 +44,11 @@ ff::dict ff::sprite_list::resource_get_siblings(const std::shared_ptr<resource>&
 
     for (auto& sprite : this->sprites)
     {
+        std::ostringstream resource_name;
+        resource_name << self->name() << "." << sprite.name();
+
         std::shared_ptr<ff::resource_object_base> sprite_resource = std::make_shared<ff::sprite_resource>(std::string(sprite.name()), self);
-        if (sprite_resource->resource_load_complete(false))
-        {
-            std::ostringstream resource_name;
-            resource_name << self->name() << "." << sprite.name();
-            dict.set(resource_name.str(), ff::value::create<ff::resource_object_base>(std::move(sprite_resource)));
-        }
+        dict.set(resource_name.str(), ff::value::create<ff::resource_object_base>(std::move(sprite_resource)));
     }
 
     return dict;

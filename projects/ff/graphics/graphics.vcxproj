@@ -36,6 +36,7 @@
     <ClCompile Include="source\palette_cycle.cpp" />
     <ClCompile Include="source\palette_data.cpp" />
     <ClCompile Include="source\png_image.cpp" />
+    <ClCompile Include="source\random_sprite.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\dx11_texture.cpp" />
     <ClCompile Include="source\sprite.cpp" />
@@ -87,6 +88,7 @@
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
     <ClInclude Include="source\draw_base.h" />
+    <ClInclude Include="source\random_sprite.h" />
     <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\sprite.h" />
     <ClInclude Include="source\sprite_base.h" />

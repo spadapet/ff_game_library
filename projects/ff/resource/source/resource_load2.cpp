@@ -594,7 +594,13 @@ protected:
                         if (res)
                         {
                             std::shared_ptr<ff::resource> res_value = std::make_shared<ff::resource>(name, object_value);
-                            output_dict.set(res->resource_get_siblings(res_value), false);
+                            ff::dict siblings = res->resource_get_siblings(res_value);
+                            output_dict.set(siblings, false);
+
+                            for (auto& pair : siblings)
+                            {
+                                this->context().set_reference(std::make_shared<ff::resource>(pair.first, pair.second));
+                            }
                         }
                     }
                 }
@@ -648,8 +654,8 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     ::expand_file_paths_transformer t1(context);
     ::expand_values_and_templates_transformer t2(context);
     ::start_load_objects_from_dict_transformer t3(context);
-    ::finish_load_objects_from_dict_transformer t4(context);
-    ::extract_resource_siblings_transformer t5(context);
+    ::extract_resource_siblings_transformer t4(context);
+    ::finish_load_objects_from_dict_transformer t5(context);
     ::save_objects_to_dict_transformer t6(context);
     std::array<transformer_base*, 6> transformers = { &t1, &t2, &t3, &t4, &t5, &t6 };
 

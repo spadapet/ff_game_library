@@ -119,6 +119,9 @@
     <ClCompile Include="source\draw_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\random_sprite.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -268,6 +271,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\draw_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\random_sprite.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

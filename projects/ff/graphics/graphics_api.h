@@ -36,6 +36,7 @@
 #include "source/palette_cycle.h"
 #include "source/palette_data.h"
 #include "source/png_image.h"
+#include "source/random_sprite.h"
 #include "source/shader.h"
 #include "source/sprite.h"
 #include "source/sprite_base.h"
