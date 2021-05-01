@@ -476,7 +476,7 @@ uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
     uint remap_index = (input.tex & 0xFF0000) >> 16;
 
     float4 color = SampleSpriteTexture(input.uv, texture_index);
-    uint index = (uint)(color.r * 256) * (uint)(color.a != 0) * (uint)(input.color.a != 0);
+    uint index = ((uint)((color.r == 1) * input.color.r * 256) + (uint)((color.r != 1) * color.r * 256)) * (uint)(color.a != 0) * (uint)(input.color.a != 0);
     index = palette_remap_.Load(int3(index, remap_index, 0));
 
     if (index == 0)

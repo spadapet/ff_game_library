@@ -1677,6 +1677,16 @@ namespace
             }
             else
             {
+                unsigned int palette_remap_index = 0;
+                if (this->target_requires_palette)
+                {
+                    palette_remap_index = (this->palette_remap_index == ff::constants::invalid_dword) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
+                    if (palette_remap_index == ff::constants::invalid_dword)
+                    {
+                        return ff::constants::invalid_dword;
+                    }
+                }
+
                 unsigned int texture_index = ff::constants::invalid_dword;
 
                 for (size_t i = this->texture_count; i != 0; i--)
@@ -1699,7 +1709,7 @@ namespace
                     texture_index = static_cast<unsigned int>(this->texture_count++);
                 }
 
-                return texture_index;
+                return texture_index | (palette_remap_index << 16);
             }
         }
 
