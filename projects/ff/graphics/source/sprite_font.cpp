@@ -111,7 +111,7 @@ ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_f
     std::wstring wtext_string;
     std::wstring_view wtext = ::to_wstring(text, wtext_array, wtext_string);
 
-    return this->internal_draw_text(nullptr, nullptr, wtext, ff::transform::identity(), ff::sprite_font_options::no_control);
+    return this->internal_draw_text(nullptr, nullptr, wtext, ff::transform({}, scale), ff::sprite_font_options::no_control);
 }
 
 float ff::sprite_font::line_spacing() const

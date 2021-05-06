@@ -1379,10 +1379,9 @@ namespace
 
         void update_palette_texture()
         {
-            if (this->textures_using_palette_count)
+            if (this->textures_using_palette_count && !this->palette_to_index.empty())
             {
                 ID3D11Resource* dest_resource = this->palette_texture->texture();
-                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_to_index)
@@ -1405,6 +1404,12 @@ namespace
                         }
                     }
                 }
+            }
+
+            if ((this->textures_using_palette_count || this->target_requires_palette) && !this->palette_remap_to_index.empty())
+            {
+                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->texture();
+                CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_remap_to_index)
                 {
@@ -1447,17 +1452,20 @@ namespace
 
             if (this->textures_using_palette_count)
             {
-                std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES_USING_PALETTE> texturesUsingPalette;
+                std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
                 for (size_t i = 0; i < this->textures_using_palette_count; i++)
                 {
-                    texturesUsingPalette[i] = this->textures_using_palette[i]->view();
+                    textures_using_palette[i] = this->textures_using_palette[i]->view();
                 }
 
-                ff::graphics::dx11_device_state().set_resources_ps(texturesUsingPalette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
+                ff::graphics::dx11_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
+            }
 
+            if (this->textures_using_palette_count || this->target_requires_palette)
+            {
                 std::array<ID3D11ShaderResourceView*, 2> palettes =
                 {
-                    this->palette_texture->view(),
+                    (this->textures_using_palette_count ? this->palette_texture->view() : nullptr),
                     this->palette_remap_texture->view(),
                 };
 
