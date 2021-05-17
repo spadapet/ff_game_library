@@ -6,6 +6,7 @@
 static std::recursive_mutex mutex;
 static ff::dict named_settings;
 static bool settings_changed;
+static ff::signal<> save_settings_signal;
 
 static std::filesystem::path settings_path()
 {
@@ -77,6 +78,11 @@ bool ff::internal::app::save_settings()
     return true;
 }
 
+void ff::internal::app::request_save_settings()
+{
+    ::save_settings_signal.notify();
+}
+
 ff::dict ff::settings(std::string_view name)
 {
     std::scoped_lock lock(::mutex);
@@ -97,4 +103,9 @@ void ff::settings(std::string_view name, const ff::dict& dict)
     }
 
     ::settings_changed = true;
+}
+
+ff::signal_sink<>& ff::request_save_settings_sink()
+{
+    return ::save_settings_signal;
 }

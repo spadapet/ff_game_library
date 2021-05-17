@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "state.h"
+#include "state_wrapper.h"
 
 std::shared_ptr<ff::state> ff::state::advance_time()
 {
@@ -59,27 +60,6 @@ void ff::state::frame_rendered(ff::state::advance_t type, ff::dx11_target_base& 
     }
 }
 
-void ff::state::save_settings()
-{
-    for (size_t i = 0; i < this->child_state_count(); i++)
-    {
-        this->child_state(i)->save_settings();
-    }
-}
-
-void ff::state::load_settings()
-{
-    for (size_t i = 0; i < this->child_state_count(); i++)
-    {
-        this->child_state(i)->load_settings();
-    }
-}
-
-ff::state::status_t ff::state::status()
-{
-    return ff::state::status_t::alive;
-}
-
 ff::state::cursor_t ff::state::cursor()
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
@@ -92,6 +72,16 @@ ff::state::cursor_t ff::state::cursor()
     }
 
     return ff::state::cursor_t::default;
+}
+
+std::shared_ptr<ff::state> ff::state::wrap()
+{
+    return std::make_shared<ff::state_wrapper>(this->shared_from_this());
+}
+
+std::shared_ptr<ff::state> ff::state::unwrap()
+{
+    return this->shared_from_this();
 }
 
 size_t ff::state::child_state_count()

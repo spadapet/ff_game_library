@@ -8,32 +8,7 @@ ff::state_wrapper::state_wrapper(std::shared_ptr<ff::state> state)
 
 ff::state_wrapper& ff::state_wrapper::operator=(std::shared_ptr<ff::state> state)
 {
-    auto wrapper = std::dynamic_pointer_cast<ff::state_wrapper>(state);
-    if (wrapper)
-    {
-        state = wrapper->state;
-    }
-
-    if (state && state->status() == ff::state::status_t::dead)
-    {
-        state.reset();
-    }
-
-    if (state != this->state)
-    {
-        if (this->state)
-        {
-            this->state->save_settings();
-        }
-
-        this->state = state;
-
-        if (this->state)
-        {
-            this->state->load_settings();
-        }
-    }
-
+    this->state = state ? state->unwrap() : std::shared_ptr<ff::state>();
     return *this;
 }
 
@@ -57,7 +32,10 @@ std::shared_ptr<ff::state> ff::state_wrapper::advance_time()
     if (this->state)
     {
         auto new_state = this->state->advance_time();
-        *this = new_state ? new_state : this->state;
+        if (new_state)
+        {
+            *this = new_state;
+        }
     }
 
     return nullptr;
@@ -111,28 +89,17 @@ void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dx11_targe
     }
 }
 
-void ff::state_wrapper::save_settings()
-{
-    if (this->state)
-    {
-        this->state->save_settings();
-    }
-}
-
-void ff::state_wrapper::load_settings()
-{
-    if (this->state)
-    {
-        this->state->load_settings();
-    }
-}
-
-ff::state::status_t ff::state_wrapper::status()
-{
-    return this->state ? this->state->status() : ff::state::status_t::dead;
-}
-
 ff::state::cursor_t ff::state_wrapper::cursor()
 {
     return this->state ? this->state->cursor() : ff::state::cursor_t::default;
+}
+
+std::shared_ptr<ff::state> ff::state_wrapper::wrap()
+{
+    return this->shared_from_this();
+}
+
+std::shared_ptr<ff::state> ff::state_wrapper::unwrap()
+{
+    return this->state;
 }

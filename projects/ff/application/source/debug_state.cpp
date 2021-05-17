@@ -226,11 +226,6 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dx11_target_
     }
 }
 
-ff::state::status_t ff::debug_state::status()
-{
-    return ff::state::status_t::ignore;
-}
-
 size_t ff::debug_state::debug_page_count() const
 {
     return 1;

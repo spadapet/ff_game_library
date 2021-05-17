@@ -29,11 +29,9 @@ namespace ff
         virtual void frame_rendering(ff::state::advance_t type) override;
         virtual void frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth) override;
 
-        virtual void save_settings() override;
-        virtual void load_settings() override;
-
-        virtual ff::state::status_t status() override;
         virtual ff::state::cursor_t cursor() override;
+        virtual std::shared_ptr<ff::state> wrap() override;
+        virtual std::shared_ptr<ff::state> unwrap() override;
 
     private:
         std::shared_ptr<ff::state> state;

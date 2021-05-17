@@ -21,7 +21,6 @@ namespace ff
         virtual void advance_input() override;
         virtual void render(ff::dx11_target_base& target, ff::dx11_depth& depth) override;
         virtual void frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth) override;
-        virtual ff::state::status_t status() override;
 
         // debug_pages_base
         virtual size_t debug_page_count() const override;

@@ -43,11 +43,6 @@ namespace
         {
             ff::ui::state_rendered();
         }
-
-        virtual ff::state::status_t status() override
-        {
-            return ff::state::status_t::ignore;
-        }
     };
 }
 
@@ -267,15 +262,15 @@ static void init_game_thread()
         states.push_back(::app_params.create_initial_state_func ? ::app_params.create_initial_state_func() : nullptr);
         states.push_back(std::make_shared<ff::debug_state>());
 
-        ::game_state = std::make_shared<ff::state_wrapper>(std::make_shared<ff::state_list>(std::move(states)));
+        ::game_state = std::make_shared<ff::state_list>(std::move(states));
     }
 
-    ::game_state.load_settings();
     ::frame_reset_timer();
 }
 
 static void destroy_game_thread()
 {
+    ff::internal::app::request_save_settings();
     ::game_state.reset();
 
     if (::app_params.game_thread_finished_func)
@@ -300,24 +295,11 @@ static void pause_game_state()
     if (::game_thread_state != ::game_thread_state_t::stopped)
     {
         ::game_thread_state = ::game_thread_state_t::paused;
-        ::game_state.save_settings();
+        ff::internal::app::request_save_settings();
 
         ff::graphics::dx11_device_state().clear();
         ff::graphics::dxgi_device()->Trim();
     }
-}
-
-static void stop_game_state()
-{
-    ff::log::write("Game state stopped");
-
-    ::game_thread_state = ::game_thread_state_t::stopped;
-
-    ff::thread_dispatch::get_main()->post([]()
-    {
-        ff::window::main()->close();
-    });
-
 }
 
 static void game_thread()
@@ -329,11 +311,7 @@ static void game_thread()
 
     while (::game_thread_state != ::game_thread_state_t::stopped)
     {
-        if (::game_state.status() == ff::state::status_t::dead)
-        {
-            ::stop_game_state();
-        }
-        else if (::game_thread_state == ::game_thread_state_t::pausing)
+        if (::game_thread_state == ::game_thread_state_t::pausing)
         {
             ::pause_game_state();
             ::SetEvent(::game_thread_event);
