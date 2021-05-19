@@ -74,7 +74,7 @@ ff::state::cursor_t ff::state::cursor()
     return ff::state::cursor_t::default;
 }
 
-std::shared_ptr<ff::state> ff::state::wrap()
+std::shared_ptr<ff::state_wrapper> ff::state::wrap()
 {
     return std::make_shared<ff::state_wrapper>(this->shared_from_this());
 }

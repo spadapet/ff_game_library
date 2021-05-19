@@ -2,6 +2,8 @@
 
 namespace ff
 {
+    class state_wrapper;
+
     class state : public std::enable_shared_from_this<ff::state>
     {
     public:
@@ -20,7 +22,7 @@ namespace ff
         virtual void frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth);
 
         virtual ff::state::cursor_t cursor();
-        virtual std::shared_ptr<ff::state> wrap();
+        virtual std::shared_ptr<ff::state_wrapper> wrap();
         virtual std::shared_ptr<ff::state> unwrap();
 
         virtual size_t child_state_count();

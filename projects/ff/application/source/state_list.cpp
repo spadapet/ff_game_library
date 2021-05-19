@@ -1,8 +1,18 @@
 #include "pch.h"
 #include "state_list.h"
+#include "state_wrapper.h"
 
 ff::state_list::state_list(std::vector<std::shared_ptr<ff::state>>&& states)
     : states(std::move(states))
+{
+    for (auto& state : this->states)
+    {
+        state = state->wrap();
+    }
+}
+
+ff::state_list::state_list(std::initializer_list<std::shared_ptr<ff::state>> list)
+    : states(list)
 {
     for (auto& state : this->states)
     {

@@ -8,6 +8,7 @@ namespace ff
     {
     public:
         state_list() = default;
+        state_list(std::initializer_list<std::shared_ptr<ff::state>> list);
         state_list(std::vector<std::shared_ptr<ff::state>>&& states);
         state_list(state_list&& other) noexcept = default;
         state_list(const state_list& other) = default;

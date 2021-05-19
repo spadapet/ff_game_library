@@ -94,9 +94,9 @@ ff::state::cursor_t ff::state_wrapper::cursor()
     return this->state ? this->state->cursor() : ff::state::cursor_t::default;
 }
 
-std::shared_ptr<ff::state> ff::state_wrapper::wrap()
+std::shared_ptr<ff::state_wrapper> ff::state_wrapper::wrap()
 {
-    return this->shared_from_this();
+    return std::static_pointer_cast<ff::state_wrapper>(this->shared_from_this());
 }
 
 std::shared_ptr<ff::state> ff::state_wrapper::unwrap()
