@@ -142,13 +142,13 @@
     <ClCompile Include="$(InteractivityRoot)Src\TriggerCollection.cpp">
       <Filter>interactivity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\packages\ffui.3.0.11\content\Src\Packages\App\MediaElement\Src\App.MediaElement.cpp">
+    <ClCompile Include="$(MediaElementRoot)\Src\App.MediaElement.cpp">
       <Filter>media_element</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\packages\ffui.3.0.11\content\Src\Packages\App\MediaElement\Src\MediaElement.cpp">
+    <ClCompile Include="$(MediaElementRoot)\Src\MediaElement.cpp">
       <Filter>media_element</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\packages\ffui.3.0.11\content\Src\Packages\App\MediaElement\Src\MediaPlayer.cpp">
+    <ClCompile Include="$(MediaElementRoot)\Src\MediaPlayer.cpp">
       <Filter>media_element</Filter>
     </ClCompile>
   </ItemGroup>
