@@ -105,7 +105,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
         {
             std::string_view errors = std::string_view(
                 reinterpret_cast<const char*>(compile_errors_blob->GetBufferPointer()),
-                compile_errors_blob->GetBufferSize());
+                compile_errors_blob->GetBufferSize() - 1);
 
             for (std::string_view error : ff::string::split(errors, "\r\n"))
             {
@@ -157,14 +157,16 @@ std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_fro
     std::vector<std::string> compile_errors;
     std::shared_ptr<ff::data_base> shader_data = ::compile_shader(file_path, entry, target, defines, debug, compile_errors);
 
-    if (!compile_errors.empty())
+    for (const std::string& error : compile_errors)
     {
-        for (const std::string& error : compile_errors)
-        {
-            std::ostringstream str;
-            str << "Shader compiler error: " << error;
-            context.add_error(str.str());
-        }
+        std::ostringstream str;
+        str << "Shader compiler error: " << error;
+        context.add_error(str.str());
+    }
+
+    if (!shader_data)
+    {
+        return nullptr;
     }
 
     auto shader_saved_data = std::make_shared<ff::saved_data_static>(shader_data, shader_data->size(), ff::saved_data_type::none);

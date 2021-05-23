@@ -29,6 +29,7 @@ public:
     {
         if (!text.empty())
         {
+            std::scoped_lock lock(this->mutex);
             this->errors_.emplace_back(text);
         }
     }
@@ -664,11 +665,12 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
         std::vector<std::string> errors;
         ff::value_ptr new_dict_value = ff::type::try_get_dict_from_data(transformer->visit_dict(dict, errors));
 
-        if (!new_dict_value || !errors.empty())
+        if (!new_dict_value || !errors.empty() || !context.errors().empty())
         {
             ff::load_resources_result result{};
             result.status = false;
             result.errors = std::move(errors);
+            std::copy(context.errors().cbegin(), context.errors().cend(), std::back_inserter(result.errors));
             return result;
         }
 
