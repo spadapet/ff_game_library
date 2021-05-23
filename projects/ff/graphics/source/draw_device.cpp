@@ -812,7 +812,7 @@ namespace
 
         virtual void draw_sprite(const ff::sprite_data& sprite, const ff::transform& transform) override
         {
-            ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque);
+            ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette);
             if (alpha_type != ::alpha_type::invisible && sprite.view())
             {
                 bool use_palette = ff::flags::has(sprite.type(), ff::sprite_type::palette);
@@ -912,7 +912,7 @@ namespace
                 std::memcpy(input.position, points, sizeof(input.position));
                 std::memcpy(input.color, colors, sizeof(input.color));
 
-                ::alpha_type alpha_type = ::get_alpha_type(colors, 3, this->force_opaque);
+                ::alpha_type alpha_type = ::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette);
                 if (alpha_type != ::alpha_type::invisible)
                 {
                     ::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ::geometry_bucket_type::triangles_alpha : ::geometry_bucket_type::triangles;
@@ -985,7 +985,7 @@ namespace
             input.inside_color = inside_color;
             input.outside_color = outside_color;
 
-            ::alpha_type alpha_type = ::get_alpha_type(&input.inside_color, 2, this->force_opaque);
+            ::alpha_type alpha_type = ::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette);
             if (alpha_type != ::alpha_type::invisible)
             {
                 ::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ::geometry_bucket_type::circles_alpha : ::geometry_bucket_type::circles;
@@ -1281,7 +1281,7 @@ namespace
 
             const DirectX::XMFLOAT2* dxpoints = reinterpret_cast<const DirectX::XMFLOAT2*>(points);
             bool closed = point_count > 2 && points[0] == points[point_count - 1];
-            ::alpha_type alpha_type = ::get_alpha_type(colors[0], this->force_opaque);
+            ::alpha_type alpha_type = ::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette);
 
             for (size_t i = 0; i < point_count - 1; i++)
             {
@@ -1300,7 +1300,7 @@ namespace
                 {
                     input.color[0] = colors[i];
                     input.color[1] = colors[i + 1];
-                    alpha_type = ::get_alpha_type(colors + i, 2, this->force_opaque);
+                    alpha_type = ::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette);
                 }
 
                 if (alpha_type != ::alpha_type::invisible)

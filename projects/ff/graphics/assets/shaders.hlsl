@@ -107,6 +107,18 @@ sprite_geometry sprite_vs(sprite_geometry input)
     return input;
 }
 
+float hash_out_1_in_4(float4 p4)
+{
+    p4 = frac(p4 * .1031);
+    p4 += dot(p4, p4.wzyx + 31.32);
+    return frac((p4.x + p4.y) * (p4.z + p4.w));
+}
+
+bool discard_for_dither(float3 pos, float a)
+{
+    return a != 1 && hash_out_1_in_4(float4(pos.xyz, a)) >= a;
+}
+
 bool miters_on_same_side_of_line(float2 dir_line, float2 miter1, float2 miter2)
 {
     float3 line_dir_3 = float3(dir_line, 0);
@@ -333,10 +345,11 @@ float4 color_ps(color_pixel input) : SV_TARGET
     return input.color;
 }
 
+// Input: RGBA (R*256=index), Output: Palette index
 uint palette_out_color_ps(color_pixel input) : SV_TARGET
 {
     uint index = (uint)(input.color.r * 256) * (uint)(input.color.a != 0);
-    if (index == 0)
+    if (index == 0 || discard_for_dither(input.pos.xyz, input.color.a))
     {
         discard;
     }
@@ -424,6 +437,7 @@ uint SamplePaletteSpriteTexture(int3 tex, uint ntex)
     }
 }
 
+// Texture: RGBA, Output: RGBA
 float4 sprite_ps(sprite_pixel input) : SV_TARGET
 {
     float4 color = input.color * SampleSpriteTexture(input.uv, input.tex);
@@ -436,6 +450,7 @@ float4 sprite_ps(sprite_pixel input) : SV_TARGET
     return color;
 }
 
+// Texture: Palette Index, Output: RGBA (needs active palette to map index -> RGB)
 float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
@@ -458,6 +473,7 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
     return color;
 }
 
+// Texture: Alpha only, Output: RGBA (111A)
 float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
 {
     float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, input.tex).a);
@@ -470,16 +486,18 @@ float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
     return color;
 }
 
+// Texture: RGBA, Output: Palette index
 uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
     uint remap_index = (input.tex & 0xFF0000) >> 16;
 
     float4 color = SampleSpriteTexture(input.uv, texture_index);
-    uint index = ((uint)((color.r == 1) * input.color.r * 256) + (uint)((color.r != 1) * color.r * 256)) * (uint)(color.a != 0) * (uint)(input.color.a != 0);
+    color.a *= input.color.a;
+    uint index = ((uint)((input.color.r != 1) * input.color.r * 256) + (uint)((input.color.r == 1) * color.r * 256)) * (uint)(color.a != 0);
     index = palette_remap_.Load(int3(index, remap_index, 0));
 
-    if (index == 0)
+    if (index == 0 || discard_for_dither(input.pos.xyz, color.a))
     {
         discard;
     }
@@ -487,15 +505,17 @@ uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
     return index;
 }
 
+// Texture: Palette index, Output: Palette index
 uint palette_out_sprite_palette_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
     uint remap_index = (input.tex & 0xFF0000) >> 16;
 
     uint index = SamplePaletteSpriteTexture(int3(input.uv * texture_palette_sizes_[texture_index].xy, 0), texture_index);
+    index = ((uint)((input.color.r != 1) * input.color.r * 256) + (uint)((input.color.r == 1) * index)) * (uint)(input.color.a != 0);
     index = palette_remap_.Load(int3(index, remap_index, 0));
 
-    if (index == 0)
+    if (index == 0 || discard_for_dither(input.pos.xyz, input.color.a))
     {
         discard;
     }

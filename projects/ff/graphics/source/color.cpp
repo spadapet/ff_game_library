@@ -56,20 +56,20 @@ const DirectX::XMFLOAT4& ff::color::magenta()
     return ::color_mangenta;
 }
 
-DirectX::XMFLOAT4 ff::palette_index_to_color(int index)
+DirectX::XMFLOAT4 ff::palette_index_to_color(int index, float alpha)
 {
-    return DirectX::XMFLOAT4(index / 256.0f, 0.0f, 0.0f, 1.0f * (index != 0));
+    return DirectX::XMFLOAT4(index / 256.0f, 0.0f, 0.0f, alpha * (index != 0));
 }
 
-void ff::palette_index_to_color(int index, DirectX::XMFLOAT4& color)
+void ff::palette_index_to_color(int index, DirectX::XMFLOAT4& color, float alpha)
 {
-    color = ff::palette_index_to_color(index);
+    color = ff::palette_index_to_color(index, alpha);
 }
 
-void ff::palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count)
+void ff::palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count, float alpha)
 {
     for (size_t i = 0; i != count; i++, index++, color++)
     {
-        ff::palette_index_to_color(*index, *color);
+        ff::palette_index_to_color(*index, *color, alpha);
     }
 }

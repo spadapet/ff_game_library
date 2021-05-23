@@ -16,7 +16,7 @@ namespace ff::color
 
 namespace ff
 {
-    DirectX::XMFLOAT4 palette_index_to_color(int index);
-    void palette_index_to_color(int index, DirectX::XMFLOAT4& color);
-    void palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count);
+    DirectX::XMFLOAT4 palette_index_to_color(int index, float alpha = 1.0f);
+    void palette_index_to_color(int index, DirectX::XMFLOAT4& color, float alpha = 1.0f);
+    void palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count, float alpha = 1.0f);
 }
