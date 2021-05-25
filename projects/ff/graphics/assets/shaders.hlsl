@@ -107,16 +107,16 @@ sprite_geometry sprite_vs(sprite_geometry input)
     return input;
 }
 
-float hash_out_1_in_4(float4 p4)
+float hash_3_to_1(float3 p)
 {
-    p4 = frac(p4 * .1031);
-    p4 += dot(p4, p4.wzyx + 31.32);
-    return frac((p4.x + p4.y) * (p4.z + p4.w));
+    p = frac(p * .1031);
+    p += dot(p, p.zyx + 31.32);
+    return frac((p.x + p.y) * p.z);
 }
 
 bool discard_for_dither(float3 pos, float a)
 {
-    return a != 1 && hash_out_1_in_4(float4(pos.xyz, a)) >= a;
+    return a != 1 && hash_3_to_1(float3(pos.xy, a)) >= a;
 }
 
 bool miters_on_same_side_of_line(float2 dir_line, float2 miter1, float2 miter2)
