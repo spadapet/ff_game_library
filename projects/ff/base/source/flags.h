@@ -54,6 +54,13 @@ namespace ff::flags
     }
 
     template<class T>
+    T toggle(T state, T toggle)
+    {
+        typedef std::underlying_type_t<T> TI;
+        return static_cast<T>(static_cast<TI>(state) ^ static_cast<TI>(toggle));
+    }
+
+    template<class T>
     T combine(T f1, T f2)
     {
         typedef std::underlying_type_t<T> TI;

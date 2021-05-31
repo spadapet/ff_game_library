@@ -472,24 +472,54 @@ namespace ff
                 {
                     rect = rect.offset(-left_move, this_type::value_zero);
                 }
-
-                if (move == top_move)
-                {
-                    rect = rect.offset(this_type::value_zero, -top_move);
-                }
-
-                if (move == right_move)
+                else if (move == right_move)
                 {
                     rect = rect.offset(right_move, this_type::value_zero);
                 }
-
-                if (move == bottom_move)
+                else if (move == top_move)
+                {
+                    rect = rect.offset(this_type::value_zero, -top_move);
+                }
+                else if (move == bottom_move)
                 {
                     rect = rect.offset(this_type::value_zero, bottom_move);
                 }
             }
 
             return rect;
+        }
+
+        point_type move_point_outside(const point_type& point) const
+        {
+            point_type point_2 = point;
+
+            if (this->contains(point))
+            {
+                T right_move = this->right - point.x;
+                T left_move = point.x - this->left;
+                T bottom_move = this->bottom - point.y;
+                T top_move = point.y - this->top;
+                T move = std::min({ left_move, right_move, top_move, bottom_move });
+
+                if (move == left_move)
+                {
+                    point_2.x -= left_move;
+                }
+                else if (move == right_move)
+                {
+                    point_2.x += right_move;
+                }
+                else if (move == top_move)
+                {
+                    point_2.y -= top_move;
+                }
+                else if (move == bottom_move)
+                {
+                    point_2.y += bottom_move;
+                }
+            }
+
+            return point_2;
         }
 
         this_type move_top_left(const point_type& value) const
