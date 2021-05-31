@@ -46,6 +46,7 @@ ff::init_data::init_data()
             ff::value::register_type<ff::type::rect_size_type>("rect_size");
             ff::value::register_type<ff::type::saved_data_type>("saved_data");
             ff::value::register_type<ff::type::size_type>("size");
+            ff::value::register_type<ff::type::size_vector_type>("size_vector");
             ff::value::register_type<ff::type::string_type>("string");
             ff::value::register_type<ff::type::string_vector_type>("string_vector");
             ff::value::register_type<ff::type::uuid_type>("uuid");
