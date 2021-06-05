@@ -17,6 +17,7 @@
 #include "source/dx11_device_state.h"
 #include "source/dx11_fixed_state.h"
 #include "source/dx11_object_cache.h"
+#include "source/dx11_operators.h"
 #include "source/dx11_target_base.h"
 #include "source/dx11_target_texture.h"
 #include "source/dx11_target_window.h"

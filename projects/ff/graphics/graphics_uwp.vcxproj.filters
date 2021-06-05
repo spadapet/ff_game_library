@@ -276,6 +276,9 @@
     <ClInclude Include="source\random_sprite.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\dx11_operators.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
