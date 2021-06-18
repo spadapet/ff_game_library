@@ -158,4 +158,10 @@ namespace std
     {
         return ff::point_t<T>(std::floor(value.x), std::floor(value.y));
     }
+
+    template<class T>
+    double atan2(const ff::point_t<T>& value)
+    {
+        return value ? std::atan2(static_cast<double>(value.y), static_cast<double>(value.x)) : 0;
+    }
 }
