@@ -59,9 +59,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\clear_ps.hlsl">
-      <FileType>Document</FileType>
-    </None>
     <None Include="assets\quad_vs.hlsl">
       <FileType>Document</FileType>
     </None>

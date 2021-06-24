@@ -55,3 +55,9 @@ bool ff::internal::ui::texture::IsInverted() const
 {
     return false;
 }
+
+bool ff::internal::ui::texture::HasAlpha() const
+{
+    auto texture = this->internal_texture();
+    return ff::flags::has(texture->sprite_type(), ff::sprite_type::transparent);
+}

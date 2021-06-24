@@ -8,9 +8,12 @@ ff::internal::ui::texture_provider::texture_provider()
     : placeholder_texture(std::make_shared<ff::dx11_texture>(ff::point_int(1, 1)))
 {}
 
-Noesis::TextureInfo ff::internal::ui::texture_provider::GetTextureInfo(const char* uri)
+Noesis::TextureInfo ff::internal::ui::texture_provider::GetTextureInfo(const Noesis::Uri& uri)
 {
-    std::string name = std::string(uri) + ".metadata";
+    Noesis::String uri_path;
+    uri.GetPath(uri_path);
+
+    std::string name = std::string(uri_path.Str(), uri_path.Size()) + ".metadata";
     ff::auto_resource<ff::texture_metadata> res = ff::internal::ui::global_resource_cache()->get_resource_object(name);
     std::shared_ptr<ff::texture_metadata> obj = res.object();
 
@@ -24,9 +27,12 @@ Noesis::TextureInfo ff::internal::ui::texture_provider::GetTextureInfo(const cha
     return Noesis::TextureInfo{};
 }
 
-Noesis::Ptr<Noesis::Texture> ff::internal::ui::texture_provider::LoadTexture(const char* uri, Noesis::RenderDevice* device)
+Noesis::Ptr<Noesis::Texture> ff::internal::ui::texture_provider::LoadTexture(const Noesis::Uri& uri, Noesis::RenderDevice* device)
 {
-    std::string_view name(uri);
+    Noesis::String uri_path;
+    uri.GetPath(uri_path);
+    std::string_view name(uri_path.Str(), uri_path.Size());
+
     std::shared_ptr<ff::resource> res = ff::internal::ui::global_resource_cache()->get_resource_object(name);
     Noesis::Ptr<ff::internal::ui::texture> texture = *new ff::internal::ui::texture(res, this->placeholder_texture, name);
     return texture;

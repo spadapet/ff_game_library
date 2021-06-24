@@ -3,6 +3,8 @@
   <PropertyGroup>
     <VsRelease Condition=" '$(VsRelease)' == '' ">16</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
+    <NoesisVersion>3.1.0-b1</NoesisVersion>
+
     <FFRoot>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>
@@ -40,7 +42,7 @@
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
 
     <!-- Noesis -->
-    <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.3.0.12\content\</NoesisRoot>
+    <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\</NoesisLibDir>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
     <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\uwp_x86\</NoesisLibDir>

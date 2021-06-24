@@ -2,7 +2,7 @@
 #include "render_target.h"
 #include "texture.h"
 
-ff::internal::ui::render_target::render_target(size_t width, size_t height, size_t samples, bool srgb, std::string_view name)
+ff::internal::ui::render_target::render_target(size_t width, size_t height, size_t samples, bool srgb, bool needs_depth_stencil, std::string_view name)
     : name_(name)
 {
     ff::point_int size = ff::point_size(width, height).cast<int>();
@@ -23,7 +23,11 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
     }
 
     this->resolved_texture_wrapper = Noesis::MakePtr<ff::internal::ui::texture>(this->resolved_texture_, name);
-    this->depth_ = std::make_shared<ff::dx11_depth>(size, this->msaa_texture_->sample_count());
+
+    if (needs_depth_stencil)
+    {
+        this->depth_ = std::make_shared<ff::dx11_depth>(size, this->msaa_texture_->sample_count());
+    }
 }
 
 ff::internal::ui::render_target::render_target(const render_target& rhs, std::string_view name)

@@ -166,7 +166,7 @@ static void open_url_callback(void* user, const char* url)
 #endif
 }
 
-static void play_sound_callback(void* user, const char* filename, float volume)
+static void play_sound_callback(void* user, const Noesis::Uri& uri, float volume)
 {
     // Not implemented
 }
@@ -203,8 +203,9 @@ static bool init_noesis()
     ::error_handler = Noesis::SetErrorHandler(::noesis_error_handler);
     ::log_handler = Noesis::SetLogHandler(::noesis_log_handler);
     Noesis::SetMemoryCallbacks(::memory_callbacks);
+    Noesis::SetLicense(::ui_params.noesis_license_name.c_str(), ::ui_params.noesis_license_key.c_str());
     Noesis::GUI::DisableInspector();
-    Noesis::GUI::Init(::ui_params.noesis_license_name.c_str(), ::ui_params.noesis_license_key.c_str());
+    Noesis::GUI::Init();
 
     // Callbacks
 

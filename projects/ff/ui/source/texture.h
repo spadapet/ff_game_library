@@ -16,6 +16,7 @@ namespace ff::internal::ui
         virtual uint32_t GetHeight() const override;
         virtual bool HasMipMaps() const override;
         virtual bool IsInverted() const override;
+        virtual bool HasAlpha() const override;
 
     private:
         mutable ff::auto_resource<ff::dx11_texture> resource;

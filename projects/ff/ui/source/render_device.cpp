@@ -6,10 +6,8 @@
 
 namespace
 {
-    struct texture_dimensions_t
+    struct pixel_buffer_2
     {
-        ff::point_float image_size;
-        ff::point_float image_inverse_size;
         ff::point_float pattern_size;
         ff::point_float pattern_inverse_size;
         unsigned int palette_row;
@@ -17,107 +15,137 @@ namespace
     };
 }
 
-static const size_t PREALLOCATED_DYNAMIC_PAGES = 1;
-static const size_t VS_CBUFFER_SIZE = 16 * sizeof(float); // projectionMtx
-static const size_t PS_CBUFFER_SIZE = 12 * sizeof(float); // rgba | radialGrad opacity | opacity
-static const size_t PS_EFFECTS_SIZE = 16 * sizeof(float);
-static const size_t TEX_DIMENSIONS_SIZE = sizeof(texture_dimensions_t);
-static const uint32_t VFPos = 0;
-static const uint32_t VFColor = 1;
-static const uint32_t VFTex0 = 2;
-static const uint32_t VFTex1 = 4;
-static const uint32_t VFTex2 = 8;
-static const uint32_t VFCoverage = 16;
+static constexpr size_t PREALLOCATED_DYNAMIC_PAGES = 1;
+static constexpr size_t VS_CBUFFER0_SIZE = 16 * sizeof(float);
+static constexpr size_t VS_CBUFFER1_SIZE = 4 * sizeof(float);
+static constexpr size_t PS_CBUFFER0_SIZE = 12 * sizeof(float);
+static constexpr size_t PS_CBUFFER1_SIZE = 128 * sizeof(float);
+
+static constexpr uint32_t VFPos = 0;
+static constexpr uint32_t VFColor = 1;
+static constexpr uint32_t VFTex0 = 2;
+static constexpr uint32_t VFTex1 = 4;
+static constexpr uint32_t VFCoverage = 8;
+static constexpr uint32_t VFRect = 16;
+static constexpr uint32_t VFTile = 32;
+static constexpr uint32_t VFImagePos = 64;
 
 static const Noesis::Pair<uint32_t, uint32_t> LAYOUT_FORMATS_AND_STRIDE[] =
 {
     { VFPos, 8 },
     { VFPos | VFColor, 12 },
     { VFPos | VFTex0, 16 },
+    { VFPos | VFTex0 | VFRect, 24 },
+    { VFPos | VFTex0 | VFRect | VFTile, 40 },
     { VFPos | VFColor | VFCoverage, 16 },
     { VFPos | VFTex0 | VFCoverage, 20 },
+    { VFPos | VFTex0 | VFCoverage | VFRect, 28 },
+    { VFPos | VFTex0 | VFCoverage | VFRect | VFTile, 44 },
     { VFPos | VFColor | VFTex1, 20 },
     { VFPos | VFTex0 | VFTex1, 24 },
-    { VFPos | VFColor | VFTex1 | VFTex2, 28 },
-    { VFPos | VFTex0 | VFTex1 | VFTex2, 32 },
+    { VFPos | VFTex0 | VFTex1 | VFRect, 32 },
+    { VFPos | VFTex0 | VFTex1 | VFRect | VFTile, 48 },
+    { VFPos | VFColor | VFTex0 | VFTex1, 28 },
+    { VFPos | VFColor | VFTex1 | VFRect, 28 },
+    { VFPos | VFColor | VFTex0 | VFRect | VFImagePos, 44 }
 };
 
-static D3D11_FILTER ToD3D(Noesis::MinMagFilter::Enum min_mag_filter, Noesis::MipFilter::Enum mip_filter)
+static void set_filter(Noesis::MinMagFilter::Enum minmag, Noesis::MipFilter::Enum mip, D3D11_SAMPLER_DESC& desc)
 {
-    switch (min_mag_filter)
+    switch (minmag)
     {
-        default:
         case Noesis::MinMagFilter::Nearest:
-            switch (mip_filter)
+            switch (mip)
             {
-                default:
                 case Noesis::MipFilter::Disabled:
+                    desc.MaxLOD = 0;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+                    break;
+
                 case Noesis::MipFilter::Nearest:
-                    return D3D11_FILTER_MIN_MAG_MIP_POINT;
+                    desc.MaxLOD = D3D11_FLOAT32_MAX;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+                    break;
 
                 case Noesis::MipFilter::Linear:
-                    return D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+                    desc.MaxLOD = D3D11_FLOAT32_MAX;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+                    break;
+
+                default:
+                    assert(false);
             }
             break;
 
         case Noesis::MinMagFilter::Linear:
-            switch (mip_filter)
+            switch (mip)
             {
-                default:
                 case Noesis::MipFilter::Disabled:
+                    desc.MaxLOD = 0;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+                    break;
+
                 case Noesis::MipFilter::Nearest:
-                    return D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+                    desc.MaxLOD = D3D11_FLOAT32_MAX;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+                    break;
 
                 case Noesis::MipFilter::Linear:
-                    return D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+                    desc.MaxLOD = D3D11_FLOAT32_MAX;
+                    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+                    break;
+
+                default:
+                    assert(false);
             }
             break;
+
+        default:
+            assert(false);
     }
 }
 
-static void ToD3D(Noesis::WrapMode::Enum mode, D3D11_TEXTURE_ADDRESS_MODE& address_u, D3D11_TEXTURE_ADDRESS_MODE& address_v)
+static void set_address(Noesis::WrapMode::Enum mode, D3D_FEATURE_LEVEL level, D3D11_SAMPLER_DESC& desc)
 {
     switch (mode)
     {
-        default:
         case Noesis::WrapMode::ClampToEdge:
-            address_u = D3D11_TEXTURE_ADDRESS_CLAMP;
-            address_v = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
             break;
 
         case Noesis::WrapMode::ClampToZero:
-            address_u = D3D11_TEXTURE_ADDRESS_BORDER;
-            address_v = D3D11_TEXTURE_ADDRESS_BORDER;
+            desc.AddressU = (level >= D3D_FEATURE_LEVEL_9_3) ? D3D11_TEXTURE_ADDRESS_BORDER : D3D11_TEXTURE_ADDRESS_CLAMP;
+            desc.AddressV = (level >= D3D_FEATURE_LEVEL_9_3) ? D3D11_TEXTURE_ADDRESS_BORDER : D3D11_TEXTURE_ADDRESS_CLAMP;
             break;
 
         case Noesis::WrapMode::Repeat:
-            address_u = D3D11_TEXTURE_ADDRESS_WRAP;
-            address_v = D3D11_TEXTURE_ADDRESS_WRAP;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
             break;
 
         case Noesis::WrapMode::MirrorU:
-            address_u = D3D11_TEXTURE_ADDRESS_MIRROR;
-            address_v = D3D11_TEXTURE_ADDRESS_WRAP;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
             break;
 
         case Noesis::WrapMode::MirrorV:
-            address_u = D3D11_TEXTURE_ADDRESS_WRAP;
-            address_v = D3D11_TEXTURE_ADDRESS_MIRROR;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
             break;
 
         case Noesis::WrapMode::Mirror:
-            address_u = D3D11_TEXTURE_ADDRESS_MIRROR;
-            address_v = D3D11_TEXTURE_ADDRESS_MIRROR;
+            desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+            desc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
             break;
+
+        default:
+            assert(false);
     }
 }
 
 ff::internal::ui::render_device::render_device(bool srgb)
-    : vertex_cb_hash(0)
-    , pixel_cb_hash(0)
-    , effect_cb_hash(0)
-    , texture_dimensions_cb_hash(0)
-    , null_textures{}
+    : null_textures{}
 {
     ff::internal::graphics::add_child(this);
 
@@ -130,9 +158,7 @@ ff::internal::ui::render_device::render_device(bool srgb)
     this->caps.linearRendering = srgb;
     this->caps.subpixelRendering = false;
 
-    this->create_buffers();
-    this->create_state_objects();
-    this->create_shaders();
+    this->reset();
 }
 
 ff::internal::ui::render_device::~render_device()
@@ -145,10 +171,10 @@ const Noesis::DeviceCaps& ff::internal::ui::render_device::GetCaps() const
     return this->caps;
 }
 
-Noesis::Ptr<Noesis::RenderTarget> ff::internal::ui::render_device::CreateRenderTarget(const char* label, uint32_t width, uint32_t height, uint32_t sample_count)
+Noesis::Ptr<Noesis::RenderTarget> ff::internal::ui::render_device::CreateRenderTarget(const char* label, uint32_t width, uint32_t height, uint32_t sample_count, bool needs_stencil)
 {
     std::string_view name(label ? label : "");
-    return *new ff::internal::ui::render_target(static_cast<size_t>(width), static_cast<size_t>(height), static_cast<size_t>(sample_count), this->caps.linearRendering, name);
+    return *new ff::internal::ui::render_target(static_cast<size_t>(width), static_cast<size_t>(height), static_cast<size_t>(sample_count), this->caps.linearRendering, needs_stencil, name);
 }
 
 Noesis::Ptr<Noesis::RenderTarget> ff::internal::ui::render_device::CloneRenderTarget(const char* label, Noesis::RenderTarget* surface)
@@ -204,25 +230,38 @@ void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, ui
     texture2->update(0, static_cast<size_t>(level), ff::rect_t<uint32_t>(x, y, x + width, y + height).cast<int>(), data, texture2->format(), true);
 }
 
-void ff::internal::ui::render_device::BeginRender(bool offscreen)
+void ff::internal::ui::render_device::BeginOnscreenRender()
 {
     std::array<ID3D11Buffer*, 2> buffer_vs =
     {
-        this->buffer_vertex_cb->buffer(),
-        this->buffer_texture_dimensions_cb->buffer(),
+        this->buffer_vertex_cb[0]->buffer(),
+        this->buffer_vertex_cb[1]->buffer(),
     };
 
     std::array<ID3D11Buffer*, 3> buffer_ps =
     {
-        this->buffer_pixel_cb->buffer(),
-        this->buffer_texture_dimensions_cb->buffer(),
-        this->buffer_effect_cb->buffer(),
+        this->buffer_pixel_cb[0]->buffer(),
+        this->buffer_pixel_cb[1]->buffer(),
+        this->buffer_pixel_cb[2]->buffer(),
     };
 
     ff::graphics::dx11_device_state().set_constants_vs(buffer_vs.data(), 0, buffer_vs.size());
     ff::graphics::dx11_device_state().set_constants_ps(buffer_ps.data(), 0, buffer_ps.size());
     ff::graphics::dx11_device_state().set_topology_ia(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     ff::graphics::dx11_device_state().set_gs(nullptr);
+}
+
+void ff::internal::ui::render_device::EndOnscreenRender()
+{}
+
+void ff::internal::ui::render_device::BeginOffscreenRender()
+{
+    this->BeginOnscreenRender();
+}
+
+void ff::internal::ui::render_device::EndOffscreenRender()
+{
+    this->EndOnscreenRender();
 }
 
 void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surface)
@@ -241,25 +280,6 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
 
     ff::graphics::dx11_device_state().set_viewports(&viewport, 1);
 }
-
-void ff::internal::ui::render_device::BeginTile(const Noesis::Tile& tile, uint32_t surface_width, uint32_t surface_height)
-{
-    uint32_t x = tile.x;
-    uint32_t y = surface_height - (tile.y + tile.height);
-
-    D3D11_RECT rect;
-    rect.left = x;
-    rect.top = y;
-    rect.right = x + tile.width;
-    rect.bottom = y + tile.height;
-
-    ff::graphics::dx11_device_state().set_scissors(&rect, 1);
-
-    this->clear_render_target();
-}
-
-void ff::internal::ui::render_device::EndTile()
-{}
 
 void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* surface, const Noesis::Tile* tiles, uint32_t tile_count)
 {
@@ -281,9 +301,9 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
         ff::graphics::dx11_device_state().set_vs(this->quad_vs.shader());
         ff::graphics::dx11_device_state().set_ps(this->resolve_ps[index_ps].shader());
 
-        ff::graphics::dx11_device_state().set_raster(this->rasterizer_states[2].Get());
-        ff::graphics::dx11_device_state().set_blend(this->blend_states[0].Get(), ff::color::none(), 0xffffffff);
-        ff::graphics::dx11_device_state().set_depth(this->depth_stencil_states[0].Get(), 0);
+        ff::graphics::dx11_device_state().set_raster(this->rasterizer_state_scissor.Get());
+        ff::graphics::dx11_device_state().set_blend(this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)].Get(), ff::color::none(), 0xffffffff);
+        ff::graphics::dx11_device_state().set_depth(this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)].Get(), 0);
 
         this->clear_textures();
         ID3D11RenderTargetView* view = surface2->resolved_target()->view();
@@ -310,9 +330,6 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
     }
 }
 
-void ff::internal::ui::render_device::EndRender()
-{}
-
 void* ff::internal::ui::render_device::MapVertices(uint32_t bytes)
 {
     return this->buffer_vertices->map(bytes);
@@ -338,7 +355,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     assert(batch.shader.v < _countof(this->programs));
     const vertex_and_pixel_program_t& program = this->programs[batch.shader.v];
     assert(program.vertex_shader_index != -1 && program.vertex_shader_index < _countof(this->vertex_stages));
-    assert(program.pixel_shader_index != -1 && program.pixel_shader_index < _countof(this->pixel_stages));
+    assert(program.pixel_shader_index != -1 && program.pixel_shader_index < _countof(this->pixel_shaders));
 
     this->set_shaders(batch);
     this->set_buffers(batch);
@@ -351,11 +368,6 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
 
 bool ff::internal::ui::render_device::reset()
 {
-    this->vertex_cb_hash = 0;
-    this->pixel_cb_hash = 0;
-    this->effect_cb_hash = 0;
-    this->texture_dimensions_cb_hash = 0;
-
     this->create_buffers();
     this->create_state_objects();
     this->create_shaders();
@@ -365,75 +377,99 @@ bool ff::internal::ui::render_device::reset()
 
 Microsoft::WRL::ComPtr<ID3D11InputLayout> ff::internal::ui::render_device::create_layout(uint32_t format, std::string_view vertex_resource_name)
 {
-    D3D11_INPUT_ELEMENT_DESC descs[5];
+    D3D11_INPUT_ELEMENT_DESC descs[8];
     uint32_t element = 0;
 
-    descs[element].SemanticIndex = 0;
     descs[element].InputSlot = 0;
     descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
     descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
     descs[element].InstanceDataStepRate = 0;
     descs[element].SemanticName = "POSITION";
+    descs[element].SemanticIndex = 0;
     descs[element].Format = DXGI_FORMAT_R32G32_FLOAT;
     element++;
 
     if (format & VFColor)
     {
-        descs[element].SemanticIndex = 0;
         descs[element].InputSlot = 0;
         descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
         descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
         descs[element].InstanceDataStepRate = 0;
         descs[element].SemanticName = "COLOR";
+        descs[element].SemanticIndex = 0;
         descs[element].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         element++;
     }
 
     if (format & VFTex0)
     {
-        descs[element].SemanticIndex = 0;
         descs[element].InputSlot = 0;
         descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
         descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
         descs[element].InstanceDataStepRate = 0;
         descs[element].SemanticName = "TEXCOORD";
+        descs[element].SemanticIndex = 0;
         descs[element].Format = DXGI_FORMAT_R32G32_FLOAT;
         element++;
     }
 
     if (format & VFTex1)
     {
+        descs[element].InputSlot = 0;
+        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+        descs[element].InstanceDataStepRate = 0;
+        descs[element].SemanticName = "TEXCOORD";
         descs[element].SemanticIndex = 1;
-        descs[element].InputSlot = 0;
-        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-        descs[element].InstanceDataStepRate = 0;
-        descs[element].SemanticName = "TEXCOORD";
         descs[element].Format = DXGI_FORMAT_R32G32_FLOAT;
-        element++;
-    }
-
-    if (format & VFTex2)
-    {
-        descs[element].SemanticIndex = 2;
-        descs[element].InputSlot = 0;
-        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-        descs[element].InstanceDataStepRate = 0;
-        descs[element].SemanticName = "TEXCOORD";
-        descs[element].Format = DXGI_FORMAT_R16G16B16A16_UNORM;
         element++;
     }
 
     if (format & VFCoverage)
     {
-        descs[element].SemanticIndex = 3;
         descs[element].InputSlot = 0;
         descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
         descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
         descs[element].InstanceDataStepRate = 0;
-        descs[element].SemanticName = "TEXCOORD";
+        descs[element].SemanticName = "COVERAGE";
+        descs[element].SemanticIndex = 0;
         descs[element].Format = DXGI_FORMAT_R32_FLOAT;
+        element++;
+    }
+
+    if (format & VFRect)
+    {
+        descs[element].InputSlot = 0;
+        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+        descs[element].InstanceDataStepRate = 0;
+        descs[element].SemanticName = "RECT";
+        descs[element].SemanticIndex = 0;
+        descs[element].Format = DXGI_FORMAT_R16G16B16A16_UNORM;
+        element++;
+    }
+
+    if (format & VFTile)
+    {
+        descs[element].InputSlot = 0;
+        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+        descs[element].InstanceDataStepRate = 0;
+        descs[element].SemanticName = "TILE";
+        descs[element].SemanticIndex = 0;
+        descs[element].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        element++;
+    }
+
+    if (format & VFImagePos)
+    {
+        descs[element].InputSlot = 0;
+        descs[element].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+        descs[element].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+        descs[element].InstanceDataStepRate = 0;
+        descs[element].SemanticName = "IMAGE_POSITION";
+        descs[element].SemanticIndex = 0;
+        descs[element].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
         element++;
     }
 
@@ -442,12 +478,16 @@ Microsoft::WRL::ComPtr<ID3D11InputLayout> ff::internal::ui::render_device::creat
 
 void ff::internal::ui::render_device::create_buffers()
 {
+    std::memset(&this->vertex_cb_hash, 0, sizeof(this->vertex_cb_hash));
+    std::memset(&this->pixel_cb_hash, 0, sizeof(this->pixel_cb_hash));
+
     this->buffer_vertices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
     this->buffer_indices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
-    this->buffer_vertex_cb = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER_SIZE);
-    this->buffer_pixel_cb = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER_SIZE);
-    this->buffer_effect_cb = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_EFFECTS_SIZE);
-    this->buffer_texture_dimensions_cb = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::TEX_DIMENSIONS_SIZE);
+    this->buffer_vertex_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
+    this->buffer_vertex_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
+    this->buffer_pixel_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[2] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
 }
 
 void ff::internal::ui::render_device::create_state_objects()
@@ -474,15 +514,13 @@ void ff::internal::ui::render_device::create_state_objects()
 
         desc.FillMode = D3D11_FILL_SOLID;
         desc.ScissorEnable = true;
-        this->rasterizer_states[2] = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
-
-        desc.FillMode = D3D11_FILL_WIREFRAME;
-        desc.ScissorEnable = true;
-        this->rasterizer_states[3] = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
+        this->rasterizer_state_scissor = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
     }
 
     // Blend states
     {
+        static_assert(_countof(this->blend_states) == static_cast<size_t>(Noesis::BlendMode::Count));
+
         D3D11_BLEND_DESC desc;
         desc.AlphaToCoverageEnable = false;
         desc.IndependentBlendEnable = false;
@@ -496,27 +534,44 @@ void ff::internal::ui::render_device::create_state_objects()
 
         // Src
         desc.RenderTarget[0].BlendEnable = false;
-        this->blend_states[0] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
 
         // SrcOver
         desc.RenderTarget[0].BlendEnable = true;
-        this->blend_states[1] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+
+        // SrcOver_Multiply
+        desc.RenderTarget[0].SrcBlend = D3D11_BLEND_DEST_COLOR;
+        desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Multiply)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+
+        // SrcOver_Screen
+        desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+        desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Screen)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+
+        // SrcOver_Additive
+        desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+        desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Additive)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
 
         // SrcOver_Dual
         desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC1_COLOR;
         desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC1_ALPHA;
-        this->blend_states[2] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Dual)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
 
         // Color disabled
         desc.RenderTarget[0].BlendEnable = false;
         desc.RenderTarget[0].RenderTargetWriteMask = 0;
-        this->blend_states[3] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_state_no_color = ff::graphics::dx11_object_cache().get_blend_state(desc);
     }
 
     // Depth states
     {
+        static_assert(_countof(this->depth_stencil_states) == static_cast<size_t>(Noesis::StencilMode::Count));
+
         D3D11_DEPTH_STENCIL_DESC desc;
         desc.DepthEnable = false;
         desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
@@ -534,33 +589,33 @@ void ff::internal::ui::render_device::create_state_objects()
         desc.StencilEnable = false;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-        this->depth_stencil_states[0] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Keep
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-        this->depth_stencil_states[1] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Keep)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Incr
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
-        this->depth_stencil_states[2] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Incr)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Decr
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
-        this->depth_stencil_states[3] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Decr)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
 
-        // Zero
+        // Clear
         desc.StencilEnable = true;
         desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_ZERO;
         desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_ZERO;
-        this->depth_stencil_states[4] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Clear)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
     }
 
     // Sampler states
@@ -571,8 +626,8 @@ void ff::internal::ui::render_device::create_state_objects()
             for (uint8_t uv = 0; uv < Noesis::WrapMode::Count; uv++)
             {
                 Noesis::SamplerState s = { { uv, minmag, mip } };
-                this->sampler_stages[s.v].params = s;
-                this->sampler_stages[s.v].state_.Reset();
+                this->sampler_states[s.v].params = s;
+                this->sampler_states[s.v].state_.Reset();
             }
         }
     }
@@ -590,69 +645,63 @@ void ff::internal::ui::render_device::create_shaders()
     {
         { "Noesis.RGBA_PS" },
         { "Noesis.Mask_PS" },
+        { "Noesis.Clear_PS" },
 
         { "Noesis.PathSolid_PS" },
         { "Noesis.PathLinear_PS" },
         { "Noesis.PathRadial_PS" },
         { "Noesis.PathPattern_PS" },
+        { "Noesis.PathPatternClamp_PS" },
+        { "Noesis.PathPatternRepeat_PS" },
+        { "Noesis.PathPatternMirrorU_PS" },
+        { "Noesis.PathPatternMirrorV_PS" },
+        { "Noesis.PathPatternMirror_PS" },
 
         { "Noesis.PathAASolid_PS" },
         { "Noesis.PathAALinear_PS" },
         { "Noesis.PathAARadial_PS" },
         { "Noesis.PathAAPattern_PS" },
+        { "Noesis.PathAAPatternClamp_PS" },
+        { "Noesis.PathAAPatternRepeat_PS" },
+        { "Noesis.PathAAPatternMirrorU_PS" },
+        { "Noesis.PathAAPatternMirrorV_PS" },
+        { "Noesis.PathAAPatternMirror_PS" },
 
         { "Noesis.SDFSolid_PS" },
         { "Noesis.SDFLinear_PS" },
         { "Noesis.SDFRadial_PS" },
         { "Noesis.SDFPattern_PS" },
+        { "Noesis.SDFPatternClamp_PS" },
+        { "Noesis.SDFPatternRepeat_PS" },
+        { "Noesis.SDFPatternMirrorU_PS" },
+        { "Noesis.SDFPatternMirrorV_PS" },
+        { "Noesis.SDFPatternMirror_PS" },
 
         { "Noesis.SDFLCDSolid_PS" },
         { "Noesis.SDFLCDLinear_PS" },
         { "Noesis.SDFLCDRadial_PS" },
         { "Noesis.SDFLCDPattern_PS" },
+        { "Noesis.SDFLCDPatternClamp_PS" },
+        { "Noesis.SDFLCDPatternRepeat_PS" },
+        { "Noesis.SDFLCDPatternMirrorU_PS" },
+        { "Noesis.SDFLCDPatternMirrorV_PS" },
+        { "Noesis.SDFLCDPatternMirror_PS" },
 
-        { "Noesis.ImageOpacitySolid_PS" },
-        { "Noesis.ImageOpacityLinear_PS" },
-        { "Noesis.ImageOpacityRadial_PS" },
-        { "Noesis.ImageOpacityPattern_PS" },
+        { "Noesis.OpacitySolid_PS" },
+        { "Noesis.OpacityLinear_PS" },
+        { "Noesis.OpacityRadial_PS" },
+        { "Noesis.OpacityPattern_PS" },
+        { "Noesis.OpacityPatternClamp_PS" },
+        { "Noesis.OpacityPatternRepeat_PS" },
+        { "Noesis.OpacityPatternMirrorU_PS" },
+        { "Noesis.OpacityPatternMirrorV_PS" },
+        { "Noesis.OpacityPatternMirror_PS" },
 
-        { "Noesis.ImageShadow35V_PS" },
-        { "Noesis.ImageShadow63V_PS" },
-        { "Noesis.ImageShadow127V_PS" },
+        { "Noesis.Upsample_PS" },
+        { "Noesis.Downsample_PS" },
 
-        { "Noesis.ImageShadow35HSolid_PS" },
-        { "Noesis.ImageShadow35HLinear_PS" },
-        { "Noesis.ImageShadow35HRadial_PS" },
-        { "Noesis.ImageShadow35HPattern_PS" },
-
-        { "Noesis.ImageShadow63HSolid_PS" },
-        { "Noesis.ImageShadow63HLinear_PS" },
-        { "Noesis.ImageShadow63HRadial_PS" },
-        { "Noesis.ImageShadow63HPattern_PS" },
-
-        { "Noesis.ImageShadow127HSolid_PS" },
-        { "Noesis.ImageShadow127HLinear_PS" },
-        { "Noesis.ImageShadow127HRadial_PS" },
-        { "Noesis.ImageShadow127HPattern_PS" },
-
-        { "Noesis.ImageBlur35V_PS" },
-        { "Noesis.ImageBlur63V_PS" },
-        { "Noesis.ImageBlur127V_PS" },
-
-        { "Noesis.ImageBlur35HSolid_PS" },
-        { "Noesis.ImageBlur35HLinear_PS" },
-        { "Noesis.ImageBlur35HRadial_PS" },
-        { "Noesis.ImageBlur35HPattern_PS" },
-
-        { "Noesis.ImageBlur63HSolid_PS" },
-        { "Noesis.ImageBlur63HLinear_PS" },
-        { "Noesis.ImageBlur63HRadial_PS" },
-        { "Noesis.ImageBlur63HPattern_PS" },
-
-        { "Noesis.ImageBlur127HSolid_PS" },
-        { "Noesis.ImageBlur127HLinear_PS" },
-        { "Noesis.ImageBlur127HRadial_PS" },
-        { "Noesis.ImageBlur127HPattern_PS" },
+        { "Noesis.Shadow_PS" },
+        { "Noesis.Blur_PS" }
     };
 
     const shader_t vertex_shaders[] =
@@ -660,23 +709,58 @@ void ff::internal::ui::render_device::create_shaders()
         { "Noesis.Pos_VS", 0 },
         { "Noesis.PosColor_VS", 1 },
         { "Noesis.PosTex0_VS", 2 },
-        { "Noesis.PosColorCoverage_VS", 3 },
-        { "Noesis.PosTex0Coverage_VS", 4 },
-        { "Noesis.PosColorTex1_VS", 5 },
-        { "Noesis.PosTex0Tex1_VS", 6 },
-        { "Noesis.PosColorTex1_SDF_VS", 5 },
-        { "Noesis.PosTex0Tex1_SDF_VS", 6 },
-        { "Noesis.PosColorTex1Tex2_VS", 7 },
-        { "Noesis.PosTex0Tex1Tex2_VS", 8 },
+        { "Noesis.PosTex0Rect_VS", 3 },
+        { "Noesis.PosTex0RectTile_VS", 4 },
+        { "Noesis.PosColorCoverage_VS", 5 },
+        { "Noesis.PosTex0Coverage_VS", 6 },
+        { "Noesis.PosTex0CoverageRect_VS", 7 },
+        { "Noesis.PosTex0CoverageRectTile_VS", 8 },
+        { "Noesis.PosColorTex1_SDF_VS", 9 },
+        { "Noesis.PosTex0Tex1_SDF_VS", 10 },
+        { "Noesis.PosTex0Tex1Rect_SDF_VS", 11 },
+        { "Noesis.PosTex0Tex1RectTile_SDF_VS", 12 },
+        { "Noesis.PosColorTex1_VS", 9 },
+        { "Noesis.PosTex0Tex1_VS", 10 },
+        { "Noesis.PosTex0Tex1Rect_VS", 11 },
+        { "Noesis.PosTex0Tex1RectTile_VS", 12 },
+        { "Noesis.PosColorTex0Tex1_VS", 13 },
+        { "Noesis.PosTex0Tex1_Downsample_VS", 10 },
+        { "Noesis.PosColorTex1Rect_VS", 14 },
+        { "Noesis.PosColorTex0RectImagePos_VS", 15 }
+    };
+
+    const shader_t vertex_shaders_srgb[] =
+    {
+        { "Noesis.Pos_VS", 0 },
+        { "Noesis.PosColor_SRGB_VS", 1 },
+        { "Noesis.PosTex0_VS", 2 },
+        { "Noesis.PosTex0Rect_VS", 3 },
+        { "Noesis.PosTex0RectTile_VS", 4 },
+        { "Noesis.PosColorCoverage_SRGB_VS", 5 },
+        { "Noesis.PosTex0Coverage_VS", 6 },
+        { "Noesis.PosTex0CoverageRect_VS", 7 },
+        { "Noesis.PosTex0CoverageRectTile_VS", 8 },
+        { "Noesis.PosColorTex1_SDF_SRGB_VS", 9 },
+        { "Noesis.PosTex0Tex1_SDF_VS", 10 },
+        { "Noesis.PosTex0Tex1Rect_SDF_VS", 11 },
+        { "Noesis.PosTex0Tex1RectTile_SDF_VS", 12 },
+        { "Noesis.PosColorTex1_SRGB_VS", 9 },
+        { "Noesis.PosTex0Tex1_VS", 10 },
+        { "Noesis.PosTex0Tex1Rect_VS", 11 },
+        { "Noesis.PosTex0Tex1RectTile_VS", 12 },
+        { "Noesis.PosColorTex0Tex1_SRGB_VS", 13 },
+        { "Noesis.PosTex0Tex1_Downsample_VS", 10 },
+        { "Noesis.PosColorTex1Rect_SRGB_VS", 14 },
+        { "Noesis.PosColorTex0RectImagePos_SRGB_VS", 15 }
     };
 
     static_assert(_countof(vertex_shaders) == _countof(this->vertex_stages));
-    static_assert(_countof(pixel_shaders) == _countof(this->pixel_stages));
-    static_assert(_countof(pixel_shaders) == _countof(this->programs));
+    static_assert(_countof(vertex_shaders) == _countof(vertex_shaders_srgb));
+    static_assert(_countof(pixel_shaders) == _countof(this->pixel_shaders));
 
     for (uint32_t i = 0; i < _countof(vertex_shaders); i++)
     {
-        const shader_t& shader = vertex_shaders[i];
+        const shader_t& shader = this->caps.linearRendering ? vertex_shaders_srgb[i] : vertex_shaders[i];
         this->vertex_stages[i].resource_name = shader.resource_name;
         this->vertex_stages[i].shader_.Reset();
         this->vertex_stages[i].layout_.Reset();
@@ -686,9 +770,12 @@ void ff::internal::ui::render_device::create_shaders()
     for (uint32_t i = 0; i < _countof(pixel_shaders); i++)
     {
         const shader_t& shader = pixel_shaders[i];
-        this->pixel_stages[i].resource_name = shader.resource_name;
-        this->pixel_stages[i].shader_.Reset();
+        this->pixel_shaders[i].resource_name = shader.resource_name;
+        this->pixel_shaders[i].shader_.Reset();
     }
+
+    this->quad_vs.resource_name = "Noesis.Quad_VS";
+    this->quad_vs.shader_.Reset();
 
     this->resolve_ps[0].resource_name = "Noesis.Resolve2_PS";
     this->resolve_ps[0].shader_.Reset();
@@ -702,96 +789,73 @@ void ff::internal::ui::render_device::create_shaders()
     this->resolve_ps[3].resource_name = "Noesis.Resolve16_PS";
     this->resolve_ps[3].shader_.Reset();
 
-    this->clear_ps.resource_name = "Noesis.Clear_PS";
-    this->clear_ps.shader_.Reset();
-
-    this->quad_vs.resource_name = "Noesis.Quad_VS";
-    this->quad_vs.shader_.Reset();
-
     std::memset(this->programs, 255, sizeof(this->programs));
 
     this->programs[Noesis::Shader::RGBA] = { 0, 0 };
     this->programs[Noesis::Shader::Mask] = { 0, 1 };
+    this->programs[Noesis::Shader::Clear] = { 0, 2 };
 
-    this->programs[Noesis::Shader::Path_Solid] = { 1, 2 };
-    this->programs[Noesis::Shader::Path_Linear] = { 2, 3 };
-    this->programs[Noesis::Shader::Path_Radial] = { 2, 4 };
-    this->programs[Noesis::Shader::Path_Pattern] = { 2, 5 };
+    this->programs[Noesis::Shader::Path_Solid] = { 1, 3 };
+    this->programs[Noesis::Shader::Path_Linear] = { 2, 4 };
+    this->programs[Noesis::Shader::Path_Radial] = { 2, 5 };
+    this->programs[Noesis::Shader::Path_Pattern] = { 2, 6 };
+    this->programs[Noesis::Shader::Path_Pattern_Clamp] = { 3, 7 };
+    this->programs[Noesis::Shader::Path_Pattern_Repeat] = { 4, 8 };
+    this->programs[Noesis::Shader::Path_Pattern_MirrorU] = { 4, 9 };
+    this->programs[Noesis::Shader::Path_Pattern_MirrorV] = { 4, 10 };
+    this->programs[Noesis::Shader::Path_Pattern_Mirror] = { 4, 11 };
 
-    this->programs[Noesis::Shader::PathAA_Solid] = { 3, 6 };
-    this->programs[Noesis::Shader::PathAA_Linear] = { 4, 7 };
-    this->programs[Noesis::Shader::PathAA_Radial] = { 4, 8 };
-    this->programs[Noesis::Shader::PathAA_Pattern] = { 4, 9 };
+    this->programs[Noesis::Shader::Path_AA_Solid] = { 5, 12 };
+    this->programs[Noesis::Shader::Path_AA_Linear] = { 6, 13 };
+    this->programs[Noesis::Shader::Path_AA_Radial] = { 6, 14 };
+    this->programs[Noesis::Shader::Path_AA_Pattern] = { 6, 15 };
+    this->programs[Noesis::Shader::Path_AA_Pattern_Clamp] = { 7, 16 };
+    this->programs[Noesis::Shader::Path_AA_Pattern_Repeat] = { 8, 17 };
+    this->programs[Noesis::Shader::Path_AA_Pattern_MirrorU] = { 8, 18 };
+    this->programs[Noesis::Shader::Path_AA_Pattern_MirrorV] = { 8, 19 };
+    this->programs[Noesis::Shader::Path_AA_Pattern_Mirror] = { 8, 20 };
 
-    this->programs[Noesis::Shader::SDF_Solid] = { 7, 10 };
-    this->programs[Noesis::Shader::SDF_Linear] = { 8, 11 };
-    this->programs[Noesis::Shader::SDF_Radial] = { 8, 12 };
-    this->programs[Noesis::Shader::SDF_Pattern] = { 8, 13 };
+    this->programs[Noesis::Shader::SDF_Solid] = { 9, 21 };
+    this->programs[Noesis::Shader::SDF_Linear] = { 10, 22 };
+    this->programs[Noesis::Shader::SDF_Radial] = { 10, 23 };
+    this->programs[Noesis::Shader::SDF_Pattern] = { 10, 24 };
+    this->programs[Noesis::Shader::SDF_Pattern_Clamp] = { 11, 25 };
+    this->programs[Noesis::Shader::SDF_Pattern_Repeat] = { 12, 26 };
+    this->programs[Noesis::Shader::SDF_Pattern_MirrorU] = { 12, 27 };
+    this->programs[Noesis::Shader::SDF_Pattern_MirrorV] = { 12, 28 };
+    this->programs[Noesis::Shader::SDF_Pattern_Mirror] = { 12, 29 };
 
-    this->programs[Noesis::Shader::SDF_LCD_Solid] = { 7, 14 };
-    this->programs[Noesis::Shader::SDF_LCD_Linear] = { 8, 15 };
-    this->programs[Noesis::Shader::SDF_LCD_Radial] = { 8, 16 };
-    this->programs[Noesis::Shader::SDF_LCD_Pattern] = { 8, 17 };
+    this->programs[Noesis::Shader::SDF_LCD_Solid] = { 9, 30 };
+    this->programs[Noesis::Shader::SDF_LCD_Linear] = { 10, 31 };
+    this->programs[Noesis::Shader::SDF_LCD_Radial] = { 10, 32 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern] = { 10, 33 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern_Clamp] = { 11, 34 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern_Repeat] = { 12, 35 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern_MirrorU] = { 12, 36 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern_MirrorV] = { 12, 37 };
+    this->programs[Noesis::Shader::SDF_LCD_Pattern_Mirror] = { 12, 38 };
 
-    this->programs[Noesis::Shader::Image_Opacity_Solid] = { 5, 18 };
-    this->programs[Noesis::Shader::Image_Opacity_Linear] = { 6, 19 };
-    this->programs[Noesis::Shader::Image_Opacity_Radial] = { 6, 20 };
-    this->programs[Noesis::Shader::Image_Opacity_Pattern] = { 6, 21 };
+    this->programs[Noesis::Shader::Opacity_Solid] = { 13, 39 };
+    this->programs[Noesis::Shader::Opacity_Linear] = { 14, 40 };
+    this->programs[Noesis::Shader::Opacity_Radial] = { 14, 41 };
+    this->programs[Noesis::Shader::Opacity_Pattern] = { 14, 42 };
+    this->programs[Noesis::Shader::Opacity_Pattern_Clamp] = { 15, 43 };
+    this->programs[Noesis::Shader::Opacity_Pattern_Repeat] = { 16, 44 };
+    this->programs[Noesis::Shader::Opacity_Pattern_MirrorU] = { 16, 45 };
+    this->programs[Noesis::Shader::Opacity_Pattern_MirrorV] = { 16, 46 };
+    this->programs[Noesis::Shader::Opacity_Pattern_Mirror] = { 16, 47 };
 
-    this->programs[Noesis::Shader::Image_Shadow35V] = { 9, 22 };
-    this->programs[Noesis::Shader::Image_Shadow63V] = { 9, 23 };
-    this->programs[Noesis::Shader::Image_Shadow127V] = { 9, 24 };
+    this->programs[Noesis::Shader::Upsample] = { 17, 48 };
+    this->programs[Noesis::Shader::Downsample] = { 18, 49 };
 
-    this->programs[Noesis::Shader::Image_Shadow35H_Solid] = { 9, 25 };
-    this->programs[Noesis::Shader::Image_Shadow35H_Linear] = { 10, 26 };
-    this->programs[Noesis::Shader::Image_Shadow35H_Radial] = { 10, 27 };
-    this->programs[Noesis::Shader::Image_Shadow35H_Pattern] = { 10, 28 };
-
-    this->programs[Noesis::Shader::Image_Shadow63H_Solid] = { 9, 29 };
-    this->programs[Noesis::Shader::Image_Shadow63H_Linear] = { 10, 30 };
-    this->programs[Noesis::Shader::Image_Shadow63H_Radial] = { 10, 31 };
-    this->programs[Noesis::Shader::Image_Shadow63H_Pattern] = { 10, 32 };
-
-    this->programs[Noesis::Shader::Image_Shadow127H_Solid] = { 9, 33 };
-    this->programs[Noesis::Shader::Image_Shadow127H_Linear] = { 10, 34 };
-    this->programs[Noesis::Shader::Image_Shadow127H_Radial] = { 10, 35 };
-    this->programs[Noesis::Shader::Image_Shadow127H_Pattern] = { 10, 36 };
-
-    this->programs[Noesis::Shader::Image_Blur35V] = { 9, 37 };
-    this->programs[Noesis::Shader::Image_Blur63V] = { 9, 38 };
-    this->programs[Noesis::Shader::Image_Blur127V] = { 9, 39 };
-
-    this->programs[Noesis::Shader::Image_Blur35H_Solid] = { 9, 40 };
-    this->programs[Noesis::Shader::Image_Blur35H_Linear] = { 10, 41 };
-    this->programs[Noesis::Shader::Image_Blur35H_Radial] = { 10, 42 };
-    this->programs[Noesis::Shader::Image_Blur35H_Pattern] = { 10, 43 };
-
-    this->programs[Noesis::Shader::Image_Blur63H_Solid] = { 9, 44 };
-    this->programs[Noesis::Shader::Image_Blur63H_Linear] = { 10, 45 };
-    this->programs[Noesis::Shader::Image_Blur63H_Radial] = { 10, 46 };
-    this->programs[Noesis::Shader::Image_Blur63H_Pattern] = { 10, 47 };
-
-    this->programs[Noesis::Shader::Image_Blur127H_Solid] = { 9, 48 };
-    this->programs[Noesis::Shader::Image_Blur127H_Linear] = { 10, 49 };
-    this->programs[Noesis::Shader::Image_Blur127H_Radial] = { 10, 50 };
-    this->programs[Noesis::Shader::Image_Blur127H_Pattern] = { 10, 51 };
-}
-
-void ff::internal::ui::render_device::clear_render_target()
-{
-    ff::graphics::dx11_device_state().set_layout_ia(nullptr);
-    ff::graphics::dx11_device_state().set_gs(nullptr);
-    ff::graphics::dx11_device_state().set_vs(this->quad_vs.shader());
-    ff::graphics::dx11_device_state().set_ps(this->clear_ps.shader());
-    ff::graphics::dx11_device_state().set_raster(this->rasterizer_states[2].Get());
-    ff::graphics::dx11_device_state().set_blend(this->blend_states[0].Get(), ff::color::none(), 0xffffffff);
-    ff::graphics::dx11_device_state().set_depth(this->depth_stencil_states[4].Get(), 0);
-    ff::graphics::dx11_device_state().draw(3, 0);
+    this->programs[Noesis::Shader::Shadow] = { 19, 50 };
+    this->programs[Noesis::Shader::Blur] = { 13, 51 };
+    this->programs[Noesis::Shader::Custom_Effect] = { 20, 0 };
 }
 
 void ff::internal::ui::render_device::clear_textures()
 {
-    ID3D11ShaderResourceView* textures[(size_t)texture_slot_t::Count] = { nullptr };
+    ID3D11ShaderResourceView* textures[static_cast<size_t>(texture_slot_t::Count)] = { nullptr };
     ff::graphics::dx11_device_state().set_resources_ps(textures, 0, _countof(textures));
 }
 
@@ -799,11 +863,13 @@ void ff::internal::ui::render_device::set_shaders(const Noesis::Batch& batch)
 {
     const vertex_and_pixel_program_t& program = this->programs[batch.shader.v];
     vertex_shader_and_layout_t& vertex = this->vertex_stages[program.vertex_shader_index];
-    pixel_shader_t& pixel = this->pixel_stages[program.pixel_shader_index];
-
     ff::graphics::dx11_device_state().set_layout_ia(vertex.layout());
     ff::graphics::dx11_device_state().set_vs(vertex.shader());
-    ff::graphics::dx11_device_state().set_ps(pixel.shader());
+
+    pixel_shader_t& pixel = this->pixel_shaders[program.pixel_shader_index];
+    ff::graphics::dx11_device_state().set_ps(batch.pixelShader
+        ? reinterpret_cast<ID3D11PixelShader*>(batch.pixelShader)
+        : pixel.shader());
 }
 
 void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
@@ -816,96 +882,82 @@ void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
     unsigned int stride = ::LAYOUT_FORMATS_AND_STRIDE[this->vertex_stages[program.vertex_shader_index].layout_index].second;
     ff::graphics::dx11_device_state().set_vertex_ia(this->buffer_vertices->buffer(), stride, batch.vertexOffset);
 
-    // Vertex Constants
-    if (this->vertex_cb_hash != batch.projMtxHash)
+    // Vertex Shader Constant Buffers
+    static_assert(_countof(this->buffer_vertex_cb) == _countof(Noesis::Batch::vertexUniforms));
+    static_assert(_countof(this->vertex_cb_hash) == _countof(Noesis::Batch::vertexUniforms));
+
+    for (uint32_t i = 0; i < _countof(this->buffer_vertex_cb); i++)
     {
-        void* ptr = this->buffer_vertex_cb->map(16 * sizeof(float));
-        ::memcpy(ptr, batch.projMtx, 16 * sizeof(float));
-        this->buffer_vertex_cb->unmap();
-
-        this->vertex_cb_hash = batch.projMtxHash;
-
-    }
-
-    // Pixel Constants
-    if (batch.rgba != 0 || batch.radialGrad != 0 || batch.opacity != 0)
-    {
-        uint32_t hash = batch.rgbaHash ^ batch.radialGradHash ^ batch.opacityHash;
-        if (this->pixel_cb_hash != hash)
+        if (batch.vertexUniforms[i].numDwords > 0)
         {
-            void* ptr = this->buffer_pixel_cb->map(12 * sizeof(float));
-
-            if (batch.rgba != 0)
+            if (this->vertex_cb_hash[i] != batch.vertexUniforms[i].hash)
             {
-                memcpy(ptr, batch.rgba, 4 * sizeof(float));
-                ptr = (uint8_t*)ptr + 4 * sizeof(float);
+                uint32_t size = batch.vertexUniforms[i].numDwords * sizeof(uint32_t);
+                void* ptr = this->buffer_vertex_cb[i]->map(size);
+                std::memcpy(ptr, batch.vertexUniforms[i].values, size);
+                this->buffer_vertex_cb[i]->unmap();
+
+                this->vertex_cb_hash[i] = batch.vertexUniforms[i].hash;
             }
-
-            if (batch.radialGrad != 0)
-            {
-                memcpy(ptr, batch.radialGrad, 8 * sizeof(float));
-                ptr = (uint8_t*)ptr + 8 * sizeof(float);
-            }
-
-            if (batch.opacity != 0)
-            {
-                memcpy(ptr, batch.opacity, sizeof(float));
-            }
-
-            this->buffer_pixel_cb->unmap();
-
-            this->pixel_cb_hash = hash;
         }
     }
 
-    // Texture dimensions
-    if (batch.glyphs != 0 || batch.image != 0 || batch.pattern != 0)
+    // Pixel Shader Constant Buffers
+    static_assert(_countof(this->buffer_pixel_cb) == _countof(Noesis::Batch::pixelUniforms) + 1);
+    static_assert(_countof(this->pixel_cb_hash) == _countof(Noesis::Batch::pixelUniforms) + 1);
+
+    for (uint32_t i = 0; i < _countof(this->buffer_pixel_cb) - 1; i++)
     {
-        ff::internal::ui::texture* image_texture = ff::internal::ui::texture::get(batch.glyphs ? batch.glyphs : batch.image);
+        if (batch.pixelUniforms[i].numDwords > 0)
+        {
+            if (this->pixel_cb_hash[i] != batch.pixelUniforms[i].hash)
+            {
+                uint32_t size = batch.pixelUniforms[i].numDwords * sizeof(uint32_t);
+                void* ptr = this->buffer_pixel_cb[i]->map(size);
+                std::memcpy(ptr, batch.pixelUniforms[i].values, size);
+                this->buffer_pixel_cb[i]->unmap();
+
+                this->pixel_cb_hash[i] = batch.pixelUniforms[i].hash;
+            }
+        }
+    }
+
+    // Palette constant buffer
+    {
         ff::internal::ui::texture* pattern_texture = ff::internal::ui::texture::get(batch.pattern);
 
-        texture_dimensions_t data{};
-        data.image_size = image_texture ? image_texture->internal_texture()->size().cast<float>() : ff::point_float(0, 0);
-        data.image_inverse_size = image_texture ? ff::point_float(1, 1) / data.image_size : ff::point_float(0, 0);
-        data.pattern_size = pattern_texture ? pattern_texture->internal_texture()->size().cast<float>() : ff::point_float(0, 0);
-        data.pattern_inverse_size = pattern_texture ? ff::point_float(1, 1) / data.pattern_size : ff::point_float(0, 0);
-        data.palette_row = static_cast<unsigned int>(ff::ui::global_palette() ? ff::ui::global_palette()->current_row() : 0);
-        size_t hash = ff::stable_hash_func(data);
+        ::pixel_buffer_2 pb2{};
+        pb2.pattern_size = pattern_texture ? pattern_texture->internal_texture()->size().cast<float>() : ff::point_float(0, 0);
+        pb2.pattern_inverse_size = pattern_texture ? ff::point_float(1, 1) / pb2.pattern_size : ff::point_float(0, 0);
+        pb2.palette_row = static_cast<unsigned int>(ff::ui::global_palette() ? ff::ui::global_palette()->current_row() : 0);
+        uint32_t hash = static_cast<uint32_t>(ff::stable_hash_func(pb2));
 
-        if (this->texture_dimensions_cb_hash != hash)
+        if (hash != this->pixel_cb_hash[2])
         {
-            texture_dimensions_t* mapped_data = reinterpret_cast<texture_dimensions_t*>(this->buffer_texture_dimensions_cb->map(TEX_DIMENSIONS_SIZE));
-            std::memcpy(mapped_data, &data, TEX_DIMENSIONS_SIZE);
-            this->buffer_texture_dimensions_cb->unmap();
-            this->texture_dimensions_cb_hash = hash;
-        }
-    }
+            void* ptr = this->buffer_pixel_cb[2]->map(sizeof(pb2));
+            std::memcpy(ptr, &pb2, sizeof(pb2));
+            this->buffer_pixel_cb[2]->unmap();
 
-    // Effects
-    if (batch.effectParamsSize != 0 && this->effect_cb_hash != batch.effectParamsHash)
-    {
-        void* ptr = this->buffer_effect_cb->map(16 * sizeof(float));
-        std::memcpy(ptr, batch.effectParams, batch.effectParamsSize * sizeof(float));
-        this->buffer_effect_cb->unmap();
-        this->effect_cb_hash = batch.effectParamsHash;
+            this->pixel_cb_hash[2] = hash;
+        }
     }
 }
 
 void ff::internal::ui::render_device::set_render_state(const Noesis::Batch& batch)
 {
-    Noesis::RenderState renderState = batch.renderState;
+    auto f = batch.renderState.f;
 
-    uint32_t rasterizer_index = renderState.f.wireframe | (renderState.f.scissorEnable << 1);
-    ID3D11RasterizerState* rasterizer = this->rasterizer_states[rasterizer_index].Get();
+    assert(f.wireframe < _countof(this->rasterizer_states));
+    ID3D11RasterizerState* rasterizer = this->rasterizer_states[f.wireframe].Get();
     ff::graphics::dx11_device_state().set_raster(rasterizer);
 
-    uint32_t blend_index = renderState.f.colorEnable ? renderState.f.blendMode : 3;
-    ID3D11BlendState* blend = this->blend_states[blend_index].Get();
+    assert(f.blendMode < _countof(this->blend_states));
+    ID3D11BlendState* blend = f.colorEnable ? this->blend_states[f.blendMode].Get() : this->blend_state_no_color.Get();
     ff::graphics::dx11_device_state().set_blend(blend, ff::color::none(), 0xffffffff);
 
-    uint32_t depth_index = renderState.f.stencilMode;
-    ID3D11DepthStencilState* depth = this->depth_stencil_states[depth_index].Get();
-    ff::graphics::dx11_device_state().set_depth(depth, batch.stencilRef);
+    assert(f.stencilMode < _countof(this->depth_stencil_states));
+    ID3D11DepthStencilState* stencil = this->depth_stencil_states[f.stencilMode].Get();
+    ff::graphics::dx11_device_state().set_depth(stencil, batch.stencilRef);
 }
 
 void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
@@ -924,45 +976,47 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ID3D11ShaderResourceView* empty_palette_view = nullptr;
 #endif
         ID3D11ShaderResourceView* views[3] = { !palette ? view : empty_view, palette ? view : empty_palette_view, palette_view };
-        ID3D11SamplerState* sampler = this->sampler_stages[batch.patternSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(views, (size_t)texture_slot_t::Pattern, 3);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, (size_t)texture_slot_t::Pattern, 1);
+        ID3D11SamplerState* sampler = this->sampler_states[batch.patternSampler.v].state();
+        ff::graphics::dx11_device_state().set_resources_ps(&views[0], static_cast<size_t>(texture_slot_t::Pattern), 1);
+        ff::graphics::dx11_device_state().set_resources_ps(&views[1], static_cast<size_t>(texture_slot_t::PaletteImage), 1);
+        ff::graphics::dx11_device_state().set_resources_ps(&views[2], static_cast<size_t>(texture_slot_t::Palette), 1);
+        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Pattern), 1);
     }
 
     if (batch.ramps)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.ramps);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
-        ID3D11SamplerState* sampler = this->sampler_stages[batch.rampsSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, (size_t)texture_slot_t::Ramps, 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, (size_t)texture_slot_t::Ramps, 1);
+        ID3D11SamplerState* sampler = this->sampler_states[batch.rampsSampler.v].state();
+        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Ramps), 1);
+        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Ramps), 1);
     }
 
     if (batch.image)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.image);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
-        ID3D11SamplerState* sampler = this->sampler_stages[batch.imageSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, (size_t)texture_slot_t::Image, 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, (size_t)texture_slot_t::Image, 1);
+        ID3D11SamplerState* sampler = this->sampler_states[batch.imageSampler.v].state();
+        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Image), 1);
+        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Image), 1);
     }
 
     if (batch.glyphs)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.glyphs);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
-        ID3D11SamplerState* sampler = this->sampler_stages[batch.glyphsSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, (size_t)texture_slot_t::Glyphs, 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, (size_t)texture_slot_t::Glyphs, 1);
+        ID3D11SamplerState* sampler = this->sampler_states[batch.glyphsSampler.v].state();
+        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Glyphs), 1);
+        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Glyphs), 1);
     }
 
     if (batch.shadow)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.shadow);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
-        ID3D11SamplerState* sampler = this->sampler_stages[batch.shadowSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, (size_t)texture_slot_t::Shadow, 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, (size_t)texture_slot_t::Shadow, 1);
+        ID3D11SamplerState* sampler = this->sampler_states[batch.shadowSampler.v].state();
+        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Shadow), 1);
+        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Shadow), 1);
     }
 }
 
@@ -1005,9 +1059,10 @@ ID3D11SamplerState* ff::internal::ui::render_device::sampler_state_t::state()
         desc.MaxAnisotropy = 1;
         desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
         desc.MinLOD = -D3D11_FLOAT32_MAX;
-        desc.MaxLOD = D3D11_FLOAT32_MAX;
-        desc.Filter = ::ToD3D(Noesis::MinMagFilter::Enum(this->params.f.minmagFilter), Noesis::MipFilter::Enum(this->params.f.mipFilter));
-        ::ToD3D(Noesis::WrapMode::Enum(this->params.f.wrapMode), desc.AddressU, desc.AddressV);
+        desc.MipLODBias = -0.75f;
+
+        ::set_filter(Noesis::MinMagFilter::Enum(this->params.f.minmagFilter), Noesis::MipFilter::Enum(this->params.f.mipFilter), desc);
+        ::set_address(Noesis::WrapMode::Enum(this->params.f.wrapMode), ff::graphics::dx11_feature_level(), desc);
 
         this->state_ = ff::graphics::dx11_object_cache().get_sampler_state(desc);
     }

@@ -4,12 +4,15 @@
 #include "stream.h"
 #include "ui.h"
 
-void ff::internal::ui::font_provider::ScanFolder(const char* folder)
+void ff::internal::ui::font_provider::ScanFolder(const Noesis::Uri& folder)
 {
+    Noesis::String folder_path;
+    folder.GetPath(folder_path);
+
     std::string prefix("#");
-    if (folder && *folder)
+    if (folder_path.Size())
     {
-        prefix += folder;
+        prefix += folder_path.Str();
         prefix += "/";
     }
 
@@ -22,7 +25,7 @@ void ff::internal::ui::font_provider::ScanFolder(const char* folder)
     }
 }
 
-Noesis::Ptr<Noesis::Stream> ff::internal::ui::font_provider::OpenFont(const char* folder, const char* filename) const
+Noesis::Ptr<Noesis::Stream> ff::internal::ui::font_provider::OpenFont(const Noesis::Uri& folder, const char* filename) const
 {
     std::string_view name(filename);
     if (name.size() > 0 && name[0] == L'#')

@@ -105,9 +105,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="assets\clear_ps.hlsl">
-      <Filter>assets</Filter>
-    </None>
     <None Include="assets\quad_vs.hlsl">
       <Filter>assets</Filter>
     </None>

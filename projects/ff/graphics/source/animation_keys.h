@@ -78,5 +78,4 @@ namespace ff
         ff::dict dict;
         std::vector<ff::value_ptr> values;
     };
-
 }

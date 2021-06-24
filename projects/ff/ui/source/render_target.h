@@ -7,7 +7,7 @@ namespace ff::internal::ui
     class render_target : public Noesis::RenderTarget
     {
     public:
-        render_target(size_t width, size_t height, size_t samples, bool srgb, std::string_view name);
+        render_target(size_t width, size_t height, size_t samples, bool srgb, bool needs_depth_stencil, std::string_view name);
         render_target(const render_target& rhs, std::string_view name);
 
         static ff::internal::ui::render_target* get(Noesis::RenderTarget* target);

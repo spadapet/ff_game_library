@@ -10,16 +10,16 @@ namespace ff::internal::ui
 
         // Noesis::RenderDevice
         virtual const Noesis::DeviceCaps& GetCaps() const override;
-        virtual Noesis::Ptr<Noesis::RenderTarget> CreateRenderTarget(const char* label, uint32_t width, uint32_t height, uint32_t sample_count) override;
+        virtual Noesis::Ptr<Noesis::RenderTarget> CreateRenderTarget(const char* label, uint32_t width, uint32_t height, uint32_t sample_count, bool needs_stencil) override;
         virtual Noesis::Ptr<Noesis::RenderTarget> CloneRenderTarget(const char* label, Noesis::RenderTarget* surface) override;
         virtual Noesis::Ptr<Noesis::Texture> CreateTexture(const char* label, uint32_t width, uint32_t height, uint32_t mip_count, Noesis::TextureFormat::Enum format, const void** data) override;
         virtual void UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data) override;
-        virtual void BeginRender(bool offscreen) override;
+        virtual void BeginOffscreenRender() override;
+        virtual void EndOffscreenRender() override;
+        virtual void BeginOnscreenRender() override;
+        virtual void EndOnscreenRender() override;
         virtual void SetRenderTarget(Noesis::RenderTarget* surface) override;
-        virtual void BeginTile(const Noesis::Tile& tile, uint32_t surface_width, uint32_t surface_height) override;
-        virtual void EndTile() override;
         virtual void ResolveRenderTarget(Noesis::RenderTarget* surface, const Noesis::Tile* tiles, uint32_t tile_count) override;
-        virtual void EndRender() override;
         virtual void* MapVertices(uint32_t bytes) override;
         virtual void UnmapVertices() override;
         virtual void* MapIndices(uint32_t bytes) override;
@@ -31,7 +31,7 @@ namespace ff::internal::ui
 
     private:
         enum class msaa_samples_t { x1, x2, x4, x8, x16, Count };
-        enum class texture_slot_t { Pattern, PaletteImage, Palette, Ramps, Image, Glyphs, Shadow, Count };
+        enum class texture_slot_t { Pattern, Ramps, Image, Glyphs, Shadow, PaletteImage, Palette, Count };
 
         struct vertex_shader_t
         {
@@ -75,10 +75,7 @@ namespace ff::internal::ui
         void create_buffers();
         void create_state_objects();
         void create_shaders();
-
-        void clear_render_target();
         void clear_textures();
-
         void set_shaders(const Noesis::Batch& batch);
         void set_buffers(const Noesis::Batch& batch);
         void set_render_state(const Noesis::Batch& batch);
@@ -87,7 +84,7 @@ namespace ff::internal::ui
         Noesis::DeviceCaps caps;
 
         // Device
-        std::array<ID3D11ShaderResourceView*, (size_t)ff::internal::ui::render_device::texture_slot_t::Count> null_textures;
+        std::array<ID3D11ShaderResourceView*, static_cast<size_t>(texture_slot_t::Count)> null_textures;
 #ifdef _DEBUG
         std::shared_ptr<ff::dx11_texture> empty_texture_rgb;
         std::shared_ptr<ff::dx11_texture> empty_texture_palette;
@@ -96,27 +93,24 @@ namespace ff::internal::ui
         // Buffers
         std::shared_ptr<ff::dx11_buffer> buffer_vertices;
         std::shared_ptr<ff::dx11_buffer> buffer_indices;
-        std::shared_ptr<ff::dx11_buffer> buffer_vertex_cb;
-        std::shared_ptr<ff::dx11_buffer> buffer_pixel_cb;
-        std::shared_ptr<ff::dx11_buffer> buffer_effect_cb;
-        std::shared_ptr<ff::dx11_buffer> buffer_texture_dimensions_cb;
-        uint32_t vertex_cb_hash;
-        uint32_t pixel_cb_hash;
-        uint32_t effect_cb_hash;
-        size_t texture_dimensions_cb_hash;
+        std::shared_ptr<ff::dx11_buffer> buffer_vertex_cb[2];
+        std::shared_ptr<ff::dx11_buffer> buffer_pixel_cb[3];
+        uint32_t vertex_cb_hash[2];
+        uint32_t pixel_cb_hash[3];
 
         // Shaders
-        vertex_and_pixel_program_t programs[52];
-        vertex_shader_and_layout_t vertex_stages[11];
-        pixel_shader_t pixel_stages[52];
+        vertex_and_pixel_program_t programs[Noesis::Shader::Count];
+        vertex_shader_and_layout_t vertex_stages[21];
+        pixel_shader_t pixel_shaders[52];
+        pixel_shader_t resolve_ps[static_cast<size_t>(msaa_samples_t::Count) - 1];
         vertex_shader_t quad_vs;
-        pixel_shader_t clear_ps;
-        pixel_shader_t resolve_ps[(size_t)msaa_samples_t::Count - 1];
 
         // State
-        Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizer_states[4];
-        Microsoft::WRL::ComPtr<ID3D11BlendState> blend_states[4];
+        Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizer_states[2];
+        Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizer_state_scissor;
+        Microsoft::WRL::ComPtr<ID3D11BlendState> blend_states[6];
+        Microsoft::WRL::ComPtr<ID3D11BlendState> blend_state_no_color;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilState> depth_stencil_states[5];
-        sampler_state_t sampler_stages[64];
+        sampler_state_t sampler_states[64];
     };
 }

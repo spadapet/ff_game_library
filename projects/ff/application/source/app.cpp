@@ -259,9 +259,17 @@ static void init_game_thread()
     {
         std::vector<std::shared_ptr<ff::state>> states;
         states.push_back(std::make_shared<::ui_state>());
-        states.push_back(::app_params.create_initial_state_func ? ::app_params.create_initial_state_func() : nullptr);
-        states.push_back(std::make_shared<ff::debug_state>());
 
+        if (::app_params.create_initial_state_func)
+        {
+            auto initial_state = ::app_params.create_initial_state_func();
+            if (initial_state)
+            {
+                states.push_back(initial_state);
+            }
+        }
+
+        states.push_back(std::make_shared<ff::debug_state>());
         ::game_state = std::make_shared<ff::state_list>(std::move(states));
     }
 
