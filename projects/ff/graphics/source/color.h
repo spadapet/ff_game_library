@@ -11,7 +11,6 @@ namespace ff::color
     const DirectX::XMFLOAT4& yellow();
     const DirectX::XMFLOAT4& cyan();
     const DirectX::XMFLOAT4& magenta();
-
 }
 
 namespace ff

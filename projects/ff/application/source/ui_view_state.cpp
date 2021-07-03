@@ -8,7 +8,7 @@ ff::ui_view_state::ui_view_state(std::shared_ptr<ff::ui_view> view, std::shared_
 {
     if (this->target_override)
     {
-        auto target_window = std::dynamic_pointer_cast<ff::dx11_target_window_base>(this->target_override);
+        auto target_window = std::dynamic_pointer_cast<ff::target_window_base>(this->target_override);
         if (target_window)
         {
             this->view_->size(*target_window);

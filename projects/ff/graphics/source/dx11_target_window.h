@@ -1,12 +1,14 @@
 #pragma once
 
+#include "dx11_target_base.h"
 #include "dx11_target_window_base.h"
 #include "graphics_child_base.h"
 
 namespace ff
 {
     class dx11_target_window
-        : public ff::dx11_target_window_base
+        : public ff::dx11_target_base
+        , public ff::target_window_base
         , public ff::internal::graphics_child_base
     {
     public:
@@ -26,7 +28,7 @@ namespace ff
         virtual ID3D11Texture2D* texture() override;
         virtual ID3D11RenderTargetView* view() override;
 
-        // dx11_target_window_base
+        // target_window_base
         virtual bool present(bool vsync) override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;

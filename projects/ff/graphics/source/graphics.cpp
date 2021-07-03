@@ -28,22 +28,23 @@ namespace
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory;
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
 static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> write_font_loader;
-static Microsoft::WRL::ComPtr<ID3D11DeviceX> dx11_device;
-static Microsoft::WRL::ComPtr<ID3D11DeviceContextX> dx11_device_context;
 static Microsoft::WRL::ComPtr<IDXGIDeviceX> dxgi_device;
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory_for_device;
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> dxgi_adapter_for_device;
-static std::unique_ptr<ff::dx11_object_cache> dx11_object_cache;
-static std::unique_ptr<ff::dx11_device_state> dx11_device_state;
-static D3D_FEATURE_LEVEL dx11_feature_level;
 static size_t dxgi_adapters_hash;
 static size_t dxgi_adapter_outputs_hash;
+
+static Microsoft::WRL::ComPtr<ID3D11DeviceX> dx11_device;
+static Microsoft::WRL::ComPtr<ID3D11DeviceContextX> dx11_device_context;
+static std::unique_ptr<ff::dx11_object_cache> dx11_object_cache;
+static std::unique_ptr<ff::dx11_device_state> dx11_device_state;
+static D3D_FEATURE_LEVEL dx_feature_level;
 
 static std::recursive_mutex graphics_mutex;
 static std::vector<ff::internal::graphics_child_base*> graphics_children;
 static ff::signal<ff::internal::graphics_child_base*> removed_child;
-static ff::dx11_target_window_base* defer_full_screen_target;
-static std::vector<std::pair<ff::dx11_target_window_base*, ff::window_size>> defer_sizes;
+static ff::target_window_base* defer_full_screen_target;
+static std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
 
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
@@ -115,7 +116,7 @@ static Microsoft::WRL::ComPtr<ID3D11DeviceX> create_dx11_device(D3D_FEATURE_LEVE
     return nullptr;
 }
 
-static bool init_dx11()
+static bool init_dxgi()
 {
     if (!(::dxgi_factory = ::create_dxgi_factory()) ||
         !(::write_factory = ::create_write_factory()) ||
@@ -125,7 +126,28 @@ static bool init_dx11()
         return false;
     }
 
-    if (!(::dx11_device = ::create_dx11_device(::dx11_feature_level, ::dx11_device_context)) ||
+    ::dxgi_adapters_hash = ff::internal::get_adapters_hash(::dxgi_factory.Get());
+    ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ::dxgi_adapter_for_device.Get());
+
+    return true;
+}
+
+static void destroy_dxgi()
+{
+    ::dxgi_adapters_hash = 0;
+    ::dxgi_adapter_outputs_hash = 0;
+
+    ::write_font_loader.Reset();
+    ::write_factory.Reset();
+    ::dxgi_adapter_for_device.Reset();
+    ::dxgi_factory_for_device.Reset();
+    ::dxgi_device.Reset();
+    ::dxgi_factory.Reset();
+}
+
+static bool init_dx11()
+{
+    if (!(::dx11_device = ::create_dx11_device(::dx_feature_level, ::dx11_device_context)) ||
         FAILED(::dx11_device.As(&::dxgi_device)) ||
         FAILED(::dxgi_device->SetMaximumFrameLatency(1)) ||
         FAILED(::dxgi_device->GetParent(__uuidof(IDXGIAdapterX), reinterpret_cast<void**>(::dxgi_adapter_for_device.GetAddressOf()))) ||
@@ -137,39 +159,31 @@ static bool init_dx11()
 
     ::dx11_object_cache = std::make_unique<ff::dx11_object_cache>(::dx11_device.Get());
     ::dx11_device_state = std::make_unique<ff::dx11_device_state>(::dx11_device_context.Get());
-    ::dxgi_adapters_hash = ff::internal::get_adapters_hash(::dxgi_factory.Get());
-    ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ::dxgi_adapter_for_device.Get());
 
     return true;
 }
 
 static void destroy_dx11()
 {
+    ::dx_feature_level = static_cast<D3D_FEATURE_LEVEL>(0);
     ::dx11_device_state->clear();
 
-    ::dxgi_adapters_hash = 0;
-    ::dxgi_adapter_outputs_hash = 0;
-    ::dx11_feature_level = static_cast<D3D_FEATURE_LEVEL>(0);
     ::dx11_device_state.reset();
     ::dx11_object_cache.reset();
-    ::dxgi_adapter_for_device.Reset();
-    ::dxgi_factory_for_device.Reset();
-    ::dxgi_device.Reset();
+
     ::dx11_device_context.Reset();
     ::dx11_device.Reset();
-    ::write_font_loader.Reset();
-    ::write_factory.Reset();
-    ::dxgi_factory.Reset();
 }
 
 bool ff::internal::graphics::init()
 {
-    return ::init_dx11();
+    return ::init_dxgi() && ::init_dx11();
 }
 
 void ff::internal::graphics::destroy()
 {
     ::destroy_dx11();
+    ::destroy_dxgi();
 }
 
 void ff::internal::graphics::add_child(ff::internal::graphics_child_base* child)
@@ -234,9 +248,9 @@ ID3D11DeviceContextX* ff::graphics::dx11_device_context()
     return ::dx11_device_context.Get();
 }
 
-D3D_FEATURE_LEVEL ff::graphics::dx11_feature_level()
+D3D_FEATURE_LEVEL ff::graphics::dx_feature_level()
 {
-    return ::dx11_feature_level;
+    return ::dx_feature_level;
 }
 
 ff::dx11_device_state& ff::graphics::dx11_device_state()
@@ -326,7 +340,7 @@ static void flush_graphics_commands()
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
         {
             bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::dx11_target_window_base* target = ::defer_full_screen_target;
+            ff::target_window_base* target = ::defer_full_screen_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
             lock.unlock();
 
@@ -345,7 +359,7 @@ static void flush_graphics_commands()
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
-            std::vector<std::pair<ff::dx11_target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
+            std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
             lock.unlock();
 
@@ -362,14 +376,14 @@ static void post_flush_graphics_commands()
     ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
 }
 
-void ff::graphics::defer::set_full_screen_target(ff::dx11_target_window_base* target)
+void ff::graphics::defer::set_full_screen_target(ff::target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
     assert(!::defer_full_screen_target || !target);
     ::defer_full_screen_target = target;
 }
 
-void ff::graphics::defer::remove_target(ff::dx11_target_window_base* target)
+void ff::graphics::defer::remove_target(ff::target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
     assert(target);
@@ -389,29 +403,7 @@ void ff::graphics::defer::remove_target(ff::dx11_target_window_base* target)
     }
 }
 
-void ff::graphics::defer::validate_device(bool force)
-{
-    std::scoped_lock lock(::graphics_mutex);
-
-    ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
-        force ? ::defer_flags_t::validate_force : ::defer_flags_t::validate_check);
-
-    ::post_flush_graphics_commands();
-}
-
-void ff::graphics::defer::full_screen(bool value)
-{
-    std::scoped_lock lock(::graphics_mutex);
-
-    ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
-        value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
-
-    ::post_flush_graphics_commands();
-}
-
-void ff::graphics::defer::resize_target(ff::dx11_target_window_base* target, const ff::window_size& size)
+void ff::graphics::defer::resize_target(ff::target_window_base* target, const ff::window_size& size)
 {
     assert(target);
     if (target)
@@ -440,4 +432,26 @@ void ff::graphics::defer::resize_target(ff::dx11_target_window_base* target, con
 
         ::post_flush_graphics_commands();
     }
+}
+
+void ff::graphics::defer::validate_device(bool force)
+{
+    std::scoped_lock lock(::graphics_mutex);
+
+    ::defer_flags = ff::flags::set(
+        ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
+        force ? ::defer_flags_t::validate_force : ::defer_flags_t::validate_check);
+
+    ::post_flush_graphics_commands();
+}
+
+void ff::graphics::defer::full_screen(bool value)
+{
+    std::scoped_lock lock(::graphics_mutex);
+
+    ::defer_flags = ff::flags::set(
+        ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
+        value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
+
+    ::post_flush_graphics_commands();
 }

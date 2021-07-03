@@ -57,7 +57,7 @@ namespace ff
     private:
         void fix_sprite_data();
 
-        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
+        mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
         std::shared_ptr<dx11_texture> texture_;
         ff::sprite_data sprite_data_;
         size_t array_start_;

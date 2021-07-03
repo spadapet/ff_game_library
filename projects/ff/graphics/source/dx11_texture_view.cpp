@@ -17,7 +17,6 @@ ff::dx11_texture_view::dx11_texture_view(
     , mip_start_(mip_start)
     , mip_count_(mip_count ? mip_count : texture->mip_count() - mip_start)
 {
-    this->view_ = ff::internal::create_shader_view(texture->texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
     this->fix_sprite_data();
 
     ff::internal::graphics::add_child(this);
@@ -62,12 +61,12 @@ ff::dx11_texture_view& ff::dx11_texture_view::operator=(dx11_texture_view&& othe
 
 ff::dx11_texture_view::operator bool() const
 {
-    return this->view_;
+    return true;
 }
 
 bool ff::dx11_texture_view::reset()
 {
-    *this = dx11_texture_view(this->texture_, this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
+    this->view_.Reset();
     return *this;
 }
 
@@ -78,6 +77,11 @@ const ff::dx11_texture* ff::dx11_texture_view::view_texture() const
 
 ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
 {
+    if (!this->view_)
+    {
+        this->view_ = ff::internal::create_shader_view(this->texture_->texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
+    }
+
     return this->view_.Get();
 }
 

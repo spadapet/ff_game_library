@@ -4,7 +4,7 @@ namespace ff
 {
     class dx11_device_state;
     class dx11_object_cache;
-    class dx11_target_window_base;
+    class target_window_base;
 }
 
 namespace ff::internal
@@ -23,21 +23,21 @@ namespace ff::graphics
     IDXGIDeviceX* dxgi_device();
     IDXGIFactoryX* dxgi_factory_for_device();
     IDXGIAdapterX* dxgi_adapter_for_device();
+    D3D_FEATURE_LEVEL dx_feature_level();
+
     ID3D11DeviceX* dx11_device();
     ID3D11DeviceContextX* dx11_device_context();
-    D3D_FEATURE_LEVEL dx11_feature_level();
-
     ff::dx11_device_state& dx11_device_state();
     ff::dx11_object_cache& dx11_object_cache();
 }
 
 namespace ff::graphics::defer
 {
-    void set_full_screen_target(ff::dx11_target_window_base* target);
-    void remove_target(ff::dx11_target_window_base* target);
+    void set_full_screen_target(ff::target_window_base* target);
+    void remove_target(ff::target_window_base* target);
+    void resize_target(ff::target_window_base* target, const ff::window_size& size);
     void validate_device(bool force);
     void full_screen(bool value);
-    void resize_target(ff::dx11_target_window_base* target, const ff::window_size& size);
 }
 
 namespace ff::internal::graphics

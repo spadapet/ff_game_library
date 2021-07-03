@@ -20,7 +20,7 @@ namespace ff
         Noesis::Cursor cursor() const;
         void cursor(Noesis::Cursor cursor);
         void size(const ff::window_size& value);
-        void size(ff::dx11_target_window_base& target);
+        void size(ff::target_window_base& target);
         ff::point_float screen_to_content(ff::point_float pos) const;
         ff::point_float content_to_screen(ff::point_float pos) const;
 

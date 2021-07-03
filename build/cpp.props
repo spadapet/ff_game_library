@@ -40,6 +40,9 @@
     <IntDir>$(ProjectOutRoot)obj\</IntDir>
     <OutDir>$(ProjectOutRoot)bin\</OutDir>
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
+    
+    <!-- Graphics -->
+    <DirectXVersion Condition=" '$(DirectXVersion)' != '12' ">11</DirectXVersion>
 
     <!-- Noesis -->
     <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
@@ -152,7 +155,7 @@
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;DXVER=$(DirectXVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4103</DisableSpecificWarnings>

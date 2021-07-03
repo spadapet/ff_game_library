@@ -1062,7 +1062,7 @@ ID3D11SamplerState* ff::internal::ui::render_device::sampler_state_t::state()
         desc.MipLODBias = -0.75f;
 
         ::set_filter(Noesis::MinMagFilter::Enum(this->params.f.minmagFilter), Noesis::MipFilter::Enum(this->params.f.mipFilter), desc);
-        ::set_address(Noesis::WrapMode::Enum(this->params.f.wrapMode), ff::graphics::dx11_feature_level(), desc);
+        ::set_address(Noesis::WrapMode::Enum(this->params.f.wrapMode), ff::graphics::dx_feature_level(), desc);
 
         this->state_ = ff::graphics::dx11_object_cache().get_sampler_state(desc);
     }
