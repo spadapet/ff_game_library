@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "dx11_device_state.h"
 #include "dx11_object_cache.h"
-#include "dx11_target_window_base.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
+#include "target_window_base.h"
 
 namespace
 {
@@ -127,7 +127,6 @@ static bool init_dxgi()
     }
 
     ::dxgi_adapters_hash = ff::internal::get_adapters_hash(::dxgi_factory.Get());
-    ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ::dxgi_adapter_for_device.Get());
 
     return true;
 }
@@ -135,7 +134,6 @@ static bool init_dxgi()
 static void destroy_dxgi()
 {
     ::dxgi_adapters_hash = 0;
-    ::dxgi_adapter_outputs_hash = 0;
 
     ::write_font_loader.Reset();
     ::write_factory.Reset();
@@ -157,6 +155,7 @@ static bool init_dx11()
         return false;
     }
 
+    ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ::dxgi_adapter_for_device.Get());
     ::dx11_object_cache = std::make_unique<ff::dx11_object_cache>(::dx11_device.Get());
     ::dx11_device_state = std::make_unique<ff::dx11_device_state>(::dx11_device_context.Get());
 
@@ -165,6 +164,7 @@ static bool init_dx11()
 
 static void destroy_dx11()
 {
+    ::dxgi_adapter_outputs_hash = 0;
     ::dx_feature_level = static_cast<D3D_FEATURE_LEVEL>(0);
     ::dx11_device_state->clear();
 

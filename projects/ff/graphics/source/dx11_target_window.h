@@ -1,14 +1,13 @@
 #pragma once
 
-#include "dx11_target_base.h"
-#include "dx11_target_window_base.h"
+#include "target_base.h"
+#include "target_window_base.h"
 #include "graphics_child_base.h"
 
 namespace ff
 {
     class dx11_target_window
-        : public ff::dx11_target_base
-        , public ff::target_window_base
+        : public ff::target_window_base
         , public ff::internal::graphics_child_base
     {
     public:
@@ -22,7 +21,7 @@ namespace ff
         dx11_target_window& operator=(const dx11_target_window& other) = delete;
         operator bool() const;
 
-        // dx11_target_base
+        // target_base
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
         virtual ID3D11Texture2D* texture() override;

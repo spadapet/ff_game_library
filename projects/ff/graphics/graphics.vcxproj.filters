@@ -228,10 +228,10 @@
     <ClInclude Include="source\palette_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_target_base.h">
+    <ClInclude Include="source\target_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_target_window_base.h">
+    <ClInclude Include="source\target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx11_target_texture.h">

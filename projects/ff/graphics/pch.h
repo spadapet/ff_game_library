@@ -2,10 +2,15 @@
 
 // Windows
 #include <d3dcompiler.h>
-#include <d3d11_4.h>
 #include <DirectXMath.h>
 #include <dwrite_3.h>
 #include <dxgi1_6.h>
+
+#if DXVER == 11
+#include <d3d11_4.h>
+#elif DXVER == 12
+#include <d3d12.h>
+#endif
 
 #if UWP_APP
 #include <windows.ui.xaml.media.dxinterop.h>
@@ -37,5 +42,7 @@ using IDWriteFontSetBuilderX = typename IDWriteFontSetBuilder2;
 using IDWriteTextFormatX = typename IDWriteTextFormat3;
 using IDWriteTextLayoutX = typename IDWriteTextLayout4;
 
+#if DXVER == 11
 using ID3D11DeviceX = typename ID3D11Device5;
 using ID3D11DeviceContextX = typename ID3D11DeviceContext4;
+#endif

@@ -55,6 +55,7 @@
     <NoesisDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\windows_x86_64\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\uwp_x86\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\uwp_x86_64\noesis.dll</NoesisDll>
+    <NoesisDll Condition=" '$(AppType)' == 'UWP' And !Exists('$(NoesisDll)') ">$(NoesisDll.Replace("\uwp_", "\windows_"))</NoesisDll>
   </PropertyGroup>
 
   <!-- Property pages -->

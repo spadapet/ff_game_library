@@ -75,12 +75,12 @@ const std::shared_ptr<ff::dx11_texture>& ff::internal::ui::render_target::msaa_t
     return this->msaa_texture_;
 }
 
-const std::shared_ptr<ff::dx11_target_base>& ff::internal::ui::render_target::resolved_target() const
+const std::shared_ptr<ff::target_base>& ff::internal::ui::render_target::resolved_target() const
 {
     return this->resolved_target_;
 }
 
-const std::shared_ptr<ff::dx11_target_base>& ff::internal::ui::render_target::msaa_target() const
+const std::shared_ptr<ff::target_base>& ff::internal::ui::render_target::msaa_target() const
 {
     return this->msaa_target_;
 }

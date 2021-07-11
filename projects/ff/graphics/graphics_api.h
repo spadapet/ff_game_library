@@ -18,10 +18,8 @@
 #include "source/dx11_fixed_state.h"
 #include "source/dx11_object_cache.h"
 #include "source/dx11_operators.h"
-#include "source/dx11_target_base.h"
 #include "source/dx11_target_texture.h"
 #include "source/dx11_target_window.h"
-#include "source/dx11_target_window_base.h"
 #include "source/dx11_texture.h"
 #include "source/dx11_texture_view.h"
 #include "source/dx11_texture_view_base.h"
@@ -47,13 +45,20 @@
 #include "source/sprite_optimizer.h"
 #include "source/sprite_resource.h"
 #include "source/sprite_type.h"
+#include "source/target_base.h"
+#include "source/target_window_base.h"
 #include "source/texture_metadata.h"
 #include "source/texture_util.h"
 #include "source/transform.h"
 #include "source/vertex.h"
 #include "source/viewport.h"
 
+#if DXVER == 11
 #pragma comment(lib, "d3d11.lib")
+#elif DXVER == 12
+#pragma comment(lib, "d3d12.lib")
+#endif
+
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "dxgi.lib")

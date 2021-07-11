@@ -6,7 +6,6 @@
 #include "dx11_device_state.h"
 #include "dx11_fixed_state.h"
 #include "dx11_object_cache.h"
-#include "dx11_target_base.h"
 #include "dx11_texture.h"
 #include "dx11_texture_view_base.h"
 #include "dxgi_util.h"
@@ -18,6 +17,7 @@
 #include "shader.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
+#include "target_base.h"
 #include "transform.h"
 #include "vertex.h"
 
@@ -533,7 +533,7 @@ static ff::dx11_fixed_state create_pre_multiplied_alpha_draw_state()
     return state;
 }
 
-static ff::rect_float get_rotated_view_rect(ff::dx11_target_base& target, const ff::rect_float& view_rect)
+static ff::rect_float get_rotated_view_rect(ff::target_base& target, const ff::rect_float& view_rect)
 {
     ff::window_size size = target.size();
     ff::rect_float rotated_view_rect;
@@ -585,7 +585,7 @@ static DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect)
         0, ::MAX_RENDER_DEPTH);
 }
 
-static DirectX::XMMATRIX get_orientation_matrix(ff::dx11_target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
+static DirectX::XMMATRIX get_orientation_matrix(ff::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
 {
     DirectX::XMMATRIX orientation_matrix;
 
@@ -637,7 +637,7 @@ static D3D11_VIEWPORT get_viewport(const ff::rect_float& view_rect)
     return viewport;
 }
 
-static bool setup_view_matrix(ff::dx11_target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
+static bool setup_view_matrix(ff::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
 {
     if (world_rect.width() != 0 && world_rect.height() != 0 && view_rect.width() > 0 && view_rect.height() > 0)
     {
@@ -651,7 +651,7 @@ static bool setup_view_matrix(ff::dx11_target_base& target, const ff::rect_float
     return false;
 }
 
-static bool setup_render_target(ff::dx11_target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect)
+static bool setup_render_target(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect)
 {
     ID3D11RenderTargetView* target_view = target.view();
     if (target_view)
@@ -771,7 +771,7 @@ namespace
             return true;
         }
 
-        virtual ff::draw_ptr begin_draw(ff::dx11_target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
+        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
         {
             this->end_draw();
 
@@ -1311,7 +1311,7 @@ namespace
             }
         }
 
-        void init_geometry_constant_buffers_0(ff::dx11_target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
+        void init_geometry_constant_buffers_0(ff::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
         {
             this->geometry_constants_0.view_size = view_rect.size() / static_cast<float>(target.size().dpi_scale);
             this->geometry_constants_0.view_scale = world_rect.size() / this->geometry_constants_0.view_size;
@@ -1901,7 +1901,7 @@ std::unique_ptr<ff::draw_device> ff::draw_device::create()
     return std::make_unique<::draw_device_internal>();
 }
 
-ff::draw_ptr ff::draw_device::begin_draw(ff::dx11_target_base& target, ff::dx11_depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
+ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }

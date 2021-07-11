@@ -69,9 +69,9 @@
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
     <ClInclude Include="source\dx11_operators.h" />
-    <ClInclude Include="source\dx11_target_base.h" />
+    <ClInclude Include="source\target_base.h" />
     <ClInclude Include="source\dx11_target_texture.h" />
-    <ClInclude Include="source\dx11_target_window_base.h" />
+    <ClInclude Include="source\target_window_base.h" />
     <ClInclude Include="source\dx11_target_window.h" />
     <ClInclude Include="source\dx11_texture_view.h" />
     <ClInclude Include="source\dx11_texture_view_base.h" />

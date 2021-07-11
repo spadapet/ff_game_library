@@ -1,14 +1,14 @@
 #pragma once
 
-#include "dx11_target_base.h"
 #include "graphics_child_base.h"
+#include "target_base.h"
 
 namespace ff
 {
     class dx11_texture;
 
     class dx11_target_texture
-        : public ff::dx11_target_base
+        : public ff::target_base
         , public ff::internal::graphics_child_base
     {
     public:
@@ -24,7 +24,7 @@ namespace ff
 
         const std::shared_ptr<ff::dx11_texture>& shared_texture() const;
 
-        // dx11_target_base
+        // target_base
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
         virtual ID3D11Texture2D* texture() override;

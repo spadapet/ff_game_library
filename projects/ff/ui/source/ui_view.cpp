@@ -213,7 +213,7 @@ void ff::ui_view::pre_render()
     this->internal_view_->GetRenderer()->RenderOffscreen();
 }
 
-void ff::ui_view::render(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect)
+void ff::ui_view::render(ff::target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect)
 {
     ff::internal::ui::on_render_view(this);
 
@@ -223,7 +223,7 @@ void ff::ui_view::render(ff::dx11_target_base& target, ff::dx11_depth& depth, co
     }
 }
 
-bool ff::ui_view::render_begin(ff::dx11_target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect)
+bool ff::ui_view::render_begin(ff::target_base& target, ff::dx11_depth& depth, const ff::rect_float* view_rect)
 {
     if (depth.size(target.size().pixel_size))
     {

@@ -39,7 +39,7 @@ namespace
             ff::ui::state_rendering();
         }
 
-        virtual void frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth) override
+        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dx11_depth& depth) override
         {
             ff::ui::state_rendered();
         }

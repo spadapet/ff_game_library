@@ -49,7 +49,7 @@ void ff::state_wrapper::advance_input()
     }
 }
 
-void ff::state_wrapper::render(ff::dx11_target_base& target, ff::dx11_depth& depth)
+void ff::state_wrapper::render(ff::target_base& target, ff::dx11_depth& depth)
 {
     if (this->state)
     {
@@ -81,7 +81,7 @@ void ff::state_wrapper::frame_rendering(ff::state::advance_t type)
     }
 }
 
-void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dx11_target_base& target, ff::dx11_depth& depth)
+void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dx11_depth& depth)
 {
     if (this->state)
     {
