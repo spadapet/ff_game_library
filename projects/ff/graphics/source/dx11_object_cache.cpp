@@ -1,6 +1,8 @@
 #include "pch.h"
-#include "dx11_operators.h"
+#include "dx_operators.h"
 #include "dx11_object_cache.h"
+
+#if DXVER == 11
 
 size_t ff::dx11_object_cache::hash_data::operator()(const std::shared_ptr<ff::data_base>& value) const
 {
@@ -288,3 +290,5 @@ ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(const std::shared_ptr
 
     return return_value;
 }
+
+#endif

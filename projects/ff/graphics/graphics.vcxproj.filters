@@ -65,7 +65,7 @@
     <ClCompile Include="source\texture_metadata.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_texture_view.cpp">
+    <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\animation_player.cpp">
@@ -201,7 +201,7 @@
     <ClInclude Include="source\texture_metadata.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_texture_view.h">
+    <ClInclude Include="source\texture_view.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\animation_base.h">
@@ -222,7 +222,7 @@
     <ClInclude Include="source\animation_player_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_texture_view_base.h">
+    <ClInclude Include="source\texture_view_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_base.h">
@@ -274,9 +274,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\random_sprite.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_operators.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

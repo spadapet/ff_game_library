@@ -662,7 +662,7 @@ static bool create_outline_sprites(
 
         outline_sprite_list.emplace_back(
             std::string(sprite_info.sprite->name()),
-            std::shared_ptr<ff::dx11_texture_view_base>(outline_texture),
+            std::shared_ptr<ff::texture_view_base>(outline_texture),
             ff::rect_float(ff::point_float{}, outline_texture->size().cast<float>()),
             sprite_data.handle() + ff::point_float(1, 1),
             sprite_data.scale(),

@@ -2,38 +2,41 @@
 
 #include "animation_base.h"
 #include "animation_player_base.h"
-#include "dx11_texture_view_base.h"
 #include "graphics_child_base.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
+#include "texture_view_base.h"
 
 namespace ff
 {
     class texture;
 
-    class dx11_texture_view
+    class texture_view
         : public ff::internal::graphics_child_base
-        , public ff::dx11_texture_view_base
+        , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base
         , public ff::animation_player_base
     {
     public:
-        dx11_texture_view(const std::shared_ptr<ff::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
-        dx11_texture_view(dx11_texture_view&& other) noexcept;
-        dx11_texture_view(const dx11_texture_view& other) = delete;
-        virtual ~dx11_texture_view() override;
+        texture_view(const std::shared_ptr<ff::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
+        texture_view(texture_view&& other) noexcept;
+        texture_view(const texture_view& other) = delete;
+        virtual ~texture_view() override;
 
-        dx11_texture_view& operator=(dx11_texture_view&& other) noexcept;
-        dx11_texture_view& operator=(const dx11_texture_view& other) = delete;
+        texture_view& operator=(texture_view&& other) noexcept;
+        texture_view& operator=(const texture_view& other) = delete;
         operator bool() const;
 
         // graphics_child_base
         virtual bool reset() override;
 
-        // dx11_texture_view_base
+        // texture_view_base
         virtual const ff::texture* view_texture() const override;
+#if DXVER == 11
         virtual ID3D11ShaderResourceView* view() const override;
+#elif DXVER == 12
+#endif
 
         // sprite_base
         virtual std::string_view name() const override;
@@ -57,7 +60,10 @@ namespace ff
     private:
         void fix_sprite_data();
 
+#if DXVER == 11
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
+#elif DXVER == 12
+#endif
         std::shared_ptr<ff::texture> texture_;
         ff::sprite_data sprite_data_;
         size_t array_start_;

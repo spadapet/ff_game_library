@@ -1,6 +1,5 @@
 #pragma once
 
-#include "dx11_texture_view_base.h"
 #include "animation_base.h"
 #include "animation_player_base.h"
 #include "graphics_child_base.h"
@@ -8,6 +7,7 @@
 #include "sprite_data.h"
 #include "sprite_type.h"
 #include "texture_metadata.h"
+#include "texture_view_base.h"
 
 namespace ff
 {
@@ -15,7 +15,7 @@ namespace ff
         : public ff::internal::graphics_child_base
         , public ff::resource_object_base
         , public ff::texture_metadata_base
-        , public ff::dx11_texture_view_base
+        , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base
         , public ff::animation_player_base
@@ -58,7 +58,7 @@ namespace ff
         virtual bool reset() override;
 
         // texture_view_base
-        virtual const texture* view_texture() const override;
+        virtual const ff::texture* view_texture() const override;
 #if DXVER == 11
         virtual ID3D11ShaderResourceView* view() const override;
 #elif DXVER == 12

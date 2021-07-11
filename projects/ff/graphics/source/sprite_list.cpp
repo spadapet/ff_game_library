@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "dx11_texture_view.h"
 #include "dxgi_util.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
@@ -7,6 +6,7 @@
 #include "sprite_optimizer.h"
 #include "sprite_resource.h"
 #include "texture.h"
+#include "texture_view.h"
 
 ff::sprite_list::sprite_list(std::vector<ff::sprite>&& sprites)
     : sprites(std::move(sprites))
@@ -135,7 +135,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
     }
 
     ff::dict sprites_dict = dict.get<ff::dict>("sprites");
-    std::unordered_map<std::wstring, std::shared_ptr<ff::dx11_texture_view_base>> texture_views;
+    std::unordered_map<std::wstring, std::shared_ptr<ff::texture_view_base>> texture_views;
     std::vector<ff::sprite> sprites;
 
     for (auto& sprite_iter : sprites_dict)
@@ -162,7 +162,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         ff::point_float scale = sprite_dict.get<ff::point_float>("scale", ff::point_float(1, 1));
         size_t repeat = sprite_dict.get<size_t>("repeat", 1);
 
-        std::shared_ptr<ff::dx11_texture_view_base> texture_view;
+        std::shared_ptr<ff::texture_view_base> texture_view;
         auto iter = texture_views.find(full_file.native());
         if (iter != texture_views.cend())
         {
@@ -237,7 +237,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
 std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::load_from_cache(const ff::dict& dict) const
 {
-    std::vector<std::shared_ptr<ff::dx11_texture_view_base>> texture_views;
+    std::vector<std::shared_ptr<ff::texture_view_base>> texture_views;
     {
         std::vector<ff::value_ptr> texture_values = dict.get<std::vector<ff::value_ptr>>("textures");
         texture_views.reserve(texture_values.size());
@@ -251,7 +251,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
                 return nullptr;
             }
 
-            texture_views.push_back(std::make_shared<ff::dx11_texture_view>(texture));
+            texture_views.push_back(std::make_shared<ff::texture_view>(texture));
         }
     }
 

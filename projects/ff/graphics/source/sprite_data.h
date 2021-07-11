@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    class dx11_texture_view_base;
+    class texture_view_base;
     enum class sprite_type;
 
     class sprite_data
@@ -10,12 +10,12 @@ namespace ff
     public:
         sprite_data();
         sprite_data(
-            ff::dx11_texture_view_base* view,
+            ff::texture_view_base* view,
             ff::rect_float texture_uv,
             ff::rect_float world,
             ff::sprite_type type);
         sprite_data(
-            ff::dx11_texture_view_base* view,
+            ff::texture_view_base* view,
             ff::rect_float rect,
             ff::point_float handle,
             ff::point_float scale,
@@ -27,7 +27,7 @@ namespace ff
         sprite_data& operator=(const sprite_data & other) = default;
         operator bool() const;
 
-        ff::dx11_texture_view_base* view() const;
+        ff::texture_view_base* view() const;
         const ff::rect_float& texture_uv() const;
         const ff::rect_float& world() const;
         ff::sprite_type type() const;
@@ -37,7 +37,7 @@ namespace ff
         ff::point_float handle() const;
 
     private:
-        ff::dx11_texture_view_base* view_;
+        ff::texture_view_base* view_;
         ff::rect_float texture_uv_;
         ff::rect_float world_;
         ff::sprite_type type_;

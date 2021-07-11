@@ -2,6 +2,8 @@
 #include "dx_operators.h"
 #include "dx11_device_state.h"
 
+#if DXVER == 11
+
 ff::dx11_device_state::dx11_device_state()
 {
     this->clear();
@@ -601,3 +603,5 @@ const Microsoft::WRL::ComPtr<ID3D11DepthStencilView>& ff::dx11_device_state::dep
 {
     return this->depth_view_;
 }
+
+#endif

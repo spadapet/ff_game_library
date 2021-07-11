@@ -7,7 +7,7 @@
 
 namespace ff
 {
-    class dx11_texture_view_base;
+    class texture_view_base;
 
     class sprite_resource
         : public ff::sprite_base

@@ -6,7 +6,6 @@
 #include "dx11_device_state.h"
 #include "dx11_fixed_state.h"
 #include "dx11_object_cache.h"
-#include "dx11_texture_view_base.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
@@ -18,6 +17,7 @@
 #include "sprite_type.h"
 #include "target_base.h"
 #include "texture.h"
+#include "texture_view_base.h"
 #include "transform.h"
 #include "vertex.h"
 
@@ -1643,7 +1643,7 @@ namespace
             return this->world_matrix_index;
         }
 
-        unsigned int get_texture_index_no_flush(const ff::dx11_texture_view_base& texture_view, bool use_palette)
+        unsigned int get_texture_index_no_flush(const ff::texture_view_base& texture_view, bool use_palette)
         {
             if (use_palette)
             {
@@ -1777,7 +1777,7 @@ namespace
             return this->palette_remap_stack.back().first[color];
         }
 
-        void get_world_matrix_and_texture_index(const ff::dx11_texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
+        void get_world_matrix_and_texture_index(const ff::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
         {
             model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
             texture_index = this->get_texture_index_no_flush(texture_view, use_palette);
@@ -1789,7 +1789,7 @@ namespace
             }
         }
 
-        void get_world_matrix_and_texture_indexes(ff::dx11_texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
+        void get_world_matrix_and_texture_indexes(ff::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
         {
             model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
             bool flush = (model_index == ff::constants::invalid_dword);
@@ -1865,8 +1865,8 @@ namespace
         unsigned int world_matrix_index;
 
         // Textures
-        std::array<const ff::dx11_texture_view_base*, ::MAX_TEXTURES> textures;
-        std::array<const ff::dx11_texture_view_base*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
+        std::array<const ff::texture_view_base*, ::MAX_TEXTURES> textures;
+        std::array<const ff::texture_view_base*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
         size_t texture_count;
         size_t textures_using_palette_count;
 

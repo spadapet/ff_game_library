@@ -3,6 +3,8 @@
 #include "dx11_fixed_state.h"
 #include "graphics.h"
 
+#if DXVER == 11
+
 ff::dx11_fixed_state::dx11_fixed_state()
     : blend_factor(1, 1, 1, 1)
     , sample_mask(0xFFFFFFFF)
@@ -35,3 +37,5 @@ void ff::dx11_fixed_state::apply(ff::dx11_device_state& context) const
         context.set_depth(this->depth.Get(), this->stencil);
     }
 }
+
+#endif

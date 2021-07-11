@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "dx11_texture_view_base.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
 #include "texture.h"
+#include "texture_view_base.h"
 
 ff::sprite_data::sprite_data()
     : view_(nullptr)
@@ -12,7 +12,7 @@ ff::sprite_data::sprite_data()
 {}
 
 ff::sprite_data::sprite_data(
-    ff::dx11_texture_view_base* view,
+    ff::texture_view_base* view,
     ff::rect_float texture_uv,
     ff::rect_float world,
     ff::sprite_type type)
@@ -23,7 +23,7 @@ ff::sprite_data::sprite_data(
 {}
 
 ff::sprite_data::sprite_data(
-    ff::dx11_texture_view_base* view,
+    ff::texture_view_base* view,
     ff::rect_float rect,
     ff::point_float handle,
     ff::point_float scale,
@@ -39,7 +39,7 @@ ff::sprite_data::operator bool() const
     return this->view_ != nullptr;
 }
 
-ff::dx11_texture_view_base* ff::sprite_data::view() const
+ff::texture_view_base* ff::sprite_data::view() const
 {
     return this->view_;
 }

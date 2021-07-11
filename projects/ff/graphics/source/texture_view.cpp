@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "draw_base.h"
-#include "dx11_texture_view.h"
 #include "graphics.h"
 #include "texture.h"
 #include "texture_util.h"
+#include "texture_view.h"
 
-ff::dx11_texture_view::dx11_texture_view(
+ff::texture_view::texture_view(
     const std::shared_ptr<ff::texture>& texture,
     size_t array_start,
     size_t array_count,
@@ -22,7 +22,7 @@ ff::dx11_texture_view::dx11_texture_view(
     ff::internal::graphics::add_child(this);
 }
 
-ff::dx11_texture_view::dx11_texture_view(dx11_texture_view&& other) noexcept
+ff::texture_view::texture_view(texture_view&& other) noexcept
     : view_(std::move(other.view_))
     , texture_(std::move(other.texture_))
     , array_start_(other.array_start_)
@@ -36,12 +36,12 @@ ff::dx11_texture_view::dx11_texture_view(dx11_texture_view&& other) noexcept
     ff::internal::graphics::add_child(this);
 }
 
-ff::dx11_texture_view::~dx11_texture_view()
+ff::texture_view::~texture_view()
 {
     ff::internal::graphics::remove_child(this);
 }
 
-ff::dx11_texture_view& ff::dx11_texture_view::operator=(dx11_texture_view&& other) noexcept
+ff::texture_view& ff::texture_view::operator=(texture_view&& other) noexcept
 {
     if (this != &other)
     {
@@ -59,23 +59,23 @@ ff::dx11_texture_view& ff::dx11_texture_view::operator=(dx11_texture_view&& othe
     return *this;
 }
 
-ff::dx11_texture_view::operator bool() const
+ff::texture_view::operator bool() const
 {
     return true;
 }
 
-bool ff::dx11_texture_view::reset()
+bool ff::texture_view::reset()
 {
     this->view_.Reset();
     return *this;
 }
 
-const ff::texture* ff::dx11_texture_view::view_texture() const
+const ff::texture* ff::texture_view::view_texture() const
 {
     return this->texture_.get();
 }
 
-ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
+ID3D11ShaderResourceView* ff::texture_view::view() const
 {
     if (!this->view_)
     {
@@ -85,68 +85,68 @@ ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
     return this->view_.Get();
 }
 
-std::string_view ff::dx11_texture_view::name() const
+std::string_view ff::texture_view::name() const
 {
     return "";
 }
 
-const ff::sprite_data& ff::dx11_texture_view::sprite_data() const
+const ff::sprite_data& ff::texture_view::sprite_data() const
 {
     return this->sprite_data_;
 }
 
-float ff::dx11_texture_view::frame_length() const
+float ff::texture_view::frame_length() const
 {
     return 0.0f;
 }
 
-float ff::dx11_texture_view::frames_per_second() const
+float ff::texture_view::frames_per_second() const
 {
     return 0.0f;
 }
 
-void ff::dx11_texture_view::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
+void ff::texture_view::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::dx11_texture_view::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::texture_view::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-void ff::dx11_texture_view::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+void ff::texture_view::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-ff::value_ptr ff::dx11_texture_view::frame_value(size_t value_id, float frame, const ff::dict* params)
+ff::value_ptr ff::texture_view::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     return ff::value_ptr();
 }
 
-void ff::dx11_texture_view::advance_animation(ff::push_base<ff::animation_event>* events)
+void ff::texture_view::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::dx11_texture_view::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+void ff::texture_view::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-void ff::dx11_texture_view::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+void ff::texture_view::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-float ff::dx11_texture_view::animation_frame() const
+float ff::texture_view::animation_frame() const
 {
     return 0.0f;
 }
 
-const ff::animation_base* ff::dx11_texture_view::animation() const
+const ff::animation_base* ff::texture_view::animation() const
 {
     return this;
 }
 
-void ff::dx11_texture_view::fix_sprite_data()
+void ff::texture_view::fix_sprite_data()
 {
     this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
