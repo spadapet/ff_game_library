@@ -13,21 +13,21 @@ namespace ff::internal::ui
         static ff::internal::ui::render_target* get(Noesis::RenderTarget* target);
         Noesis::Ptr<ff::internal::ui::render_target> clone(std::string_view name) const;
         const std::string& name() const;
-        const std::shared_ptr<ff::dx11_texture>& resolved_texture() const;
-        const std::shared_ptr<ff::dx11_texture>& msaa_texture() const;
+        const std::shared_ptr<ff::texture>& resolved_texture() const;
+        const std::shared_ptr<ff::texture>& msaa_texture() const;
         const std::shared_ptr<ff::target_base>& resolved_target() const;
         const std::shared_ptr<ff::target_base>& msaa_target() const;
-        const std::shared_ptr<ff::dx11_depth>& depth() const;
+        const std::shared_ptr<ff::depth>& depth() const;
 
         virtual Noesis::Texture* GetTexture() override;
 
     private:
         std::string name_;
-        std::shared_ptr<ff::dx11_texture> resolved_texture_;
-        std::shared_ptr<ff::dx11_texture> msaa_texture_;
+        std::shared_ptr<ff::texture> resolved_texture_;
+        std::shared_ptr<ff::texture> msaa_texture_;
         std::shared_ptr<ff::target_base> resolved_target_;
         std::shared_ptr<ff::target_base> msaa_target_;
-        std::shared_ptr<ff::dx11_depth> depth_;
+        std::shared_ptr<ff::depth> depth_;
         Noesis::Ptr<ff::internal::ui::texture> resolved_texture_wrapper;
     };
 }

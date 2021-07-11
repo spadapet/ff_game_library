@@ -7,7 +7,7 @@ namespace graphics_test
     public:
         TEST_METHOD(target_texture)
         {
-            ff::dx11_target_texture target{ ff::dx11_texture(ff::point_int(256, 256)) };
+            ff::dx11_target_texture target{ ff::texture(ff::point_int(256, 256)) };
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::internal::DEFAULT_FORMAT);

@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "palette_data.h"
+#include "texture.h"
 #include "texture_util.h"
 
 ff::palette_data::palette_data(DirectX::ScratchImage&& scratch)
@@ -23,12 +23,12 @@ ff::palette_data::palette_data(DirectX::ScratchImage&& scratch, std::unordered_m
                 this->row_hashes.push_back(ff::stable_hash_bytes(cur, ff::constants::palette_row_bytes));
             }
 
-            this->texture_ = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
+            this->texture_ = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
         }
     }
 }
 
-ff::palette_data::palette_data(std::shared_ptr<ff::dx11_texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap)
+ff::palette_data::palette_data(std::shared_ptr<ff::texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap)
     : texture_(std::move(texture))
     , row_hashes(std::move(row_hashes))
     , name_to_remap(std::move(name_to_remap))
@@ -51,7 +51,7 @@ size_t ff::palette_data::row_hash(size_t index) const
     return this->row_hashes[index];
 }
 
-const std::shared_ptr<ff::dx11_texture> ff::palette_data::texture() const
+const std::shared_ptr<ff::texture> ff::palette_data::texture() const
 {
     return this->texture_;
 }
@@ -146,7 +146,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::lo
 
 std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::load_from_cache(const ff::dict& dict) const
 {
-    std::shared_ptr<ff::dx11_texture> texture = std::dynamic_pointer_cast<ff::dx11_texture>(dict.get<ff::resource_object_base>("texture"));
+    std::shared_ptr<ff::texture> texture = std::dynamic_pointer_cast<ff::texture>(dict.get<ff::resource_object_base>("texture"));
     std::unordered_map<std::string, std::shared_ptr<ff::data_base>> name_to_remap;
     std::vector<size_t> row_hashes;
 

@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "draw_base.h"
-#include "dx11_texture.h"
 #include "dx11_texture_view.h"
 #include "graphics.h"
+#include "texture.h"
 #include "texture_util.h"
 
 ff::dx11_texture_view::dx11_texture_view(
-    const std::shared_ptr<dx11_texture>& texture,
+    const std::shared_ptr<ff::texture>& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_start,
@@ -70,7 +70,7 @@ bool ff::dx11_texture_view::reset()
     return *this;
 }
 
-const ff::dx11_texture* ff::dx11_texture_view::view_texture() const
+const ff::texture* ff::dx11_texture_view::view_texture() const
 {
     return this->texture_.get();
 }
@@ -79,7 +79,7 @@ ID3D11ShaderResourceView* ff::dx11_texture_view::view() const
 {
     if (!this->view_)
     {
-        this->view_ = ff::internal::create_shader_view(this->texture_->texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
+        this->view_ = ff::internal::create_shader_view(this->texture_->dx_texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
     }
 
     return this->view_.Get();

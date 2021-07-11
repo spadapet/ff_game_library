@@ -11,7 +11,7 @@
 
 namespace ff
 {
-    class dx11_texture
+    class texture
         : public ff::internal::graphics_child_base
         , public ff::resource_object_base
         , public ff::texture_metadata_base
@@ -21,22 +21,25 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        dx11_texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
-        dx11_texture(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
-        dx11_texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::sprite_type sprite_type = ff::sprite_type::unknown);
-        dx11_texture(const dx11_texture& other, DXGI_FORMAT new_format, size_t new_mip_count);
-        dx11_texture(dx11_texture&& other) noexcept;
-        dx11_texture(const dx11_texture& other) = delete;
-        virtual ~dx11_texture() override;
+        texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
+        texture(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
+        texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::sprite_type sprite_type = ff::sprite_type::unknown);
+        texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count);
+        texture(texture&& other) noexcept;
+        texture(const texture& other) = delete;
+        virtual ~texture() override;
 
-        dx11_texture& operator=(dx11_texture&& other) noexcept;
-        dx11_texture& operator=(const dx11_texture& other) = delete;
+        texture& operator=(texture&& other) noexcept;
+        texture& operator=(const texture& other) = delete;
         operator bool() const;
 
         ff::sprite_type sprite_type() const;
         std::shared_ptr<DirectX::ScratchImage> data() const;
         std::shared_ptr<DirectX::ScratchImage> palette() const;
-        ID3D11Texture2D* texture() const;
+#if DXVER == 11
+        ID3D11Texture2D* dx_texture() const;
+#elif DXVER == 12
+#endif
 
         bool update(size_t array_index, size_t mip_index, const ff::rect_int& rect, const void* data, DXGI_FORMAT data_format, bool update_local_cache);
 
@@ -54,9 +57,12 @@ namespace ff
         // graphics_child_base
         virtual bool reset() override;
 
-        // dx11_texture_view_base
-        virtual const dx11_texture* view_texture() const override;
+        // texture_view_base
+        virtual const texture* view_texture() const override;
+#if DXVER == 11
         virtual ID3D11ShaderResourceView* view() const override;
+#elif DXVER == 12
+#endif
 
         // sprite_base
         virtual std::string_view name() const override;
@@ -83,8 +89,11 @@ namespace ff
     private:
         void fix_sprite_data(ff::sprite_type sprite_type);
 
+#if DXVER == 11
         mutable Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
+#elif
+#endif
         std::shared_ptr<DirectX::ScratchImage> data_;
         std::shared_ptr<DirectX::ScratchImage> palette_;
         ff::sprite_data sprite_data_;
@@ -93,10 +102,10 @@ namespace ff
 
 namespace ff::internal
 {
-    class texture_factory : public ff::resource_object_factory<dx11_texture>
+    class texture_factory : public ff::resource_object_factory<ff::texture>
     {
     public:
-        using ff::resource_object_factory<dx11_texture>::resource_object_factory;
+        using ff::resource_object_factory<ff::texture>::resource_object_factory;
 
         virtual std::shared_ptr<resource_object_base> load_from_source(const ff::dict& dict, resource_load_context& context) const override;
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;

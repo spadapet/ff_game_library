@@ -1,5 +1,7 @@
 #pragma once
 
+#if DXVER == 11
+
 namespace ff
 {
     class dx11_object_cache
@@ -53,3 +55,5 @@ namespace ff
         std::unordered_set<std::shared_ptr<ff::resource>> resources;
     };
 }
+
+#endif

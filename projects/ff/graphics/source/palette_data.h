@@ -10,7 +10,7 @@ namespace ff::constants
 
 namespace ff
 {
-    class dx11_texture;
+    class texture;
 
     class palette_data
         : public ff::resource_object_base
@@ -19,7 +19,7 @@ namespace ff
     public:
         palette_data(DirectX::ScratchImage&& scratch);
         palette_data(DirectX::ScratchImage&& scratch, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
-        palette_data(std::shared_ptr<ff::dx11_texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
+        palette_data(std::shared_ptr<ff::texture>&& texture, std::vector<size_t>&& row_hashes, std::unordered_map<std::string, std::shared_ptr<ff::data_base>>&& name_to_remap);
         palette_data(palette_data&& other) noexcept = default;
         palette_data(const palette_data& other) = delete;
 
@@ -29,7 +29,7 @@ namespace ff
 
         size_t row_size() const;
         size_t row_hash(size_t index) const;
-        const std::shared_ptr<ff::dx11_texture> texture() const;
+        const std::shared_ptr<ff::texture> texture() const;
         std::shared_ptr<ff::data_base> remap(std::string_view name) const;
 
         // palette_base
@@ -42,7 +42,7 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        std::shared_ptr<ff::dx11_texture> texture_;
+        std::shared_ptr<ff::texture> texture_;
         std::vector<size_t> row_hashes;
         std::unordered_map<std::string, std::shared_ptr<ff::data_base>> name_to_remap;
     };

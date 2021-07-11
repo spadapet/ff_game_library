@@ -4,17 +4,17 @@
 
 namespace ff
 {
-    class dx11_depth : public ff::internal::graphics_child_base
+    class depth : public ff::internal::graphics_child_base
     {
     public:
-        dx11_depth(size_t sample_count = 0);
-        dx11_depth(const ff::point_int& size, size_t sample_count = 0);
-        dx11_depth(dx11_depth&& other) noexcept = default;
-        dx11_depth(const dx11_depth& other) = delete;
-        virtual ~dx11_depth() override;
+        depth(size_t sample_count = 0);
+        depth(const ff::point_int& size, size_t sample_count = 0);
+        depth(depth&& other) noexcept = default;
+        depth(const depth& other) = delete;
+        virtual ~depth() override;
 
-        dx11_depth& operator=(dx11_depth&& other) noexcept = default;
-        dx11_depth& operator=(const dx11_depth& other) = delete;
+        depth& operator=(depth&& other) noexcept = default;
+        depth& operator=(const depth& other) = delete;
         operator bool() const;
 
         ff::point_int size() const;
@@ -31,7 +31,10 @@ namespace ff
         virtual bool reset() override;
 
     private:
+#if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilView> view_;
+#elif DXVER == 12
+#endif
     };
 }

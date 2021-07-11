@@ -23,12 +23,12 @@ namespace graphics_test
             ff::auto_resource<ff::sprite_resource> sprites_res = res->get_resource_object("sprites.box[7]");
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
-            ff::dx11_target_texture target(ff::dx11_texture(ff::point_int(256, 256)));
+            ff::dx11_target_texture target(ff::texture(ff::point_int(256, 256)));
             ff::graphics::dx11_device_state().clear_target(target.view(), DirectX::XMFLOAT4(0.25, 0, 0.5, 1));
 
             // Draw
             {
-                ff::dx11_depth depth;
+                ff::depth depth;
                 std::unique_ptr<ff::draw_device> draw_device = ff::draw_device::create();
                 ff::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
                 draw->draw_sprite(sprite->sprite_data(), ff::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));

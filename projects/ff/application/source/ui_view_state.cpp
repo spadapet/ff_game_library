@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "ui_view_state.h"
 
-ff::ui_view_state::ui_view_state(std::shared_ptr<ff::ui_view> view, std::shared_ptr<ff::target_base> target_override, std::shared_ptr<ff::dx11_depth> depth_override)
+ff::ui_view_state::ui_view_state(std::shared_ptr<ff::ui_view> view, std::shared_ptr<ff::target_base> target_override, std::shared_ptr<ff::depth> depth_override)
     : view_(view)
     , target_override(target_override)
     , depth_override(depth_override)
@@ -31,7 +31,7 @@ std::shared_ptr<ff::state> ff::ui_view_state::advance_time()
     return nullptr;
 }
 
-void ff::ui_view_state::render(ff::target_base& target, ff::dx11_depth& depth)
+void ff::ui_view_state::render(ff::target_base& target, ff::depth& depth)
 {
     this->view_->render(this->target_override ? *this->target_override : target, this->depth_override ? *this->depth_override : depth);
 }

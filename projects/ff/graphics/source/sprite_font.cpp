@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "color.h"
 #include "draw_base.h"
-#include "dx11_texture.h"
 #include "font_file.h"
 #include "graphics.h"
 #include "sprite.h"
 #include "sprite_font.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
+#include "texture.h"
 #include "transform.h"
 
 static bool text_contains_outline_control(std::wstring_view text)
@@ -346,7 +346,7 @@ bool ff::sprite_font::init_sprites()
     std::vector<std::shared_ptr<ff::dx11_texture_view_base>> textures;
     for (DirectX::ScratchImage& scratch : staging_scratches)
     {
-        std::shared_ptr<ff::dx11_texture_view_base> view = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
+        std::shared_ptr<ff::dx11_texture_view_base> view = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
         textures.push_back(std::move(view));
     }
 

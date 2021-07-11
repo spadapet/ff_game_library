@@ -3,7 +3,7 @@
 
 NS_IMPLEMENT_REFLECTION_(ff::internal::ui::texture);
 
-ff::internal::ui::texture::texture(const std::shared_ptr<ff::resource>& resource, const std::shared_ptr<ff::dx11_texture>& placeholder_texture, std::string_view name)
+ff::internal::ui::texture::texture(const std::shared_ptr<ff::resource>& resource, const std::shared_ptr<ff::texture>& placeholder_texture, std::string_view name)
     : resource(resource)
     , placeholder_texture(placeholder_texture)
     , name_(name)
@@ -11,7 +11,7 @@ ff::internal::ui::texture::texture(const std::shared_ptr<ff::resource>& resource
     assert(this->resource.valid() && this->placeholder_texture);
 }
 
-ff::internal::ui::texture::texture(const std::shared_ptr<ff::dx11_texture>& texture, std::string_view name)
+ff::internal::ui::texture::texture(const std::shared_ptr<ff::texture>& texture, std::string_view name)
     : static_texture(texture)
     , name_(name)
 {}
@@ -26,7 +26,7 @@ const std::string& ff::internal::ui::texture::name() const
     return this->name_;
 }
 
-const std::shared_ptr<ff::dx11_texture>& ff::internal::ui::texture::internal_texture() const
+const std::shared_ptr<ff::texture>& ff::internal::ui::texture::internal_texture() const
 {
     auto& texture = this->resource.valid() ? this->resource.object() : this->static_texture;
     return texture ? texture : this->placeholder_texture;

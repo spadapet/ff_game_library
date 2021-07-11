@@ -20,7 +20,7 @@ void ff::state::advance_input()
     }
 }
 
-void ff::state::render(ff::target_base& target, ff::dx11_depth& depth)
+void ff::state::render(ff::target_base& target, ff::depth& depth)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
@@ -52,7 +52,7 @@ void ff::state::frame_rendering(ff::state::advance_t type)
     }
 }
 
-void ff::state::frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dx11_depth& depth)
+void ff::state::frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::depth& depth)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {

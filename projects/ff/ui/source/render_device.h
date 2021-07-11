@@ -86,15 +86,15 @@ namespace ff::internal::ui
         // Device
         std::array<ID3D11ShaderResourceView*, static_cast<size_t>(texture_slot_t::Count)> null_textures;
 #ifdef _DEBUG
-        std::shared_ptr<ff::dx11_texture> empty_texture_rgb;
-        std::shared_ptr<ff::dx11_texture> empty_texture_palette;
+        std::shared_ptr<ff::texture> empty_texture_rgb;
+        std::shared_ptr<ff::texture> empty_texture_palette;
 #endif
 
         // Buffers
-        std::shared_ptr<ff::dx11_buffer> buffer_vertices;
-        std::shared_ptr<ff::dx11_buffer> buffer_indices;
-        std::shared_ptr<ff::dx11_buffer> buffer_vertex_cb[2];
-        std::shared_ptr<ff::dx11_buffer> buffer_pixel_cb[3];
+        std::shared_ptr<ff::buffer> buffer_vertices;
+        std::shared_ptr<ff::buffer> buffer_indices;
+        std::shared_ptr<ff::buffer> buffer_vertex_cb[2];
+        std::shared_ptr<ff::buffer> buffer_pixel_cb[3];
         uint32_t vertex_cb_hash[2];
         uint32_t pixel_cb_hash[3];
 

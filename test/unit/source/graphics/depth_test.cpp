@@ -9,7 +9,7 @@ namespace graphics_test
         {
             const ff::point_int size(64, 32);
             const size_t sample_count = 2;
-            ff::dx11_depth depth(size, sample_count);
+            ff::depth depth(size, sample_count);
 
             Assert::IsTrue(depth);
             Assert::IsTrue(depth.size() == size);

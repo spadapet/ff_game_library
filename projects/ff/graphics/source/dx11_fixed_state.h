@@ -1,5 +1,7 @@
 #pragma once
 
+#if DXVER == 11
+
 namespace ff
 {
     class dx11_device_state;
@@ -25,3 +27,5 @@ namespace ff
         UINT stencil;
     };
 }
+
+#endif

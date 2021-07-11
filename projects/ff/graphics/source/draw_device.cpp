@@ -1,12 +1,11 @@
 #include "pch.h"
+#include "buffer.h"
+#include "depth.h"
 #include "draw_device.h"
 #include "dx_operators.h"
-#include "dx11_buffer.h"
-#include "dx11_depth.h"
 #include "dx11_device_state.h"
 #include "dx11_fixed_state.h"
 #include "dx11_object_cache.h"
-#include "dx11_texture.h"
 #include "dx11_texture_view_base.h"
 #include "dxgi_util.h"
 #include "graphics.h"
@@ -18,6 +17,7 @@
 #include "sprite_data.h"
 #include "sprite_type.h"
 #include "target_base.h"
+#include "texture.h"
 #include "transform.h"
 #include "vertex.h"
 
@@ -651,7 +651,7 @@ static bool setup_view_matrix(ff::target_base& target, const ff::rect_float& vie
     return false;
 }
 
-static bool setup_render_target(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect)
+static bool setup_render_target(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect)
 {
     ID3D11RenderTargetView* target_view = target.view();
     if (target_view)
@@ -754,11 +754,11 @@ namespace
 
             // Palette
             this->palette_stack.push_back(nullptr);
-            this->palette_texture = std::make_shared<ff::dx11_texture>(
+            this->palette_texture = std::make_shared<ff::texture>(
                 ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::internal::PALETTE_FORMAT);
 
             this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
-            this->palette_remap_texture = std::make_shared<ff::dx11_texture>(
+            this->palette_remap_texture = std::make_shared<ff::texture>(
                 ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::internal::PALETTE_INDEX_FORMAT);
 
             // States
@@ -771,7 +771,7 @@ namespace
             return true;
         }
 
-        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
+        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
         {
             this->end_draw();
 
@@ -1381,7 +1381,7 @@ namespace
         {
             if (this->textures_using_palette_count && !this->palette_to_index.empty())
             {
-                ID3D11Resource* dest_resource = this->palette_texture->texture();
+                ID3D11Resource* dest_resource = this->palette_texture->dx_texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_to_index)
@@ -1397,7 +1397,7 @@ namespace
                         if (this->palette_texture_hashes[index] != row_hash)
                         {
                             this->palette_texture_hashes[index] = row_hash;
-                            ID3D11Resource* src_resource = palette_data->texture()->texture();
+                            ID3D11Resource* src_resource = palette_data->texture()->dx_texture();
                             box.top = static_cast<UINT>(palette_row);
                             box.bottom = box.top + 1;
                             ff::graphics::dx11_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
@@ -1408,7 +1408,7 @@ namespace
 
             if ((this->textures_using_palette_count || this->target_requires_palette) && !this->palette_remap_to_index.empty())
             {
-                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->texture();
+                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->dx_texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_remap_to_index)
@@ -1430,10 +1430,10 @@ namespace
 
         void set_shader_input()
         {
-            std::array<ID3D11Buffer*, 2> buffers_gs = { this->geometry_constants_buffer_0.buffer(), this->geometry_constants_buffer_1.buffer() };
+            std::array<ID3D11Buffer*, 2> buffers_gs = { this->geometry_constants_buffer_0.dx_buffer(), this->geometry_constants_buffer_1.dx_buffer() };
             ff::graphics::dx11_device_state().set_constants_gs(buffers_gs.data(), 0, buffers_gs.size());
 
-            std::array<ID3D11Buffer*, 1> buffers_ps = { this->pixel_constants_buffer_0.buffer() };
+            std::array<ID3D11Buffer*, 1> buffers_ps = { this->pixel_constants_buffer_0.dx_buffer() };
             ff::graphics::dx11_device_state().set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
 
             std::array<ID3D11SamplerState*, 1> sample_states = { this->sampler_stack.back().Get() };
@@ -1551,7 +1551,7 @@ namespace
 
                 if (bucket.render_count())
                 {
-                    bucket.apply(this->geometry_buffer.buffer(), this->target_requires_palette);
+                    bucket.apply(this->geometry_buffer.dx_buffer(), this->target_requires_palette);
 
                     if (!custom_func || (*custom_func)(bucket.item_type(), true))
                     {
@@ -1588,7 +1588,7 @@ namespace
                         }
                     }
 
-                    entry.bucket->apply(this->geometry_buffer.buffer(), this->target_requires_palette);
+                    entry.bucket->apply(this->geometry_buffer.dx_buffer(), this->target_requires_palette);
 
                     if (!custom_func || (*custom_func)(entry.bucket->item_type(), false))
                     {
@@ -1839,10 +1839,10 @@ namespace
         } state;
 
         // Constant data for shaders
-        ff::dx11_buffer geometry_buffer;
-        ff::dx11_buffer geometry_constants_buffer_0;
-        ff::dx11_buffer geometry_constants_buffer_1;
-        ff::dx11_buffer pixel_constants_buffer_0;
+        ff::buffer geometry_buffer;
+        ff::buffer geometry_constants_buffer_0;
+        ff::buffer geometry_constants_buffer_1;
+        ff::buffer pixel_constants_buffer_0;
         ::geometry_shader_constants_0 geometry_constants_0;
         ::geometry_shader_constants_1 geometry_constants_1;
         ::pixel_shader_constants_0 pixel_constants_0;
@@ -1874,13 +1874,13 @@ namespace
         bool target_requires_palette;
 
         std::vector<ff::palette_base*> palette_stack;
-        std::shared_ptr<ff::dx11_texture> palette_texture;
+        std::shared_ptr<ff::texture> palette_texture;
         std::array<size_t, ::MAX_PALETTES> palette_texture_hashes;
         std::unordered_map<size_t, std::pair<ff::palette_base*, unsigned int>, ff::no_hash<size_t>> palette_to_index;
         unsigned int palette_index;
 
         std::vector<std::pair<const uint8_t*, size_t>> palette_remap_stack;
-        std::shared_ptr<ff::dx11_texture> palette_remap_texture;
+        std::shared_ptr<ff::texture> palette_remap_texture;
         std::array<size_t, ::MAX_PALETTE_REMAPS> palette_remap_texture_hashes;
         std::unordered_map<size_t, std::pair<const uint8_t*, unsigned int>, ff::no_hash<size_t>> palette_remap_to_index;
         unsigned int palette_remap_index;
@@ -1901,7 +1901,7 @@ std::unique_ptr<ff::draw_device> ff::draw_device::create()
     return std::make_unique<::draw_device_internal>();
 }
 
-ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::dx11_depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
+ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }

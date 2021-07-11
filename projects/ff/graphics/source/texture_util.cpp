@@ -5,22 +5,6 @@
 #include "png_image.h"
 #include "texture_util.h"
 
-Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const DirectX::ScratchImage& data)
-{
-    Microsoft::WRL::ComPtr<ID3D11Resource> resource;
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
-
-    if (data.GetImageCount() &&
-        SUCCEEDED(DirectX::CreateTexture(ff::graphics::dx11_device(), data.GetImages(), data.GetImageCount(), data.GetMetadata(), &resource)) &&
-        SUCCEEDED(resource.As(&texture)))
-    {
-        return texture;
-    }
-
-    assert(false);
-    return nullptr;
-}
-
 static DirectX::ScratchImage load_texture_png(
     const ff::resource_file& resource_file,
     DXGI_FORMAT new_format,
@@ -159,6 +143,22 @@ static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_
     }
 
     return scratch_final;
+}
+
+Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const DirectX::ScratchImage& data)
+{
+    Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+
+    if (data.GetImageCount() &&
+        SUCCEEDED(DirectX::CreateTexture(ff::graphics::dx11_device(), data.GetImages(), data.GetImageCount(), data.GetMetadata(), &resource)) &&
+        SUCCEEDED(resource.As(&texture)))
+    {
+        return texture;
+    }
+
+    assert(false);
+    return nullptr;
 }
 
 D3D_SRV_DIMENSION ff::internal::default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc)

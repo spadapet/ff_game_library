@@ -1,19 +1,19 @@
 #include "pch.h"
 #include "dx11_target_texture.h"
-#include "dx11_texture.h"
 #include "graphics.h"
+#include "texture.h"
 #include "texture_util.h"
 
 ff::dx11_target_texture::dx11_target_texture(
-    ff::dx11_texture&& texture,
+    ff::texture&& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_level)
-    : dx11_target_texture(std::make_shared<ff::dx11_texture>(std::move(texture)), array_start, array_count, mip_level)
+    : dx11_target_texture(std::make_shared<ff::texture>(std::move(texture)), array_start, array_count, mip_level)
 {}
 
 ff::dx11_target_texture::dx11_target_texture(
-    const std::shared_ptr<ff::dx11_texture>& texture,
+    const std::shared_ptr<ff::texture>& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_level)
@@ -22,7 +22,7 @@ ff::dx11_target_texture::dx11_target_texture(
     , array_count(array_count ? array_count : texture->array_size() - array_start)
     , mip_level(mip_level)
 {
-    this->view_ = ff::internal::create_target_view(texture->texture(), this->array_start, this->array_count, this->mip_level);
+    this->view_ = ff::internal::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
 
     ff::internal::graphics::add_child(this);
 }
@@ -37,7 +37,7 @@ ff::dx11_target_texture::operator bool() const
     return this->view_;
 }
 
-const std::shared_ptr<ff::dx11_texture>& ff::dx11_target_texture::shared_texture() const
+const std::shared_ptr<ff::texture>& ff::dx11_target_texture::shared_texture() const
 {
     return this->texture_;
 }
@@ -54,7 +54,7 @@ ff::window_size ff::dx11_target_texture::size() const
 
 ID3D11Texture2D* ff::dx11_target_texture::texture()
 {
-    return this->texture_->texture();
+    return this->texture_->dx_texture();
 }
 
 ID3D11RenderTargetView* ff::dx11_target_texture::view()

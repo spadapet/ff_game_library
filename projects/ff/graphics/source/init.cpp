@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "animation.h"
-#include "dx11_texture.h"
 #include "font_file.h"
 #include "graphics.h"
 #include "init.h"
@@ -10,6 +9,7 @@
 #include "sprite_list.h"
 #include "sprite_resource.h"
 #include "shader.h"
+#include "texture.h"
 #include "texture_metadata.h"
 
 #include "ff.graphics.res.h"

@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "dx11_texture_view_base.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
+#include "texture.h"
 
 ff::sprite_data::sprite_data()
     : view_(nullptr)

@@ -150,8 +150,8 @@ ff::internal::ui::render_device::render_device(bool srgb)
     ff::internal::graphics::add_child(this);
 
 #ifdef _DEBUG
-    this->empty_texture_rgb = std::make_shared<ff::dx11_texture>(ff::point_int(1, 1));
-    this->empty_texture_palette = std::make_shared<ff::dx11_texture>(ff::point_int(1, 1), ff::internal::PALETTE_INDEX_FORMAT);
+    this->empty_texture_rgb = std::make_shared<ff::texture>(ff::point_int(1, 1));
+    this->empty_texture_palette = std::make_shared<ff::texture>(ff::point_int(1, 1), ff::internal::PALETTE_INDEX_FORMAT);
 #endif
 
     this->caps.centerPixelOffset = 0;
@@ -187,7 +187,7 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
 {
     std::string_view name(label ? label : "");
     DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? ff::internal::DEFAULT_FORMAT_SRGB : ff::internal::DEFAULT_FORMAT);
-    std::shared_ptr<ff::dx11_texture> texture;
+    std::shared_ptr<ff::texture> texture;
 
     DirectX::ScratchImage scratch;
     if (FAILED(scratch.Initialize2D(format2, width, height, 1, mip_count)))
@@ -219,14 +219,14 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
         }
     }
 
-    texture = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
+    texture = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
 
     return *new ff::internal::ui::texture(texture, name);
 }
 
 void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data)
 {
-    ff::dx11_texture* texture2 = ff::internal::ui::texture::get(texture)->internal_texture().get();
+    ff::texture* texture2 = ff::internal::ui::texture::get(texture)->internal_texture().get();
     texture2->update(0, static_cast<size_t>(level), ff::rect_t<uint32_t>(x, y, x + width, y + height).cast<int>(), data, texture2->format(), true);
 }
 
@@ -234,15 +234,15 @@ void ff::internal::ui::render_device::BeginOnscreenRender()
 {
     std::array<ID3D11Buffer*, 2> buffer_vs =
     {
-        this->buffer_vertex_cb[0]->buffer(),
-        this->buffer_vertex_cb[1]->buffer(),
+        this->buffer_vertex_cb[0]->dx_buffer(),
+        this->buffer_vertex_cb[1]->dx_buffer(),
     };
 
     std::array<ID3D11Buffer*, 3> buffer_ps =
     {
-        this->buffer_pixel_cb[0]->buffer(),
-        this->buffer_pixel_cb[1]->buffer(),
-        this->buffer_pixel_cb[2]->buffer(),
+        this->buffer_pixel_cb[0]->dx_buffer(),
+        this->buffer_pixel_cb[1]->dx_buffer(),
+        this->buffer_pixel_cb[2]->dx_buffer(),
     };
 
     ff::graphics::dx11_device_state().set_constants_vs(buffer_vs.data(), 0, buffer_vs.size());
@@ -481,13 +481,13 @@ void ff::internal::ui::render_device::create_buffers()
     std::memset(&this->vertex_cb_hash, 0, sizeof(this->vertex_cb_hash));
     std::memset(&this->pixel_cb_hash, 0, sizeof(this->pixel_cb_hash));
 
-    this->buffer_vertices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
-    this->buffer_indices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
-    this->buffer_vertex_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
-    this->buffer_vertex_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
-    this->buffer_pixel_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[2] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
+    this->buffer_vertices = std::make_shared<ff::buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
+    this->buffer_indices = std::make_shared<ff::buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
+    this->buffer_vertex_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
+    this->buffer_vertex_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
+    this->buffer_pixel_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[2] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
 }
 
 void ff::internal::ui::render_device::create_state_objects()
@@ -875,12 +875,12 @@ void ff::internal::ui::render_device::set_shaders(const Noesis::Batch& batch)
 void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
 {
     // Indices
-    ff::graphics::dx11_device_state().set_index_ia(this->buffer_indices->buffer(), DXGI_FORMAT_R16_UINT, 0);
+    ff::graphics::dx11_device_state().set_index_ia(this->buffer_indices->dx_buffer(), DXGI_FORMAT_R16_UINT, 0);
 
     // Vertices
     const vertex_and_pixel_program_t& program = this->programs[batch.shader.v];
     unsigned int stride = ::LAYOUT_FORMATS_AND_STRIDE[this->vertex_stages[program.vertex_shader_index].layout_index].second;
-    ff::graphics::dx11_device_state().set_vertex_ia(this->buffer_vertices->buffer(), stride, batch.vertexOffset);
+    ff::graphics::dx11_device_state().set_vertex_ia(this->buffer_vertices->dx_buffer(), stride, batch.vertexOffset);
 
     // Vertex Shader Constant Buffers
     static_assert(_countof(this->buffer_vertex_cb) == _countof(Noesis::Batch::vertexUniforms));

@@ -53,13 +53,13 @@
     <ClCompile Include="source\graphics_child_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_buffer.cpp">
+    <ClCompile Include="source\buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_depth.cpp">
+    <ClCompile Include="source\depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_texture.cpp">
+    <ClCompile Include="source\texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\texture_metadata.cpp">
@@ -186,16 +186,16 @@
     <ClInclude Include="source\graphics_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_buffer.h">
+    <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx_operators.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_depth.h">
+    <ClInclude Include="source\depth.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_texture.h">
+    <ClInclude Include="source\texture.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_metadata.h">

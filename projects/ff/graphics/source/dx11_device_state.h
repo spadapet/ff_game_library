@@ -1,5 +1,7 @@
 #pragma once
 
+#if DXVER == 11
+
 #include "graphics_counters.h"
 
 namespace ff
@@ -128,3 +130,5 @@ namespace ff
         std::array<Microsoft::WRL::ComPtr<ID3D11Buffer>, D3D11_SO_STREAM_COUNT> so_targets;
     };
 }
+
+#endif

@@ -1,9 +1,9 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "palette_data.h"
 #include "sprite_base.h"
 #include "sprite_optimizer.h"
+#include "texture.h"
 #include "texture_util.h"
 
 static const int TEXTURE_SIZE_MAX = 1024;
@@ -68,7 +68,7 @@ namespace
     // Cached RGBA original texture
     struct original_texture_info
     {
-        std::shared_ptr<ff::dx11_texture> rgb_texture;
+        std::shared_ptr<ff::texture> rgb_texture;
         std::shared_ptr<DirectX::ScratchImage> rgb_scratch;
     };
 
@@ -254,7 +254,7 @@ namespace
 
         ff::point_int size;
         DirectX::ScratchImage scratch_texture;
-        std::shared_ptr<ff::dx11_texture> final_texture;
+        std::shared_ptr<ff::texture> final_texture;
 
     private:
         std::array<uint8_t, ::TEXTURE_SIZE_MAX / ::TEXTURE_GRID_SIZE> row_left;
@@ -347,12 +347,12 @@ static std::vector<::optimized_sprite_info> create_sprite_infos(const std::vecto
 static bool create_original_textures(
     DXGI_FORMAT format,
     const std::vector<::optimized_sprite_info>& sprite_infos,
-    std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
+    std::unordered_map<const ff::texture*, ::original_texture_info>& original_textures,
     std::shared_ptr<DirectX::ScratchImage>& palette_data)
 {
     for (const ::optimized_sprite_info& sprite_info : sprite_infos)
     {
-        const ff::dx11_texture* texture = sprite_info.sprite->sprite_data().view()->view_texture();
+        const ff::texture* texture = sprite_info.sprite->sprite_data().view()->view_texture();
         if (!palette_data)
         {
             palette_data = texture->palette();
@@ -368,7 +368,7 @@ static bool create_original_textures(
 
             DXGI_FORMAT capture_format = ff::internal::color_format(format) ? ff::internal::DEFAULT_FORMAT : format;
             ::original_texture_info texure_info;
-            texure_info.rgb_texture = std::make_shared<ff::dx11_texture>(*texture, capture_format, 1);
+            texure_info.rgb_texture = std::make_shared<ff::texture>(*texture, capture_format, 1);
             if (!texure_info.rgb_texture)
             {
                 assert(false);
@@ -448,7 +448,7 @@ static bool create_optimized_textures(DXGI_FORMAT format, std::vector<::optimize
 
 static bool copy_optimized_sprites(
     std::vector<::optimized_sprite_info>& sprite_infos,
-    std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
+    std::unordered_map<const ff::texture*, ::original_texture_info>& original_textures,
     std::vector<::optimized_texture_info>& texture_infos)
 {
     for (::optimized_sprite_info& sprite : sprite_infos)
@@ -488,7 +488,7 @@ static bool convert_final_textures(
 {
     for (::optimized_texture_info& texure_info : texture_infos)
     {
-        std::shared_ptr<ff::dx11_texture> rgb_texture = std::make_shared<ff::dx11_texture>(
+        std::shared_ptr<ff::texture> rgb_texture = std::make_shared<ff::texture>(
             std::make_shared<DirectX::ScratchImage>(std::move(texure_info.scratch_texture)), palette_scratch);
         if (!*rgb_texture)
         {
@@ -496,7 +496,7 @@ static bool convert_final_textures(
             return false;
         }
 
-        texure_info.final_texture = std::make_shared<ff::dx11_texture>(*rgb_texture, format, mip_count);
+        texure_info.final_texture = std::make_shared<ff::texture>(*rgb_texture, format, mip_count);
         if (!*texure_info.final_texture)
         {
             assert(false);
@@ -541,7 +541,7 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
     std::vector<::optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
     std::sort(sprite_infos.begin(), sprite_infos.end());
 
-    std::unordered_map<const ff::dx11_texture*, ::original_texture_info> original_textures;
+    std::unordered_map<const ff::texture*, ::original_texture_info> original_textures;
     std::shared_ptr<DirectX::ScratchImage> scratch_palette;
     std::vector<::optimized_texture_info> texture_infos;
 
@@ -572,8 +572,8 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
 static bool create_outline_sprites(
     DXGI_FORMAT format,
     std::vector<::optimized_sprite_info>& sprite_infos,
-    const std::unordered_map<const ff::dx11_texture*, ::original_texture_info>& original_textures,
-    std::vector<std::shared_ptr<ff::dx11_texture>>& outline_textures,
+    const std::unordered_map<const ff::texture*, ::original_texture_info>& original_textures,
+    std::vector<std::shared_ptr<ff::texture>>& outline_textures,
     std::vector<ff::sprite>& outline_sprite_list,
     const std::shared_ptr<DirectX::ScratchImage>& palette_data)
 {
@@ -584,7 +584,7 @@ static bool create_outline_sprites(
     for (::optimized_sprite_info& sprite_info : sprite_infos)
     {
         const ff::sprite_data& sprite_data = sprite_info.sprite->sprite_data();
-        const ff::dx11_texture* original_texture = sprite_data.view()->view_texture();
+        const ff::texture* original_texture = sprite_data.view()->view_texture();
         auto iter = original_textures.find(original_texture);
         if (iter == original_textures.cend())
         {
@@ -657,7 +657,7 @@ static bool create_outline_sprites(
             }
         }
 
-        auto outline_texture = std::make_shared<ff::dx11_texture>(std::make_shared<DirectX::ScratchImage>(std::move(outline_scratch)), palette_data);
+        auto outline_texture = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(outline_scratch)), palette_data);
         outline_textures.push_back(outline_texture);
 
         outline_sprite_list.emplace_back(
@@ -683,8 +683,8 @@ std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<const ff
     }
 
     std::vector<::optimized_sprite_info> sprite_infos = ::create_sprite_infos(old_sprites);
-    std::vector<std::shared_ptr<ff::dx11_texture>> outline_textures;
-    std::unordered_map<const ff::dx11_texture*, ::original_texture_info> original_textures;
+    std::vector<std::shared_ptr<ff::texture>> outline_textures;
+    std::unordered_map<const ff::texture*, ::original_texture_info> original_textures;
     std::shared_ptr<DirectX::ScratchImage> palette_data;
 
     if (!::create_original_textures(new_format, sprite_infos, original_textures, palette_data) ||

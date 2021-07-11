@@ -9,7 +9,7 @@
 
 namespace ff
 {
-    class dx11_texture;
+    class texture;
 
     class dx11_texture_view
         : public ff::internal::graphics_child_base
@@ -19,7 +19,7 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        dx11_texture_view(const std::shared_ptr<dx11_texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
+        dx11_texture_view(const std::shared_ptr<ff::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
         dx11_texture_view(dx11_texture_view&& other) noexcept;
         dx11_texture_view(const dx11_texture_view& other) = delete;
         virtual ~dx11_texture_view() override;
@@ -32,7 +32,7 @@ namespace ff
         virtual bool reset() override;
 
         // dx11_texture_view_base
-        virtual const dx11_texture* view_texture() const override;
+        virtual const ff::texture* view_texture() const override;
         virtual ID3D11ShaderResourceView* view() const override;
 
         // sprite_base
@@ -58,7 +58,7 @@ namespace ff
         void fix_sprite_data();
 
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
-        std::shared_ptr<dx11_texture> texture_;
+        std::shared_ptr<ff::texture> texture_;
         ff::sprite_data sprite_data_;
         size_t array_start_;
         size_t array_count_;

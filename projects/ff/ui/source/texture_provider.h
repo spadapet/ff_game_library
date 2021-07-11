@@ -11,6 +11,6 @@ namespace ff::internal::ui
         virtual Noesis::Ptr<Noesis::Texture> LoadTexture(const Noesis::Uri& uri, Noesis::RenderDevice* device) override;
 
     private:
-        std::shared_ptr<ff::dx11_texture> placeholder_texture;
+        std::shared_ptr<ff::texture> placeholder_texture;
     };
 }

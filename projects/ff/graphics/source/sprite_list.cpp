@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "dx11_texture_view.h"
 #include "dxgi_util.h"
 #include "sprite_base.h"
@@ -7,6 +6,7 @@
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
 #include "sprite_resource.h"
+#include "texture.h"
 
 ff::sprite_list::sprite_list(std::vector<ff::sprite>&& sprites)
     : sprites(std::move(sprites))
@@ -57,10 +57,10 @@ ff::dict ff::sprite_list::resource_get_siblings(const std::shared_ptr<resource>&
 bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     // Find all unique textures
-    std::vector<const ff::dx11_texture*> textures;
+    std::vector<const ff::texture*> textures;
     for (auto& sprite : this->sprites)
     {
-        const ff::dx11_texture* texture = sprite.sprite_data().view()->view_texture();
+        const ff::texture* texture = sprite.sprite_data().view()->view_texture();
         if (std::find(textures.cbegin(), textures.cend(), texture) == textures.cend())
         {
             textures.push_back(texture);
@@ -70,7 +70,7 @@ bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
     // Save textures to a vector of resource dicts
     {
         std::vector<ff::value_ptr> textures_vector;
-        for (const ff::dx11_texture* texture : textures)
+        for (const ff::texture* texture : textures)
         {
             ff::dict dict;
             bool allow_compress = false;
@@ -170,7 +170,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         }
         else
         {
-            std::shared_ptr<ff::dx11_texture> texture = std::make_shared<ff::dx11_texture>(full_file,
+            std::shared_ptr<ff::texture> texture = std::make_shared<ff::texture>(full_file,
                 (optimize && ff::internal::color_format(format)) ? ff::internal::DEFAULT_FORMAT : format,
                 optimize ? 1 : mip_count);
 
@@ -244,7 +244,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
         for (auto& value : texture_values)
         {
-            std::shared_ptr<ff::dx11_texture> texture = std::dynamic_pointer_cast<ff::dx11_texture>(value->get<ff::resource_object_base>());
+            std::shared_ptr<ff::texture> texture = std::dynamic_pointer_cast<ff::texture>(value->get<ff::resource_object_base>());
             if (!texture)
             {
                 assert(false);
