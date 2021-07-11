@@ -1,19 +1,19 @@
 #include "pch.h"
 #include "dx11_device_state.h"
-#include "dx11_target_window.h"
 #include "dxgi_util.h"
 #include "graphics.h"
+#include "target_window.h"
 #include "texture_util.h"
 
-ff::dx11_target_window::dx11_target_window()
-    : dx11_target_window(ff::window::main())
+ff::target_window::target_window()
+    : target_window(ff::window::main())
 {}
 
-ff::dx11_target_window::dx11_target_window(ff::window* window)
+ff::target_window::target_window(ff::window* window)
     : window(window)
     , cached_size{}
     , main_window(ff::window::main() == window)
-    , window_message_connection(window->message_sink().connect(std::bind(&dx11_target_window::handle_message, this, std::placeholders::_1)))
+    , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , was_full_screen_on_close(false)
 #if UWP_APP
     , use_xaml_composition(false)
@@ -31,7 +31,7 @@ ff::dx11_target_window::dx11_target_window(ff::window* window)
     }
 }
 
-ff::dx11_target_window::~dx11_target_window()
+ff::target_window::~target_window()
 {
     if (this->main_window &&this->swap_chain)
     {
@@ -42,32 +42,32 @@ ff::dx11_target_window::~dx11_target_window()
     ff::internal::graphics::remove_child(this);
 }
 
-ff::dx11_target_window::operator bool() const
+ff::target_window::operator bool() const
 {
     return this->swap_chain && this->view_ && this->window;
 }
 
-DXGI_FORMAT ff::dx11_target_window::format() const
+DXGI_FORMAT ff::target_window::format() const
 {
     return DXGI_FORMAT_B8G8R8A8_UNORM;
 }
 
-ff::window_size ff::dx11_target_window::size() const
+ff::window_size ff::target_window::size() const
 {
     return this->cached_size;
 }
 
-ID3D11Texture2D* ff::dx11_target_window::texture()
+ID3D11Texture2D* ff::target_window::texture()
 {
     return this->texture_.Get();
 }
 
-ID3D11RenderTargetView* ff::dx11_target_window::view()
+ID3D11RenderTargetView* ff::target_window::view()
 {
     return this->view_.Get();
 }
 
-bool ff::dx11_target_window::present(bool vsync)
+bool ff::target_window::present(bool vsync)
 {
     ff::graphics::dx11_device_state().set_targets(nullptr, 0, nullptr);
 
@@ -82,7 +82,7 @@ bool ff::dx11_target_window::present(bool vsync)
     return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
 }
 
-bool ff::dx11_target_window::size(const ff::window_size& size)
+bool ff::target_window::size(const ff::window_size& size)
 {
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.rotated_pixel_size().cast<UINT>();
@@ -190,17 +190,17 @@ bool ff::dx11_target_window::size(const ff::window_size& size)
     return true;
 }
 
-ff::signal_sink<ff::window_size>& ff::dx11_target_window::size_changed()
+ff::signal_sink<ff::window_size>& ff::target_window::size_changed()
 {
     return this->size_changed_;
 }
 
-bool ff::dx11_target_window::allow_full_screen() const
+bool ff::target_window::allow_full_screen() const
 {
     return this->main_window;
 }
 
-bool ff::dx11_target_window::full_screen()
+bool ff::target_window::full_screen()
 {
     if (this->main_window && *this)
     {
@@ -222,7 +222,7 @@ bool ff::dx11_target_window::full_screen()
     return this->was_full_screen_on_close;
 }
 
-bool ff::dx11_target_window::full_screen(bool value)
+bool ff::target_window::full_screen(bool value)
 {
     if (this->main_window && *this && !value != !this->full_screen())
     {
@@ -247,7 +247,7 @@ bool ff::dx11_target_window::full_screen(bool value)
     return false;
 }
 
-bool ff::dx11_target_window::reset()
+bool ff::target_window::reset()
 {
     BOOL full_screen = FALSE;
     if (this->main_window && this->swap_chain)
@@ -275,12 +275,12 @@ bool ff::dx11_target_window::reset()
     return *this;
 }
 
-int ff::dx11_target_window::reset_priority() const
+int ff::target_window::reset_priority() const
 {
     return -100;
 }
 
-void ff::dx11_target_window::handle_message(ff::window_message& msg)
+void ff::target_window::handle_message(ff::window_message& msg)
 {
     switch (msg.msg)
     {

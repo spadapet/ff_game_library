@@ -6,26 +6,29 @@
 
 namespace ff
 {
-    class dx11_target_window
+    class target_window
         : public ff::target_window_base
         , public ff::internal::graphics_child_base
     {
     public:
-        dx11_target_window();
-        dx11_target_window(ff::window* window);
-        dx11_target_window(dx11_target_window&& other) noexcept = delete;
-        dx11_target_window(const dx11_target_window& other) = delete;
-        virtual ~dx11_target_window() override;
+        target_window();
+        target_window(ff::window* window);
+        target_window(target_window&& other) noexcept = delete;
+        target_window(const target_window& other) = delete;
+        virtual ~target_window() override;
 
-        dx11_target_window& operator=(dx11_target_window&& other) noexcept = delete;
-        dx11_target_window& operator=(const dx11_target_window& other) = delete;
+        target_window& operator=(target_window&& other) noexcept = delete;
+        target_window& operator=(const target_window& other) = delete;
         operator bool() const;
 
         // target_base
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
+#if DXVER == 11
         virtual ID3D11Texture2D* texture() override;
         virtual ID3D11RenderTargetView* view() override;
+#elif DXVER == 12
+#endif
 
         // target_window_base
         virtual bool present(bool vsync) override;
@@ -47,8 +50,11 @@ namespace ff
         ff::signal<ff::window_size> size_changed_;
         ff::signal_connection window_message_connection;
         Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
+#if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
+#elif DXVER == 12
+#endif
         bool main_window;
         bool was_full_screen_on_close;
 #if UWP_APP

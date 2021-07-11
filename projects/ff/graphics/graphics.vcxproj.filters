@@ -74,10 +74,10 @@
     <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_target_texture.cpp">
+    <ClCompile Include="source\target_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_target_window.cpp">
+    <ClCompile Include="source\target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\sprite.cpp">
@@ -234,10 +234,10 @@
     <ClInclude Include="source\target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_target_texture.h">
+    <ClInclude Include="source\target_texture.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_target_window.h">
+    <ClInclude Include="source\target_window.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite.h">

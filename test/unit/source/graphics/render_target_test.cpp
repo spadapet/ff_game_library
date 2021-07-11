@@ -7,7 +7,7 @@ namespace graphics_test
     public:
         TEST_METHOD(target_texture)
         {
-            ff::dx11_target_texture target{ ff::texture(ff::point_int(256, 256)) };
+            ff::target_texture target{ ff::texture(ff::point_int(256, 256)) };
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::internal::DEFAULT_FORMAT);
@@ -16,7 +16,7 @@ namespace graphics_test
 
         TEST_METHOD(target_window)
         {
-            ff::dx11_target_window target;
+            ff::target_window target;
 
             Assert::IsNotNull(target.view());
             Assert::IsNotNull(target.texture());

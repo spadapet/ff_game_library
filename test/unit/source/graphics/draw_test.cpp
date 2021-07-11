@@ -23,7 +23,7 @@ namespace graphics_test
             ff::auto_resource<ff::sprite_resource> sprites_res = res->get_resource_object("sprites.box[7]");
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
-            ff::dx11_target_texture target(ff::texture(ff::point_int(256, 256)));
+            ff::target_texture target(ff::texture(ff::point_int(256, 256)));
             ff::graphics::dx11_device_state().clear_target(target.view(), DirectX::XMFLOAT4(0.25, 0, 0.5, 1));
 
             // Draw

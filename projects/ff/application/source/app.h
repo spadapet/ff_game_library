@@ -10,7 +10,7 @@ namespace ff
     const std::string& app_internal_name();
     const ff::app_time_t& app_time();
     const ff::frame_time_t& frame_time();
-    ff::dx11_target_window& app_render_target();
+    ff::target_window& app_render_target();
 }
 
 namespace ff::internal::app
