@@ -21,6 +21,8 @@
 #include "transform.h"
 #include "vertex.h"
 
+#if DXVER == 11
+
 static const size_t MAX_TEXTURES = 32;
 static const size_t MAX_TEXTURES_USING_PALETTE = 32;
 static const size_t MAX_PALETTES = 128; // 256 color palettes only
@@ -1905,3 +1907,5 @@ ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::depth* dep
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }
+
+#endif

@@ -1,5 +1,7 @@
 #pragma once
 
+#if DXVER == 11
+
 namespace ff::internal::ui
 {
     class render_device : public Noesis::RenderDevice, public ff::internal::graphics_child_base
@@ -114,3 +116,5 @@ namespace ff::internal::ui
         sampler_state_t sampler_states[64];
     };
 }
+
+#endif

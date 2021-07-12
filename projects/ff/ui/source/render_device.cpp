@@ -4,6 +4,8 @@
 #include "texture.h"
 #include "ui.h"
 
+#if DXVER == 11
+
 namespace
 {
     struct pixel_buffer_2
@@ -1069,3 +1071,5 @@ ID3D11SamplerState* ff::internal::ui::render_device::sampler_state_t::state()
 
     return this->state_.Get();
 }
+
+#endif

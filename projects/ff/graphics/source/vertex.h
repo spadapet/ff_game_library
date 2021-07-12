@@ -10,7 +10,10 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
+#if DXVER == 11
         static const std::array<D3D11_INPUT_ELEMENT_DESC, 10>& layout();
+#elif DXVER == 12
+#endif
     };
 
     struct circle_geometry
@@ -22,7 +25,10 @@ namespace ff::vertex
         float thickness;
         UINT matrix_index;
 
+#if DXVER == 11
         static const std::array<D3D11_INPUT_ELEMENT_DESC, 6>& layout();
+#elif DXVER == 12
+#endif
     };
 
     struct triangle_geometry
@@ -32,7 +38,10 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
+#if DXVER == 11
         static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
+#elif DXVER == 12
+#endif
     };
 
     struct sprite_geometry
@@ -46,6 +55,9 @@ namespace ff::vertex
         UINT texture_index;
         UINT matrix_index;
 
+#if DXVER == 11
         static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
+#elif DXVER == 12
+#endif
     };
 }

@@ -73,7 +73,10 @@ namespace ff
         virtual void pop_pre_multiplied_alpha() = 0;
         virtual void push_custom_context(ff::draw_base::custom_context_func&& func) = 0;
         virtual void pop_custom_context() = 0;
+#if DXVER == 11
         virtual void push_texture_sampler(D3D11_FILTER filter) = 0;
         virtual void pop_texture_sampler() = 0;
+#elif DXVER == 12
+#endif
     };
 }
