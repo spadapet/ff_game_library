@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <VsRelease Condition=" '$(VsRelease)' == '' ">16</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <NoesisVersion>3.1.0-b1</NoesisVersion>
+    <DefaultDirectXVersion>11</DefaultDirectXVersion>
 
     <FFRoot>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
@@ -40,9 +41,9 @@
     <IntDir>$(ProjectOutRoot)obj\</IntDir>
     <OutDir>$(ProjectOutRoot)bin\</OutDir>
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
-    
+
     <!-- Graphics -->
-    <DirectXVersion Condition=" '$(DirectXVersion)' != '12' ">11</DirectXVersion>
+    <DirectXVersion Condition=" '$(DirectXVersion)' == '' ">$(DefaultDirectXVersion)</DirectXVersion>
 
     <!-- Noesis -->
     <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
