@@ -37,13 +37,13 @@ namespace ff
         virtual bool reset() override;
 
     private:
+#if DXVER == 11
         buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable);
 
-        std::shared_ptr<ff::data_base> initial_data;
-#if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Buffer> buffer_;
         Microsoft::WRL::ComPtr<ID3D11DeviceX> mapped_device;
 #elif DXVER == 12
 #endif
+        std::shared_ptr<ff::data_base> initial_data;
     };
 }

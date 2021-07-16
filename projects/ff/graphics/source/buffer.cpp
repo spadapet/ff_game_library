@@ -3,6 +3,8 @@
 #include "dx11_device_state.h"
 #include "graphics.h"
 
+#if DXVER == 11
+
 static const size_t MIN_BUFFER_SIZE = 16;
 
 ff::buffer::buffer(D3D11_BIND_FLAG type)
@@ -144,3 +146,5 @@ bool ff::buffer::reset()
 
     return *this;
 }
+
+#endif

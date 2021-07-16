@@ -3,7 +3,7 @@
   <PropertyGroup>
     <VsRelease Condition=" '$(VsRelease)' == '' ">16</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <NoesisVersion>3.1.0-b1</NoesisVersion>
+    <NoesisVersion>3.1.0-b4</NoesisVersion>
     <DefaultDirectXVersion>11</DefaultDirectXVersion>
 
     <FFRoot>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))</FFRoot>
