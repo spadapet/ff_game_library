@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "vertex.h"
 
+#if DXVER == 11
+
 const std::array<D3D11_INPUT_ELEMENT_DESC, 10>& ff::vertex::line_geometry::layout()
 {
     static const std::array<D3D11_INPUT_ELEMENT_DESC, 10> layout
@@ -68,3 +70,7 @@ const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& ff::vertex::sprite_geometry::layo
 
     return layout;
 }
+
+#elif DXVER == 12
+
+#endif

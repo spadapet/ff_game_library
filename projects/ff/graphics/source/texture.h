@@ -92,7 +92,7 @@ namespace ff
 #if DXVER == 11
         mutable Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
-#elif
+#elif DXVER == 12
 #endif
         std::shared_ptr<DirectX::ScratchImage> data_;
         std::shared_ptr<DirectX::ScratchImage> palette_;

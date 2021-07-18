@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\graphics.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics.11.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics.12.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dxgi_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_device_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_fixed_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_object_cache.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\color.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data_blob.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\matrix.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\matrix_stack.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\png_image.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\shader.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_metadata.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\transform.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vertex.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\viewport.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="graphics_api.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\graphics.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics_child_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dxgi_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_device_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_fixed_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_object_cache.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\color.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data_blob.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx_operators.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\graphics_counters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\matrix.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\matrix_stack.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\png_image.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\shader.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_metadata.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\transform.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vertex.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\viewport.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="assets">
+      <UniqueIdentifier>{ef66f316-e06f-4c41-9633-ae6ba2e23faa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{12d96ef0-076b-4cc6-80ed-039b0cca827a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.graphics.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders.hlsl">
+      <Filter>assets</Filter>
+    </None>
+  </ItemGroup>
+</Project>

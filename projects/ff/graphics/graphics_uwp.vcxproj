@@ -25,6 +25,8 @@
     <ClCompile Include="source\dx11_object_cache.cpp" />
     <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\font_file.cpp" />
+    <ClCompile Include="source\graphics.11.cpp" />
+    <ClCompile Include="source\graphics.12.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\graphics_child_base.cpp" />
     <ClCompile Include="source\init.cpp" />

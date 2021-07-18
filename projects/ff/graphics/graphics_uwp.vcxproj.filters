@@ -122,6 +122,12 @@
     <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\graphics.11.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics.12.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

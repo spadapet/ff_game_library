@@ -2,51 +2,30 @@
 <Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <ProjectName>ff.graphics</ProjectName>
-    <ProjectGuid>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</ProjectGuid>
+    <ProjectName>ff.graphics.12</ProjectName>
+    <ProjectGuid>{7eb63e37-079e-4b92-aab2-7eb0d6bb92ed}</ProjectGuid>
+    <DirectXVersion>12</DirectXVersion>
   </PropertyGroup>
   <Import Project="..\..\..\build\cpp.props" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\animation.cpp" />
-    <ClCompile Include="source\animation_keys.cpp" />
-    <ClCompile Include="source\animation_player.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
-    <ClCompile Include="source\draw_base.cpp" />
-    <ClCompile Include="source\draw_ptr.cpp" />
-    <ClCompile Include="source\buffer.cpp" />
-    <ClCompile Include="source\depth.cpp" />
     <ClCompile Include="source\dx11_device_state.cpp" />
-    <ClCompile Include="source\draw_device.cpp" />
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
+    <ClCompile Include="source\dxgi_util.cpp" />
     <ClCompile Include="source\graphics.11.cpp" />
     <ClCompile Include="source\graphics.12.cpp" />
-    <ClCompile Include="source\target_texture.cpp" />
-    <ClCompile Include="source\target_window.cpp" />
-    <ClCompile Include="source\texture_view.cpp" />
-    <ClCompile Include="source\dxgi_util.cpp" />
-    <ClCompile Include="source\font_file.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\graphics_child_base.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
-    <ClCompile Include="source\palette_cycle.cpp" />
-    <ClCompile Include="source\palette_data.cpp" />
     <ClCompile Include="source\png_image.cpp" />
-    <ClCompile Include="source\random_sprite.cpp" />
     <ClCompile Include="source\shader.cpp" />
-    <ClCompile Include="source\texture.cpp" />
-    <ClCompile Include="source\sprite.cpp" />
-    <ClCompile Include="source\sprite_data.cpp" />
-    <ClCompile Include="source\sprite_font.cpp" />
-    <ClCompile Include="source\sprite_list.cpp" />
-    <ClCompile Include="source\sprite_optimizer.cpp" />
-    <ClCompile Include="source\sprite_resource.cpp" />
     <ClCompile Include="source\texture_metadata.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
     <ClCompile Include="source\transform.cpp" />
@@ -56,51 +35,21 @@
   <ItemGroup>
     <ClInclude Include="graphics_api.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\animation.h" />
-    <ClInclude Include="source\animation_base.h" />
-    <ClInclude Include="source\animation_keys.h" />
-    <ClInclude Include="source\animation_player.h" />
-    <ClInclude Include="source\animation_player_base.h" />
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
-    <ClInclude Include="source\draw_ptr.h" />
-    <ClInclude Include="source\buffer.h" />
-    <ClInclude Include="source\depth.h" />
     <ClInclude Include="source\dx11_device_state.h" />
-    <ClInclude Include="source\draw_device.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
-    <ClInclude Include="source\target_base.h" />
-    <ClInclude Include="source\target_texture.h" />
-    <ClInclude Include="source\target_window_base.h" />
-    <ClInclude Include="source\target_window.h" />
-    <ClInclude Include="source\texture_view.h" />
-    <ClInclude Include="source\texture_view_base.h" />
     <ClInclude Include="source\dxgi_util.h" />
     <ClInclude Include="source\dx_operators.h" />
-    <ClInclude Include="source\font_file.h" />
     <ClInclude Include="source\graphics.h" />
     <ClInclude Include="source\graphics_child_base.h" />
     <ClInclude Include="source\graphics_counters.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
-    <ClInclude Include="source\palette_cycle.h" />
-    <ClInclude Include="source\palette_base.h" />
-    <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
-    <ClInclude Include="source\draw_base.h" />
-    <ClInclude Include="source\random_sprite.h" />
     <ClInclude Include="source\shader.h" />
-    <ClInclude Include="source\sprite.h" />
-    <ClInclude Include="source\sprite_base.h" />
-    <ClInclude Include="source\sprite_data.h" />
-    <ClInclude Include="source\sprite_font.h" />
-    <ClInclude Include="source\sprite_list.h" />
-    <ClInclude Include="source\sprite_optimizer.h" />
-    <ClInclude Include="source\sprite_resource.h" />
-    <ClInclude Include="source\sprite_type.h" />
-    <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_metadata.h" />
     <ClInclude Include="source\texture_util.h" />
     <ClInclude Include="source\transform.h" />

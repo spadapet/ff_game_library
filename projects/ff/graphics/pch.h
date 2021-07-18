@@ -43,6 +43,12 @@ using IDWriteTextFormatX = typename IDWriteTextFormat3;
 using IDWriteTextLayoutX = typename IDWriteTextLayout4;
 
 #if DXVER == 11
+
 using ID3D11DeviceX = typename ID3D11Device5;
 using ID3D11DeviceContextX = typename ID3D11DeviceContext4;
+
+#elif DXVER == 12
+
+using ID3D12DeviceX = typename ID3D12Device8;
+
 #endif

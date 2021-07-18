@@ -1,8 +1,8 @@
 #pragma once
 
-#include "graphics_counters.h"
-
 #if DXVER == 11
+
+#include "graphics_counters.h"
 
 namespace ff
 {
