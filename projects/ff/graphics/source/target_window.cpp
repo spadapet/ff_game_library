@@ -20,6 +20,12 @@ ff::target_window::target_window(ff::window* window)
     , cached_full_screen_uwp(false)
     , full_screen_uwp(false)
 #endif
+#if DXVER == 12
+    , rtv_desc_size(0)
+    , back_buffer_index(0)
+    , fence_values{}
+    , fence_event(ff::create_event())
+#endif
 {
     this->size(this->window->size());
 
@@ -44,7 +50,7 @@ ff::target_window::~target_window()
 
 ff::target_window::operator bool() const
 {
-    return this->swap_chain && this->view_ && this->window;
+    return this->swap_chain && this->window;
 }
 
 DXGI_FORMAT ff::target_window::format() const
@@ -56,6 +62,8 @@ ff::window_size ff::target_window::size() const
 {
     return this->cached_size;
 }
+
+#if DXVER == 11
 
 ID3D11Texture2D* ff::target_window::texture()
 {
@@ -82,6 +90,108 @@ bool ff::target_window::present(bool vsync)
     return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
 }
 
+void ff::target_window::before_resize()
+{
+    this->view_.Reset();
+    this->texture_.Reset();
+}
+
+void ff::target_window::internal_reset()
+{
+    this->swap_chain.Reset();
+    this->view_.Reset();
+    this->texture_.Reset();
+
+    ff::graphics::dx11_device_state().clear();
+}
+
+#elif DXVER == 12
+
+D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::rtv_handle()
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
+    handle.ptr += this->back_buffer_index * this->rtv_desc_size;
+    return handle;
+}
+
+ID3D12ResourceX* ff::target_window::rtv_resource()
+{
+    return this->render_targets[this->back_buffer_index].Get();
+}
+
+bool ff::target_window::present(bool vsync)
+{
+    if (*this)
+    {
+        DXGI_PRESENT_PARAMETERS pp{};
+        HRESULT hr = this->swap_chain->Present1(vsync ? 1 : 0, 0, &pp);
+
+        if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
+        {
+            //ff::wait_for_handle(this->swap_chain->GetFrameLatencyWaitableObject());
+            this->wait_for_gpu();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ff::target_window::before_resize()
+{
+    this->internal_reset(true);
+}
+
+void ff::target_window::internal_reset()
+{
+    this->internal_reset(false);
+}
+
+void ff::target_window::internal_reset(bool for_resize)
+{
+    this->wait_for_gpu();
+
+    this->rtv_desc_heap.Reset();
+    this->rtv_desc_size = 0;
+
+    if (!for_resize)
+    {
+        this->fence.Reset();
+    }
+
+    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
+    {
+        if (!for_resize)
+        {
+            this->fence_values[i] = this->fence_values[this->back_buffer_index];
+            this->command_allocators[i].Reset();
+        }
+
+        this->render_targets[i].Reset();
+    }
+}
+
+void ff::target_window::wait_for_gpu()
+{
+    const UINT64 current_fence_value = this->fence_values[this->back_buffer_index];
+
+    if (SUCCEEDED(ff::graphics::dx12_command_queue()->Signal(this->fence.Get(), current_fence_value)))
+    {
+        this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
+
+        // Check to see if the next frame is ready to start.
+        if (this->fence->GetCompletedValue() < this->fence_values[this->back_buffer_index] &&
+            SUCCEEDED(this->fence->SetEventOnCompletion(this->fence_values[this->back_buffer_index], this->fence_event)))
+        {
+            ff::wait_for_event_and_reset(this->fence_event);
+        }
+
+        this->fence_values[this->back_buffer_index] = current_fence_value + 1;
+    }
+}
+
+#endif
+
 bool ff::target_window::size(const ff::window_size& size)
 {
     ff::window_size old_size = this->cached_size;
@@ -93,13 +203,11 @@ bool ff::target_window::size(const ff::window_size& size)
 
     if (this->swap_chain && old_size != size) // on game thread
     {
-        this->view_.Reset();
-        this->texture_.Reset();
-        ff::graphics::dx11_device_state().clear();
+        this->before_resize();
 
         DXGI_SWAP_CHAIN_DESC1 desc;
         this->swap_chain->GetDesc1(&desc);
-        if (FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
+        if (FAILED(this->swap_chain->ResizeBuffers(ff::target_window::BACK_BUFFER_COUNT, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
             assert(false);
             return false;
@@ -112,15 +220,20 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Height = buffer_size.y;
         desc.Format = this->format();
         desc.SampleDesc.Count = 1;
-        desc.BufferCount = 2;
+        desc.BufferCount = ff::target_window::BACK_BUFFER_COUNT;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+        // desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::graphics::dxgi_factory_for_device();
+#if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11DeviceX> device = ff::graphics::dx11_device();
+#elif DXVER == 12
+        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::graphics::dx12_command_queue();
+#endif
 
         ff::thread_dispatch::get_main()->send([this, factory, device, &new_swap_chain, &desc]()
             {
@@ -174,8 +287,6 @@ bool ff::target_window::size(const ff::window_size& size)
 #endif
 
     if (!this->swap_chain ||
-        (!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(this->texture_.GetAddressOf())))) ||
-        (!this->view_ && (this->view_ = ff::internal::create_target_view(this->texture_.Get())) == nullptr) ||
 #if UWP_APP
         (this->use_xaml_composition && FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale))) ||
 #endif
@@ -184,6 +295,60 @@ bool ff::target_window::size(const ff::window_size& size)
         assert(false);
         return false;
     }
+
+#if DXVER == 11
+    if ((!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(this->texture_.GetAddressOf())))) ||
+        (!this->view_ && (this->view_ = ff::internal::create_target_view(this->texture_.Get())) == nullptr))
+    {
+        assert(false);
+        return false;
+    }
+#elif DXVER == 12
+    this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
+
+    if (!this->fence)
+    {
+        if (FAILED(ff::graphics::dx12_device()->CreateFence(this->fence_values[this->back_buffer_index], D3D12_FENCE_FLAG_NONE,
+            __uuidof(ID3D12FenceX), reinterpret_cast<void**>(this->fence.GetAddressOf()))))
+        {
+            assert(false);
+            return false;
+        }
+
+        this->fence_values[this->back_buffer_index]++;
+    }
+
+    if (!this->rtv_desc_heap)
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc{};
+        rtv_heap_desc.NumDescriptors = static_cast<UINT>(ff::target_window::BACK_BUFFER_COUNT);
+        rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+
+        if (FAILED(ff::graphics::dx12_device()->CreateDescriptorHeap(&rtv_heap_desc, __uuidof(ID3D12DescriptorHeapX), reinterpret_cast<void**>(this->rtv_desc_heap.GetAddressOf()))) ||
+            !(this->rtv_desc_size = ff::graphics::dx12_device()->GetDescriptorHandleIncrementSize(rtv_heap_desc.Type)))
+        {
+            assert(false);
+            return false;
+        }
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
+
+    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
+    {
+        if ((!this->command_allocators[i] && FAILED(ff::graphics::dx12_device()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
+                __uuidof(ID3D12CommandAllocatorX), reinterpret_cast<void**>(this->command_allocators[i].GetAddressOf())))) ||
+            (!this->render_targets[i] && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i),
+                __uuidof(ID3D12ResourceX), reinterpret_cast<void**>(this->render_targets[i].GetAddressOf())))))
+        {
+            assert(false);
+            return false;
+        }
+
+        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].Get(), nullptr, rtv_handle);
+        rtv_handle.ptr += this->rtv_desc_size;
+    }
+#endif
 
     this->size_changed_.notify(size);
 
@@ -257,9 +422,7 @@ bool ff::target_window::reset()
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
 
-    this->swap_chain.Reset();
-    this->view_.Reset();
-    this->texture_.Reset();
+    this->internal_reset();
 
     if (!this->window || !this->size(this->window->size()))
     {

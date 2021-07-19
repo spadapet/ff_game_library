@@ -49,6 +49,14 @@ using ID3D11DeviceContextX = typename ID3D11DeviceContext4;
 
 #elif DXVER == 12
 
+using ID3D12CommandAllocatorX = ID3D12CommandAllocator;
+using ID3D12CommandListX = typename ID3D12CommandList;
+using ID3D12CommandQueueX = typename ID3D12CommandQueue;
+using ID3D12DescriptorHeapX = typename ID3D12DescriptorHeap;
+using ID3D12DebugX = typename ID3D12Debug3;
 using ID3D12DeviceX = typename ID3D12Device8;
+using ID3D12FenceX = typename ID3D12Fence1;
+using ID3D12GraphicsCommandListX = typename ID3D12GraphicsCommandList6;
+using ID3D12ResourceX = ID3D12Resource2;
 
 #endif

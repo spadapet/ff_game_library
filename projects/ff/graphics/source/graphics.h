@@ -22,18 +22,21 @@ namespace ff::graphics
     IDWriteFactoryX* write_factory();
     IDWriteInMemoryFontFileLoader* write_font_loader();
 
-    IDXGIDeviceX* dxgi_device();
     IDXGIFactoryX* dxgi_factory_for_device();
     IDXGIAdapterX* dxgi_adapter_for_device();
     D3D_FEATURE_LEVEL dx_feature_level();
 
 #if DXVER == 11
+    IDXGIDeviceX* dxgi_device();
     ID3D11DeviceX* dx11_device();
     ID3D11DeviceContextX* dx11_device_context();
     ff::dx11_device_state& dx11_device_state();
     ff::dx11_object_cache& dx11_object_cache();
 #elif DXVER == 12
     ID3D12DeviceX* dx12_device();
+    ID3D12CommandQueueX* dx12_command_queue();
+    ID3D12GraphicsCommandListX* dx12_command_list();
+    ID3D12CommandAllocatorX* dx12_command_allocator();
 #endif
 }
 

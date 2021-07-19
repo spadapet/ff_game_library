@@ -86,6 +86,17 @@ static void destroy_dxgi()
 
 bool ff::internal::graphics::init()
 {
+#if DXVER == 12
+    if (ff::constants::debug_build && ::IsDebuggerPresent())
+    {
+        Microsoft::WRL::ComPtr<ID3D12DebugX> debug_interface;
+        if (SUCCEEDED(::D3D12GetDebugInterface(__uuidof(ID3D12DebugX), &debug_interface)))
+        {
+            debug_interface->EnableDebugLayer();
+        }
+    }
+#endif
+
     if (::init_dxgi() && ff::internal::graphics::init_d3d())
     {
         ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ff::graphics::dxgi_adapter_for_device());

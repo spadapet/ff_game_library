@@ -28,6 +28,8 @@ namespace ff
         virtual ID3D11Texture2D* texture() override;
         virtual ID3D11RenderTargetView* view() override;
 #elif DXVER == 12
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle() override;
+        virtual ID3D12ResourceX* rtv_resource() override;
 #endif
 
         // target_window_base
@@ -43,7 +45,15 @@ namespace ff
         virtual int reset_priority() const override;
 
     private:
+        static const size_t BACK_BUFFER_COUNT = 2;
+
         void handle_message(ff::window_message& msg);
+        void before_resize();
+        void internal_reset();
+#if DXVER == 12
+        void wait_for_gpu();
+        void internal_reset(bool for_resize);
+#endif
 
         ff::window* window;
         ff::window_size cached_size;
@@ -54,6 +64,14 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
+        std::array<Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>, BACK_BUFFER_COUNT> command_allocators;
+        std::array<Microsoft::WRL::ComPtr<ID3D12ResourceX>, BACK_BUFFER_COUNT> render_targets;
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> rtv_desc_heap;
+        Microsoft::WRL::ComPtr<ID3D12FenceX> fence;
+        std::array<UINT64, BACK_BUFFER_COUNT> fence_values;
+        ff::win_handle fence_event;
+        size_t rtv_desc_size;
+        size_t back_buffer_index;
 #endif
         bool main_window;
         bool was_full_screen_on_close;

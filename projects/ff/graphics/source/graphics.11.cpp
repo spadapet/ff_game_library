@@ -80,9 +80,7 @@ bool ff::internal::graphics::init_d3d()
 
 void ff::internal::graphics::destroy_d3d()
 {
-    ::dx_feature_level = static_cast<D3D_FEATURE_LEVEL>(0);
     ::dx11_device_state->clear();
-
     ::dx11_device_state.reset();
     ::dx11_object_cache.reset();
 

@@ -62,6 +62,9 @@
     <ClCompile Include="source\viewport.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\target_window.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphics_api.h" />
@@ -124,6 +127,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\viewport.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_window.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
