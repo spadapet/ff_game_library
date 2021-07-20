@@ -35,8 +35,6 @@ namespace ff::graphics
 #elif DXVER == 12
     ID3D12DeviceX* dx12_device();
     ID3D12CommandQueueX* dx12_command_queue();
-    ID3D12GraphicsCommandListX* dx12_command_list();
-    ID3D12CommandAllocatorX* dx12_command_allocator();
 #endif
 }
 

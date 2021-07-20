@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "color.h"
 #include "dx11_device_state.h"
 #include "dxgi_util.h"
 #include "graphics.h"
@@ -39,6 +40,10 @@ ff::target_window::target_window(ff::window* window)
 
 ff::target_window::~target_window()
 {
+#if DXVER == 12
+    this->wait_for_gpu();
+#endif
+
     if (this->main_window &&this->swap_chain)
     {
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
@@ -75,6 +80,11 @@ ID3D11RenderTargetView* ff::target_window::view()
     return this->view_.Get();
 }
 
+void ff::target_window::prerender()
+{
+    ff::graphics::dx11_device_state().clear_target(this->view(), ff::color::black());
+}
+
 bool ff::target_window::present(bool vsync)
 {
     ff::graphics::dx11_device_state().set_targets(nullptr, 0, nullptr);
@@ -99,6 +109,7 @@ void ff::target_window::before_resize()
 void ff::target_window::internal_reset()
 {
     this->swap_chain.Reset();
+    this->swap_chain_latency_handle.close();
     this->view_.Reset();
     this->texture_.Reset();
 
@@ -119,6 +130,25 @@ ID3D12ResourceX* ff::target_window::rtv_resource()
     return this->render_targets[this->back_buffer_index].Get();
 }
 
+ID3D12CommandAllocatorX* ff::target_window::command_allocator()
+{
+    return this->command_allocators[this->back_buffer_index].Get();
+}
+
+ID3D12GraphicsCommandListX* ff::target_window::command_list()
+{
+    return this->command_list_.Get();
+}
+
+void ff::target_window::prerender()
+{
+    if (*this)
+    {
+        //ff::wait_for_handle(this->swap_chain_latency_handle);
+        this->wait_for_gpu();
+    }
+}
+
 bool ff::target_window::present(bool vsync)
 {
     if (*this)
@@ -128,8 +158,6 @@ bool ff::target_window::present(bool vsync)
 
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
-            //ff::wait_for_handle(this->swap_chain->GetFrameLatencyWaitableObject());
-            this->wait_for_gpu();
             return true;
         }
     }
@@ -156,7 +184,10 @@ void ff::target_window::internal_reset(bool for_resize)
 
     if (!for_resize)
     {
+        this->command_list_.Reset();
         this->fence.Reset();
+        this->swap_chain.Reset();
+        this->swap_chain_latency_handle.close();
     }
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
@@ -207,7 +238,7 @@ bool ff::target_window::size(const ff::window_size& size)
 
         DXGI_SWAP_CHAIN_DESC1 desc;
         this->swap_chain->GetDesc1(&desc);
-        if (FAILED(this->swap_chain->ResizeBuffers(ff::target_window::BACK_BUFFER_COUNT, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
+        if (FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
             assert(false);
             return false;
@@ -225,7 +256,7 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-        // desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+        desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::graphics::dxgi_factory_for_device();
@@ -274,6 +305,8 @@ bool ff::target_window::size(const ff::window_size& size)
             assert(false);
             return false;
         }
+
+        this->swap_chain_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
     }
 
     DXGI_MODE_ROTATION display_rotation = ff::internal::get_display_rotation(
@@ -316,6 +349,13 @@ bool ff::target_window::size(const ff::window_size& size)
         }
 
         this->fence_values[this->back_buffer_index]++;
+    }
+
+    if (!this->command_list_ && FAILED(ff::graphics::dx12_device()->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
+        __uuidof(ID3D12GraphicsCommandListX), reinterpret_cast<void**>(this->command_list_.GetAddressOf()))))
+    {
+        assert(false);
+        return false;
     }
 
     if (!this->rtv_desc_heap)

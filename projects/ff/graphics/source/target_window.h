@@ -30,9 +30,12 @@ namespace ff
 #elif DXVER == 12
         virtual D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle() override;
         virtual ID3D12ResourceX* rtv_resource() override;
+        virtual ID3D12CommandAllocatorX* command_allocator() override;
+        virtual ID3D12GraphicsCommandListX* command_list() override;
 #endif
 
         // target_window_base
+        virtual void prerender() override;
         virtual bool present(bool vsync) override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
@@ -59,6 +62,7 @@ namespace ff
         ff::window_size cached_size;
         ff::signal<ff::window_size> size_changed_;
         ff::signal_connection window_message_connection;
+        ff::win_handle swap_chain_latency_handle;
         Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
 #if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
@@ -66,6 +70,7 @@ namespace ff
 #elif DXVER == 12
         std::array<Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>, BACK_BUFFER_COUNT> command_allocators;
         std::array<Microsoft::WRL::ComPtr<ID3D12ResourceX>, BACK_BUFFER_COUNT> render_targets;
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> command_list_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> rtv_desc_heap;
         Microsoft::WRL::ComPtr<ID3D12FenceX> fence;
         std::array<UINT64, BACK_BUFFER_COUNT> fence_values;

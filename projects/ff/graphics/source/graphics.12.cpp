@@ -6,8 +6,6 @@
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> dxgi_adapter;
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> dx12_device;
 static Microsoft::WRL::ComPtr<ID3D12CommandQueueX> dx12_command_queue;
-static Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> dx12_command_list;
-static Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> dx12_command_allocator;
 static const D3D_FEATURE_LEVEL dx_feature_level = D3D_FEATURE_LEVEL_11_0;
 
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
@@ -40,9 +38,7 @@ bool ff::internal::graphics::init_d3d()
 
         LUID luid = ::dx12_device->GetAdapterLuid();
         if (SUCCEEDED(ff::graphics::dxgi_factory()->EnumAdapterByLuid(luid, __uuidof(IDXGIAdapterX), reinterpret_cast<void**>(::dxgi_adapter.GetAddressOf()))) &&
-            SUCCEEDED(::dx12_device->CreateCommandQueue(&command_queue_desc, __uuidof(ID3D12CommandQueueX), reinterpret_cast<void**>(::dx12_command_queue.GetAddressOf()))) &&
-            SUCCEEDED(::dx12_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocatorX), reinterpret_cast<void**>(::dx12_command_allocator.GetAddressOf()))) &&
-            SUCCEEDED(::dx12_device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandListX), reinterpret_cast<void**>(::dx12_command_list.GetAddressOf()))))
+            SUCCEEDED(::dx12_device->CreateCommandQueue(&command_queue_desc, __uuidof(ID3D12CommandQueueX), reinterpret_cast<void**>(::dx12_command_queue.GetAddressOf()))))
         {
             return true;
         }
@@ -86,16 +82,6 @@ ID3D12DeviceX* ff::graphics::dx12_device()
 ID3D12CommandQueueX* ff::graphics::dx12_command_queue()
 {
     return ::dx12_command_queue.Get();
-}
-
-ID3D12GraphicsCommandListX* ff::graphics::dx12_command_list()
-{
-    return ::dx12_command_list.Get();
-}
-
-ID3D12CommandAllocatorX* ff::graphics::dx12_command_allocator()
-{
-    return ::dx12_command_allocator.Get();
 }
 
 #endif

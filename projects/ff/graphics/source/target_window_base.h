@@ -9,6 +9,7 @@ namespace ff
     public:
         using ff::target_base::size;
 
+        virtual void prerender() = 0;
         virtual bool present(bool vsync) = 0;
         virtual bool size(const ff::window_size& size) = 0;
         virtual ff::signal_sink<ff::window_size>& size_changed() = 0;

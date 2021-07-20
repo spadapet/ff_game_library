@@ -27,15 +27,21 @@ void run_test_app()
     {
         ff::target_window target;
         ff::win_handle unset_event = ff::create_event();
+        ff::timer timer;
+        size_t tps = 0;
 
         ::ShowWindow(*ff::window::main(), SW_NORMAL);
 
         do
         {
-            //ff::wait_for_handle(unset_event, 20);
+            ff::handle_messages();
 
-            ff::graphics::dx12_command_allocator()->Reset();
-            ff::graphics::dx12_command_list()->Reset(ff::graphics::dx12_command_allocator(), nullptr);
+            // TODO: Prerender should clear the command allocator, etc.
+            // TODO: Present should do the final RTV transition, close the command list, and execute it
+            timer.tick();
+            target.prerender();
+            target.command_allocator()->Reset();
+            target.command_list()->Reset(target.command_allocator(), nullptr);
 
             static float color[4] = { 1, 1, 1, 1 };
             color[1] += 0.0625;
@@ -45,18 +51,24 @@ void run_test_app()
             }
 
             D3D12_RESOURCE_BARRIER present_resource_barrier1 = ::transition(target.rtv_resource(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            ff::graphics::dx12_command_list()->ResourceBarrier(1, &present_resource_barrier1);
+            target.command_list()->ResourceBarrier(1, &present_resource_barrier1);
 
-            ff::graphics::dx12_command_list()->ClearRenderTargetView(target.rtv_handle(), color, 0, nullptr);
+            target.command_list()->ClearRenderTargetView(target.rtv_handle(), color, 0, nullptr);
 
             D3D12_RESOURCE_BARRIER present_resource_barrier2 = ::transition(target.rtv_resource(),D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-            ff::graphics::dx12_command_list()->ResourceBarrier(1, &present_resource_barrier2);
-            ff::graphics::dx12_command_list()->Close();
+            target.command_list()->ResourceBarrier(1, &present_resource_barrier2);
+            target.command_list()->Close();
 
-            ID3D12CommandList* command_list = ff::graphics::dx12_command_list();
+            ID3D12CommandList* command_list = target.command_list();
             ff::graphics::dx12_command_queue()->ExecuteCommandLists(1, &command_list);
 
-            ff::handle_messages();
+            if (tps != timer.ticks_per_second())
+            {
+                tps = timer.ticks_per_second();
+                std::ostringstream str;
+                str << "FPS: " << tps;
+                ff::log::write_debug(str);
+            }
         }
         while (target.present(true));
     }

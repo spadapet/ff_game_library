@@ -198,7 +198,7 @@ static void frame_update_cursor()
 
 static void frame_render(ff::state::advance_t advance_type)
 {
-    ff::graphics::dx11_device_state().clear_target(::target->view(), ff::color::black());
+    ::target->prerender();
     ::game_state.frame_rendering(advance_type);
     ::game_state.render(*::target, *::depth);
 
