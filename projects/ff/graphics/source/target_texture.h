@@ -25,6 +25,8 @@ namespace ff
         const std::shared_ptr<ff::texture>& shared_texture() const;
 
         // target_base
+        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool post_render() override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
 #if DXVER == 11

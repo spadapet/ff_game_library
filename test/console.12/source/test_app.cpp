@@ -32,36 +32,21 @@ void run_test_app()
 
         ::ShowWindow(*ff::window::main(), SW_NORMAL);
 
-        do
+        while (ff::handle_messages())
         {
-            ff::handle_messages();
-
-            // TODO: Prerender should clear the command allocator, etc.
-            // TODO: Present should do the final RTV transition, close the command list, and execute it
-            timer.tick();
-            target.prerender();
-            target.command_allocator()->Reset();
-            target.command_list()->Reset(target.command_allocator(), nullptr);
-
-            static float color[4] = { 1, 1, 1, 1 };
-            color[1] += 0.0625;
-            if (color[1] > 1.0f)
+            if (!target.pre_render(&ff::color::green()))
             {
-                color[1] -= 1.0f;
+                break;
             }
 
-            D3D12_RESOURCE_BARRIER present_resource_barrier1 = ::transition(target.rtv_resource(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            target.command_list()->ResourceBarrier(1, &present_resource_barrier1);
+            // TODO: Render
 
-            target.command_list()->ClearRenderTargetView(target.rtv_handle(), color, 0, nullptr);
+            if (!target.post_render())
+            {
+                break;
+            }
 
-            D3D12_RESOURCE_BARRIER present_resource_barrier2 = ::transition(target.rtv_resource(),D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-            target.command_list()->ResourceBarrier(1, &present_resource_barrier2);
-            target.command_list()->Close();
-
-            ID3D12CommandList* command_list = target.command_list();
-            ff::graphics::dx12_command_queue()->ExecuteCommandLists(1, &command_list);
-
+            timer.tick();
             if (tps != timer.ticks_per_second())
             {
                 tps = timer.ticks_per_second();
@@ -70,6 +55,5 @@ void run_test_app()
                 ff::log::write_debug(str);
             }
         }
-        while (target.present(true));
     }
 }

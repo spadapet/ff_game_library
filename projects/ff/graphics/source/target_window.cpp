@@ -22,10 +22,11 @@ ff::target_window::target_window(ff::window* window)
     , full_screen_uwp(false)
 #endif
 #if DXVER == 12
+    , fence_values{}
+    , current_fence_value(0)
+    , fence_event(ff::create_event(false, false))
     , rtv_desc_size(0)
     , back_buffer_index(0)
-    , fence_values{}
-    , fence_event(ff::create_event())
 #endif
 {
     this->size(this->window->size());
@@ -44,7 +45,7 @@ ff::target_window::~target_window()
     this->wait_for_gpu();
 #endif
 
-    if (this->main_window &&this->swap_chain)
+    if (this->main_window && this->swap_chain)
     {
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
@@ -80,20 +81,24 @@ ID3D11RenderTargetView* ff::target_window::view()
     return this->view_.Get();
 }
 
-void ff::target_window::prerender()
+bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
-    ff::graphics::dx11_device_state().clear_target(this->view(), ff::color::black());
+    if (clear_color)
+    {
+        ff::graphics::dx11_device_state().clear_target(this->view(), *clear_color);
+    }
+
+    return true;
 }
 
-bool ff::target_window::present(bool vsync)
+bool ff::target_window::post_render()
 {
     ff::graphics::dx11_device_state().set_targets(nullptr, 0, nullptr);
 
     HRESULT hr = E_FAIL;
     if (*this)
     {
-        DXGI_PRESENT_PARAMETERS pp{};
-        hr = this->swap_chain->Present1(vsync ? 1 : 0, 0, &pp);
+        hr = this->swap_chain->Present(1, 0);
         ff::graphics::dx11_device_context()->DiscardView1(this->view_.Get(), nullptr, 0);
     }
 
@@ -118,16 +123,15 @@ void ff::target_window::internal_reset()
 
 #elif DXVER == 12
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::rtv_handle()
+ID3D12ResourceX* ff::target_window::texture()
+{
+    return this->render_targets[this->back_buffer_index].Get();
+}
+D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::view()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
     handle.ptr += this->back_buffer_index * this->rtv_desc_size;
     return handle;
-}
-
-ID3D12ResourceX* ff::target_window::rtv_resource()
-{
-    return this->render_targets[this->back_buffer_index].Get();
 }
 
 ID3D12CommandAllocatorX* ff::target_window::command_allocator()
@@ -140,85 +144,101 @@ ID3D12GraphicsCommandListX* ff::target_window::command_list()
     return this->command_list_.Get();
 }
 
-void ff::target_window::prerender()
+bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this)
+    if (*this && this->wait_for_gpu(this->fence_values[this->back_buffer_index]))
     {
-        //ff::wait_for_handle(this->swap_chain_latency_handle);
-        this->wait_for_gpu();
-    }
-}
+        this->command_allocator()->Reset();
+        this->command_list()->Reset(this->command_allocator(), nullptr);
 
-bool ff::target_window::present(bool vsync)
-{
-    if (*this)
-    {
-        DXGI_PRESENT_PARAMETERS pp{};
-        HRESULT hr = this->swap_chain->Present1(vsync ? 1 : 0, 0, &pp);
+        D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+        barrier.Transition.pResource = this->texture();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        this->command_list()->ResourceBarrier(1, &barrier);
 
-        if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
+        if (clear_color)
         {
-            return true;
+            this->command_list()->ClearRenderTargetView(this->view(), reinterpret_cast<const float*>(clear_color), 0, nullptr);
         }
+
+        return true;
     }
 
     return false;
 }
 
+bool ff::target_window::post_render()
+{
+    HRESULT hr = E_FAIL;
+    if (*this)
+    {
+        D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+        barrier.Transition.pResource = this->texture();
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+        ID3D12GraphicsCommandList* command_list = this->command_list();
+        command_list->ResourceBarrier(1, &barrier);
+        command_list->Close();
+
+        ID3D12CommandList* command_lists[] = { command_list };
+        ff::graphics::dx12_command_queue()->ExecuteCommandLists(1, command_lists);
+
+        //::WaitForSingleObjectEx(this->swap_chain_latency_handle, INFINITE, FALSE);
+        hr = this->swap_chain->Present(1, 0);
+
+        UINT64 fence_value = this->fence_values[this->back_buffer_index] = ++this->current_fence_value;
+        this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
+        ff::graphics::dx12_command_queue()->Signal(this->fence.Get(), fence_value);
+    }
+
+    return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
+}
+
 void ff::target_window::before_resize()
-{
-    this->internal_reset(true);
-}
-
-void ff::target_window::internal_reset()
-{
-    this->internal_reset(false);
-}
-
-void ff::target_window::internal_reset(bool for_resize)
 {
     this->wait_for_gpu();
 
     this->rtv_desc_heap.Reset();
     this->rtv_desc_size = 0;
 
-    if (!for_resize)
-    {
-        this->command_list_.Reset();
-        this->fence.Reset();
-        this->swap_chain.Reset();
-        this->swap_chain_latency_handle.close();
-    }
-
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        if (!for_resize)
-        {
-            this->fence_values[i] = this->fence_values[this->back_buffer_index];
-            this->command_allocators[i].Reset();
-        }
-
         this->render_targets[i].Reset();
     }
 }
 
-void ff::target_window::wait_for_gpu()
+void ff::target_window::internal_reset()
 {
-    const UINT64 current_fence_value = this->fence_values[this->back_buffer_index];
+    this->before_resize();
 
-    if (SUCCEEDED(ff::graphics::dx12_command_queue()->Signal(this->fence.Get(), current_fence_value)))
+    this->command_list_.Reset();
+    this->fence.Reset();
+    this->current_fence_value = 0;
+    this->swap_chain.Reset();
+    this->swap_chain_latency_handle.close();
+
+    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-
-        // Check to see if the next frame is ready to start.
-        if (this->fence->GetCompletedValue() < this->fence_values[this->back_buffer_index] &&
-            SUCCEEDED(this->fence->SetEventOnCompletion(this->fence_values[this->back_buffer_index], this->fence_event)))
-        {
-            ff::wait_for_event_and_reset(this->fence_event);
-        }
-
-        this->fence_values[this->back_buffer_index] = current_fence_value + 1;
+        this->fence_values[i] = 0;
+        this->command_allocators[i].Reset();
     }
+}
+
+bool ff::target_window::wait_for_gpu(UINT64 fence_value)
+{
+    if (!fence_value)
+    {
+        fence_value = this->current_fence_value;
+    }
+
+    if (this->fence->GetCompletedValue() < fence_value && SUCCEEDED(this->fence->SetEventOnCompletion(fence_value, this->fence_event)))
+    {
+        ::WaitForSingleObjectEx(this->fence_event, INFINITE, FALSE);
+    }
+
+    return true;
 }
 
 #endif
@@ -341,14 +361,12 @@ bool ff::target_window::size(const ff::window_size& size)
 
     if (!this->fence)
     {
-        if (FAILED(ff::graphics::dx12_device()->CreateFence(this->fence_values[this->back_buffer_index], D3D12_FENCE_FLAG_NONE,
+        if (FAILED(ff::graphics::dx12_device()->CreateFence(this->current_fence_value, D3D12_FENCE_FLAG_NONE,
             __uuidof(ID3D12FenceX), reinterpret_cast<void**>(this->fence.GetAddressOf()))))
         {
             assert(false);
             return false;
         }
-
-        this->fence_values[this->back_buffer_index]++;
     }
 
     if (!this->command_list_ && FAILED(ff::graphics::dx12_device()->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
@@ -364,15 +382,15 @@ bool ff::target_window::size(const ff::window_size& size)
         rtv_heap_desc.NumDescriptors = static_cast<UINT>(ff::target_window::BACK_BUFFER_COUNT);
         rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 
-        if (FAILED(ff::graphics::dx12_device()->CreateDescriptorHeap(&rtv_heap_desc, __uuidof(ID3D12DescriptorHeapX), reinterpret_cast<void**>(this->rtv_desc_heap.GetAddressOf()))) ||
-            !(this->rtv_desc_size = ff::graphics::dx12_device()->GetDescriptorHandleIncrementSize(rtv_heap_desc.Type)))
+        if (FAILED(ff::graphics::dx12_device()->CreateDescriptorHeap(&rtv_heap_desc,
+            __uuidof(ID3D12DescriptorHeapX), reinterpret_cast<void**>(this->rtv_desc_heap.GetAddressOf()))))
         {
             assert(false);
             return false;
         }
-    }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
+        this->rtv_desc_size = ff::graphics::dx12_device()->GetDescriptorHandleIncrementSize(rtv_heap_desc.Type);
+    }
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
@@ -385,8 +403,9 @@ bool ff::target_window::size(const ff::window_size& size)
             return false;
         }
 
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
+        rtv_handle.ptr += this->rtv_desc_size * i;
         ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].Get(), nullptr, rtv_handle);
-        rtv_handle.ptr += this->rtv_desc_size;
     }
 #endif
 

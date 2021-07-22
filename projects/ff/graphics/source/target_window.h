@@ -28,15 +28,15 @@ namespace ff
         virtual ID3D11Texture2D* texture() override;
         virtual ID3D11RenderTargetView* view() override;
 #elif DXVER == 12
-        virtual D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle() override;
-        virtual ID3D12ResourceX* rtv_resource() override;
+        virtual ID3D12ResourceX* texture() override;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE view() override;
         virtual ID3D12CommandAllocatorX* command_allocator() override;
         virtual ID3D12GraphicsCommandListX* command_list() override;
 #endif
 
         // target_window_base
-        virtual void prerender() override;
-        virtual bool present(bool vsync) override;
+        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool post_render() override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
         virtual bool allow_full_screen() const override;
@@ -54,8 +54,7 @@ namespace ff
         void before_resize();
         void internal_reset();
 #if DXVER == 12
-        void wait_for_gpu();
-        void internal_reset(bool for_resize);
+        bool wait_for_gpu(UINT64 fence_value = 0);
 #endif
 
         ff::window* window;
@@ -74,6 +73,7 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> rtv_desc_heap;
         Microsoft::WRL::ComPtr<ID3D12FenceX> fence;
         std::array<UINT64, BACK_BUFFER_COUNT> fence_values;
+        UINT64 current_fence_value;
         ff::win_handle fence_event;
         size_t rtv_desc_size;
         size_t back_buffer_index;

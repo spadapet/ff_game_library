@@ -198,7 +198,6 @@ static void frame_update_cursor()
 
 static void frame_render(ff::state::advance_t advance_type)
 {
-    ::target->prerender();
     ::game_state.frame_rendering(advance_type);
     ::game_state.render(*::target, *::depth);
 
@@ -207,6 +206,19 @@ static void frame_render(ff::state::advance_t advance_type)
     ::app_time.render_count++;
 
     ::game_state.frame_rendered(advance_type, *::target, *::depth);
+}
+
+static void frame_presented()
+{
+    if (::raw_startup_time)
+    {
+        double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
+        ::raw_startup_time = 0;
+
+        std::ostringstream str;
+        str << "App startup time: " << std::fixed << std::setprecision(3) << seconds << "s";
+        ff::log::write(str.str());
+    }
 }
 
 static void frame_advance_and_render()
@@ -229,21 +241,20 @@ static void frame_advance_and_render()
         }
     }
 
-    ::frame_render(advance_type);
-    ::frame_update_cursor();
-}
-
-static void frame_presented()
-{
-    if (::raw_startup_time)
+    bool valid = ::target->pre_render(&ff::color::black());
+    if (valid)
     {
-        double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
-        ::raw_startup_time = 0;
-
-        std::ostringstream str;
-        str << "App startup time: " << std::fixed << std::setprecision(3) << seconds << "s";
-        ff::log::write(str.str());
+        ::frame_render(advance_type);
+        valid = ::target->post_render();
+        ::frame_presented();
     }
+
+    if (!valid)
+    {
+        ff::graphics::defer::validate_device(false);
+    }
+
+    ::frame_update_cursor();
 }
 
 static void init_game_thread()
@@ -332,13 +343,6 @@ static void game_thread()
         else
         {
             ::frame_advance_and_render();
-
-            if (!::target->present(true))
-            {
-                ff::graphics::defer::validate_device(false);
-            }
-
-            ::frame_presented();
         }
     }
 

@@ -24,7 +24,7 @@ namespace graphics_test
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
             ff::target_texture target(ff::texture(ff::point_int(256, 256)));
-            ff::graphics::dx11_device_state().clear_target(target.view(), DirectX::XMFLOAT4(0.25, 0, 0.5, 1));
+            target.pre_render(&DirectX::XMFLOAT4(0.25, 0, 0.5, 1));
 
             // Draw
             {
@@ -35,6 +35,8 @@ namespace graphics_test
                 draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::color::yellow(), 4);
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::color::red(), 3);
             }
+
+            target.post_render();
 
             bool saved = target.shared_texture()->resource_save_to_file(temp_path, "draw_device_test");
             Assert::IsTrue(saved);

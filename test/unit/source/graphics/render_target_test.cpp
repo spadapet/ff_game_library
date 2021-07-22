@@ -23,15 +23,15 @@ namespace graphics_test
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());
 
-            ff::graphics::dx11_device_state().clear_target(target.view(), ff::color::magenta());
-            Assert::IsTrue(target.present(false));
+            Assert::IsTrue(target.pre_render(&ff::color::magenta()));
+            Assert::IsTrue(target.post_render());
 
             Assert::IsTrue(target.reset());
             Assert::IsNotNull(target.view());
             Assert::IsNotNull(target.texture());
 
-            ff::graphics::dx11_device_state().clear_target(target.view(), ff::color::yellow());
-            Assert::IsTrue(target.present(false));
+            Assert::IsTrue(target.pre_render(&ff::color::yellow()));
+            Assert::IsTrue(target.post_render());
         }
     };
 }

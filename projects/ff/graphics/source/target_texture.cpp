@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "dx11_device_state.h"
 #include "graphics.h"
 #include "target_texture.h"
 #include "texture.h"
@@ -40,6 +41,21 @@ ff::target_texture::operator bool() const
 const std::shared_ptr<ff::texture>& ff::target_texture::shared_texture() const
 {
     return this->texture_;
+}
+
+bool ff::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
+{
+    if (clear_color)
+    {
+        ff::graphics::dx11_device_state().clear_target(this->view(), *clear_color);
+    }
+
+    return true;
+}
+
+bool ff::target_texture::post_render()
+{
+    return true;
 }
 
 DXGI_FORMAT ff::target_texture::format() const
