@@ -61,7 +61,6 @@ namespace ff
         ff::window_size cached_size;
         ff::signal<ff::window_size> size_changed_;
         ff::signal_connection window_message_connection;
-        ff::win_handle swap_chain_latency_handle;
         Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
 #if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;

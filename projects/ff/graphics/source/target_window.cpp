@@ -95,13 +95,7 @@ bool ff::target_window::post_render()
 {
     ff::graphics::dx11_device_state().set_targets(nullptr, 0, nullptr);
 
-    HRESULT hr = E_FAIL;
-    if (*this)
-    {
-        hr = this->swap_chain->Present(1, 0);
-        ff::graphics::dx11_device_context()->DiscardView1(this->view_.Get(), nullptr, 0);
-    }
-
+    HRESULT hr = *this ? this->swap_chain->Present(1, 0) : E_FAIL;
     return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
 }
 
@@ -114,7 +108,6 @@ void ff::target_window::before_resize()
 void ff::target_window::internal_reset()
 {
     this->swap_chain.Reset();
-    this->swap_chain_latency_handle.close();
     this->view_.Reset();
     this->texture_.Reset();
 
@@ -185,7 +178,6 @@ bool ff::target_window::post_render()
         ID3D12CommandList* command_lists[] = { command_list };
         ff::graphics::dx12_command_queue()->ExecuteCommandLists(1, command_lists);
 
-        //::WaitForSingleObjectEx(this->swap_chain_latency_handle, INFINITE, FALSE);
         hr = this->swap_chain->Present(1, 0);
 
         UINT64 fence_value = this->fence_values[this->back_buffer_index] = ++this->current_fence_value;
@@ -217,7 +209,6 @@ void ff::target_window::internal_reset()
     this->fence.Reset();
     this->current_fence_value = 0;
     this->swap_chain.Reset();
-    this->swap_chain_latency_handle.close();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
@@ -276,7 +267,7 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-        desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+        desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT; // sets latency to 1 frame
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::graphics::dxgi_factory_for_device();
@@ -325,8 +316,6 @@ bool ff::target_window::size(const ff::window_size& size)
             assert(false);
             return false;
         }
-
-        this->swap_chain_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
     }
 
     DXGI_MODE_ROTATION display_rotation = ff::internal::get_display_rotation(

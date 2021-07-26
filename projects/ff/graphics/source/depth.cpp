@@ -90,11 +90,6 @@ void ff::depth::clear_stencil(BYTE stencil) const
     ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), false, true, 0, stencil);
 }
 
-void ff::depth::discard() const
-{
-    ff::graphics::dx11_device_context()->DiscardView1(this->view(), nullptr, 0);
-}
-
 ID3D11Texture2D* ff::depth::texture() const
 {
     return this->texture_.Get();

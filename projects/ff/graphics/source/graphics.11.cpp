@@ -21,12 +21,9 @@ static Microsoft::WRL::ComPtr<ID3D11DeviceX> create_dx11_device(D3D_FEATURE_LEVE
     Microsoft::WRL::ComPtr<ID3D11DeviceX> created_device_x;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> created_device_context;
 
-    std::array<D3D_FEATURE_LEVEL, 4> feature_levels
+    std::array<D3D_FEATURE_LEVEL, 1> feature_levels
     {
-        D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0,
     };
 
     HRESULT hr = E_FAIL;

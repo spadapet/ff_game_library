@@ -23,7 +23,6 @@ namespace ff
         void clear(float depth, BYTE stencil) const;
         void clear_depth(float depth = 0.0f) const;
         void clear_stencil(BYTE stencil) const;
-        void discard() const;
         ID3D11Texture2D* texture() const;
         ID3D11DepthStencilView* view() const;
 
