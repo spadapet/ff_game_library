@@ -267,7 +267,9 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+#if DXVER == 12
         desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT; // sets latency to 1 frame
+#endif
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::graphics::dxgi_factory_for_device();
