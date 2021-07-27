@@ -272,7 +272,7 @@ void ff::file_mem_mapped::open()
     if (this->file_ && this->file_.size())
     {
 #if UWP_APP
-        this->handle_ = win_handle(::CreateFileMappingFromApp(this->file.handle(), nullptr, PAGE_READONLY, 0, nullptr));
+        this->handle_ = win_handle(::CreateFileMappingFromApp(this->file_.handle(), nullptr, PAGE_READONLY, 0, nullptr));
 #else
         this->handle_ = win_handle(::CreateFileMapping(this->file_.handle(), nullptr, PAGE_READONLY, 0, 0, nullptr));
 #endif
@@ -282,7 +282,7 @@ void ff::file_mem_mapped::open()
         {
             this->size_ = this->file_.size();
 #if UWP_APP
-            this->data_ = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->handle_, FILE_MAP_READ, 0, this->_size));
+            this->data_ = reinterpret_cast<const uint8_t*>(::MapViewOfFileFromApp(this->handle_, FILE_MAP_READ, 0, this->size_));
 #else
             this->data_ = reinterpret_cast<const uint8_t*>(::MapViewOfFile(this->handle_, FILE_MAP_READ, 0, 0, this->size_));
 #endif
