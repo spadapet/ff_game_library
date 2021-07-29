@@ -17,6 +17,7 @@
 #endif
 
 // Vendor
+#include <dxheaders/include/directx/d3dx12.h>
 #include <directxtex/DirectXTex/DirectXTex.h>
 #include <libpng/png.h>
 
