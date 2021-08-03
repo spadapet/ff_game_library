@@ -74,7 +74,10 @@
     <ClCompile Include="source\dx11_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx12_command_queue.cpp">
+    <ClCompile Include="source\dx12_commands.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_descriptors.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -159,7 +162,10 @@
     <ClInclude Include="source\dx11_texture.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx12_command_queue.h">
+    <ClInclude Include="source\dx12_commands.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_descriptors.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

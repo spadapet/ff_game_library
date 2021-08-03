@@ -24,7 +24,8 @@
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_graphics.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
-    <ClCompile Include="source\dx12_command_queue.cpp" />
+    <ClCompile Include="source\dx12_commands.cpp" />
+    <ClCompile Include="source\dx12_descriptors.cpp" />
     <ClCompile Include="source\dx12_graphics.cpp" />
     <ClCompile Include="source\target_texture.cpp" />
     <ClCompile Include="source\target_window.cpp" />
@@ -71,7 +72,8 @@
     <ClInclude Include="source\draw_device.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
-    <ClInclude Include="source\dx12_command_queue.h" />
+    <ClInclude Include="source\dx12_commands.h" />
+    <ClInclude Include="source\dx12_descriptors.h" />
     <ClInclude Include="source\target_base.h" />
     <ClInclude Include="source\target_texture.h" />
     <ClInclude Include="source\target_window_base.h" />
