@@ -2,14 +2,16 @@
 #include "data_blob.h"
 #include "draw_base.h"
 #include "dx11_device_state.h"
+#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "png_image.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
-#include "texture.h"
 #include "texture_metadata.h"
 #include "texture_util.h"
+
+#if DXVER == 11
 
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
@@ -550,3 +552,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
 
     return *texture ? texture : nullptr;
 }
+
+#endif

@@ -1,7 +1,7 @@
 #include "pch.h"
+#include "texture.h"
 #include "render_device.h"
 #include "render_target.h"
-#include "texture.h"
 #include "ui.h"
 
 #if DXVER == 11
@@ -483,13 +483,13 @@ void ff::internal::ui::render_device::create_buffers()
     std::memset(&this->vertex_cb_hash, 0, sizeof(this->vertex_cb_hash));
     std::memset(&this->pixel_cb_hash, 0, sizeof(this->pixel_cb_hash));
 
-    this->buffer_vertices = std::make_shared<ff::buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
-    this->buffer_indices = std::make_shared<ff::buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
-    this->buffer_vertex_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
-    this->buffer_vertex_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
-    this->buffer_pixel_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[2] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
+    this->buffer_vertices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
+    this->buffer_indices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
+    this->buffer_vertex_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
+    this->buffer_vertex_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
+    this->buffer_pixel_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[2] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
 }
 
 void ff::internal::ui::render_device::create_state_objects()

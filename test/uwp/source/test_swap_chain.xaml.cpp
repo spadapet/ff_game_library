@@ -11,7 +11,7 @@ test_uwp::test_swap_chain::test_swap_chain()
 
 void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
 {
-    this->target = std::make_unique<ff::dx11_target_window>();
+    this->target = std::make_unique<ff::target_window>();
 
     ff::thread_pool::get()->add_thread([this]()
         {
@@ -20,8 +20,8 @@ void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xa
             DirectX::XMFLOAT4 color(0, 0, 0, 1);
             do
             {
-                ff::graphics::dx11_device_state().clear_target(this->target->view(), color);
-                this->target->present(false);
+                this->target->pre_render(&color);
+                this->target->post_render();
 
                 color.x += 0.0625f;
                 if (color.x > 1.0f)

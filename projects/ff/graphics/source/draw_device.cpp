@@ -1,11 +1,12 @@
 #include "pch.h"
-#include "buffer.h"
-#include "depth.h"
 #include "draw_device.h"
 #include "dx_operators.h"
+#include "dx11_buffer.h"
+#include "dx11_depth.h"
 #include "dx11_device_state.h"
 #include "dx11_fixed_state.h"
 #include "dx11_object_cache.h"
+#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "graphics_child_base.h"
@@ -16,7 +17,6 @@
 #include "sprite_data.h"
 #include "sprite_type.h"
 #include "target_base.h"
-#include "texture.h"
 #include "texture_view_base.h"
 #include "transform.h"
 #include "vertex.h"
@@ -1841,10 +1841,10 @@ namespace
         } state;
 
         // Constant data for shaders
-        ff::buffer geometry_buffer;
-        ff::buffer geometry_constants_buffer_0;
-        ff::buffer geometry_constants_buffer_1;
-        ff::buffer pixel_constants_buffer_0;
+        ff::dx11_buffer geometry_buffer;
+        ff::dx11_buffer geometry_constants_buffer_0;
+        ff::dx11_buffer geometry_constants_buffer_1;
+        ff::dx11_buffer pixel_constants_buffer_0;
         ::geometry_shader_constants_0 geometry_constants_0;
         ::geometry_shader_constants_1 geometry_constants_1;
         ::pixel_shader_constants_0 pixel_constants_0;

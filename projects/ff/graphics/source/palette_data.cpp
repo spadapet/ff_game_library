@@ -1,7 +1,7 @@
 #include "pch.h"
+#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "palette_data.h"
-#include "texture.h"
 #include "texture_util.h"
 
 ff::palette_data::palette_data(DirectX::ScratchImage&& scratch)

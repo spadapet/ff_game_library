@@ -1,9 +1,9 @@
 #include "pch.h"
+#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "palette_data.h"
 #include "sprite_base.h"
 #include "sprite_optimizer.h"
-#include "texture.h"
 #include "texture_util.h"
 
 static const int TEXTURE_SIZE_MAX = 1024;

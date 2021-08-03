@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "buffer.h"
+#include "dx11_buffer.h"
 #include "dx11_device_state.h"
 #include "graphics.h"
 
@@ -7,19 +7,19 @@
 
 static const size_t MIN_BUFFER_SIZE = 16;
 
-ff::buffer::buffer(D3D11_BIND_FLAG type)
-    : buffer(type, 0)
+ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type)
+    : dx11_buffer(type, 0)
 {}
 
-ff::buffer::buffer(D3D11_BIND_FLAG type, size_t size)
-    : buffer(type, size, nullptr, true)
+ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size)
+    : dx11_buffer(type, size, nullptr, true)
 {}
 
-ff::buffer::buffer(D3D11_BIND_FLAG type, std::shared_ptr<ff::data_base> initial_data, bool writable)
-    : buffer(type, 0, initial_data, writable)
+ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, std::shared_ptr<ff::data_base> initial_data, bool writable)
+    : dx11_buffer(type, 0, initial_data, writable)
 {}
 
-ff::buffer::buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable)
+ff::dx11_buffer::dx11_buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable)
     : initial_data(initial_data)
 {
     ff::internal::graphics::add_child(this);
@@ -45,40 +45,40 @@ ff::buffer::buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_b
     assert(SUCCEEDED(hr));
 }
 
-ff::buffer::~buffer()
+ff::dx11_buffer::~dx11_buffer()
 {
     this->unmap();
 
     ff::internal::graphics::remove_child(this);
 }
 
-ff::buffer::operator bool() const
+ff::dx11_buffer::operator bool() const
 {
     return this->buffer_;
 }
 
-D3D11_BIND_FLAG ff::buffer::type() const
+D3D11_BIND_FLAG ff::dx11_buffer::type() const
 {
     D3D11_BUFFER_DESC desc;
     this->buffer_->GetDesc(&desc);
     return static_cast<D3D11_BIND_FLAG>(desc.BindFlags);
 }
 
-size_t ff::buffer::size() const
+size_t ff::dx11_buffer::size() const
 {
     D3D11_BUFFER_DESC desc;
     this->buffer_->GetDesc(&desc);
     return static_cast<size_t>(desc.ByteWidth);
 }
 
-bool ff::buffer::writable() const
+bool ff::dx11_buffer::writable() const
 {
     D3D11_BUFFER_DESC desc;
     this->buffer_->GetDesc(&desc);
     return (desc.CPUAccessFlags & D3D11_CPU_ACCESS_WRITE) != 0;
 }
 
-void* ff::buffer::map(size_t size)
+void* ff::dx11_buffer::map(size_t size)
 {
     if (this->writable())
     {
@@ -88,7 +88,7 @@ void* ff::buffer::map(size_t size)
         {
             size = ff::math::nearest_power_of_two(size);
 
-            buffer new_buffer(this->type(), size);
+            dx11_buffer new_buffer(this->type(), size);
             if (!new_buffer)
             {
                 assert(false);
@@ -106,7 +106,7 @@ void* ff::buffer::map(size_t size)
     return nullptr;
 }
 
-void ff::buffer::unmap()
+void ff::dx11_buffer::unmap()
 {
     if (this->mapped_device)
     {
@@ -115,12 +115,12 @@ void ff::buffer::unmap()
     }
 }
 
-bool ff::buffer::update_discard(const void* data, size_t size)
+bool ff::dx11_buffer::update_discard(const void* data, size_t size)
 {
     return this->update_discard(data, size, size);
 }
 
-bool ff::buffer::update_discard(const void* data, size_t data_size, size_t buffer_size)
+bool ff::dx11_buffer::update_discard(const void* data, size_t data_size, size_t buffer_size)
 {
     void* mapped_data = this->map(std::max(data_size, buffer_size));
     if (mapped_data)
@@ -133,16 +133,16 @@ bool ff::buffer::update_discard(const void* data, size_t data_size, size_t buffe
     return false;
 }
 
-ID3D11Buffer* ff::buffer::dx_buffer() const
+ID3D11Buffer* ff::dx11_buffer::dx_buffer() const
 {
     return this->buffer_.Get();
 }
 
-bool ff::buffer::reset()
+bool ff::dx11_buffer::reset()
 {
     *this = this->initial_data
-        ? buffer(this->type(), this->initial_data, this->writable())
-        : buffer(this->type());
+        ? dx11_buffer(this->type(), this->initial_data, this->writable())
+        : dx11_buffer(this->type());
 
     return *this;
 }

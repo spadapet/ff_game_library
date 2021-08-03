@@ -2,6 +2,8 @@
 
 #include "graphics_child_base.h"
 
+#if DXVER == 11
+
 namespace ff
 {
     class depth : public ff::internal::graphics_child_base
@@ -30,10 +32,9 @@ namespace ff
         virtual bool reset() override;
 
     private:
-#if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilView> view_;
-#elif DXVER == 12
-#endif
     };
 }
+
+#endif

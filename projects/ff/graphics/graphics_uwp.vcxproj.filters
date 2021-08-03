@@ -104,28 +104,31 @@
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\buffer.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\depth.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\target_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\texture.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\graphics.11.cpp">
+    <ClCompile Include="source\dx11_buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\graphics.12.cpp">
+    <ClCompile Include="source\dx11_depth.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_graphics.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx11_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_command_queue.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_graphics.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -255,12 +258,6 @@
     <ClInclude Include="source\random_sprite.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\buffer.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\depth.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\target_base.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -273,13 +270,22 @@
     <ClInclude Include="source\target_window_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\texture.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\texture_view.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_view_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_buffer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_depth.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_command_queue.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

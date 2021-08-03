@@ -1,8 +1,10 @@
 #include "pch.h"
-#include "depth.h"
+#include "dx11_depth.h"
 #include "dx11_device_state.h"
 #include "dxgi_util.h"
 #include "graphics.h"
+
+#if DXVER == 11
 
 static const DXGI_FORMAT DEPTH_STENCIL_FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
@@ -108,3 +110,5 @@ bool ff::depth::reset()
 
     return *this;
 }
+
+#endif

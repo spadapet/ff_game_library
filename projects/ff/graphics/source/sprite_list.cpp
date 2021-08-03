@@ -1,11 +1,11 @@
 #include "pch.h"
+#include "dx11_texture.h"
 #include "dxgi_util.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
 #include "sprite_resource.h"
-#include "texture.h"
 #include "texture_view.h"
 
 ff::sprite_list::sprite_list(std::vector<ff::sprite>&& sprites)

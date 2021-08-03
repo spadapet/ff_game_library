@@ -9,6 +9,8 @@
 #include "texture_metadata.h"
 #include "texture_view_base.h"
 
+#if DXVER == 11
+
 namespace ff
 {
     class texture
@@ -36,10 +38,7 @@ namespace ff
         ff::sprite_type sprite_type() const;
         std::shared_ptr<DirectX::ScratchImage> data() const;
         std::shared_ptr<DirectX::ScratchImage> palette() const;
-#if DXVER == 11
         ID3D11Texture2D* dx_texture() const;
-#elif DXVER == 12
-#endif
 
         bool update(size_t array_index, size_t mip_index, const ff::rect_int& rect, const void* data, DXGI_FORMAT data_format, bool update_local_cache);
 
@@ -59,10 +58,7 @@ namespace ff
 
         // texture_view_base
         virtual const ff::texture* view_texture() const override;
-#if DXVER == 11
         virtual ID3D11ShaderResourceView* view() const override;
-#elif DXVER == 12
-#endif
 
         // sprite_base
         virtual std::string_view name() const override;
@@ -89,11 +85,8 @@ namespace ff
     private:
         void fix_sprite_data(ff::sprite_type sprite_type);
 
-#if DXVER == 11
         mutable Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
-#elif DXVER == 12
-#endif
         std::shared_ptr<DirectX::ScratchImage> data_;
         std::shared_ptr<DirectX::ScratchImage> palette_;
         ff::sprite_data sprite_data_;
@@ -111,3 +104,5 @@ namespace ff::internal
         virtual std::shared_ptr<resource_object_base> load_from_cache(const ff::dict& dict) const override;
     };
 }
+
+#endif

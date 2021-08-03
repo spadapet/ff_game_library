@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "dx11_device_state.h"
+#include "dx11_texture.h"
 #include "graphics.h"
 #include "target_texture.h"
-#include "texture.h"
 #include "texture_util.h"
 
 ff::target_texture::target_texture(

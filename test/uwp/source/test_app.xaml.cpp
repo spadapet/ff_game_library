@@ -12,6 +12,7 @@ test_uwp::test_app::test_app()
 void test_uwp::test_app::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
 {
     ff::init_app_params app_params = test_uwp::get_init_app_params();
+    app_params.use_swap_chain_panel = true;
     app_params.get_time_scale_func = []()
     {
         return ::time_scale;

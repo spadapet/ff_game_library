@@ -2,6 +2,12 @@
 
 namespace ff::vertex
 {
+#if DXVER == 11
+    using D3D_INPUT_ELEMENT_DESC = typename D3D11_INPUT_ELEMENT_DESC;
+#elif DXVER == 12
+    using D3D_INPUT_ELEMENT_DESC = typename D3D12_INPUT_ELEMENT_DESC;
+#endif
+
     struct line_geometry
     {
         DirectX::XMFLOAT2 position[4]; // adjacency at 0 and 3
@@ -10,10 +16,7 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
-#if DXVER == 11
-        static const std::array<D3D11_INPUT_ELEMENT_DESC, 10>& layout();
-#elif DXVER == 12
-#endif
+        static const std::array<D3D_INPUT_ELEMENT_DESC, 10>& layout();
     };
 
     struct circle_geometry
@@ -25,10 +28,7 @@ namespace ff::vertex
         float thickness;
         UINT matrix_index;
 
-#if DXVER == 11
-        static const std::array<D3D11_INPUT_ELEMENT_DESC, 6>& layout();
-#elif DXVER == 12
-#endif
+        static const std::array<D3D_INPUT_ELEMENT_DESC, 6>& layout();
     };
 
     struct triangle_geometry
@@ -38,10 +38,7 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
-#if DXVER == 11
-        static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
-#elif DXVER == 12
-#endif
+        static const std::array<D3D_INPUT_ELEMENT_DESC, 8>& layout();
     };
 
     struct sprite_geometry
@@ -55,9 +52,6 @@ namespace ff::vertex
         UINT texture_index;
         UINT matrix_index;
 
-#if DXVER == 11
-        static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
-#elif DXVER == 12
-#endif
+        static const std::array<D3D_INPUT_ELEMENT_DESC, 8>& layout();
     };
 }

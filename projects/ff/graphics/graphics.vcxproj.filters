@@ -53,13 +53,13 @@
     <ClCompile Include="source\graphics_child_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\buffer.cpp">
+    <ClCompile Include="source\dx11_buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\depth.cpp">
+    <ClCompile Include="source\dx11_depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\texture.cpp">
+    <ClCompile Include="source\dx11_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\texture_metadata.cpp">
@@ -122,10 +122,13 @@
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\graphics.11.cpp">
+    <ClCompile Include="source\dx11_graphics.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\graphics.12.cpp">
+    <ClCompile Include="source\dx12_graphics.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_command_queue.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -192,16 +195,16 @@
     <ClInclude Include="source\graphics_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\buffer.h">
+    <ClInclude Include="source\dx11_buffer.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx_operators.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\depth.h">
+    <ClInclude Include="source\dx11_depth.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\texture.h">
+    <ClInclude Include="source\dx11_texture.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_metadata.h">
@@ -280,6 +283,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\random_sprite.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_command_queue.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

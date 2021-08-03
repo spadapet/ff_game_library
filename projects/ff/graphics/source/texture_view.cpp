@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "draw_base.h"
+#include "dx11_texture.h"
 #include "graphics.h"
-#include "texture.h"
 #include "texture_util.h"
 #include "texture_view.h"
 
