@@ -45,6 +45,7 @@ namespace ff
         uint64_t signal_fence();
         bool fence_complete(uint64_t value);
         void wait_for_fence(uint64_t value);
+        void wait_for_idle();
 
         dx12_commands new_commands(ID3D12PipelineStateX* initial_state = nullptr);
         void return_commands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator, uint64_t allocator_fence_value);
@@ -73,22 +74,22 @@ namespace ff
     class dx12_command_queues
     {
     public:
-        dx12_command_queues(ID3D12DeviceX* device);
+        dx12_command_queues();
         dx12_command_queues(dx12_command_queues&& other) noexcept = default;
         dx12_command_queues(const dx12_command_queues& other) = delete;
 
         dx12_command_queues& operator=(dx12_command_queues&& other) noexcept = default;
         dx12_command_queues& operator=(const dx12_command_queues& other) = delete;
 
-        ID3D12DeviceX* device() const;
         dx12_command_queue& direct();
         dx12_command_queue& compute();
         dx12_command_queue& copy();
         dx12_command_queue& from_type(D3D12_COMMAND_LIST_TYPE type);
         dx12_command_queue& from_fence(uint64_t value);
+        void wait_for_fence(uint64_t value);
+        void wait_for_idle();
 
     private:
-        Microsoft::WRL::ComPtr<ID3D12DeviceX> device_;
         dx12_command_queue direct_queue;
         dx12_command_queue compute_queue;
         dx12_command_queue copy_queue;

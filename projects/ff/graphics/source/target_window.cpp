@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "color.h"
 #include "dx11_device_state.h"
+#include "dx12_commands.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "target_window.h"
@@ -23,8 +24,6 @@ ff::target_window::target_window(ff::window* window)
 #endif
 #if DXVER == 12
     , fence_values{}
-    , current_fence_value(0)
-    , fence_event(ff::create_event(false, false))
     , rtv_desc_size(0)
     , back_buffer_index(0)
 #endif
@@ -42,7 +41,7 @@ ff::target_window::target_window(ff::window* window)
 ff::target_window::~target_window()
 {
 #if DXVER == 12
-    this->wait_for_gpu();
+    ff::graphics::dx12_command_queues().wait_for_idle();
 #endif
 
     if (this->main_window && this->swap_chain)
@@ -139,8 +138,10 @@ ID3D12GraphicsCommandListX* ff::target_window::command_list()
 
 bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this && this->wait_for_gpu(this->fence_values[this->back_buffer_index]))
+    if (*this)
     {
+        ff::graphics::dx12_command_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
+
         this->command_allocator()->Reset();
         this->command_list()->Reset(this->command_allocator(), nullptr);
 
@@ -176,13 +177,12 @@ bool ff::target_window::post_render()
         command_list->Close();
 
         ID3D12CommandList* command_lists[] = { command_list };
-        ff::graphics::dx12_command_queue()->ExecuteCommandLists(1, command_lists);
+        ff::graphics::dx12_direct_queue().get()->ExecuteCommandLists(1, command_lists);
 
         hr = this->swap_chain->Present(1, 0);
 
-        UINT64 fence_value = this->fence_values[this->back_buffer_index] = ++this->current_fence_value;
+        this->fence_values[this->back_buffer_index] = ff::graphics::dx12_direct_queue().signal_fence();
         this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-        ff::graphics::dx12_command_queue()->Signal(this->fence.Get(), fence_value);
     }
 
     return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
@@ -190,7 +190,7 @@ bool ff::target_window::post_render()
 
 void ff::target_window::before_resize()
 {
-    this->wait_for_gpu();
+    ff::graphics::dx12_command_queues().wait_for_idle();
 
     this->rtv_desc_heap.Reset();
     this->rtv_desc_size = 0;
@@ -206,30 +206,12 @@ void ff::target_window::internal_reset()
     this->before_resize();
 
     this->command_list_.Reset();
-    this->fence.Reset();
-    this->current_fence_value = 0;
     this->swap_chain.Reset();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        this->fence_values[i] = 0;
         this->command_allocators[i].Reset();
     }
-}
-
-bool ff::target_window::wait_for_gpu(UINT64 fence_value)
-{
-    if (!fence_value)
-    {
-        fence_value = this->current_fence_value;
-    }
-
-    if (this->fence->GetCompletedValue() < fence_value && SUCCEEDED(this->fence->SetEventOnCompletion(fence_value, this->fence_event)))
-    {
-        ::WaitForSingleObjectEx(this->fence_event, INFINITE, FALSE);
-    }
-
-    return true;
 }
 
 #endif
@@ -276,7 +258,7 @@ bool ff::target_window::size(const ff::window_size& size)
 #if DXVER == 11
         Microsoft::WRL::ComPtr<ID3D11DeviceX> device = ff::graphics::dx11_device();
 #elif DXVER == 12
-        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::graphics::dx12_command_queue();
+        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::graphics::dx12_direct_queue().get();
 #endif
 
         ff::thread_dispatch::get_main()->send([this, factory, device, &new_swap_chain, &desc]()
@@ -349,16 +331,6 @@ bool ff::target_window::size(const ff::window_size& size)
     }
 #elif DXVER == 12
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
-
-    if (!this->fence)
-    {
-        if (FAILED(ff::graphics::dx12_device()->CreateFence(this->current_fence_value, D3D12_FENCE_FLAG_NONE,
-            __uuidof(ID3D12FenceX), reinterpret_cast<void**>(this->fence.GetAddressOf()))))
-        {
-            assert(false);
-            return false;
-        }
-    }
 
     if (!this->command_list_ && FAILED(ff::graphics::dx12_device()->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
         __uuidof(ID3D12GraphicsCommandListX), reinterpret_cast<void**>(this->command_list_.GetAddressOf()))))

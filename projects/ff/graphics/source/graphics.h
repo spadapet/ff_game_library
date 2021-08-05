@@ -5,6 +5,11 @@ namespace ff
 #if DXVER == 11
     class dx11_device_state;
     class dx11_object_cache;
+#elif DXVER == 12
+    class dx12_command_queue;
+    class dx12_command_queues;
+    class dx12_descriptors_cpu;
+    class dx12_descriptors_gpu;
 #endif
     class target_window_base;
 }
@@ -34,7 +39,16 @@ namespace ff::graphics
     ff::dx11_object_cache& dx11_object_cache();
 #elif DXVER == 12
     ID3D12DeviceX* dx12_device();
-    ID3D12CommandQueueX* dx12_command_queue();
+    ff::dx12_command_queues& dx12_command_queues();
+    ff::dx12_command_queue& dx12_direct_queue();
+    ff::dx12_command_queue& dx12_copy_queue();
+    ff::dx12_command_queue& dx12_compute_queue();
+    ff::dx12_descriptors_cpu& dx12_descriptors_buffer();
+    ff::dx12_descriptors_cpu& dx12_descriptors_sampler();
+    ff::dx12_descriptors_cpu& dx12_descriptors_target();
+    ff::dx12_descriptors_cpu& dx12_descriptors_depth();
+    ff::dx12_descriptors_gpu& dx12_descriptors_gpu_buffer();
+    ff::dx12_descriptors_gpu& dx12_descriptors_gpu_sampler();
 #endif
 }
 

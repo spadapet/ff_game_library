@@ -53,9 +53,6 @@ namespace ff
         void handle_message(ff::window_message& msg);
         void before_resize();
         void internal_reset();
-#if DXVER == 12
-        bool wait_for_gpu(UINT64 fence_value = 0);
-#endif
 
         ff::window* window;
         ff::window_size cached_size;
@@ -70,10 +67,7 @@ namespace ff
         std::array<Microsoft::WRL::ComPtr<ID3D12ResourceX>, BACK_BUFFER_COUNT> render_targets;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> command_list_;
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> rtv_desc_heap;
-        Microsoft::WRL::ComPtr<ID3D12FenceX> fence;
         std::array<UINT64, BACK_BUFFER_COUNT> fence_values;
-        UINT64 current_fence_value;
-        ff::win_handle fence_event;
         size_t rtv_desc_size;
         size_t back_buffer_index;
 #endif

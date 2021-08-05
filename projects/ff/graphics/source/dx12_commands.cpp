@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "dx12_commands.h"
+#include "graphics.h"
 
 #if DXVER == 12
 
@@ -78,13 +79,13 @@ ff::dx12_command_queue::dx12_command_queue(dx12_command_queues& owner, D3D12_COM
     , next_fence_value(initial_fence_value)
 {
     const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ type };
-    this->owner.device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));
-    this->owner.device()->CreateFence(this->completed_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence));
+    ff::graphics::dx12_device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));
+    ff::graphics::dx12_device()->CreateFence(this->completed_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence));
 }
 
 ff::dx12_command_queue::~dx12_command_queue()
 {
-    this->wait_for_fence(this->signal_fence());
+    this->wait_for_idle();
 }
 
 ID3D12CommandQueueX* ff::dx12_command_queue::get() const
@@ -137,6 +138,11 @@ void ff::dx12_command_queue::wait_for_fence(uint64_t value)
     }
 }
 
+void ff::dx12_command_queue::wait_for_idle()
+{
+    this->wait_for_fence(this->signal_fence());
+}
+
 ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* initial_state)
 {
     Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
@@ -145,7 +151,7 @@ ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* ini
 
         if (this->allocators.empty() || !this->fence_complete(this->allocators.front().first))
         {
-            this->owner.device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator));
+            ff::graphics::dx12_device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator));
         }
         else
         {
@@ -160,7 +166,7 @@ ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* ini
 
         if (this->lists.empty())
         {
-            this->owner.device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&list));
+            ff::graphics::dx12_device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&list));
         }
         else
         {
@@ -200,17 +206,11 @@ void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12Graphi
     }
 }
 
-ff::dx12_command_queues::dx12_command_queues(ID3D12DeviceX* device)
-    : device_(device)
-    , direct_queue(*this, D3D12_COMMAND_LIST_TYPE_DIRECT, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_DIRECT))
+ff::dx12_command_queues::dx12_command_queues()
+    : direct_queue(*this, D3D12_COMMAND_LIST_TYPE_DIRECT, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_DIRECT))
     , compute_queue(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_COMPUTE))
     , copy_queue(*this, D3D12_COMMAND_LIST_TYPE_COPY, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_COPY))
 {}
-
-ID3D12DeviceX* ff::dx12_command_queues::device() const
-{
-    return this->device_.Get();
-}
 
 ff::dx12_command_queue& ff::dx12_command_queues::direct()
 {
@@ -245,6 +245,18 @@ ff::dx12_command_queue& ff::dx12_command_queues::from_type(D3D12_COMMAND_LIST_TY
 ff::dx12_command_queue& ff::dx12_command_queues::from_fence(uint64_t value)
 {
     return this->from_type(::fence_to_type(value));
+}
+
+void ff::dx12_command_queues::wait_for_fence(uint64_t value)
+{
+    this->from_fence(value).wait_for_fence(value);
+}
+
+void ff::dx12_command_queues::wait_for_idle()
+{
+    this->copy_queue.wait_for_idle();
+    this->compute_queue.wait_for_idle();
+    this->direct_queue.wait_for_idle();
 }
 
 #endif
