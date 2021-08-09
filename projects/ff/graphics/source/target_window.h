@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dx12_descriptor_range.h"
 #include "target_base.h"
 #include "target_window_base.h"
 #include "graphics_child_base.h"
@@ -30,8 +31,6 @@ namespace ff
 #elif DXVER == 12
         virtual ID3D12ResourceX* texture() override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE view() override;
-        virtual ID3D12CommandAllocatorX* command_allocator() override;
-        virtual ID3D12GraphicsCommandListX* command_list() override;
 #endif
 
         // target_window_base
@@ -63,12 +62,9 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
-        std::array<Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>, BACK_BUFFER_COUNT> command_allocators;
         std::array<Microsoft::WRL::ComPtr<ID3D12ResourceX>, BACK_BUFFER_COUNT> render_targets;
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> command_list_;
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> rtv_desc_heap;
-        std::array<UINT64, BACK_BUFFER_COUNT> fence_values;
-        size_t rtv_desc_size;
+        std::array<uint64_t, BACK_BUFFER_COUNT> fence_values;
+        ff::dx12_descriptor_range views;
         size_t back_buffer_index;
 #endif
         bool main_window;

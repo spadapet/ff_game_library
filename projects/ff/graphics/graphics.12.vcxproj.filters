@@ -77,7 +77,13 @@
     <ClCompile Include="source\dx12_commands.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx12_descriptors.cpp">
+    <ClCompile Include="source\dx12_descriptor_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_descriptor_range.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_command_queue.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -165,7 +171,13 @@
     <ClInclude Include="source\dx12_commands.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx12_descriptors.h">
+    <ClInclude Include="source\dx12_descriptor_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_descriptor_range.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_command_queue.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

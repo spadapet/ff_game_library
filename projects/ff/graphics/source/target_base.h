@@ -18,8 +18,6 @@ namespace ff
 #elif DXVER == 12
         virtual ID3D12ResourceX* texture() = 0;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE view() = 0;
-        virtual ID3D12CommandAllocatorX* command_allocator() = 0;
-        virtual ID3D12GraphicsCommandListX* command_list() = 0;
 #endif
     };
 }

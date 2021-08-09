@@ -8,6 +8,7 @@ namespace ff
 #elif DXVER == 12
     class dx12_command_queue;
     class dx12_command_queues;
+    class dx12_commands;
     class dx12_descriptors_cpu;
     class dx12_descriptors_gpu;
 #endif
@@ -39,10 +40,13 @@ namespace ff::graphics
     ff::dx11_object_cache& dx11_object_cache();
 #elif DXVER == 12
     ID3D12DeviceX* dx12_device();
-    ff::dx12_command_queues& dx12_command_queues();
+
+    ff::dx12_commands& dx12_direct_commands();
+    ff::dx12_command_queues& dx12_queues();
     ff::dx12_command_queue& dx12_direct_queue();
     ff::dx12_command_queue& dx12_copy_queue();
     ff::dx12_command_queue& dx12_compute_queue();
+
     ff::dx12_descriptors_cpu& dx12_descriptors_buffer();
     ff::dx12_descriptors_cpu& dx12_descriptors_sampler();
     ff::dx12_descriptors_cpu& dx12_descriptors_target();

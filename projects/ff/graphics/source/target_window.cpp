@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "color.h"
 #include "dx11_device_state.h"
+#include "dx12_command_queue.h"
 #include "dx12_commands.h"
+#include "dx12_descriptor_allocator.h"
 #include "dxgi_util.h"
 #include "graphics.h"
 #include "target_window.h"
@@ -24,7 +26,7 @@ ff::target_window::target_window(ff::window* window)
 #endif
 #if DXVER == 12
     , fence_values{}
-    , rtv_desc_size(0)
+    , views(ff::graphics::dx12_descriptors_target().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
 #endif
 {
@@ -41,7 +43,7 @@ ff::target_window::target_window(ff::window* window)
 ff::target_window::~target_window()
 {
 #if DXVER == 12
-    ff::graphics::dx12_command_queues().wait_for_idle();
+    ff::graphics::dx12_queues().wait_for_idle();
 #endif
 
     if (this->main_window && this->swap_chain)
@@ -119,41 +121,22 @@ ID3D12ResourceX* ff::target_window::texture()
 {
     return this->render_targets[this->back_buffer_index].Get();
 }
+
 D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::view()
 {
-    D3D12_CPU_DESCRIPTOR_HANDLE handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
-    handle.ptr += this->back_buffer_index * this->rtv_desc_size;
-    return handle;
-}
-
-ID3D12CommandAllocatorX* ff::target_window::command_allocator()
-{
-    return this->command_allocators[this->back_buffer_index].Get();
-}
-
-ID3D12GraphicsCommandListX* ff::target_window::command_list()
-{
-    return this->command_list_.Get();
+    return this->views.cpu_handle(this->back_buffer_index);
 }
 
 bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
-        ff::graphics::dx12_command_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
-
-        this->command_allocator()->Reset();
-        this->command_list()->Reset(this->command_allocator(), nullptr);
-
-        D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
-        barrier.Transition.pResource = this->texture();
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        this->command_list()->ResourceBarrier(1, &barrier);
+        ff::graphics::dx12_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
+        ff::graphics::dx12_direct_commands().transition(this->texture(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         if (clear_color)
         {
-            this->command_list()->ClearRenderTargetView(this->view(), reinterpret_cast<const float*>(clear_color), 0, nullptr);
+            ff::graphics::dx12_direct_commands()->ClearRenderTargetView(this->view(), reinterpret_cast<const float*>(clear_color), 0, nullptr);
         }
 
         return true;
@@ -167,17 +150,9 @@ bool ff::target_window::post_render()
     HRESULT hr = E_FAIL;
     if (*this)
     {
-        D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
-        barrier.Transition.pResource = this->texture();
-        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-
-        ID3D12GraphicsCommandList* command_list = this->command_list();
-        command_list->ResourceBarrier(1, &barrier);
-        command_list->Close();
-
-        ID3D12CommandList* command_lists[] = { command_list };
-        ff::graphics::dx12_direct_queue().get()->ExecuteCommandLists(1, command_lists);
+        ff::graphics::dx12_direct_commands().transition(this->texture(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+        ff::graphics::dx12_direct_commands().execute(false);
+        ff::graphics::dx12_direct_commands() = ff::graphics::dx12_direct_queue().new_commands();
 
         hr = this->swap_chain->Present(1, 0);
 
@@ -190,10 +165,7 @@ bool ff::target_window::post_render()
 
 void ff::target_window::before_resize()
 {
-    ff::graphics::dx12_command_queues().wait_for_idle();
-
-    this->rtv_desc_heap.Reset();
-    this->rtv_desc_size = 0;
+    ff::graphics::dx12_queues().wait_for_idle();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
@@ -204,14 +176,7 @@ void ff::target_window::before_resize()
 void ff::target_window::internal_reset()
 {
     this->before_resize();
-
-    this->command_list_.Reset();
     this->swap_chain.Reset();
-
-    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
-    {
-        this->command_allocators[i].Reset();
-    }
 }
 
 #endif
@@ -332,43 +297,16 @@ bool ff::target_window::size(const ff::window_size& size)
 #elif DXVER == 12
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
 
-    if (!this->command_list_ && FAILED(ff::graphics::dx12_device()->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
-        __uuidof(ID3D12GraphicsCommandListX), reinterpret_cast<void**>(this->command_list_.GetAddressOf()))))
-    {
-        assert(false);
-        return false;
-    }
-
-    if (!this->rtv_desc_heap)
-    {
-        D3D12_DESCRIPTOR_HEAP_DESC rtv_heap_desc{};
-        rtv_heap_desc.NumDescriptors = static_cast<UINT>(ff::target_window::BACK_BUFFER_COUNT);
-        rtv_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-
-        if (FAILED(ff::graphics::dx12_device()->CreateDescriptorHeap(&rtv_heap_desc,
-            __uuidof(ID3D12DescriptorHeapX), reinterpret_cast<void**>(this->rtv_desc_heap.GetAddressOf()))))
-        {
-            assert(false);
-            return false;
-        }
-
-        this->rtv_desc_size = ff::graphics::dx12_device()->GetDescriptorHandleIncrementSize(rtv_heap_desc.Type);
-    }
-
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        if ((!this->command_allocators[i] && FAILED(ff::graphics::dx12_device()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-                __uuidof(ID3D12CommandAllocatorX), reinterpret_cast<void**>(this->command_allocators[i].GetAddressOf())))) ||
-            (!this->render_targets[i] && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i),
-                __uuidof(ID3D12ResourceX), reinterpret_cast<void**>(this->render_targets[i].GetAddressOf())))))
+        if (!this->render_targets[i] && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i),
+             __uuidof(ID3D12ResourceX), reinterpret_cast<void**>(this->render_targets[i].GetAddressOf()))))
         {
             assert(false);
             return false;
         }
 
-        D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle = this->rtv_desc_heap->GetCPUDescriptorHandleForHeapStart();
-        rtv_handle.ptr += this->rtv_desc_size * i;
-        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].Get(), nullptr, rtv_handle);
+        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].Get(), nullptr, this->views.cpu_handle(i));
     }
 #endif
 

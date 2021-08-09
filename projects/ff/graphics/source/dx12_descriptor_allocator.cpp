@@ -1,46 +1,19 @@
 #include "pch.h"
+#include "dx12_command_queue.h"
 #include "dx12_commands.h"
-#include "dx12_descriptors.h"
+#include "dx12_descriptor_allocator.h"
 #include "graphics.h"
 
 #if DXVER == 12
 
-ff::dx12_descriptor_range::dx12_descriptor_range(ff::internal::dx12_descriptor_bucket_base& owner, size_t start, size_t count)
-    : owner(owner)
-    , start_(start)
-    , count_(count)
-{}
-
-ff::dx12_descriptor_range::~dx12_descriptor_range()
+bool ff::internal::dx12_descriptor_bucket::range_t::operator<(const range_t& other) const
 {
-    this->owner.free_range(*this);
+    return this->start < other.start;
 }
 
-ff::dx12_descriptor_range::operator bool() const
+size_t ff::internal::dx12_descriptor_bucket::range_t::after_end() const
 {
-    return this->count_ != 0;
-}
-
-size_t ff::dx12_descriptor_range::start() const
-{
-    return this->start_;
-}
-
-size_t ff::dx12_descriptor_range::count() const
-{
-    return this->count_;
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12_descriptor_range::cpu_handle(size_t index) const
-{
-    assert(index < this->count_);
-    return this->owner.cpu_handle(this->start_ + index);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE ff::dx12_descriptor_range::gpu_handle(size_t index) const
-{
-    assert(index < this->count_);
-    return this->owner.gpu_handle(this->start_ + index);
+    return this->start + this->count;
 }
 
 ff::internal::dx12_descriptor_bucket::dx12_descriptor_bucket(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
@@ -50,6 +23,8 @@ ff::internal::dx12_descriptor_bucket::dx12_descriptor_bucket(ID3D12DescriptorHea
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc = this->descriptor_heap->GetDesc();
     this->descriptor_size = static_cast<size_t>(ff::graphics::dx12_device()->GetDescriptorHandleIncrementSize(desc.Type));
+
+    this->free_ranges.emplace_back(range_t{ 0, this->descriptor_count });
 }
 
 ID3D12DescriptorHeapX* ff::internal::dx12_descriptor_bucket::get() const
@@ -64,17 +39,67 @@ void ff::internal::dx12_descriptor_bucket::reset(ID3D12DescriptorHeapX* descript
 
 ff::dx12_descriptor_range ff::internal::dx12_descriptor_bucket::alloc_range(size_t count)
 {
-    // TODO
+    std::lock_guard<std::mutex> lock(this->ranges_mutex);
+
+    for (auto i = this->free_ranges.begin(); i != this->free_ranges.end(); i++)
+    {
+        if (i->count >= count)
+        {
+            size_t start = i->start;
+            i->start += count;
+            i->count -= count;
+
+            if (!i->count)
+            {
+                this->free_ranges.erase(i);
+            }
+
+            return ff::dx12_descriptor_range(*this, start, count);
+        }
+    }
+
     return ff::dx12_descriptor_range(*this, 0, 0);
 }
 
 void ff::internal::dx12_descriptor_bucket::free_range(const dx12_descriptor_range& range)
 {
-    // TODO
+    std::lock_guard<std::mutex> lock(this->ranges_mutex);
+
+    range_t range2{ range.start(), range.count() };
+    auto i = std::lower_bound(this->free_ranges.begin(), this->free_ranges.end(), range2);
+    assert(i == this->free_ranges.end() || range2.start < i->start);
+
+    if (i != this->free_ranges.begin())
+    {
+        auto prev = std::prev(i);
+        if (prev->after_end() == range2.start)
+        {
+            prev->count += range2.count;
+
+            if (i != this->free_ranges.end() && i->start == prev->after_end())
+            {
+                prev->count += i->count;
+                this->free_ranges.erase(i);
+            }
+
+            return;
+        }
+    }
+
+    if (i != this->free_ranges.end() && i->start == range2.after_end())
+    {
+        i->start -= range2.count;
+        i->count += range2.count;
+        return;
+    }
+
+    this->free_ranges.insert(i, range2);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_bucket::cpu_handle(size_t index) const
 {
+    assert(index < this->descriptor_count);
+
     D3D12_CPU_DESCRIPTOR_HANDLE handle = this->descriptor_heap->GetCPUDescriptorHandleForHeapStart();
     handle.ptr += (this->descriptor_start + index) * this->descriptor_size;
     return handle;
@@ -82,6 +107,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_bucket::cpu_handle(siz
 
 D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_bucket::gpu_handle(size_t index) const
 {
+    assert(index < this->descriptor_count);
+
     D3D12_GPU_DESCRIPTOR_HANDLE handle = this->descriptor_heap->GetGPUDescriptorHandleForHeapStart();
     handle.ptr += static_cast<uint64_t>((this->descriptor_start + index) * this->descriptor_size);
     return handle;
@@ -130,7 +157,7 @@ ff::dx12_descriptor_range ff::internal::dx12_descriptor_ring::alloc_range(size_t
 
             while (!this->ranges.empty() && start + count > this->ranges.front().start)
             {
-                ff::graphics::dx12_command_queues().wait_for_fence(this->ranges.front().fence_value);
+                ff::graphics::dx12_queues().wait_for_fence(this->ranges.front().fence_value);
                 this->ranges.pop_front();
             }
         }
@@ -153,6 +180,8 @@ void ff::internal::dx12_descriptor_ring::fence(uint64_t value)
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_ring::cpu_handle(size_t index) const
 {
+    assert(index < this->descriptor_count);
+
     D3D12_CPU_DESCRIPTOR_HANDLE handle = this->descriptor_heap->GetCPUDescriptorHandleForHeapStart();
     handle.ptr += (this->descriptor_start + index) * this->descriptor_size;
     return handle;
@@ -160,6 +189,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_ring::cpu_handle(size_
 
 D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_ring::gpu_handle(size_t index) const
 {
+    assert(index < this->descriptor_count);
+
     D3D12_GPU_DESCRIPTOR_HANDLE handle = this->descriptor_heap->GetGPUDescriptorHandleForHeapStart();
     handle.ptr += static_cast<uint64_t>((this->descriptor_start + index) * this->descriptor_size);
     return handle;
@@ -194,7 +225,7 @@ ff::dx12_descriptor_range ff::dx12_descriptors_cpu::alloc_range(size_t count)
     D3D12_DESCRIPTOR_HEAP_DESC desc{ this->type, static_cast<UINT>(std::max(this->bucket_size, count)) };
     ff::graphics::dx12_device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap));
 
-    this->buckets.push_front(ff::internal::dx12_descriptor_bucket(descriptor_heap.Get(), 0, this->bucket_size));
+    this->buckets.emplace_front(descriptor_heap.Get(), 0, this->bucket_size);
 
     return this->buckets.front().alloc_range(count);
 }

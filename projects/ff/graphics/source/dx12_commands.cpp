@@ -1,262 +1,172 @@
 #include "pch.h"
+#include "dx12_descriptor_allocator.h"
+#include "dx12_command_queue.h"
 #include "dx12_commands.h"
 #include "graphics.h"
 
 #if DXVER == 12
 
-static constexpr uint64_t type_to_fence(D3D12_COMMAND_LIST_TYPE type)
-{
-    return static_cast<uint64_t>(type) << 56;
-}
-
-static constexpr D3D12_COMMAND_LIST_TYPE fence_to_type(uint64_t value)
-{
-    return static_cast<D3D12_COMMAND_LIST_TYPE>(value >> 56);
-}
-
-ff::dx12_commands::dx12_commands(dx12_command_queue& owner, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator)
-    : owner(owner)
+ff::dx12_commands::dx12_commands(
+    dx12_command_queue& owner,
+    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list,
+    Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator,
+    ID3D12PipelineStateX* initial_state)
+    : owner(&owner)
     , list(std::move(list))
     , allocator(std::move(allocator))
+    , state_(initial_state)
     , allocator_fence_value(0)
-{}
+    , open_(false)
+{
+    this->open();
+}
+
+ff::dx12_commands::dx12_commands(dx12_commands&& other) noexcept
+    : owner(nullptr)
+    , allocator_fence_value(0)
+    , open_(false)
+{
+    *this = std::move(other);
+}
 
 ff::dx12_commands::~dx12_commands()
 {
-    this->owner.return_commands(std::move(this->list), std::move(this->allocator), this->allocator_fence_value);
+    this->destroy();
+}
+
+ff::dx12_commands& ff::dx12_commands::operator=(ff::dx12_commands&& other) noexcept
+{
+    if (this != &other)
+    {
+        this->destroy();
+
+        std::swap(this->owner, other.owner);
+        std::swap(this->list, other.list);
+        std::swap(this->allocator, other.allocator);
+        std::swap(this->state_, other.state_);
+        std::swap(this->allocator_fence_value, other.allocator_fence_value);
+        std::swap(this->open_, other.open_);
+    }
+
+    return *this;
+}
+
+ff::dx12_commands::operator bool() const
+{
+    return this->owner != nullptr;
 }
 
 ID3D12GraphicsCommandListX* ff::dx12_commands::get() const
 {
+    assert(this->open_);
     return this->list.Get();
+}
+
+ID3D12GraphicsCommandListX* ff::dx12_commands::operator->() const
+{
+    return this->get();
+}
+
+void ff::dx12_commands::state(ID3D12PipelineStateX* state)
+{
+    if (this->state_.Get() != state)
+    {
+        this->state_ = state;
+        this->list->SetPipelineState(state);
+    }
+}
+
+void ff::dx12_commands::transition(ID3D12ResourceX* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, size_t sub_resource)
+{
+    assert(this->open_);
+
+    D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+    barrier.Transition.pResource = resource;
+    barrier.Transition.StateBefore = before;
+    barrier.Transition.StateAfter = after;
+
+    this->list->ResourceBarrier(1, &barrier);
+}
+
+uint64_t ff::dx12_commands::execute(bool reopen)
+{
+    uint64_t fence_value = 0;
+
+    if (this->close())
+    {
+        this->allocator_fence_value = fence_value = this->execute();
+
+        if (reopen)
+        {
+            this->open();
+        }
+    }
+
+    return fence_value;
+}
+
+void ff::dx12_commands::destroy()
+{
+    if (*this)
+    {
+        this->close();
+        this->owner->return_commands(std::move(this->list), std::move(this->allocator), this->allocator_fence_value);
+
+        this->owner = nullptr;
+        this->list.Reset();
+        this->allocator.Reset();
+        this->state_.Reset();
+        this->allocator_fence_value = 0;
+    }
 }
 
 uint64_t ff::dx12_commands::execute()
 {
-    ff::dx12_commands* self = this;
-    return ff::dx12_commands::execute(&self, 1);
-}
+    uint64_t fence_value = 0;
 
-// static
-uint64_t ff::dx12_commands::execute(dx12_commands* const* first, size_t count)
-{
-    uint64_t allocator_fence_value = 0;
-
-    if (count)
+    assert(!this->open_);
+    if (!this->open_)
     {
-        ff::dx12_command_queue& owner = first[0]->owner;
-
-        ff::stack_vector<ID3D12CommandList*, 32> lists;
-        lists.reserve(count);
-
-        for (size_t i = 0; i < count; i++)
-        {
-            assert(&first[i]->owner == &owner);
-            ID3D12GraphicsCommandListX* list = first[i]->list.Get();
-            list->Close();
-            lists.push_back(list);
-        }
-
-        owner.get()->ExecuteCommandLists(static_cast<UINT>(count), lists.data());
-        allocator_fence_value = owner.signal_fence();
-
-        for (size_t i = 0; i < count; i++)
-        {
-            ff::dx12_commands* commands = first[i];
-            commands->allocator_fence_value = allocator_fence_value;
-            commands->list.Get()->Reset(commands->allocator.Get(), nullptr);
-        }
+        ID3D12CommandList* list = this->list.Get();
+        this->owner->get()->ExecuteCommandLists(1, &list);
+        fence_value = this->owner->signal_fence();
     }
 
-    return allocator_fence_value;
+    return fence_value;
 }
 
-ff::dx12_command_queue::dx12_command_queue(dx12_command_queues& owner, D3D12_COMMAND_LIST_TYPE type, uint64_t initial_fence_value)
-    : owner(owner)
-    , type(type)
-    , fence_event(ff::create_event(false, false))
-    , completed_fence_value(initial_fence_value)
-    , next_fence_value(initial_fence_value)
+bool ff::dx12_commands::close()
 {
-    const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ type };
-    ff::graphics::dx12_device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));
-    ff::graphics::dx12_device()->CreateFence(this->completed_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence));
-}
-
-ff::dx12_command_queue::~dx12_command_queue()
-{
-    this->wait_for_idle();
-}
-
-ID3D12CommandQueueX* ff::dx12_command_queue::get() const
-{
-    return this->command_queue.Get();
-}
-
-uint64_t ff::dx12_command_queue::signal_fence()
-{
-    std::lock_guard<std::mutex> lock(this->next_fence_mutex);
-    this->command_queue->Signal(this->fence.Get(), this->next_fence_value);
-    return this->next_fence_value++;
-}
-
-bool ff::dx12_command_queue::fence_complete(uint64_t value)
-{
-    std::lock_guard<std::mutex> lock(this->completed_fence_mutex);
-    return this->internal_fence_complete(value);
-}
-
-bool ff::dx12_command_queue::internal_fence_complete(uint64_t value)
-{
-    if (value > this->completed_fence_value)
+    if (this->open_)
     {
-        this->completed_fence_value = std::max(this->completed_fence_value, this->fence->GetCompletedValue());
+        this->list->Close();
+        this->open_ = false;
+
+        return true;
     }
 
-    return value <= this->completed_fence_value;
+    return false;
 }
 
-void ff::dx12_command_queue::wait_for_fence(uint64_t value)
+bool ff::dx12_commands::open()
 {
-    if (value)
+    if (!this->open_)
     {
-        ff::dx12_command_queue& other = this->owner.from_fence(value);
-        if (this == &other)
-        {
-            std::lock_guard<std::mutex> lock(this->completed_fence_mutex);
+        this->list->Reset(this->allocator.Get(), this->state_.Get());
 
-            if (!this->internal_fence_complete(value) && SUCCEEDED(this->fence->SetEventOnCompletion(value, this->fence_event)))
-            {
-                ::WaitForSingleObject(this->fence_event, INFINITE);
-                this->completed_fence_value = value;
-            }
-        }
-        else
+        ID3D12DescriptorHeap* heaps[2] =
         {
-            other.get()->Wait(other.fence.Get(), value);
-        }
-    }
-}
+            ff::graphics::dx12_descriptors_gpu_buffer().get(),
+            ff::graphics::dx12_descriptors_gpu_sampler().get(),
+        };
 
-void ff::dx12_command_queue::wait_for_idle()
-{
-    this->wait_for_fence(this->signal_fence());
-}
+        this->list->SetDescriptorHeaps(2, heaps);
+        this->open_ = true;
 
-ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* initial_state)
-{
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
-    {
-        std::lock_guard<std::mutex> lock(this->allocators_mutex);
-
-        if (this->allocators.empty() || !this->fence_complete(this->allocators.front().first))
-        {
-            ff::graphics::dx12_device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator));
-        }
-        else
-        {
-            allocator = std::move(this->allocators.front().second);
-            this->allocators.pop_front();
-        }
+        return true;
     }
 
-    Microsoft::WRL::ComPtr < ID3D12GraphicsCommandListX> list;
-    {
-        std::lock_guard<std::mutex> lock(this->lists_mutex);
-
-        if (this->lists.empty())
-        {
-            ff::graphics::dx12_device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&list));
-        }
-        else
-        {
-            list = std::move(this->lists.front());
-            this->lists.pop_front();
-        }
-    }
-
-    allocator->Reset();
-    list->Reset(allocator.Get(), initial_state);
-
-    return dx12_commands(*this, std::move(list), std::move(allocator));
-}
-
-void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator, uint64_t allocator_fence_value)
-{
-    list->Close();
-
-    // allocator
-    {
-        std::lock_guard<std::mutex> lock(this->allocators_mutex);
-        if (!allocator_fence_value)
-        {
-            // didn't draw anything?
-            this->allocators.push_front(std::make_pair(allocator_fence_value, std::move(allocator)));
-        }
-        else
-        {
-            this->allocators.push_back(std::make_pair(allocator_fence_value, std::move(allocator)));
-        }
-    }
-
-    // list
-    {
-        std::lock_guard<std::mutex> lock(this->lists_mutex);
-        this->lists.push_front(std::move(list));
-    }
-}
-
-ff::dx12_command_queues::dx12_command_queues()
-    : direct_queue(*this, D3D12_COMMAND_LIST_TYPE_DIRECT, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_DIRECT))
-    , compute_queue(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_COMPUTE))
-    , copy_queue(*this, D3D12_COMMAND_LIST_TYPE_COPY, ::type_to_fence(D3D12_COMMAND_LIST_TYPE_COPY))
-{}
-
-ff::dx12_command_queue& ff::dx12_command_queues::direct()
-{
-    return this->direct_queue;
-}
-
-ff::dx12_command_queue& ff::dx12_command_queues::compute()
-{
-    return this->compute_queue;
-}
-
-ff::dx12_command_queue& ff::dx12_command_queues::copy()
-{
-    return this->copy_queue;
-}
-
-ff::dx12_command_queue& ff::dx12_command_queues::from_type(D3D12_COMMAND_LIST_TYPE type)
-{
-    switch (type)
-    {
-    default:
-        return this->direct_queue;
-
-    case D3D12_COMMAND_LIST_TYPE_COPY:
-        return this->copy_queue;
-
-    case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-        return this->compute_queue;
-    }
-}
-
-ff::dx12_command_queue& ff::dx12_command_queues::from_fence(uint64_t value)
-{
-    return this->from_type(::fence_to_type(value));
-}
-
-void ff::dx12_command_queues::wait_for_fence(uint64_t value)
-{
-    this->from_fence(value).wait_for_fence(value);
-}
-
-void ff::dx12_command_queues::wait_for_idle()
-{
-    this->copy_queue.wait_for_idle();
-    this->compute_queue.wait_for_idle();
-    this->direct_queue.wait_for_idle();
+    return false;
 }
 
 #endif

@@ -1,39 +1,9 @@
 #pragma once
 
+#include "dx12_descriptor_range.h"
 #include "graphics_child_base.h"
 
 #if DXVER == 12
-
-namespace ff::internal
-{
-    class dx12_descriptor_bucket_base;
-}
-
-namespace ff
-{
-    class dx12_descriptor_range
-    {
-    public:
-        dx12_descriptor_range(ff::internal::dx12_descriptor_bucket_base& owner, size_t start, size_t count);
-        dx12_descriptor_range(dx12_descriptor_range&& other) noexcept = default;
-        dx12_descriptor_range(const dx12_descriptor_range& other) = delete;
-        ~dx12_descriptor_range();
-
-        dx12_descriptor_range& operator=(dx12_descriptor_range&& other) noexcept = default;
-        dx12_descriptor_range& operator=(const dx12_descriptor_range& other) = delete;
-
-        operator bool() const;
-        size_t start() const;
-        size_t count() const;
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(size_t index) const;
-        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const;
-
-    private:
-        ff::internal::dx12_descriptor_bucket_base& owner;
-        size_t start_;
-        size_t count_;
-    };
-}
 
 namespace ff::internal
 {
@@ -51,10 +21,10 @@ namespace ff::internal
     {
     public:
         dx12_descriptor_bucket(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count);
-        dx12_descriptor_bucket(dx12_descriptor_bucket&& other) noexcept = default;
+        dx12_descriptor_bucket(dx12_descriptor_bucket&& other) noexcept = delete;
         dx12_descriptor_bucket(const dx12_descriptor_bucket& other) = delete;
 
-        dx12_descriptor_bucket& operator=(dx12_descriptor_bucket&& other) noexcept = default;
+        dx12_descriptor_bucket& operator=(dx12_descriptor_bucket&& other) noexcept = delete;
         dx12_descriptor_bucket& operator=(const dx12_descriptor_bucket& other) = delete;
 
         ID3D12DescriptorHeapX* get() const;
@@ -66,8 +36,18 @@ namespace ff::internal
         virtual D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const override;
 
     private:
+        struct range_t
+        {
+            bool operator<(const range_t& other) const;
+            size_t after_end() const;
+
+            size_t start;
+            size_t count;
+        };
+
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
-        std::vector<std::pair<size_t, size_t>> free_ranges;
+        std::mutex ranges_mutex;
+        std::vector<range_t> free_ranges;
         size_t descriptor_start;
         size_t descriptor_count;
         size_t descriptor_size;
@@ -77,10 +57,10 @@ namespace ff::internal
     {
     public:
         dx12_descriptor_ring(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count);
-        dx12_descriptor_ring(dx12_descriptor_ring&& other) noexcept = default;
+        dx12_descriptor_ring(dx12_descriptor_ring&& other) noexcept = delete;
         dx12_descriptor_ring(const dx12_descriptor_ring& other) = delete;
 
-        dx12_descriptor_ring& operator=(dx12_descriptor_ring&& other) noexcept = default;
+        dx12_descriptor_ring& operator=(dx12_descriptor_ring&& other) noexcept = delete;
         dx12_descriptor_ring& operator=(const dx12_descriptor_ring& other) = delete;
 
         void reset(ID3D12DescriptorHeapX* descriptor_heap);
