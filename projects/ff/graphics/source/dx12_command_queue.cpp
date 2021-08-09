@@ -25,11 +25,15 @@ ff::dx12_command_queue::dx12_command_queue(dx12_command_queues& owner, D3D12_COM
     const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ type };
     ff::graphics::dx12_device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));
     ff::graphics::dx12_device()->CreateFence(this->completed_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence));
+
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx12_command_queue::~dx12_command_queue()
 {
     this->wait_for_idle();
+
+    ff::internal::graphics::remove_child(this);
 }
 
 ID3D12CommandQueueX* ff::dx12_command_queue::get() const

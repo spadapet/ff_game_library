@@ -78,6 +78,7 @@
     <ClInclude Include="source\dx12_command_queue.h" />
     <ClInclude Include="source\dx12_descriptor_allocator.h" />
     <ClInclude Include="source\dx12_descriptor_range.h" />
+    <ClInclude Include="source\dx12_resource.h" />
     <ClInclude Include="source\target_base.h" />
     <ClInclude Include="source\target_texture.h" />
     <ClInclude Include="source\target_window_base.h" />

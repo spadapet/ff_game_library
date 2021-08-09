@@ -7,6 +7,7 @@
 namespace ff
 {
     class dx12_command_queue;
+    struct dx12_resource;
 
     class dx12_commands : public ff::internal::graphics_child_base
     {
@@ -27,7 +28,7 @@ namespace ff
         ID3D12GraphicsCommandListX* get() const;
         ID3D12GraphicsCommandListX* operator->() const;
         void state(ID3D12PipelineStateX* state);
-        void transition(ID3D12ResourceX* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, size_t sub_resource = 0);
+        void transition(dx12_resource& resource, D3D12_RESOURCE_STATES new_state);
 
         uint64_t execute(bool reopen);
 

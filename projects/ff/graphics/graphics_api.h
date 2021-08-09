@@ -14,6 +14,7 @@
 #include "source/dx12_commands.h"
 #include "source/dx12_descriptor_allocator.h"
 #include "source/dx12_descriptor_range.h"
+#include "source/dx12_resource.h"
 #include "source/dxgi_util.h"
 #include "source/graphics.h"
 #include "source/graphics_child_base.h"

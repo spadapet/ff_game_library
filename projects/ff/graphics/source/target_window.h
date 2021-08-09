@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dx12_descriptor_range.h"
+#include "dx12_resource.h"
 #include "target_base.h"
 #include "target_window_base.h"
 #include "graphics_child_base.h"
@@ -62,7 +63,7 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
-        std::array<Microsoft::WRL::ComPtr<ID3D12ResourceX>, BACK_BUFFER_COUNT> render_targets;
+        std::array<ff::dx12_resource, BACK_BUFFER_COUNT> render_targets;
         std::array<uint64_t, BACK_BUFFER_COUNT> fence_values;
         ff::dx12_descriptor_range views;
         size_t back_buffer_index;

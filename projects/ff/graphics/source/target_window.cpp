@@ -119,7 +119,7 @@ void ff::target_window::internal_reset()
 
 ID3D12ResourceX* ff::target_window::texture()
 {
-    return this->render_targets[this->back_buffer_index].Get();
+    return this->render_targets[this->back_buffer_index].resource.Get();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::view()
@@ -132,7 +132,7 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
     if (*this)
     {
         ff::graphics::dx12_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
-        ff::graphics::dx12_direct_commands().transition(this->texture(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_RENDER_TARGET);
 
         if (clear_color)
         {
@@ -150,7 +150,7 @@ bool ff::target_window::post_render()
     HRESULT hr = E_FAIL;
     if (*this)
     {
-        ff::graphics::dx12_direct_commands().transition(this->texture(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+        ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
         ff::graphics::dx12_direct_commands().execute(false);
         ff::graphics::dx12_direct_commands() = ff::graphics::dx12_direct_queue().new_commands();
 
@@ -169,7 +169,7 @@ void ff::target_window::before_resize()
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        this->render_targets[i].Reset();
+        this->render_targets[i] = {};
     }
 }
 
@@ -299,14 +299,13 @@ bool ff::target_window::size(const ff::window_size& size)
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        if (!this->render_targets[i] && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i),
-             __uuidof(ID3D12ResourceX), reinterpret_cast<void**>(this->render_targets[i].GetAddressOf()))))
+        if (!this->render_targets[i].resource && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&this->render_targets[i].resource))))
         {
             assert(false);
             return false;
         }
 
-        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].Get(), nullptr, this->views.cpu_handle(i));
+        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].resource.Get(), nullptr, this->views.cpu_handle(i));
     }
 #endif
 

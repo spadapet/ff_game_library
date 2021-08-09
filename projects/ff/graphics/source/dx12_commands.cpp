@@ -2,6 +2,7 @@
 #include "dx12_descriptor_allocator.h"
 #include "dx12_command_queue.h"
 #include "dx12_commands.h"
+#include "dx12_resource.h"
 #include "graphics.h"
 
 #if DXVER == 12
@@ -19,6 +20,8 @@ ff::dx12_commands::dx12_commands(
     , open_(false)
 {
     this->open();
+
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx12_commands::dx12_commands(dx12_commands&& other) noexcept
@@ -27,11 +30,15 @@ ff::dx12_commands::dx12_commands(dx12_commands&& other) noexcept
     , open_(false)
 {
     *this = std::move(other);
+
+    ff::internal::graphics::add_child(this);
 }
 
 ff::dx12_commands::~dx12_commands()
 {
     this->destroy();
+
+    ff::internal::graphics::remove_child(this);
 }
 
 ff::dx12_commands& ff::dx12_commands::operator=(ff::dx12_commands&& other) noexcept
@@ -76,16 +83,21 @@ void ff::dx12_commands::state(ID3D12PipelineStateX* state)
     }
 }
 
-void ff::dx12_commands::transition(ID3D12ResourceX* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, size_t sub_resource)
+void ff::dx12_commands::transition(ff::dx12_resource& resource, D3D12_RESOURCE_STATES new_state)
 {
     assert(this->open_);
 
-    D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
-    barrier.Transition.pResource = resource;
-    barrier.Transition.StateBefore = before;
-    barrier.Transition.StateAfter = after;
+    if (new_state != resource.state)
+    {
+        D3D12_RESOURCE_BARRIER barrier{ D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
+        barrier.Transition.pResource = resource.resource.Get();
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barrier.Transition.StateBefore = resource.state;
+        barrier.Transition.StateAfter = new_state;
 
-    this->list->ResourceBarrier(1, &barrier);
+        this->list->ResourceBarrier(1, &barrier);
+        resource.state = new_state;
+    }
 }
 
 uint64_t ff::dx12_commands::execute(bool reopen)
@@ -112,6 +124,7 @@ bool ff::dx12_commands::reset()
         // Can't return the existing list/allocator
         this->list.Reset();
         this->allocator.Reset();
+        this->open_ = false;
 
         *this = this->owner->new_commands();
     }

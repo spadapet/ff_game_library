@@ -306,6 +306,9 @@
     <ClInclude Include="source\dx12_command_queue.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\dx12_resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
