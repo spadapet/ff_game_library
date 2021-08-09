@@ -34,6 +34,14 @@ void run_test_app()
 
         while (ff::handle_messages())
         {
+            if (timer.tick_count() == 240)
+            {
+                if (!ff::graphics::reset(true))
+                {
+                    break;
+                }
+            }
+
             if (!target.pre_render(&ff::color::green()))
             {
                 break;

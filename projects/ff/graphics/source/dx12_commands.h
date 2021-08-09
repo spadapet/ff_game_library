@@ -1,12 +1,14 @@
 #pragma once
 
+#include "graphics_child_base.h"
+
 #if DXVER == 12
 
 namespace ff
 {
     class dx12_command_queue;
 
-    class dx12_commands
+    class dx12_commands : public ff::internal::graphics_child_base
     {
     public:
         dx12_commands(
@@ -28,6 +30,10 @@ namespace ff
         void transition(ID3D12ResourceX* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, size_t sub_resource = 0);
 
         uint64_t execute(bool reopen);
+
+        // graphics_child_base
+        virtual bool reset() override;
+        virtual int reset_priority() const override;
 
     private:
         void destroy();

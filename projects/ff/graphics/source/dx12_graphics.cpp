@@ -35,7 +35,7 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
     return nullptr;
 }
 
-bool ff::internal::graphics::init_d3d()
+bool ff::internal::graphics::init_d3d(bool for_reset)
 {
     ::dx12_device = ::create_dx12_device();
     if (::dx12_device)
@@ -43,14 +43,17 @@ bool ff::internal::graphics::init_d3d()
         LUID luid = ::dx12_device->GetAdapterLuid();
         if (SUCCEEDED(ff::graphics::dxgi_factory()->EnumAdapterByLuid(luid, __uuidof(IDXGIAdapterX), reinterpret_cast<void**>(::dxgi_adapter.GetAddressOf()))))
         {
-            ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256);
-            ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
-            ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
-            ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 32);
-            ::dx12_descriptors_gpu[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12_descriptors_gpu>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048);
-            ::dx12_descriptors_gpu[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12_descriptors_gpu>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256);
-            ::dx12_queues = std::make_unique<ff::dx12_command_queues>();
-            ::dx12_direct_commands = std::make_unique<ff::dx12_commands>(::dx12_queues->direct().new_commands());
+            if (!for_reset)
+            {
+                ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256);
+                ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
+                ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
+                ::dx12_descriptors_cpu[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = std::make_unique<ff::dx12_descriptors_cpu>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 32);
+                ::dx12_descriptors_gpu[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12_descriptors_gpu>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 2048);
+                ::dx12_descriptors_gpu[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12_descriptors_gpu>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256);
+                ::dx12_queues = std::make_unique<ff::dx12_command_queues>();
+                ::dx12_direct_commands = std::make_unique<ff::dx12_commands>(::dx12_queues->direct().new_commands());
+            }
 
             return true;
         }
@@ -60,19 +63,24 @@ bool ff::internal::graphics::init_d3d()
     return false;
 }
 
-void ff::internal::graphics::destroy_d3d()
+void ff::internal::graphics::destroy_d3d(bool for_reset)
 {
-    ::dx12_direct_commands.reset();
-    ::dx12_queues.reset();
+    ::dx12_queues->wait_for_idle();
 
-    for (auto& i : ::dx12_descriptors_cpu)
+    if (!for_reset)
     {
-        i.reset();
-    }
+        ::dx12_direct_commands.reset();
+        ::dx12_queues.reset();
 
-    for (auto& i : ::dx12_descriptors_gpu)
-    {
-        i.reset();
+        for (auto& i : ::dx12_descriptors_cpu)
+        {
+            i.reset();
+        }
+
+        for (auto& i : ::dx12_descriptors_gpu)
+        {
+            i.reset();
+        }
     }
 
     ::dxgi_adapter.Reset();

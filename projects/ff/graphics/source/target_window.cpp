@@ -400,7 +400,7 @@ bool ff::target_window::reset()
 
 int ff::target_window::reset_priority() const
 {
-    return -100;
+    return ff::internal::graphics_reset_priorities::target_window;
 }
 
 void ff::target_window::handle_message(ff::window_message& msg)

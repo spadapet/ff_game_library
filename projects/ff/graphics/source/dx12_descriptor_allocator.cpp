@@ -248,7 +248,7 @@ bool ff::dx12_descriptors_cpu::reset()
 
 int ff::dx12_descriptors_cpu::reset_priority() const
 {
-    return -200;
+    return ff::internal::graphics_reset_priorities::dx12_descriptors_cpu;
 }
 
 ff::dx12_descriptors_gpu::dx12_descriptors_gpu(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t ring_size)
@@ -296,7 +296,7 @@ bool ff::dx12_descriptors_gpu::reset()
 
 int ff::dx12_descriptors_gpu::reset_priority() const
 {
-    return -200;
+    return ff::internal::graphics_reset_priorities::dx12_descriptors_gpu;
 }
 
 #endif

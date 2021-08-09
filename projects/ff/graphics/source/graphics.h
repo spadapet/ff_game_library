@@ -70,8 +70,8 @@ namespace ff::internal::graphics
     bool init();
     void destroy();
 
-    bool init_d3d();
-    void destroy_d3d();
+    bool init_d3d(bool for_reset);
+    void destroy_d3d(bool for_reset);
     bool d3d_device_disconnected();
 
     void add_child(ff::internal::graphics_child_base* child);

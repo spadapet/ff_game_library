@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dx12_commands.h"
+#include "graphics_child_base.h"
 
 #if DXVER == 12
 
@@ -8,7 +9,7 @@ namespace ff
 {
     class dx12_command_queues;
 
-    class dx12_command_queue
+    class dx12_command_queue : public ff::internal::graphics_child_base
     {
     public:
         dx12_command_queue(dx12_command_queues& owner, D3D12_COMMAND_LIST_TYPE type, uint64_t initial_fence_value);
@@ -28,6 +29,10 @@ namespace ff
 
         ff::dx12_commands new_commands(ID3D12PipelineStateX* initial_state = nullptr);
         void return_commands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator, uint64_t allocator_fence_value);
+
+        // graphics_child_base
+        virtual bool reset() override;
+        virtual int reset_priority() const override;
 
     private:
         bool internal_fence_complete(uint64_t value);

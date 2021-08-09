@@ -97,7 +97,7 @@ bool ff::internal::graphics::init()
     }
 #endif
 
-    if (::init_dxgi() && ff::internal::graphics::init_d3d())
+    if (::init_dxgi() && ff::internal::graphics::init_d3d(false))
     {
         ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ff::graphics::dxgi_adapter_for_device());
         return true;
@@ -110,7 +110,7 @@ void ff::internal::graphics::destroy()
 {
     ::dxgi_adapter_outputs_hash = 0;
 
-    ff::internal::graphics::destroy_d3d();
+    ff::internal::graphics::destroy_d3d(false);
     ::destroy_dxgi();
 }
 
@@ -178,9 +178,9 @@ bool ff::graphics::reset(bool force)
 
     if (force)
     {
-        ff::internal::graphics::destroy_d3d();
+        ff::internal::graphics::destroy_d3d(true);
 
-        if (!ff::internal::graphics::init_d3d())
+        if (!ff::internal::graphics::init_d3d(true))
         {
             return false;
         }

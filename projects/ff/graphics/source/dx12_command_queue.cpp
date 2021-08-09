@@ -125,7 +125,7 @@ ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* ini
 
 void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX>&& list, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator, uint64_t allocator_fence_value)
 {
-    // allocator
+    if (allocator)
     {
         std::lock_guard<std::mutex> lock(this->allocators_mutex);
         if (!allocator_fence_value)
@@ -139,11 +139,40 @@ void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12Graphi
         }
     }
 
-    // list
+    if (list)
     {
         std::lock_guard<std::mutex> lock(this->lists_mutex);
         this->lists.push_front(std::move(list));
     }
+}
+
+bool ff::dx12_command_queue::reset()
+{
+    // allocator
+    {
+        std::lock_guard<std::mutex> lock(this->allocators_mutex);
+        this->allocators.clear();
+    }
+
+    // list
+    {
+        std::lock_guard<std::mutex> lock(this->lists_mutex);
+        this->lists.clear();
+    }
+
+    const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ this->type };
+    this->command_queue.Reset();
+    ff::graphics::dx12_device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));
+
+    this->fence.Reset();
+    ff::graphics::dx12_device()->CreateFence(this->completed_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence));
+
+    return true;
+}
+
+int ff::dx12_command_queue::reset_priority() const
+{
+    return ff::internal::graphics_reset_priorities::dx12_command_queue;
 }
 
 ff::dx12_command_queues::dx12_command_queues()

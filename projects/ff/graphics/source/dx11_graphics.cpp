@@ -57,7 +57,7 @@ static Microsoft::WRL::ComPtr<ID3D11DeviceX> create_dx11_device(D3D_FEATURE_LEVE
     return nullptr;
 }
 
-bool ff::internal::graphics::init_d3d()
+bool ff::internal::graphics::init_d3d(bool for_reset)
 {
     if (!(::dx11_device = ::create_dx11_device(::dx_feature_level, ::dx11_device_context)) ||
         FAILED(::dx11_device.As(&::dxgi_device)) ||
@@ -75,7 +75,7 @@ bool ff::internal::graphics::init_d3d()
     return true;
 }
 
-void ff::internal::graphics::destroy_d3d()
+void ff::internal::graphics::destroy_d3d(bool for_reset)
 {
     ::dx11_device_state->clear();
     ::dx11_device_state.reset();

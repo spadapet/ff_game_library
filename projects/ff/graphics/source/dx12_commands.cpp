@@ -105,6 +105,25 @@ uint64_t ff::dx12_commands::execute(bool reopen)
     return fence_value;
 }
 
+bool ff::dx12_commands::reset()
+{
+    if (*this)
+    {
+        // Can't return the existing list/allocator
+        this->list.Reset();
+        this->allocator.Reset();
+
+        *this = this->owner->new_commands();
+    }
+
+    return true;
+}
+
+int ff::dx12_commands::reset_priority() const
+{
+    return ff::internal::graphics_reset_priorities::dx12_commands;
+}
+
 void ff::dx12_commands::destroy()
 {
     if (*this)
