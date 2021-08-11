@@ -1,18 +1,18 @@
 #pragma once
 
-#include "dx12_descriptor_range.h"
+#include "dx12_resource.h"
 #include "graphics_child_base.h"
 
 #if DXVER == 12
 
 namespace ff::internal
 {
-    class dx12_descriptor_bucket_base
+    class dx12_buffer_bucket_base
     {
     public:
-        virtual ~dx12_descriptor_bucket_base() = default;
+        virtual ~dx12_buffer_bucket_base() = default;
 
-        virtual void free_range(const ff::dx12_descriptor_range& range) {}
+        virtual void free_resource(const ff::dx12_resource& range) {}
         virtual D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(size_t index) const = 0;
         virtual D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const = 0;
     };
@@ -31,7 +31,7 @@ namespace ff::internal
         void reset(ID3D12DescriptorHeapX* descriptor_heap);
         ff::dx12_descriptor_range alloc_range(size_t count);
 
-        virtual void free_range(const ff::dx12_descriptor_range& range) override;
+        virtual void free_range(const dx12_descriptor_range& range) override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(size_t index) const override;
         virtual D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const override;
 

@@ -86,6 +86,9 @@
     <ClCompile Include="source\dx12_command_queue.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx12_buffer_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphics_api.h" />
@@ -181,6 +184,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx12_resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_buffer_allocator.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

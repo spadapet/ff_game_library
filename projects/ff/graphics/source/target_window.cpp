@@ -238,7 +238,7 @@ bool ff::target_window::size(const ff::window_size& size)
                     {
                         Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
 
-                        if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(__uuidof(ISwapChainPanelNative), reinterpret_cast<void**>(native_panel.GetAddressOf()))) ||
+                        if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(IID_PPV_ARGS(&native_panel))) ||
                             FAILED(factory->CreateSwapChainForComposition(device.Get(), &desc, nullptr, &new_swap_chain)) ||
                             FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
                         {
@@ -288,7 +288,7 @@ bool ff::target_window::size(const ff::window_size& size)
     }
 
 #if DXVER == 11
-    if ((!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(this->texture_.GetAddressOf())))) ||
+    if ((!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, IID_PPV_ARGS(&this->texture_)))) ||
         (!this->view_ && (this->view_ = ff::internal::create_target_view(this->texture_.Get())) == nullptr))
     {
         assert(false);
