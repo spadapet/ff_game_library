@@ -27,6 +27,7 @@ namespace ff
         // target_base
         virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
         virtual bool post_render() override;
+        virtual ff::signal_sink<ff::target_base*, uint64_t>& render_presented() override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
 #if DXVER == 11
@@ -44,6 +45,7 @@ namespace ff
 #elif DXVER == 12
 #endif
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
+        ff::signal<ff::target_base*, uint64_t> render_presented_;
         size_t array_start;
         size_t array_count;
         size_t mip_level;

@@ -41,8 +41,10 @@ namespace ff
         uint64_t execute();
         bool close();
         bool open();
+        void render_frame_complete(uint64_t fence_value);
 
         ff::dx12_command_queue* owner;
+        ff::signal_connection render_frame_complete_connection;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list;
         Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
         Microsoft::WRL::ComPtr<ID3D12PipelineStateX> state_;

@@ -55,7 +55,13 @@ bool ff::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::target_texture::post_render()
 {
+    this->render_presented_.notify(this, 0);
     return true;
+}
+
+ff::signal_sink<ff::target_base*, uint64_t>& ff::target_texture::render_presented()
+{
+    return this->render_presented_;
 }
 
 DXGI_FORMAT ff::target_texture::format() const

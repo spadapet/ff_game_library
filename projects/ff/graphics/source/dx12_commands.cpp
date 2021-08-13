@@ -13,6 +13,7 @@ ff::dx12_commands::dx12_commands(
     Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>&& allocator,
     ID3D12PipelineStateX* initial_state)
     : owner(&owner)
+    , render_frame_complete_connection(ff::internal::graphics::render_frame_complete_sink().connect(std::bind(&ff::dx12_commands::render_frame_complete, this, std::placeholders::_1)))
     , list(std::move(list))
     , allocator(std::move(allocator))
     , state_(initial_state)
@@ -26,6 +27,7 @@ ff::dx12_commands::dx12_commands(
 
 ff::dx12_commands::dx12_commands(dx12_commands&& other) noexcept
     : owner(nullptr)
+    , render_frame_complete_connection(ff::internal::graphics::render_frame_complete_sink().connect(std::bind(&ff::dx12_commands::render_frame_complete, this, std::placeholders::_1)))
     , allocator_fence_value(0)
     , open_(false)
 {
@@ -199,6 +201,14 @@ bool ff::dx12_commands::open()
     }
 
     return false;
+}
+
+void ff::dx12_commands::render_frame_complete(uint64_t fence_value)
+{
+    if (this->allocator_fence_value)
+    {
+        *this = this->owner->new_commands();
+    }
 }
 
 #endif

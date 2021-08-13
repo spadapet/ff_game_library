@@ -7,12 +7,12 @@
 
 static constexpr uint64_t type_to_fence(D3D12_COMMAND_LIST_TYPE type)
 {
-    return static_cast<uint64_t>(type) << 56;
+    return (static_cast<uint64_t>(type) + 1) << 56;
 }
 
 static constexpr D3D12_COMMAND_LIST_TYPE fence_to_type(uint64_t value)
 {
-    return static_cast<D3D12_COMMAND_LIST_TYPE>(value >> 56);
+    return static_cast<D3D12_COMMAND_LIST_TYPE>((value >> 56) - 1);
 }
 
 ff::dx12_command_queue::dx12_command_queue(dx12_command_queues& owner, D3D12_COMMAND_LIST_TYPE type, uint64_t initial_fence_value)
@@ -20,7 +20,7 @@ ff::dx12_command_queue::dx12_command_queue(dx12_command_queues& owner, D3D12_COM
     , type(type)
     , fence_event(ff::create_event(false, false))
     , completed_fence_value(initial_fence_value)
-    , next_fence_value(initial_fence_value)
+    , next_fence_value(initial_fence_value + 1)
 {
     const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ type };
     ff::graphics::dx12_device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue));

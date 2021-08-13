@@ -252,7 +252,8 @@ int ff::dx12_descriptors_cpu::reset_priority() const
 }
 
 ff::dx12_descriptors_gpu::dx12_descriptors_gpu(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t ring_size)
-    : type(type)
+    : render_frame_complete_connection(ff::internal::graphics::render_frame_complete_sink().connect(std::bind(&ff::dx12_descriptors_gpu::render_frame_complete, this, std::placeholders::_1)))
+    , type(type)
     , ring_size(ring_size)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc{ type, static_cast<UINT>(ring_size), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE };
@@ -273,7 +274,7 @@ ID3D12DescriptorHeapX* ff::dx12_descriptors_gpu::get() const
     return this->descriptor_heap.Get();
 }
 
-void ff::dx12_descriptors_gpu::fence(uint64_t value)
+void ff::dx12_descriptors_gpu::render_frame_complete(uint64_t value)
 {
     this->ring->fence(value);
 }

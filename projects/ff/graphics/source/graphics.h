@@ -12,6 +12,7 @@ namespace ff
     class dx12_descriptors_cpu;
     class dx12_descriptors_gpu;
 #endif
+    class target_base;
     class target_window_base;
 }
 
@@ -73,6 +74,8 @@ namespace ff::internal::graphics
     bool init_d3d(bool for_reset);
     void destroy_d3d(bool for_reset);
     bool d3d_device_disconnected();
+    void render_frame_complete(ff::target_base* target, uint64_t fence_value);
+    ff::signal_sink<uint64_t>& render_frame_complete_sink();
 
     void add_child(ff::internal::graphics_child_base* child);
     void remove_child(ff::internal::graphics_child_base* child);

@@ -37,6 +37,7 @@ namespace ff
         // target_window_base
         virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
         virtual bool post_render() override;
+        virtual ff::signal_sink<ff::target_base*, uint64_t>& render_presented() override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
         virtual bool allow_full_screen() const override;
@@ -57,6 +58,7 @@ namespace ff
         ff::window* window;
         ff::window_size cached_size;
         ff::signal<ff::window_size> size_changed_;
+        ff::signal<ff::target_base*, uint64_t> render_presented_;
         ff::signal_connection window_message_connection;
         Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
 #if DXVER == 11

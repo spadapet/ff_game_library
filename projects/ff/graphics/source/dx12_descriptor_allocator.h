@@ -128,15 +128,17 @@ namespace ff
 
         ID3D12DescriptorHeapX* get() const;
         ff::dx12_descriptor_range alloc_range(size_t count);
-        void fence(uint64_t value);
 
         // graphics_child_base
         virtual bool reset() override;
         virtual int reset_priority() const override;
 
     private:
+        void render_frame_complete(uint64_t fence_value);
+
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
         std::unique_ptr<ff::internal::dx12_descriptor_ring> ring;
+        ff::signal_connection render_frame_complete_connection;
         D3D12_DESCRIPTOR_HEAP_TYPE type;
         size_t ring_size;
     };

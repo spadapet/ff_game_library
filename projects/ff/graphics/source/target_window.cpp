@@ -147,20 +147,26 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::target_window::post_render()
 {
-    HRESULT hr = E_FAIL;
     if (*this)
     {
         ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
         ff::graphics::dx12_direct_commands().execute(false);
-        ff::graphics::dx12_direct_commands() = ff::graphics::dx12_direct_queue().new_commands();
 
-        hr = this->swap_chain->Present(1, 0);
+        HRESULT hr = this->swap_chain->Present(1, 0);
 
-        this->fence_values[this->back_buffer_index] = ff::graphics::dx12_direct_queue().signal_fence();
-        this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
+        if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
+        {
+            uint64_t fence_value = this->fence_values[this->back_buffer_index] = ff::graphics::dx12_direct_queue().signal_fence();
+            this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
+            this->render_presented_.notify(this, fence_value);
+        }
+        else
+        {
+            return false;
+        }
     }
 
-    return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
+    return true;
 }
 
 void ff::target_window::before_resize()
@@ -180,6 +186,11 @@ void ff::target_window::internal_reset()
 }
 
 #endif
+
+ff::signal_sink<ff::target_base*, uint64_t>& ff::target_window::render_presented()
+{
+    return this->render_presented_;
+}
 
 bool ff::target_window::size(const ff::window_size& size)
 {
