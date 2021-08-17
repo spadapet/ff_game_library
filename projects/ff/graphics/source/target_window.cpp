@@ -133,6 +133,7 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
     {
         ff::graphics::dx12_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
         ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_RENDER_TARGET);
+        ff::graphics::dx12_direct_commands()->DiscardResource(this->render_targets[this->back_buffer_index].resource.Get(), nullptr);
 
         if (clear_color)
         {

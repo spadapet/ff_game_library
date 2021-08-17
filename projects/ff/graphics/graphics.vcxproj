@@ -24,7 +24,8 @@
     <ClCompile Include="source\dx11_fixed_state.cpp" />
     <ClCompile Include="source\dx11_graphics.cpp" />
     <ClCompile Include="source\dx11_object_cache.cpp" />
-    <ClCompile Include="source\dx12_buffer_allocator.cpp" />
+    <ClCompile Include="source\dx12_allocator.cpp" />
+    <ClCompile Include="source\dx12_buffer_range.cpp" />
     <ClCompile Include="source\dx12_commands.cpp" />
     <ClCompile Include="source\dx12_command_queue.cpp" />
     <ClCompile Include="source\dx12_descriptor_allocator.cpp" />
@@ -75,7 +76,8 @@
     <ClInclude Include="source\draw_device.h" />
     <ClInclude Include="source\dx11_fixed_state.h" />
     <ClInclude Include="source\dx11_object_cache.h" />
-    <ClInclude Include="source\dx12_buffer_allocator.h" />
+    <ClInclude Include="source\dx12_allocator.h" />
+    <ClInclude Include="source\dx12_buffer_range.h" />
     <ClInclude Include="source\dx12_commands.h" />
     <ClInclude Include="source\dx12_command_queue.h" />
     <ClInclude Include="source\dx12_descriptor_allocator.h" />

@@ -205,10 +205,8 @@ bool ff::dx12_commands::open()
 
 void ff::dx12_commands::render_frame_complete(uint64_t fence_value)
 {
-    if (this->allocator_fence_value)
-    {
-        *this = this->owner->new_commands();
-    }
+    assert(!this->open_);
+    *this = this->owner->new_commands();
 }
 
 #endif

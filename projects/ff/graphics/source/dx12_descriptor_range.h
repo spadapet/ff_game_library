@@ -4,7 +4,7 @@
 
 namespace ff::internal
 {
-    class dx12_descriptor_bucket_base;
+    class dx12_descriptor_buffer_base;
 }
 
 namespace ff
@@ -13,7 +13,7 @@ namespace ff
     {
     public:
         dx12_descriptor_range();
-        dx12_descriptor_range(ff::internal::dx12_descriptor_bucket_base& owner, size_t start, size_t count);
+        dx12_descriptor_range(ff::internal::dx12_descriptor_buffer_base& owner, size_t start, size_t count);
         dx12_descriptor_range(dx12_descriptor_range&& other) noexcept;
         dx12_descriptor_range(const dx12_descriptor_range& other) = delete;
         ~dx12_descriptor_range();
@@ -29,7 +29,7 @@ namespace ff
         D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const;
 
     private:
-        ff::internal::dx12_descriptor_bucket_base* owner;
+        ff::internal::dx12_descriptor_buffer_base* owner;
         size_t start_;
         size_t count_;
     };

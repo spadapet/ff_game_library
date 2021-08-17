@@ -10,6 +10,8 @@
 #include "source/dx11_fixed_state.h"
 #include "source/dx11_object_cache.h"
 #include "source/dx11_texture.h"
+#include "source/dx12_allocator.h"
+#include "source/dx12_buffer_range.h"
 #include "source/dx12_command_queue.h"
 #include "source/dx12_commands.h"
 #include "source/dx12_descriptor_allocator.h"

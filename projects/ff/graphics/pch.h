@@ -58,6 +58,7 @@ using ID3D12DebugX = typename ID3D12Debug3;
 using ID3D12DeviceX = typename ID3D12Device8;
 using ID3D12FenceX = typename ID3D12Fence1;
 using ID3D12GraphicsCommandListX = typename ID3D12GraphicsCommandList6;
+using ID3D12HeapX = typename ID3D12Heap1;
 using ID3D12PipelineStateX = typename ID3D12PipelineState;
 using ID3D12ResourceX = typename ID3D12Resource2;
 

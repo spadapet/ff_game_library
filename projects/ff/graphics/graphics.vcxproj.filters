@@ -140,7 +140,10 @@
     <ClCompile Include="source\dx12_command_queue.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx12_buffer_allocator.cpp">
+    <ClCompile Include="source\dx12_buffer_range.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_allocator.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -312,7 +315,10 @@
     <ClInclude Include="source\dx12_resource.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx12_buffer_allocator.h">
+    <ClInclude Include="source\dx12_buffer_range.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_allocator.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
