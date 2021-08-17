@@ -64,7 +64,7 @@ namespace ff
     class dx12_frame_allocator : public ff::dx12_allocator_base, public ff::internal::graphics_child_base
     {
     public:
-        dx12_frame_allocator(bool cpu_writable);
+        dx12_frame_allocator(bool upload_buffer);
         dx12_frame_allocator(dx12_frame_allocator&& other) noexcept = default;
         dx12_frame_allocator(const dx12_frame_allocator& other) = delete;
         ~dx12_frame_allocator();

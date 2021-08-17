@@ -1,19 +1,19 @@
 # Ferret Face Game Library
-This is a set of utility libraries for writing C++ Windows 10 games. Visual Studio 2019 is required for building these projects.
+This is a set of utility libraries for writing C++ Windows 10 games. Visual Studio 2022 is required for building these projects.
 
 git clone --recursive https://github.com/spadapet/ff_game_library.git
 
 ## Documentation
 * [Doxygen](https://www.doxygen.nl/download.html) is used to build the documentation. A link will be added here if a built copy is hosted on the web.
 
-## Build from Visual Studio 2019
+## Build from Visual Studio 2022
 1) Open either solution __game_library.sln__ or __game_library_uwp.sln__
 2) Build Solution (just Ctrl-Shift-B)
 3) The solution __game_library.sln__ has tests that show up in the Test Explorer window (Ctrl-E, T)
 
 ## Build from the command line
 1) Download [nuget.exe](https://dist.nuget.org/win-x86-commandline/latest/nuget.exe)
-2) Open a __Visual Studio 2019__ developer command prompt
+2) Open a __Visual Studio 2022__ developer command prompt
 2) Run: __nuget.exe restore game_library.sln__
 3) Run: __msbuild.exe game_library.sln__
     * Or for a specific type of build: __msbuild.exe /p:Configuration=Release|Debug;Platform=x86|x64 game_library.sln__

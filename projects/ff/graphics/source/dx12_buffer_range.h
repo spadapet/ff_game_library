@@ -4,7 +4,7 @@
 
 namespace ff::internal
 {
-    class dx12_buffer_allocator_base;
+    class dx12_buffer_base;
 }
 
 namespace ff
@@ -13,7 +13,7 @@ namespace ff
     {
     public:
         dx12_buffer_range();
-        dx12_buffer_range(ff::internal::dx12_buffer_allocator_base& owner, size_t start, size_t size);
+        dx12_buffer_range(ff::internal::dx12_buffer_base& owner, size_t start, size_t size);
         dx12_buffer_range(dx12_buffer_range&& other) noexcept;
         dx12_buffer_range(const dx12_buffer_range& other) = delete;
         ~dx12_buffer_range();
@@ -29,7 +29,7 @@ namespace ff
         D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
 
     private:
-        ff::internal::dx12_buffer_allocator_base* owner;
+        ff::internal::dx12_buffer_base* owner;
         size_t start_;
         size_t size_;
     };
