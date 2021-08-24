@@ -26,7 +26,7 @@ namespace ff
 
         static thread_pool* get();
 
-        void add_thread(func_type&& func);
+        ff::win_handle add_thread(func_type&& func);
         void add_task(func_type&& func);
         void flush();
 

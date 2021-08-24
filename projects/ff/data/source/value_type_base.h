@@ -159,9 +159,9 @@ namespace ff::internal
                 {
                     vec.reserve(size);
 
-                    raw_type::value_type child;
                     for (size_t i = 0; i < size; i++)
                     {
+                        raw_type::value_type child;
                         if (!ff::load(reader, child))
                         {
                             assert(false);

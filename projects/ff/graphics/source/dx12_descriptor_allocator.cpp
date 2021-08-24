@@ -217,19 +217,19 @@ ff::dx12_descriptor_range ff::dx12_descriptor_allocator_base::alloc_pinned_range
     return this->alloc_range(count);
 }
 
-ff::dx12_descriptor_cpu_allocator::dx12_descriptor_cpu_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size)
+ff::dx12_cpu_descriptor_allocator::dx12_cpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size)
     : type(type)
     , bucket_size(bucket_size)
 {
     ff::internal::graphics::add_child(this);
 }
 
-ff::dx12_descriptor_cpu_allocator::~dx12_descriptor_cpu_allocator()
+ff::dx12_cpu_descriptor_allocator::~dx12_cpu_descriptor_allocator()
 {
     ff::internal::graphics::remove_child(this);
 }
 
-ff::dx12_descriptor_range ff::dx12_descriptor_cpu_allocator::alloc_range(size_t count)
+ff::dx12_descriptor_range ff::dx12_cpu_descriptor_allocator::alloc_range(size_t count)
 {
     std::lock_guard<std::mutex> lock(this->bucket_mutex);
 
@@ -251,7 +251,7 @@ ff::dx12_descriptor_range ff::dx12_descriptor_cpu_allocator::alloc_range(size_t 
     return this->buckets.front().alloc_range(count);
 }
 
-bool ff::dx12_descriptor_cpu_allocator::reset()
+bool ff::dx12_cpu_descriptor_allocator::reset()
 {
     std::lock_guard<std::mutex> lock(this->bucket_mutex);
 
@@ -267,12 +267,12 @@ bool ff::dx12_descriptor_cpu_allocator::reset()
     return true;
 }
 
-int ff::dx12_descriptor_cpu_allocator::reset_priority() const
+int ff::dx12_cpu_descriptor_allocator::reset_priority() const
 {
-    return ff::internal::graphics_reset_priorities::dx12_descriptor_cpu_allocator;
+    return ff::internal::graphics_reset_priorities::dx12_cpu_descriptor_allocator;
 }
 
-ff::dx12_descriptor_gpu_allocator::dx12_descriptor_gpu_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size)
+ff::dx12_gpu_descriptor_allocator::dx12_gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc{ type, static_cast<UINT>(pinned_size + ring_size), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE };
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
@@ -284,29 +284,29 @@ ff::dx12_descriptor_gpu_allocator::dx12_descriptor_gpu_allocator(D3D12_DESCRIPTO
     ff::internal::graphics::add_child(this);
 }
 
-ff::dx12_descriptor_gpu_allocator::~dx12_descriptor_gpu_allocator()
+ff::dx12_gpu_descriptor_allocator::~dx12_gpu_descriptor_allocator()
 {
     ff::internal::graphics::remove_child(this);
 }
 
-ID3D12DescriptorHeapX* ff::dx12_descriptor_gpu_allocator::get() const
+ID3D12DescriptorHeapX* ff::dx12_gpu_descriptor_allocator::get() const
 {
     return this->ring->get();
 }
 
-ff::dx12_descriptor_range ff::dx12_descriptor_gpu_allocator::alloc_range(size_t count)
+ff::dx12_descriptor_range ff::dx12_gpu_descriptor_allocator::alloc_range(size_t count)
 {
     return this->ring->alloc_range(count);
 }
 
-ff::dx12_descriptor_range ff::dx12_descriptor_gpu_allocator::alloc_pinned_range(size_t count)
+ff::dx12_descriptor_range ff::dx12_gpu_descriptor_allocator::alloc_pinned_range(size_t count)
 {
     ff::dx12_descriptor_range range = this->pinned->alloc_range(count);
     assert(range);
     return range;
 }
 
-bool ff::dx12_descriptor_gpu_allocator::reset()
+bool ff::dx12_gpu_descriptor_allocator::reset()
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc = this->get()->GetDesc();
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
@@ -318,9 +318,9 @@ bool ff::dx12_descriptor_gpu_allocator::reset()
     return true;
 }
 
-int ff::dx12_descriptor_gpu_allocator::reset_priority() const
+int ff::dx12_gpu_descriptor_allocator::reset_priority() const
 {
-    return ff::internal::graphics_reset_priorities::dx12_descriptor_gpu_allocator;
+    return ff::internal::graphics_reset_priorities::dx12_gpu_descriptor_allocator;
 }
 
 #endif

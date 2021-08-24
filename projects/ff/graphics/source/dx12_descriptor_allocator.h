@@ -103,16 +103,16 @@ namespace ff
         virtual ff::dx12_descriptor_range alloc_pinned_range(size_t count);
     };
 
-    class dx12_descriptor_cpu_allocator : public ff::dx12_descriptor_allocator_base, public ff::internal::graphics_child_base
+    class dx12_cpu_descriptor_allocator : public ff::dx12_descriptor_allocator_base, public ff::internal::graphics_child_base
     {
     public:
-        dx12_descriptor_cpu_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size);
-        dx12_descriptor_cpu_allocator(dx12_descriptor_cpu_allocator&& other) noexcept = default;
-        dx12_descriptor_cpu_allocator(const dx12_descriptor_cpu_allocator& other) = delete;
-        ~dx12_descriptor_cpu_allocator();
+        dx12_cpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size);
+        dx12_cpu_descriptor_allocator(dx12_cpu_descriptor_allocator&& other) noexcept = default;
+        dx12_cpu_descriptor_allocator(const dx12_cpu_descriptor_allocator& other) = delete;
+        ~dx12_cpu_descriptor_allocator();
 
-        dx12_descriptor_cpu_allocator& operator=(dx12_descriptor_cpu_allocator&& other) noexcept = default;
-        dx12_descriptor_cpu_allocator& operator=(const dx12_descriptor_cpu_allocator& other) = delete;
+        dx12_cpu_descriptor_allocator& operator=(dx12_cpu_descriptor_allocator&& other) noexcept = default;
+        dx12_cpu_descriptor_allocator& operator=(const dx12_cpu_descriptor_allocator& other) = delete;
 
         virtual ff::dx12_descriptor_range alloc_range(size_t count) override;
 
@@ -127,16 +127,16 @@ namespace ff
         size_t bucket_size;
     };
 
-    class dx12_descriptor_gpu_allocator : public ff::dx12_descriptor_allocator_base, public ff::internal::graphics_child_base
+    class dx12_gpu_descriptor_allocator : public ff::dx12_descriptor_allocator_base, public ff::internal::graphics_child_base
     {
     public:
-        dx12_descriptor_gpu_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size);
-        dx12_descriptor_gpu_allocator(dx12_descriptor_gpu_allocator&& other) noexcept = default;
-        dx12_descriptor_gpu_allocator(const dx12_descriptor_gpu_allocator& other) = delete;
-        ~dx12_descriptor_gpu_allocator();
+        dx12_gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size);
+        dx12_gpu_descriptor_allocator(dx12_gpu_descriptor_allocator&& other) noexcept = default;
+        dx12_gpu_descriptor_allocator(const dx12_gpu_descriptor_allocator& other) = delete;
+        ~dx12_gpu_descriptor_allocator();
 
-        dx12_descriptor_gpu_allocator& operator=(dx12_descriptor_gpu_allocator&& other) noexcept = default;
-        dx12_descriptor_gpu_allocator& operator=(const dx12_descriptor_gpu_allocator& other) = delete;
+        dx12_gpu_descriptor_allocator& operator=(dx12_gpu_descriptor_allocator&& other) noexcept = default;
+        dx12_gpu_descriptor_allocator& operator=(const dx12_gpu_descriptor_allocator& other) = delete;
 
         ID3D12DescriptorHeapX* get() const;
         virtual ff::dx12_descriptor_range alloc_range(size_t count) override;

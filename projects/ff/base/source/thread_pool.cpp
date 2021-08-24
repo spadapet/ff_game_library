@@ -49,14 +49,28 @@ ff::thread_pool* ff::thread_pool::get()
     return ::task_thread_pool ? ::task_thread_pool : ::main_thread_pool;
 }
 
-void ff::thread_pool::add_thread(func_type&& func)
+namespace
 {
-    func_type* new_func = new func_type(std::move(func));
-    if (!::TrySubmitThreadpoolCallback(&thread_pool::thread_callback, new_func, nullptr))
+    struct thread_data_t
+    {
+        ff::thread_pool::func_type func;
+        ff::win_handle done_event;
+    };
+}
+
+ff::win_handle ff::thread_pool::add_thread(func_type&& func)
+{
+    ff::win_handle done_event = ff::create_event();
+    ::thread_data_t* thread_data = new ::thread_data_t{ std::move(func), done_event.duplicate() };
+
+    if (!::TrySubmitThreadpoolCallback(&thread_pool::thread_callback, thread_data, nullptr))
     {
         assert(false);
-        delete new_func;
+        done_event.close();
+        delete thread_data;
     }
+
+    return done_event;
 }
 
 void ff::thread_pool::add_task(func_type&& func)
@@ -94,9 +108,10 @@ void ff::thread_pool::thread_callback(PTP_CALLBACK_INSTANCE instance, void* cont
     ::DisassociateCurrentThreadFromCallback(instance);
     ::SetThreadDescription(::GetCurrentThread(), L"ff::thread_pool::thread");
 
-    func_type* func = reinterpret_cast<func_type*>(context);
-    func->operator()();
-    delete func;
+    ::thread_data_t* thread_data = reinterpret_cast<::thread_data_t*>(context);
+    thread_data->func();
+    ::SetEvent(thread_data->done_event);
+    delete thread_data;
 }
 
 void ff::thread_pool::task_callback(PTP_CALLBACK_INSTANCE instance, void* context)

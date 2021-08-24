@@ -9,8 +9,8 @@ namespace ff
     class dx12_command_queue;
     class dx12_command_queues;
     class dx12_commands;
-    class dx12_descriptor_cpu_allocator;
-    class dx12_descriptor_gpu_allocator;
+    class dx12_cpu_descriptor_allocator;
+    class dx12_gpu_descriptor_allocator;
 #endif
     class target_base;
     class target_window_base;
@@ -42,18 +42,23 @@ namespace ff::graphics
 #elif DXVER == 12
     ID3D12DeviceX* dx12_device();
 
+    DXGI_QUERY_VIDEO_MEMORY_INFO dx12_memory_info();
+    ff::signal_sink<const DXGI_QUERY_VIDEO_MEMORY_INFO&>& dx12_memory_info_changed_sink();
+    void dx12_reserve_memory(size_t size);
+    void dx12_unreserve_memory(size_t size);
+
     ff::dx12_commands& dx12_direct_commands();
     ff::dx12_command_queues& dx12_queues();
     ff::dx12_command_queue& dx12_direct_queue();
     ff::dx12_command_queue& dx12_copy_queue();
     ff::dx12_command_queue& dx12_compute_queue();
 
-    ff::dx12_descriptor_cpu_allocator& dx12_descriptors_buffer();
-    ff::dx12_descriptor_cpu_allocator& dx12_descriptors_sampler();
-    ff::dx12_descriptor_cpu_allocator& dx12_descriptors_target();
-    ff::dx12_descriptor_cpu_allocator& dx12_descriptors_depth();
-    ff::dx12_descriptor_gpu_allocator& dx12_descriptors_gpu_buffer();
-    ff::dx12_descriptor_gpu_allocator& dx12_descriptors_gpu_sampler();
+    ff::dx12_cpu_descriptor_allocator& dx12_descriptors_buffer();
+    ff::dx12_cpu_descriptor_allocator& dx12_descriptors_sampler();
+    ff::dx12_cpu_descriptor_allocator& dx12_descriptors_target();
+    ff::dx12_cpu_descriptor_allocator& dx12_descriptors_depth();
+    ff::dx12_gpu_descriptor_allocator& dx12_descriptors_gpu_buffer();
+    ff::dx12_gpu_descriptor_allocator& dx12_descriptors_gpu_sampler();
 #endif
 }
 
