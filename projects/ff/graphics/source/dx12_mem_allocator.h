@@ -14,7 +14,6 @@ namespace ff::internal
 
         virtual void free_range(const ff::dx12_mem_range& range) {}
         virtual void* cpu_address(size_t start) const = 0;
-        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address(size_t start) const = 0;
     };
 
     class dx12_mem_buffer_ring : public ff::internal::dx12_mem_buffer_base
@@ -32,7 +31,6 @@ namespace ff::internal
         ff::dx12_mem_range alloc_bytes(size_t size, size_t align);
 
         virtual void* cpu_address(size_t start) const override;
-        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address(size_t start) const override;
 
     private:
         struct range_t
@@ -46,7 +44,7 @@ namespace ff::internal
 
         Microsoft::WRL::ComPtr<ID3D12HeapX> heap;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> upload_resource;
-        std::mutex ranges_mutex;
+        void* upload_data;
         std::list<range_t> ranges;
         size_t heap_start;
         size_t heap_size;
@@ -84,6 +82,7 @@ namespace ff
     private:
         void render_frame_complete(uint64_t fence_value);
 
+        std::mutex ranges_mutex;
         ff::signal_connection render_frame_complete_connection;
     };
 

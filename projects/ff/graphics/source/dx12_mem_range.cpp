@@ -75,10 +75,4 @@ void* ff::dx12_mem_range::cpu_address() const
     return this->owner->cpu_address(this->start_);
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS ff::dx12_mem_range::gpu_address() const
-{
-    assert(*this);
-    return this->owner->gpu_address(this->start_);
-}
-
 #endif

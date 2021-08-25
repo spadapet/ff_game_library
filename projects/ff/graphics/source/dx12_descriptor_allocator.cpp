@@ -166,7 +166,7 @@ ff::dx12_descriptor_range ff::internal::dx12_descriptor_buffer_ring::alloc_range
         {
             start = this->ranges.back().after_end();
 
-            if (start + count >= this->descriptor_count)
+            if (start + count > this->descriptor_count)
             {
                 start = 0;
             }
@@ -202,13 +202,13 @@ D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_buffer_ring::gpu_handl
     return handle;
 }
 
-void ff::internal::dx12_descriptor_buffer_ring::render_frame_complete(uint64_t value)
+void ff::internal::dx12_descriptor_buffer_ring::render_frame_complete(uint64_t fence_value)
 {
     std::lock_guard<std::mutex> lock(this->ranges_mutex);
 
     for (auto i = this->ranges.rbegin(); i != this->ranges.rend() && !i->fence_value; i++)
     {
-        i->fence_value = value;
+        i->fence_value = fence_value;
     }
 }
 

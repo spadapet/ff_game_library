@@ -220,6 +220,11 @@ ff::dx12_command_queue& ff::dx12_command_queues::from_fence(uint64_t value)
     return this->from_type(::fence_to_type(value));
 }
 
+bool ff::dx12_command_queues::fence_complete(uint64_t value)
+{
+    return this->from_fence(value).fence_complete(value);
+}
+
 void ff::dx12_command_queues::wait_for_fence(uint64_t value)
 {
     this->from_fence(value).wait_for_fence(value);

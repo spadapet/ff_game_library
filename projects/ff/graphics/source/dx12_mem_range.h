@@ -26,7 +26,6 @@ namespace ff
         size_t size() const;
         void free_range();
         void* cpu_address() const;
-        D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
 
     private:
         ff::internal::dx12_mem_buffer_base* owner;

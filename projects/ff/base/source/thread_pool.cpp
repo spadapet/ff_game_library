@@ -104,9 +104,13 @@ void ff::thread_pool::flush()
 
 void ff::thread_pool::thread_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
-    ::CallbackMayRunLong(instance);
+    BOOL created_new_thead = ::CallbackMayRunLong(instance);
+    assert(created_new_thead);
+
     ::DisassociateCurrentThreadFromCallback(instance);
+#if _DEBUG
     ::SetThreadDescription(::GetCurrentThread(), L"ff::thread_pool::thread");
+#endif
 
     ::thread_data_t* thread_data = reinterpret_cast<::thread_data_t*>(context);
     thread_data->func();

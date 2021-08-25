@@ -80,6 +80,29 @@ namespace ff::math
         return num + not_zero;
     }
 
+    template<typename T>
+    constexpr bool is_power_of_2(T num)
+    {
+        return num && (num & (num - 1)) == 0;
+    }
+
+    template<typename T>
+    constexpr T align_down(T num, size_t align)
+    {
+        align += (align == 0);
+        assert(ff::math::is_power_of_2(align));
+        return size & ~static_cast<T>(align - 1);
+    }
+
+    template<typename T>
+    constexpr T align_up(T size, size_t align) noexcept
+    {
+        align += (align == 0);
+        assert(ff::math::is_power_of_2(align));
+        T mask = static_cast<T>(align - 1);
+        return (size + mask) & ~mask;
+    }
+
     template<class T>
     constexpr size_t round_up(T value, T multiple)
     {

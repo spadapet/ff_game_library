@@ -70,6 +70,7 @@ namespace ff
         dx12_command_queue& copy();
         dx12_command_queue& from_type(D3D12_COMMAND_LIST_TYPE type);
         dx12_command_queue& from_fence(uint64_t value);
+        bool fence_complete(uint64_t value);
         void wait_for_fence(uint64_t value);
         void wait_for_idle();
 
