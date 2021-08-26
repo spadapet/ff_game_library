@@ -17,7 +17,6 @@ static D3D12_RESOURCE_BARRIER transition(
     return result;
 }
 
-
 void run_test_app()
 {
     ff::init_main_window init_main_window{ ff::init_main_window_params{} };
@@ -48,6 +47,14 @@ void run_test_app()
             }
 
             // TODO: Render
+            ff::dx12_mem_range mr1 = ff::graphics::dx12_upload_allocator().alloc_buffer(1024 * 10);
+            ff::dx12_mem_range mr2 = ff::graphics::dx12_upload_allocator().alloc_texture(1024 * 20);
+            ff::dx12_mem_range mr3 = ff::graphics::dx12_buffer_frame_allocator().alloc_buffer(1024 * 10);
+
+            if (timer.tick_count() % 60 == 0)
+            {
+                ff::graphics::dx12_allocation_stats::debug_dump();
+            }
 
             if (!target.post_render())
             {

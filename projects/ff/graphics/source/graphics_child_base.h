@@ -6,8 +6,9 @@ namespace ff::internal
     {
         static const int dx12_cpu_descriptor_allocator = 100;
         static const int dx12_gpu_descriptor_allocator = 99;
-        static const int dx12_command_queue = 98;
-        static const int dx12_commands = 97;
+        static const int dx12_frame_mem_allocator = 98;
+        static const int dx12_command_queue = 97;
+        static const int dx12_commands = 96;
         static const int normal = 0;
         static const int target_window = -100;
     };

@@ -10,7 +10,9 @@ namespace ff
     class dx12_command_queues;
     class dx12_commands;
     class dx12_cpu_descriptor_allocator;
+    class dx12_frame_mem_allocator;
     class dx12_gpu_descriptor_allocator;
+    class dx12_gpu_mem_allocator;
 #endif
     class target_base;
     class target_window_base;
@@ -59,6 +61,27 @@ namespace ff::graphics
     ff::dx12_cpu_descriptor_allocator& dx12_descriptors_depth();
     ff::dx12_gpu_descriptor_allocator& dx12_descriptors_gpu_buffer();
     ff::dx12_gpu_descriptor_allocator& dx12_descriptors_gpu_sampler();
+
+    ff::dx12_frame_mem_allocator& dx12_upload_allocator();
+    ff::dx12_frame_mem_allocator& dx12_buffer_frame_allocator();
+    //ff::dx12_gpu_mem_allocator& dx12_buffer_allocator();
+    //ff::dx12_gpu_mem_allocator& dx12_texture_allocator();
+
+    struct dx12_allocation_stats
+    {
+        static ff::graphics::dx12_allocation_stats get();
+        static void debug_dump();
+
+        static void change_upload_heap_space(size_t size, bool added);
+        static void change_upload_used_space(size_t size, bool added);
+        static void change_gpu_heap_space(size_t size, bool added);
+        static void change_gpu_used_space(size_t size, bool added);
+
+        uint64_t upload_heap_space;
+        uint64_t upload_used_space;
+        uint64_t gpu_heap_space;
+        uint64_t gpu_used_space;
+    };
 #endif
 }
 

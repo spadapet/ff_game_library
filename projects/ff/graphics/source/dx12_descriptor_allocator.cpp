@@ -48,7 +48,7 @@ ff::dx12_descriptor_range ff::internal::dx12_descriptor_buffer_free_list::alloc_
     }
     else
     {
-        std::lock_guard<std::mutex> lock(this->ranges_mutex);
+        std::scoped_lock lock(this->ranges_mutex);
 
         for (auto i = this->free_ranges.begin(); i != this->free_ranges.end(); i++)
         {
@@ -73,7 +73,7 @@ ff::dx12_descriptor_range ff::internal::dx12_descriptor_buffer_free_list::alloc_
 
 void ff::internal::dx12_descriptor_buffer_free_list::free_range(const dx12_descriptor_range& range)
 {
-    std::lock_guard<std::mutex> lock(this->ranges_mutex);
+    std::scoped_lock lock(this->ranges_mutex);
 
     range_t range2{ range.start(), range.count() };
     auto i = std::lower_bound(this->free_ranges.begin(), this->free_ranges.end(), range2);
@@ -160,7 +160,7 @@ ff::dx12_descriptor_range ff::internal::dx12_descriptor_buffer_ring::alloc_range
     }
     else
     {
-        std::lock_guard<std::mutex> lock(this->ranges_mutex);
+        std::scoped_lock lock(this->ranges_mutex);
 
         if (!this->ranges.empty())
         {
@@ -204,7 +204,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12_descriptor_buffer_ring::gpu_handl
 
 void ff::internal::dx12_descriptor_buffer_ring::render_frame_complete(uint64_t fence_value)
 {
-    std::lock_guard<std::mutex> lock(this->ranges_mutex);
+    std::scoped_lock lock(this->ranges_mutex);
 
     for (auto i = this->ranges.rbegin(); i != this->ranges.rend() && !i->fence_value; i++)
     {
@@ -231,7 +231,7 @@ ff::dx12_cpu_descriptor_allocator::~dx12_cpu_descriptor_allocator()
 
 ff::dx12_descriptor_range ff::dx12_cpu_descriptor_allocator::alloc_range(size_t count)
 {
-    std::lock_guard<std::mutex> lock(this->bucket_mutex);
+    std::scoped_lock lock(this->bucket_mutex);
 
     for (ff::internal::dx12_descriptor_buffer_free_list& bucket : this->buckets)
     {
@@ -253,7 +253,7 @@ ff::dx12_descriptor_range ff::dx12_cpu_descriptor_allocator::alloc_range(size_t 
 
 bool ff::dx12_cpu_descriptor_allocator::reset()
 {
-    std::lock_guard<std::mutex> lock(this->bucket_mutex);
+    std::scoped_lock lock(this->bucket_mutex);
 
     for (ff::internal::dx12_descriptor_buffer_free_list& bucket : this->buckets)
     {

@@ -43,14 +43,14 @@ ID3D12CommandQueueX* ff::dx12_command_queue::get() const
 
 uint64_t ff::dx12_command_queue::signal_fence()
 {
-    std::lock_guard<std::mutex> lock(this->next_fence_mutex);
+    std::scoped_lock lock(this->next_fence_mutex);
     this->command_queue->Signal(this->fence.Get(), this->next_fence_value);
     return this->next_fence_value++;
 }
 
 bool ff::dx12_command_queue::fence_complete(uint64_t value)
 {
-    std::lock_guard<std::mutex> lock(this->completed_fence_mutex);
+    std::scoped_lock lock(this->completed_fence_mutex);
     return this->internal_fence_complete(value);
 }
 
@@ -71,7 +71,7 @@ void ff::dx12_command_queue::wait_for_fence(uint64_t value)
         ff::dx12_command_queue& other = this->owner.from_fence(value);
         if (this == &other)
         {
-            std::lock_guard<std::mutex> lock(this->completed_fence_mutex);
+            std::scoped_lock lock(this->completed_fence_mutex);
 
             if (!this->internal_fence_complete(value) && SUCCEEDED(this->fence->SetEventOnCompletion(value, this->fence_event)))
             {
@@ -95,7 +95,7 @@ ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* ini
 {
     Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
     {
-        std::lock_guard<std::mutex> lock(this->allocators_mutex);
+        std::scoped_lock lock(this->allocators_mutex);
 
         if (this->allocators.empty() || !this->fence_complete(this->allocators.front().first))
         {
@@ -110,7 +110,7 @@ ff::dx12_commands ff::dx12_command_queue::new_commands(ID3D12PipelineStateX* ini
 
     Microsoft::WRL::ComPtr < ID3D12GraphicsCommandListX> list;
     {
-        std::lock_guard<std::mutex> lock(this->lists_mutex);
+        std::scoped_lock lock(this->lists_mutex);
 
         if (this->lists.empty())
         {
@@ -131,7 +131,7 @@ void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12Graphi
 {
     if (allocator)
     {
-        std::lock_guard<std::mutex> lock(this->allocators_mutex);
+        std::scoped_lock lock(this->allocators_mutex);
         if (!allocator_fence_value)
         {
             // didn't draw anything?
@@ -145,7 +145,7 @@ void ff::dx12_command_queue::return_commands(Microsoft::WRL::ComPtr<ID3D12Graphi
 
     if (list)
     {
-        std::lock_guard<std::mutex> lock(this->lists_mutex);
+        std::scoped_lock lock(this->lists_mutex);
         this->lists.push_front(std::move(list));
     }
 }
@@ -154,13 +154,13 @@ bool ff::dx12_command_queue::reset()
 {
     // allocator
     {
-        std::lock_guard<std::mutex> lock(this->allocators_mutex);
+        std::scoped_lock lock(this->allocators_mutex);
         this->allocators.clear();
     }
 
     // list
     {
-        std::lock_guard<std::mutex> lock(this->lists_mutex);
+        std::scoped_lock lock(this->lists_mutex);
         this->lists.clear();
     }
 
