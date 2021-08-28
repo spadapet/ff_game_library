@@ -29,6 +29,7 @@
     <ClCompile Include="source\dx12_descriptor_allocator.cpp" />
     <ClCompile Include="source\dx12_descriptor_range.cpp" />
     <ClCompile Include="source\dx12_graphics.cpp" />
+    <ClCompile Include="source\dx12_heap.cpp" />
     <ClCompile Include="source\dx12_mem_allocator.cpp" />
     <ClCompile Include="source\dx12_mem_range.cpp" />
     <ClCompile Include="source\target_texture.cpp" />
@@ -80,6 +81,7 @@
     <ClInclude Include="source\dx12_command_queue.h" />
     <ClInclude Include="source\dx12_descriptor_allocator.h" />
     <ClInclude Include="source\dx12_descriptor_range.h" />
+    <ClInclude Include="source\dx12_heap.h" />
     <ClInclude Include="source\dx12_mem_allocator.h" />
     <ClInclude Include="source\dx12_mem_range.h" />
     <ClInclude Include="source\dx12_resource.h" />

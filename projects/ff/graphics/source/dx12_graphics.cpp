@@ -24,13 +24,6 @@ static ff::win_handle adapter_memory_change_event;
 static DWORD adapter_memory_change_cookie;
 static std::atomic_size_t adapter_reserved_memory;
 
-// Memory usage
-static std::mutex allocation_mutex;
-static uint64_t upload_heap_space;
-static uint64_t upload_used_space;
-static uint64_t gpu_heap_space;
-static uint64_t gpu_used_space;
-
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 {
     for (size_t use_warp = 0; use_warp < 2; use_warp++)
@@ -284,73 +277,6 @@ ff::dx12_frame_mem_allocator& ff::graphics::dx12_upload_allocator()
 ff::dx12_frame_mem_allocator& ff::graphics::dx12_buffer_frame_allocator()
 {
     return *::dx12_buffer_frame_allocator;
-}
-
-ff::graphics::dx12_allocation_stats ff::graphics::dx12_allocation_stats::get()
-{
-    ff::graphics::dx12_allocation_stats stats{};
-    {
-        std::scoped_lock lock(::allocation_mutex);
-        stats.upload_heap_space = ::upload_heap_space;
-        stats.upload_used_space = ::upload_used_space;
-        stats.gpu_heap_space = ::gpu_heap_space;
-        stats.gpu_used_space = ::gpu_used_space;
-    }
-
-    return stats;
-}
-
-void ff::graphics::dx12_allocation_stats::debug_dump()
-{
-#ifdef _DEBUG
-    ff::graphics::dx12_allocation_stats stats = ff::graphics::dx12_allocation_stats::get();
-    std::ostringstream str;
-    str <<
-        "Total upload heap: " << ::upload_heap_space << std::endl <<
-        "Used upload heap:  " << ::upload_used_space << std::endl <<
-        "Total GPU heap:    " << ::gpu_heap_space << std::endl <<
-        "Used GPU heap:     " << ::gpu_used_space;
-    ff::log::write_debug(str);
-#endif
-}
-
-constexpr static size_t adjust_size(size_t value, size_t size, bool added)
-{
-    if (added)
-    {
-        value += size;
-    }
-    else
-    {
-        assert(size <= value);
-        value -= std::min(value, size);
-    }
-
-    return value;
-}
-
-void ff::graphics::dx12_allocation_stats::change_upload_heap_space(size_t size, bool added)
-{
-    std::scoped_lock lock(::allocation_mutex);
-    ::upload_heap_space = ::adjust_size(::upload_heap_space, size, added);
-}
-
-void ff::graphics::dx12_allocation_stats::change_upload_used_space(size_t size, bool added)
-{
-    std::scoped_lock lock(::allocation_mutex);
-    ::upload_used_space = ::adjust_size(::upload_used_space, size, added);
-}
-
-void ff::graphics::dx12_allocation_stats::change_gpu_heap_space(size_t size, bool added)
-{
-    std::scoped_lock lock(::allocation_mutex);
-    ::gpu_heap_space = ::adjust_size(::gpu_heap_space, size, added);
-}
-
-void ff::graphics::dx12_allocation_stats::change_gpu_used_space(size_t size, bool added)
-{
-    std::scoped_lock lock(::allocation_mutex);
-    ::gpu_used_space = ::adjust_size(::gpu_used_space, size, added);
 }
 
 #endif

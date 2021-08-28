@@ -146,6 +146,9 @@
     <ClCompile Include="source\dx12_mem_range.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx12_heap.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -319,6 +322,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\dx12_mem_range.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_heap.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

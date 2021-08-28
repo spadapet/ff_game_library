@@ -37,6 +37,7 @@ static std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_si
 static ::defer_flags_t defer_flags;
 static ff::signal_connection render_presented_connection;
 static ff::signal<uint64_t> render_frame_complete_signal;
+static size_t render_frame_count;
 
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
 {
@@ -116,9 +117,15 @@ void ff::internal::graphics::destroy()
     ::destroy_dxgi();
 }
 
+size_t ff::internal::graphics::render_frame_count()
+{
+    return ::render_frame_count;
+}
+
 void ff::internal::graphics::render_frame_complete(ff::target_base* target, uint64_t fence_value)
 {
     ::render_frame_complete_signal.notify(fence_value);
+    ::render_frame_count++;
 }
 
 ff::signal_sink<uint64_t>& ff::internal::graphics::render_frame_complete_sink()

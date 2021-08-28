@@ -5,37 +5,6 @@
 
 #if DXVER == 12
 
-static void handle_heap(ID3D12HeapX* heap, bool added)
-{
-    if (heap)
-    {
-        D3D12_HEAP_DESC heap_desc = heap->GetDesc();
-        if (heap_desc.Properties.Type == D3D12_HEAP_TYPE_UPLOAD)
-        {
-            ff::graphics::dx12_allocation_stats::change_upload_heap_space(static_cast<size_t>(heap_desc.SizeInBytes), added);
-        }
-        else
-        {
-            ff::graphics::dx12_allocation_stats::change_gpu_heap_space(static_cast<size_t>(heap_desc.SizeInBytes), added);
-        }
-    }
-}
-
-static void handle_allocation(size_t size, bool added, bool upload)
-{
-    if (size)
-    {
-        if (upload)
-        {
-            ff::graphics::dx12_allocation_stats::change_upload_used_space(size, added);
-        }
-        else
-        {
-            ff::graphics::dx12_allocation_stats::change_gpu_used_space(size, added);
-        }
-    }
-}
-
 size_t ff::internal::dx12_mem_buffer_ring::range_t::after_end() const
 {
     return this->start + this->size;
@@ -61,11 +30,7 @@ ID3D12HeapX* ff::internal::dx12_mem_buffer_ring::heap() const
 
 void ff::internal::dx12_mem_buffer_ring::heap(ID3D12HeapX* value)
 {
-    ::handle_heap(this->heap_.Get(), false);
-
     this->heap_ = value;
-
-    ::handle_heap(this->heap_.Get(), true);
 
     if (this->upload_resource)
     {
@@ -110,7 +75,6 @@ bool ff::internal::dx12_mem_buffer_ring::render_frame_complete(uint64_t fence_va
 
         if (ff::graphics::dx12_queues().fence_complete(front.fence_value))
         {
-            ::handle_allocation(front.size, false, this->upload_data != nullptr);
             this->ranges.pop_front();
         }
         else
@@ -150,7 +114,6 @@ ff::dx12_mem_range ff::internal::dx12_mem_buffer_ring::alloc_bytes(size_t size, 
                 {
                     if (front.fence_value && ff::graphics::dx12_queues().fence_complete(front.fence_value))
                     {
-                        ::handle_allocation(front.size, false, this->upload_data != nullptr);
                         this->ranges.pop_front();
                     }
                     else
@@ -166,7 +129,6 @@ ff::dx12_mem_range ff::internal::dx12_mem_buffer_ring::alloc_bytes(size_t size, 
             }
         }
 
-        ::handle_allocation(size, true, this->upload_data != nullptr);
         this->ranges.emplace_back(range_t{ start, size, 0 });
     }
 
