@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\globals.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fence.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\heap.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\descriptor_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\descriptor_range.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fence_value.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\commands.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\queue.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\queues.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\device_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\mem_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\mem_range.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\access.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fence_values.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_child_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\globals.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fence.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\heap.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\descriptor_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\descriptor_range.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fence_value.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\commands.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\queue.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\queues.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\mem_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\mem_range.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\access.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fence_values.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{ef35e02b-970a-4bdb-b706-09a435763296}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

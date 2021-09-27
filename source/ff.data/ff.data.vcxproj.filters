@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\file.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\saved_data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stream.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\compression.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\persist.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dict.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\json_tokenizer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\json_persist.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\bool_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dict_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\double_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fixed_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\float_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\int_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\null_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\saved_data_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\size_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\uuid_v.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_type.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\value_vector.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dict_visitor.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\file.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\saved_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stream.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\compression.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\persist.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dict.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\json_tokenizer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\json_persist.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\bool_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dict_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\double_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\float_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\int_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\null_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\point_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rect_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\saved_data_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\size_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\uuid_v.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_traits.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_type.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_type_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\value_vector_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dict_visitor.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\filesystem.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{76ec87b9-6627-4ce2-bbbb-8ed3e616fa63}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

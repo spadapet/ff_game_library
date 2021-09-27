@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\base\fixed_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\point_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\pool_allocator_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\rect_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\string_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\uuid_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\stack_vector_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\file_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\data_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\compression_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\persist_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\value_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\dict_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\json_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\signal_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\window_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\thread_dispatch_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\thread_pool_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\data\dict_visitor_tests.cpp">
+      <Filter>source\data</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource\resource_persist_tests.cpp">
+      <Filter>source\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="source\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\resource\resource_values_tests.cpp">
+      <Filter>source\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="source\audio\effect_tests.cpp">
+      <Filter>source\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="source\audio\music_tests.cpp">
+      <Filter>source\audio</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input\keyboard_tests.cpp">
+      <Filter>source\input</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input\mapping_tests.cpp">
+      <Filter>source\input</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\shader_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\buffer_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\depth_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\viewport_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\texture_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\render_target_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\sprite_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\palette_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\utility.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\font_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\animation_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\filesystem_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\draw_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\graphics\random_sprite_tests.cpp">
+      <Filter>source\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="source\base\frame_allocator_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\descriptor_allocator_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\fence_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\heap_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\mem_allocator_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\resource_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\test_base.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\resource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\utility.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12\test_base.h">
+      <Filter>source\dx12</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{0ffe958e-6078-414e-9825-107c5af26444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\base">
+      <UniqueIdentifier>{61ba3123-d669-4913-b682-a62ceb12074b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\data">
+      <UniqueIdentifier>{b18b94e7-5f61-4526-b534-a4f7c58423f3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\resource">
+      <UniqueIdentifier>{b7a6460a-796a-4a06-b9a9-d3566cbc9dbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\audio">
+      <UniqueIdentifier>{461ed571-3b17-4113-acf2-74827f2898c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\input">
+      <UniqueIdentifier>{500925ae-e8dd-4024-9262-fffd194a21de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\graphics">
+      <UniqueIdentifier>{a8221fdc-2b07-473c-96ff-85a2c91d88c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\dx12">
+      <UniqueIdentifier>{62887a70-17b2-4748-bdf2-5650b7d09833}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\resource.rc">
+      <Filter>source</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

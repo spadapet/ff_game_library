@@ -1,0 +1,18 @@
+#pragma once
+
+#include "../source/ff.resource/pch.h"
+#include "../source/ff.resource/source/auto_resource.h"
+#include "../source/ff.resource/source/global_resources.h"
+#include "../source/ff.resource/source/init.h"
+#include "../source/ff.resource/source/resource.h"
+#include "../source/ff.resource/source/resource_file.h"
+#include "../source/ff.resource/source/resource_load.h"
+#include "../source/ff.resource/source/resource_load_context.h"
+#include "../source/ff.resource/source/resource_object_base.h"
+#include "../source/ff.resource/source/resource_object_factory_base.h"
+#include "../source/ff.resource/source/resource_object_provider.h"
+#include "../source/ff.resource/source/resource_object_v.h"
+#include "../source/ff.resource/source/resource_objects.h"
+#include "../source/ff.resource/source/resource_value_provider.h"
+#include "../source/ff.resource/source/resource_values.h"
+#include "../source/ff.resource/source/resource_v.h"

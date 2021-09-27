@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{279176cb-1db1-40ea-aa60-1a0469e8a6d8}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;$(FFRoot)vendor\libpng_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\converters.cpp" />
+    <ClCompile Include="source\delegate_command.cpp" />
+    <ClCompile Include="source\font_provider.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\key_map.cpp" />
+    <ClCompile Include="source\notify_property_changed_base.cpp" />
+    <ClCompile Include="source\render_device.cpp" />
+    <ClCompile Include="source\render_target.cpp" />
+    <ClCompile Include="source\resource_cache.cpp" />
+    <ClCompile Include="source\set_panel_child_focus_action.cpp" />
+    <ClCompile Include="source\stream.cpp" />
+    <ClCompile Include="source\texture.cpp" />
+    <ClCompile Include="source\texture_provider.cpp" />
+    <ClCompile Include="source\ui.cpp" />
+    <ClCompile Include="source\ui_view.cpp" />
+    <ClCompile Include="source\xaml_provider.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\converters.h" />
+    <ClInclude Include="source\delegate_command.h" />
+    <ClInclude Include="source\font_provider.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\key_map.h" />
+    <ClInclude Include="source\notify_property_changed_base.h" />
+    <ClInclude Include="source\render_device.h" />
+    <ClInclude Include="source\render_target.h" />
+    <ClInclude Include="source\resource_cache.h" />
+    <ClInclude Include="source\set_panel_child_focus_action.h" />
+    <ClInclude Include="source\stream.h" />
+    <ClInclude Include="source\texture.h" />
+    <ClInclude Include="source\texture_provider.h" />
+    <ClInclude Include="source\ui.h" />
+    <ClInclude Include="source\ui_view.h" />
+    <ClInclude Include="source\xaml_provider.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.ui.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\quad_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\resolve_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shader_ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shader_vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.noesis_interactivity_uwp.vcxproj">
+      <Project>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.data\ff.data_uwp.vcxproj">
+      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.input\ff.input_uwp.vcxproj">
+      <Project>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.resource\ff.resource_uwp.vcxproj">
+      <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

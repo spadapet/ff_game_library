@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{BC64E930-33B0-4D7C-827F-8E692BCB5C40}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\access.cpp" />
+    <ClCompile Include="source\commands.cpp" />
+    <ClCompile Include="source\descriptor_allocator.cpp" />
+    <ClCompile Include="source\descriptor_range.cpp" />
+    <ClCompile Include="source\device_child_base.cpp" />
+    <ClCompile Include="source\fence.cpp" />
+    <ClCompile Include="source\fence_value.cpp" />
+    <ClCompile Include="source\fence_values.cpp" />
+    <ClCompile Include="source\globals.cpp" />
+    <ClCompile Include="source\heap.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\mem_allocator.cpp" />
+    <ClCompile Include="source\mem_range.cpp" />
+    <ClCompile Include="source\queue.cpp" />
+    <ClCompile Include="source\queues.cpp" />
+    <ClCompile Include="source\resource.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\access.h" />
+    <ClInclude Include="source\commands.h" />
+    <ClInclude Include="source\descriptor_allocator.h" />
+    <ClInclude Include="source\descriptor_range.h" />
+    <ClInclude Include="source\device_child_base.h" />
+    <ClInclude Include="source\fence.h" />
+    <ClInclude Include="source\fence_value.h" />
+    <ClInclude Include="source\fence_values.h" />
+    <ClInclude Include="source\globals.h" />
+    <ClInclude Include="source\heap.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\mem_allocator.h" />
+    <ClInclude Include="source\mem_range.h" />
+    <ClInclude Include="source\queue.h" />
+    <ClInclude Include="source\queues.h" />
+    <ClInclude Include="source\resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.directxtex_uwp.vcxproj">
+      <Project>{57ae618b-7b0e-4f51-b623-d1b5b90d11c9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

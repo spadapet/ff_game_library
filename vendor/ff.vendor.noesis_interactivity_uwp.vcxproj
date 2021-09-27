@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <InteractivityRoot>$(NoesisRoot)Src\Packages\App\Interactivity\</InteractivityRoot>
+    <MediaElementRoot>$(NoesisRoot)Src\Packages\App\MediaElement\</MediaElementRoot>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <CompileAsWinRT>false</CompileAsWinRT>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>NS_APP_INTERACTIVITY_API=;NS_APP_MEDIAELEMENT_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(InteractivityRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MediaElementRoot)Include</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(InteractivityRoot)Src\App.Interactivity.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\AttachableObject.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\Behavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\BehaviorCollection.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ChangePropertyAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\CollectionFilterBehavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\CollectionSortBehavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ComparisonCondition.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ComparisonLogic.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ConditionalExpression.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ConditionBehavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\ControlStoryboardAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\DataBindingHelper.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\DataTrigger.Interactivity.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\EventTrigger.Interactivity.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\EventTriggerBase.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\FilterPredicate.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\GamepadTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\GoToStateAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\Interaction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\InvokeCommandAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\KeyTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\LaunchUriOrFileAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\MouseDragElementBehavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\PlaySoundAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\PropertyChangedTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\RemoveElementAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\SelectAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\SelectAllAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\SetFocusAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\SortComparer.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StoryboardAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StoryboardCompletedTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StoryboardTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StringFilterPredicate.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StringSortComparer.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\StyleInteraction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TargetedTriggerAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TimerTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TranslateZoomRotateBehavior.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TriggerAction.Interactivity.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TriggerActionCollection.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TriggerBase.Interactivity.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\TriggerCollection.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\DataEventTrigger.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\LoadContentAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\MediaActions.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\App.MediaElement.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\MediaElement.cpp" />
+    <ClCompile Include="$(MediaElementRoot)Src\MediaPlayer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(InteractivityRoot)Src\ComparisonLogic.h" />
+    <ClInclude Include="$(InteractivityRoot)Src\DataBindingHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

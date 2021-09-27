@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Natvis Include="base.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\memory.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\timer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\string.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\uuid.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\signal.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\win_handle.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\win_msg.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\thread_dispatch.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\thread_pool.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\log.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_desktop.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window_uwp.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\math.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\window.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stable_hash.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\end_scope_action.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\filesystem.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\frame_allocator.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\constants.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\math.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\pool_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\type_helper.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\memory.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\point.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\rect.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\timer.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\string.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\uuid.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\intrusive_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\flags.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\signal.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\win_handle.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\win_msg.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\window.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\thread_dispatch.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\thread_pool.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\log.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\push_back.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stable_hash.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stack_vector.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\end_scope_action.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\filesystem.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\frame_allocator.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{c99231be-6fed-402d-ac79-6763f69023ad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

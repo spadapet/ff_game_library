@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SharedCppTargetsImported>true</SharedCppTargetsImported>
+  </PropertyGroup>
+
   <Target Name="ResJsonPrepareForBuild" BeforeTargets="PrepareForBuild" Condition=" '@(ResJson)' != '' ">
     <PropertyGroup>
       <ResJsonDebugOption></ResJsonDebugOption>
@@ -27,6 +31,87 @@
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemDefinitionGroup>
+    <!-- Compiler options -->
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
+      <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(AppType)' == 'Desktop' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;UWP_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' And '$(AppType)' == 'UWP' ">_WINRT_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;DXVER=$(DirectXVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4103</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Condition=" '$(Configuration)' != 'Debug' ">
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>Full</Optimization>
+      <PreprocessorDefinitions>NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck></SDLCheck>
+    </ClCompile>
+    <ClCompile Condition=" '$(Configuration)' == 'Debug' ">
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <PreprocessorDefinitions>DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- Shader compiler options -->
+    <FXC>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXC>
+    <!-- Librarian options -->
+    <Lib>
+      <AdditionalOptions>/ignore:4264</AdditionalOptions>
+      <TreatLibWarningAsErrors>true</TreatLibWarningAsErrors>
+    </Lib>
+    <!-- Typelib options -->
+    <Midl>
+      <DefaultCharType>Signed</DefaultCharType>
+      <GenerateClientFiles>None</GenerateClientFiles>
+      <GenerateServerFiles>None</GenerateServerFiles>
+      <GenerateTypeLibrary>true</GenerateTypeLibrary>
+      <OutputDirectory>$(GeneratedFilesDir)</OutputDirectory>
+      <TargetEnvironment>Win32</TargetEnvironment>
+      <TargetEnvironment Condition=" '$(Platform)' == 'x64' ">X64</TargetEnvironment>
+      <TypeLibraryName>$(GeneratedFilesDir)\%(FileName).tlb</TypeLibraryName>
+      <WarnAsError>true</WarnAsError>
+      <WarningLevel>3</WarningLevel>
+    </Midl>
+    <Midl Condition=" '$(AppType)' == 'UWP' ">
+      <PrependWithABINamepsace></PrependWithABINamepsace>
+      <PreprocessorDefinitions></PreprocessorDefinitions>
+      <EnableWindowsRuntime>false</EnableWindowsRuntime>
+      <AdditionalMetadataDirectories></AdditionalMetadataDirectories>
+      <MetadataFileName></MetadataFileName>
+    </Midl>
+    <!-- Resources -->
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <!-- Linker options -->
+    <Link>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>
+      <GenerateDebugInformation Condition=" '$(Configuration)' != 'Debug' ">true</GenerateDebugInformation>
+      <GenerateWindowsMetadata>$(GenerateWindowsMetadata)</GenerateWindowsMetadata>
+      <LargeAddressAware>true</LargeAddressAware>
+      <LinkTimeCodeGeneration Condition=" '$(Configuration)' != 'Debug' ">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <OptimizeReferences Condition=" '$(Configuration)' != 'Debug' ">true</OptimizeReferences>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <SubSystem>Windows</SubSystem>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+    </Link>
+  </ItemDefinitionGroup>
 
 </Project>
