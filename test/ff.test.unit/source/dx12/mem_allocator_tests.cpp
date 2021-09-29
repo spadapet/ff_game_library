@@ -24,22 +24,22 @@ namespace ff::test::dx12
 
             ff::dx12::mem_range range = allocator.alloc_buffer(1024, fence.next_value());
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(1024, range.size());
+            Assert::AreEqual<uint64_t>(1024, range.size());
             Assert::IsNotNull(range.cpu_data());
 
             range = allocator.alloc_texture(64, fence.next_value());
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(64, range.size());
+            Assert::AreEqual<uint64_t>(64, range.size());
             Assert::IsNotNull(range.cpu_data());
 
             range = allocator.alloc_buffer(128, fence.next_value());
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(128, range.size());
+            Assert::AreEqual<uint64_t>(128, range.size());
             Assert::IsNotNull(range.cpu_data());
 
             range = allocator.alloc_buffer(one_meg, fence.next_value());
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(one_meg, range.size());
+            Assert::AreEqual<uint64_t>(one_meg, range.size());
             Assert::IsNotNull(range.cpu_data());
             void* data = range.cpu_data();
 
@@ -58,44 +58,44 @@ namespace ff::test::dx12
 
             ff::dx12::mem_range range = allocator.alloc_bytes(1024);
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(1024, range.size());
-            Assert::AreEqual<size_t>(1024, range.allocated_size());
-            Assert::AreEqual<size_t>(0, range.start());
-            Assert::AreEqual<size_t>(0, range.allocated_start());
+            Assert::AreEqual<uint64_t>(1024, range.size());
+            Assert::AreEqual<uint64_t>(1024, range.allocated_size());
+            Assert::AreEqual<uint64_t>(0, range.start());
+            Assert::AreEqual<uint64_t>(0, range.allocated_start());
             Assert::IsNull(range.cpu_data());
 
             range = allocator.alloc_bytes(64);
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(64, range.size());
-            Assert::AreEqual<size_t>(64576, range.allocated_size());
-            Assert::AreEqual<size_t>(65536, range.start());
-            Assert::AreEqual<size_t>(1024, range.allocated_start());
+            Assert::AreEqual<uint64_t>(64, range.size());
+            Assert::AreEqual<uint64_t>(64576, range.allocated_size());
+            Assert::AreEqual<uint64_t>(65536, range.start());
+            Assert::AreEqual<uint64_t>(1024, range.allocated_start());
             Assert::IsNull(range.cpu_data());
 
             range = allocator.alloc_bytes(128);
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(128, range.size());
-            Assert::AreEqual<size_t>(128, range.allocated_size());
-            Assert::AreEqual<size_t>(0, range.start());
-            Assert::AreEqual<size_t>(0, range.allocated_start());
+            Assert::AreEqual<uint64_t>(128, range.size());
+            Assert::AreEqual<uint64_t>(128, range.allocated_size());
+            Assert::AreEqual<uint64_t>(0, range.start());
+            Assert::AreEqual<uint64_t>(0, range.allocated_start());
             Assert::IsNull(range.cpu_data());
 
             range = allocator.alloc_bytes(one_meg);
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(one_meg, range.size());
-            Assert::AreEqual<size_t>(one_meg, range.allocated_size());
-            Assert::AreEqual<size_t>(0, range.start());
-            Assert::AreEqual<size_t>(0, range.allocated_start());
+            Assert::AreEqual<uint64_t>(one_meg, range.size());
+            Assert::AreEqual<uint64_t>(one_meg, range.allocated_size());
+            Assert::AreEqual<uint64_t>(0, range.start());
+            Assert::AreEqual<uint64_t>(0, range.allocated_start());
             Assert::IsNull(range.cpu_data());
 
             ff::dx12::frame_complete();
 
             range = allocator.alloc_bytes(one_meg);
             Assert::IsTrue(range);
-            Assert::AreEqual<size_t>(one_meg, range.size());
-            Assert::AreEqual<size_t>(one_meg, range.allocated_size());
-            Assert::AreEqual<size_t>(0, range.start());
-            Assert::AreEqual<size_t>(0, range.allocated_start());
+            Assert::AreEqual<uint64_t>(one_meg, range.size());
+            Assert::AreEqual<uint64_t>(one_meg, range.allocated_size());
+            Assert::AreEqual<uint64_t>(0, range.start());
+            Assert::AreEqual<uint64_t>(0, range.allocated_start());
             Assert::IsNull(range.cpu_data());
         }
     };

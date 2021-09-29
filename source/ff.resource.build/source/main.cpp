@@ -9,9 +9,9 @@ static std::vector<std::string> get_command_line()
 static void show_usage()
 {
     std::cerr << "Command line options:" << std::endl;
-    std::cerr << "  1) ff.build_res.exe -in \"input file\" [-out \"output file\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
-    std::cerr << "  2) ff.build_res.exe -dump \"pack file\"" << std::endl;
-    std::cerr << "  3) ff.build_res.exe -dumpbin \"pack file\"" << std::endl;
+    std::cerr << "  1) ff.resource.build.exe -in \"input file\" [-out \"output file\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
+    std::cerr << "  2) ff.resource.build.exe -dump \"pack file\"" << std::endl;
+    std::cerr << "  3) ff.resource.build.exe -dumpbin \"pack file\"" << std::endl;
     std::cerr << std::endl;
     std::cerr << "NOTES:" << std::endl;
     std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'." << std::endl;
@@ -248,7 +248,7 @@ int main()
 
     if (!init_resource)
     {
-        std::cerr << "ff.build_res: Failed to initialize" << std::endl;
+        std::cerr << "ff.resource.build: Failed to initialize" << std::endl;
         return 5;
     }
 
@@ -334,7 +334,7 @@ int main()
     std::error_code ec;
     if (!std::filesystem::exists(input_file, ec))
     {
-        std::cerr << "ff.build_res: File doesn't exist: " << input_file << std::endl;
+        std::cerr << "ff.resource.build: File doesn't exist: " << input_file << std::endl;
         return 2;
     }
 
@@ -349,7 +349,7 @@ int main()
 
         if (!init_graphics || !init_audio || !init_input)
         {
-            std::cerr << "ff.build_res: Failed to initialize" << std::endl;
+            std::cerr << "ff.resource.build: Failed to initialize" << std::endl;
             return 5;
         }
 
@@ -364,12 +364,12 @@ int main()
 
                 if (verbose)
                 {
-                    std::cout << "ff.build_res: Loaded: " << ref << std::endl;
+                    std::cout << "ff.resource.build: Loaded: " << ref << std::endl;
                 }
 
                 if (!init_func)
                 {
-                    std::cerr << "ff.build_res: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
+                    std::cerr << "ff.resource.build: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
                     return 3;
                 }
 
@@ -377,14 +377,14 @@ int main()
             }
             else
             {
-                std::cerr << "ff.build_res: Failed to load reference: " << ref << std::endl;
+                std::cerr << "ff.resource.build: Failed to load reference: " << ref << std::endl;
                 return 4;
             }
         }
 
         if (!::compile_resource_pack(input_file, output_file, header_file, debug))
         {
-            std::cerr << "ff.build_res: Compile failed" << std::endl;
+            std::cerr << "ff.resource.build: Compile failed" << std::endl;
             return 6;
         }
     }
@@ -392,7 +392,7 @@ int main()
     if (verbose)
     {
         std::cout <<
-            "ff.build_res: Time: " <<
+            "ff.resource.build: Time: " <<
             std::fixed <<
             std::setprecision(3) <<
             timer.tick() <<

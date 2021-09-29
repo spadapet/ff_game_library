@@ -18,7 +18,7 @@ namespace ff::test::dx12
 
         TEST_METHOD(size)
         {
-            const size_t size = 1024 * 1024;
+            const uint64_t size = 1024 * 1024;
             ff::dx12::heap heap(size, ff::dx12::heap::usage_t::gpu_buffers);
 
             Assert::IsNull(heap.cpu_data());
@@ -28,7 +28,7 @@ namespace ff::test::dx12
 
         TEST_METHOD(cpu_upload_data)
         {
-            const size_t size = 1024 * 1024;
+            const uint64_t size = 1024 * 1024;
             ff::dx12::heap heap(size, ff::dx12::heap::usage_t::upload);
 
             Assert::IsNotNull(heap.cpu_data());
@@ -37,7 +37,7 @@ namespace ff::test::dx12
 
         TEST_METHOD(cpu_readback_data)
         {
-            const size_t size = 1024 * 1024;
+            const uint64_t size = 1024 * 1024;
             ff::dx12::heap heap(size, ff::dx12::heap::usage_t::readback);
 
             Assert::IsNotNull(heap.cpu_data());

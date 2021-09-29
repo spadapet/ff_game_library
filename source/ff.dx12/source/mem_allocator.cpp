@@ -229,8 +229,8 @@ ff::dx12::mem_range ff::internal::dx12::mem_buffer_free_list::alloc_bytes(uint64
 
 ff::dx12::mem_allocator_base::mem_allocator_base(uint64_t initial_size, uint64_t max_size, ff::dx12::heap::usage_t usage)
     : frame_complete_connection(ff::dx12::frame_complete_sink().connect(std::bind(&ff::dx12::mem_allocator_base::frame_complete, this, std::placeholders::_1)))
-    , initial_size(std::max<size_t>(1024, ff::math::nearest_power_of_two(initial_size)))
-    , max_size(max_size ? std::max<size_t>(this->initial_size, ff::math::nearest_power_of_two(max_size)) : 0)
+    , initial_size(std::max<uint64_t>(1024, ff::math::nearest_power_of_two(initial_size)))
+    , max_size(max_size ? std::max<uint64_t>(this->initial_size, ff::math::nearest_power_of_two(max_size)) : 0)
     , usage_(usage)
 {}
 

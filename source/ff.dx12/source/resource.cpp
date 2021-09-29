@@ -146,7 +146,7 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
         return {};
     }
 
-    ::memcpy(mem_range.cpu_data(), data, size);
+    ::memcpy(mem_range.cpu_data(), data, static_cast<size_t>(size));
 
     commands->wait_before_execute().add(this->read_fence_values);
     commands->wait_before_execute().add(this->write_fence_value);

@@ -87,19 +87,19 @@ namespace ff::math
     }
 
     template<typename T>
-    constexpr T align_down(T size, size_t align) noexcept
+    constexpr T align_down(T size, T align) noexcept
     {
         align += (align == 0);
         assert(ff::math::is_power_of_2(align));
-        return size & ~static_cast<T>(align - 1);
+        return size & ~(align - 1);
     }
 
     template<typename T>
-    constexpr T align_up(T size, size_t align) noexcept
+    constexpr T align_up(T size, T align) noexcept
     {
         align += (align == 0);
         assert(ff::math::is_power_of_2(align));
-        T mask = static_cast<T>(align - 1);
+        T mask = (align - 1);
         return (size + mask) & ~mask;
     }
 
@@ -107,7 +107,7 @@ namespace ff::math
     uint8_t* align_up(uint8_t* data, size_t align) noexcept;
 
     template<class T>
-    constexpr size_t round_up(T value, T multiple)
+    constexpr T round_up(T value, T multiple)
     {
         return (value + multiple - static_cast<T>(1)) / multiple * multiple;
     }
