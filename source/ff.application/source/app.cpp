@@ -202,7 +202,6 @@ static void frame_render(ff::state::advance_t advance_type)
     ::game_state.render(*::target, *::depth);
 
     ::frame_time.render_time = ::timer.current_stored_raw_time();
-    ::frame_time.graphics_counters = ff::graphics::dx11_device_state().reset_counters();
     ::app_time.render_count++;
 
     ::game_state.frame_rendered(advance_type, *::target, *::depth);
@@ -315,9 +314,7 @@ static void pause_game_state()
     {
         ::game_thread_state = ::game_thread_state_t::paused;
         ff::internal::app::request_save_settings();
-
-        ff::graphics::dx11_device_state().clear();
-        ff::graphics::dxgi_device()->Trim();
+        ff_dx::trim();
     }
 }
 

@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{8D48C235-4204-4094-B2C0-442DD544EE54}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\format.cpp" />
+    <ClCompile Include="source\globals.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\utility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\format.h" />
+    <ClInclude Include="source\globals.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\operators.h" />
+    <ClInclude Include="source\utility.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.directxtex_uwp.vcxproj">
+      <Project>{57ae618b-7b0e-4f51-b623-d1b5b90d11c9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
+      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

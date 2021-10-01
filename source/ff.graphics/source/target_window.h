@@ -2,13 +2,12 @@
 
 #include "target_base.h"
 #include "target_window_base.h"
-#include "graphics_child_base.h"
 
 namespace ff
 {
     class target_window
         : public ff::target_window_base
-        , public ff::internal::graphics_child_base
+        , public ff_internal_dx::device_child_base
     {
     public:
         target_window();
@@ -44,7 +43,6 @@ namespace ff
 
         // graphics_child_base
         virtual bool reset() override;
-        virtual int reset_priority() const override;
 
     private:
         static const size_t BACK_BUFFER_COUNT = 2;

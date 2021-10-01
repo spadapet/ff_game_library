@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "color.h"
 #include "draw_base.h"
-#include "dx11_texture.h"
 #include "font_file.h"
 #include "graphics.h"
 #include "sprite.h"
 #include "sprite_font.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
+#include "texture.h"
 #include "transform.h"
 
 static bool text_contains_outline_control(std::wstring_view text)

@@ -23,22 +23,10 @@
     <ClCompile Include="source\viewport.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dxgi_util.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\texture_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\png_image.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_device_state.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_fixed_state.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_object_cache.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\shader.cpp">
@@ -51,9 +39,6 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\graphics.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\graphics_child_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\texture_metadata.cpp">
@@ -113,16 +98,13 @@
     <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_buffer.cpp">
+    <ClCompile Include="source\texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_depth.cpp">
+    <ClCompile Include="source\buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\dx11_graphics.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\dx11_texture.cpp">
+    <ClCompile Include="source\depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -152,9 +134,6 @@
     <ClInclude Include="source\viewport.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dxgi_util.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\texture_util.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -162,18 +141,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_data.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx_operators.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_device_state.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_fixed_state.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\dx11_object_cache.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\shader.h">
@@ -189,9 +156,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\graphics.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\graphics_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_metadata.h">
@@ -269,13 +233,13 @@
     <ClInclude Include="source\texture_view_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_buffer.h">
+    <ClInclude Include="source\texture.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_depth.h">
+    <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\dx11_texture.h">
+    <ClInclude Include="source\depth.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

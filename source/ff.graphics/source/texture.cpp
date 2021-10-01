@@ -1,13 +1,11 @@
 #include "pch.h"
 #include "data_blob.h"
 #include "draw_base.h"
-#include "dx11_device_state.h"
-#include "dx11_texture.h"
-#include "dxgi_util.h"
 #include "graphics.h"
 #include "png_image.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
+#include "texture.h"
 #include "texture_metadata.h"
 #include "texture_util.h"
 
@@ -18,12 +16,12 @@ ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_for
     this->data_ = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
     this->fix_sprite_data(this->data_ ? ff::internal::get_sprite_type(*this->data_) : ff::sprite_type::unknown);
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
 {
-    format = ff::internal::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
+    format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 
     if (size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
     {
@@ -31,23 +29,23 @@ ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, s
         desc.Width = static_cast<UINT>(size.x);
         desc.Height = static_cast<UINT>(size.y);
         desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | (!ff::internal::compressed_format(format) ? D3D11_BIND_RENDER_TARGET : 0);
+        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | (!ff::dxgi::compressed_format(format) ? D3D11_BIND_RENDER_TARGET : 0);
         desc.Format = format;
         desc.MipLevels = static_cast<UINT>(mip_count);
         desc.ArraySize = static_cast<UINT>(array_size);
-        desc.SampleDesc.Count = static_cast<UINT>(ff::internal::fix_sample_count(format, sample_count));
+        desc.SampleDesc.Count = static_cast<UINT>(ff_internal_dx::fix_sample_count(format, sample_count));
 
-        HRESULT hr = ff::graphics::dx11_device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
+        HRESULT hr = ff::dx11::device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
         assert(SUCCEEDED(hr));
     }
 
-    const ff::sprite_type sprite_type = ff::internal::palette_format(format)
+    const ff::sprite_type sprite_type = ff::dxgi::palette_format(format)
         ? ff::sprite_type::opaque_palette
-        : (ff::internal::has_alpha(format) ? ff::sprite_type::transparent : ff::sprite_type::opaque);
+        : (ff::dxgi::has_alpha(format) ? ff::sprite_type::transparent : ff::sprite_type::opaque);
 
     this->fix_sprite_data(sprite_type);
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::sprite_type sprite_type)
@@ -56,7 +54,7 @@ ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const s
 {
     this->fix_sprite_data(sprite_type == ff::sprite_type::unknown && this->data_ ? ff::internal::get_sprite_type(*this->data_) : sprite_type);
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
@@ -73,14 +71,14 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
         }
     }
 
-    if (ff::internal::palette_format(other.format()) && ff::internal::palette_format(new_format))
+    if (ff::dxgi::palette_format(other.format()) && ff::dxgi::palette_format(new_format))
     {
         this->palette_ = other.palette_;
     }
 
     this->fix_sprite_data(sprite_type);
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(texture&& other) noexcept
@@ -92,12 +90,12 @@ ff::texture::texture(texture&& other) noexcept
     this->fix_sprite_data(other.sprite_data_.type());
     other.sprite_data_ = ff::sprite_data();
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::texture::~texture()
 {
-    ff::internal::graphics::remove_child(this);
+    ff_internal_dx::remove_device_child(this);
 }
 
 ff::texture& ff::texture::operator=(texture&& other) noexcept
@@ -230,7 +228,7 @@ std::shared_ptr<DirectX::ScratchImage> ff::texture::data() const
         // Can't use the device context on background threads
         ff::thread_dispatch::get_game()->send([&scratch, texture]()
             {
-                DirectX::CaptureTexture(ff::graphics::dx11_device(), ff::graphics::dx11_device_context(), texture, scratch);
+                DirectX::CaptureTexture(ff::dx11::device(), ff_dx::context(), texture, scratch);
             });
 
         return scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch)) : nullptr;
@@ -309,7 +307,7 @@ bool ff::texture::update(
 
             ff::thread_dispatch::get_game()->send([texture, subresource, box, data, row_pitch]()
                 {
-                    ff::graphics::dx11_device_state().update_subresource(
+                    ff::dx11::get_device_state().update_subresource(
                         texture, subresource, &box, data, static_cast<UINT>(row_pitch), 0);
                 });
         }
@@ -342,9 +340,9 @@ bool ff::texture::resource_save_to_file(const std::filesystem::path& directory_p
     std::shared_ptr<DirectX::ScratchImage> data = this->data();
     if (data)
     {
-        if (!ff::internal::palette_format(data->GetMetadata().format))
+        if (!ff::dxgi::palette_format(data->GetMetadata().format))
         {
-            data = ff::internal::convert_texture_data(data, ff::internal::DEFAULT_FORMAT, this->mip_count());
+            data = ff::internal::convert_texture_data(data, ff::dxgi::DEFAULT_FORMAT, this->mip_count());
         }
 
         for (size_t i = 0; i < data->GetImageCount(); i++)
@@ -495,7 +493,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
     bool pma = dict.get<bool>("pma");
     size_t mip_count = dict.get<size_t>("mips", 1);
     std::filesystem::path full_file = dict.get<std::string>("file");
-    DXGI_FORMAT format = ff::internal::parse_format(dict.get<std::string>("format", std::string("rgbs32")));
+    DXGI_FORMAT format = ff::dxgi::parse_format(dict.get<std::string>("format", std::string("rgbs32")));
 
     if (format != DXGI_FORMAT_UNKNOWN)
     {

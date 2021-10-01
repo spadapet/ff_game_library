@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "graphics.h"
 #include "init.h"
 #include "shader.h"
+#include "texture.h"
 #include "texture_metadata.h"
 
 #if DXVER == 11
@@ -59,7 +59,7 @@ ff::init_graphics::init_graphics()
 {
     std::scoped_lock lock(::init_graphics_mutex);
 
-    if (::init_graphics_refs++ == 0 && this->init_resource)
+    if (::init_graphics_refs++ == 0 && this->init_resource && this->init_dx)
     {
         ::init_graphics_data = std::make_unique<one_time_init_grahics>();
     }
@@ -77,5 +77,5 @@ ff::init_graphics::~init_graphics()
 
 ff::init_graphics::operator bool() const
 {
-    return this->init_resource && ::init_graphics_status;
+    return this->init_resource && this->init_dx && ::init_graphics_status;
 }

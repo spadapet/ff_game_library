@@ -1,26 +1,21 @@
 #pragma once
 
-#if DXVER == 11
-
-#include "graphics_counters.h"
-
-namespace ff
+namespace ff::dx11
 {
-    class dx11_device_state
+    class device_state
     {
     public:
-        dx11_device_state();
-        dx11_device_state(ID3D11DeviceContextX* context);
-        dx11_device_state(dx11_device_state&& other) noexcept = delete;
-        dx11_device_state(const dx11_device_state& other) = delete;
+        device_state();
+        device_state(ID3D11DeviceContextX* context);
+        device_state(device_state&& other) noexcept = delete;
+        device_state(const device_state& other) = delete;
 
-        dx11_device_state& operator=(dx11_device_state&& other) noexcept = delete;
-        dx11_device_state& operator=(const dx11_device_state& other) = delete;
+        device_state& operator=(device_state&& other) noexcept = delete;
+        device_state& operator=(const device_state& other) = delete;
 
         void clear();
         void reset(ID3D11DeviceContextX* context);
-        void apply(dx11_device_state& dest);
-        ff::graphics_counters reset_counters();
+        void apply(device_state& dest);
         void draw(size_t count, size_t start);
         void draw_indexed(size_t index_count, size_t index_start, int vertex_offset);
         void* map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map = nullptr);
@@ -63,7 +58,6 @@ namespace ff
 
     private:
         Microsoft::WRL::ComPtr<ID3D11DeviceContextX> context;
-        ff::graphics_counters counters;
 
         template<typename TShader>
         struct shader_state
@@ -130,5 +124,3 @@ namespace ff
         std::array<Microsoft::WRL::ComPtr<ID3D11Buffer>, D3D11_SO_STREAM_COUNT> so_targets;
     };
 }
-
-#endif

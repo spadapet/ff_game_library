@@ -57,7 +57,6 @@ ff::debug_state::debug_state()
     , input_mapping("ff.debug_page_input")
     , draw_device(ff::draw_device::create())
     , mem_stats{}
-    , graphics_counters{}
     , total_advance_count(0)
     , total_render_count(0)
     , advance_count(0)
@@ -261,7 +260,7 @@ void ff::debug_state::debug_page_info(size_t page, size_t index, std::string& ou
 
         case 1:
             out_color = ff::color::green();
-            str << "Render:" << std::fixed << std::setprecision(2) << this->render_time * 1000.0 << "ms/" << std::setprecision(0) << this->last_rps << "Hz, Clear:T" << this->graphics_counters.clear << "/D" << this->graphics_counters.depth_clear << ", Draw:" << this->graphics_counters.draw;
+            str << "Render:" << std::fixed << std::setprecision(2) << this->render_time * 1000.0 << "ms/" << std::setprecision(0) << this->last_rps << "Hz";
             break;
 
         case 2:
@@ -342,7 +341,6 @@ void ff::debug_state::update_stats()
         this->render_time = ft.render_time / freq_d;
         this->flip_time = ft.flip_time / freq_d;
         this->bank_time = gt.unused_advance_seconds;
-        this->graphics_counters = ft.graphics_counters;
     }
 
     ff::debug_state::frame_t frame_info;

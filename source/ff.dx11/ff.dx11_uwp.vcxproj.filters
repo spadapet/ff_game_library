@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\globals.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\device_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\device_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\fixed_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\object_cache.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\globals.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_child_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\fixed_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\object_cache.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\operators.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{f4bd62ff-c8c6-496b-940e-24ecbf6c372d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,8 +1,5 @@
 #include "pch.h"
-#include "dx11_depth.h"
-#include "dx11_device_state.h"
-#include "dxgi_util.h"
-#include "graphics.h"
+#include "depth.h"
 
 #if DXVER == 11
 
@@ -14,7 +11,7 @@ ff::depth::depth(size_t sample_count)
 
 ff::depth::depth(const ff::point_int& size, size_t sample_count)
 {
-    ff::internal::graphics::add_child(this);
+    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
 
     D3D11_TEXTURE2D_DESC texture_desc{};
     texture_desc.ArraySize = 1;
@@ -23,7 +20,7 @@ ff::depth::depth(const ff::point_int& size, size_t sample_count)
     texture_desc.Width = static_cast<UINT>(std::max(size.x, 1));
     texture_desc.Height = static_cast<UINT>(std::max(size.y, 1));
     texture_desc.MipLevels = 1;
-    texture_desc.SampleDesc.Count = static_cast<UINT>(ff::internal::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count));
+    texture_desc.SampleDesc.Count = static_cast<UINT>(ff::internal::dx11::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count));
     texture_desc.Usage = D3D11_USAGE_DEFAULT;
 
     D3D11_DEPTH_STENCIL_VIEW_DESC view_desc{};
@@ -31,14 +28,14 @@ ff::depth::depth(const ff::point_int& size, size_t sample_count)
     view_desc.ViewDimension = (texture_desc.SampleDesc.Count > 1) ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
 
     bool status =
-        SUCCEEDED(ff::graphics::dx11_device()->CreateTexture2D(&texture_desc, nullptr, this->texture_.GetAddressOf())) &&
-        SUCCEEDED(ff::graphics::dx11_device()->CreateDepthStencilView(this->texture(), &view_desc, this->view_.GetAddressOf()));
+        SUCCEEDED(ff::dx11::device()->CreateTexture2D(&texture_desc, nullptr, this->texture_.GetAddressOf())) &&
+        SUCCEEDED(ff::dx11::device()->CreateDepthStencilView(this->texture(), &view_desc, this->view_.GetAddressOf()));
     assert(status);
 }
 
 ff::depth::~depth()
 {
-    ff::internal::graphics::remove_child(this);
+    ff::internal::dx11::remove_device_child(this);
 }
 
 ff::depth::operator bool() const
@@ -79,17 +76,17 @@ size_t ff::depth::sample_count() const
 
 void ff::depth::clear(float depth, BYTE stencil) const
 {
-    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), true, true, depth, stencil);
+    ff::dx11::get_device_state().clear_depth_stencil(this->view(), true, true, depth, stencil);
 }
 
 void ff::depth::clear_depth(float depth) const
 {
-    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), true, false, depth, 0);
+    ff::dx11::get_device_state().clear_depth_stencil(this->view(), true, false, depth, 0);
 }
 
 void ff::depth::clear_stencil(BYTE stencil) const
 {
-    ff::graphics::dx11_device_state().clear_depth_stencil(this->view(), false, true, 0, stencil);
+    ff::dx11::get_device_state().clear_depth_stencil(this->view(), false, true, 0, stencil);
 }
 
 ID3D11Texture2D* ff::depth::texture() const

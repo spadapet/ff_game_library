@@ -12,5 +12,6 @@ namespace ff
 
     private:
         ff::init_resource init_resource;
+        ff_dx::init init_dx;
     };
 }

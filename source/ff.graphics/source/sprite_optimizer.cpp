@@ -1,9 +1,8 @@
 #include "pch.h"
-#include "dx11_texture.h"
-#include "dxgi_util.h"
 #include "palette_data.h"
 #include "sprite_base.h"
 #include "sprite_optimizer.h"
+#include "texture.h"
 #include "texture_util.h"
 
 static const int TEXTURE_SIZE_MAX = 1024;
@@ -360,13 +359,13 @@ static bool create_original_textures(
 
         if (original_textures.find(texture) == original_textures.cend())
         {
-            if (texture->format() != format && (!ff::internal::color_format(texture->format()) || !ff::internal::color_format(format)))
+            if (texture->format() != format && (!ff::dxgi::color_format(texture->format()) || !ff::dxgi::color_format(format)))
             {
                 assert(false);
                 return false;
             }
 
-            DXGI_FORMAT capture_format = ff::internal::color_format(format) ? ff::internal::DEFAULT_FORMAT : format;
+            DXGI_FORMAT capture_format = ff::dxgi::color_format(format) ? ff::dxgi::DEFAULT_FORMAT : format;
             ::original_texture_info texure_info;
             texure_info.rgb_texture = std::make_shared<ff::texture>(*texture, capture_format, 1);
             if (!texure_info.rgb_texture)
@@ -430,7 +429,7 @@ static bool compute_optimized_sprites(std::vector<::optimized_sprite_info>& spri
 
 static bool create_optimized_textures(DXGI_FORMAT format, std::vector<::optimized_texture_info>& texture_infos)
 {
-    format = ff::internal::color_format(format) ? ff::internal::DEFAULT_FORMAT : format;
+    format = ff::dxgi::color_format(format) ? ff::dxgi::DEFAULT_FORMAT : format;
 
     for (::optimized_texture_info& texture : texture_infos)
     {
@@ -532,7 +531,7 @@ std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const f
 {
     std::vector<ff::sprite> new_sprites;
 
-    if (new_mip_count != 1 && !ff::internal::color_format(new_format))
+    if (new_mip_count != 1 && !ff::dxgi::color_format(new_format))
     {
         assert(false);
         return new_sprites;
@@ -577,7 +576,7 @@ static bool create_outline_sprites(
     std::vector<ff::sprite>& outline_sprite_list,
     const std::shared_ptr<DirectX::ScratchImage>& palette_data)
 {
-    bool use_palette = ff::internal::palette_format(format);
+    bool use_palette = ff::dxgi::palette_format(format);
     const int pixel_size = use_palette ? 1 : 4;
     const int alpha_offset = use_palette ? 0 : 3;
 
@@ -676,7 +675,7 @@ std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<const ff
 {
     std::vector<ff::sprite> new_sprites;
 
-    if (!ff::internal::color_format(new_format) && !ff::internal::palette_format(new_format))
+    if (!ff::dxgi::color_format(new_format) && !ff::dxgi::palette_format(new_format))
     {
         assert(false);
         return new_sprites;

@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "dx11_texture.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
+#include "texture.h"
 #include "texture_view_base.h"
 
 ff::sprite_data::sprite_data()

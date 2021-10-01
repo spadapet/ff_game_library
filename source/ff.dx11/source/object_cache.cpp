@@ -1,15 +1,13 @@
 #include "pch.h"
-#include "dx_operators.h"
-#include "dx11_object_cache.h"
+#include "operators.h"
+#include "object_cache.h"
 
-#if DXVER == 11
-
-size_t ff::dx11_object_cache::hash_data::operator()(const std::shared_ptr<ff::data_base>& value) const
+size_t ff::dx11::object_cache::hash_data::operator()(const std::shared_ptr<ff::data_base>& value) const
 {
     return (value && value->size()) ? ff::stable_hash_bytes(value->data(), value->size()) : 0;
 }
 
-bool ff::dx11_object_cache::equals_data::operator()(const std::shared_ptr<ff::data_base>& lhs, const std::shared_ptr<ff::data_base>& rhs) const
+bool ff::dx11::object_cache::equals_data::operator()(const std::shared_ptr<ff::data_base>& lhs, const std::shared_ptr<ff::data_base>& rhs) const
 {
     if (!lhs || !rhs)
     {
@@ -19,11 +17,11 @@ bool ff::dx11_object_cache::equals_data::operator()(const std::shared_ptr<ff::da
     return lhs->size() == rhs->size() && !std::memcmp(lhs->data(), rhs->data(), lhs->size());
 }
 
-ff::dx11_object_cache::dx11_object_cache(ID3D11DeviceX* device)
+ff::dx11::object_cache::object_cache(ID3D11DeviceX* device)
     : device(device)
 {}
 
-ID3D11BlendState* ff::dx11_object_cache::get_blend_state(const D3D11_BLEND_DESC& desc)
+ID3D11BlendState* ff::dx11::object_cache::get_blend_state(const D3D11_BLEND_DESC& desc)
 {
     auto i = this->blend_states.find(desc);
     if (i == this->blend_states.cend())
@@ -41,7 +39,7 @@ ID3D11BlendState* ff::dx11_object_cache::get_blend_state(const D3D11_BLEND_DESC&
     return i->second.Get();
 }
 
-ID3D11DepthStencilState* ff::dx11_object_cache::get_depth_stencil_state(const D3D11_DEPTH_STENCIL_DESC& desc)
+ID3D11DepthStencilState* ff::dx11::object_cache::get_depth_stencil_state(const D3D11_DEPTH_STENCIL_DESC& desc)
 {
     auto i = this->depth_states.find(desc);
     if (i == this->depth_states.cend())
@@ -59,7 +57,7 @@ ID3D11DepthStencilState* ff::dx11_object_cache::get_depth_stencil_state(const D3
     return i->second.Get();
 }
 
-ID3D11RasterizerState* ff::dx11_object_cache::get_rasterize_state(const D3D11_RASTERIZER_DESC& desc)
+ID3D11RasterizerState* ff::dx11::object_cache::get_rasterize_state(const D3D11_RASTERIZER_DESC& desc)
 {
     auto i = this->raster_states.find(desc);
     if (i == this->raster_states.cend())
@@ -77,7 +75,7 @@ ID3D11RasterizerState* ff::dx11_object_cache::get_rasterize_state(const D3D11_RA
     return i->second.Get();
 }
 
-ID3D11SamplerState* ff::dx11_object_cache::get_sampler_state(const D3D11_SAMPLER_DESC& desc)
+ID3D11SamplerState* ff::dx11::object_cache::get_sampler_state(const D3D11_SAMPLER_DESC& desc)
 {
     auto i = this->sampler_states.find(desc);
     if (i == this->sampler_states.cend())
@@ -95,7 +93,7 @@ ID3D11SamplerState* ff::dx11_object_cache::get_sampler_state(const D3D11_SAMPLER
     return i->second.Get();
 }
 
-ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader(std::string_view resource_name)
+ID3D11VertexShader* ff::dx11::object_cache::get_vertex_shader(std::string_view resource_name)
 {
     ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
@@ -110,13 +108,13 @@ ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader(std::string_view re
     return value;
 }
 
-ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader_and_input_layout(std::string_view resource_name, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
+ID3D11VertexShader* ff::dx11::object_cache::get_vertex_shader_and_input_layout(std::string_view resource_name, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
 {
     input_layout = this->get_input_layout(resource_name, layout, count);
     return this->get_vertex_shader(resource_name);
 }
 
-ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(std::string_view resource_name)
+ID3D11GeometryShader* ff::dx11::object_cache::get_geometry_shader(std::string_view resource_name)
 {
     ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
@@ -131,7 +129,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(std::string_vie
     return value;
 }
 
-ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(std::string_view resource_name, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride)
+ID3D11GeometryShader* ff::dx11::object_cache::get_geometry_shader_stream_output(std::string_view resource_name, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride)
 {
     ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
@@ -146,7 +144,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(s
     return value;
 }
 
-ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(std::string_view resource_name)
+ID3D11PixelShader* ff::dx11::object_cache::get_pixel_shader(std::string_view resource_name)
 {
     ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
@@ -161,7 +159,7 @@ ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(std::string_view reso
     return value;
 }
 
-ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(std::string_view vertex_shader_resource_name, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
+ID3D11InputLayout* ff::dx11::object_cache::get_input_layout(std::string_view vertex_shader_resource_name, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
 {
     ff::auto_resource<ff::resource_file> resource = ff::global_resources::get(vertex_shader_resource_name);
     std::shared_ptr<ff::saved_data_base> saved_data = resource.object() ? resource->saved_data() : nullptr;
@@ -176,7 +174,7 @@ ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(std::string_view vert
     return value;
 }
 
-ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader(const std::shared_ptr<ff::data_base>& shader_data)
+ID3D11VertexShader* ff::dx11::object_cache::get_vertex_shader(const std::shared_ptr<ff::data_base>& shader_data)
 {
     ID3D11VertexShader* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> value;
@@ -198,13 +196,13 @@ ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader(const std::shared_p
     return return_value;
 }
 
-ID3D11VertexShader* ff::dx11_object_cache::get_vertex_shader_and_input_layout(const std::shared_ptr<ff::data_base>& shader_data, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
+ID3D11VertexShader* ff::dx11::object_cache::get_vertex_shader_and_input_layout(const std::shared_ptr<ff::data_base>& shader_data, Microsoft::WRL::ComPtr<ID3D11InputLayout>& input_layout, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
 {
     input_layout = this->get_input_layout(shader_data, layout, count);
     return this->get_vertex_shader(shader_data);
 }
 
-ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(const std::shared_ptr<ff::data_base>& shader_data)
+ID3D11GeometryShader* ff::dx11::object_cache::get_geometry_shader(const std::shared_ptr<ff::data_base>& shader_data)
 {
     ID3D11GeometryShader* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11GeometryShader> value;
@@ -226,7 +224,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader(const std::shar
     return return_value;
 }
 
-ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(const std::shared_ptr<ff::data_base>& shader_data, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride)
+ID3D11GeometryShader* ff::dx11::object_cache::get_geometry_shader_stream_output(const std::shared_ptr<ff::data_base>& shader_data, const D3D11_SO_DECLARATION_ENTRY* layout, size_t count, size_t vertex_stride)
 {
     ID3D11GeometryShader* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11GeometryShader> value;
@@ -249,7 +247,7 @@ ID3D11GeometryShader* ff::dx11_object_cache::get_geometry_shader_stream_output(c
     return return_value;
 }
 
-ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(const std::shared_ptr<ff::data_base>& shader_data)
+ID3D11PixelShader* ff::dx11::object_cache::get_pixel_shader(const std::shared_ptr<ff::data_base>& shader_data)
 {
     ID3D11PixelShader* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> value;
@@ -271,7 +269,7 @@ ID3D11PixelShader* ff::dx11_object_cache::get_pixel_shader(const std::shared_ptr
     return return_value;
 }
 
-ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(const std::shared_ptr<ff::data_base>& shader_data, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
+ID3D11InputLayout* ff::dx11::object_cache::get_input_layout(const std::shared_ptr<ff::data_base>& shader_data, const D3D11_INPUT_ELEMENT_DESC* layout, size_t count)
 {
     ID3D11InputLayout* return_value = nullptr;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> value;
@@ -290,5 +288,3 @@ ID3D11InputLayout* ff::dx11_object_cache::get_input_layout(const std::shared_ptr
 
     return return_value;
 }
-
-#endif

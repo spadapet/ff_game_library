@@ -2,7 +2,6 @@
 
 #include "animation_base.h"
 #include "animation_player_base.h"
-#include "graphics_child_base.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
 #include "sprite_type.h"
@@ -14,7 +13,7 @@
 namespace ff
 {
     class texture
-        : public ff::internal::graphics_child_base
+        : public ff::internal::dx11::device_child_base
         , public ff::resource_object_base
         , public ff::texture_metadata_base
         , public ff::texture_view_base

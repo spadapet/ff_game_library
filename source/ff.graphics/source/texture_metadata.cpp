@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "dxgi_util.h"
 #include "texture_metadata.h"
 
 ff::texture_metadata::texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
@@ -56,7 +55,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),
         dict.get<size_t>("sample_count"),
-        ff::internal::parse_format(dict.get<std::string>("format")));
+        ff::dxgi::parse_format(dict.get<std::string>("format")));
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_cache(const ff::dict& dict) const

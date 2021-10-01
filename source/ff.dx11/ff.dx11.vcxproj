@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{52341559-1659-489D-82A8-F81B7ABA39ED}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\device_child_base.cpp" />
+    <ClCompile Include="source\device_state.cpp" />
+    <ClCompile Include="source\fixed_state.cpp" />
+    <ClCompile Include="source\globals.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\object_cache.cpp" />
+    <ClCompile Include="source\texture_util.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\device_child_base.h" />
+    <ClInclude Include="source\device_state.h" />
+    <ClInclude Include="source\fixed_state.h" />
+    <ClInclude Include="source\globals.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\object_cache.h" />
+    <ClInclude Include="source\operators.h" />
+    <ClInclude Include="source\texture_util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">
+      <Project>{5f0b3fd1-44d5-4524-8f61-e22098986a43}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.base\ff.base.vcxproj">
+      <Project>{dfdbd2c1-61cb-4606-8e52-85b65c9aaef2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.data\ff.data.vcxproj">
+      <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.dxgi\ff.dxgi.vcxproj">
+      <Project>{a4ea1e4f-874e-4d9a-8ce1-5483c5c8c33e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.resource\ff.resource.vcxproj">
+      <Project>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

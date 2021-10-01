@@ -1,12 +1,10 @@
 #pragma once
 
-#include "graphics_child_base.h"
-
 #if DXVER == 11
 
 namespace ff
 {
-    class depth : public ff::internal::graphics_child_base
+    class depth : public ff::internal::dx11::device_child_base
     {
     public:
         depth(size_t sample_count = 0);
@@ -28,7 +26,7 @@ namespace ff
         ID3D11Texture2D* texture() const;
         ID3D11DepthStencilView* view() const;
 
-        // graphics_child_base
+        // device_child_base
         virtual bool reset() override;
 
     private:

@@ -1,8 +1,7 @@
 #include "pch.h"
-#include "dx11_device_state.h"
-#include "dx11_texture.h"
 #include "graphics.h"
 #include "target_texture.h"
+#include "texture.h"
 #include "texture_util.h"
 
 ff::target_texture::target_texture(
@@ -25,12 +24,12 @@ ff::target_texture::target_texture(
 {
     this->view_ = ff::internal::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
 
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 }
 
 ff::target_texture::~target_texture()
 {
-    ff::internal::graphics::remove_child(this);
+    ff_internal_dx::remove_device_child(this);
 }
 
 ff::target_texture::operator bool() const
@@ -47,7 +46,7 @@ bool ff::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff::graphics::dx11_device_state().clear_target(this->view(), *clear_color);
+        ff::dx11::get_device_state().clear_target(this->view(), *clear_color);
     }
 
     return true;

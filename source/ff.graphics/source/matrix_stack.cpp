@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "dx_operators.h"
 #include "matrix.h"
 #include "matrix_stack.h"
 

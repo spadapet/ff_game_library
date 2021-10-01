@@ -1,12 +1,12 @@
 #pragma once
 
-namespace ff
+namespace ff::dx12
 {
-    class init_dx12
+    class init
     {
     public:
-        init_dx12(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
-        ~init_dx12();
+        init(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
+        ~init();
 
         operator bool() const;
     };

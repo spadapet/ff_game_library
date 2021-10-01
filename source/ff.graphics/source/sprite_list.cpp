@@ -1,11 +1,10 @@
 #include "pch.h"
-#include "dx11_texture.h"
-#include "dxgi_util.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
 #include "sprite_resource.h"
+#include "texture.h"
 #include "texture_view.h"
 
 ff::sprite_list::sprite_list(std::vector<ff::sprite>&& sprites)
@@ -115,20 +114,20 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 {
     bool optimize = dict.get<bool>("optimize", true);
     size_t mip_count = dict.get<size_t>("mips", 1);
-    DXGI_FORMAT format = ff::internal::parse_format(dict.get<std::string>("format", std::string("rgba32")));
+    DXGI_FORMAT format = ff::dxgi::parse_format(dict.get<std::string>("format", std::string("rgba32")));
     if (format == DXGI_FORMAT_UNKNOWN)
     {
         assert(false);
-        format = ff::internal::DEFAULT_FORMAT;
+        format = ff::dxgi::DEFAULT_FORMAT;
     }
 
-    if (mip_count > 1 && !ff::internal::color_format(format))
+    if (mip_count > 1 && !ff::dxgi::color_format(format))
     {
         context.add_error("MipMaps are only supported for color textures");
         return false;
     }
 
-    if (optimize && !ff::internal::color_format(format) && !ff::internal::palette_format(format))
+    if (optimize && !ff::dxgi::color_format(format) && !ff::dxgi::palette_format(format))
     {
         context.add_error("Can only optimize full color or palette textures");
         return false;
@@ -171,7 +170,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         else
         {
             std::shared_ptr<ff::texture> texture = std::make_shared<ff::texture>(full_file,
-                (optimize && ff::internal::color_format(format)) ? ff::internal::DEFAULT_FORMAT : format,
+                (optimize && ff::dxgi::color_format(format)) ? ff::dxgi::DEFAULT_FORMAT : format,
                 optimize ? 1 : mip_count);
 
             if (!*texture)

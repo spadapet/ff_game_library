@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "draw_base.h"
-#include "dx11_texture.h"
 #include "graphics.h"
+#include "texture.h"
 #include "texture_util.h"
 #include "texture_view.h"
+
+#if DXVER == 11
 
 ff::texture_view::texture_view(
     const std::shared_ptr<ff::texture>& texture,
@@ -19,7 +21,7 @@ ff::texture_view::texture_view(
 {
     this->fix_sprite_data();
 
-    ff::internal::graphics::add_child(this);
+    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
 }
 
 ff::texture_view::texture_view(texture_view&& other) noexcept
@@ -33,12 +35,12 @@ ff::texture_view::texture_view(texture_view&& other) noexcept
     this->fix_sprite_data();
     other.sprite_data_ = ff::sprite_data();
 
-    ff::internal::graphics::add_child(this);
+    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
 }
 
 ff::texture_view::~texture_view()
 {
-    ff::internal::graphics::remove_child(this);
+    ff::internal::dx11::remove_device_child(this);
 }
 
 ff::texture_view& ff::texture_view::operator=(texture_view&& other) noexcept
@@ -153,3 +155,5 @@ void ff::texture_view::fix_sprite_data()
         ff::rect_float(ff::point_float{}, this->texture_->size().cast<float>()),
         this->texture_->sprite_type());
 }
+
+#endif

@@ -53,6 +53,9 @@
     <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
       <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\ff.dxgi\ff.dxgi_uwp.vcxproj">
+      <Project>{8d48c235-4204-4094-b2c0-442dd544ee54}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

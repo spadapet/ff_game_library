@@ -10,7 +10,7 @@ namespace ff::test::graphics
             ff::target_texture target{ ff::texture(ff::point_int(256, 256)) };
 
             Assert::IsTrue(target);
-            Assert::IsTrue(target.format() == ff::internal::DEFAULT_FORMAT);
+            Assert::IsTrue(target.format() == ff::dxgi::DEFAULT_FORMAT);
             Assert::IsTrue(target.size().pixel_size == ff::point_int(256, 256));
         }
 

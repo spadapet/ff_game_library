@@ -1,7 +1,5 @@
 #include "pch.h"
-#include "dxgi_util.h"
 #include "graphics.h"
-#include "graphics_child_base.h"
 #include "target_window_base.h"
 
 namespace
@@ -23,30 +21,13 @@ namespace
     };
 }
 
-static Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory;
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
 static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> write_font_loader;
-static size_t dxgi_adapters_hash;
-static size_t dxgi_adapter_outputs_hash;
 
-static std::recursive_mutex graphics_mutex;
-static std::vector<ff::internal::graphics_child_base*> graphics_children;
-static ff::signal<ff::internal::graphics_child_base*> removed_child;
+static std::mutex graphics_mutex;
 static ff::target_window_base* defer_full_screen_target;
 static std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
-static ff::signal_connection render_presented_connection;
-static ff::signal<uint64_t> render_frame_complete_signal;
-static size_t render_frame_count;
-
-static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
-{
-    UINT flags = (ff::constants::debug_build && ::IsDebuggerPresent()) ? DXGI_CREATE_FACTORY_DEBUG : 0;
-
-    Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory;
-    return (SUCCEEDED(::CreateDXGIFactory2(flags, __uuidof(IDXGIFactoryX), reinterpret_cast<void**>(dxgi_factory.GetAddressOf()))))
-        ? dxgi_factory : nullptr;
-}
 
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> create_write_factory()
 {
@@ -63,90 +44,22 @@ static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> create_write_font_l
         ? write_font_loader : nullptr;
 }
 
-static bool init_dxgi()
+bool ff::internal::graphics::init()
 {
-    if (!(::dxgi_factory = ::create_dxgi_factory()) ||
-        !(::write_factory = ::create_write_factory()) ||
+    if (!(::write_factory = ::create_write_factory()) ||
         !(::write_font_loader = ::create_write_font_loader()))
     {
         assert(false);
         return false;
     }
 
-    ::dxgi_adapters_hash = ff::internal::get_adapters_hash(::dxgi_factory.Get());
-
     return true;
-}
-
-static void destroy_dxgi()
-{
-    ::dxgi_adapters_hash = 0;
-
-    ::write_font_loader.Reset();
-    ::write_factory.Reset();
-    ::dxgi_factory.Reset();
-}
-
-bool ff::internal::graphics::init()
-{
-    if (::init_dxgi() && ff::internal::graphics::init_d3d(false))
-    {
-        ::dxgi_adapter_outputs_hash = ff::internal::get_adapter_outputs_hash(::dxgi_factory.Get(), ff::graphics::dxgi_adapter_for_device());
-        return true;
-    }
-
-    return false;
 }
 
 void ff::internal::graphics::destroy()
 {
-    ::dxgi_adapter_outputs_hash = 0;
-
-    ff::internal::graphics::destroy_d3d(false);
-    ::destroy_dxgi();
-}
-
-size_t ff::internal::graphics::render_frame_count()
-{
-    return ::render_frame_count;
-}
-
-void ff::internal::graphics::render_frame_complete(ff::target_base* target, uint64_t fence_value)
-{
-    ::render_frame_complete_signal.notify(fence_value);
-    ::render_frame_count++;
-}
-
-ff::signal_sink<uint64_t>& ff::internal::graphics::render_frame_complete_sink()
-{
-    return ::render_frame_complete_signal;
-}
-
-void ff::internal::graphics::add_child(ff::internal::graphics_child_base* child)
-{
-    std::scoped_lock lock(::graphics_mutex);
-    ::graphics_children.push_back(child);
-}
-
-void ff::internal::graphics::remove_child(ff::internal::graphics_child_base* child)
-{
-    std::scoped_lock lock(::graphics_mutex);
-    auto i = std::find(::graphics_children.cbegin(), ::graphics_children.cend(), child);
-    if (i != ::graphics_children.cend())
-    {
-        ::graphics_children.erase(i);
-        ::removed_child.notify(child);
-    }
-}
-
-IDXGIFactoryX* ff::graphics::dxgi_factory()
-{
-    if (!::dxgi_factory->IsCurrent())
-    {
-        ::dxgi_factory = ::create_dxgi_factory();
-    }
-
-    return ::dxgi_factory.Get();
+    ::write_font_loader.Reset();
+    ::write_factory.Reset();
 }
 
 IDWriteFactoryX* ff::graphics::write_factory()
@@ -157,74 +70,6 @@ IDWriteFactoryX* ff::graphics::write_factory()
 IDWriteInMemoryFontFileLoader* ff::graphics::write_font_loader()
 {
     return ::write_font_loader.Get();
-}
-
-bool ff::graphics::reset(bool force)
-{
-    if (!force)
-    {
-        if (ff::internal::graphics::d3d_device_disconnected())
-        {
-            force = true;
-        }
-        else if (!::dxgi_factory->IsCurrent())
-        {
-            Microsoft::WRL::ComPtr<IDXGIFactoryX> dxgi_factory_latest = ff::graphics::dxgi_factory();
-
-            if (::dxgi_adapters_hash != ff::internal::get_adapters_hash(dxgi_factory_latest.Get()))
-            {
-                force = true;
-            }
-            else if (::dxgi_adapter_outputs_hash != ff::internal::get_adapter_outputs_hash(dxgi_factory_latest.Get(), ff::graphics::dxgi_adapter_for_device()))
-            {
-                force = true;
-            }
-        }
-    }
-
-    bool status = true;
-
-    if (force)
-    {
-        ff::internal::graphics::destroy_d3d(true);
-
-        if (!ff::internal::graphics::init_d3d(true))
-        {
-            return false;
-        }
-
-        std::vector<ff::internal::graphics_child_base*> sorted_children;
-        {
-            std::scoped_lock lock(::graphics_mutex);
-            sorted_children = ::graphics_children;
-        }
-
-        std::stable_sort(sorted_children.begin(), sorted_children.end(),
-            [](const ff::internal::graphics_child_base* lhs, const ff::internal::graphics_child_base* rhs)
-            {
-                return lhs->reset_priority() > rhs->reset_priority();
-            });
-
-        ff::signal_connection connection = ::removed_child.connect([&sorted_children](ff::internal::graphics_child_base* child)
-            {
-                auto i = std::find(sorted_children.begin(), sorted_children.end(), child);
-                if (i != sorted_children.end())
-                {
-                    *i = nullptr;
-                }
-            });
-
-        for (ff::internal::graphics_child_base* child : sorted_children)
-        {
-            if (child && !child->reset())
-            {
-                status = false;
-            }
-        }
-    }
-
-    assert(status);
-    return status;
 }
 
 static void flush_graphics_commands()
@@ -251,7 +96,7 @@ static void flush_graphics_commands()
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
             lock.unlock();
 
-            ff::graphics::reset(force);
+            ff_dx::reset(force);
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
@@ -277,7 +122,6 @@ void ff::graphics::defer::set_full_screen_target(ff::target_window_base* target)
     std::scoped_lock lock(::graphics_mutex);
     assert(!::defer_full_screen_target || !target);
     ::defer_full_screen_target = target;
-    ::render_presented_connection = target->render_presented().connect(ff::internal::graphics::render_frame_complete);
 }
 
 void ff::graphics::defer::remove_target(ff::target_window_base* target)
@@ -288,7 +132,6 @@ void ff::graphics::defer::remove_target(ff::target_window_base* target)
     if (::defer_full_screen_target == target)
     {
         ::defer_full_screen_target = nullptr;
-        ::render_presented_connection.disconnect();
     }
 
     for (auto i = ::defer_sizes.cbegin(); i != ::defer_sizes.cend(); i++)

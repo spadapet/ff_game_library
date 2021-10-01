@@ -149,11 +149,11 @@ static void set_address(Noesis::WrapMode::Enum mode, D3D_FEATURE_LEVEL level, D3
 ff::internal::ui::render_device::render_device(bool srgb)
     : null_textures{}
 {
-    ff::internal::graphics::add_child(this);
+    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
 
 #ifdef _DEBUG
     this->empty_texture_rgb = std::make_shared<ff::texture>(ff::point_int(1, 1));
-    this->empty_texture_palette = std::make_shared<ff::texture>(ff::point_int(1, 1), ff::internal::PALETTE_INDEX_FORMAT);
+    this->empty_texture_palette = std::make_shared<ff::texture>(ff::point_int(1, 1), ff::dxgi::PALETTE_INDEX_FORMAT);
 #endif
 
     this->caps.centerPixelOffset = 0;
@@ -165,7 +165,7 @@ ff::internal::ui::render_device::render_device(bool srgb)
 
 ff::internal::ui::render_device::~render_device()
 {
-    ff::internal::graphics::remove_child(this);
+    ff_internal_dx::remove_device_child(this);
 }
 
 const Noesis::DeviceCaps& ff::internal::ui::render_device::GetCaps() const
@@ -188,7 +188,7 @@ Noesis::Ptr<Noesis::RenderTarget> ff::internal::ui::render_device::CloneRenderTa
 Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(const char* label, uint32_t width, uint32_t height, uint32_t mip_count, Noesis::TextureFormat::Enum format, const void** data)
 {
     std::string_view name(label ? label : "");
-    DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? ff::internal::DEFAULT_FORMAT_SRGB : ff::internal::DEFAULT_FORMAT);
+    DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT);
     std::shared_ptr<ff::texture> texture;
 
     DirectX::ScratchImage scratch;
@@ -247,10 +247,10 @@ void ff::internal::ui::render_device::BeginOnscreenRender()
         this->buffer_pixel_cb[2]->dx_buffer(),
     };
 
-    ff::graphics::dx11_device_state().set_constants_vs(buffer_vs.data(), 0, buffer_vs.size());
-    ff::graphics::dx11_device_state().set_constants_ps(buffer_ps.data(), 0, buffer_ps.size());
-    ff::graphics::dx11_device_state().set_topology_ia(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    ff::graphics::dx11_device_state().set_gs(nullptr);
+    ff_dx::get_device_state().set_constants_vs(buffer_vs.data(), 0, buffer_vs.size());
+    ff_dx::get_device_state().set_constants_ps(buffer_ps.data(), 0, buffer_ps.size());
+    ff_dx::get_device_state().set_topology_ia(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    ff_dx::get_device_state().set_gs(nullptr);
 }
 
 void ff::internal::ui::render_device::EndOnscreenRender()
@@ -273,14 +273,14 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
     ff::internal::ui::render_target* surface2 = ff::internal::ui::render_target::get(surface);
     ff::point_float size = surface2->msaa_texture()->size().cast<float>();
     ID3D11RenderTargetView* view = surface2->msaa_target()->view();
-    ff::graphics::dx11_device_state().set_targets(&view, 1, surface2->depth()->view());
+    ff_dx::get_device_state().set_targets(&view, 1, surface2->depth()->view());
 
     D3D11_VIEWPORT viewport{};
     viewport.Width = size.x;
     viewport.Height = size.y;
     viewport.MaxDepth = 1.0f;
 
-    ff::graphics::dx11_device_state().set_viewports(&viewport, 1);
+    ff_dx::get_device_state().set_viewports(&viewport, 1);
 }
 
 void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* surface, const Noesis::Tile* tiles, uint32_t tile_count)
@@ -299,20 +299,20 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
             default: assert(false); return;
         }
 
-        ff::graphics::dx11_device_state().set_layout_ia(nullptr);
-        ff::graphics::dx11_device_state().set_vs(this->quad_vs.shader());
-        ff::graphics::dx11_device_state().set_ps(this->resolve_ps[index_ps].shader());
+        ff_dx::get_device_state().set_layout_ia(nullptr);
+        ff_dx::get_device_state().set_vs(this->quad_vs.shader());
+        ff_dx::get_device_state().set_ps(this->resolve_ps[index_ps].shader());
 
-        ff::graphics::dx11_device_state().set_raster(this->rasterizer_state_scissor.Get());
-        ff::graphics::dx11_device_state().set_blend(this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)].Get(), ff::color::none(), 0xffffffff);
-        ff::graphics::dx11_device_state().set_depth(this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)].Get(), 0);
+        ff_dx::get_device_state().set_raster(this->rasterizer_state_scissor.Get());
+        ff_dx::get_device_state().set_blend(this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)].Get(), ff::color::none(), 0xffffffff);
+        ff_dx::get_device_state().set_depth(this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)].Get(), 0);
 
         this->clear_textures();
         ID3D11RenderTargetView* view = surface2->resolved_target()->view();
-        ff::graphics::dx11_device_state().set_targets(&view, 1, nullptr);
+        ff_dx::get_device_state().set_targets(&view, 1, nullptr);
 
         ID3D11ShaderResourceView* resourceView = surface2->msaa_texture()->view();
-        ff::graphics::dx11_device_state().set_resources_ps(&resourceView, 0, 1);
+        ff_dx::get_device_state().set_resources_ps(&resourceView, 0, 1);
 
         ff::point_int size = surface2->resolved_texture()->size();
 
@@ -325,9 +325,9 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
             rect.top = size.y - (tile.y + tile.height);
             rect.right = tile.x + tile.width;
             rect.bottom = size.y - tile.y;
-            ff::graphics::dx11_device_state().set_scissors(&rect, 1);
+            ff_dx::get_device_state().set_scissors(&rect, 1);
 
-            ff::graphics::dx11_device_state().draw(3, 0);
+            ff_dx::get_device_state().draw(3, 0);
         }
     }
 }
@@ -364,8 +364,8 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     this->set_render_state(batch);
     this->set_textures(batch);
 
-    ff::graphics::dx11_device_state().draw_indexed(batch.numIndices, batch.startIndex, 0);
-    ff::graphics::dx11_device_state().set_resources_ps(this->null_textures.data(), 0, this->null_textures.size());
+    ff_dx::get_device_state().draw_indexed(batch.numIndices, batch.startIndex, 0);
+    ff_dx::get_device_state().set_resources_ps(this->null_textures.data(), 0, this->null_textures.size());
 }
 
 bool ff::internal::ui::render_device::reset()
@@ -475,7 +475,7 @@ Microsoft::WRL::ComPtr<ID3D11InputLayout> ff::internal::ui::render_device::creat
         element++;
     }
 
-    return ff::graphics::dx11_object_cache().get_input_layout(vertex_resource_name, descs, element);
+    return ff_dx::get_object_cache().get_input_layout(vertex_resource_name, descs, element);
 }
 
 void ff::internal::ui::render_device::create_buffers()
@@ -483,13 +483,13 @@ void ff::internal::ui::render_device::create_buffers()
     std::memset(&this->vertex_cb_hash, 0, sizeof(this->vertex_cb_hash));
     std::memset(&this->pixel_cb_hash, 0, sizeof(this->pixel_cb_hash));
 
-    this->buffer_vertices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
-    this->buffer_indices = std::make_shared<ff::dx11_buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
-    this->buffer_vertex_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
-    this->buffer_vertex_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[0] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
-    this->buffer_pixel_cb[1] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[2] = std::make_shared<ff::dx11_buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
+    this->buffer_vertices = std::make_shared<ff::buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
+    this->buffer_indices = std::make_shared<ff::buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
+    this->buffer_vertex_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
+    this->buffer_vertex_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
+    this->buffer_pixel_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[2] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
 }
 
 void ff::internal::ui::render_device::create_state_objects()
@@ -508,15 +508,15 @@ void ff::internal::ui::render_device::create_state_objects()
 
         desc.FillMode = D3D11_FILL_SOLID;
         desc.ScissorEnable = false;
-        this->rasterizer_states[0] = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
+        this->rasterizer_states[0] = ff_dx::get_object_cache().get_rasterize_state(desc);
 
         desc.FillMode = D3D11_FILL_WIREFRAME;
         desc.ScissorEnable = false;
-        this->rasterizer_states[1] = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
+        this->rasterizer_states[1] = ff_dx::get_object_cache().get_rasterize_state(desc);
 
         desc.FillMode = D3D11_FILL_SOLID;
         desc.ScissorEnable = true;
-        this->rasterizer_state_scissor = ff::graphics::dx11_object_cache().get_rasterize_state(desc);
+        this->rasterizer_state_scissor = ff_dx::get_object_cache().get_rasterize_state(desc);
     }
 
     // Blend states
@@ -536,38 +536,38 @@ void ff::internal::ui::render_device::create_state_objects()
 
         // Src
         desc.RenderTarget[0].BlendEnable = false;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // SrcOver
         desc.RenderTarget[0].BlendEnable = true;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // SrcOver_Multiply
         desc.RenderTarget[0].SrcBlend = D3D11_BLEND_DEST_COLOR;
         desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Multiply)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Multiply)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // SrcOver_Screen
         desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Screen)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Screen)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // SrcOver_Additive
         desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Additive)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Additive)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // SrcOver_Dual
         desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC1_COLOR;
         desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
         desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC1_ALPHA;
-        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Dual)] = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_states[static_cast<size_t>(Noesis::BlendMode::SrcOver_Dual)] = ff_dx::get_object_cache().get_blend_state(desc);
 
         // Color disabled
         desc.RenderTarget[0].BlendEnable = false;
         desc.RenderTarget[0].RenderTargetWriteMask = 0;
-        this->blend_state_no_color = ff::graphics::dx11_object_cache().get_blend_state(desc);
+        this->blend_state_no_color = ff_dx::get_object_cache().get_blend_state(desc);
     }
 
     // Depth states
@@ -591,25 +591,25 @@ void ff::internal::ui::render_device::create_state_objects()
         desc.StencilEnable = false;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)] = ff_dx::get_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Keep
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Keep)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Keep)] = ff_dx::get_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Incr
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
-        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Incr)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Incr)] = ff_dx::get_object_cache().get_depth_stencil_state(desc);
 
         // Equal_Decr
         desc.StencilEnable = true;
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_DECR;
-        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Decr)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Equal_Decr)] = ff_dx::get_object_cache().get_depth_stencil_state(desc);
 
         // Clear
         desc.StencilEnable = true;
@@ -617,7 +617,7 @@ void ff::internal::ui::render_device::create_state_objects()
         desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_ZERO;
         desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
         desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_ZERO;
-        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Clear)] = ff::graphics::dx11_object_cache().get_depth_stencil_state(desc);
+        this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Clear)] = ff_dx::get_object_cache().get_depth_stencil_state(desc);
     }
 
     // Sampler states
@@ -858,18 +858,18 @@ void ff::internal::ui::render_device::create_shaders()
 void ff::internal::ui::render_device::clear_textures()
 {
     ID3D11ShaderResourceView* textures[static_cast<size_t>(texture_slot_t::Count)] = { nullptr };
-    ff::graphics::dx11_device_state().set_resources_ps(textures, 0, _countof(textures));
+    ff_dx::get_device_state().set_resources_ps(textures, 0, _countof(textures));
 }
 
 void ff::internal::ui::render_device::set_shaders(const Noesis::Batch& batch)
 {
     const vertex_and_pixel_program_t& program = this->programs[batch.shader.v];
     vertex_shader_and_layout_t& vertex = this->vertex_stages[program.vertex_shader_index];
-    ff::graphics::dx11_device_state().set_layout_ia(vertex.layout());
-    ff::graphics::dx11_device_state().set_vs(vertex.shader());
+    ff_dx::get_device_state().set_layout_ia(vertex.layout());
+    ff_dx::get_device_state().set_vs(vertex.shader());
 
     pixel_shader_t& pixel = this->pixel_shaders[program.pixel_shader_index];
-    ff::graphics::dx11_device_state().set_ps(batch.pixelShader
+    ff_dx::get_device_state().set_ps(batch.pixelShader
         ? reinterpret_cast<ID3D11PixelShader*>(batch.pixelShader)
         : pixel.shader());
 }
@@ -877,12 +877,12 @@ void ff::internal::ui::render_device::set_shaders(const Noesis::Batch& batch)
 void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
 {
     // Indices
-    ff::graphics::dx11_device_state().set_index_ia(this->buffer_indices->dx_buffer(), DXGI_FORMAT_R16_UINT, 0);
+    ff_dx::get_device_state().set_index_ia(this->buffer_indices->dx_buffer(), DXGI_FORMAT_R16_UINT, 0);
 
     // Vertices
     const vertex_and_pixel_program_t& program = this->programs[batch.shader.v];
     unsigned int stride = ::LAYOUT_FORMATS_AND_STRIDE[this->vertex_stages[program.vertex_shader_index].layout_index].second;
-    ff::graphics::dx11_device_state().set_vertex_ia(this->buffer_vertices->dx_buffer(), stride, batch.vertexOffset);
+    ff_dx::get_device_state().set_vertex_ia(this->buffer_vertices->dx_buffer(), stride, batch.vertexOffset);
 
     // Vertex Shader Constant Buffers
     static_assert(_countof(this->buffer_vertex_cb) == _countof(Noesis::Batch::vertexUniforms));
@@ -951,15 +951,15 @@ void ff::internal::ui::render_device::set_render_state(const Noesis::Batch& batc
 
     assert(f.wireframe < _countof(this->rasterizer_states));
     ID3D11RasterizerState* rasterizer = this->rasterizer_states[f.wireframe].Get();
-    ff::graphics::dx11_device_state().set_raster(rasterizer);
+    ff_dx::get_device_state().set_raster(rasterizer);
 
     assert(f.blendMode < _countof(this->blend_states));
     ID3D11BlendState* blend = f.colorEnable ? this->blend_states[f.blendMode].Get() : this->blend_state_no_color.Get();
-    ff::graphics::dx11_device_state().set_blend(blend, ff::color::none(), 0xffffffff);
+    ff_dx::get_device_state().set_blend(blend, ff::color::none(), 0xffffffff);
 
     assert(f.stencilMode < _countof(this->depth_stencil_states));
     ID3D11DepthStencilState* stencil = this->depth_stencil_states[f.stencilMode].Get();
-    ff::graphics::dx11_device_state().set_depth(stencil, batch.stencilRef);
+    ff_dx::get_device_state().set_depth(stencil, batch.stencilRef);
 }
 
 void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
@@ -967,7 +967,7 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     if (batch.pattern)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.pattern);
-        bool palette = ff::internal::palette_format(t->internal_texture()->format());
+        bool palette = ff::dxgi::palette_format(t->internal_texture()->format());
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
         ID3D11ShaderResourceView* palette_view = (palette && ff::ui::global_palette()) ? ff::ui::global_palette()->data()->texture()->view() : nullptr;
 #ifdef _DEBUG
@@ -979,10 +979,10 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
 #endif
         ID3D11ShaderResourceView* views[3] = { !palette ? view : empty_view, palette ? view : empty_palette_view, palette_view };
         ID3D11SamplerState* sampler = this->sampler_states[batch.patternSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&views[0], static_cast<size_t>(texture_slot_t::Pattern), 1);
-        ff::graphics::dx11_device_state().set_resources_ps(&views[1], static_cast<size_t>(texture_slot_t::PaletteImage), 1);
-        ff::graphics::dx11_device_state().set_resources_ps(&views[2], static_cast<size_t>(texture_slot_t::Palette), 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Pattern), 1);
+        ff_dx::get_device_state().set_resources_ps(&views[0], static_cast<size_t>(texture_slot_t::Pattern), 1);
+        ff_dx::get_device_state().set_resources_ps(&views[1], static_cast<size_t>(texture_slot_t::PaletteImage), 1);
+        ff_dx::get_device_state().set_resources_ps(&views[2], static_cast<size_t>(texture_slot_t::Palette), 1);
+        ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Pattern), 1);
     }
 
     if (batch.ramps)
@@ -990,8 +990,8 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.ramps);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.rampsSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Ramps), 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Ramps), 1);
+        ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Ramps), 1);
+        ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Ramps), 1);
     }
 
     if (batch.image)
@@ -999,8 +999,8 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.image);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.imageSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Image), 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Image), 1);
+        ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Image), 1);
+        ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Image), 1);
     }
 
     if (batch.glyphs)
@@ -1008,8 +1008,8 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.glyphs);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.glyphsSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Glyphs), 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Glyphs), 1);
+        ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Glyphs), 1);
+        ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Glyphs), 1);
     }
 
     if (batch.shadow)
@@ -1017,8 +1017,8 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.shadow);
         ID3D11ShaderResourceView* view = t->internal_texture()->view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.shadowSampler.v].state();
-        ff::graphics::dx11_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Shadow), 1);
-        ff::graphics::dx11_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Shadow), 1);
+        ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Shadow), 1);
+        ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Shadow), 1);
     }
 }
 
@@ -1026,7 +1026,7 @@ ID3D11VertexShader* ff::internal::ui::render_device::vertex_shader_t::shader()
 {
     if (!this->shader_)
     {
-        this->shader_ = ff::graphics::dx11_object_cache().get_vertex_shader(this->resource_name);
+        this->shader_ = ff_dx::get_object_cache().get_vertex_shader(this->resource_name);
     }
 
     return this->shader_.Get();
@@ -1046,7 +1046,7 @@ ID3D11PixelShader* ff::internal::ui::render_device::pixel_shader_t::shader()
 {
     if (!this->shader_)
     {
-        this->shader_ = ff::graphics::dx11_object_cache().get_pixel_shader(this->resource_name);
+        this->shader_ = ff_dx::get_object_cache().get_pixel_shader(this->resource_name);
     }
 
     return this->shader_.Get();
@@ -1064,9 +1064,9 @@ ID3D11SamplerState* ff::internal::ui::render_device::sampler_state_t::state()
         desc.MipLODBias = -0.75f;
 
         ::set_filter(Noesis::MinMagFilter::Enum(this->params.f.minmagFilter), Noesis::MipFilter::Enum(this->params.f.mipFilter), desc);
-        ::set_address(Noesis::WrapMode::Enum(this->params.f.wrapMode), ff::graphics::dx_feature_level(), desc);
+        ::set_address(Noesis::WrapMode::Enum(this->params.f.wrapMode), ff_dx::feature_level(), desc);
 
-        this->state_ = ff::graphics::dx11_object_cache().get_sampler_state(desc);
+        this->state_ = ff_dx::get_object_cache().get_sampler_state(desc);
     }
 
     return this->state_.Get();

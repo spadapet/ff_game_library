@@ -51,7 +51,6 @@ namespace ff
         std::unique_ptr<ff::draw_device> draw_device;
 
         ff::memory::allocation_stats mem_stats;
-        ff::graphics_counters graphics_counters;
         size_t total_advance_count;
         size_t total_render_count;
         size_t advance_count;

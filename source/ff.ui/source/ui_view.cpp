@@ -249,8 +249,8 @@ bool ff::ui_view::render_begin(ff::target_base& target, ff::depth& depth, const 
                 viewport.Height = target_size.y;
             }
 
-            ff::graphics::dx11_device_state().set_targets(&target_view, 1, depth_view);
-            ff::graphics::dx11_device_state().set_viewports(&viewport, 1);
+            ff_dx::get_device_state().set_targets(&target_view, 1, depth_view);
+            ff_dx::get_device_state().set_viewports(&viewport, 1);
 
             return true;
         }

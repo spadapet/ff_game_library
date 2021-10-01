@@ -1,6 +1,5 @@
 #pragma once
 
-#include "graphics_child_base.h"
 #include "target_base.h"
 
 namespace ff
@@ -9,7 +8,7 @@ namespace ff
 
     class target_texture
         : public ff::target_base
-        , public ff::internal::graphics_child_base
+        , public ff_internal_dx::device_child_base
     {
     public:
         target_texture(ff::texture&& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);

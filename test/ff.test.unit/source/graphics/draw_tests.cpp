@@ -24,7 +24,8 @@ namespace ff::test::graphics
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
             ff::target_texture target(ff::texture(ff::point_int(256, 256)));
-            target.pre_render(&DirectX::XMFLOAT4(0.25, 0, 0.5, 1));
+            static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+            target.pre_render(&clear_color);
 
             // Draw
             {

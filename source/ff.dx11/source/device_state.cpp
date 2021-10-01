@@ -1,28 +1,24 @@
 #include "pch.h"
-#include "dx_operators.h"
-#include "dx11_device_state.h"
+#include "operators.h"
+#include "device_state.h"
 
-#if DXVER == 11
-
-ff::dx11_device_state::dx11_device_state()
+ff::dx11::device_state::device_state()
 {
     this->clear();
 }
 
-ff::dx11_device_state::dx11_device_state(ID3D11DeviceContextX* context)
+ff::dx11::device_state::device_state(ID3D11DeviceContextX* context)
 {
     this->reset(context);
 }
 
-void ff::dx11_device_state::clear()
+void ff::dx11::device_state::clear()
 {
     if (this->context)
     {
         this->context->ClearState();
         this->context->Flush();
     }
-
-    this->counters = ff::graphics_counters{};
 
     this->vs_state.reset();
     this->gs_state.reset();
@@ -66,7 +62,7 @@ void ff::dx11_device_state::clear()
     }
 }
 
-void ff::dx11_device_state::reset(ID3D11DeviceContextX* context)
+void ff::dx11::device_state::reset(ID3D11DeviceContextX* context)
 {
     this->clear();
     this->context = context;
@@ -111,7 +107,7 @@ void ff::dx11_device_state::reset(ID3D11DeviceContextX* context)
     }
 }
 
-void ff::dx11_device_state::apply(dx11_device_state& dest)
+void ff::dx11::device_state::apply(device_state& dest)
 {
     assert(!this->context);
 
@@ -143,32 +139,23 @@ void ff::dx11_device_state::apply(dx11_device_state& dest)
     dest.set_scissors(this->scissor_count ? this->scissors.data() : nullptr, this->scissor_count);
 }
 
-ff::graphics_counters ff::dx11_device_state::reset_counters()
-{
-    ff::graphics_counters counters = this->counters;
-    this->counters = ff::graphics_counters{};
-    return counters;
-}
-
-void ff::dx11_device_state::draw(size_t count, size_t start)
+void ff::dx11::device_state::draw(size_t count, size_t start)
 {
     if (this->context)
     {
         this->context->Draw(static_cast<UINT>(count), static_cast<UINT>(start));
-        this->counters.draw++;
     }
 }
 
-void ff::dx11_device_state::draw_indexed(size_t index_count, size_t index_start, int vertex_offset)
+void ff::dx11::device_state::draw_indexed(size_t index_count, size_t index_start, int vertex_offset)
 {
     if (this->context)
     {
         this->context->DrawIndexed(static_cast<UINT>(index_count), static_cast<UINT>(index_start), vertex_offset);
-        this->counters.draw++;
     }
 }
 
-void* ff::dx11_device_state::map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map)
+void* ff::dx11::device_state::map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map)
 {
     if (this->context && buffer)
     {
@@ -176,7 +163,6 @@ void* ff::dx11_device_state::map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_M
         map = map ? map : &stack_map;
 
         this->context->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, map);
-        this->counters.map++;
 
         return map->pData;
     }
@@ -184,7 +170,7 @@ void* ff::dx11_device_state::map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_M
     return nullptr;
 }
 
-void ff::dx11_device_state::unmap(ID3D11Resource* buffer)
+void ff::dx11::device_state::unmap(ID3D11Resource* buffer)
 {
     if (this->context && buffer)
     {
@@ -192,7 +178,7 @@ void ff::dx11_device_state::unmap(ID3D11Resource* buffer)
     }
 }
 
-void ff::dx11_device_state::update_discard(ID3D11Resource* buffer, const void* data, size_t size)
+void ff::dx11::device_state::update_discard(ID3D11Resource* buffer, const void* data, size_t size)
 {
     void* dest = size ? this->map(buffer, D3D11_MAP_WRITE_DISCARD) : 0;
     if (dest)
@@ -202,43 +188,39 @@ void ff::dx11_device_state::update_discard(ID3D11Resource* buffer, const void* d
     }
 }
 
-void ff::dx11_device_state::clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color)
+void ff::dx11::device_state::clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color)
 {
     if (this->context)
     {
         this->context->ClearRenderTargetView(view, &color.x);
-        this->counters.clear++;
     }
 }
 
-void ff::dx11_device_state::clear_depth_stencil(ID3D11DepthStencilView* view, bool clear_depth, bool clear_stencil, float depth, BYTE stencil)
+void ff::dx11::device_state::clear_depth_stencil(ID3D11DepthStencilView* view, bool clear_depth, bool clear_stencil, float depth, BYTE stencil)
 {
     if (this->context)
     {
         this->context->ClearDepthStencilView(view, (clear_depth ? D3D11_CLEAR_DEPTH : 0) | (clear_stencil ? D3D11_CLEAR_STENCIL : 0), depth, stencil);
-        this->counters.depth_clear++;
     }
 }
 
-void ff::dx11_device_state::update_subresource(ID3D11Resource* dest, UINT dest_subresource, const D3D11_BOX* dest_box, const void* src_data, UINT src_row_pitch, UINT src_depth_pitch)
+void ff::dx11::device_state::update_subresource(ID3D11Resource* dest, UINT dest_subresource, const D3D11_BOX* dest_box, const void* src_data, UINT src_row_pitch, UINT src_depth_pitch)
 {
     if (this->context)
     {
         this->context->UpdateSubresource(dest, dest_subresource, dest_box, src_data, src_row_pitch, src_depth_pitch);
-        this->counters.update++;
     }
 }
 
-void ff::dx11_device_state::copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* src_resource, UINT src_subresource, const D3D11_BOX* src_box)
+void ff::dx11::device_state::copy_subresource_region(ID3D11Resource* dest_resource, UINT dest_subresource, UINT dest_x, UINT dest_y, UINT dest_z, ID3D11Resource* src_resource, UINT src_subresource, const D3D11_BOX* src_box)
 {
     if (this->context)
     {
         this->context->CopySubresourceRegion(dest_resource, dest_subresource, dest_x, dest_y, dest_z, src_resource, src_subresource, src_box);
-        this->counters.copy++;
     }
 }
 
-void ff::dx11_device_state::set_vertex_ia(ID3D11Buffer* value, size_t stride, size_t offset)
+void ff::dx11::device_state::set_vertex_ia(ID3D11Buffer* value, size_t stride, size_t offset)
 {
     if (this->ia_vertexes[0].Get() != value || this->ia_vertex_strides[0] != stride || this->ia_vertex_offsets[0] != offset)
     {
@@ -253,7 +235,7 @@ void ff::dx11_device_state::set_vertex_ia(ID3D11Buffer* value, size_t stride, si
     }
 }
 
-void ff::dx11_device_state::set_index_ia(ID3D11Buffer* value, DXGI_FORMAT format, size_t offset)
+void ff::dx11::device_state::set_index_ia(ID3D11Buffer* value, DXGI_FORMAT format, size_t offset)
 {
     if (this->ia_index.Get() != value || this->ia_index_format != format || this->ia_index_offset != offset)
     {
@@ -268,7 +250,7 @@ void ff::dx11_device_state::set_index_ia(ID3D11Buffer* value, DXGI_FORMAT format
     }
 }
 
-void ff::dx11_device_state::set_layout_ia(ID3D11InputLayout* value)
+void ff::dx11::device_state::set_layout_ia(ID3D11InputLayout* value)
 {
     if (this->ia_layout.Get() != value)
     {
@@ -281,7 +263,7 @@ void ff::dx11_device_state::set_layout_ia(ID3D11InputLayout* value)
     }
 }
 
-void ff::dx11_device_state::set_topology_ia(D3D_PRIMITIVE_TOPOLOGY value)
+void ff::dx11::device_state::set_topology_ia(D3D_PRIMITIVE_TOPOLOGY value)
 {
     if (this->ia_topology != value)
     {
@@ -294,7 +276,7 @@ void ff::dx11_device_state::set_topology_ia(D3D_PRIMITIVE_TOPOLOGY value)
     }
 }
 
-void ff::dx11_device_state::set_append_so(ID3D11Buffer* value)
+void ff::dx11::device_state::set_append_so(ID3D11Buffer* value)
 {
     if (this->so_targets[0].Get() != value)
     {
@@ -302,7 +284,7 @@ void ff::dx11_device_state::set_append_so(ID3D11Buffer* value)
     }
 }
 
-void ff::dx11_device_state::set_output_so(ID3D11Buffer* value, size_t offset)
+void ff::dx11::device_state::set_output_so(ID3D11Buffer* value, size_t offset)
 {
     this->so_targets[0] = value;
 
@@ -313,7 +295,7 @@ void ff::dx11_device_state::set_output_so(ID3D11Buffer* value, size_t offset)
     }
 }
 
-void ff::dx11_device_state::set_vs(ID3D11VertexShader* value)
+void ff::dx11::device_state::set_vs(ID3D11VertexShader* value)
 {
     if (this->vs_state.shader.Get() != value)
     {
@@ -326,7 +308,7 @@ void ff::dx11_device_state::set_vs(ID3D11VertexShader* value)
     }
 }
 
-void ff::dx11_device_state::set_samplers_vs(ID3D11SamplerState* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_samplers_vs(ID3D11SamplerState* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->vs_state.samplers[start].GetAddressOf(), sizeof(ID3D11SamplerState*) * count))
     {
@@ -342,7 +324,7 @@ void ff::dx11_device_state::set_samplers_vs(ID3D11SamplerState* const* values, s
     }
 }
 
-void ff::dx11_device_state::set_constants_vs(ID3D11Buffer* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_constants_vs(ID3D11Buffer* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->vs_state.constants[start].GetAddressOf(), sizeof(ID3D11Buffer*) * count))
     {
@@ -358,7 +340,7 @@ void ff::dx11_device_state::set_constants_vs(ID3D11Buffer* const* values, size_t
     }
 }
 
-void ff::dx11_device_state::set_resources_vs(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_resources_vs(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->vs_state.resources[start].GetAddressOf(), sizeof(ID3D11ShaderResourceView*) * count))
     {
@@ -374,7 +356,7 @@ void ff::dx11_device_state::set_resources_vs(ID3D11ShaderResourceView* const* va
     }
 }
 
-void ff::dx11_device_state::set_gs(ID3D11GeometryShader* value)
+void ff::dx11::device_state::set_gs(ID3D11GeometryShader* value)
 {
     if (this->gs_state.shader.Get() != value)
     {
@@ -387,7 +369,7 @@ void ff::dx11_device_state::set_gs(ID3D11GeometryShader* value)
     }
 }
 
-void ff::dx11_device_state::set_samplers_gs(ID3D11SamplerState* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_samplers_gs(ID3D11SamplerState* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->gs_state.samplers[start].GetAddressOf(), sizeof(ID3D11SamplerState*) * count))
     {
@@ -403,7 +385,7 @@ void ff::dx11_device_state::set_samplers_gs(ID3D11SamplerState* const* values, s
     }
 }
 
-void ff::dx11_device_state::set_constants_gs(ID3D11Buffer* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_constants_gs(ID3D11Buffer* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->gs_state.constants[start].GetAddressOf(), sizeof(ID3D11Buffer*) * count))
     {
@@ -419,7 +401,7 @@ void ff::dx11_device_state::set_constants_gs(ID3D11Buffer* const* values, size_t
     }
 }
 
-void ff::dx11_device_state::set_resources_gs(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_resources_gs(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->gs_state.resources[start].GetAddressOf(), sizeof(ID3D11ShaderResourceView*) * count))
     {
@@ -435,7 +417,7 @@ void ff::dx11_device_state::set_resources_gs(ID3D11ShaderResourceView* const* va
     }
 }
 
-void ff::dx11_device_state::set_ps(ID3D11PixelShader* value)
+void ff::dx11::device_state::set_ps(ID3D11PixelShader* value)
 {
     if (this->ps_state.shader.Get() != value)
     {
@@ -448,7 +430,7 @@ void ff::dx11_device_state::set_ps(ID3D11PixelShader* value)
     }
 }
 
-void ff::dx11_device_state::set_samplers_ps(ID3D11SamplerState* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_samplers_ps(ID3D11SamplerState* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->ps_state.samplers[start].GetAddressOf(), sizeof(ID3D11SamplerState*) * count))
     {
@@ -464,7 +446,7 @@ void ff::dx11_device_state::set_samplers_ps(ID3D11SamplerState* const* values, s
     }
 }
 
-void ff::dx11_device_state::set_constants_ps(ID3D11Buffer* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_constants_ps(ID3D11Buffer* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->ps_state.constants[start].GetAddressOf(), sizeof(ID3D11Buffer*) * count))
     {
@@ -480,7 +462,7 @@ void ff::dx11_device_state::set_constants_ps(ID3D11Buffer* const* values, size_t
     }
 }
 
-void ff::dx11_device_state::set_resources_ps(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
+void ff::dx11::device_state::set_resources_ps(ID3D11ShaderResourceView* const* values, size_t start, size_t count)
 {
     if (std::memcmp(values, this->ps_state.resources[start].GetAddressOf(), sizeof(ID3D11ShaderResourceView*) * count))
     {
@@ -496,9 +478,9 @@ void ff::dx11_device_state::set_resources_ps(ID3D11ShaderResourceView* const* va
     }
 }
 
-void ff::dx11_device_state::set_blend(ID3D11BlendState* value, const DirectX::XMFLOAT4& blend_factor, UINT sample_mask)
+void ff::dx11::device_state::set_blend(ID3D11BlendState* value, const DirectX::XMFLOAT4& blend_factor, UINT sample_mask)
 {
-    if (this->blend.Get() != value || this->blend_factor != blend_factor || this->blend_sample_mask != sample_mask)
+    if (this->blend.Get() != value || std::memcmp(&this->blend_factor, &blend_factor, sizeof(blend_factor)) || this->blend_sample_mask != sample_mask)
     {
         this->blend = value;
         this->blend_factor = blend_factor;
@@ -511,7 +493,7 @@ void ff::dx11_device_state::set_blend(ID3D11BlendState* value, const DirectX::XM
     }
 }
 
-void ff::dx11_device_state::set_depth(ID3D11DepthStencilState* value, UINT stencil)
+void ff::dx11::device_state::set_depth(ID3D11DepthStencilState* value, UINT stencil)
 {
     if (this->depth_state.Get() != value || this->depth_stencil != stencil)
     {
@@ -525,7 +507,7 @@ void ff::dx11_device_state::set_depth(ID3D11DepthStencilState* value, UINT stenc
     }
 }
 
-void ff::dx11_device_state::set_targets(ID3D11RenderTargetView* const* targets, size_t count, ID3D11DepthStencilView* depth)
+void ff::dx11::device_state::set_targets(ID3D11RenderTargetView* const* targets, size_t count, ID3D11DepthStencilView* depth)
 {
     if (this->depth_view_.Get() != depth || this->target_views_count != count ||
         (count && std::memcmp(targets, this->target_views[0].GetAddressOf(), sizeof(ID3D11RenderTargetView*) * count)))
@@ -550,7 +532,7 @@ void ff::dx11_device_state::set_targets(ID3D11RenderTargetView* const* targets, 
     }
 }
 
-void ff::dx11_device_state::set_raster(ID3D11RasterizerState* value)
+void ff::dx11::device_state::set_raster(ID3D11RasterizerState* value)
 {
     if (this->raster.Get() != value)
     {
@@ -563,7 +545,7 @@ void ff::dx11_device_state::set_raster(ID3D11RasterizerState* value)
     }
 }
 
-void ff::dx11_device_state::set_viewports(const D3D11_VIEWPORT* value, size_t count)
+void ff::dx11::device_state::set_viewports(const D3D11_VIEWPORT* value, size_t count)
 {
     if (this->viewports_count != count || (count && std::memcmp(value, this->viewports.data(), sizeof(D3D11_VIEWPORT) * count)))
     {
@@ -581,7 +563,7 @@ void ff::dx11_device_state::set_viewports(const D3D11_VIEWPORT* value, size_t co
     }
 }
 
-void ff::dx11_device_state::set_scissors(const D3D11_RECT* value, size_t count)
+void ff::dx11::device_state::set_scissors(const D3D11_RECT* value, size_t count)
 {
     if (this->scissor_count != count || (count && std::memcmp(value, this->scissors.data(), sizeof(D3D11_RECT) * count)))
     {
@@ -599,9 +581,7 @@ void ff::dx11_device_state::set_scissors(const D3D11_RECT* value, size_t count)
     }
 }
 
-const Microsoft::WRL::ComPtr<ID3D11DepthStencilView>& ff::dx11_device_state::depth_view() const
+const Microsoft::WRL::ComPtr<ID3D11DepthStencilView>& ff::dx11::device_state::depth_view() const
 {
     return this->depth_view_;
 }
-
-#endif

@@ -1,18 +1,16 @@
 #pragma once
 
-#if DXVER == 11
-
-namespace ff
+namespace ff::dx11
 {
-    class dx11_object_cache
+    class object_cache
     {
     public:
-        dx11_object_cache(ID3D11DeviceX* device);
-        dx11_object_cache(dx11_object_cache&& other) noexcept = delete;
-        dx11_object_cache(const dx11_object_cache& other) = delete;
+        object_cache(ID3D11DeviceX* device);
+        object_cache(object_cache&& other) noexcept = delete;
+        object_cache(const object_cache& other) = delete;
 
-        dx11_object_cache& operator=(dx11_object_cache&& other) noexcept = delete;
-        dx11_object_cache& operator=(const dx11_object_cache& other) = delete;
+        object_cache& operator=(object_cache&& other) noexcept = delete;
+        object_cache& operator=(const object_cache& other) = delete;
 
         ID3D11BlendState* get_blend_state(const D3D11_BLEND_DESC& desc);
         ID3D11DepthStencilState* get_depth_stencil_state(const D3D11_DEPTH_STENCIL_DESC& desc);
@@ -55,5 +53,3 @@ namespace ff
         std::unordered_set<std::shared_ptr<ff::resource>> resources;
     };
 }
-
-#endif

@@ -2,17 +2,18 @@
 
 #include "animation_base.h"
 #include "animation_player_base.h"
-#include "graphics_child_base.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
 #include "texture_view_base.h"
+
+#if DXVER == 11
 
 namespace ff
 {
     class texture;
 
     class texture_view
-        : public ff::internal::graphics_child_base
+        : public ff::internal::dx11::device_child_base
         , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base
@@ -33,9 +34,7 @@ namespace ff
 
         // texture_view_base
         virtual const ff::texture* view_texture() const override;
-#if DXVER == 11
         virtual ID3D11ShaderResourceView* view() const override;
-#endif
 
         // sprite_base
         virtual std::string_view name() const override;
@@ -59,9 +58,7 @@ namespace ff
     private:
         void fix_sprite_data();
 
-#if DXVER == 11
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;
-#endif
         std::shared_ptr<ff::texture> texture_;
         ff::sprite_data sprite_data_;
         size_t array_start_;
@@ -70,3 +67,5 @@ namespace ff
         size_t mip_count_;
     };
 }
+
+#endif

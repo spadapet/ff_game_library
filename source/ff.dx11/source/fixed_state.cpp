@@ -1,22 +1,20 @@
 #include "pch.h"
-#include "dx11_device_state.h"
-#include "dx11_fixed_state.h"
-#include "graphics.h"
+#include "device_state.h"
+#include "fixed_state.h"
+#include "globals.h"
 
-#if DXVER == 11
-
-ff::dx11_fixed_state::dx11_fixed_state()
+ff::dx11::fixed_state::fixed_state()
     : blend_factor(1, 1, 1, 1)
     , sample_mask(0xFFFFFFFF)
     , stencil(0)
 {}
 
-void ff::dx11_fixed_state::apply() const
+void ff::dx11::fixed_state::apply() const
 {
-    this->apply(ff::graphics::dx11_device_state());
+    this->apply(ff::dx11::get_device_state());
 }
 
-void ff::dx11_fixed_state::apply(ff::dx11_device_state& context) const
+void ff::dx11::fixed_state::apply(ff::dx11::device_state& context) const
 {
     if (this->raster)
     {
@@ -37,5 +35,3 @@ void ff::dx11_fixed_state::apply(ff::dx11_device_state& context) const
         context.set_depth(this->depth.Get(), this->stencil);
     }
 }
-
-#endif

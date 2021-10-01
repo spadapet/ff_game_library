@@ -52,56 +52,6 @@ static std::unique_ptr<ff::dx12::mem_allocator> texture_allocator;
 static std::mutex keep_alive_mutex;
 static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
 
-static Microsoft::WRL::ComPtr<IDXGIFactoryX> create_dxgi_factory()
-{
-    const UINT flags = (DEBUG && ::IsDebuggerPresent()) ? DXGI_CREATE_FACTORY_DEBUG : 0;
-
-    Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
-    return SUCCEEDED(::CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory))) ? factory : nullptr;
-}
-
-static Microsoft::WRL::ComPtr<IDXGIAdapterX> fix_adapter(IDXGIFactoryX* dxgi, Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter)
-{
-    DXGI_ADAPTER_DESC desc;
-    Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter2;
-    return SUCCEEDED(adapter->GetDesc(&desc)) && SUCCEEDED(dxgi->EnumAdapterByLuid(desc.AdapterLuid, IID_PPV_ARGS(&adapter2))) ? adapter2 : adapter;
-}
-
-static size_t get_adapters_hash(IDXGIFactoryX* factory)
-{
-    ff::stack_vector<LUID, 32> luids;
-
-    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
-    for (UINT i = 0; SUCCEEDED(factory->EnumAdapters(i, &adapter)); i++, adapter.Reset())
-    {
-        DXGI_ADAPTER_DESC desc;
-        if (SUCCEEDED(adapter->GetDesc(&desc)))
-        {
-            luids.push_back(desc.AdapterLuid);
-        }
-    }
-
-    return !luids.empty() ? ff::stable_hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
-}
-
-static size_t get_outputs_hash(IDXGIFactoryX* factory, IDXGIAdapterX* adapter)
-{
-    ff::stack_vector<HMONITOR, 32> outputs;
-    Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter2 = ::fix_adapter(factory, adapter);
-
-    Microsoft::WRL::ComPtr<IDXGIOutput> output;
-    for (UINT i = 0; SUCCEEDED(adapter2->EnumOutputs(i++, &output)); output.Reset())
-    {
-        DXGI_OUTPUT_DESC desc;
-        if (SUCCEEDED(output->GetDesc(&desc)))
-        {
-            outputs.push_back(desc.Monitor);
-        }
-    }
-
-    return !outputs.empty() ? ff::stable_hash_bytes(outputs.data(), ff::vector_byte_size(outputs)) : 0;
-}
-
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 {
     for (size_t use_warp = 0; use_warp < 2; use_warp++)
@@ -143,10 +93,10 @@ static bool init_dxgi()
 {
     ::DXGIDeclareAdapterRemovalSupport();
 
-    ::factory = ::create_dxgi_factory();
+    ::factory = ff::dxgi::create_factory();
     if (::factory)
     {
-        ::adapters_hash = ::get_adapters_hash(::factory.Get());
+        ::adapters_hash = ff::dxgi::get_adapters_hash(::factory.Get());
         return true;
     }
 
@@ -192,7 +142,7 @@ static bool init_d3d(bool for_reset)
         }
     }
 
-    ::outputs_hash = ::get_outputs_hash(::factory.Get(), ::adapter.Get());
+    ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
 
     if (!for_reset)
     {
@@ -282,6 +232,24 @@ void ff::internal::dx12::remove_device_child(ff::internal::dx12::device_child_ba
     }
 }
 
+size_t ff::internal::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+{
+    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
+    assert(fixed_sample_count == sample_count);
+
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS levels{};
+    levels.Format = format;
+    levels.SampleCount = static_cast<UINT>(fixed_sample_count);
+
+    while (fixed_sample_count > 1 && (FAILED(ff::dx12::device()->CheckFeatureSupport(
+        D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &levels, sizeof(levels))) || !levels.NumQualityLevels))
+    {
+        fixed_sample_count /= 2;
+    }
+
+    return std::max<size_t>(fixed_sample_count, 1);
+}
+
 bool ff::dx12::reset(bool force)
 {
     if (!force)
@@ -292,17 +260,17 @@ bool ff::dx12::reset(bool force)
         }
         else if (!::factory->IsCurrent())
         {
-            ::factory = ::create_dxgi_factory();
+            ::factory = ff::dxgi::create_factory();
             if (!::factory)
             {
                 return false;
             }
 
-            if (::adapters_hash != ::get_adapters_hash(::factory.Get()))
+            if (::adapters_hash != ff::dxgi::get_adapters_hash(::factory.Get()))
             {
                 force = true;
             }
-            else if (::outputs_hash != ::get_outputs_hash(::factory.Get(), ::adapter.Get()))
+            else if (::outputs_hash != ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get()))
             {
                 force = true;
             }
@@ -388,6 +356,10 @@ bool ff::dx12::reset(bool force)
 
     assert(status);
     return status;
+}
+
+void ff::dx12::trim()
+{
 }
 
 D3D_FEATURE_LEVEL ff::dx12::feature_level()

@@ -25,7 +25,7 @@ static int init_refs;
 static std::unique_ptr<::one_time_init> init_data;
 static std::mutex init_mutex;
 
-ff::init_dx12::init_dx12(D3D_FEATURE_LEVEL feature_level)
+ff::dx12::init::init(D3D_FEATURE_LEVEL feature_level)
 {
     std::scoped_lock lock(::init_mutex);
 
@@ -35,7 +35,7 @@ ff::init_dx12::init_dx12(D3D_FEATURE_LEVEL feature_level)
     }
 }
 
-ff::init_dx12::~init_dx12()
+ff::dx12::init::~init()
 {
     std::scoped_lock lock(::init_mutex);
 
@@ -45,7 +45,7 @@ ff::init_dx12::~init_dx12()
     }
 }
 
-ff::init_dx12::operator bool() const
+ff::dx12::init::operator bool() const
 {
     return ::init_status;
 }

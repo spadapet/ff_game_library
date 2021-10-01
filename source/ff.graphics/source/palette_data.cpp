@@ -1,7 +1,6 @@
 #include "pch.h"
-#include "dx11_texture.h"
-#include "dxgi_util.h"
 #include "palette_data.h"
+#include "texture.h"
 #include "texture_util.h"
 
 ff::palette_data::palette_data(DirectX::ScratchImage&& scratch)
@@ -104,7 +103,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::lo
 {
     std::filesystem::path full_path = dict.get<std::string>("file");
     std::shared_ptr<DirectX::ScratchImage> scratch_palette;
-    std::shared_ptr<DirectX::ScratchImage> scratch_data = ff::internal::load_texture_data(full_path, ff::internal::DEFAULT_FORMAT, 1, scratch_palette);
+    std::shared_ptr<DirectX::ScratchImage> scratch_data = ff::internal::load_texture_data(full_path, ff::dxgi::DEFAULT_FORMAT, 1, scratch_palette);
     std::unordered_map<std::string, std::shared_ptr<ff::data_base>> name_to_remap;
 
     if (!scratch_data || !scratch_data->GetImageCount())

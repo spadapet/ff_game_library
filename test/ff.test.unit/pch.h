@@ -6,6 +6,7 @@
 
 // FF
 #include <ff.all.h>
+#include <ff.dx12.h>
 
 // VS
 #include <CppUnitTest.h>
