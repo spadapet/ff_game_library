@@ -4,12 +4,14 @@ namespace ff::dx12
 {
     class commands;
     class cpu_descriptor_allocator;
+    class device_child_base;
     class fence_values;
     class gpu_descriptor_allocator;
     class mem_allocator;
     class mem_allocator_ring;
     class queue;
     class resource;
+    enum class device_reset_priority;
 
     bool reset(bool force);
     void trim();
@@ -41,18 +43,12 @@ namespace ff::dx12
     ff::dx12::mem_allocator_ring& dynamic_buffer_allocator();
     ff::dx12::mem_allocator& static_buffer_allocator();
     ff::dx12::mem_allocator& texture_allocator();
-}
-
-namespace ff::internal::dx12
-{
-    class device_child_base;
-    enum class device_reset_priority;
 
     bool init_globals(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
     void destroy_globals();
 
-    void add_device_child(ff::internal::dx12::device_child_base* child, ff::internal::dx12::device_reset_priority reset_priority);
-    void remove_device_child(ff::internal::dx12::device_child_base* child);
+    void add_device_child(ff::dx12::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
+    void remove_device_child(ff::dx12::device_child_base* child);
 
     size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 }

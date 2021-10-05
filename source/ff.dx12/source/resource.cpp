@@ -29,20 +29,20 @@ ff::dx12::resource::resource(
     this->reset();
     assert(*this && (!mem_range || mem_range == this->mem_range_));
 
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::resource);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
 ff::dx12::resource::resource(resource&& other) noexcept
     : state_(D3D12_RESOURCE_STATE_COMMON)
 {
     *this = std::move(other);
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::resource);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
 ff::dx12::resource::~resource()
 {
     this->destroy(false);
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept

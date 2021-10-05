@@ -21,7 +21,7 @@ ff::texture_view::texture_view(
 {
     this->fix_sprite_data();
 
-    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture_view::texture_view(texture_view&& other) noexcept
@@ -35,12 +35,12 @@ ff::texture_view::texture_view(texture_view&& other) noexcept
     this->fix_sprite_data();
     other.sprite_data_ = ff::sprite_data();
 
-    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture_view::~texture_view()
 {
-    ff::internal::dx11::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 ff::texture_view& ff::texture_view::operator=(texture_view&& other) noexcept

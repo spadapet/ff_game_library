@@ -4,7 +4,7 @@
 
 namespace ff
 {
-    class buffer : public ff::internal::dx11::device_child_base
+    class buffer : public ff_dx::device_child_base
     {
     public:
         buffer(D3D11_BIND_FLAG type);

@@ -11,12 +11,12 @@ ff::dx12::fence::fence(ff::dx12::queue* queue, uint64_t initial_value)
 {
     this->reset();
 
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::fence);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::fence);
 }
 
 ff::dx12::fence::~fence()
 {
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::fence::operator bool() const

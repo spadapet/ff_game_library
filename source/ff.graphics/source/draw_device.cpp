@@ -184,7 +184,7 @@ namespace
         {
             const_cast<::geometry_bucket*>(this)->create_shaders(palette_out);
 
-            ff::dx11::device_state& state = ff::dx11::get_device_state();
+            ff_dx::device_state& state = ff_dx::get_device_state();
             state.set_vertex_ia(geometry_buffer, item_size(), 0);
             state.set_layout_ia(this->layout.Get());
             state.set_vs(this->vs.Get());
@@ -269,18 +269,18 @@ namespace
         {
             if (!this->vs)
             {
-                this->vs = ff::dx11::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
+                this->vs = ff_dx::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
             }
 
             if (!this->gs)
             {
-                this->gs = ff::dx11::get_object_cache().get_geometry_shader(this->gs_res.resource()->name());
+                this->gs = ff_dx::get_object_cache().get_geometry_shader(this->gs_res.resource()->name());
             }
 
             Microsoft::WRL::ComPtr<ID3D11PixelShader>& ps = palette_out ? this->ps_palette_out : this->ps;
             if (!ps)
             {
-                ps = ff::dx11::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
+                ps = ff_dx::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
             }
         }
 
@@ -448,34 +448,34 @@ static ID3D11SamplerState* get_texture_sampler_state(D3D11_FILTER filter)
 {
     CD3D11_SAMPLER_DESC sampler(D3D11_DEFAULT);
     sampler.Filter = filter;
-    return ff::dx11::get_object_cache().get_sampler_state(sampler);
+    return ff_dx::get_object_cache().get_sampler_state(sampler);
 }
 
 static ID3D11BlendState* get_opaque_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
-    return ff::dx11::get_object_cache().get_blend_state(blend);
+    return ff_dx::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11BlendState* get_alpha_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
     ::get_alpha_blend(blend.RenderTarget[0]);
-    return ff::dx11::get_object_cache().get_blend_state(blend);
+    return ff_dx::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11BlendState* get_pre_multiplied_alpha_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
     ::get_pre_multiplied_alpha_blend(blend.RenderTarget[0]);
-    return ff::dx11::get_object_cache().get_blend_state(blend);
+    return ff_dx::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11DepthStencilState* get_enabled_depth_state()
 {
     CD3D11_DEPTH_STENCIL_DESC depth(D3D11_DEFAULT);
     depth.DepthFunc = D3D11_COMPARISON_GREATER;
-    return ff::dx11::get_object_cache().get_depth_stencil_state(depth);
+    return ff_dx::get_object_cache().get_depth_stencil_state(depth);
 }
 
 static ID3D11DepthStencilState* get_disabled_depth_state()
@@ -483,19 +483,19 @@ static ID3D11DepthStencilState* get_disabled_depth_state()
     CD3D11_DEPTH_STENCIL_DESC depth(D3D11_DEFAULT);
     depth.DepthEnable = FALSE;
     depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-    return ff::dx11::get_object_cache().get_depth_stencil_state(depth);
+    return ff_dx::get_object_cache().get_depth_stencil_state(depth);
 }
 
 static ID3D11RasterizerState* get_no_cull_raster_state()
 {
     CD3D11_RASTERIZER_DESC raster(D3D11_DEFAULT);
     raster.CullMode = D3D11_CULL_NONE;
-    return ff::dx11::get_object_cache().get_rasterize_state(raster);
+    return ff_dx::get_object_cache().get_rasterize_state(raster);
 }
 
-static ff::dx11::fixed_state create_opaque_draw_state()
+static ff_dx::fixed_state create_opaque_draw_state()
 {
-    ff::dx11::fixed_state state;
+    ff_dx::fixed_state state;
 
     state.blend = ::get_opaque_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -505,9 +505,9 @@ static ff::dx11::fixed_state create_opaque_draw_state()
     return state;
 }
 
-static ff::dx11::fixed_state create_alpha_draw_state()
+static ff_dx::fixed_state create_alpha_draw_state()
 {
-    ff::dx11::fixed_state state;
+    ff_dx::fixed_state state;
 
     state.blend = ::get_alpha_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -517,9 +517,9 @@ static ff::dx11::fixed_state create_alpha_draw_state()
     return state;
 }
 
-static ff::dx11::fixed_state create_pre_multiplied_alpha_draw_state()
+static ff_dx::fixed_state create_pre_multiplied_alpha_draw_state()
 {
-    ff::dx11::fixed_state state;
+    ff_dx::fixed_state state;
 
     state.blend = ::get_pre_multiplied_alpha_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -671,8 +671,8 @@ static bool setup_render_target(ff::target_base& target, ff::depth* depth, const
         ff::rect_float rotated_view_rect = ::get_rotated_view_rect(target, view_rect);
         D3D11_VIEWPORT viewport = ::get_viewport(rotated_view_rect);
 
-        ff::dx11::get_device_state().set_targets(&target_view, 1, depth_view);
-        ff::dx11::get_device_state().set_viewports(&viewport, 1);
+        ff_dx::get_device_state().set_targets(&target_view, 1, depth_view);
+        ff_dx::get_device_state().set_viewports(&viewport, 1);
 
         return true;
     }
@@ -686,7 +686,7 @@ namespace
     class draw_device_internal
         : public ff::draw_device
         , public ff::draw_base
-        , public ff_internal_dx::device_child_base
+        , public ff_dx::device_child_base
     {
     public:
         draw_device_internal()
@@ -712,13 +712,13 @@ namespace
         {
             this->reset();
 
-            ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+            ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
         }
 
         virtual ~draw_device_internal() override
         {
             assert(this->state != ::draw_device_internal::state_t::drawing);
-            ff_internal_dx::remove_device_child(this);
+            ff_dx::remove_device_child(this);
         }
 
         draw_device_internal(draw_device_internal&& other) noexcept = delete;
@@ -791,7 +791,7 @@ namespace
             {
                 this->flush();
 
-                ff::dx11::get_device_state().set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
+                ff_dx::get_device_state().set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
 
                 this->state = ::draw_device_internal::state_t::valid;
                 this->palette_stack.resize(1);
@@ -1219,9 +1219,9 @@ namespace
             this->pixel_constants_hash_0 = 0;
 
             this->sampler_stack.clear();
-            this->opaque_state = ff::dx11::fixed_state();
-            this->alpha_state = ff::dx11::fixed_state();
-            this->pre_multiplied_alpha_state = ff::dx11::fixed_state();
+            this->opaque_state = ff_dx::fixed_state();
+            this->alpha_state = ff_dx::fixed_state();
+            this->pre_multiplied_alpha_state = ff_dx::fixed_state();
             this->custom_context_stack.clear();
 
             this->view_matrix = ff::matrix::identity_4x4();
@@ -1398,7 +1398,7 @@ namespace
                             ID3D11Resource* src_resource = palette_data->texture()->dx_texture();
                             box.top = static_cast<UINT>(palette_row);
                             box.bottom = box.top + 1;
-                            ff::dx11::get_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
+                            ff_dx::get_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
                         }
                     }
                 }
@@ -1420,7 +1420,7 @@ namespace
                         this->palette_remap_texture_hashes[row] = row_hash;
                         box.top = row;
                         box.bottom = row + 1;
-                        ff::dx11::get_device_state().update_subresource(dest_remap_resource, 0, &box, remap, static_cast<UINT>(ff::constants::palette_size), 0);
+                        ff_dx::get_device_state().update_subresource(dest_remap_resource, 0, &box, remap, static_cast<UINT>(ff::constants::palette_size), 0);
                     }
                 }
             }
@@ -1429,13 +1429,13 @@ namespace
         void set_shader_input()
         {
             std::array<ID3D11Buffer*, 2> buffers_gs = { this->geometry_constants_buffer_0.dx_buffer(), this->geometry_constants_buffer_1.dx_buffer() };
-            ff::dx11::get_device_state().set_constants_gs(buffers_gs.data(), 0, buffers_gs.size());
+            ff_dx::get_device_state().set_constants_gs(buffers_gs.data(), 0, buffers_gs.size());
 
             std::array<ID3D11Buffer*, 1> buffers_ps = { this->pixel_constants_buffer_0.dx_buffer() };
-            ff::dx11::get_device_state().set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
+            ff_dx::get_device_state().set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
 
             std::array<ID3D11SamplerState*, 1> sample_states = { this->sampler_stack.back().Get() };
-            ff::dx11::get_device_state().set_samplers_ps(sample_states.data(), 0, sample_states.size());
+            ff_dx::get_device_state().set_samplers_ps(sample_states.data(), 0, sample_states.size());
 
             if (this->texture_count)
             {
@@ -1445,7 +1445,7 @@ namespace
                     textures[i] = this->textures[i]->view();
                 }
 
-                ff::dx11::get_device_state().set_resources_ps(textures.data(), 0, this->texture_count);
+                ff_dx::get_device_state().set_resources_ps(textures.data(), 0, this->texture_count);
             }
 
             if (this->textures_using_palette_count)
@@ -1456,7 +1456,7 @@ namespace
                     textures_using_palette[i] = this->textures_using_palette[i]->view();
                 }
 
-                ff::dx11::get_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
+                ff_dx::get_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
             }
 
             if (this->textures_using_palette_count || this->target_requires_palette)
@@ -1467,7 +1467,7 @@ namespace
                     this->palette_remap_texture->view(),
                 };
 
-                ff::dx11::get_device_state().set_resources_ps(palettes.data(), ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE, palettes.size());
+                ff_dx::get_device_state().set_resources_ps(palettes.data(), ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE, palettes.size());
             }
         }
 
@@ -1536,7 +1536,7 @@ namespace
         void draw_opaque_geometry()
         {
             const ff::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
-            ff::dx11::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+            ff_dx::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
             this->opaque_state.apply();
 
@@ -1553,7 +1553,7 @@ namespace
 
                     if (!custom_func || (*custom_func)(bucket.item_type(), true))
                     {
-                        ff::dx11::get_device_state().draw(bucket.render_count(), bucket.render_start());
+                        ff_dx::get_device_state().draw(bucket.render_count(), bucket.render_start());
                     }
                 }
             }
@@ -1565,9 +1565,9 @@ namespace
             if (alpha_geometry_size)
             {
                 const ff::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
-                ff::dx11::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+                ff_dx::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
-                ff::dx11::fixed_state& alpha_state = this->force_pre_multiplied_alpha ? this->pre_multiplied_alpha_state : this->alpha_state;
+                ff_dx::fixed_state& alpha_state = this->force_pre_multiplied_alpha ? this->pre_multiplied_alpha_state : this->alpha_state;
                 alpha_state.apply();
 
                 for (size_t i = 0; i < alpha_geometry_size; )
@@ -1590,7 +1590,7 @@ namespace
 
                     if (!custom_func || (*custom_func)(entry.bucket->item_type(), false))
                     {
-                        ff::dx11::get_device_state().draw(geometry_count, entry.bucket->render_start() + entry.index);
+                        ff_dx::get_device_state().draw(geometry_count, entry.bucket->render_start() + entry.index);
                     }
                 }
             }
@@ -1850,9 +1850,9 @@ namespace
 
         // Render state
         std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> sampler_stack;
-        ff::dx11::fixed_state opaque_state;
-        ff::dx11::fixed_state alpha_state;
-        ff::dx11::fixed_state pre_multiplied_alpha_state;
+        ff_dx::fixed_state opaque_state;
+        ff_dx::fixed_state alpha_state;
+        ff_dx::fixed_state pre_multiplied_alpha_state;
         std::vector<ff::draw_base::custom_context_func> custom_context_stack;
 
         // Matrixes

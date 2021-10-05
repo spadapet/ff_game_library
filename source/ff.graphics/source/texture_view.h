@@ -13,7 +13,7 @@ namespace ff
     class texture;
 
     class texture_view
-        : public ff::internal::dx11::device_child_base
+        : public ff_dx::device_child_base
         , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base

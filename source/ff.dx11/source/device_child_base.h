@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::internal::dx11
+namespace ff::dx11
 {
     enum class device_reset_priority
     {
@@ -23,5 +23,10 @@ namespace ff::internal::dx11
 
         // Called after every GPU object has been recreated, now you can upload new GPU data
         virtual bool after_reset();
+        bool call_after_reset();
+        ff::signal_sink<device_child_base*, bool&>& after_reset_sink();
+
+    private:
+        ff::signal<device_child_base*, bool&> after_reset_signal;
     };
 }

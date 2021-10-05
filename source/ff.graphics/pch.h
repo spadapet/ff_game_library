@@ -20,11 +20,9 @@
 #if DXVER == 11
 #include <ff.dx11.h>
 namespace ff_dx = ff::dx11;
-namespace ff_internal_dx = ff::internal::dx11;
 #elif DXVER == 12
 #include <ff.dx12.h>
 namespace ff_dx = ff::dx12;
-namespace ff_internal_dx = ff::internal::dx12;
 #endif
 
 // DirectWrite interace usage

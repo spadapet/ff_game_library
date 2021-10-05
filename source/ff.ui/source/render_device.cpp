@@ -149,7 +149,7 @@ static void set_address(Noesis::WrapMode::Enum mode, D3D_FEATURE_LEVEL level, D3
 ff::internal::ui::render_device::render_device(bool srgb)
     : null_textures{}
 {
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 
 #ifdef _DEBUG
     this->empty_texture_rgb = std::make_shared<ff::texture>(ff::point_int(1, 1));
@@ -165,7 +165,7 @@ ff::internal::ui::render_device::render_device(bool srgb)
 
 ff::internal::ui::render_device::~render_device()
 {
-    ff_internal_dx::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 const Noesis::DeviceCaps& ff::internal::ui::render_device::GetCaps() const

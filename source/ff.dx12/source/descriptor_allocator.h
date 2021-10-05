@@ -5,7 +5,7 @@
 #include "device_child_base.h"
 #include "fence_value.h"
 
-namespace ff::internal::dx12
+namespace ff::dx12
 {
     class descriptor_buffer_base
     {
@@ -17,7 +17,7 @@ namespace ff::internal::dx12
         virtual D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const = 0;
     };
 
-    class descriptor_buffer_free_list : public ff::internal::dx12::descriptor_buffer_base
+    class descriptor_buffer_free_list : public ff::dx12::descriptor_buffer_base
     {
     public:
         descriptor_buffer_free_list(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count);
@@ -53,7 +53,7 @@ namespace ff::internal::dx12
         size_t descriptor_size;
     };
 
-    class descriptor_buffer_ring : public ff::internal::dx12::descriptor_buffer_base
+    class descriptor_buffer_ring : public ff::dx12::descriptor_buffer_base
     {
     public:
         descriptor_buffer_ring(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count);
@@ -89,11 +89,8 @@ namespace ff::internal::dx12
         size_t descriptor_count;
         size_t descriptor_size;
     };
-}
 
-namespace ff::dx12
-{
-    class cpu_descriptor_allocator : private ff::internal::dx12::device_child_base
+    class cpu_descriptor_allocator : private ff::dx12::device_child_base
     {
     public:
         cpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size);
@@ -112,12 +109,12 @@ namespace ff::dx12
         virtual bool reset(void* data) override;
 
         std::mutex bucket_mutex;
-        std::list<ff::internal::dx12::descriptor_buffer_free_list> buckets;
+        std::list<ff::dx12::descriptor_buffer_free_list> buckets;
         D3D12_DESCRIPTOR_HEAP_TYPE type;
         size_t bucket_size;
     };
 
-    class gpu_descriptor_allocator : private ff::internal::dx12::device_child_base
+    class gpu_descriptor_allocator : private ff::dx12::device_child_base
     {
     public:
         gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size);
@@ -139,7 +136,7 @@ namespace ff::dx12
         virtual bool reset(void* data) override;
 
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
-        std::unique_ptr<ff::internal::dx12::descriptor_buffer_free_list> pinned;
-        std::unique_ptr<ff::internal::dx12::descriptor_buffer_ring> ring;
+        std::unique_ptr<ff::dx12::descriptor_buffer_free_list> pinned;
+        std::unique_ptr<ff::dx12::descriptor_buffer_ring> ring;
     };
 }

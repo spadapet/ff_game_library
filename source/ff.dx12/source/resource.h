@@ -8,7 +8,7 @@ namespace ff::dx12
     class commands;
     class mem_range;
 
-    class resource : private ff::internal::dx12::device_child_base
+    class resource : private ff::dx12::device_child_base
     {
     public:
         resource(

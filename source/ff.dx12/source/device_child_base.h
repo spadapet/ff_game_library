@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::internal::dx12
+namespace ff::dx12
 {
     enum class device_reset_priority
     {

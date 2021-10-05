@@ -7,7 +7,7 @@ namespace ff
 {
     class target_window
         : public ff::target_window_base
-        , public ff_internal_dx::device_child_base
+        , public ff_dx::device_child_base
     {
     public:
         target_window();

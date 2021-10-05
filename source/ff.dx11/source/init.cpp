@@ -10,12 +10,12 @@ namespace
     {
         one_time_init()
         {
-            ::init_status = ff::internal::dx11::init_globals();
+            ::init_status = ff::dx11::init_globals();
         }
 
         ~one_time_init()
         {
-            ff::internal::dx11::destroy_globals();
+            ff::dx11::destroy_globals();
             ::init_status = false;
         }
     };

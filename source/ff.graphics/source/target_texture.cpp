@@ -24,12 +24,12 @@ ff::target_texture::target_texture(
 {
     this->view_ = ff::internal::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::target_texture::~target_texture()
 {
-    ff_internal_dx::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 ff::target_texture::operator bool() const
@@ -46,7 +46,7 @@ bool ff::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff::dx11::get_device_state().clear_target(this->view(), *clear_color);
+        ff_dx::get_device_state().clear_target(this->view(), *clear_color);
     }
 
     return true;

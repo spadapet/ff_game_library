@@ -31,18 +31,18 @@ ff::dx12::commands::commands(
         this->list->SetDescriptorHeaps(2, heaps);
     }
 
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::commands);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::commands);
 }
 
 ff::dx12::commands::commands(commands&& other) noexcept
 {
     *this = std::move(other);
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::commands);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::commands);
 }
 
 ff::dx12::commands::~commands()
 {
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::commands::operator bool() const

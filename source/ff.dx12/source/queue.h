@@ -6,7 +6,7 @@
 
 namespace ff::dx12
 {
-    class queue : private ff::internal::dx12::device_child_base
+    class queue : private ff::dx12::device_child_base
     {
     public:
         queue(D3D12_COMMAND_LIST_TYPE type);

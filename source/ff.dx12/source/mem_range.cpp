@@ -13,7 +13,7 @@ ff::dx12::mem_range::mem_range()
     , allocated_size_(0)
 {}
 
-ff::dx12::mem_range::mem_range(ff::internal::dx12::mem_buffer_base& owner, uint64_t start, uint64_t size, uint64_t allocated_start, uint64_t allocated_size)
+ff::dx12::mem_range::mem_range(ff::dx12::mem_buffer_base& owner, uint64_t start, uint64_t size, uint64_t allocated_start, uint64_t allocated_size)
     : owner(&owner)
     , active_resource_(nullptr)
     , start_(start)

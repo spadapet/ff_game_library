@@ -8,12 +8,12 @@ ff::dx12::queue::queue(D3D12_COMMAND_LIST_TYPE type)
     : type(type)
 {
     this->reset();
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::queue);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::queue);
 }
 
 ff::dx12::queue::~queue()
 {
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::queue::operator bool() const

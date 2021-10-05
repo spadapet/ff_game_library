@@ -5,7 +5,7 @@
 
 namespace ff::dx12
 {
-    class heap : private ff::internal::dx12::device_child_base
+    class heap : private ff::dx12::device_child_base
     {
     public:
         enum class usage_t

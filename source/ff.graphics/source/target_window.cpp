@@ -27,7 +27,7 @@ ff::target_window::target_window(ff::window* window)
 {
     this->size(this->window->size());
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::target_window);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::target_window);
 
     if (this->main_window)
     {
@@ -47,7 +47,7 @@ ff::target_window::~target_window()
     }
 
     ff::graphics::defer::remove_target(this);
-    ff_internal_dx::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 ff::target_window::operator bool() const
@@ -81,7 +81,7 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff::dx11::get_device_state().clear_target(this->view(), *clear_color);
+        ff_dx::get_device_state().clear_target(this->view(), *clear_color);
     }
 
     return true;
@@ -89,7 +89,7 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::target_window::post_render()
 {
-    ff::dx11::get_device_state().set_targets(nullptr, 0, nullptr);
+    ff_dx::get_device_state().set_targets(nullptr, 0, nullptr);
 
     HRESULT hr = *this ? this->swap_chain->Present(1, 0) : E_FAIL;
     return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
@@ -107,7 +107,7 @@ void ff::target_window::internal_reset()
     this->view_.Reset();
     this->texture_.Reset();
 
-    ff::dx11::get_device_state().clear();
+    ff_dx::get_device_state().clear();
 }
 
 #elif DXVER == 12
@@ -227,7 +227,7 @@ bool ff::target_window::size(const ff::window_size& size)
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
 #if DXVER == 11
-        Microsoft::WRL::ComPtr<ID3D11DeviceX> device = ff::dx11::device();
+        Microsoft::WRL::ComPtr<ID3D11DeviceX> device = ff_dx::device();
         Microsoft::WRL::ComPtr<IDXGIDeviceX> dxgi_device;
         Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;

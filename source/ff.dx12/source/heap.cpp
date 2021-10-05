@@ -11,13 +11,13 @@ ff::dx12::heap::heap(uint64_t size, ff::dx12::heap::usage_t usage)
     , usage_(usage)
 {
     this->reset();
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::heap);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::heap);
 }
 
 ff::dx12::heap::~heap()
 {
     this->cpu_unmap();
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::heap::operator bool() const

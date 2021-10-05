@@ -1,20 +1,16 @@
 #pragma once
 
-namespace ff::internal::dx12
-{
-    class mem_buffer_base;
-}
-
 namespace ff::dx12
 {
     class commands;
+    class mem_buffer_base;
     class resource;
 
     class mem_range
     {
     public:
         mem_range();
-        mem_range(ff::internal::dx12::mem_buffer_base& owner, uint64_t start, uint64_t size, uint64_t allocated_start, uint64_t allocated_size);
+        mem_range(ff::dx12::mem_buffer_base& owner, uint64_t start, uint64_t size, uint64_t allocated_start, uint64_t allocated_size);
         mem_range(mem_range&& other) noexcept;
         mem_range(const mem_range& other) = delete;
         ~mem_range();
@@ -38,7 +34,7 @@ namespace ff::dx12
     private:
         void free_range();
 
-        ff::internal::dx12::mem_buffer_base* owner;
+        ff::dx12::mem_buffer_base* owner;
         ff::dx12::resource* active_resource_;
         uint64_t start_;
         uint64_t size_;

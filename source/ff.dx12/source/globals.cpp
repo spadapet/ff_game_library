@@ -21,8 +21,8 @@ namespace
             return this->reset_priority == other.reset_priority;
         }
 
-        ff::internal::dx12::device_child_base* child;
-        ff::internal::dx12::device_reset_priority reset_priority;
+        ff::dx12::device_child_base* child;
+        ff::dx12::device_reset_priority reset_priority;
         void* reset_data;
     };
 }
@@ -36,7 +36,7 @@ static size_t outputs_hash;
 
 static std::mutex device_children_mutex;
 static std::vector<::device_child_t> device_children;
-static ff::signal<ff::internal::dx12::device_child_base*> removed_device_child;
+static ff::signal<ff::dx12::device_child_base*> removed_device_child;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
@@ -192,7 +192,7 @@ static void destroy_d3d(bool for_reset)
     ::device.Reset();
 }
 
-bool ff::internal::dx12::init_globals(D3D_FEATURE_LEVEL feature_level)
+bool ff::dx12::init_globals(D3D_FEATURE_LEVEL feature_level)
 {
     ::feature_level = feature_level;
 
@@ -205,19 +205,19 @@ bool ff::internal::dx12::init_globals(D3D_FEATURE_LEVEL feature_level)
     return false;
 }
 
-void ff::internal::dx12::destroy_globals()
+void ff::dx12::destroy_globals()
 {
     ::destroy_d3d(false);
     ::destroy_dxgi();
 }
 
-void ff::internal::dx12::add_device_child(ff::internal::dx12::device_child_base* child, ff::internal::dx12::device_reset_priority reset_priority)
+void ff::dx12::add_device_child(ff::dx12::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
 {
     std::scoped_lock lock(::device_children_mutex);
     ::device_children.push_back(::device_child_t{ child, reset_priority, nullptr });
 }
 
-void ff::internal::dx12::remove_device_child(ff::internal::dx12::device_child_base* child)
+void ff::dx12::remove_device_child(ff::dx12::device_child_base* child)
 {
     std::scoped_lock lock(::device_children_mutex);
 
@@ -232,7 +232,7 @@ void ff::internal::dx12::remove_device_child(ff::internal::dx12::device_child_ba
     }
 }
 
-size_t ff::internal::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+size_t ff::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
 {
     size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
     assert(fixed_sample_count == sample_count);
@@ -306,7 +306,7 @@ bool ff::dx12::reset(bool force)
 
             std::stable_sort(sorted_children.begin(), sorted_children.end());
 
-            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::internal::dx12::device_child_base* child)
+            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dx12::device_child_base* child)
                 {
                     for (::device_child_t& i : sorted_children)
                     {

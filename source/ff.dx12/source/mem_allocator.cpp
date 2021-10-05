@@ -2,54 +2,54 @@
 #include "globals.h"
 #include "mem_allocator.h"
 
-void* ff::internal::dx12::mem_buffer_base::cpu_data(uint64_t start)
+void* ff::dx12::mem_buffer_base::cpu_data(uint64_t start)
 {
     return nullptr;
 }
 
-uint64_t ff::internal::dx12::mem_buffer_ring::range_t::after_end() const
+uint64_t ff::dx12::mem_buffer_ring::range_t::after_end() const
 {
     return this->start + this->size;
 }
 
-bool ff::internal::dx12::mem_buffer_free_list::range_t::operator<(const range_t& other) const
+bool ff::dx12::mem_buffer_free_list::range_t::operator<(const range_t& other) const
 {
     return this->start < other.start;
 }
 
-uint64_t ff::internal::dx12::mem_buffer_free_list::range_t::after_end() const
+uint64_t ff::dx12::mem_buffer_free_list::range_t::after_end() const
 {
     return this->start + this->size;
 }
 
-ff::internal::dx12::mem_buffer_ring::mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage)
+ff::dx12::mem_buffer_ring::mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage)
     : heap_(size, usage)
 {}
 
-ff::internal::dx12::mem_buffer_ring::~mem_buffer_ring()
+ff::dx12::mem_buffer_ring::~mem_buffer_ring()
 {
     assert(this->allocated_range_count.load() == 0);
 }
 
-void ff::internal::dx12::mem_buffer_ring::free_range(const ff::dx12::mem_range& range)
+void ff::dx12::mem_buffer_ring::free_range(const ff::dx12::mem_range& range)
 {
     size_t old_value = this->allocated_range_count.fetch_sub(1);
     assert(old_value > 0);
 }
 
-void* ff::internal::dx12::mem_buffer_ring::cpu_data(uint64_t start)
+void* ff::dx12::mem_buffer_ring::cpu_data(uint64_t start)
 {
     assert(start <= this->heap_.size());
     uint8_t* data = reinterpret_cast<uint8_t*>(this->heap_.cpu_data());
     return data ? data + start : nullptr;
 }
 
-ff::dx12::heap& ff::internal::dx12::mem_buffer_ring::heap()
+ff::dx12::heap& ff::dx12::mem_buffer_ring::heap()
 {
     return this->heap_;
 }
 
-bool ff::internal::dx12::mem_buffer_ring::frame_complete()
+bool ff::dx12::mem_buffer_ring::frame_complete()
 {
     bool has_range = false;
 
@@ -71,7 +71,7 @@ bool ff::internal::dx12::mem_buffer_ring::frame_complete()
     return has_range;
 }
 
-ff::dx12::mem_range ff::internal::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
 {
     if (size && size <= this->heap_.size())
     {
@@ -129,18 +129,18 @@ ff::dx12::mem_range ff::internal::dx12::mem_buffer_ring::alloc_bytes(uint64_t si
     return ff::dx12::mem_range();
 }
 
-ff::internal::dx12::mem_buffer_free_list::mem_buffer_free_list(uint64_t size, ff::dx12::heap::usage_t usage)
+ff::dx12::mem_buffer_free_list::mem_buffer_free_list(uint64_t size, ff::dx12::heap::usage_t usage)
     : heap_(size, usage)
 {
     this->free_ranges.emplace_back(range_t{ 0, size });
 }
 
-ff::internal::dx12::mem_buffer_free_list::~mem_buffer_free_list()
+ff::dx12::mem_buffer_free_list::~mem_buffer_free_list()
 {
     assert(this->free_ranges.size() == 1 && this->free_ranges.front().size == this->heap_.size());
 }
 
-void ff::internal::dx12::mem_buffer_free_list::free_range(const ff::dx12::mem_range& range)
+void ff::dx12::mem_buffer_free_list::free_range(const ff::dx12::mem_range& range)
 {
     std::scoped_lock lock(this->ranges_mutex);
 
@@ -175,26 +175,26 @@ void ff::internal::dx12::mem_buffer_free_list::free_range(const ff::dx12::mem_ra
     this->free_ranges.insert(i, range2);
 }
 
-void* ff::internal::dx12::mem_buffer_free_list::cpu_data(uint64_t start)
+void* ff::dx12::mem_buffer_free_list::cpu_data(uint64_t start)
 {
     assert(start <= this->heap_.size());
     uint8_t* data = reinterpret_cast<uint8_t*>(this->heap_.cpu_data());
     return data ? data + start : nullptr;
 }
 
-ff::dx12::heap& ff::internal::dx12::mem_buffer_free_list::heap()
+ff::dx12::heap& ff::dx12::mem_buffer_free_list::heap()
 {
     return this->heap_;
 }
 
-bool ff::internal::dx12::mem_buffer_free_list::frame_complete()
+bool ff::dx12::mem_buffer_free_list::frame_complete()
 {
     std::scoped_lock lock(this->ranges_mutex);
 
     return this->free_ranges.size() != 1 || this->free_ranges.front().size != this->heap_.size();
 }
 
-ff::dx12::mem_range ff::internal::dx12::mem_buffer_free_list::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_buffer_free_list::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
 {
     if (size && size <= this->heap_.size())
     {
@@ -313,9 +313,9 @@ ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_texture(uint64_t size, f
     return this->alloc_bytes(size, align, fence_value);
 }
 
-std::unique_ptr<ff::internal::dx12::mem_buffer_base> ff::dx12::mem_allocator_ring::new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const
+std::unique_ptr<ff::dx12::mem_buffer_base> ff::dx12::mem_allocator_ring::new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const
 {
-    return std::make_unique<ff::internal::dx12::mem_buffer_ring>(size, usage);
+    return std::make_unique<ff::dx12::mem_buffer_ring>(size, usage);
 }
 
 ff::dx12::mem_allocator::mem_allocator(uint64_t initial_size, uint64_t max_size, ff::dx12::heap::usage_t usage)
@@ -327,7 +327,7 @@ ff::dx12::mem_range ff::dx12::mem_allocator::alloc_bytes(uint64_t size, uint64_t
     return this->ff::dx12::mem_allocator_base::alloc_bytes(size, align ? align : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT, {});
 }
 
-std::unique_ptr<ff::internal::dx12::mem_buffer_base> ff::dx12::mem_allocator::new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const
+std::unique_ptr<ff::dx12::mem_buffer_base> ff::dx12::mem_allocator::new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const
 {
-    return std::make_unique<ff::internal::dx12::mem_buffer_free_list>(size, usage);
+    return std::make_unique<ff::dx12::mem_buffer_free_list>(size, usage);
 }

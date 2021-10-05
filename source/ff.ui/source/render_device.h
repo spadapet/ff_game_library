@@ -4,7 +4,7 @@
 
 namespace ff::internal::ui
 {
-    class render_device : public Noesis::RenderDevice, public ff_internal_dx::device_child_base
+    class render_device : public Noesis::RenderDevice, public ff_dx::device_child_base
     {
     public:
         render_device(bool srgb);

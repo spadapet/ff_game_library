@@ -8,7 +8,7 @@ ff::dx12::descriptor_range::descriptor_range()
     , count_(0)
 {}
 
-ff::dx12::descriptor_range::descriptor_range(ff::internal::dx12::descriptor_buffer_base& owner, size_t start, size_t count)
+ff::dx12::descriptor_range::descriptor_range(ff::dx12::descriptor_buffer_base& owner, size_t start, size_t count)
     : owner(&owner)
     , start_(start)
     , count_(count)

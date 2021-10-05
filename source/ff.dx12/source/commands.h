@@ -10,7 +10,7 @@ namespace ff::dx12
     class resource;
     class queue;
 
-    class commands : private ff::internal::dx12::device_child_base
+    class commands : private ff::dx12::device_child_base
     {
     public:
         commands(

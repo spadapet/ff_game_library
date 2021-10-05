@@ -4,7 +4,7 @@
 #include "heap.h"
 #include "mem_range.h"
 
-namespace ff::internal::dx12
+namespace ff::dx12
 {
     class mem_buffer_base
     {
@@ -21,7 +21,7 @@ namespace ff::internal::dx12
         virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) = 0;
     };
 
-    class mem_buffer_ring : public ff::internal::dx12::mem_buffer_base
+    class mem_buffer_ring : public ff::dx12::mem_buffer_base
     {
     public:
         mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage);
@@ -54,7 +54,7 @@ namespace ff::internal::dx12
         std::atomic_size_t allocated_range_count;
     };
 
-    class mem_buffer_free_list : public ff::internal::dx12::mem_buffer_base
+    class mem_buffer_free_list : public ff::dx12::mem_buffer_base
     {
     public:
         mem_buffer_free_list(uint64_t size, ff::dx12::heap::usage_t usage);
@@ -86,10 +86,7 @@ namespace ff::internal::dx12
         std::mutex ranges_mutex;
         std::vector<range_t> free_ranges;
     };
-}
 
-namespace ff::dx12
-{
     class mem_allocator_base
     {
     public:
@@ -100,13 +97,13 @@ namespace ff::dx12
 
         ff::dx12::heap::usage_t usage() const;
         ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value);
-        virtual std::unique_ptr<ff::internal::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const = 0;
+        virtual std::unique_ptr<ff::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const = 0;
 
     private:
         void frame_complete(size_t frame_count);
 
         std::mutex buffers_mutex;
-        std::vector<std::unique_ptr<ff::internal::dx12::mem_buffer_base>> buffers;
+        std::vector<std::unique_ptr<ff::dx12::mem_buffer_base>> buffers;
         ff::signal_connection frame_complete_connection;
         ff::dx12::heap::usage_t usage_;
         uint64_t initial_size;
@@ -128,7 +125,7 @@ namespace ff::dx12
         ff::dx12::mem_range alloc_texture(uint64_t size, ff::dx12::fence_value fence_value);
 
     protected:
-        virtual std::unique_ptr<ff::internal::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const override;
+        virtual std::unique_ptr<ff::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const override;
     };
 
     // For long term constants, vertices, and textures
@@ -145,6 +142,6 @@ namespace ff::dx12
         ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align = 0);
 
     protected:
-        virtual std::unique_ptr<ff::internal::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const override;
+        virtual std::unique_ptr<ff::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const override;
     };
 }

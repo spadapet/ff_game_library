@@ -20,7 +20,7 @@ ff::buffer::buffer(D3D11_BIND_FLAG type, std::shared_ptr<ff::data_base> initial_
 ff::buffer::buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable)
     : initial_data(initial_data)
 {
-    ff::internal::dx11::add_device_child(this, ff::internal::dx11::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 
     UINT bind_flags = type;
     UINT cpu_flags = writable ? D3D11_CPU_ACCESS_WRITE : 0;
@@ -39,7 +39,7 @@ ff::buffer::buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_b
     }
 
     CD3D11_BUFFER_DESC desc(static_cast<UINT>(size), bind_flags, usage, cpu_flags);
-    HRESULT hr = ff::dx11::device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, this->buffer_.GetAddressOf());
+    HRESULT hr = ff_dx::device()->CreateBuffer(&desc, data.pSysMem ? &data : nullptr, this->buffer_.GetAddressOf());
     assert(SUCCEEDED(hr));
 }
 
@@ -47,7 +47,7 @@ ff::buffer::~buffer()
 {
     this->unmap();
 
-    ff::internal::dx11::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 ff::buffer::operator bool() const
@@ -96,8 +96,8 @@ void* ff::buffer::map(size_t size)
             std::swap(*this, new_buffer);
         }
 
-        this->mapped_device = ff::dx11::device();
-        return ff::dx11::get_device_state().map(this->buffer_.Get(), D3D11_MAP_WRITE_DISCARD);
+        this->mapped_device = ff_dx::device();
+        return ff_dx::get_device_state().map(this->buffer_.Get(), D3D11_MAP_WRITE_DISCARD);
     }
 
     assert(false);
@@ -108,7 +108,7 @@ void ff::buffer::unmap()
 {
     if (this->mapped_device)
     {
-        ff::dx11::get_device_state().unmap(this->buffer_.Get());
+        ff_dx::get_device_state().unmap(this->buffer_.Get());
         this->mapped_device.Reset();
     }
 }

@@ -2,17 +2,17 @@
 #include "descriptor_allocator.h"
 #include "globals.h"
 
-bool ff::internal::dx12::descriptor_buffer_free_list::range_t::operator<(const range_t& other) const
+bool ff::dx12::descriptor_buffer_free_list::range_t::operator<(const range_t& other) const
 {
     return this->start < other.start;
 }
 
-size_t ff::internal::dx12::descriptor_buffer_free_list::range_t::after_end() const
+size_t ff::dx12::descriptor_buffer_free_list::range_t::after_end() const
 {
     return this->start + this->count;
 }
 
-ff::internal::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
+ff::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
     : descriptor_heap(descriptor_heap)
     , descriptor_start(start)
     , descriptor_count(count)
@@ -23,12 +23,12 @@ ff::internal::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3
     this->free_ranges.emplace_back(range_t{ 0, this->descriptor_count });
 }
 
-ff::internal::dx12::descriptor_buffer_free_list::~descriptor_buffer_free_list()
+ff::dx12::descriptor_buffer_free_list::~descriptor_buffer_free_list()
 {
     assert(this->free_ranges.size() == 1 && this->free_ranges.front().count == this->descriptor_count);
 }
 
-D3D12_DESCRIPTOR_HEAP_DESC ff::internal::dx12::descriptor_buffer_free_list::set(ID3D12DescriptorHeapX* descriptor_heap)
+D3D12_DESCRIPTOR_HEAP_DESC ff::dx12::descriptor_buffer_free_list::set(ID3D12DescriptorHeapX* descriptor_heap)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
 
@@ -42,7 +42,7 @@ D3D12_DESCRIPTOR_HEAP_DESC ff::internal::dx12::descriptor_buffer_free_list::set(
     return desc;
 }
 
-ff::dx12::descriptor_range ff::internal::dx12::descriptor_buffer_free_list::alloc_range(size_t count)
+ff::dx12::descriptor_range ff::dx12::descriptor_buffer_free_list::alloc_range(size_t count)
 {
     size_t start = 0;
     size_t allocated_count = 0;
@@ -74,7 +74,7 @@ ff::dx12::descriptor_range ff::internal::dx12::descriptor_buffer_free_list::allo
     return ff::dx12::descriptor_range(*this, start, allocated_count);
 }
 
-void ff::internal::dx12::descriptor_buffer_free_list::free_range(const ff::dx12::descriptor_range& range)
+void ff::dx12::descriptor_buffer_free_list::free_range(const ff::dx12::descriptor_range& range)
 {
     std::scoped_lock lock(this->ranges_mutex);
 
@@ -109,7 +109,7 @@ void ff::internal::dx12::descriptor_buffer_free_list::free_range(const ff::dx12:
     this->free_ranges.insert(i, range2);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_free_list::cpu_handle(size_t index) const
+D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::descriptor_buffer_free_list::cpu_handle(size_t index) const
 {
     assert(index < this->descriptor_count);
 
@@ -118,7 +118,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_free_list::cpu
     return handle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_free_list::gpu_handle(size_t index) const
+D3D12_GPU_DESCRIPTOR_HANDLE ff::dx12::descriptor_buffer_free_list::gpu_handle(size_t index) const
 {
     assert(index < this->descriptor_count);
 
@@ -127,12 +127,12 @@ D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_free_list::gpu
     return handle;
 }
 
-size_t ff::internal::dx12::descriptor_buffer_ring::range_t::after_end() const
+size_t ff::dx12::descriptor_buffer_ring::range_t::after_end() const
 {
     return this->start + this->count;
 }
 
-ff::internal::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
+ff::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
     : descriptor_heap(descriptor_heap)
     , descriptor_start(start)
     , descriptor_count(count)
@@ -141,17 +141,17 @@ ff::internal::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12Descrip
     this->descriptor_size = static_cast<size_t>(ff::dx12::device()->GetDescriptorHandleIncrementSize(desc.Type));
 }
 
-ff::internal::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
+ff::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
 {
     assert(this->allocated_range_count.load() == 0);
 }
 
-void ff::internal::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeapX* descriptor_heap)
+void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeapX* descriptor_heap)
 {
     this->descriptor_heap = descriptor_heap;
 }
 
-ff::dx12::descriptor_range ff::internal::dx12::descriptor_buffer_ring::alloc_range(size_t count, ff::dx12::fence_value fence_value)
+ff::dx12::descriptor_range ff::dx12::descriptor_buffer_ring::alloc_range(size_t count, ff::dx12::fence_value fence_value)
 {
     size_t start = 0;
     size_t allocated_count = 0;
@@ -192,13 +192,13 @@ ff::dx12::descriptor_range ff::internal::dx12::descriptor_buffer_ring::alloc_ran
     return ff::dx12::descriptor_range(*this, start, allocated_count);
 }
 
-void ff::internal::dx12::descriptor_buffer_ring::free_range(const ff::dx12::descriptor_range& range)
+void ff::dx12::descriptor_buffer_ring::free_range(const ff::dx12::descriptor_range& range)
 {
     size_t old_value = this->allocated_range_count.fetch_sub(1);
     assert(old_value > 0);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_ring::cpu_handle(size_t index) const
+D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::descriptor_buffer_ring::cpu_handle(size_t index) const
 {
     assert(index < this->descriptor_count);
 
@@ -207,7 +207,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_ring::cpu_hand
     return handle;
 }
 
-D3D12_GPU_DESCRIPTOR_HANDLE ff::internal::dx12::descriptor_buffer_ring::gpu_handle(size_t index) const
+D3D12_GPU_DESCRIPTOR_HANDLE ff::dx12::descriptor_buffer_ring::gpu_handle(size_t index) const
 {
     assert(index < this->descriptor_count);
 
@@ -220,19 +220,19 @@ ff::dx12::cpu_descriptor_allocator::cpu_descriptor_allocator(D3D12_DESCRIPTOR_HE
     : type(type)
     , bucket_size(bucket_size)
 {
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::cpu_descriptor_allocator);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::cpu_descriptor_allocator);
 }
 
 ff::dx12::cpu_descriptor_allocator::~cpu_descriptor_allocator()
 {
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::descriptor_range ff::dx12::cpu_descriptor_allocator::alloc_range(size_t count)
 {
     std::scoped_lock lock(this->bucket_mutex);
 
-    for (ff::internal::dx12::descriptor_buffer_free_list& bucket : this->buckets)
+    for (ff::dx12::descriptor_buffer_free_list& bucket : this->buckets)
     {
         ff::dx12::descriptor_range range = bucket.alloc_range(count);
         if (range)
@@ -257,7 +257,7 @@ void* ff::dx12::cpu_descriptor_allocator::before_reset(ff::frame_allocator& allo
     D3D12_DESCRIPTOR_HEAP_DESC* descs = allocator.alloc<D3D12_DESCRIPTOR_HEAP_DESC>(this->buckets.size());
     D3D12_DESCRIPTOR_HEAP_DESC* desc = descs;
 
-    for (ff::internal::dx12::descriptor_buffer_free_list& bucket : this->buckets)
+    for (ff::dx12::descriptor_buffer_free_list& bucket : this->buckets)
     {
         *desc++ = bucket.set(nullptr);
     }
@@ -271,7 +271,7 @@ bool ff::dx12::cpu_descriptor_allocator::reset(void* data)
     const D3D12_DESCRIPTOR_HEAP_DESC* desc = reinterpret_cast<const D3D12_DESCRIPTOR_HEAP_DESC*>(data);
     bool status = true;
 
-    for (ff::internal::dx12::descriptor_buffer_free_list& bucket : this->buckets)
+    for (ff::dx12::descriptor_buffer_free_list& bucket : this->buckets)
     {
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
         if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(desc++, IID_PPV_ARGS(&descriptor_heap))))
@@ -295,15 +295,15 @@ ff::dx12::gpu_descriptor_allocator::gpu_descriptor_allocator(D3D12_DESCRIPTOR_HE
     D3D12_DESCRIPTOR_HEAP_DESC desc{ type, static_cast<UINT>(pinned_size + ring_size), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE };
     ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&this->descriptor_heap));
 
-    this->pinned = std::make_unique<ff::internal::dx12::descriptor_buffer_free_list>(this->descriptor_heap.Get(), 0, pinned_size);
-    this->ring = std::make_unique<ff::internal::dx12::descriptor_buffer_ring>(this->descriptor_heap.Get(), pinned_size, ring_size);
+    this->pinned = std::make_unique<ff::dx12::descriptor_buffer_free_list>(this->descriptor_heap.Get(), 0, pinned_size);
+    this->ring = std::make_unique<ff::dx12::descriptor_buffer_ring>(this->descriptor_heap.Get(), pinned_size, ring_size);
 
-    ff::internal::dx12::add_device_child(this, ff::internal::dx12::device_reset_priority::gpu_descriptor_allocator);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::gpu_descriptor_allocator);
 }
 
 ff::dx12::gpu_descriptor_allocator::~gpu_descriptor_allocator()
 {
-    ff::internal::dx12::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::descriptor_range ff::dx12::gpu_descriptor_allocator::alloc_range(size_t count, ff::dx12::fence_value fence_value)

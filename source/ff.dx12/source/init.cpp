@@ -10,12 +10,12 @@ namespace
     {
         one_time_init(D3D_FEATURE_LEVEL feature_level)
         {
-            ::init_status = ff::internal::dx12::init_globals(feature_level);
+            ::init_status = ff::dx12::init_globals(feature_level);
         }
 
         ~one_time_init()
         {
-            ff::internal::dx12::destroy_globals();
+            ff::dx12::destroy_globals();
             ::init_status = false;
         }
     };

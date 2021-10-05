@@ -1,17 +1,14 @@
 #pragma once
 
-namespace ff::internal::dx12
-{
-    class descriptor_buffer_base;
-}
-
 namespace ff::dx12
 {
+    class descriptor_buffer_base;
+
     class descriptor_range
     {
     public:
         descriptor_range();
-        descriptor_range(ff::internal::dx12::descriptor_buffer_base& owner, size_t start, size_t count);
+        descriptor_range(ff::dx12::descriptor_buffer_base& owner, size_t start, size_t count);
         descriptor_range(descriptor_range&& other) noexcept;
         descriptor_range(const descriptor_range& other) = delete;
         ~descriptor_range();
@@ -27,7 +24,7 @@ namespace ff::dx12
         D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const;
 
     private:
-        ff::internal::dx12::descriptor_buffer_base* owner;
+        ff::dx12::descriptor_buffer_base* owner;
         size_t start_;
         size_t count_;
     };

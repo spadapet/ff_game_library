@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::internal::dxgi
+namespace ff::dxgi
 {
     bool init_globals();
     void destroy_globals();

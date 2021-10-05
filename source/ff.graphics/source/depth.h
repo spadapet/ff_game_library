@@ -4,7 +4,7 @@
 
 namespace ff
 {
-    class depth : public ff::internal::dx11::device_child_base
+    class depth : public ff_dx::device_child_base
     {
     public:
         depth(size_t sample_count = 0);

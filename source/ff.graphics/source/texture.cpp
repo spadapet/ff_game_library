@@ -16,7 +16,7 @@ ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_for
     this->data_ = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
     this->fix_sprite_data(this->data_ ? ff::internal::get_sprite_type(*this->data_) : ff::sprite_type::unknown);
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
@@ -33,9 +33,9 @@ ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, s
         desc.Format = format;
         desc.MipLevels = static_cast<UINT>(mip_count);
         desc.ArraySize = static_cast<UINT>(array_size);
-        desc.SampleDesc.Count = static_cast<UINT>(ff_internal_dx::fix_sample_count(format, sample_count));
+        desc.SampleDesc.Count = static_cast<UINT>(ff_dx::fix_sample_count(format, sample_count));
 
-        HRESULT hr = ff::dx11::device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
+        HRESULT hr = ff_dx::device()->CreateTexture2D(&desc, nullptr, this->texture_.GetAddressOf());
         assert(SUCCEEDED(hr));
     }
 
@@ -45,7 +45,7 @@ ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, s
 
     this->fix_sprite_data(sprite_type);
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::sprite_type sprite_type)
@@ -54,7 +54,7 @@ ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const s
 {
     this->fix_sprite_data(sprite_type == ff::sprite_type::unknown && this->data_ ? ff::internal::get_sprite_type(*this->data_) : sprite_type);
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
@@ -78,7 +78,7 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
 
     this->fix_sprite_data(sprite_type);
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(texture&& other) noexcept
@@ -90,12 +90,12 @@ ff::texture::texture(texture&& other) noexcept
     this->fix_sprite_data(other.sprite_data_.type());
     other.sprite_data_ = ff::sprite_data();
 
-    ff_internal_dx::add_device_child(this, ff_internal_dx::device_reset_priority::normal);
+    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::~texture()
 {
-    ff_internal_dx::remove_device_child(this);
+    ff_dx::remove_device_child(this);
 }
 
 ff::texture& ff::texture::operator=(texture&& other) noexcept
@@ -228,7 +228,7 @@ std::shared_ptr<DirectX::ScratchImage> ff::texture::data() const
         // Can't use the device context on background threads
         ff::thread_dispatch::get_game()->send([&scratch, texture]()
             {
-                DirectX::CaptureTexture(ff::dx11::device(), ff_dx::context(), texture, scratch);
+                DirectX::CaptureTexture(ff_dx::device(), ff_dx::context(), texture, scratch);
             });
 
         return scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch)) : nullptr;
@@ -307,7 +307,7 @@ bool ff::texture::update(
 
             ff::thread_dispatch::get_game()->send([texture, subresource, box, data, row_pitch]()
                 {
-                    ff::dx11::get_device_state().update_subresource(
+                    ff_dx::get_device_state().update_subresource(
                         texture, subresource, &box, data, static_cast<UINT>(row_pitch), 0);
                 });
         }
