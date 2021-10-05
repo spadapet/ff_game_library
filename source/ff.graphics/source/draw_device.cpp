@@ -1190,13 +1190,15 @@ namespace
             this->custom_context_stack.pop_back();
         }
 
-        virtual void push_texture_sampler(D3D11_FILTER filter) override
+        virtual void push_sampler_linear_filter(bool linear_filter) override
         {
             this->flush();
-            this->sampler_stack.push_back(::get_texture_sampler_state(filter));
+            this->sampler_stack.push_back(::get_texture_sampler_state(linear_filter
+                ? D3D11_FILTER_MIN_MAG_MIP_LINEAR
+                : D3D11_FILTER_MIN_MAG_MIP_POINT));
         }
 
-        virtual void pop_texture_sampler() override
+        virtual void pop_sampler_linear_filter() override
         {
             assert(this->sampler_stack.size() > 1);
 

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "format.h"
+#include "format_util.h"
 
 bool ff::dxgi::compressed_format(DXGI_FORMAT format)
 {

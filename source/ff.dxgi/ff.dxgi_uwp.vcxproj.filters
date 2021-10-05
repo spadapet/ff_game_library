@@ -11,7 +11,7 @@
     <ClCompile Include="source\utility.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\format.cpp">
+    <ClCompile Include="source\format_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,7 +29,7 @@
     <ClInclude Include="source\utility.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\format.h">
+    <ClInclude Include="source\format_util.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
