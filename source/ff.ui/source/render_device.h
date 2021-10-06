@@ -4,7 +4,7 @@
 
 namespace ff::internal::ui
 {
-    class render_device : public Noesis::RenderDevice, public ff_dx::device_child_base
+    class render_device : public Noesis::RenderDevice, private ff::dxgi::device_child_base
     {
     public:
         render_device(bool srgb);
@@ -28,10 +28,10 @@ namespace ff::internal::ui
         virtual void UnmapIndices() override;
         virtual void DrawBatch(const Noesis::Batch& batch) override;
 
-        // graphics_child_base
+    private:
+        // device_child_base
         virtual bool reset() override;
 
-    private:
         enum class msaa_samples_t { x1, x2, x4, x8, x16, Count };
         enum class texture_slot_t { Pattern, Ramps, Image, Glyphs, Shadow, PaletteImage, Palette, Count };
 

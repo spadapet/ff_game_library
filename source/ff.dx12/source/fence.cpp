@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "access.h"
+#include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
 #include "queue.h"

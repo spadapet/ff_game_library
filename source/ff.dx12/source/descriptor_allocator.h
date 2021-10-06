@@ -2,7 +2,6 @@
 
 #include "access.h"
 #include "descriptor_range.h"
-#include "device_child_base.h"
 #include "fence_value.h"
 
 namespace ff::dx12
@@ -90,7 +89,7 @@ namespace ff::dx12
         size_t descriptor_size;
     };
 
-    class cpu_descriptor_allocator : private ff::dx12::device_child_base
+    class cpu_descriptor_allocator : private ff::dxgi::device_child_base
     {
     public:
         cpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size);
@@ -114,7 +113,7 @@ namespace ff::dx12
         size_t bucket_size;
     };
 
-    class gpu_descriptor_allocator : private ff::dx12::device_child_base
+    class gpu_descriptor_allocator : private ff::dxgi::device_child_base
     {
     public:
         gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size);

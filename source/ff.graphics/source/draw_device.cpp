@@ -686,7 +686,7 @@ namespace
     class draw_device_internal
         : public ff::draw_device
         , public ff::draw_base
-        , public ff_dx::device_child_base
+        , private ff::dxgi::device_child_base
     {
     public:
         draw_device_internal()
@@ -729,42 +729,6 @@ namespace
         virtual bool valid() const override
         {
             return this->state != ::draw_device_internal::state_t::invalid;
-        }
-
-        // graphics_child_base
-        virtual bool reset()
-        {
-            this->destroy();
-
-            // Geometry buckets
-            this->get_geometry_bucket(::geometry_bucket_type::lines).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::circles).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::triangles).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::palette_sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_palette_ps", "ff.shader.palette_out_sprite_palette_ps");
-
-            this->get_geometry_bucket(::geometry_bucket_type::lines_alpha).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::circles_alpha).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::triangles_alpha).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::sprites_alpha).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
-
-            // Palette
-            this->palette_stack.push_back(nullptr);
-            this->palette_texture = std::make_shared<ff::texture>(
-                ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::dxgi::PALETTE_FORMAT);
-
-            this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
-            this->palette_remap_texture = std::make_shared<ff::texture>(
-                ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::dxgi::PALETTE_INDEX_FORMAT);
-
-            // States
-            this->sampler_stack.push_back(::get_texture_sampler_state(D3D11_FILTER_MIN_MAG_MIP_POINT));
-            this->opaque_state = ::create_opaque_draw_state();
-            this->alpha_state = ::create_alpha_draw_state();
-            this->pre_multiplied_alpha_state = ::create_pre_multiplied_alpha_draw_state();
-
-            this->state = ::draw_device_internal::state_t::valid;
-            return true;
         }
 
         virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
@@ -1207,6 +1171,42 @@ namespace
         }
 
     private:
+        // device_child_base
+        virtual bool reset()
+        {
+            this->destroy();
+
+            // Geometry buckets
+            this->get_geometry_bucket(::geometry_bucket_type::lines).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::circles).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::triangles).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::palette_sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_palette_ps", "ff.shader.palette_out_sprite_palette_ps");
+
+            this->get_geometry_bucket(::geometry_bucket_type::lines_alpha).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::circles_alpha).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::triangles_alpha).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::sprites_alpha).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
+
+            // Palette
+            this->palette_stack.push_back(nullptr);
+            this->palette_texture = std::make_shared<ff::texture>(
+                ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::dxgi::PALETTE_FORMAT);
+
+            this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
+            this->palette_remap_texture = std::make_shared<ff::texture>(
+                ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::dxgi::PALETTE_INDEX_FORMAT);
+
+            // States
+            this->sampler_stack.push_back(::get_texture_sampler_state(D3D11_FILTER_MIN_MAG_MIP_POINT));
+            this->opaque_state = ::create_opaque_draw_state();
+            this->alpha_state = ::create_alpha_draw_state();
+            this->pre_multiplied_alpha_state = ::create_pre_multiplied_alpha_draw_state();
+
+            this->state = ::draw_device_internal::state_t::valid;
+            return true;
+        }
+
         void destroy()
         {
             this->state = ::draw_device_internal::state_t::invalid;

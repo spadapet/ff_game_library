@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "device_child_base.h"
 #include "device_state.h"
 #include "globals.h"
 #include "object_cache.h"
@@ -18,7 +17,7 @@ namespace
             return this->reset_priority == other.reset_priority;
         }
 
-        ff::dx11::device_child_base* child;
+        ff::dxgi::device_child_base* child;
         ff::dx11::device_reset_priority reset_priority;
         void* reset_data;
     };
@@ -35,7 +34,7 @@ static size_t outputs_hash;
 
 static std::mutex device_children_mutex;
 static std::vector<::device_child_t> device_children;
-static ff::signal<ff::dx11::device_child_base*> removed_device_child;
+static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
 
 static bool create_device(Microsoft::WRL::ComPtr<ID3D11DeviceX>& out_device, Microsoft::WRL::ComPtr<ID3D11DeviceContextX>& out_context)
 {
@@ -161,13 +160,13 @@ void ff::dx11::destroy_globals()
     ::destroy_dxgi();
 }
 
-void ff::dx11::add_device_child(ff::dx11::device_child_base* child, ff::dx11::device_reset_priority reset_priority)
+void ff::dx11::add_device_child(ff::dxgi::device_child_base* child, ff::dx11::device_reset_priority reset_priority)
 {
     std::scoped_lock lock(::device_children_mutex);
     ::device_children.push_back(::device_child_t{ child, reset_priority, nullptr });
 }
 
-void ff::dx11::remove_device_child(ff::dx11::device_child_base* child)
+void ff::dx11::remove_device_child(ff::dxgi::device_child_base* child)
 {
     std::scoped_lock lock(::device_children_mutex);
 
@@ -253,7 +252,7 @@ bool ff::dx11::reset(bool force)
 
             std::stable_sort(sorted_children.begin(), sorted_children.end());
 
-            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dx11::device_child_base* child)
+            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dxgi::device_child_base* child)
                 {
                     for (::device_child_t& i : sorted_children)
                     {
@@ -289,7 +288,7 @@ bool ff::dx11::reset(bool force)
 
             for (::device_child_t& i : sorted_children)
             {
-                if (i.child && !i.child->after_reset())
+                if (i.child && !i.child->call_after_reset())
                 {
                     assert(false);
                     status = false;

@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "descriptor_allocator.h"
-#include "device_child_base.h"
 #include "fence.h"
 #include "globals.h"
 #include "mem_allocator.h"
@@ -21,7 +20,7 @@ namespace
             return this->reset_priority == other.reset_priority;
         }
 
-        ff::dx12::device_child_base* child;
+        ff::dxgi::device_child_base* child;
         ff::dx12::device_reset_priority reset_priority;
         void* reset_data;
     };
@@ -36,7 +35,7 @@ static size_t outputs_hash;
 
 static std::mutex device_children_mutex;
 static std::vector<::device_child_t> device_children;
-static ff::signal<ff::dx12::device_child_base*> removed_device_child;
+static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
@@ -211,13 +210,13 @@ void ff::dx12::destroy_globals()
     ::destroy_dxgi();
 }
 
-void ff::dx12::add_device_child(ff::dx12::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
+void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
 {
     std::scoped_lock lock(::device_children_mutex);
     ::device_children.push_back(::device_child_t{ child, reset_priority, nullptr });
 }
 
-void ff::dx12::remove_device_child(ff::dx12::device_child_base* child)
+void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
 {
     std::scoped_lock lock(::device_children_mutex);
 
@@ -306,7 +305,7 @@ bool ff::dx12::reset(bool force)
 
             std::stable_sort(sorted_children.begin(), sorted_children.end());
 
-            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dx12::device_child_base* child)
+            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dxgi::device_child_base* child)
                 {
                     for (::device_child_t& i : sorted_children)
                     {
@@ -342,7 +341,7 @@ bool ff::dx12::reset(bool force)
 
             for (::device_child_t& i : sorted_children)
             {
-                if (i.child && !i.child->after_reset())
+                if (i.child && !i.child->call_after_reset())
                 {
                     assert(false);
                     status = false;

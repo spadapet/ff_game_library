@@ -1,6 +1,5 @@
 #pragma once
 
-#include "device_child_base.h"
 #include "fence_value.h"
 
 namespace ff::dx12
@@ -8,7 +7,7 @@ namespace ff::dx12
     class commands;
     class mem_range;
 
-    class resource : private ff::dx12::device_child_base
+    class resource : private ff::dxgi::device_child_base
     {
     public:
         resource(

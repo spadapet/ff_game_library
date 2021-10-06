@@ -7,7 +7,7 @@ namespace ff
 {
     class target_window
         : public ff::target_window_base
-        , public ff_dx::device_child_base
+        , private ff::dxgi::device_child_base
     {
     public:
         target_window();
@@ -41,10 +41,10 @@ namespace ff
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;
 
-        // graphics_child_base
+    private:
+        // device_child_base
         virtual bool reset() override;
 
-    private:
         static const size_t BACK_BUFFER_COUNT = 2;
 
         void handle_message(ff::window_message& msg);

@@ -13,7 +13,7 @@ namespace ff
     class texture;
 
     class texture_view
-        : public ff_dx::device_child_base
+        : private ff::dxgi::device_child_base
         , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base
@@ -28,9 +28,6 @@ namespace ff
         texture_view& operator=(texture_view&& other) noexcept;
         texture_view& operator=(const texture_view& other) = delete;
         operator bool() const;
-
-        // graphics_child_base
-        virtual bool reset() override;
 
         // texture_view_base
         virtual const ff::texture* view_texture() const override;
@@ -56,6 +53,9 @@ namespace ff
         virtual const ff::animation_base* animation() const override;
 
     private:
+        // device_child_base
+        virtual bool reset() override;
+
         void fix_sprite_data();
 
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;

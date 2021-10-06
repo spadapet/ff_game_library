@@ -14,7 +14,6 @@
     <ClCompile Include="source\commands.cpp" />
     <ClCompile Include="source\descriptor_allocator.cpp" />
     <ClCompile Include="source\descriptor_range.cpp" />
-    <ClCompile Include="source\device_child_base.cpp" />
     <ClCompile Include="source\fence.cpp" />
     <ClCompile Include="source\fence_value.cpp" />
     <ClCompile Include="source\fence_values.cpp" />
@@ -33,7 +32,7 @@
     <ClInclude Include="source\commands.h" />
     <ClInclude Include="source\descriptor_allocator.h" />
     <ClInclude Include="source\descriptor_range.h" />
-    <ClInclude Include="source\device_child_base.h" />
+    <ClInclude Include="source\device_reset_priority.h" />
     <ClInclude Include="source\fence.h" />
     <ClInclude Include="source\fence_value.h" />
     <ClInclude Include="source\fence_values.h" />

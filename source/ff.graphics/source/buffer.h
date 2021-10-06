@@ -4,7 +4,7 @@
 
 namespace ff
 {
-    class buffer : public ff_dx::device_child_base
+    class buffer : private ff::dxgi::device_child_base
     {
     public:
         buffer(D3D11_BIND_FLAG type);
@@ -27,11 +27,11 @@ namespace ff
         bool update_discard(const void* data, size_t size);
         bool update_discard(const void* data, size_t data_size, size_t buffer_size);
 
-        // device_child_base
-        virtual bool reset() override;
-
     private:
         buffer(D3D11_BIND_FLAG type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable);
+
+        // device_child_base
+        virtual bool reset() override;
 
         Microsoft::WRL::ComPtr<ID3D11Buffer> buffer_;
         Microsoft::WRL::ComPtr<ID3D11DeviceX> mapped_device;

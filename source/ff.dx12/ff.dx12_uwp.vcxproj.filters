@@ -35,9 +35,6 @@
     <ClCompile Include="source\resource.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\device_child_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\mem_allocator.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -54,9 +51,6 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\init.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\device_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\globals.h">
@@ -99,6 +93,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\fence_values.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_reset_priority.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

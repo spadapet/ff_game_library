@@ -4,7 +4,7 @@
 
 namespace ff
 {
-    class depth : public ff_dx::device_child_base
+    class depth : private ff::dxgi::device_child_base
     {
     public:
         depth(size_t sample_count = 0);
@@ -26,10 +26,10 @@ namespace ff
         ID3D11Texture2D* texture() const;
         ID3D11DepthStencilView* view() const;
 
+    private:
         // device_child_base
         virtual bool reset() override;
 
-    private:
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilView> view_;
     };

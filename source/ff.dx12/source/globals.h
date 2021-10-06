@@ -4,7 +4,6 @@ namespace ff::dx12
 {
     class commands;
     class cpu_descriptor_allocator;
-    class device_child_base;
     class fence_values;
     class gpu_descriptor_allocator;
     class mem_allocator;
@@ -47,8 +46,8 @@ namespace ff::dx12
     bool init_globals(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
     void destroy_globals();
 
-    void add_device_child(ff::dx12::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
-    void remove_device_child(ff::dx12::device_child_base* child);
+    void add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
+    void remove_device_child(ff::dxgi::device_child_base* child);
 
     size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 }

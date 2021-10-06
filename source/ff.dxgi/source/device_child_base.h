@@ -1,13 +1,7 @@
 #pragma once
 
-namespace ff::dx11
+namespace ff::dxgi
 {
-    enum class device_reset_priority
-    {
-        normal,
-        target_window,
-    };
-
     class device_child_base
     {
     public:

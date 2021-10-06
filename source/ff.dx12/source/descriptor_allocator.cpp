@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "descriptor_allocator.h"
+#include "device_reset_priority.h"
 #include "globals.h"
 
 bool ff::dx12::descriptor_buffer_free_list::range_t::operator<(const range_t& other) const

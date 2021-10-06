@@ -2,6 +2,8 @@
 #include "access.h"
 #include "commands.h"
 #include "descriptor_allocator.h"
+#include "device_reset_priority.h"
+#include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
 #include "mem_range.h"
@@ -43,6 +45,11 @@ ff::dx12::commands::commands(commands&& other) noexcept
 ff::dx12::commands::~commands()
 {
     ff::dx12::remove_device_child(this);
+}
+
+ff::dx12::commands& ff::dx12::commands::get(ff::dxgi::command_context& obj)
+{
+    return *static_cast<ff::dx12::commands*>(&obj);
 }
 
 ff::dx12::commands::operator bool() const

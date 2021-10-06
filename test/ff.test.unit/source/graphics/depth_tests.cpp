@@ -14,7 +14,6 @@ namespace ff::test::graphics
             Assert::IsTrue(depth);
             Assert::IsTrue(depth.size() == size);
             Assert::IsTrue(depth.sample_count() == sample_count);
-            Assert::IsTrue(depth.reset());
             Assert::IsNotNull(depth.texture());
             Assert::IsNotNull(depth.view());
         }

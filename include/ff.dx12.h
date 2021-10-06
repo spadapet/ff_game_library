@@ -5,7 +5,7 @@
 #include "../source/ff.dx12/source/commands.h"
 #include "../source/ff.dx12/source/descriptor_allocator.h"
 #include "../source/ff.dx12/source/descriptor_range.h"
-#include "../source/ff.dx12/source/device_child_base.h"
+#include "../source/ff.dx12/source/device_reset_priority.h"
 #include "../source/ff.dx12/source/fence.h"
 #include "../source/ff.dx12/source/fence_value.h"
 #include "../source/ff.dx12/source/fence_values.h"

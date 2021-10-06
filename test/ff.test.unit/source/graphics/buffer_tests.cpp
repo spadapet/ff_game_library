@@ -15,7 +15,6 @@ namespace ff::test::graphics
             Assert::IsFalse(buffer.writable());
             Assert::AreEqual(ff::array_byte_size(ints), buffer.size());
             Assert::IsTrue(buffer.type() == D3D11_BIND_INDEX_BUFFER);
-            Assert::IsTrue(buffer.reset());
         }
 
         TEST_METHOD(writable_buffer)

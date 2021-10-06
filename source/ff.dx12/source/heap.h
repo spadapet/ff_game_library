@@ -1,11 +1,10 @@
 #pragma once
 
 #include "access.h"
-#include "device_child_base.h"
 
 namespace ff::dx12
 {
-    class heap : private ff::dx12::device_child_base
+    class heap : private ff::dxgi::device_child_base
     {
     public:
         enum class usage_t

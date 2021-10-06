@@ -13,7 +13,7 @@
 namespace ff
 {
     class texture
-        : public ff::dx11::device_child_base
+        : private ff::dxgi::device_child_base
         , public ff::resource_object_base
         , public ff::texture_metadata_base
         , public ff::texture_view_base
@@ -52,9 +52,6 @@ namespace ff
         virtual size_t sample_count() const override;
         virtual DXGI_FORMAT format() const override;
 
-        // graphics_child_base
-        virtual bool reset() override;
-
         // texture_view_base
         virtual const ff::texture* view_texture() const override;
         virtual ID3D11ShaderResourceView* view() const override;
@@ -82,6 +79,9 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
+        // device_child_base
+        virtual bool reset() override;
+
         void fix_sprite_data(ff::sprite_type sprite_type);
 
         mutable Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;

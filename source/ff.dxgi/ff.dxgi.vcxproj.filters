@@ -14,6 +14,9 @@
     <ClCompile Include="source\format_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\device_child_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -30,6 +33,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\format_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\command_context.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\buffer_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\device_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -10,7 +10,6 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\device_child_base.cpp" />
     <ClCompile Include="source\device_state.cpp" />
     <ClCompile Include="source\fixed_state.cpp" />
     <ClCompile Include="source\globals.cpp" />
@@ -20,7 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\device_child_base.h" />
+    <ClInclude Include="source\device_reset_priority.h" />
     <ClInclude Include="source\device_state.h" />
     <ClInclude Include="source\fixed_state.h" />
     <ClInclude Include="source\globals.h" />

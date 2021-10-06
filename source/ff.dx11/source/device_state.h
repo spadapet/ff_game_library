@@ -2,7 +2,7 @@
 
 namespace ff::dx11
 {
-    class device_state
+    class device_state : public ff::dxgi::command_context
     {
     public:
         device_state();
@@ -10,6 +10,7 @@ namespace ff::dx11
         device_state(device_state&& other) noexcept = delete;
         device_state(const device_state& other) = delete;
 
+        static device_state& get(ff::dxgi::command_context& obj);
         device_state& operator=(device_state&& other) noexcept = delete;
         device_state& operator=(const device_state& other) = delete;
 

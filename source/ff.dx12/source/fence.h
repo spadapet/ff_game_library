@@ -1,14 +1,13 @@
 #pragma once
 
 #include "access.h"
-#include "device_child_base.h"
 #include "fence_value.h"
 
 namespace ff::dx12
 {
     class queue;
 
-    class fence : private ff::dx12::device_child_base
+    class fence : private ff::dxgi::device_child_base
     {
     public:
         fence(ff::dx12::queue* queue, uint64_t initial_value = 1);

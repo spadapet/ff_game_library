@@ -1,7 +1,6 @@
 #pragma once
 
 #include "access.h"
-#include "device_child_base.h"
 #include "fence_values.h"
 
 namespace ff::dx12
@@ -10,7 +9,7 @@ namespace ff::dx12
     class resource;
     class queue;
 
-    class commands : private ff::dx12::device_child_base
+    class commands : public ff::dxgi::command_context, private ff::dxgi::device_child_base
     {
     public:
         commands(
@@ -23,6 +22,7 @@ namespace ff::dx12
         commands(const commands& other) = delete;
         virtual ~commands() override;
 
+        static commands& get(ff::dxgi::command_context& obj);
         commands& operator=(commands&& other) noexcept = default;
         commands& operator=(const commands& other) = delete;
 

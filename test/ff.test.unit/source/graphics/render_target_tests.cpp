@@ -26,7 +26,6 @@ namespace ff::test::graphics
             Assert::IsTrue(target.pre_render(&ff::color::magenta()));
             Assert::IsTrue(target.post_render());
 
-            Assert::IsTrue(target.reset());
             Assert::IsNotNull(target.view());
             Assert::IsNotNull(target.texture());
 

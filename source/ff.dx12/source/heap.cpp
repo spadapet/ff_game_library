@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "device_reset_priority.h"
 #include "globals.h"
 #include "heap.h"
 
