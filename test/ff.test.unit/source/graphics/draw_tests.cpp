@@ -29,7 +29,7 @@ namespace ff::test::graphics
 
             // Draw
             {
-                ff::depth depth;
+                ff_dx::depth depth;
                 std::unique_ptr<ff::draw_device> draw_device = ff::draw_device::create();
                 ff::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
                 draw->draw_sprite(sprite->sprite_data(), ff::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));

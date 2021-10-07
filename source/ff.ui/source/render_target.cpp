@@ -26,7 +26,7 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
 
     if (needs_depth_stencil)
     {
-        this->depth_ = std::make_shared<ff::depth>(size, this->msaa_texture_->sample_count());
+        this->depth_ = std::make_shared<ff_dx::depth>(size, this->msaa_texture_->sample_count());
     }
 }
 
@@ -85,7 +85,7 @@ const std::shared_ptr<ff::target_base>& ff::internal::ui::render_target::msaa_ta
     return this->msaa_target_;
 }
 
-const std::shared_ptr<ff::depth>& ff::internal::ui::render_target::depth() const
+const std::shared_ptr<ff::dxgi::depth_base>& ff::internal::ui::render_target::depth() const
 {
     return this->depth_;
 }

@@ -18,8 +18,6 @@
     <ClCompile Include="source\animation.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
     <ClCompile Include="source\color.cpp" />
-    <ClCompile Include="source\data_blob.cpp" />
-    <ClCompile Include="source\depth.cpp" />
     <ClCompile Include="source\draw_base.cpp" />
     <ClCompile Include="source\draw_device.cpp" />
     <ClCompile Include="source\draw_ptr.cpp" />
@@ -57,14 +55,11 @@
     <ClInclude Include="source\animation_player.h" />
     <ClInclude Include="source\animation_player_base.h" />
     <ClInclude Include="source\color.h" />
-    <ClInclude Include="source\data_blob.h" />
-    <ClInclude Include="source\depth.h" />
     <ClInclude Include="source\draw_base.h" />
     <ClInclude Include="source\draw_device.h" />
     <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\font_file.h" />
     <ClInclude Include="source\graphics.h" />
-    <ClInclude Include="source\graphics_counters.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\animation_keys.h" />
     <ClInclude Include="source\matrix.h" />

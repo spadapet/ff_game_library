@@ -29,9 +29,6 @@
     <ClCompile Include="source\shader.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\data_blob.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -101,9 +98,6 @@
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\depth.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -138,9 +132,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\shader.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\data_blob.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
@@ -228,9 +219,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\random_sprite.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\depth.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

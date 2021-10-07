@@ -41,7 +41,6 @@
     <ClInclude Include="source\app.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="application_api.h" />
     <ClInclude Include="source\app_time.h">
       <Filter>source</Filter>
     </ClInclude>

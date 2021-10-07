@@ -14,12 +14,12 @@ namespace ff
 
         virtual std::shared_ptr<ff::state> advance_time();
         virtual void advance_input();
-        virtual void render(ff::target_base& target, ff::depth& depth);
+        virtual void render(ff::target_base& target, ff::dxgi::depth_base& depth);
         virtual void render();
 
         virtual void frame_started(ff::state::advance_t type);
         virtual void frame_rendering(ff::state::advance_t type);
-        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::depth& depth);
+        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dxgi::depth_base& depth);
 
         virtual ff::state::cursor_t cursor();
         virtual std::shared_ptr<ff::state_wrapper> wrap();

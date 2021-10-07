@@ -213,7 +213,7 @@ void ff::ui_view::pre_render()
     this->internal_view_->GetRenderer()->RenderOffscreen();
 }
 
-void ff::ui_view::render(ff::target_base& target, ff::depth& depth, const ff::rect_float* view_rect)
+void ff::ui_view::render(ff::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect)
 {
     ff::internal::ui::on_render_view(this);
 
@@ -223,12 +223,12 @@ void ff::ui_view::render(ff::target_base& target, ff::depth& depth, const ff::re
     }
 }
 
-bool ff::ui_view::render_begin(ff::target_base& target, ff::depth& depth, const ff::rect_float* view_rect)
+bool ff::ui_view::render_begin(ff::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect)
 {
     if (depth.size(target.size().pixel_size))
     {
         ID3D11RenderTargetView* target_view = target.view();
-        ID3D11DepthStencilView* depth_view = depth.view();
+        ID3D11DepthStencilView* depth_view = ff_dx::depth::get(depth).view();
 
         if (target_view && depth_view)
         {

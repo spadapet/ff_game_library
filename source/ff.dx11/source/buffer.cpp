@@ -63,12 +63,12 @@ ff::dx11::buffer::~buffer()
 
 ff::dx11::buffer& ff::dx11::buffer::get(ff::dxgi::buffer_base& obj)
 {
-    return *static_cast<ff::dx11::buffer*>(&obj);
+    return static_cast<ff::dx11::buffer&>(obj);
 }
 
 const ff::dx11::buffer& ff::dx11::buffer::get(const ff::dxgi::buffer_base& obj)
 {
-    return *static_cast<const ff::dx11::buffer*>(&obj);
+    return static_cast<const ff::dx11::buffer&>(obj);
 }
 
 ff::dx11::buffer::operator bool() const

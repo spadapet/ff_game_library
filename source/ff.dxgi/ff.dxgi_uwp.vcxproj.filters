@@ -17,6 +17,9 @@
     <ClCompile Include="source\device_child_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\data_blob.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,6 +45,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\command_context_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\data_blob.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\depth_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

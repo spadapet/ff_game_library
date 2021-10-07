@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "data_blob.h"
 #include "shader.h"
 
 namespace
@@ -116,7 +115,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
         return nullptr;
     }
 
-    return std::make_shared<ff::internal::data_blob_dx>(shader_blob.Get());
+    return std::make_shared<ff::dxgi::data_blob_dx>(shader_blob.Get());
 }
 
 static std::shared_ptr<ff::data_base> compile_shader(

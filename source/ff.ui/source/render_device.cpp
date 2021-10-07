@@ -273,7 +273,7 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
     ff::internal::ui::render_target* surface2 = ff::internal::ui::render_target::get(surface);
     ff::point_float size = surface2->msaa_texture()->size().cast<float>();
     ID3D11RenderTargetView* view = surface2->msaa_target()->view();
-    ff_dx::get_device_state().set_targets(&view, 1, surface2->depth()->view());
+    ff_dx::get_device_state().set_targets(&view, 1, ff_dx::depth::get(*surface2->depth()).view());
 
     D3D11_VIEWPORT viewport{};
     viewport.Width = size.x;

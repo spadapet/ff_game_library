@@ -39,7 +39,7 @@ namespace
             ff::ui::state_rendering();
         }
 
-        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::depth& depth) override
+        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dxgi::depth_base& depth) override
         {
             ff::ui::state_rendered();
         }
@@ -58,7 +58,7 @@ static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
 static std::unique_ptr<ff::target_window> target;
-static std::unique_ptr<ff::depth> depth;
+static std::unique_ptr<ff::dxgi::depth_base> depth;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
@@ -583,7 +583,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = std::make_unique<ff::target_window>(ff::window::main());
-    ::depth = std::make_unique<ff::depth>(::target->size().pixel_size);
+    ::depth = std::make_unique<ff_dx::depth>(::target->size().pixel_size);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);

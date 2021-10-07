@@ -10,6 +10,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\device_child_base.cpp" />
     <ClCompile Include="source\format_util.cpp" />
     <ClCompile Include="source\globals.cpp" />
@@ -20,6 +21,8 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\buffer_base.h" />
     <ClInclude Include="source\command_context_base.h" />
+    <ClInclude Include="source\data_blob.h" />
+    <ClInclude Include="source\depth_base.h" />
     <ClInclude Include="source\device_child_base.h" />
     <ClInclude Include="source\format_util.h" />
     <ClInclude Include="source\globals.h" />
@@ -33,6 +36,9 @@
     </ProjectReference>
     <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
       <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ff.data\ff.data_uwp.vcxproj">
+      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

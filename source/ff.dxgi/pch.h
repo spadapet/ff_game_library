@@ -9,7 +9,7 @@
 #include <directxtex/DirectXTex/DirectXTex.h>
 
 // FF
-#include <ff.base.h>
+#include <ff.data.h>
 
 // DXGI interface usage
 

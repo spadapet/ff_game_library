@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "data_blob.h"
 #include "draw_base.h"
 #include "graphics.h"
 #include "png_image.h"
@@ -455,7 +454,7 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
     if (data && SUCCEEDED(DirectX::SaveToDDSMemory(
         data->GetImages(), data->GetImageCount(), data->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
     {
-        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::internal::data_blob_dxtex>(std::move(blob));
+        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
         dict.set<ff::data_base>("data", blob_data, ff::saved_data_type::zlib_compressed);
     }
     else
@@ -468,7 +467,7 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
         if (SUCCEEDED(DirectX::SaveToDDSMemory(
             this->palette_->GetImages(), this->palette_->GetImageCount(), this->palette_->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
         {
-            std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::internal::data_blob_dxtex>(std::move(blob));
+            std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
             dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
         }
         else

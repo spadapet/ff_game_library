@@ -20,7 +20,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             ff::init_ui init_ui(test_uwp::get_init_ui_params());
             ff::internal::ui::init_game_thread();
             ff::target_window target;
-            ff::depth depth;
+            ff_dx::depth depth;
             ff::ui_view view("overlay.xaml");
 
             view.size(target);

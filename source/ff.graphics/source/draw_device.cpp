@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "depth.h"
 #include "draw_device.h"
 #include "graphics.h"
 #include "matrix.h"
@@ -646,7 +645,7 @@ static bool setup_view_matrix(ff::target_base& target, const ff::rect_float& vie
     return false;
 }
 
-static bool setup_render_target(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect)
+static bool setup_render_target(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
 {
     ID3D11RenderTargetView* target_view = target.view();
     if (target_view)
@@ -656,8 +655,8 @@ static bool setup_render_target(ff::target_base& target, ff::depth* depth, const
         {
             if (depth->size(target.size().pixel_size))
             {
-                depth->clear(0, 0);
-                depth_view = depth->view();
+                depth->clear(ff_dx::get_device_state(), 0, 0);
+                depth_view = ff_dx::depth::get(*depth).view();
             }
 
             if (!depth_view)
@@ -730,7 +729,7 @@ namespace
             return this->state != ::draw_device_internal::state_t::invalid;
         }
 
-        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
+        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
         {
             this->end_draw();
 
@@ -1898,7 +1897,7 @@ std::unique_ptr<ff::draw_device> ff::draw_device::create()
     return std::make_unique<::draw_device_internal>();
 }
 
-ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
+ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }

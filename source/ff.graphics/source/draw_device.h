@@ -21,7 +21,7 @@ namespace ff
 
         virtual ~draw_device() = default;
         virtual bool valid() const = 0;
-        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options = ff::draw_options::none) = 0;
-        ff::draw_ptr begin_draw(ff::target_base& target, ff::depth* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options = ff::draw_options::none);
+        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options = ff::draw_options::none) = 0;
+        ff::draw_ptr begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options = ff::draw_options::none);
     };
 }

@@ -14,7 +14,7 @@ ff::dx11::device_state::device_state(ID3D11DeviceContextX* context)
 
 ff::dx11::device_state& ff::dx11::device_state::get(ff::dxgi::command_context_base& obj)
 {
-    return *static_cast<ff::dx11::device_state*>(&obj);
+    return static_cast<ff::dx11::device_state&>(obj);
 }
 
 void ff::dx11::device_state::clear()

@@ -7,8 +7,6 @@
 #include "../source/ff.graphics/source/animation_player.h"
 #include "../source/ff.graphics/source/animation_player_base.h"
 #include "../source/ff.graphics/source/color.h"
-#include "../source/ff.graphics/source/data_blob.h"
-#include "../source/ff.graphics/source/depth.h"
 #include "../source/ff.graphics/source/draw_base.h"
 #include "../source/ff.graphics/source/draw_device.h"
 #include "../source/ff.graphics/source/draw_ptr.h"
