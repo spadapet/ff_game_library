@@ -101,9 +101,6 @@
     <ClCompile Include="source\texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\buffer.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -234,9 +231,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\depth.h">

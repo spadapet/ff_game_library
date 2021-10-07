@@ -12,7 +12,7 @@ ff::dx11::device_state::device_state(ID3D11DeviceContextX* context)
     this->reset(context);
 }
 
-ff::dx11::device_state& ff::dx11::device_state::get(ff::dxgi::command_context& obj)
+ff::dx11::device_state& ff::dx11::device_state::get(ff::dxgi::command_context_base& obj)
 {
     return *static_cast<ff::dx11::device_state*>(&obj);
 }
@@ -160,7 +160,7 @@ void ff::dx11::device_state::draw_indexed(size_t index_count, size_t index_start
     }
 }
 
-void* ff::dx11::device_state::map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map)
+void* ff::dx11::device_state::map(ID3D11Resource* buffer, D3D11_MAPPED_SUBRESOURCE* map)
 {
     if (this->context && buffer)
     {
@@ -185,7 +185,7 @@ void ff::dx11::device_state::unmap(ID3D11Resource* buffer)
 
 void ff::dx11::device_state::update_discard(ID3D11Resource* buffer, const void* data, size_t size)
 {
-    void* dest = size ? this->map(buffer, D3D11_MAP_WRITE_DISCARD) : 0;
+    void* dest = size ? this->map(buffer) : 0;
     if (dest)
     {
         std::memcpy(dest, data, size);

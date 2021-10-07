@@ -47,7 +47,7 @@ ff::dx12::commands::~commands()
     ff::dx12::remove_device_child(this);
 }
 
-ff::dx12::commands& ff::dx12::commands::get(ff::dxgi::command_context& obj)
+ff::dx12::commands& ff::dx12::commands::get(ff::dxgi::command_context_base& obj)
 {
     return *static_cast<ff::dx12::commands*>(&obj);
 }

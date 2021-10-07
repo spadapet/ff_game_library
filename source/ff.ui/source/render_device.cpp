@@ -334,7 +334,7 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
 
 void* ff::internal::ui::render_device::MapVertices(uint32_t bytes)
 {
-    return this->buffer_vertices->map(bytes);
+    return this->buffer_vertices->map(ff_dx::get_device_state(), bytes);
 }
 
 void ff::internal::ui::render_device::UnmapVertices()
@@ -344,7 +344,7 @@ void ff::internal::ui::render_device::UnmapVertices()
 
 void* ff::internal::ui::render_device::MapIndices(uint32_t bytes)
 {
-    return this->buffer_indices->map(bytes);
+    return this->buffer_indices->map(ff_dx::get_device_state(), bytes);
 }
 
 void ff::internal::ui::render_device::UnmapIndices()
@@ -483,13 +483,13 @@ void ff::internal::ui::render_device::create_buffers()
     std::memset(&this->vertex_cb_hash, 0, sizeof(this->vertex_cb_hash));
     std::memset(&this->pixel_cb_hash, 0, sizeof(this->pixel_cb_hash));
 
-    this->buffer_vertices = std::make_shared<ff::buffer>(D3D11_BIND_VERTEX_BUFFER, DYNAMIC_VB_SIZE);
-    this->buffer_indices = std::make_shared<ff::buffer>(D3D11_BIND_INDEX_BUFFER, DYNAMIC_IB_SIZE);
-    this->buffer_vertex_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER0_SIZE);
-    this->buffer_vertex_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::VS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[0] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER0_SIZE);
-    this->buffer_pixel_cb[1] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, ::PS_CBUFFER1_SIZE);
-    this->buffer_pixel_cb[2] = std::make_shared<ff::buffer>(D3D11_BIND_CONSTANT_BUFFER, sizeof(::pixel_buffer_2));
+    this->buffer_vertices = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::vertex, DYNAMIC_VB_SIZE);
+    this->buffer_indices = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::index, DYNAMIC_IB_SIZE);
+    this->buffer_vertex_cb[0] = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::constant, ::VS_CBUFFER0_SIZE);
+    this->buffer_vertex_cb[1] = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::constant, ::VS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[0] = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::constant, ::PS_CBUFFER0_SIZE);
+    this->buffer_pixel_cb[1] = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::constant, ::PS_CBUFFER1_SIZE);
+    this->buffer_pixel_cb[2] = std::make_shared<ff_dx::buffer>(ff::dxgi::buffer_type::constant, sizeof(::pixel_buffer_2));
 }
 
 void ff::internal::ui::render_device::create_state_objects()
@@ -895,7 +895,7 @@ void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
             if (this->vertex_cb_hash[i] != batch.vertexUniforms[i].hash)
             {
                 uint32_t size = batch.vertexUniforms[i].numDwords * sizeof(uint32_t);
-                void* ptr = this->buffer_vertex_cb[i]->map(size);
+                void* ptr = this->buffer_vertex_cb[i]->map(ff_dx::get_device_state(), size);
                 std::memcpy(ptr, batch.vertexUniforms[i].values, size);
                 this->buffer_vertex_cb[i]->unmap();
 
@@ -915,7 +915,7 @@ void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
             if (this->pixel_cb_hash[i] != batch.pixelUniforms[i].hash)
             {
                 uint32_t size = batch.pixelUniforms[i].numDwords * sizeof(uint32_t);
-                void* ptr = this->buffer_pixel_cb[i]->map(size);
+                void* ptr = this->buffer_pixel_cb[i]->map(ff_dx::get_device_state(), size);
                 std::memcpy(ptr, batch.pixelUniforms[i].values, size);
                 this->buffer_pixel_cb[i]->unmap();
 
@@ -936,7 +936,7 @@ void ff::internal::ui::render_device::set_buffers(const Noesis::Batch& batch)
 
         if (hash != this->pixel_cb_hash[2])
         {
-            void* ptr = this->buffer_pixel_cb[2]->map(sizeof(pb2));
+            void* ptr = this->buffer_pixel_cb[2]->map(ff_dx::get_device_state(), sizeof(pb2));
             std::memcpy(ptr, &pb2, sizeof(pb2));
             this->buffer_pixel_cb[2]->unmap();
 

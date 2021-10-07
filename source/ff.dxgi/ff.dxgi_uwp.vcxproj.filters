@@ -38,10 +38,10 @@
     <ClInclude Include="source\buffer_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\command_context.h">
+    <ClInclude Include="source\device_child_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\device_child_base.h">
+    <ClInclude Include="source\command_context_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

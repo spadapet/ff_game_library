@@ -35,7 +35,7 @@
     <ClInclude Include="source\format_util.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\command_context.h">
+    <ClInclude Include="source\command_context_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\buffer_base.h">

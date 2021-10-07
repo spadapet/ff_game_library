@@ -18,7 +18,6 @@
     <ClCompile Include="source\animation.cpp" />
     <ClCompile Include="source\animation_keys.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
-    <ClCompile Include="source\buffer.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\depth.cpp" />
@@ -58,7 +57,6 @@
     <ClInclude Include="source\animation_keys.h" />
     <ClInclude Include="source\animation_player.h" />
     <ClInclude Include="source\animation_player_base.h" />
-    <ClInclude Include="source\buffer.h" />
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\data_blob.h" />
     <ClInclude Include="source\depth.h" />

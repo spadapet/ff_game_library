@@ -9,7 +9,7 @@ namespace ff::dx12
     class resource;
     class queue;
 
-    class commands : public ff::dxgi::command_context, private ff::dxgi::device_child_base
+    class commands : public ff::dxgi::command_context_base, private ff::dxgi::device_child_base
     {
     public:
         commands(
@@ -22,7 +22,7 @@ namespace ff::dx12
         commands(const commands& other) = delete;
         virtual ~commands() override;
 
-        static commands& get(ff::dxgi::command_context& obj);
+        static commands& get(ff::dxgi::command_context_base& obj);
         commands& operator=(commands&& other) noexcept = default;
         commands& operator=(const commands& other) = delete;
 

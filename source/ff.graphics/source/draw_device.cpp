@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "buffer.h"
 #include "depth.h"
 #include "draw_device.h"
 #include "graphics.h"
@@ -692,10 +691,10 @@ namespace
         draw_device_internal()
             : state(::draw_device_internal::state_t::invalid)
             , world_matrix_stack_changing_connection(this->world_matrix_stack_.matrix_changing().connect(std::bind(&draw_device_internal::matrix_changing, this, std::placeholders::_1)))
-            , geometry_buffer(D3D11_BIND_VERTEX_BUFFER)
-            , geometry_constants_buffer_0(D3D11_BIND_CONSTANT_BUFFER)
-            , geometry_constants_buffer_1(D3D11_BIND_CONSTANT_BUFFER)
-            , pixel_constants_buffer_0(D3D11_BIND_CONSTANT_BUFFER)
+            , geometry_buffer(ff::dxgi::buffer_type::vertex)
+            , geometry_constants_buffer_0(ff::dxgi::buffer_type::constant)
+            , geometry_constants_buffer_1(ff::dxgi::buffer_type::constant)
+            , pixel_constants_buffer_0(ff::dxgi::buffer_type::constant)
             , geometry_buckets
         {
             ::geometry_bucket::create<ff::vertex::line_geometry, ::geometry_bucket_type::lines>(),
@@ -1322,7 +1321,7 @@ namespace
             size_t hash0 = ff::stable_hash_func(this->geometry_constants_0);
             if (!this->geometry_constants_hash_0 || this->geometry_constants_hash_0 != hash0)
             {
-                this->geometry_constants_buffer_0.update_discard(&this->geometry_constants_0, sizeof(::geometry_shader_constants_0));
+                this->geometry_constants_buffer_0.update(ff_dx::get_device_state(), &this->geometry_constants_0, sizeof(::geometry_shader_constants_0));
                 this->geometry_constants_hash_0 = hash0;
             }
         }
@@ -1350,7 +1349,7 @@ namespace
 #else
                 size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;
 #endif
-                this->geometry_constants_buffer_1.update_discard(this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
+                this->geometry_constants_buffer_1.update(ff_dx::get_device_state(), this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
             }
         }
 
@@ -1369,7 +1368,7 @@ namespace
                 size_t hash0 = ff::stable_hash_func(this->pixel_constants_0);
                 if (!this->pixel_constants_hash_0 || this->pixel_constants_hash_0 != hash0)
                 {
-                    this->pixel_constants_buffer_0.update_discard(&this->pixel_constants_0, sizeof(::pixel_shader_constants_0));
+                    this->pixel_constants_buffer_0.update(ff_dx::get_device_state(), &this->pixel_constants_0, sizeof(::pixel_shader_constants_0));
                     this->pixel_constants_hash_0 = hash0;
                 }
             }
@@ -1512,7 +1511,7 @@ namespace
                 byte_size += bucket.byte_size();
             }
 
-            void* buffer_data = this->geometry_buffer.map(byte_size);
+            void* buffer_data = this->geometry_buffer.map(ff_dx::get_device_state(), byte_size);
             if (buffer_data)
             {
                 for (::geometry_bucket& bucket : this->geometry_buckets)
@@ -1837,10 +1836,10 @@ namespace
         } state;
 
         // Constant data for shaders
-        ff::buffer geometry_buffer;
-        ff::buffer geometry_constants_buffer_0;
-        ff::buffer geometry_constants_buffer_1;
-        ff::buffer pixel_constants_buffer_0;
+        ff_dx::buffer geometry_buffer;
+        ff_dx::buffer geometry_constants_buffer_0;
+        ff_dx::buffer geometry_constants_buffer_1;
+        ff_dx::buffer pixel_constants_buffer_0;
         ::geometry_shader_constants_0 geometry_constants_0;
         ::geometry_shader_constants_1 geometry_constants_1;
         ::pixel_shader_constants_0 pixel_constants_0;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../source/ff.dx11/pch.h"
+#include "../source/ff.dx11/source/buffer.h"
 #include "../source/ff.dx11/source/device_reset_priority.h"
 #include "../source/ff.dx11/source/device_state.h"
 #include "../source/ff.dx11/source/fixed_state.h"

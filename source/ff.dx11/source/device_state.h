@@ -2,7 +2,7 @@
 
 namespace ff::dx11
 {
-    class device_state : public ff::dxgi::command_context
+    class device_state : public ff::dxgi::command_context_base
     {
     public:
         device_state();
@@ -10,7 +10,7 @@ namespace ff::dx11
         device_state(device_state&& other) noexcept = delete;
         device_state(const device_state& other) = delete;
 
-        static device_state& get(ff::dxgi::command_context& obj);
+        static device_state& get(ff::dxgi::command_context_base& obj);
         device_state& operator=(device_state&& other) noexcept = delete;
         device_state& operator=(const device_state& other) = delete;
 
@@ -19,7 +19,7 @@ namespace ff::dx11
         void apply(device_state& dest);
         void draw(size_t count, size_t start);
         void draw_indexed(size_t index_count, size_t index_start, int vertex_offset);
-        void* map(ID3D11Resource* buffer, D3D11_MAP type, D3D11_MAPPED_SUBRESOURCE* map = nullptr);
+        void* map(ID3D11Resource* buffer, D3D11_MAPPED_SUBRESOURCE* map = nullptr);
         void unmap(ID3D11Resource* buffer);
         void update_discard(ID3D11Resource* buffer, const void* data, size_t size);
         void clear_target(ID3D11RenderTargetView* view, const DirectX::XMFLOAT4& color);

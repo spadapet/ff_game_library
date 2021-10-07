@@ -19,7 +19,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\buffer_base.h" />
-    <ClInclude Include="source\command_context.h" />
+    <ClInclude Include="source\command_context_base.h" />
     <ClInclude Include="source\device_child_base.h" />
     <ClInclude Include="source\format_util.h" />
     <ClInclude Include="source\globals.h" />
