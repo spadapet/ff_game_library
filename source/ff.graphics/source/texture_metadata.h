@@ -2,21 +2,9 @@
 
 namespace ff
 {
-    class texture_metadata_base
-    {
-    public:
-        virtual ~texture_metadata_base() = default;
-
-        virtual ff::point_int size() const = 0;
-        virtual size_t mip_count() const = 0;
-        virtual size_t array_size() const = 0;
-        virtual size_t sample_count() const = 0;
-        virtual DXGI_FORMAT format() const = 0;
-    };
-
     class texture_metadata
         : public ff::resource_object_base
-        , public ff::texture_metadata_base
+        , public ff::dxgi::texture_metadata_base
     {
     public:
         texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format);

@@ -83,7 +83,6 @@
     <ClInclude Include="source\sprite_list.h" />
     <ClInclude Include="source\sprite_optimizer.h" />
     <ClInclude Include="source\sprite_resource.h" />
-    <ClInclude Include="source\sprite_type.h" />
     <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_metadata.h" />
     <ClInclude Include="source\texture_util.h" />

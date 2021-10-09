@@ -2,7 +2,6 @@
 
 namespace ff
 {
-    class target_base;
     class target_window_base;
 }
 

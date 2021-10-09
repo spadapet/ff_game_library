@@ -25,6 +25,7 @@
     <ClCompile Include="source\queue.cpp" />
     <ClCompile Include="source\queues.cpp" />
     <ClCompile Include="source\resource.cpp" />
+    <ClCompile Include="source\target_access.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -44,6 +45,7 @@
     <ClInclude Include="source\queue.h" />
     <ClInclude Include="source\queues.h" />
     <ClInclude Include="source\resource.h" />
+    <ClInclude Include="source\target_access.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">

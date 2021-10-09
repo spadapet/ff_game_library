@@ -16,7 +16,7 @@ namespace
     {
         optimized_sprite_info(const ff::sprite_base* sprite, size_t sprite_index)
             : sprite(sprite)
-            , dest_sprite_type(ff::sprite_type::unknown)
+            , dest_sprite_type(ff::dxgi::sprite_type::unknown)
             , source_rect(sprite->sprite_data().texture_rect().offset(0.5f, 0.5f).cast<int>())
             , dest_rect{}
             , sprite_index(sprite_index)
@@ -57,7 +57,7 @@ namespace
         }
 
         const ff::sprite_base* sprite;
-        ff::sprite_type dest_sprite_type;
+        ff::dxgi::sprite_type dest_sprite_type;
         ff::rect_int source_rect;
         ff::rect_int dest_rect;
         size_t sprite_index;
@@ -460,7 +460,7 @@ static bool copy_optimized_sprites(
         }
 
         ::original_texture_info& original_info = iter->second;
-        sprite.dest_sprite_type = ff::internal::get_sprite_type(*original_info.rgb_scratch, &sprite.source_rect.cast<size_t>());
+        sprite.dest_sprite_type = ff::dxgi::get_sprite_type(*original_info.rgb_scratch, &sprite.source_rect.cast<size_t>());
 
         bool status = SUCCEEDED(DirectX::CopyRectangle(
             *original_info.rgb_scratch->GetImages(),
@@ -665,7 +665,7 @@ static bool create_outline_sprites(
             ff::rect_float(ff::point_float{}, outline_texture->size().cast<float>()),
             sprite_data.handle() + ff::point_float(1, 1),
             sprite_data.scale(),
-            ff::sprite_type::unknown);
+            ff::dxgi::sprite_type::unknown);
     }
 
     return true;

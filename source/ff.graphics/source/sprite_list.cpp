@@ -207,7 +207,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
             ff::point_float top_left(pos.x + offset.x * i, pos.y + offset.y * i);
             ff::rect_float rect(top_left, top_left + size);
-            sprites.emplace_back(sprite_name.str(), texture_view, rect, handle, scale, ff::sprite_type::unknown);
+            sprites.emplace_back(sprite_name.str(), texture_view, rect, handle, scale, ff::dxgi::sprite_type::unknown);
         }
     }
 
@@ -272,7 +272,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
             std::string name;
             ff::rect_float texture_uv;
             ff::rect_float world;
-            ff::sprite_type type;
+            ff::dxgi::sprite_type type;
 
             if (ff::load(reader, texture_index) &&
                 ff::load(reader, name) &&

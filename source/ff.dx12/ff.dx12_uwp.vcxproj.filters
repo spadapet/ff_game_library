@@ -47,6 +47,9 @@
     <ClCompile Include="source\fence_values.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\target_access.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -96,6 +99,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\device_reset_priority.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_access.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

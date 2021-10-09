@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "sprite_data.h"
-#include "sprite_type.h"
 #include "texture.h"
 #include "texture_view_base.h"
 
@@ -8,18 +7,18 @@ ff::sprite_data::sprite_data()
     : view_(nullptr)
     , texture_uv_(0, 0, 0, 0)
     , world_(0, 0, 0, 0)
-    , type_(ff::sprite_type::unknown)
+    , type_(ff::dxgi::sprite_type::unknown)
 {}
 
 ff::sprite_data::sprite_data(
     ff::texture_view_base* view,
     ff::rect_float texture_uv,
     ff::rect_float world,
-    ff::sprite_type type)
+    ff::dxgi::sprite_type type)
     : view_(view)
     , texture_uv_(texture_uv)
     , world_(world)
-    , type_((type == ff::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
+    , type_((type == ff::dxgi::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
 {}
 
 ff::sprite_data::sprite_data(
@@ -27,11 +26,11 @@ ff::sprite_data::sprite_data(
     ff::rect_float rect,
     ff::point_float handle,
     ff::point_float scale,
-    ff::sprite_type type)
+    ff::dxgi::sprite_type type)
     : view_(view)
     , texture_uv_(rect / view->view_texture()->size().cast<float>())
     , world_(-handle * scale, (rect.size() - handle) * scale)
-    , type_((type == ff::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
+    , type_((type == ff::dxgi::sprite_type::unknown && view) ? view->view_texture()->sprite_type() : type)
 {}
 
 ff::sprite_data::operator bool() const
@@ -54,7 +53,7 @@ const ff::rect_float& ff::sprite_data::world() const
     return this->world_;
 }
 
-ff::sprite_type ff::sprite_data::type() const
+ff::dxgi::sprite_type ff::sprite_data::type() const
 {
     return this->type_;
 }

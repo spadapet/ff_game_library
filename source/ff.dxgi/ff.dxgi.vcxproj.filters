@@ -20,6 +20,9 @@
     <ClCompile Include="source\data_blob.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\texture_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -51,6 +54,33 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\depth_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_window_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_access_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_view_access_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_view_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_metadata_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_type.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_util.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

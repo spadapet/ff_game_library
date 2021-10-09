@@ -17,7 +17,11 @@
     <ClCompile Include="source\globals.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\object_cache.cpp" />
+    <ClCompile Include="source\target_access.cpp" />
+    <ClCompile Include="source\target_texture.cpp" />
+    <ClCompile Include="source\texture.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
+    <ClCompile Include="source\texture_view_access.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -30,7 +34,11 @@
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\object_cache.h" />
     <ClInclude Include="source\operators.h" />
+    <ClInclude Include="source\target_access.h" />
+    <ClInclude Include="source\target_texture.h" />
+    <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_util.h" />
+    <ClInclude Include="source\texture_view_access.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex_uwp.vcxproj">

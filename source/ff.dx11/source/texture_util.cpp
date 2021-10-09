@@ -2,7 +2,22 @@
 #include "globals.h"
 #include "texture_util.h"
 
-Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const DirectX::ScratchImage& data)
+size_t ff::dx11::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+{
+    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
+    assert(fixed_sample_count == sample_count);
+
+    UINT levels = 0;
+    while (fixed_sample_count > 1 && (FAILED(ff::dx11::device()->CheckMultisampleQualityLevels(
+        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels))
+    {
+        fixed_sample_count /= 2;
+    }
+
+    return std::max<size_t>(fixed_sample_count, 1);
+}
+
+Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::dx11::create_texture(const DirectX::ScratchImage& data)
 {
     Microsoft::WRL::ComPtr<ID3D11Resource> resource;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
@@ -18,7 +33,7 @@ Microsoft::WRL::ComPtr<ID3D11Texture2D> ff::internal::create_texture(const Direc
     return nullptr;
 }
 
-D3D_SRV_DIMENSION ff::internal::default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc)
+D3D_SRV_DIMENSION ff::dx11::default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc)
 {
     if (desc.ArraySize > 1)
     {
@@ -34,7 +49,7 @@ D3D_SRV_DIMENSION ff::internal::default_shader_dimension(const D3D11_TEXTURE2D_D
     }
 }
 
-D3D11_RTV_DIMENSION ff::internal::default_target_dimension(const D3D11_TEXTURE2D_DESC& desc)
+D3D11_RTV_DIMENSION ff::dx11::default_target_dimension(const D3D11_TEXTURE2D_DESC& desc)
 {
     if (desc.ArraySize > 1)
     {
@@ -50,7 +65,7 @@ D3D11_RTV_DIMENSION ff::internal::default_target_dimension(const D3D11_TEXTURE2D
     }
 }
 
-Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_shader_view(
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::dx11::create_shader_view(
     ID3D11Texture2D* texture,
     size_t array_start,
     size_t array_count,
@@ -65,7 +80,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_shader_vie
 
         D3D11_SHADER_RESOURCE_VIEW_DESC view_desc{};
         view_desc.Format = texture_desc.Format;
-        view_desc.ViewDimension = ff::internal::default_shader_dimension(texture_desc);
+        view_desc.ViewDimension = ff::dx11::default_shader_dimension(texture_desc);
 
         switch (view_desc.ViewDimension)
         {
@@ -97,7 +112,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::internal::create_shader_vie
     return view;
 }
 
-Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::internal::create_target_view(
+Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::dx11::create_target_view(
     ID3D11Texture2D* texture,
     size_t array_start,
     size_t array_count,
@@ -111,7 +126,7 @@ Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::internal::create_target_view(
 
         D3D11_RENDER_TARGET_VIEW_DESC view_desc{};
         view_desc.Format = texture_desc.Format;
-        view_desc.ViewDimension = ff::internal::default_target_dimension(texture_desc);
+        view_desc.ViewDimension = ff::dx11::default_target_dimension(texture_desc);
 
         switch (view_desc.ViewDimension)
         {

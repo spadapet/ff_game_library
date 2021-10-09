@@ -3,6 +3,7 @@
 #include "device_reset_priority.h"
 #include "device_state.h"
 #include "globals.h"
+#include "texture_util.h"
 
 static const DXGI_FORMAT DEPTH_STENCIL_FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
 

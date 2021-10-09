@@ -4,8 +4,6 @@
 #include "animation_player_base.h"
 #include "sprite_base.h"
 #include "sprite_data.h"
-#include "sprite_type.h"
-#include "texture_metadata.h"
 #include "texture_view_base.h"
 
 #if DXVER == 11
@@ -15,7 +13,7 @@ namespace ff
     class texture
         : private ff::dxgi::device_child_base
         , public ff::resource_object_base
-        , public ff::texture_metadata_base
+        , public ff::dxgi::texture_metadata_base
         , public ff::texture_view_base
         , public ff::sprite_base
         , public ff::animation_base
@@ -24,7 +22,7 @@ namespace ff
     public:
         texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
         texture(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
-        texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::sprite_type sprite_type = ff::sprite_type::unknown);
+        texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown);
         texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count);
         texture(texture&& other) noexcept;
         texture(const texture& other) = delete;
@@ -34,7 +32,7 @@ namespace ff
         texture& operator=(const texture& other) = delete;
         operator bool() const;
 
-        ff::sprite_type sprite_type() const;
+        ff::dxgi::sprite_type sprite_type() const;
         std::shared_ptr<DirectX::ScratchImage> data() const;
         std::shared_ptr<DirectX::ScratchImage> palette() const;
         ID3D11Texture2D* dx_texture() const;
@@ -82,7 +80,7 @@ namespace ff
         // device_child_base
         virtual bool reset() override;
 
-        void fix_sprite_data(ff::sprite_type sprite_type);
+        void fix_sprite_data(ff::dxgi::sprite_type sprite_type);
 
         mutable Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         mutable Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view_;

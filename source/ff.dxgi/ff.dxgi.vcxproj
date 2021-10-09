@@ -15,6 +15,7 @@
     <ClCompile Include="source\format_util.cpp" />
     <ClCompile Include="source\globals.cpp" />
     <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\texture_util.cpp" />
     <ClCompile Include="source\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +29,15 @@
     <ClInclude Include="source\globals.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\operators.h" />
+    <ClInclude Include="source\sprite_type.h" />
+    <ClInclude Include="source\target_access_base.h" />
+    <ClInclude Include="source\target_base.h" />
+    <ClInclude Include="source\target_window_base.h" />
+    <ClInclude Include="source\texture_base.h" />
+    <ClInclude Include="source\texture_metadata_base.h" />
+    <ClInclude Include="source\texture_util.h" />
+    <ClInclude Include="source\texture_view_access_base.h" />
+    <ClInclude Include="source\texture_view_base.h" />
     <ClInclude Include="source\utility.h" />
   </ItemGroup>
   <ItemGroup>

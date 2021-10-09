@@ -1,7 +1,8 @@
 #pragma once
 
-namespace ff::internal
+namespace ff::dx11
 {
+    size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
     Microsoft::WRL::ComPtr<ID3D11Texture2D> create_texture(const DirectX::ScratchImage& data);
     D3D_SRV_DIMENSION default_shader_dimension(const D3D11_TEXTURE2D_DESC& desc);
     D3D11_RTV_DIMENSION default_target_dimension(const D3D11_TEXTURE2D_DESC& desc);

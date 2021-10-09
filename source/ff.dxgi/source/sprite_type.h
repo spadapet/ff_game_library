@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff
+namespace ff::dxgi
 {
     enum class sprite_type
     {

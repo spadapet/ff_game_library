@@ -181,21 +181,6 @@ void ff::dx11::remove_device_child(ff::dxgi::device_child_base* child)
     }
 }
 
-size_t ff::dx11::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
-{
-    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
-    assert(fixed_sample_count == sample_count);
-
-    UINT levels = 0;
-    while (fixed_sample_count > 1 && (FAILED(ff::dx11::device()->CheckMultisampleQualityLevels(
-        format, static_cast<UINT>(fixed_sample_count), &levels)) || !levels))
-    {
-        fixed_sample_count /= 2;
-    }
-
-    return std::max<size_t>(fixed_sample_count, 1);
-}
-
 bool ff::dx11::reset(bool force)
 {
     if (!force)

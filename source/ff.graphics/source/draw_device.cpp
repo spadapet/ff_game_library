@@ -6,7 +6,6 @@
 #include "palette_data.h"
 #include "shader.h"
 #include "sprite_data.h"
-#include "sprite_type.h"
 #include "target_base.h"
 #include "texture.h"
 #include "texture_view_base.h"
@@ -382,10 +381,10 @@ static alpha_type get_alpha_type(const ff::sprite_data& data, const DirectX::XMF
     switch (::get_alpha_type(color, force_opaque))
     {
         case alpha_type::transparent:
-            return ff::flags::has(data.type(), ff::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
+            return ff::flags::has(data.type(), ff::dxgi::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
 
         case alpha_type::opaque:
-            return (ff::flags::has(data.type(), ff::sprite_type::transparent) && !force_opaque)
+            return (ff::flags::has(data.type(), ff::dxgi::sprite_type::transparent) && !force_opaque)
                 ? alpha_type::transparent
                 : alpha_type::opaque;
 
@@ -773,7 +772,7 @@ namespace
             ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette);
             if (alpha_type != ::alpha_type::invisible && sprite.view())
             {
-                bool use_palette = ff::flags::has(sprite.type(), ff::sprite_type::palette);
+                bool use_palette = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
                 ::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent && !this->target_requires_palette)
                     ? (use_palette ? ::geometry_bucket_type::palette_sprites : ::geometry_bucket_type::sprites_alpha)
                     : (use_palette ? ::geometry_bucket_type::palette_sprites : ::geometry_bucket_type::sprites);

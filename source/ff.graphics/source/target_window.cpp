@@ -306,7 +306,7 @@ bool ff::target_window::size(const ff::window_size& size)
 
 #if DXVER == 11
     if ((!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, IID_PPV_ARGS(&this->texture_)))) ||
-        (!this->view_ && (this->view_ = ff::internal::create_target_view(this->texture_.Get())) == nullptr))
+        (!this->view_ && (this->view_ = ff::dx11::create_target_view(this->texture_.Get())) == nullptr))
     {
         assert(false);
         return false;

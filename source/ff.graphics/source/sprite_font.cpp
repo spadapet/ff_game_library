@@ -357,7 +357,7 @@ bool ff::sprite_font::init_sprites()
 
     for (const sprite_info& info : sprite_infos)
     {
-        sprite_vector.emplace_back("", textures[info.texture_index], info.pos, info.handle, ff::point_float(1, 1), ff::sprite_type::unknown);
+        sprite_vector.emplace_back("", textures[info.texture_index], info.pos, info.handle, ff::point_float(1, 1), ff::dxgi::sprite_type::unknown);
     }
 
     for (const ff::sprite& sprite : sprite_vector)

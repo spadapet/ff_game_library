@@ -119,9 +119,6 @@
     <ClInclude Include="source\viewport.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\sprite_type.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\texture_util.h">
       <Filter>source</Filter>
     </ClInclude>

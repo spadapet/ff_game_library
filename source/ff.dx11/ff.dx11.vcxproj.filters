@@ -26,6 +26,18 @@
     <ClCompile Include="source\depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\target_access.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\target_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture_view_access.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -57,6 +69,18 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\depth.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_access.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_view_access.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

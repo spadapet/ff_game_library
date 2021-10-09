@@ -81,7 +81,7 @@ ID3D11ShaderResourceView* ff::texture_view::view() const
 {
     if (!this->view_)
     {
-        this->view_ = ff::internal::create_shader_view(this->texture_->dx_texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
+        this->view_ = ff::dx11::create_shader_view(this->texture_->dx_texture(), this->array_start_, this->array_count_, this->mip_start_, this->mip_count_);
     }
 
     return this->view_.Get();

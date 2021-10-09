@@ -28,7 +28,6 @@
 #include "../source/ff.graphics/source/sprite_list.h"
 #include "../source/ff.graphics/source/sprite_optimizer.h"
 #include "../source/ff.graphics/source/sprite_resource.h"
-#include "../source/ff.graphics/source/sprite_type.h"
 #include "../source/ff.graphics/source/target_base.h"
 #include "../source/ff.graphics/source/target_texture.h"
 #include "../source/ff.graphics/source/target_window.h"

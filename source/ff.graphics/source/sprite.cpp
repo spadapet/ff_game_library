@@ -8,7 +8,7 @@ ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture_view_ba
     , sprite_data_(this->view.get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
 {}
 
-ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::sprite_type type)
+ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type)
     : name_(std::move(name))
     , view(view)
     , sprite_data_(this->view.get(), rect, handle, scale, type)

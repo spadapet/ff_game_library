@@ -14,9 +14,10 @@
 #include "../source/ff.dx12/source/init.h"
 #include "../source/ff.dx12/source/mem_allocator.h"
 #include "../source/ff.dx12/source/mem_range.h"
-#include "../source/ff.dx12/source/resource.h"
 #include "../source/ff.dx12/source/queue.h"
 #include "../source/ff.dx12/source/queues.h"
+#include "../source/ff.dx12/source/resource.h"
+#include "../source/ff.dx12/source/target_access.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "d3dcompiler.lib")

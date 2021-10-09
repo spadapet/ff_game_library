@@ -1,4 +1,7 @@
 #include "pch.h"
+
+#if 0
+
 #include "graphics.h"
 #include "target_texture.h"
 #include "texture.h"
@@ -22,7 +25,7 @@ ff::target_texture::target_texture(
     , array_count(array_count ? array_count : texture->array_size() - array_start)
     , mip_level(mip_level)
 {
-    this->view_ = ff::dx11::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
+    this->view_ = ff::internal::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
 
     ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
@@ -88,3 +91,5 @@ bool ff::target_texture::reset()
     *this = target_texture(this->texture_, this->array_start, this->array_count, this->mip_level);
     return *this;
 }
+
+#endif

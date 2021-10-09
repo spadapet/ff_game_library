@@ -3,7 +3,6 @@
 #include "graphics.h"
 #include "png_image.h"
 #include "sprite_data.h"
-#include "sprite_type.h"
 #include "texture.h"
 #include "texture_metadata.h"
 #include "texture_util.h"
@@ -13,7 +12,7 @@
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     this->data_ = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
-    this->fix_sprite_data(this->data_ ? ff::internal::get_sprite_type(*this->data_) : ff::sprite_type::unknown);
+    this->fix_sprite_data(this->data_ ? ff::dxgi::get_sprite_type(*this->data_) : ff::dxgi::sprite_type::unknown);
 
     ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
@@ -38,35 +37,35 @@ ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, s
         assert(SUCCEEDED(hr));
     }
 
-    const ff::sprite_type sprite_type = ff::dxgi::palette_format(format)
-        ? ff::sprite_type::opaque_palette
-        : (ff::dxgi::has_alpha(format) ? ff::sprite_type::transparent : ff::sprite_type::opaque);
+    const ff::dxgi::sprite_type sprite_type = ff::dxgi::palette_format(format)
+        ? ff::dxgi::sprite_type::opaque_palette
+        : (ff::dxgi::has_alpha(format) ? ff::dxgi::sprite_type::transparent : ff::dxgi::sprite_type::opaque);
 
     this->fix_sprite_data(sprite_type);
 
     ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
-ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::sprite_type sprite_type)
+ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::dxgi::sprite_type sprite_type)
     : data_(data)
     , palette_(palette)
 {
-    this->fix_sprite_data(sprite_type == ff::sprite_type::unknown && this->data_ ? ff::internal::get_sprite_type(*this->data_) : sprite_type);
+    this->fix_sprite_data(sprite_type == ff::dxgi::sprite_type::unknown && this->data_ ? ff::dxgi::get_sprite_type(*this->data_) : sprite_type);
 
     ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 }
 
 ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
 {
-    ff::sprite_type sprite_type = ff::sprite_type::unknown;
+    ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown;
 
     std::shared_ptr<DirectX::ScratchImage> data = other.data();
     if (data)
     {
-        this->data_ = ff::internal::convert_texture_data(data, new_format, new_mip_count);
+        this->data_ = ff::dxgi::convert_texture_data(data, new_format, new_mip_count);
         if (this->data_)
         {
-            sprite_type = (this->data_ == data) ? other.sprite_type() : ff::internal::get_sprite_type(*this->data_);
+            sprite_type = (this->data_ == data) ? other.sprite_type() : ff::dxgi::get_sprite_type(*this->data_);
         }
     }
 
@@ -212,7 +211,7 @@ ff::texture::operator bool() const
     return this->texture_ || (this->data_ && this->data_->GetImageCount());
 }
 
-ff::sprite_type ff::texture::sprite_type() const
+ff::dxgi::sprite_type ff::texture::sprite_type() const
 {
     return this->sprite_data_.type();
 }
@@ -245,7 +244,7 @@ ID3D11Texture2D* ff::texture::dx_texture() const
 {
     if (!this->texture_ && this->data_)
     {
-        this->texture_ = ff::internal::create_texture(*this->data_);
+        this->texture_ = ff_dx::create_texture(*this->data_);
     }
 
     return this->texture_.Get();
@@ -341,7 +340,7 @@ bool ff::texture::resource_save_to_file(const std::filesystem::path& directory_p
     {
         if (!ff::dxgi::palette_format(data->GetMetadata().format))
         {
-            data = ff::internal::convert_texture_data(data, ff::dxgi::DEFAULT_FORMAT, this->mip_count());
+            data = ff::dxgi::convert_texture_data(data, ff::dxgi::DEFAULT_FORMAT, this->mip_count());
         }
 
         for (size_t i = 0; i < data->GetImageCount(); i++)
@@ -378,7 +377,7 @@ ID3D11ShaderResourceView* ff::texture::view() const
 {
     if (!this->view_)
     {
-        this->view_ = ff::internal::create_shader_view(this->dx_texture());
+        this->view_ = ff_dx::create_shader_view(this->dx_texture());
     }
 
     return this->view_.Get();
@@ -447,7 +446,7 @@ const ff::animation_base* ff::texture::animation() const
 
 bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
-    dict.set_enum<ff::sprite_type>("sprite_type", this->sprite_type());
+    dict.set_enum<ff::dxgi::sprite_type>("sprite_type", this->sprite_type());
 
     DirectX::Blob blob;
     std::shared_ptr<DirectX::ScratchImage> data = this->data();
@@ -479,7 +478,7 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
     return true;
 }
 
-void ff::texture::fix_sprite_data(ff::sprite_type sprite_type)
+void ff::texture::fix_sprite_data(ff::dxgi::sprite_type sprite_type)
 {
     this->sprite_data_ = ff::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
@@ -521,7 +520,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
 
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_from_cache(const ff::dict& dict) const
 {
-    ff::sprite_type sprite_type = dict.get_enum<ff::sprite_type>("sprite_type");
+    ff::dxgi::sprite_type sprite_type = dict.get_enum<ff::dxgi::sprite_type>("sprite_type");
 
     std::shared_ptr<ff::data_base> palette_data = dict.get<ff::data_base>("palette");
     std::shared_ptr<ff::data_base> data = dict.get<ff::data_base>("data");
