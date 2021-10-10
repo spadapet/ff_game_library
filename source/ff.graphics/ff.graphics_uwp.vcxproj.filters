@@ -86,13 +86,7 @@
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\target_texture.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\target_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\texture.cpp">
@@ -197,22 +191,7 @@
     <ClInclude Include="source\random_sprite.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\target_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_texture.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\target_window.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_window_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\texture_view.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\texture_view_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture.h">

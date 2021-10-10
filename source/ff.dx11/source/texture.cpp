@@ -5,6 +5,12 @@
 #include "texture.h"
 #include "texture_util.h"
 
+ff::dx11::texture::texture()
+    : sprite_type_(ff::dxgi::sprite_type::unknown)
+{
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
+}
+
 ff::dx11::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
     : sprite_type_(ff::dxgi::sprite_type::unknown)
 {
@@ -59,15 +65,27 @@ ff::dx11::texture::~texture()
 
 ff::dx11::texture& ff::dx11::texture::operator=(texture&& other) noexcept
 {
+    return this->assign(std::move(other));
+}
+
+ff::dx11::texture& ff::dx11::texture::assign(texture&& other) noexcept
+{
     if (this != &other)
     {
         this->texture_ = std::move(other.texture_);
         this->view_ = std::move(other.view_);
         this->data_ = std::move(other.data_);
         this->sprite_type_ = std::move(other.sprite_type_);
+
+        this->on_reset();
     }
 
     return *this;
+}
+
+ff::dx11::texture&& ff::dx11::texture::move_base()
+{
+    return std::move(*this);
 }
 
 ff::point_int ff::dx11::texture::size() const

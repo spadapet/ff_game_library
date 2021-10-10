@@ -31,3 +31,9 @@ using ID3D12GraphicsCommandListX = typename ID3D12GraphicsCommandList6;
 using ID3D12HeapX = typename ID3D12Heap1;
 using ID3D12PipelineStateX = typename ID3D12PipelineState;
 using ID3D12ResourceX = typename ID3D12Resource2;
+
+namespace ff::dx12
+{
+    using D3D_INPUT_ELEMENT_DESC = typename D3D12_INPUT_ELEMENT_DESC;
+    static const D3D12_INPUT_CLASSIFICATION D3D_IPVA = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+}

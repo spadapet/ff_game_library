@@ -38,6 +38,13 @@ namespace ff::dx11
         // texture_view_access
         virtual ID3D11ShaderResourceView* dx11_texture_view() const override;
 
+    protected:
+        texture();
+
+        texture& assign(texture&& other) noexcept;
+        texture&& move_base();
+        virtual void on_reset();
+
     private:
         // device_child_base
         virtual bool reset() override;

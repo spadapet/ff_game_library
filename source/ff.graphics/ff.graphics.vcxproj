@@ -22,9 +22,7 @@
     <ClCompile Include="source\draw_base.cpp" />
     <ClCompile Include="source\draw_ptr.cpp" />
     <ClCompile Include="source\draw_device.cpp" />
-    <ClCompile Include="source\target_texture.cpp" />
     <ClCompile Include="source\target_window.cpp" />
-    <ClCompile Include="source\texture_view.cpp" />
     <ClCompile Include="source\font_file.cpp" />
     <ClCompile Include="source\graphics.cpp" />
     <ClCompile Include="source\init.cpp" />
@@ -58,12 +56,7 @@
     <ClInclude Include="source\color.h" />
     <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\draw_device.h" />
-    <ClInclude Include="source\target_base.h" />
-    <ClInclude Include="source\target_texture.h" />
-    <ClInclude Include="source\target_window_base.h" />
     <ClInclude Include="source\target_window.h" />
-    <ClInclude Include="source\texture_view.h" />
-    <ClInclude Include="source\texture_view_base.h" />
     <ClInclude Include="source\font_file.h" />
     <ClInclude Include="source\graphics.h" />
     <ClInclude Include="source\init.h" />

@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "graphics.h"
-#include "target_window_base.h"
 
 namespace
 {
@@ -25,8 +24,8 @@ static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
 static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> write_font_loader;
 
 static std::mutex graphics_mutex;
-static ff::target_window_base* defer_full_screen_target;
-static std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_sizes;
+static ff::dxgi::target_window_base* defer_full_screen_target;
+static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
 
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> create_write_factory()
@@ -81,7 +80,7 @@ static void flush_graphics_commands()
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
         {
             bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::target_window_base* target = ::defer_full_screen_target;
+            ff::dxgi::target_window_base* target = ::defer_full_screen_target;
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
             lock.unlock();
 
@@ -100,7 +99,7 @@ static void flush_graphics_commands()
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
-            std::vector<std::pair<ff::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
+            std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
             lock.unlock();
 
@@ -117,14 +116,14 @@ static void post_flush_graphics_commands()
     ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
 }
 
-void ff::graphics::defer::set_full_screen_target(ff::target_window_base* target)
+void ff::graphics::defer::set_full_screen_target(ff::dxgi::target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
     assert(!::defer_full_screen_target || !target);
     ::defer_full_screen_target = target;
 }
 
-void ff::graphics::defer::remove_target(ff::target_window_base* target)
+void ff::graphics::defer::remove_target(ff::dxgi::target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
     assert(target);
@@ -144,7 +143,7 @@ void ff::graphics::defer::remove_target(ff::target_window_base* target)
     }
 }
 
-void ff::graphics::defer::resize_target(ff::target_window_base* target, const ff::window_size& size)
+void ff::graphics::defer::resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size)
 {
     assert(target);
     if (target)

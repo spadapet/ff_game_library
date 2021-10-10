@@ -41,16 +41,10 @@
     <ClCompile Include="source\texture_metadata.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\texture_view.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\animation_player.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\sprite_data.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\target_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\target_window.cpp">
@@ -143,9 +137,6 @@
     <ClInclude Include="source\texture_metadata.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\texture_view.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\animation_base.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -164,19 +155,7 @@
     <ClInclude Include="source\animation_player_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\texture_view_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\palette_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_window_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_texture.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\target_window.h">

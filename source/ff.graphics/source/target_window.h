@@ -1,13 +1,8 @@
 #pragma once
 
-#include "target_base.h"
-#include "target_window_base.h"
-
 namespace ff
 {
-    class target_window
-        : public ff::target_window_base
-        , private ff::dxgi::device_child_base
+    class target_window : public ff::dxgi::target_window_base, public ff_dx::target_access, private ff::dxgi::device_child_base
     {
     public:
         target_window();
@@ -21,20 +16,23 @@ namespace ff
         operator bool() const;
 
         // target_base
+        virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool post_render(ff::dxgi::command_context_base& context) override;
+        virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
+        virtual ff::dxgi::target_access_base& target_access() override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
+
+        // target_access
 #if DXVER == 11
-        virtual ID3D11Texture2D* texture() override;
-        virtual ID3D11RenderTargetView* view() override;
+        virtual ID3D11Texture2D* dx11_target_texture() override;
+        virtual ID3D11RenderTargetView* dx11_target_view() override;
 #elif DXVER == 12
         virtual ID3D12ResourceX* texture() override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE view() override;
 #endif
 
         // target_window_base
-        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool post_render() override;
-        virtual ff::signal_sink<ff::target_base*, uint64_t>& render_presented() override;
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
         virtual bool allow_full_screen() const override;
@@ -54,7 +52,7 @@ namespace ff
         ff::window* window;
         ff::window_size cached_size;
         ff::signal<ff::window_size> size_changed_;
-        ff::signal<ff::target_base*, uint64_t> render_presented_;
+        ff::signal<ff::dxgi::target_base*> render_presented_;
         ff::signal_connection window_message_connection;
         Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
 #if DXVER == 11

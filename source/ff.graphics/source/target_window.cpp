@@ -67,32 +67,38 @@ ff::window_size ff::target_window::size() const
 
 #if DXVER == 11
 
-ID3D11Texture2D* ff::target_window::texture()
+ID3D11Texture2D* ff::target_window::dx11_target_texture()
 {
     return this->texture_.Get();
 }
 
-ID3D11RenderTargetView* ff::target_window::view()
+ID3D11RenderTargetView* ff::target_window::dx11_target_view()
 {
     return this->view_.Get();
 }
 
-bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::target_window::pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff_dx::get_device_state().clear_target(this->view(), *clear_color);
+        ff_dx::device_state::get(context).clear_target(this->dx11_target_view(), *clear_color);
     }
 
     return true;
 }
 
-bool ff::target_window::post_render()
+bool ff::target_window::post_render(ff::dxgi::command_context_base& context)
 {
-    ff_dx::get_device_state().set_targets(nullptr, 0, nullptr);
+    ff_dx::device_state::get(context).set_targets(nullptr, 0, nullptr);
 
     HRESULT hr = *this ? this->swap_chain->Present(1, 0) : E_FAIL;
-    return hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
+    if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
+    {
+        this->render_presented_.notify(this);
+        return true;
+    }
+
+    return false;
 }
 
 void ff::target_window::before_resize()
@@ -154,7 +160,7 @@ bool ff::target_window::post_render()
         {
             uint64_t fence_value = this->fence_values[this->back_buffer_index] = ff::graphics::dx12_direct_queue().signal_fence();
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-            this->render_presented_.notify(this, fence_value);
+            this->render_presented_.notify(this);
         }
         else
         {
@@ -183,9 +189,14 @@ void ff::target_window::internal_reset()
 
 #endif
 
-ff::signal_sink<ff::target_base*, uint64_t>& ff::target_window::render_presented()
+ff::signal_sink<ff::dxgi::target_base*>& ff::target_window::render_presented()
 {
     return this->render_presented_;
+}
+
+ff::dxgi::target_access_base& ff::target_window::target_access()
+{
+    return *this;
 }
 
 bool ff::target_window::size(const ff::window_size& size)

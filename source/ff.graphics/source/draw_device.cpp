@@ -6,9 +6,7 @@
 #include "palette_data.h"
 #include "shader.h"
 #include "sprite_data.h"
-#include "target_base.h"
 #include "texture.h"
-#include "texture_view_base.h"
 #include "transform.h"
 #include "vertex.h"
 
