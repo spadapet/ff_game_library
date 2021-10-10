@@ -210,46 +210,47 @@ bool ff::dx11::texture::update(
     const ff::point_int& pos,
     const DirectX::Image& data)
 {
-    if (this->format() == data.format)
+    if (this->format() != data.format)
     {
-        if (!this->data_)
-        {
-            this->data_ = this->data();
-
-            if (!this->data_)
-            {
-                assert(false);
-                return false;
-            }
-        }
-
-        if (FAILED(DirectX::CopyRectangle(data,
-            DirectX::Rect(0, 0, data.width, data.height),
-            *this->data_->GetImage(mip_index, array_index, 0),
-            DirectX::TEX_FILTER_DEFAULT,
-            static_cast<size_t>(pos.x),
-            static_cast<size_t>(pos.y))))
-        {
-            assert(false);
-        }
-
-        if (this->texture_)
-        {
-            CD3D11_BOX box(static_cast<UINT>(pos.x), static_cast<UINT>(pos.y), 0, static_cast<UINT>(pos.x + data.width), static_cast<UINT>(pos.y + data.height), 1);
-            UINT subresource = ::D3D11CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), static_cast<UINT>(this->mip_count()));
-            ID3D11Texture2D* texture = this->texture_.Get();
-
-            ff::thread_dispatch::get_game()->send([texture, subresource, box, &data, &context]()
-                {
-                    ff::dx11::device_state::get(context).update_subresource(
-                        texture, subresource, &box, data.pixels, static_cast<UINT>(data.rowPitch), 0);
-                });
-        }
-
-        return true;
+        assert(false);
+        return false;
     }
 
-    return false;
+    if (!this->data_)
+    {
+        this->data_ = this->data();
+
+        if (!this->data_)
+        {
+            assert(false);
+            return false;
+        }
+    }
+
+    if (FAILED(DirectX::CopyRectangle(data,
+        DirectX::Rect(0, 0, data.width, data.height),
+        *this->data_->GetImage(mip_index, array_index, 0),
+        DirectX::TEX_FILTER_DEFAULT,
+        static_cast<size_t>(pos.x),
+        static_cast<size_t>(pos.y))))
+    {
+        assert(false);
+    }
+
+    if (this->texture_)
+    {
+        CD3D11_BOX box(static_cast<UINT>(pos.x), static_cast<UINT>(pos.y), 0, static_cast<UINT>(pos.x + data.width), static_cast<UINT>(pos.y + data.height), 1);
+        UINT subresource = ::D3D11CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), static_cast<UINT>(this->mip_count()));
+        ID3D11Texture2D* texture = this->texture_.Get();
+
+        ff::thread_dispatch::get_game()->send([texture, subresource, box, &data, &context]()
+            {
+                ff::dx11::device_state::get(context).update_subresource(
+                    texture, subresource, &box, data.pixels, static_cast<UINT>(data.rowPitch), 0);
+            });
+    }
+
+    return true;
 }
 
 bool ff::dx11::texture::reset()

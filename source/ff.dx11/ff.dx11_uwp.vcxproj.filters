@@ -38,6 +38,9 @@
     <ClCompile Include="source\texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\texture_view.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -81,6 +84,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\texture_view.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

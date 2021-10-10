@@ -21,6 +21,7 @@
     <ClCompile Include="source\target_texture.cpp" />
     <ClCompile Include="source\texture.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
+    <ClCompile Include="source\texture_view.cpp" />
     <ClCompile Include="source\texture_view_access.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,6 +39,7 @@
     <ClInclude Include="source\target_texture.h" />
     <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_util.h" />
+    <ClInclude Include="source\texture_view.h" />
     <ClInclude Include="source\texture_view_access.h" />
   </ItemGroup>
   <ItemGroup>

@@ -14,6 +14,7 @@
 #include "../source/ff.dx11/source/target_texture.h"
 #include "../source/ff.dx11/source/texture.h"
 #include "../source/ff.dx11/source/texture_util.h"
+#include "../source/ff.dx11/source/texture_view.h"
 #include "../source/ff.dx11/source/texture_view_access.h"
 
 #pragma comment(lib, "d3d11.lib")
