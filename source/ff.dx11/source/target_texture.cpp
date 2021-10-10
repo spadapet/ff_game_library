@@ -1,22 +1,13 @@
 #include "pch.h"
-
-#if 0
-
-#include "graphics.h"
+#include "device_reset_priority.h"
+#include "device_state.h"
+#include "globals.h"
 #include "target_texture.h"
 #include "texture.h"
 #include "texture_util.h"
 
-ff::target_texture::target_texture(
-    ff::texture&& texture,
-    size_t array_start,
-    size_t array_count,
-    size_t mip_level)
-    : target_texture(std::make_shared<ff::texture>(std::move(texture)), array_start, array_count, mip_level)
-{}
-
-ff::target_texture::target_texture(
-    const std::shared_ptr<ff::texture>& texture,
+ff::dx11::target_texture::target_texture(
+    const std::shared_ptr<ff::dx11::texture>& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_level)
@@ -25,71 +16,74 @@ ff::target_texture::target_texture(
     , array_count(array_count ? array_count : texture->array_size() - array_start)
     , mip_level(mip_level)
 {
-    this->view_ = ff::internal::create_target_view(texture->dx_texture(), this->array_start, this->array_count, this->mip_level);
+    this->view_ = ff::dx11::create_target_view(texture->dx11_texture(), this->array_start, this->array_count, this->mip_level);
 
-    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
 }
 
-ff::target_texture::~target_texture()
+ff::dx11::target_texture::~target_texture()
 {
-    ff_dx::remove_device_child(this);
+    ff::dx11::remove_device_child(this);
 }
 
-ff::target_texture::operator bool() const
+ff::dx11::target_texture::operator bool() const
 {
     return this->view_;
 }
 
-const std::shared_ptr<ff::texture>& ff::target_texture::shared_texture() const
+const std::shared_ptr<ff::dx11::texture>& ff::dx11::target_texture::shared_texture() const
 {
     return this->texture_;
 }
 
-bool ff::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx11::target_texture::pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff_dx::get_device_state().clear_target(this->view(), *clear_color);
+        ff::dx11::device_state::get(context).clear_target(this->dx11_target_view(), *clear_color);
     }
 
     return true;
 }
 
-bool ff::target_texture::post_render()
+bool ff::dx11::target_texture::post_render(ff::dxgi::command_context_base& context)
 {
-    this->render_presented_.notify(this, 0);
+    this->render_presented_.notify(this);
     return true;
 }
 
-ff::signal_sink<ff::target_base*, uint64_t>& ff::target_texture::render_presented()
+ff::signal_sink<ff::dxgi::target_base*>& ff::dx11::target_texture::render_presented()
 {
     return this->render_presented_;
 }
 
-DXGI_FORMAT ff::target_texture::format() const
+ff::dxgi::target_access_base& ff::dx11::target_texture::target_access()
+{
+    return *this;
+}
+
+DXGI_FORMAT ff::dx11::target_texture::format() const
 {
     return this->texture_->format();
 }
 
-ff::window_size ff::target_texture::size() const
+ff::window_size ff::dx11::target_texture::size() const
 {
     return ff::window_size{ this->texture_->size(), 1.0, DMDO_DEFAULT, DMDO_DEFAULT };
 }
 
-ID3D11Texture2D* ff::target_texture::texture()
+ID3D11Texture2D* ff::dx11::target_texture::dx11_target_texture()
 {
-    return this->texture_->dx_texture();
+    return this->texture_->dx11_texture();
 }
 
-ID3D11RenderTargetView* ff::target_texture::view()
+ID3D11RenderTargetView* ff::dx11::target_texture::dx11_target_view()
 {
     return this->view_.Get();
 }
 
-bool ff::target_texture::reset()
+bool ff::dx11::target_texture::reset()
 {
-    *this = target_texture(this->texture_, this->array_start, this->array_count, this->mip_level);
+    *this = ff::dx11::target_texture(this->texture_, this->array_start, this->array_count, this->mip_level);
     return *this;
 }
-
-#endif

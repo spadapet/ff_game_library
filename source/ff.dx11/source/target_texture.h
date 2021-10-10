@@ -1,18 +1,15 @@
 #pragma once
 
-#if 0
+#include "target_access.h"
 
 namespace ff::dx11
 {
     class texture;
 
-    class target_texture
-        : public ff::target_base
-        , private ff::dxgi::device_child_base
+    class target_texture : public ff::dxgi::target_base, public ff::dx11::target_access, private ff::dxgi::device_child_base
     {
     public:
-        target_texture(ff::texture&& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);
-        target_texture(const std::shared_ptr<ff::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);
+        target_texture(const std::shared_ptr<ff::dx11::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);
         target_texture(target_texture&& other) noexcept = default;
         target_texture(const target_texture& other) = delete;
         virtual ~target_texture() override;
@@ -21,32 +18,29 @@ namespace ff::dx11
         target_texture& operator=(const target_texture & other) = delete;
         operator bool() const;
 
-        const std::shared_ptr<ff::texture>& shared_texture() const;
+        const std::shared_ptr<ff::dx11::texture>& shared_texture() const;
 
         // target_base
-        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool post_render() override;
-        virtual ff::signal_sink<ff::target_base*, uint64_t>& render_presented() override;
+        virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool post_render(ff::dxgi::command_context_base& context) override;
+        virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
+        virtual ff::dxgi::target_access_base& target_access() override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
-#if DXVER == 11
-        virtual ID3D11Texture2D* texture() override;
-        virtual ID3D11RenderTargetView* view() override;
-#endif
+
+        // target_access
+        virtual ID3D11Texture2D* dx11_target_texture() override;
+        virtual ID3D11RenderTargetView* dx11_target_view() override;
 
     private:
         // device_child_base
         virtual bool reset() override;
 
-#if DXVER == 11
-        std::shared_ptr<ff::texture> texture_;
-#endif
+        std::shared_ptr<ff::dx11::texture> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
-        ff::signal<ff::target_base*, uint64_t> render_presented_;
+        ff::signal<ff::dxgi::target_base*> render_presented_;
         size_t array_start;
         size_t array_count;
         size_t mip_level;
     };
 }
-
-#endif
