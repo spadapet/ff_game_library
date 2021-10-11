@@ -22,9 +22,10 @@ namespace ff
         texture(texture&& other) noexcept;
         texture(const texture& other) = delete;
 
+        static texture& get(ff::dxgi::texture_base& other);
+        static const texture& get(const ff::dxgi::texture_base& other);
         texture& operator=(texture&& other) noexcept;
         texture& operator=(const texture& other) = delete;
-        operator bool() const;
 
         std::shared_ptr<DirectX::ScratchImage> palette() const;
 

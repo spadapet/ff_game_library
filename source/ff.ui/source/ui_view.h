@@ -12,7 +12,7 @@ namespace ff
         void destroy();
         virtual void advance();
         virtual void pre_render();
-        virtual void render(ff::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect = nullptr);
+        virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect = nullptr);
 
         Noesis::IView* internal_view() const;
         Noesis::FrameworkElement* content() const;
@@ -20,7 +20,7 @@ namespace ff
         Noesis::Cursor cursor() const;
         void cursor(Noesis::Cursor cursor);
         void size(const ff::window_size& value);
-        void size(ff::target_window_base& target);
+        void size(ff::dxgi::target_window_base& target);
         ff::point_float screen_to_content(ff::point_float pos) const;
         ff::point_float content_to_screen(ff::point_float pos) const;
 
@@ -37,7 +37,7 @@ namespace ff
         bool block_input_below() const;
 
     protected:
-        virtual bool render_begin(ff::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect);
+        virtual bool render_begin(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect);
 
     private:
         DirectX::XMMATRIX* matrix;

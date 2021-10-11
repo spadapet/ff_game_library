@@ -25,8 +25,8 @@ namespace ff::test::graphics
             Assert::IsTrue(texture->array_size() == 1);
             Assert::IsTrue(texture->sample_count() == 1);
             Assert::IsTrue(texture->mip_count() == 4);
-            Assert::IsNotNull(texture->dx_texture());
-            Assert::IsNotNull(texture->view());
+            Assert::IsNotNull(texture->dx11_texture());
+            Assert::IsNotNull(texture->dx11_texture_view());
             Assert::IsNotNull(texture->animation());
         }
 

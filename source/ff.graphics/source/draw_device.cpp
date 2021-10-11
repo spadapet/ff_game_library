@@ -524,7 +524,7 @@ static ff_dx::fixed_state create_pre_multiplied_alpha_draw_state()
     return state;
 }
 
-static ff::rect_float get_rotated_view_rect(ff::target_base& target, const ff::rect_float& view_rect)
+static ff::rect_float get_rotated_view_rect(ff::dxgi::target_base& target, const ff::rect_float& view_rect)
 {
     ff::window_size size = target.size();
     ff::rect_float rotated_view_rect;
@@ -576,7 +576,7 @@ static DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect)
         0, ::MAX_RENDER_DEPTH);
 }
 
-static DirectX::XMMATRIX get_orientation_matrix(ff::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
+static DirectX::XMMATRIX get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
 {
     DirectX::XMMATRIX orientation_matrix;
 
@@ -628,7 +628,7 @@ static D3D11_VIEWPORT get_viewport(const ff::rect_float& view_rect)
     return viewport;
 }
 
-static bool setup_view_matrix(ff::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
+static bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
 {
     if (world_rect.width() != 0 && world_rect.height() != 0 && view_rect.width() > 0 && view_rect.height() > 0)
     {
@@ -642,9 +642,9 @@ static bool setup_view_matrix(ff::target_base& target, const ff::rect_float& vie
     return false;
 }
 
-static bool setup_render_target(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
+static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
 {
-    ID3D11RenderTargetView* target_view = target.view();
+    ID3D11RenderTargetView* target_view = ff_dx::target_access::get(target).dx11_target_view();
     if (target_view)
     {
         ID3D11DepthStencilView* depth_view = nullptr;
@@ -726,7 +726,7 @@ namespace
             return this->state != ::draw_device_internal::state_t::invalid;
         }
 
-        virtual ff::draw_ptr begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
+        virtual ff::draw_ptr begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
         {
             this->end_draw();
 
@@ -1304,7 +1304,7 @@ namespace
             }
         }
 
-        void init_geometry_constant_buffers_0(ff::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
+        void init_geometry_constant_buffers_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
         {
             this->geometry_constants_0.view_size = view_rect.size() / static_cast<float>(target.size().dpi_scale);
             this->geometry_constants_0.view_scale = world_rect.size() / this->geometry_constants_0.view_size;
@@ -1374,7 +1374,7 @@ namespace
         {
             if (this->textures_using_palette_count && !this->palette_to_index.empty())
             {
-                ID3D11Resource* dest_resource = this->palette_texture->dx_texture();
+                ID3D11Resource* dest_resource = this->palette_texture->dx11_texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_to_index)
@@ -1390,7 +1390,7 @@ namespace
                         if (this->palette_texture_hashes[index] != row_hash)
                         {
                             this->palette_texture_hashes[index] = row_hash;
-                            ID3D11Resource* src_resource = palette_data->texture()->dx_texture();
+                            ID3D11Resource* src_resource = palette_data->texture()->dx11_texture();
                             box.top = static_cast<UINT>(palette_row);
                             box.bottom = box.top + 1;
                             ff_dx::get_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
@@ -1401,7 +1401,7 @@ namespace
 
             if ((this->textures_using_palette_count || this->target_requires_palette) && !this->palette_remap_to_index.empty())
             {
-                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->dx_texture();
+                ID3D11Resource* dest_remap_resource = this->palette_remap_texture->dx11_texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_remap_to_index)
@@ -1437,7 +1437,7 @@ namespace
                 std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES> textures;
                 for (size_t i = 0; i < this->texture_count; i++)
                 {
-                    textures[i] = this->textures[i]->view();
+                    textures[i] = ff_dx::texture_view::get(*this->textures[i]).dx11_texture_view();
                 }
 
                 ff_dx::get_device_state().set_resources_ps(textures.data(), 0, this->texture_count);
@@ -1448,7 +1448,7 @@ namespace
                 std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
                 for (size_t i = 0; i < this->textures_using_palette_count; i++)
                 {
-                    textures_using_palette[i] = this->textures_using_palette[i]->view();
+                    textures_using_palette[i] = ff_dx::texture_view::get(*this->textures_using_palette[i]).dx11_texture_view();
                 }
 
                 ff_dx::get_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
@@ -1458,8 +1458,8 @@ namespace
             {
                 std::array<ID3D11ShaderResourceView*, 2> palettes =
                 {
-                    (this->textures_using_palette_count ? this->palette_texture->view() : nullptr),
-                    this->palette_remap_texture->view(),
+                    (this->textures_using_palette_count ? ff_dx::texture_view::get(*this->palette_texture).dx11_texture_view() : nullptr),
+                    ff_dx::texture_view::get(*this->palette_remap_texture).dx11_texture_view(),
                 };
 
                 ff_dx::get_device_state().set_resources_ps(palettes.data(), ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE, palettes.size());
@@ -1636,7 +1636,7 @@ namespace
             return this->world_matrix_index;
         }
 
-        unsigned int get_texture_index_no_flush(const ff::texture_view_base& texture_view, bool use_palette)
+        unsigned int get_texture_index_no_flush(const ff::dxgi::texture_view_base& texture_view, bool use_palette)
         {
             if (use_palette)
             {
@@ -1770,7 +1770,7 @@ namespace
             return this->palette_remap_stack.back().first[color];
         }
 
-        void get_world_matrix_and_texture_index(const ff::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
+        void get_world_matrix_and_texture_index(const ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
         {
             model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
             texture_index = this->get_texture_index_no_flush(texture_view, use_palette);
@@ -1782,7 +1782,7 @@ namespace
             }
         }
 
-        void get_world_matrix_and_texture_indexes(ff::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
+        void get_world_matrix_and_texture_indexes(ff::dxgi::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
         {
             model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
             bool flush = (model_index == ff::constants::invalid_dword);
@@ -1858,8 +1858,8 @@ namespace
         unsigned int world_matrix_index;
 
         // Textures
-        std::array<const ff::texture_view_base*, ::MAX_TEXTURES> textures;
-        std::array<const ff::texture_view_base*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
+        std::array<const ff::dxgi::texture_view_base*, ::MAX_TEXTURES> textures;
+        std::array<const ff::dxgi::texture_view_base*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
         size_t texture_count;
         size_t textures_using_palette_count;
 
@@ -1894,7 +1894,7 @@ std::unique_ptr<ff::draw_device> ff::draw_device::create()
     return std::make_unique<::draw_device_internal>();
 }
 
-ff::draw_ptr ff::draw_device::begin_draw(ff::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
+ff::draw_ptr ff::draw_device::begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }

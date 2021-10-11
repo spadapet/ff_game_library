@@ -229,7 +229,22 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
 void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data)
 {
     ff::texture* texture2 = ff::internal::ui::texture::get(texture)->internal_texture().get();
-    texture2->update(0, static_cast<size_t>(level), ff::rect_t<uint32_t>(x, y, x + width, y + height).cast<int>(), data, texture2->format(), true);
+    ff::point_int pos(static_cast<int>(x), static_cast<int>(y));
+
+    size_t row_pitch, slice_pitch;
+    DirectX::ComputePitch(texture2->format(), static_cast<size_t>(width), static_cast<size_t>(height), row_pitch, slice_pitch);
+
+    DirectX::Image image_data
+    {
+        static_cast<size_t>(width),
+        static_cast<size_t>(height),
+        texture2->format(),
+        row_pitch,
+        slice_pitch,
+        reinterpret_cast<uint8_t*>(const_cast<void*>(data)),
+    };
+
+    texture2->update(ff_dx::get_device_state(), 0, static_cast<size_t>(level), pos, image_data);
 }
 
 void ff::internal::ui::render_device::BeginOnscreenRender()
@@ -272,7 +287,7 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
 
     ff::internal::ui::render_target* surface2 = ff::internal::ui::render_target::get(surface);
     ff::point_float size = surface2->msaa_texture()->size().cast<float>();
-    ID3D11RenderTargetView* view = surface2->msaa_target()->view();
+    ID3D11RenderTargetView* view = ff_dx::target_access::get(*surface2->msaa_target()).dx11_target_view();
     ff_dx::get_device_state().set_targets(&view, 1, ff_dx::depth::get(*surface2->depth()).view());
 
     D3D11_VIEWPORT viewport{};
@@ -308,10 +323,10 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
         ff_dx::get_device_state().set_depth(this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)].Get(), 0);
 
         this->clear_textures();
-        ID3D11RenderTargetView* view = surface2->resolved_target()->view();
+        ID3D11RenderTargetView* view = ff_dx::target_access::get(*surface2->resolved_target()).dx11_target_view();
         ff_dx::get_device_state().set_targets(&view, 1, nullptr);
 
-        ID3D11ShaderResourceView* resourceView = surface2->msaa_texture()->view();
+        ID3D11ShaderResourceView* resourceView = surface2->msaa_texture()->dx11_texture_view();
         ff_dx::get_device_state().set_resources_ps(&resourceView, 0, 1);
 
         ff::point_int size = surface2->resolved_texture()->size();
@@ -968,11 +983,11 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.pattern);
         bool palette = ff::dxgi::palette_format(t->internal_texture()->format());
-        ID3D11ShaderResourceView* view = t->internal_texture()->view();
-        ID3D11ShaderResourceView* palette_view = (palette && ff::ui::global_palette()) ? ff::ui::global_palette()->data()->texture()->view() : nullptr;
+        ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
+        ID3D11ShaderResourceView* palette_view = (palette && ff::ui::global_palette()) ? ff::ui::global_palette()->data()->texture()->dx11_texture_view() : nullptr;
 #ifdef _DEBUG
-        ID3D11ShaderResourceView* empty_view = this->empty_texture_rgb->view();
-        ID3D11ShaderResourceView* empty_palette_view = this->empty_texture_palette->view();
+        ID3D11ShaderResourceView* empty_view = this->empty_texture_rgb->dx11_texture_view();
+        ID3D11ShaderResourceView* empty_palette_view = this->empty_texture_palette->dx11_texture_view();
 #else
         ID3D11ShaderResourceView* empty_view = nullptr;
         ID3D11ShaderResourceView* empty_palette_view = nullptr;
@@ -988,7 +1003,7 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     if (batch.ramps)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.ramps);
-        ID3D11ShaderResourceView* view = t->internal_texture()->view();
+        ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.rampsSampler.v].state();
         ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Ramps), 1);
         ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Ramps), 1);
@@ -997,7 +1012,7 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     if (batch.image)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.image);
-        ID3D11ShaderResourceView* view = t->internal_texture()->view();
+        ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.imageSampler.v].state();
         ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Image), 1);
         ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Image), 1);
@@ -1006,7 +1021,7 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     if (batch.glyphs)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.glyphs);
-        ID3D11ShaderResourceView* view = t->internal_texture()->view();
+        ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.glyphsSampler.v].state();
         ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Glyphs), 1);
         ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Glyphs), 1);
@@ -1015,7 +1030,7 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
     if (batch.shadow)
     {
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.shadow);
-        ID3D11ShaderResourceView* view = t->internal_texture()->view();
+        ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
         ID3D11SamplerState* sampler = this->sampler_states[batch.shadowSampler.v].state();
         ff_dx::get_device_state().set_resources_ps(&view, static_cast<size_t>(texture_slot_t::Shadow), 1);
         ff_dx::get_device_state().set_samplers_ps(&sampler, static_cast<size_t>(texture_slot_t::Shadow), 1);

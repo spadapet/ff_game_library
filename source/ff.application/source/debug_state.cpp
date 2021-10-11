@@ -178,12 +178,12 @@ void ff::debug_state::advance_input()
     }
 }
 
-void ff::debug_state::render(ff::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
     this->rps_counter++;
 }
 
-void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
     switch (type)
     {
@@ -359,7 +359,7 @@ void ff::debug_state::update_stats()
     }
 }
 
-void ff::debug_state::render_text(ff::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
     auto font = this->font.object();
     size_t page_index, sub_page_index;
@@ -416,7 +416,7 @@ void ff::debug_state::render_text(ff::target_base& target, ff::dxgi::depth_base&
     }
 }
 
-void ff::debug_state::render_charts(ff::target_base& target)
+void ff::debug_state::render_charts(ff::dxgi::target_base& target)
 {
     const float view_fps = ff::constants::advances_per_second_f;
     const float view_seconds = ff::debug_state::MAX_QUEUE_SIZE / view_fps;

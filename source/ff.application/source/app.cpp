@@ -39,7 +39,7 @@ namespace
             ff::ui::state_rendering();
         }
 
-        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dxgi::depth_base& depth) override
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override
         {
             ff::ui::state_rendered();
         }
@@ -240,11 +240,11 @@ static void frame_advance_and_render()
         }
     }
 
-    bool valid = ::target->pre_render(&ff::color::black());
+    bool valid = ::target->pre_render(ff_dx::get_device_state(), &ff::color::black());
     if (valid)
     {
         ::frame_render(advance_type);
-        valid = ::target->post_render();
+        valid = ::target->post_render(ff_dx::get_device_state());
         ::frame_presented();
     }
 

@@ -19,8 +19,8 @@ namespace ff
         // state
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
-        virtual void render(ff::target_base& target, ff::dxgi::depth_base& depth) override;
-        virtual void frame_rendered(ff::state::advance_t type, ff::target_base& target, ff::dxgi::depth_base& depth) override;
+        virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
 
         // debug_pages_base
         virtual size_t debug_page_count() const override;
@@ -34,8 +34,8 @@ namespace ff
 
     private:
         void update_stats();
-        void render_text(ff::target_base& target, ff::dxgi::depth_base& depth);
-        void render_charts(ff::target_base& target);
+        void render_text(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth);
+        void render_charts(ff::dxgi::target_base& target);
         void toggle(size_t index);
         size_t total_page_count() const;
         ff::debug_pages_base* convert_page_to_sub_page(size_t debugPage, size_t& outPage, size_t& outSubPage) const;

@@ -15,8 +15,8 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        sprite(std::string&& name, const std::shared_ptr<ff::texture_view_base>& view, const ff::sprite_data& sprite_data);
-        sprite(std::string&& name, const std::shared_ptr<ff::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type);
+        sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, const ff::sprite_data& sprite_data);
+        sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type);
         sprite(sprite&& other) noexcept = default;
         sprite(const sprite& other) = default;
 
@@ -44,7 +44,7 @@ namespace ff
 
     private:
         std::string name_;
-        std::shared_ptr<ff::texture_view_base> view;
+        std::shared_ptr<ff::dxgi::texture_view_base> view;
         ff::sprite_data sprite_data_;
     };
 }

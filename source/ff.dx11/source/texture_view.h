@@ -19,7 +19,7 @@ namespace ff::dx11
         operator bool() const;
 
         // texture_view_base
-        virtual ff::dxgi::texture_view_access_base& view_access() override;
+        virtual const ff::dxgi::texture_view_access_base& view_access() const override;
         virtual const ff::dxgi::texture_base* view_texture() const override;
 
         // texture_view_access

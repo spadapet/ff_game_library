@@ -20,8 +20,8 @@ void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xa
             DirectX::XMFLOAT4 color(0, 0, 0, 1);
             do
             {
-                this->target->pre_render(&color);
-                this->target->post_render();
+                this->target->pre_render(ff_dx::get_device_state(), &color);
+                this->target->post_render(ff_dx::get_device_state());
 
                 color.x += 0.0625f;
                 if (color.x > 1.0f)

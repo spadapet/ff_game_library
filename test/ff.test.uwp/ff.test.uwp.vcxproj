@@ -117,6 +117,12 @@
     <ProjectReference Include="..\..\source\ff.data\ff.data_uwp.vcxproj">
       <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\source\ff.dx11\ff.dx11_uwp.vcxproj">
+      <Project>{3bd621eb-dec6-4eee-a3cf-6db8c3086eb4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\source\ff.dxgi\ff.dxgi_uwp.vcxproj">
+      <Project>{8d48c235-4204-4094-b2c0-442dd544ee54}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\source\ff.graphics\ff.graphics_uwp.vcxproj">
       <Project>{eabbdac6-970e-403e-a7c9-ecc410b2a040}</Project>
     </ProjectReference>

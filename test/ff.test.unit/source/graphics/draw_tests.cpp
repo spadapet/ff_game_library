@@ -23,9 +23,9 @@ namespace ff::test::graphics
             ff::auto_resource<ff::sprite_resource> sprites_res = res->get_resource_object("sprites.box[7]");
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
-            ff::target_texture target(ff::texture(ff::point_int(256, 256)));
+            ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_int(256, 256)));
             static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
-            target.pre_render(&clear_color);
+            target.pre_render(ff_dx::get_device_state(), &clear_color);
 
             // Draw
             {
@@ -37,9 +37,9 @@ namespace ff::test::graphics
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::color::red(), 3);
             }
 
-            target.post_render();
+            target.post_render(ff_dx::get_device_state());
 
-            bool saved = target.shared_texture()->resource_save_to_file(temp_path, "draw_device_test");
+            bool saved = ff::texture::get(*target.shared_texture()).resource_save_to_file(temp_path, "draw_device_test");
             Assert::IsTrue(saved);
 
             std::filesystem::path file_path = temp_path / "draw_device_test.0.png";

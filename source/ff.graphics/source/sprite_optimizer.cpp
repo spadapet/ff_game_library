@@ -351,7 +351,7 @@ static bool create_original_textures(
 {
     for (const ::optimized_sprite_info& sprite_info : sprite_infos)
     {
-        const ff::texture* texture = sprite_info.sprite->sprite_data().view()->view_texture();
+        const ff::texture* texture = &ff::texture::get(*sprite_info.sprite->sprite_data().view()->view_texture());
         if (!palette_data)
         {
             palette_data = texture->palette();
@@ -452,7 +452,7 @@ static bool copy_optimized_sprites(
 {
     for (::optimized_sprite_info& sprite : sprite_infos)
     {
-        auto iter = original_textures.find(sprite.sprite->sprite_data().view()->view_texture());
+        auto iter = original_textures.find(&ff::texture::get(*sprite.sprite->sprite_data().view()->view_texture()));
         if (sprite.dest_texture >= texture_infos.size() || iter == original_textures.cend())
         {
             assert(false);
@@ -583,7 +583,7 @@ static bool create_outline_sprites(
     for (::optimized_sprite_info& sprite_info : sprite_infos)
     {
         const ff::sprite_data& sprite_data = sprite_info.sprite->sprite_data();
-        const ff::texture* original_texture = sprite_data.view()->view_texture();
+        const ff::texture* original_texture = &ff::texture::get(*sprite_data.view()->view_texture());
         auto iter = original_textures.find(original_texture);
         if (iter == original_textures.cend())
         {
@@ -661,7 +661,7 @@ static bool create_outline_sprites(
 
         outline_sprite_list.emplace_back(
             std::string(sprite_info.sprite->name()),
-            std::shared_ptr<ff::texture_view_base>(outline_texture),
+            std::shared_ptr<ff::dxgi::texture_view_base>(outline_texture),
             ff::rect_float(ff::point_float{}, outline_texture->size().cast<float>()),
             sprite_data.handle() + ff::point_float(1, 1),
             sprite_data.scale(),

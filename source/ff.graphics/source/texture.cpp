@@ -50,11 +50,21 @@ ff::texture::texture(texture&& other) noexcept
     *this = std::move(other);
 }
 
+ff::texture& ff::texture::get(ff::dxgi::texture_base& other)
+{
+    return static_cast<ff::texture&>(other);
+}
+
+const ff::texture& ff::texture::get(const ff::dxgi::texture_base& other)
+{
+    return static_cast<const ff::texture&>(other);
+}
+
 ff::texture& ff::texture::operator=(texture&& other) noexcept
 {
     if (this != &other)
     {
-        this->assign(other.move_base());
+        this->assign(std::move(other));
         std::swap(this->palette_, other.palette_);
         other.sprite_data_ = ff::sprite_data();
     }
@@ -183,11 +193,16 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set_enum<ff::dxgi::sprite_type>("sprite_type", this->sprite_type());
 
-    DirectX::Blob blob;
     std::shared_ptr<DirectX::ScratchImage> data = this->data();
-    if (data && SUCCEEDED(DirectX::SaveToDDSMemory(
-        data->GetImages(), data->GetImageCount(), data->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
+    if (data)
     {
+        DirectX::Blob blob;
+        if (FAILED(DirectX::SaveToDDSMemory(
+            data->GetImages(), data->GetImageCount(), data->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
+        {
+            return false;
+        }
+
         std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
         dict.set<ff::data_base>("data", blob_data, ff::saved_data_type::zlib_compressed);
     }
@@ -198,16 +213,15 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
 
     if (this->palette_)
     {
-        if (SUCCEEDED(DirectX::SaveToDDSMemory(
+        DirectX::Blob blob;
+        if (FAILED(DirectX::SaveToDDSMemory(
             this->palette_->GetImages(), this->palette_->GetImageCount(), this->palette_->GetMetadata(), DirectX::DDS_FLAGS_NONE, blob)))
-        {
-            std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
-            dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
-        }
-        else
         {
             return false;
         }
+
+        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
+        dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
     }
 
     return true;

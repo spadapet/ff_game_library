@@ -83,9 +83,9 @@ ff::dx11::texture& ff::dx11::texture::assign(texture&& other) noexcept
     return *this;
 }
 
-ff::dx11::texture&& ff::dx11::texture::move_base()
+void ff::dx11::texture::on_reset()
 {
-    return std::move(*this);
+    // override this
 }
 
 ff::point_int ff::dx11::texture::size() const
@@ -280,7 +280,7 @@ bool ff::dx11::texture::reset()
     return *this;
 }
 
-ff::dxgi::texture_view_access_base& ff::dx11::texture::view_access()
+const ff::dxgi::texture_view_access_base& ff::dx11::texture::view_access() const
 {
     return *this;
 }

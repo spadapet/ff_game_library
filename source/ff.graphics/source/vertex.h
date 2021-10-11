@@ -1,5 +1,11 @@
 #pragma once
 
+namespace ff::dx11
+{
+    using D3D_INPUT_ELEMENT_DESC = typename D3D11_INPUT_ELEMENT_DESC;
+    static const D3D11_INPUT_CLASSIFICATION D3D_IPVA = D3D11_INPUT_PER_VERTEX_DATA;
+}
+
 namespace ff::vertex
 {
     struct line_geometry

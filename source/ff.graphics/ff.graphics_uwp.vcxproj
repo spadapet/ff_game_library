@@ -99,6 +99,9 @@
     <ProjectReference Include="..\ff.dx11\ff.dx11_uwp.vcxproj">
       <Project>{3bd621eb-dec6-4eee-a3cf-6db8c3086eb4}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\ff.dxgi\ff.dxgi_uwp.vcxproj">
+      <Project>{8d48c235-4204-4094-b2c0-442dd544ee54}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ff.resource\ff.resource_uwp.vcxproj">
       <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
     </ProjectReference>

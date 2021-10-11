@@ -10,7 +10,7 @@ namespace ff::dxgi
     public:
         virtual ~texture_view_base() = default;
 
-        virtual ff::dxgi::texture_view_access_base& view_access() = 0;
+        virtual const ff::dxgi::texture_view_access_base& view_access() const = 0;
         virtual const ff::dxgi::texture_base* view_texture() const = 0;
     };
 }

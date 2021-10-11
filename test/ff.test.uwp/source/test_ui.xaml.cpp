@@ -53,11 +53,11 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 ff::ui::state_rendering();
                 view.pre_render();
 
-                target.pre_render(&bg_color);
+                target.pre_render(ff_dx::get_device_state(), &bg_color);
                 view.render(target, depth);
 
                 ff::ui::state_rendered();
-                target.post_render();
+                target.post_render(ff_dx::get_device_state());
 
                 thread_dispatch.flush();
             }
