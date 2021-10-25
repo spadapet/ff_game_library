@@ -1,7 +1,10 @@
 #pragma once
 
-namespace ff
+namespace ff::dxgi
 {
+    class texture_view_base;
+    enum class sprite_type;
+
     class sprite_data
     {
     public:

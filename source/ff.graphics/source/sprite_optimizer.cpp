@@ -582,7 +582,7 @@ static bool create_outline_sprites(
 
     for (::optimized_sprite_info& sprite_info : sprite_infos)
     {
-        const ff::sprite_data& sprite_data = sprite_info.sprite->sprite_data();
+        const ff::dxgi::sprite_data& sprite_data = sprite_info.sprite->sprite_data();
         const ff::texture* original_texture = &ff::texture::get(*sprite_data.view()->view_texture());
         auto iter = original_textures.find(original_texture);
         if (iter == original_textures.cend())

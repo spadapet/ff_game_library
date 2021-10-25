@@ -46,12 +46,12 @@ float ff::random_sprite::frames_per_second() const
 void ff::random_sprite::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::random_sprite::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
 
-void ff::random_sprite::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
@@ -64,7 +64,7 @@ ff::value_ptr ff::random_sprite::frame_value(size_t value_id, float frame, const
 void ff::random_sprite::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::random_sprite::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     for (const auto& i : this->pick_sprites())
     {
@@ -72,7 +72,7 @@ void ff::random_sprite::draw_animation(ff::draw_base& draw, const ff::transform&
     }
 }
 
-void ff::random_sprite::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
 {
     for (const auto& i : this->pick_sprites())
     {

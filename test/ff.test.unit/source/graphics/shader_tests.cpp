@@ -15,10 +15,10 @@ namespace ff::test::graphics
             )");
             auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::shader> shader_res = res->get_resource_object("test_shader");
+            ff::auto_resource<ff_dx::shader> shader_res = res->get_resource_object("test_shader");
             Assert::IsTrue(shader_res.valid());
 
-            std::shared_ptr<ff::shader> shader = shader_res.object();
+            std::shared_ptr<ff_dx::shader> shader = shader_res.object();
             Assert::IsNotNull(shader.get());
             Assert::IsTrue(shader->saved_data() && shader->saved_data()->saved_size());
         }

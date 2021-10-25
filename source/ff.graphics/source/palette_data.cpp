@@ -13,7 +13,7 @@ ff::palette_data::palette_data(DirectX::ScratchImage&& scratch, std::unordered_m
     if (scratch.GetImageCount())
     {
         const DirectX::Image& image = *scratch.GetImages();
-        if (image.width == ff::constants::palette_size)
+        if (image.width == ff::dxgi::palette_size)
         {
             this->row_hashes.reserve(image.height);
 
@@ -32,12 +32,12 @@ ff::palette_data::palette_data(std::shared_ptr<ff::texture>&& texture, std::vect
     , row_hashes(std::move(row_hashes))
     , name_to_remap(std::move(name_to_remap))
 {
-    assert(this->texture_ && this->texture_->size().cast<size_t>().x == ff::constants::palette_size);
+    assert(this->texture_ && this->texture_->size().cast<size_t>().x == ff::dxgi::palette_size);
 }
 
 ff::palette_data::operator bool() const
 {
-    return this->texture_ && *this->texture_ && this->texture_->size().cast<size_t>().x == ff::constants::palette_size;
+    return this->texture_ && *this->texture_ && this->texture_->size().cast<size_t>().x == ff::dxgi::palette_size;
 }
 
 size_t ff::palette_data::row_size() const
@@ -50,7 +50,7 @@ size_t ff::palette_data::row_hash(size_t index) const
     return this->row_hashes[index];
 }
 
-const std::shared_ptr<ff::texture> ff::palette_data::texture() const
+const std::shared_ptr<ff::dxgi::texture_base> ff::palette_data::texture() const
 {
     return this->texture_;
 }
@@ -66,7 +66,7 @@ size_t ff::palette_data::current_row() const
     return 0;
 }
 
-const ff::palette_data* ff::palette_data::data() const
+const ff::dxgi::palette_data_base* ff::palette_data::data() const
 {
     return this;
 }
@@ -115,9 +115,9 @@ std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::lo
     for (auto& remap_pair : dict.get<ff::dict>("remaps"))
     {
         std::vector<uint8_t> remap;
-        remap.resize(ff::constants::palette_size);
+        remap.resize(ff::dxgi::palette_size);
 
-        for (size_t i = 0; i < ff::constants::palette_size; i++)
+        for (size_t i = 0; i < ff::dxgi::palette_size; i++)
         {
             remap[i] = static_cast<uint8_t>(i);
         }
@@ -159,7 +159,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::lo
     for (auto& i : dict.get<ff::dict>("remaps"))
     {
         auto data = i.second->get<ff::data_base>();
-        if (data && data->size() == ff::constants::palette_size)
+        if (data && data->size() == ff::dxgi::palette_size)
         {
             name_to_remap.try_emplace(std::string(i.first), std::move(data));
         }

@@ -1,8 +1,6 @@
 #include "pch.h"
-#include "draw_base.h"
 #include "graphics.h"
 #include "png_image.h"
-#include "sprite_data.h"
 #include "texture.h"
 #include "texture_metadata.h"
 #include "texture_util.h"
@@ -66,7 +64,7 @@ ff::texture& ff::texture::operator=(texture&& other) noexcept
     {
         this->assign(std::move(other));
         std::swap(this->palette_, other.palette_);
-        other.sprite_data_ = ff::sprite_data();
+        other.sprite_data_ = ff::dxgi::sprite_data();
     }
 
     return *this;
@@ -125,7 +123,7 @@ std::string_view ff::texture::name() const
     return "";
 }
 
-const ff::sprite_data& ff::texture::sprite_data() const
+const ff::dxgi::sprite_data& ff::texture::sprite_data() const
 {
     return this->sprite_data_;
 }
@@ -143,12 +141,12 @@ float ff::texture::frames_per_second() const
 void ff::texture::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::texture::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-void ff::texture::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
@@ -161,12 +159,12 @@ ff::value_ptr ff::texture::frame_value(size_t value_id, float frame, const ff::d
 void ff::texture::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::texture::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-void ff::texture::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
@@ -183,7 +181,7 @@ const ff::animation_base* ff::texture::animation() const
 
 void ff::texture::on_reset()
 {
-    this->sprite_data_ = ff::sprite_data(this,
+    this->sprite_data_ = ff::dxgi::sprite_data(this,
         ff::rect_float(0, 0, 1, 1),
         ff::rect_float(ff::point_float{}, this->size().cast<float>()),
         this->sprite_type());

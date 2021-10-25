@@ -1,7 +1,5 @@
 #pragma once
 
-#include "palette_base.h"
-
 namespace ff::constants
 {
     const size_t palette_size = 256;
@@ -14,7 +12,7 @@ namespace ff
 
     class palette_data
         : public ff::resource_object_base
-        , public ff::palette_base
+        , public ff::dxgi::palette_data_base
     {
     public:
         palette_data(DirectX::ScratchImage&& scratch);
@@ -27,14 +25,14 @@ namespace ff
         palette_data& operator=(const palette_data & other) = delete;
         operator bool() const;
 
-        size_t row_size() const;
-        size_t row_hash(size_t index) const;
-        const std::shared_ptr<ff::texture> texture() const;
-        std::shared_ptr<ff::data_base> remap(std::string_view name) const;
+        virtual size_t row_size() const override;
+        virtual size_t row_hash(size_t index) const override;
+        virtual const std::shared_ptr<ff::dxgi::texture_base> texture() const override;
+        virtual std::shared_ptr<ff::data_base> remap(std::string_view name) const override;
 
         // palette_base
         virtual size_t current_row() const override;
-        virtual const ff::palette_data* data() const override;
+        virtual const ff::dxgi::palette_data_base* data() const override;
         virtual const uint8_t* index_remap() const override;
         virtual size_t index_remap_hash() const override;
 

@@ -41,6 +41,15 @@
     <ClCompile Include="source\texture_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\draw_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vertex.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\shader.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -89,10 +98,32 @@
     <ClInclude Include="source\texture_view.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\draw_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vertex.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\shader.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
       <UniqueIdentifier>{62dd6c7f-9705-4804-8e6a-db38f3b48d55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{d072d961-aadb-49cd-907d-88f8aec3f7b8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.dx11.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders.hlsl">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

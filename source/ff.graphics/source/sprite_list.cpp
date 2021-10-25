@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "sprite_base.h"
-#include "sprite_data.h"
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
 #include "sprite_resource.h"
@@ -91,7 +90,7 @@ bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
             ff::data_writer writer(sprite_bytes);
             for (auto& sprite : this->sprites)
             {
-                const ff::sprite_data& sprite_data = sprite.sprite_data();
+                const ff::dxgi::sprite_data& sprite_data = sprite.sprite_data();
                 size_t texture_index = std::find(textures.cbegin(), textures.cend(), sprite_data.view()->view_texture()) - textures.cbegin();
 
                 ff::save(writer, texture_index);
@@ -281,7 +280,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
                 texture_index < texture_views.size())
             {
                 auto& view = texture_views[texture_index];
-                sprites.emplace_back(std::move(name), view, ff::sprite_data(view.get(), texture_uv, world, type));
+                sprites.emplace_back(std::move(name), view, ff::dxgi::sprite_data(view.get(), texture_uv, world, type));
             }
             else
             {

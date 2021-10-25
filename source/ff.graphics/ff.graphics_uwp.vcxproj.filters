@@ -2,22 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\color.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\animation_keys.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\matrix.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\transform.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\matrix_stack.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\vertex.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\viewport.cpp">
@@ -27,9 +12,6 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\png_image.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\shader.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\init.cpp">
@@ -42,9 +24,6 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\animation_player.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\sprite.cpp">
@@ -74,15 +53,6 @@
     <ClCompile Include="source\font_file.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\draw_ptr.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\draw_base.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\draw_device.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -95,22 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\color.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\animation_keys.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\matrix.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\transform.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\matrix_stack.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\vertex.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\viewport.h">
@@ -123,9 +78,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_data.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\shader.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
@@ -146,13 +98,7 @@
     <ClInclude Include="source\sprite_base.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\sprite_data.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\animation_player_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\palette_base.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite.h">
@@ -179,15 +125,6 @@
     <ClInclude Include="source\font_file.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\draw_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\draw_ptr.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\draw_device.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\random_sprite.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -202,18 +139,5 @@
     <Filter Include="source">
       <UniqueIdentifier>{ee249d4a-d0e0-468c-ab99-809c379394f3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="assets">
-      <UniqueIdentifier>{aaeb4c63-358e-41fa-8aa0-39a3d7a8b539}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="assets\shaders.hlsl">
-      <Filter>assets</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResJson Include="assets\ff.graphics.res.json">
-      <Filter>assets</Filter>
-    </ResJson>
   </ItemGroup>
 </Project>

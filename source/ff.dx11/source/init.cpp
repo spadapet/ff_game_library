@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "globals.h"
 #include "init.h"
+#include "shader.h"
+
+#include "ff.dx11.res.h"
 
 static bool init_status;
 
@@ -10,6 +13,11 @@ namespace
     {
         one_time_init()
         {
+            // Resource objects
+            ff::resource_object_base::register_factory<ff::dx11::shader_factory>("shader");
+
+            ff::global_resources::add(::assets::dx11::data());
+
             ::init_status = ff::dx11::init_globals();
         }
 

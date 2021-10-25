@@ -15,8 +15,8 @@ namespace ff
         animation_player& operator=(const animation_player & other) = default;
 
         virtual void advance_animation(ff::push_base<ff::animation_event>* events) override;
-        virtual void draw_animation(ff::draw_base& draw, const ff::transform& transform) const override;
-        virtual void draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const override;
+        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const override;
+        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const override;
         virtual float animation_frame() const override;
         virtual const ff::animation_base* animation() const override;
 

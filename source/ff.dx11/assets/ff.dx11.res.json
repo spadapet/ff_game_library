@@ -1,5 +1,5 @@
 {
-  "res:namespace": "assets::graphics",
+  "res:namespace": "assets::dx11",
 
   "ff.shader.line_vs":
   {

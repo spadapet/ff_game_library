@@ -1,12 +1,18 @@
 #pragma once
 
-namespace ff
+namespace ff::dxgi
 {
     class matrix_stack;
     class palette_base;
     class sprite_data;
     struct pixel_transform;
     struct transform;
+
+    enum class draw_options
+    {
+        none = 0x00,
+        pre_multiplied_alpha = 0x01,
+    };
 
     class draw_base
     {
@@ -17,8 +23,8 @@ namespace ff
 
         virtual void end_draw() = 0;
 
-        virtual void draw_sprite(const ff::sprite_data& sprite, const ff::transform& transform) = 0;
-        void draw_sprite(const ff::sprite_data& sprite, const ff::pixel_transform& transform);
+        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform) = 0;
+        void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::pixel_transform& transform);
 
         virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness = false) = 0;
         virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
@@ -58,10 +64,10 @@ namespace ff
         void draw_palette_outline_rectangle(const ff::rect_fixed& rect, int color, ff::fixed_int thickness);
         void draw_palette_outline_circle(const ff::point_fixed& center, ff::fixed_int radius, int color, ff::fixed_int thickness);
 
-        virtual ff::matrix_stack& world_matrix_stack() = 0;
+        virtual ff::dxgi::matrix_stack& world_matrix_stack() = 0;
         virtual void nudge_depth() = 0;
 
-        virtual void push_palette(ff::palette_base* palette) = 0;
+        virtual void push_palette(ff::dxgi::palette_base* palette) = 0;
         virtual void pop_palette() = 0;
         virtual void push_palette_remap(const uint8_t* remap, size_t hash) = 0;
         virtual void pop_palette_remap() = 0;
@@ -71,7 +77,7 @@ namespace ff
         virtual void pop_opaque() = 0;
         virtual void push_pre_multiplied_alpha() = 0;
         virtual void pop_pre_multiplied_alpha() = 0;
-        virtual void push_custom_context(ff::draw_base::custom_context_func&& func) = 0;
+        virtual void push_custom_context(ff::dxgi::draw_base::custom_context_func&& func) = 0;
         virtual void pop_custom_context() = 0;
         virtual void push_sampler_linear_filter(bool linear_filter) = 0;
         virtual void pop_sampler_linear_filter() = 0;

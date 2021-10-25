@@ -55,7 +55,7 @@ ff::debug_state::debug_state()
     , debug_page(0)
     , font("ff.debug_font")
     , input_mapping("ff.debug_page_input")
-    , draw_device(ff::draw_device::create())
+    , draw_device(ff_dx::draw_device::create())
     , mem_stats{}
     , total_advance_count(0)
     , total_render_count(0)
@@ -194,10 +194,10 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target
                 ff::rect_float target_rect(0, 0, rotated_size.x, rotated_size.y);
                 ff::rect_float scaled_target_rect = target_rect / static_cast<float>(target.size().dpi_scale);
 
-                ff::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, scaled_target_rect);
+                ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, scaled_target_rect);
                 if (draw)
                 {
-                    DirectX::XMFLOAT4 color = ff::color::magenta();
+                    DirectX::XMFLOAT4 color = ff::dxgi::color_magenta();
                     color.w = 0.375;
                     draw->draw_outline_rectangle(scaled_target_rect, color, std::min<size_t>(this->fast_number_counter++, 16) / 2.0f, true);
                 }
@@ -254,12 +254,12 @@ void ff::debug_state::debug_page_info(size_t page, size_t index, std::string& ou
     switch (index)
     {
         case 0:
-            out_color = ff::color::magenta();
+            out_color = ff::dxgi::color_magenta();
             str << "Update:" << std::fixed << std::setprecision(2) << this->advance_time_average * 1000.0 << "ms*" << this->advance_count << "/" << std::setprecision(0) << this->last_aps << "Hz";
             break;
 
         case 1:
-            out_color = ff::color::green();
+            out_color = ff::dxgi::color_green();
             str << "Render:" << std::fixed << std::setprecision(2) << this->render_time * 1000.0 << "ms/" << std::setprecision(0) << this->last_rps << "Hz";
             break;
 
@@ -371,7 +371,7 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
 
     ff::point_float target_size = target.size().rotated_pixel_size().cast<float>();
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
-    ff::draw_ptr draw = this->draw_device->begin_draw(target, &depth, target_rect, target_rect / static_cast<float>(target.size().dpi_scale));
+    ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, &depth, target_rect, target_rect / static_cast<float>(target.size().dpi_scale));
     if (draw)
     {
         draw->push_no_overlap();
@@ -381,7 +381,7 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
             << "<Ctrl-F8> Page " << this->debug_page + 1 << "/" << this->total_page_count() << ": " << page->debug_page_name(sub_page_index) << std::endl
             << "Time:" << std::fixed << std::setprecision(2) << this->total_seconds << "s, FPS:" << std::setprecision(1) << this->last_rps;
 
-        font->draw_text(draw, str.str(), ff::transform(ff::point_float(8, 8)), ff::color::black());
+        font->draw_text(draw, str.str(), ff::dxgi::transform(ff::point_float(8, 8)), ff::dxgi::color_black());
 
         size_t line = 3;
         float spacing_y = font->line_spacing();
@@ -389,11 +389,11 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
 
         for (size_t i = 0; i < page->debug_page_info_count(sub_page_index); i++, line++)
         {
-            DirectX::XMFLOAT4 color = ff::color::white();
+            DirectX::XMFLOAT4 color = ff::dxgi::color_white();
             std::string str_info;
             page->debug_page_info(sub_page_index, i, str_info, color);
 
-            font->draw_text(draw, str_info, ff::transform(ff::point_float(8, start_y + spacing_y * line), ff::point_float(1, 1), 0.0f, color), ff::color::black());
+            font->draw_text(draw, str_info, ff::dxgi::transform(ff::point_float(8, start_y + spacing_y * line), ff::point_float(1, 1), 0.0f, color), ff::dxgi::color_black());
         }
 
         line++;
@@ -409,7 +409,7 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
             str.clear();
             str << "<Ctrl-" << i << ">" << str_toggle_value << " " << str_toggle;
 
-            font->draw_text(draw, str.str(), ff::transform(ff::point_float(8, start_y + spacing_y * line)), ff::color::black());
+            font->draw_text(draw, str.str(), ff::dxgi::transform(ff::point_float(8, start_y + spacing_y * line)), ff::dxgi::color_black());
         }
 
         draw->pop_no_overlap();
@@ -427,7 +427,7 @@ void ff::debug_state::render_charts(ff::dxgi::target_base& target)
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
     ff::rect_float world_rect = ff::rect_float(0, 1, view_seconds, 0);
 
-    ff::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, world_rect);
+    ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, world_rect);
     if (draw)
     {
         std::array<ff::point_float, ff::debug_state::MAX_QUEUE_SIZE> advance_points{};

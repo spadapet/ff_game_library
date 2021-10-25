@@ -24,12 +24,12 @@ void ff::animation_player::advance_animation(ff::push_base<ff::animation_event>*
     }
 }
 
-void ff::animation_player::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+void ff::animation_player::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
 }
 
-void ff::animation_player::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+void ff::animation_player::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
 {
     this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
 }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "format_util.h"
+#include "sprite_type.h"
 #include "texture_util.h"
 
 std::shared_ptr<DirectX::ScratchImage> ff::dxgi::convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count)

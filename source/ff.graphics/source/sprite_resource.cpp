@@ -1,9 +1,8 @@
 #include "pch.h"
-#include "draw_base.h"
 #include "sprite_list.h"
 #include "sprite_resource.h"
 
-static ff::sprite_data empty_sprite_data{};
+static ff::dxgi::sprite_data empty_sprite_data{};
 
 ff::sprite_resource::sprite_resource(std::string&& name, const std::shared_ptr<ff::resource>& source)
     : name_(std::move(name))
@@ -16,7 +15,7 @@ std::string_view ff::sprite_resource::name() const
     return this->name_;
 }
 
-const ff::sprite_data& ff::sprite_resource::sprite_data() const
+const ff::dxgi::sprite_data& ff::sprite_resource::sprite_data() const
 {
     return *this->sprite_data_;
 }
@@ -34,12 +33,12 @@ float ff::sprite_resource::frames_per_second() const
 void ff::sprite_resource::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
 {}
 
-void ff::sprite_resource::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::sprite_resource::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }
 
-void ff::sprite_resource::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+void ff::sprite_resource::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }
@@ -52,12 +51,12 @@ ff::value_ptr ff::sprite_resource::frame_value(size_t value_id, float frame, con
 void ff::sprite_resource::advance_animation(ff::push_base<ff::animation_event>* events)
 {}
 
-void ff::sprite_resource::draw_animation(ff::draw_base& draw, const ff::transform& transform) const
+void ff::sprite_resource::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }
 
-void ff::sprite_resource::draw_animation(ff::draw_base& draw, const ff::pixel_transform& transform) const
+void ff::sprite_resource::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }

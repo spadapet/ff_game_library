@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "color.h"
 #include "graphics.h"
 #include "target_window.h"
 #include "texture_util.h"

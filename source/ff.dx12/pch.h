@@ -10,6 +10,7 @@
 
 // Windows
 #include <d3d12.h>
+#include <d3dcompiler.h>
 
 // Vendor
 #include <directxtex/DirectXTex/d3dx12.h>

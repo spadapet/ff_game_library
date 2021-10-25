@@ -41,7 +41,7 @@ namespace ff
         sprite_font& operator=(const sprite_font & other) = delete;
         operator bool() const;
 
-        virtual ff::point_float draw_text(ff::draw_base* draw, std::string_view text, const ff::transform& transform, const DirectX::XMFLOAT4& outline_color, ff::sprite_font_options options = ff::sprite_font_options::none) const;
+        virtual ff::point_float draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::dxgi::transform& transform, const DirectX::XMFLOAT4& outline_color, ff::sprite_font_options options = ff::sprite_font_options::none) const;
         virtual ff::point_float measure_text(std::string_view text, ff::point_float scale) const;
         virtual float line_spacing() const;
 
@@ -53,7 +53,7 @@ namespace ff
 
     private:
         bool init_sprites();
-        ff::point_float internal_draw_text(ff::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const;
+        ff::point_float internal_draw_text(ff::dxgi::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::dxgi::transform& transform, ff::sprite_font_options options) const;
 
         static const size_t MAX_GLYPH_COUNT = 0x10000;
 

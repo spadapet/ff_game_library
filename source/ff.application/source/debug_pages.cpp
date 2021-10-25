@@ -22,7 +22,7 @@ size_t ff::debug_pages_base::debug_page_info_count(size_t page) const
 void ff::debug_pages_base::debug_page_info(size_t page, size_t index, std::string& out_text, DirectX::XMFLOAT4& out_color) const
 {
     out_text.clear();
-    out_color = ff::color::none();
+    out_color = ff::dxgi::color_none();
 }
 
 size_t ff::debug_pages_base::debug_page_toggle_count(size_t page) const

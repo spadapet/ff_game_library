@@ -1,12 +1,6 @@
 #pragma once
 
-namespace ff::dx11
-{
-    using D3D_INPUT_ELEMENT_DESC = typename D3D11_INPUT_ELEMENT_DESC;
-    static const D3D11_INPUT_CLASSIFICATION D3D_IPVA = D3D11_INPUT_PER_VERTEX_DATA;
-}
-
-namespace ff::vertex
+namespace ff::dx11::vertex
 {
     struct line_geometry
     {
@@ -16,7 +10,7 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
-        static const std::array<ff_dx::D3D_INPUT_ELEMENT_DESC, 10>& layout();
+        static const std::array<D3D11_INPUT_ELEMENT_DESC, 10>& layout();
     };
 
     struct circle_geometry
@@ -28,7 +22,7 @@ namespace ff::vertex
         float thickness;
         UINT matrix_index;
 
-        static const std::array<ff_dx::D3D_INPUT_ELEMENT_DESC, 6>& layout();
+        static const std::array<D3D11_INPUT_ELEMENT_DESC, 6>& layout();
     };
 
     struct triangle_geometry
@@ -38,7 +32,7 @@ namespace ff::vertex
         float depth;
         UINT matrix_index;
 
-        static const std::array<ff_dx::D3D_INPUT_ELEMENT_DESC, 8>& layout();
+        static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
     };
 
     struct sprite_geometry
@@ -52,6 +46,6 @@ namespace ff::vertex
         UINT texture_index;
         UINT matrix_index;
 
-        static const std::array<ff_dx::D3D_INPUT_ELEMENT_DESC, 8>& layout();
+        static const std::array<D3D11_INPUT_ELEMENT_DESC, 8>& layout();
     };
 }

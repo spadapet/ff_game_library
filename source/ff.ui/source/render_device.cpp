@@ -319,7 +319,7 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
         ff_dx::get_device_state().set_ps(this->resolve_ps[index_ps].shader());
 
         ff_dx::get_device_state().set_raster(this->rasterizer_state_scissor.Get());
-        ff_dx::get_device_state().set_blend(this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)].Get(), ff::color::none(), 0xffffffff);
+        ff_dx::get_device_state().set_blend(this->blend_states[static_cast<size_t>(Noesis::BlendMode::Src)].Get(), ff::dxgi::color_none(), 0xffffffff);
         ff_dx::get_device_state().set_depth(this->depth_stencil_states[static_cast<size_t>(Noesis::StencilMode::Disabled)].Get(), 0);
 
         this->clear_textures();
@@ -970,7 +970,7 @@ void ff::internal::ui::render_device::set_render_state(const Noesis::Batch& batc
 
     assert(f.blendMode < _countof(this->blend_states));
     ID3D11BlendState* blend = f.colorEnable ? this->blend_states[f.blendMode].Get() : this->blend_state_no_color.Get();
-    ff_dx::get_device_state().set_blend(blend, ff::color::none(), 0xffffffff);
+    ff_dx::get_device_state().set_blend(blend, ff::dxgi::color_none(), 0xffffffff);
 
     assert(f.stencilMode < _countof(this->depth_stencil_states));
     ID3D11DepthStencilState* stencil = this->depth_stencil_states[f.stencilMode].Get();
@@ -984,7 +984,9 @@ void ff::internal::ui::render_device::set_textures(const Noesis::Batch& batch)
         ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.pattern);
         bool palette = ff::dxgi::palette_format(t->internal_texture()->format());
         ID3D11ShaderResourceView* view = t->internal_texture()->dx11_texture_view();
-        ID3D11ShaderResourceView* palette_view = (palette && ff::ui::global_palette()) ? ff::ui::global_palette()->data()->texture()->dx11_texture_view() : nullptr;
+        ID3D11ShaderResourceView* palette_view = (palette && ff::ui::global_palette())
+            ? static_cast<ff_dx::texture*>(ff::ui::global_palette()->data()->texture().get())->dx11_texture_view()
+            : nullptr;
 #ifdef _DEBUG
         ID3D11ShaderResourceView* empty_view = this->empty_texture_rgb->dx11_texture_view();
         ID3D11ShaderResourceView* empty_palette_view = this->empty_texture_palette->dx11_texture_view();

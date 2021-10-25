@@ -1,16 +1,17 @@
 #include "pch.h"
+#include "buffer.h"
+#include "depth.h"
+#include "device_reset_priority.h"
+#include "device_state.h"
 #include "draw_device.h"
-#include "graphics.h"
-#include "matrix.h"
-#include "matrix_stack.h"
-#include "palette_data.h"
+#include "fixed_state.h"
+#include "globals.h"
+#include "object_cache.h"
 #include "shader.h"
-#include "sprite_data.h"
+#include "target_access.h"
 #include "texture.h"
-#include "transform.h"
+#include "texture_view.h"
 #include "vertex.h"
-
-#if DXVER == 11
 
 static const size_t MAX_TEXTURES = 32;
 static const size_t MAX_TEXTURES_USING_PALETTE = 32;
@@ -23,7 +24,7 @@ static const float RENDER_DEPTH_DELTA = ::MAX_RENDER_DEPTH / ::MAX_RENDER_COUNT;
 
 static std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE + 2 /* palette + remap */>  NULL_TEXTURES{};
 
-static std::array<uint8_t, ff::constants::palette_size> DEFAULT_PALETTE_REMAP =
+static std::array<uint8_t, ff::dxgi::palette_size> DEFAULT_PALETTE_REMAP =
 {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
@@ -179,7 +180,7 @@ namespace
         {
             const_cast<::geometry_bucket*>(this)->create_shaders(palette_out);
 
-            ff_dx::device_state& state = ff_dx::get_device_state();
+            ff::dx11::device_state& state = ff::dx11::get_device_state();
             state.set_vertex_ia(geometry_buffer, item_size(), 0);
             state.set_layout_ia(this->layout.Get());
             state.set_vs(this->vs.Get());
@@ -264,25 +265,25 @@ namespace
         {
             if (!this->vs)
             {
-                this->vs = ff_dx::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
+                this->vs = ff::dx11::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
             }
 
             if (!this->gs)
             {
-                this->gs = ff_dx::get_object_cache().get_geometry_shader(this->gs_res.resource()->name());
+                this->gs = ff::dx11::get_object_cache().get_geometry_shader(this->gs_res.resource()->name());
             }
 
             Microsoft::WRL::ComPtr<ID3D11PixelShader>& ps = palette_out ? this->ps_palette_out : this->ps;
             if (!ps)
             {
-                ps = ff_dx::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
+                ps = ff::dx11::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
             }
         }
 
-        ff::auto_resource<ff::shader> vs_res;
-        ff::auto_resource<ff::shader> gs_res;
-        ff::auto_resource<ff::shader> ps_res;
-        ff::auto_resource<ff::shader> ps_palette_out_res;
+        ff::auto_resource<ff::dx11::shader> vs_res;
+        ff::auto_resource<ff::dx11::shader> gs_res;
+        ff::auto_resource<ff::dx11::shader> ps_res;
+        ff::auto_resource<ff::dx11::shader> ps_palette_out_res;
 
         Microsoft::WRL::ComPtr<ID3D11InputLayout> layout;
         Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
@@ -374,7 +375,7 @@ static alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, 
     return type;
 }
 
-static alpha_type get_alpha_type(const ff::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque)
+static alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque)
 {
     switch (::get_alpha_type(color, force_opaque))
     {
@@ -391,7 +392,7 @@ static alpha_type get_alpha_type(const ff::sprite_data& data, const DirectX::XMF
     }
 }
 
-static alpha_type get_alpha_type(const ff::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
+static alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
 {
     alpha_type type = alpha_type::invisible;
 
@@ -443,34 +444,34 @@ static ID3D11SamplerState* get_texture_sampler_state(D3D11_FILTER filter)
 {
     CD3D11_SAMPLER_DESC sampler(D3D11_DEFAULT);
     sampler.Filter = filter;
-    return ff_dx::get_object_cache().get_sampler_state(sampler);
+    return ff::dx11::get_object_cache().get_sampler_state(sampler);
 }
 
 static ID3D11BlendState* get_opaque_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
-    return ff_dx::get_object_cache().get_blend_state(blend);
+    return ff::dx11::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11BlendState* get_alpha_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
     ::get_alpha_blend(blend.RenderTarget[0]);
-    return ff_dx::get_object_cache().get_blend_state(blend);
+    return ff::dx11::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11BlendState* get_pre_multiplied_alpha_blend_state()
 {
     CD3D11_BLEND_DESC blend(D3D11_DEFAULT);
     ::get_pre_multiplied_alpha_blend(blend.RenderTarget[0]);
-    return ff_dx::get_object_cache().get_blend_state(blend);
+    return ff::dx11::get_object_cache().get_blend_state(blend);
 }
 
 static ID3D11DepthStencilState* get_enabled_depth_state()
 {
     CD3D11_DEPTH_STENCIL_DESC depth(D3D11_DEFAULT);
     depth.DepthFunc = D3D11_COMPARISON_GREATER;
-    return ff_dx::get_object_cache().get_depth_stencil_state(depth);
+    return ff::dx11::get_object_cache().get_depth_stencil_state(depth);
 }
 
 static ID3D11DepthStencilState* get_disabled_depth_state()
@@ -478,19 +479,19 @@ static ID3D11DepthStencilState* get_disabled_depth_state()
     CD3D11_DEPTH_STENCIL_DESC depth(D3D11_DEFAULT);
     depth.DepthEnable = FALSE;
     depth.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-    return ff_dx::get_object_cache().get_depth_stencil_state(depth);
+    return ff::dx11::get_object_cache().get_depth_stencil_state(depth);
 }
 
 static ID3D11RasterizerState* get_no_cull_raster_state()
 {
     CD3D11_RASTERIZER_DESC raster(D3D11_DEFAULT);
     raster.CullMode = D3D11_CULL_NONE;
-    return ff_dx::get_object_cache().get_rasterize_state(raster);
+    return ff::dx11::get_object_cache().get_rasterize_state(raster);
 }
 
-static ff_dx::fixed_state create_opaque_draw_state()
+static ff::dx11::fixed_state create_opaque_draw_state()
 {
-    ff_dx::fixed_state state;
+    ff::dx11::fixed_state state;
 
     state.blend = ::get_opaque_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -500,9 +501,9 @@ static ff_dx::fixed_state create_opaque_draw_state()
     return state;
 }
 
-static ff_dx::fixed_state create_alpha_draw_state()
+static ff::dx11::fixed_state create_alpha_draw_state()
 {
-    ff_dx::fixed_state state;
+    ff::dx11::fixed_state state;
 
     state.blend = ::get_alpha_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -512,9 +513,9 @@ static ff_dx::fixed_state create_alpha_draw_state()
     return state;
 }
 
-static ff_dx::fixed_state create_pre_multiplied_alpha_draw_state()
+static ff::dx11::fixed_state create_pre_multiplied_alpha_draw_state()
 {
-    ff_dx::fixed_state state;
+    ff::dx11::fixed_state state;
 
     state.blend = ::get_pre_multiplied_alpha_blend_state();
     state.depth = ::get_enabled_depth_state();
@@ -644,7 +645,7 @@ static bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_floa
 
 static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
 {
-    ID3D11RenderTargetView* target_view = ff_dx::target_access::get(target).dx11_target_view();
+    ID3D11RenderTargetView* target_view = ff::dx11::target_access::get(target).dx11_target_view();
     if (target_view)
     {
         ID3D11DepthStencilView* depth_view = nullptr;
@@ -652,8 +653,8 @@ static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_b
         {
             if (depth->size(target.size().pixel_size))
             {
-                depth->clear(ff_dx::get_device_state(), 0, 0);
-                depth_view = ff_dx::depth::get(*depth).view();
+                depth->clear(ff::dx11::get_device_state(), 0, 0);
+                depth_view = ff::dx11::depth::get(*depth).view();
             }
 
             if (!depth_view)
@@ -666,8 +667,8 @@ static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_b
         ff::rect_float rotated_view_rect = ::get_rotated_view_rect(target, view_rect);
         D3D11_VIEWPORT viewport = ::get_viewport(rotated_view_rect);
 
-        ff_dx::get_device_state().set_targets(&target_view, 1, depth_view);
-        ff_dx::get_device_state().set_viewports(&viewport, 1);
+        ff::dx11::get_device_state().set_targets(&target_view, 1, depth_view);
+        ff::dx11::get_device_state().set_viewports(&viewport, 1);
 
         return true;
     }
@@ -679,8 +680,8 @@ static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_b
 namespace
 {
     class draw_device_internal
-        : public ff::draw_device
-        , public ff::draw_base
+        : public ff::dx11::draw_device
+        , public ff::dxgi::draw_base
         , private ff::dxgi::device_child_base
     {
     public:
@@ -693,27 +694,27 @@ namespace
             , pixel_constants_buffer_0(ff::dxgi::buffer_type::constant)
             , geometry_buckets
         {
-            ::geometry_bucket::create<ff::vertex::line_geometry, ::geometry_bucket_type::lines>(),
-            ::geometry_bucket::create<ff::vertex::circle_geometry, ::geometry_bucket_type::circles>(),
-            ::geometry_bucket::create<ff::vertex::triangle_geometry, ::geometry_bucket_type::triangles>(),
-            ::geometry_bucket::create<ff::vertex::sprite_geometry, ::geometry_bucket_type::sprites>(),
-            ::geometry_bucket::create<ff::vertex::sprite_geometry, ::geometry_bucket_type::palette_sprites>(),
+            ::geometry_bucket::create<ff::dx11::vertex::line_geometry, ::geometry_bucket_type::lines>(),
+            ::geometry_bucket::create<ff::dx11::vertex::circle_geometry, ::geometry_bucket_type::circles>(),
+            ::geometry_bucket::create<ff::dx11::vertex::triangle_geometry, ::geometry_bucket_type::triangles>(),
+            ::geometry_bucket::create<ff::dx11::vertex::sprite_geometry, ::geometry_bucket_type::sprites>(),
+            ::geometry_bucket::create<ff::dx11::vertex::sprite_geometry, ::geometry_bucket_type::palette_sprites>(),
 
-            ::geometry_bucket::create<ff::vertex::line_geometry, ::geometry_bucket_type::lines_alpha>(),
-            ::geometry_bucket::create<ff::vertex::circle_geometry, ::geometry_bucket_type::circles_alpha>(),
-            ::geometry_bucket::create<ff::vertex::triangle_geometry, ::geometry_bucket_type::triangles_alpha>(),
-            ::geometry_bucket::create<ff::vertex::sprite_geometry, ::geometry_bucket_type::sprites_alpha>(),
+            ::geometry_bucket::create<ff::dx11::vertex::line_geometry, ::geometry_bucket_type::lines_alpha>(),
+            ::geometry_bucket::create<ff::dx11::vertex::circle_geometry, ::geometry_bucket_type::circles_alpha>(),
+            ::geometry_bucket::create<ff::dx11::vertex::triangle_geometry, ::geometry_bucket_type::triangles_alpha>(),
+            ::geometry_bucket::create<ff::dx11::vertex::sprite_geometry, ::geometry_bucket_type::sprites_alpha>(),
         }
         {
             this->reset();
 
-            ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
+            ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
         }
 
         virtual ~draw_device_internal() override
         {
             assert(this->state != ::draw_device_internal::state_t::drawing);
-            ff_dx::remove_device_child(this);
+            ff::dx11::remove_device_child(this);
         }
 
         draw_device_internal(draw_device_internal&& other) noexcept = delete;
@@ -726,7 +727,7 @@ namespace
             return this->state != ::draw_device_internal::state_t::invalid;
         }
 
-        virtual ff::draw_ptr begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::draw_options options) override
+        virtual ff::dxgi::draw_ptr begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options) override
         {
             this->end_draw();
 
@@ -735,7 +736,7 @@ namespace
             {
                 this->init_geometry_constant_buffers_0(target, view_rect, world_rect);
                 this->target_requires_palette = ff::dxgi::palette_format(target.format());
-                this->force_pre_multiplied_alpha = ff::flags::has(options, ff::draw_options::pre_multiplied_alpha) && ff::dxgi::supports_pre_multiplied_alpha(target.format()) ? 1 : 0;
+                this->force_pre_multiplied_alpha = ff::flags::has(options, ff::dxgi::draw_options::pre_multiplied_alpha) && ff::dxgi::supports_pre_multiplied_alpha(target.format()) ? 1 : 0;
                 this->state = ::draw_device_internal::state_t::drawing;
 
                 return this;
@@ -750,7 +751,7 @@ namespace
             {
                 this->flush();
 
-                ff_dx::get_device_state().set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
+                ff::dx11::get_device_state().set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
 
                 this->state = ::draw_device_internal::state_t::valid;
                 this->palette_stack.resize(1);
@@ -765,7 +766,7 @@ namespace
             }
         }
 
-        virtual void draw_sprite(const ff::sprite_data& sprite, const ff::transform& transform) override
+        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform) override
         {
             ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette);
             if (alpha_type != ::alpha_type::invisible && sprite.view())
@@ -776,7 +777,7 @@ namespace
                     : (use_palette ? ::geometry_bucket_type::palette_sprites : ::geometry_bucket_type::sprites);
 
                 float depth = this->nudge_depth(this->force_no_overlap ? ::last_depth_type::sprite_no_overlap : ::last_depth_type::sprite);
-                ff::vertex::sprite_geometry& input = *reinterpret_cast<ff::vertex::sprite_geometry*>(this->add_geometry(nullptr, bucket_type, depth));
+                ff::dx11::vertex::sprite_geometry& input = *reinterpret_cast<ff::dx11::vertex::sprite_geometry*>(this->add_geometry(nullptr, bucket_type, depth));
 
                 this->get_world_matrix_and_texture_index(*sprite.view(), use_palette, input.matrix_index, input.texture_index);
                 input.position.x = transform.position.x;
@@ -858,7 +859,7 @@ namespace
 
         virtual void draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count) override
         {
-            ff::vertex::triangle_geometry input;
+            ff::dx11::vertex::triangle_geometry input;
             input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
             input.depth = this->nudge_depth(this->force_no_overlap ? ::last_depth_type::triangle_no_overlap : ::last_depth_type::triangle);
 
@@ -930,7 +931,7 @@ namespace
 
         virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness) override
         {
-            ff::vertex::circle_geometry input;
+            ff::dx11::vertex::circle_geometry input;
             input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
             input.position.x = center.x;
             input.position.y = center.y;
@@ -955,7 +956,7 @@ namespace
 
             for (size_t i = 0; i != colors2.size(); i++)
             {
-                ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+                ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
             }
 
             this->draw_line_strip(points, count, colors2.data(), count, thickness, pixel_thickness);
@@ -964,14 +965,14 @@ namespace
         virtual void draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_line_strip(points, count, &color2, 1, thickness, pixel_thickness);
         }
 
         virtual void draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_line(start, end, color2, thickness, pixel_thickness);
         }
 
@@ -981,7 +982,7 @@ namespace
 
             for (size_t i = 0; i != colors2.size(); i++)
             {
-                ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+                ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
             }
 
             this->draw_filled_rectangle(rect, colors2.data());
@@ -990,7 +991,7 @@ namespace
         virtual void draw_palette_filled_rectangle(const ff::rect_float& rect, int color) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_filled_rectangle(rect, color2);
         }
 
@@ -1001,7 +1002,7 @@ namespace
 
             for (size_t i = 0; i != colors2.size(); i++)
             {
-                ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+                ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
             }
 
             this->draw_filled_triangles(points, colors2.data(), count);
@@ -1010,41 +1011,41 @@ namespace
         virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int color) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_filled_circle(center, radius, color2);
         }
 
         virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color) override
         {
             DirectX::XMFLOAT4 inside_color2, outside_color2;
-            ff::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
-            ff::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
             this->draw_filled_circle(center, radius, inside_color2, outside_color2);
         }
 
         virtual void draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_outline_rectangle(rect, color2, thickness, pixel_thickness);
         }
 
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness) override
         {
             DirectX::XMFLOAT4 color2;
-            ff::palette_index_to_color(this->remap_palette_index(color), color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
             this->draw_outline_circle(center, radius, color2, thickness, pixel_thickness);
         }
 
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness) override
         {
             DirectX::XMFLOAT4 inside_color2, outside_color2;
-            ff::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
-            ff::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
+            ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
             this->draw_outline_circle(center, radius, inside_color2, outside_color2, thickness, pixel_thickness);
         }
 
-        virtual ff::matrix_stack& world_matrix_stack() override
+        virtual ff::dxgi::matrix_stack& world_matrix_stack() override
         {
             return this->world_matrix_stack_;
         }
@@ -1054,7 +1055,7 @@ namespace
             this->last_depth_type = ::last_depth_type::nudged;
         }
 
-        virtual void push_palette(ff::palette_base* palette) override
+        virtual void push_palette(ff::dxgi::palette_base* palette) override
         {
             assert(!this->target_requires_palette && palette);
             this->palette_stack.push_back(palette);
@@ -1076,7 +1077,7 @@ namespace
         {
             this->palette_remap_stack.push_back(std::make_pair(
                 remap ? remap : ::DEFAULT_PALETTE_REMAP.data(),
-                remap ? (hash ? hash : ff::stable_hash_bytes(remap, ff::constants::palette_size)) : ::DEFAULT_PALETTE_REMAP_HASH));
+                remap ? (hash ? hash : ff::stable_hash_bytes(remap, ff::dxgi::palette_size)) : ::DEFAULT_PALETTE_REMAP_HASH));
             this->palette_remap_index = ff::constants::invalid_dword;
         }
 
@@ -1135,7 +1136,7 @@ namespace
             this->force_pre_multiplied_alpha--;
         }
 
-        virtual void push_custom_context(ff::draw_base::custom_context_func&& func) override
+        virtual void push_custom_context(ff::dxgi::draw_base::custom_context_func&& func) override
         {
             this->flush();
             this->custom_context_stack.push_back(std::move(func));
@@ -1185,12 +1186,12 @@ namespace
 
             // Palette
             this->palette_stack.push_back(nullptr);
-            this->palette_texture = std::make_shared<ff::texture>(
-                ff::point_size(ff::constants::palette_size, ::MAX_PALETTES).cast<int>(), ff::dxgi::PALETTE_FORMAT);
+            this->palette_texture = std::make_shared<ff::dx11::texture>(
+                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTES).cast<int>(), ff::dxgi::PALETTE_FORMAT);
 
             this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
-            this->palette_remap_texture = std::make_shared<ff::texture>(
-                ff::point_size(ff::constants::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::dxgi::PALETTE_INDEX_FORMAT);
+            this->palette_remap_texture = std::make_shared<ff::dx11::texture>(
+                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::dxgi::PALETTE_INDEX_FORMAT);
 
             // States
             this->sampler_stack.push_back(::get_texture_sampler_state(D3D11_FILTER_MIN_MAG_MIP_POINT));
@@ -1214,12 +1215,12 @@ namespace
             this->pixel_constants_hash_0 = 0;
 
             this->sampler_stack.clear();
-            this->opaque_state = ff_dx::fixed_state();
-            this->alpha_state = ff_dx::fixed_state();
-            this->pre_multiplied_alpha_state = ff_dx::fixed_state();
+            this->opaque_state = ff::dx11::fixed_state();
+            this->alpha_state = ff::dx11::fixed_state();
+            this->pre_multiplied_alpha_state = ff::dx11::fixed_state();
             this->custom_context_stack.clear();
 
-            this->view_matrix = ff::matrix::identity_4x4();
+            this->view_matrix = ff::dxgi::matrix_identity_4x4();
             this->world_matrix_stack_.reset();
             this->world_matrix_to_index.clear();
             this->world_matrix_index = ff::constants::invalid_dword;
@@ -1254,7 +1255,7 @@ namespace
             }
         }
 
-        void matrix_changing(const ff::matrix_stack& matrix_stack)
+        void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack)
         {
             this->world_matrix_index = ff::constants::invalid_dword;
         }
@@ -1264,7 +1265,7 @@ namespace
             assert(color_count == 1 || color_count == point_count);
             thickness = pixel_thickness ? -std::abs(thickness) : std::abs(thickness);
 
-            ff::vertex::line_geometry input;
+            ff::dx11::vertex::line_geometry input;
             input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
             input.depth = this->nudge_depth(this->force_no_overlap ? ::last_depth_type::line_no_overlap : ::last_depth_type::line);
             input.color[0] = colors[0];
@@ -1317,7 +1318,7 @@ namespace
             size_t hash0 = ff::stable_hash_func(this->geometry_constants_0);
             if (!this->geometry_constants_hash_0 || this->geometry_constants_hash_0 != hash0)
             {
-                this->geometry_constants_buffer_0.update(ff_dx::get_device_state(), &this->geometry_constants_0, sizeof(::geometry_shader_constants_0));
+                this->geometry_constants_buffer_0.update(ff::dx11::get_device_state(), &this->geometry_constants_0, sizeof(::geometry_shader_constants_0));
                 this->geometry_constants_hash_0 = hash0;
             }
         }
@@ -1345,7 +1346,7 @@ namespace
 #else
                 size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;
 #endif
-                this->geometry_constants_buffer_1.update(ff_dx::get_device_state(), this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
+                this->geometry_constants_buffer_1.update(ff::dx11::get_device_state(), this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
             }
         }
 
@@ -1364,7 +1365,7 @@ namespace
                 size_t hash0 = ff::stable_hash_func(this->pixel_constants_0);
                 if (!this->pixel_constants_hash_0 || this->pixel_constants_hash_0 != hash0)
                 {
-                    this->pixel_constants_buffer_0.update(ff_dx::get_device_state(), &this->pixel_constants_0, sizeof(::pixel_shader_constants_0));
+                    this->pixel_constants_buffer_0.update(ff::dx11::get_device_state(), &this->pixel_constants_0, sizeof(::pixel_shader_constants_0));
                     this->pixel_constants_hash_0 = hash0;
                 }
             }
@@ -1375,25 +1376,25 @@ namespace
             if (this->textures_using_palette_count && !this->palette_to_index.empty())
             {
                 ID3D11Resource* dest_resource = this->palette_texture->dx11_texture();
-                CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
+                CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::dxgi::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_to_index)
                 {
-                    ff::palette_base* palette = iter.second.first;
+                    ff::dxgi::palette_base* palette = iter.second.first;
                     if (palette)
                     {
                         unsigned int index = iter.second.second;
                         size_t palette_row = palette->current_row();
-                        const ff::palette_data* palette_data = palette->data();
+                        const ff::dxgi::palette_data_base* palette_data = palette->data();
                         size_t row_hash = palette_data->row_hash(palette_row);
 
                         if (this->palette_texture_hashes[index] != row_hash)
                         {
                             this->palette_texture_hashes[index] = row_hash;
-                            ID3D11Resource* src_resource = palette_data->texture()->dx11_texture();
+                            ID3D11Resource* src_resource = static_cast<ff::dx11::texture*>(palette_data->texture().get())->dx11_texture();
                             box.top = static_cast<UINT>(palette_row);
                             box.bottom = box.top + 1;
-                            ff_dx::get_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
+                            ff::dx11::get_device_state().copy_subresource_region(dest_resource, 0, 0, index, 0, src_resource, 0, &box);
                         }
                     }
                 }
@@ -1402,7 +1403,7 @@ namespace
             if ((this->textures_using_palette_count || this->target_requires_palette) && !this->palette_remap_to_index.empty())
             {
                 ID3D11Resource* dest_remap_resource = this->palette_remap_texture->dx11_texture();
-                CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::constants::palette_size), 1, 1);
+                CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::dxgi::palette_size), 1, 1);
 
                 for (const auto& iter : this->palette_remap_to_index)
                 {
@@ -1415,7 +1416,7 @@ namespace
                         this->palette_remap_texture_hashes[row] = row_hash;
                         box.top = row;
                         box.bottom = row + 1;
-                        ff_dx::get_device_state().update_subresource(dest_remap_resource, 0, &box, remap, static_cast<UINT>(ff::constants::palette_size), 0);
+                        ff::dx11::get_device_state().update_subresource(dest_remap_resource, 0, &box, remap, static_cast<UINT>(ff::dxgi::palette_size), 0);
                     }
                 }
             }
@@ -1424,23 +1425,23 @@ namespace
         void set_shader_input()
         {
             std::array<ID3D11Buffer*, 2> buffers_gs = { this->geometry_constants_buffer_0.dx_buffer(), this->geometry_constants_buffer_1.dx_buffer() };
-            ff_dx::get_device_state().set_constants_gs(buffers_gs.data(), 0, buffers_gs.size());
+            ff::dx11::get_device_state().set_constants_gs(buffers_gs.data(), 0, buffers_gs.size());
 
             std::array<ID3D11Buffer*, 1> buffers_ps = { this->pixel_constants_buffer_0.dx_buffer() };
-            ff_dx::get_device_state().set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
+            ff::dx11::get_device_state().set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
 
             std::array<ID3D11SamplerState*, 1> sample_states = { this->sampler_stack.back().Get() };
-            ff_dx::get_device_state().set_samplers_ps(sample_states.data(), 0, sample_states.size());
+            ff::dx11::get_device_state().set_samplers_ps(sample_states.data(), 0, sample_states.size());
 
             if (this->texture_count)
             {
                 std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES> textures;
                 for (size_t i = 0; i < this->texture_count; i++)
                 {
-                    textures[i] = ff_dx::texture_view::get(*this->textures[i]).dx11_texture_view();
+                    textures[i] = ff::dx11::texture_view::get(*this->textures[i]).dx11_texture_view();
                 }
 
-                ff_dx::get_device_state().set_resources_ps(textures.data(), 0, this->texture_count);
+                ff::dx11::get_device_state().set_resources_ps(textures.data(), 0, this->texture_count);
             }
 
             if (this->textures_using_palette_count)
@@ -1448,21 +1449,21 @@ namespace
                 std::array<ID3D11ShaderResourceView*, ::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
                 for (size_t i = 0; i < this->textures_using_palette_count; i++)
                 {
-                    textures_using_palette[i] = ff_dx::texture_view::get(*this->textures_using_palette[i]).dx11_texture_view();
+                    textures_using_palette[i] = ff::dx11::texture_view::get(*this->textures_using_palette[i]).dx11_texture_view();
                 }
 
-                ff_dx::get_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
+                ff::dx11::get_device_state().set_resources_ps(textures_using_palette.data(), ::MAX_TEXTURES, this->textures_using_palette_count);
             }
 
             if (this->textures_using_palette_count || this->target_requires_palette)
             {
                 std::array<ID3D11ShaderResourceView*, 2> palettes =
                 {
-                    (this->textures_using_palette_count ? ff_dx::texture_view::get(*this->palette_texture).dx11_texture_view() : nullptr),
-                    ff_dx::texture_view::get(*this->palette_remap_texture).dx11_texture_view(),
+                    (this->textures_using_palette_count ? ff::dx11::texture_view::get(*this->palette_texture).dx11_texture_view() : nullptr),
+                    ff::dx11::texture_view::get(*this->palette_remap_texture).dx11_texture_view(),
                 };
 
-                ff_dx::get_device_state().set_resources_ps(palettes.data(), ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE, palettes.size());
+                ff::dx11::get_device_state().set_resources_ps(palettes.data(), ::MAX_TEXTURES + ::MAX_TEXTURES_USING_PALETTE, palettes.size());
             }
         }
 
@@ -1507,7 +1508,7 @@ namespace
                 byte_size += bucket.byte_size();
             }
 
-            void* buffer_data = this->geometry_buffer.map(ff_dx::get_device_state(), byte_size);
+            void* buffer_data = this->geometry_buffer.map(ff::dx11::get_device_state(), byte_size);
             if (buffer_data)
             {
                 for (::geometry_bucket& bucket : this->geometry_buckets)
@@ -1530,8 +1531,8 @@ namespace
 
         void draw_opaque_geometry()
         {
-            const ff::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
-            ff_dx::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+            const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+            ff::dx11::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
             this->opaque_state.apply();
 
@@ -1548,7 +1549,7 @@ namespace
 
                     if (!custom_func || (*custom_func)(bucket.item_type(), true))
                     {
-                        ff_dx::get_device_state().draw(bucket.render_count(), bucket.render_start());
+                        ff::dx11::get_device_state().draw(bucket.render_count(), bucket.render_start());
                     }
                 }
             }
@@ -1559,10 +1560,10 @@ namespace
             const size_t alpha_geometry_size = this->alpha_geometry.size();
             if (alpha_geometry_size)
             {
-                const ff::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
-                ff_dx::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+                const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+                ff::dx11::get_device_state().set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
 
-                ff_dx::fixed_state& alpha_state = this->force_pre_multiplied_alpha ? this->pre_multiplied_alpha_state : this->alpha_state;
+                ff::dx11::fixed_state& alpha_state = this->force_pre_multiplied_alpha ? this->pre_multiplied_alpha_state : this->alpha_state;
                 alpha_state.apply();
 
                 for (size_t i = 0; i < alpha_geometry_size; )
@@ -1585,7 +1586,7 @@ namespace
 
                     if (!custom_func || (*custom_func)(entry.bucket->item_type(), false))
                     {
-                        ff_dx::get_device_state().draw(geometry_count, entry.bucket->render_start() + entry.index);
+                        ff::dx11::get_device_state().draw(geometry_count, entry.bucket->render_start() + entry.index);
                     }
                 }
             }
@@ -1725,7 +1726,7 @@ namespace
                 }
                 else
                 {
-                    ff::palette_base* palette = this->palette_stack.back();
+                    ff::dxgi::palette_base* palette = this->palette_stack.back();
                     size_t palette_hash = palette ? palette->data()->row_hash(palette->current_row()) : 0;
                     auto iter = this->palette_to_index.find(palette_hash);
 
@@ -1832,10 +1833,10 @@ namespace
         } state;
 
         // Constant data for shaders
-        ff_dx::buffer geometry_buffer;
-        ff_dx::buffer geometry_constants_buffer_0;
-        ff_dx::buffer geometry_constants_buffer_1;
-        ff_dx::buffer pixel_constants_buffer_0;
+        ff::dx11::buffer geometry_buffer;
+        ff::dx11::buffer geometry_constants_buffer_0;
+        ff::dx11::buffer geometry_constants_buffer_1;
+        ff::dx11::buffer pixel_constants_buffer_0;
         ::geometry_shader_constants_0 geometry_constants_0;
         ::geometry_shader_constants_1 geometry_constants_1;
         ::pixel_shader_constants_0 pixel_constants_0;
@@ -1845,14 +1846,14 @@ namespace
 
         // Render state
         std::vector<Microsoft::WRL::ComPtr<ID3D11SamplerState>> sampler_stack;
-        ff_dx::fixed_state opaque_state;
-        ff_dx::fixed_state alpha_state;
-        ff_dx::fixed_state pre_multiplied_alpha_state;
-        std::vector<ff::draw_base::custom_context_func> custom_context_stack;
+        ff::dx11::fixed_state opaque_state;
+        ff::dx11::fixed_state alpha_state;
+        ff::dx11::fixed_state pre_multiplied_alpha_state;
+        std::vector<ff::dxgi::draw_base::custom_context_func> custom_context_stack;
 
         // Matrixes
         DirectX::XMFLOAT4X4 view_matrix;
-        ff::matrix_stack world_matrix_stack_;
+        ff::dxgi::matrix_stack world_matrix_stack_;
         ff::signal_connection world_matrix_stack_changing_connection;
         std::unordered_map<DirectX::XMFLOAT4X4, unsigned int, ff::stable_hash<DirectX::XMFLOAT4X4>> world_matrix_to_index;
         unsigned int world_matrix_index;
@@ -1866,14 +1867,14 @@ namespace
         // Palettes
         bool target_requires_palette;
 
-        std::vector<ff::palette_base*> palette_stack;
-        std::shared_ptr<ff::texture> palette_texture;
+        std::vector<ff::dxgi::palette_base*> palette_stack;
+        std::shared_ptr<ff::dx11::texture> palette_texture;
         std::array<size_t, ::MAX_PALETTES> palette_texture_hashes;
-        std::unordered_map<size_t, std::pair<ff::palette_base*, unsigned int>, ff::no_hash<size_t>> palette_to_index;
+        std::unordered_map<size_t, std::pair<ff::dxgi::palette_base*, unsigned int>, ff::no_hash<size_t>> palette_to_index;
         unsigned int palette_index;
 
         std::vector<std::pair<const uint8_t*, size_t>> palette_remap_stack;
-        std::shared_ptr<ff::texture> palette_remap_texture;
+        std::shared_ptr<ff::dx11::texture> palette_remap_texture;
         std::array<size_t, ::MAX_PALETTE_REMAPS> palette_remap_texture_hashes;
         std::unordered_map<size_t, std::pair<const uint8_t*, unsigned int>, ff::no_hash<size_t>> palette_remap_to_index;
         unsigned int palette_remap_index;
@@ -1889,14 +1890,12 @@ namespace
     };
 }
 
-std::unique_ptr<ff::draw_device> ff::draw_device::create()
+std::unique_ptr<ff::dx11::draw_device> ff::dx11::draw_device::create()
 {
     return std::make_unique<::draw_device_internal>();
 }
 
-ff::draw_ptr ff::draw_device::begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::draw_options options)
+ff::dxgi::draw_ptr ff::dx11::draw_device::begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::dxgi::draw_options options)
 {
     return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }
-
-#endif

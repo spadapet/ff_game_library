@@ -1,9 +1,5 @@
 #include "pch.h"
 #include "animation.h"
-#include "color.h"
-#include "draw_base.h"
-#include "matrix_stack.h"
-#include "transform.h"
 
 ff::animation::animation()
     : frame_length_(0)
@@ -56,7 +52,7 @@ void ff::animation::frame_events(float start, float end, bool include_start, ff:
     }
 }
 
-void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
+void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
     if (!ff::animation_keys::adjust_frame(frame, 0.0f, this->frame_length_, this->method))
     {
@@ -64,7 +60,7 @@ void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transfo
     }
 
     bool push_transform = (transform.rotation != 0);
-    const ff::transform& draw_transform = push_transform ? ff::transform::identity() : transform;
+    const ff::dxgi::transform& draw_transform = push_transform ? ff::dxgi::transform::identity() : transform;
 
     if (push_transform)
     {
@@ -89,7 +85,7 @@ void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transfo
             continue;
         }
 
-        ff::transform visual_transform = draw_transform;
+        ff::dxgi::transform visual_transform = draw_transform;
 
         if (info.position_keys)
         {
@@ -133,7 +129,7 @@ void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transfo
             }
             else if (int_value)
             {
-                ff::palette_index_to_color(int_value->get<int>(), visual_transform.color);
+                ff::dxgi::palette_index_to_color(int_value->get<int>(), visual_transform.color);
             }
         }
 
@@ -150,9 +146,9 @@ void ff::animation::draw_frame(ff::draw_base& draw, const ff::transform& transfo
     }
 }
 
-void ff::animation::draw_frame(ff::draw_base& draw, const ff::pixel_transform& transform, float frame, const ff::dict* params)
+void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
 {
-    this->draw_frame(draw, ff::transform(transform), frame, params);
+    this->draw_frame(draw, ff::dxgi::transform(transform), frame, params);
 }
 
 ff::value_ptr ff::animation::frame_value(size_t value_id, float frame, const ff::dict* params)

@@ -16,12 +16,12 @@ static const DirectX::XMFLOAT3X3 identity_matrix_3x3
     0.0f, 0.0f, 1.0f
 );
 
-const DirectX::XMFLOAT4X4& ff::matrix::identity_4x4()
+const DirectX::XMFLOAT4X4& ff::dxgi::matrix_identity_4x4()
 {
     return ::identity_matrix_4x4;
 }
 
-const DirectX::XMFLOAT3X3& ff::matrix::identity_3x3()
+const DirectX::XMFLOAT3X3& ff::dxgi::matrix_identity_3x3()
 {
     return ::identity_matrix_3x3;
 }

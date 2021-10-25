@@ -1,21 +1,15 @@
 #include "pch.h"
-#include "graphics.h"
-#include "init.h"
-#include "shader.h"
-#include "texture.h"
-#include "texture_metadata.h"
-
-#if DXVER == 11
 #include "animation.h"
 #include "font_file.h"
+#include "graphics.h"
+#include "init.h"
 #include "palette_data.h"
 #include "random_sprite.h"
 #include "sprite_font.h"
 #include "sprite_list.h"
 #include "sprite_resource.h"
-#endif
-
-#include "ff.graphics.res.h"
+#include "texture.h"
+#include "texture_metadata.h"
 
 static bool init_graphics_status;
 
@@ -26,9 +20,6 @@ namespace
         one_time_init_grahics()
         {
             // Resource objects
-            ff::resource_object_base::register_factory<ff::internal::shader_factory>("shader");
-            ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
-#if DXVER == 11
             ff::resource_object_base::register_factory<ff::internal::animation_factory>("animation");
             ff::resource_object_base::register_factory<ff::internal::font_file_factory>("font_file");
             ff::resource_object_base::register_factory<ff::internal::palette_data_factory>("palette");
@@ -37,8 +28,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::sprite_resource_factory>("sprite_resource");
             ff::resource_object_base::register_factory<ff::internal::sprite_font_factory>("font");
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
-#endif
-            ff::global_resources::add(::assets::graphics::data());
+            ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
             ::init_graphics_status = ff::internal::graphics::init();
         }

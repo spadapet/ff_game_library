@@ -1,7 +1,6 @@
 #pragma once
 
 // Windows
-#include <d3dcompiler.h>
 #include <dwrite_3.h>
 
 #if UWP_APP

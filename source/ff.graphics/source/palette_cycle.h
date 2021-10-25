@@ -1,12 +1,10 @@
 #pragma once
 
-#include "palette_base.h"
-
 namespace ff
 {
     class palette_data;
 
-    class palette_cycle : public ff::palette_base
+    class palette_cycle : public ff::dxgi::palette_base
     {
     public:
         palette_cycle(const std::shared_ptr<ff::palette_data>& data, std::string_view remap_name = "", float cycles_per_second = 0.0f);
@@ -21,7 +19,7 @@ namespace ff
 
         // palette_base
         virtual size_t current_row() const override;
-        virtual const ff::palette_data* data() const override;
+        virtual const ff::dxgi::palette_data_base* data() const override;
         virtual const uint8_t* index_remap() const override;
         virtual size_t index_remap_hash() const override;
 

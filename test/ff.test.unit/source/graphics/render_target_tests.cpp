@@ -23,13 +23,13 @@ namespace ff::test::graphics
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());
 
-            Assert::IsTrue(target.pre_render(ff_dx::get_device_state(), &ff::color::magenta()));
+            Assert::IsTrue(target.pre_render(ff_dx::get_device_state(), &ff::dxgi::color_magenta()));
             Assert::IsTrue(target.post_render(ff_dx::get_device_state()));
 
             Assert::IsNotNull(target.dx11_target_view());
             Assert::IsNotNull(target.dx11_target_texture());
 
-            Assert::IsTrue(target.pre_render(ff_dx::get_device_state(), &ff::color::yellow()));
+            Assert::IsTrue(target.pre_render(ff_dx::get_device_state(), &ff::dxgi::color_yellow()));
             Assert::IsTrue(target.post_render(ff_dx::get_device_state()));
         }
     };

@@ -8,7 +8,7 @@ namespace ff
 
 namespace ff::ui
 {
-    const ff::palette_base* global_palette();
+    const ff::dxgi::palette_base* global_palette();
     const std::vector<ff::ui_view*>& input_views();
     const std::vector<ff::ui_view*>& rendered_views();
 

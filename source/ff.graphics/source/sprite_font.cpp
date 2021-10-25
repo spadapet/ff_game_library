@@ -1,6 +1,4 @@
 #include "pch.h"
-#include "color.h"
-#include "draw_base.h"
 #include "font_file.h"
 #include "graphics.h"
 #include "sprite.h"
@@ -8,7 +6,6 @@
 #include "sprite_list.h"
 #include "sprite_optimizer.h"
 #include "texture.h"
-#include "transform.h"
 
 static bool text_contains_outline_control(std::wstring_view text)
 {
@@ -78,9 +75,9 @@ ff::sprite_font::operator bool() const
 }
 
 ff::point_float ff::sprite_font::draw_text(
-    ff::draw_base* draw,
+    ff::dxgi::draw_base* draw,
     std::string_view text,
-    const ff::transform& transform,
+    const ff::dxgi::transform& transform,
     const DirectX::XMFLOAT4& outline_color,
     ff::sprite_font_options options) const
 {
@@ -91,7 +88,7 @@ ff::point_float ff::sprite_font::draw_text(
 
     if ((outline_color.w > 0 || ::text_contains_outline_control(wtext)) && !ff::flags::has(options, ff::sprite_font_options::no_outline) && this->outline_sprites)
     {
-        ff::transform outline_transform = transform;
+        ff::dxgi::transform outline_transform = transform;
         outline_transform.color = outline_color;
         size = this->internal_draw_text(draw, this->outline_sprites.get(), wtext, outline_transform, options);
         draw->nudge_depth();
@@ -111,7 +108,7 @@ ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_f
     std::wstring wtext_string;
     std::wstring_view wtext = ::to_wstring(text, wtext_array, wtext_string);
 
-    return this->internal_draw_text(nullptr, nullptr, wtext, ff::transform({}, scale), ff::sprite_font_options::no_control);
+    return this->internal_draw_text(nullptr, nullptr, wtext, ff::dxgi::transform({}, scale), ff::sprite_font_options::no_control);
 }
 
 float ff::sprite_font::line_spacing() const
@@ -383,7 +380,7 @@ bool ff::sprite_font::init_sprites()
     return true;
 }
 
-ff::point_float ff::sprite_font::internal_draw_text(ff::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::transform& transform, ff::sprite_font_options options) const
+ff::point_float ff::sprite_font::internal_draw_text(ff::dxgi::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::dxgi::transform& transform, ff::sprite_font_options options) const
 {
     IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (!font_face || text.empty() || transform.scale.x * transform.scale.y == 0.0f)
@@ -397,7 +394,7 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::draw_base* draw, const f
 
     float design_unit_size = this->size / fm.designUnitsPerEm;
     ff::point_float scaled_design_unit_size = transform.scale * design_unit_size;
-    ff::transform base_pos = transform;
+    ff::dxgi::transform base_pos = transform;
     base_pos.position.y += fm.ascent * scaled_design_unit_size.y;
     ff::point_float max_pos(transform.position.x, transform.position.y + (fm.ascent + fm.descent) * scaled_design_unit_size.y);
     float line_spacing = (fm.ascent + fm.descent + fm.lineGap) * scaled_design_unit_size.y;
@@ -442,7 +439,7 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::draw_base* draw, const f
 
                 case ff::sprite_font_control::outline_palette_color:
                 case ff::sprite_font_control::text_palette_color:
-                    ff::palette_index_to_color((ch != ch_end) ? static_cast<int>(*ch++) : 0, color);
+                    ff::dxgi::palette_index_to_color((ch != ch_end) ? static_cast<int>(*ch++) : 0, color);
 
                     if (!ff::flags::has(options, ff::sprite_font_options::no_control))
                     {

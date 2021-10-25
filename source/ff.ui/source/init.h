@@ -4,7 +4,7 @@ namespace ff
 {
     struct init_ui_params
     {
-        std::function<const ff::palette_base* ()> palette_func;
+        std::function<const ff::dxgi::palette_base* ()> palette_func;
         std::function<void()> register_components_func;
         std::function<void(Noesis::ResourceDictionary*)> application_resources_loaded_func;
 

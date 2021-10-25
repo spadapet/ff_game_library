@@ -630,7 +630,7 @@ void ff::ui::state_rendered()
     }
 }
 
-const ff::palette_base* ff::ui::global_palette()
+const ff::dxgi::palette_base* ff::ui::global_palette()
 {
     return ::ui_params.palette_func ? ::ui_params.palette_func() : nullptr;
 }

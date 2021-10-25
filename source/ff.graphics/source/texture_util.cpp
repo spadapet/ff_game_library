@@ -122,7 +122,7 @@ static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_
         return scratch_final;
     }
 
-    if (FAILED(scratch_final.Initialize2D(ff::dxgi::PALETTE_FORMAT, ff::constants::palette_size, 1, 1, 1)))
+    if (FAILED(scratch_final.Initialize2D(ff::dxgi::PALETTE_FORMAT, ff::dxgi::palette_size, 1, 1, 1)))
     {
         assert(false);
         return scratch_final;

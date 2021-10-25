@@ -4,7 +4,7 @@
     <SharedCppPropsImported>true</SharedCppPropsImported>
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <NoesisVersion>3.1.0</NoesisVersion>
+    <NoesisVersion>3.1.1</NoesisVersion>
     <DefaultDirectXVersion>11</DefaultDirectXVersion>
 
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))))</FFRoot>

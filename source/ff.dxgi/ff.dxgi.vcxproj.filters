@@ -23,6 +23,27 @@
     <ClCompile Include="source\texture_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\transform.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\color.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\draw_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\draw_ptr.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\matrix.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\matrix_stack.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sprite_data.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -81,6 +102,33 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture_util.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\transform.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\color.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_ptr.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\matrix.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\matrix_stack.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\sprite_data.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\palette_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\palette_data_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

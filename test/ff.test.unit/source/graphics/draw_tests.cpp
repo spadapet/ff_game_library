@@ -30,11 +30,11 @@ namespace ff::test::graphics
             // Draw
             {
                 ff_dx::depth depth;
-                std::unique_ptr<ff::draw_device> draw_device = ff::draw_device::create();
-                ff::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
-                draw->draw_sprite(sprite->sprite_data(), ff::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));
-                draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::color::yellow(), 4);
-                draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::color::red(), 3);
+                std::unique_ptr<ff_dx::draw_device> draw_device = ff_dx::draw_device::create();
+                ff::dxgi::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
+                draw->draw_sprite(sprite->sprite_data(), ff::dxgi::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));
+                draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::dxgi::color_yellow(), 4);
+                draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
             target.post_render(ff_dx::get_device_state());
