@@ -36,11 +36,16 @@ const std::shared_ptr<ff::dx11::texture>& ff::dx11::target_texture::shared_textu
     return this->texture_;
 }
 
+void ff::dx11::target_texture::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
+{
+    ff::dx11::device_state::get(context).clear_target(this->dx11_target_view(), clear_color);
+}
+
 bool ff::dx11::target_texture::pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        ff::dx11::device_state::get(context).clear_target(this->dx11_target_view(), *clear_color);
+        this->clear(context, *clear_color);
     }
 
     return true;

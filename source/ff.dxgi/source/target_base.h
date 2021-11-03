@@ -10,6 +10,7 @@ namespace ff::dxgi
     public:
         virtual ~target_base() = default;
 
+        virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) = 0;
         virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color = nullptr) = 0;
         virtual bool post_render(ff::dxgi::command_context_base& context) = 0;
         virtual ff::signal_sink<target_base*>& render_presented() = 0;

@@ -2,8 +2,6 @@
 
 namespace ff
 {
-    class sprite_data;
-
     class sprite_base
     {
     public:

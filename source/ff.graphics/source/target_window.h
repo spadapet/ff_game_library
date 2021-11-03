@@ -16,6 +16,7 @@ namespace ff
         operator bool() const;
 
         // target_base
+        virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
         virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
         virtual bool post_render(ff::dxgi::command_context_base& context) override;
         virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;

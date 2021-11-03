@@ -6,8 +6,6 @@
 
 namespace ff
 {
-    class texture_view_base;
-
     class sprite
         : public ff::sprite_base
         , public ff::animation_base

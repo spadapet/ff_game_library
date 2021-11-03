@@ -3,9 +3,7 @@
 namespace ff
 {
     class font_file;
-    class draw_base;
     class sprite_list;
-    struct transform;
 
     enum class sprite_font_control : wchar_t
     {
