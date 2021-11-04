@@ -140,6 +140,7 @@ static void destroy_d3d(bool for_reset)
 
     ::outputs_hash = 0;
     ::adapter.Reset();
+    ::context.Reset();
     ::device.Reset();
 }
 

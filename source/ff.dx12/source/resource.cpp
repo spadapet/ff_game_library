@@ -156,13 +156,11 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
     commands->copy_buffer(this, offset, mem_range);
     this->state(state_before, commands);
 
-    ff::dx12::fence_value result_fence_value = commands->next_fence_value();
-    if (new_commands)
-    {
-        ff::dx12::copy_queue().execute(*new_commands);
-    }
+    this->write_fence_value = new_commands
+        ? ff::dx12::copy_queue().execute(*new_commands)
+        : commands->next_fence_value();
 
-    return result_fence_value;
+    return this->write_fence_value;
 }
 
 ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::ScratchImage& data)
@@ -175,9 +173,57 @@ ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* com
     return ff::dx12::fence_value();
 }
 
-ff::dx12::fence_value ff::dx12::resource::capture_buffer(ff::dx12::commands* commands, const std::shared_ptr<std::vector<uint8_t>>& result, uint64_t offset, uint64_t size)
+std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readback_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
 {
-    return ff::dx12::fence_value();
+    if (!size || offset + size > this->alloc_info_.SizeInBytes)
+    {
+        assert(!size);
+        return {};
+    }
+
+    std::unique_ptr<ff::dx12::commands> new_commands;
+    if (!commands)
+    {
+        new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
+        commands = new_commands.get();
+    }
+
+    ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(size, commands->next_fence_value());
+    if (!mem_range || !mem_range.cpu_data())
+    {
+        assert(false);
+        return {};
+    }
+
+    commands->wait_before_execute().add(this->write_fence_value);
+
+    D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
+    commands->copy_buffer(mem_range, this, offset, size);
+    this->state(state_before, commands);
+
+    ff::dx12::fence_value fence_value = new_commands
+        ? ff::dx12::copy_queue().execute(*new_commands)
+        : commands->next_fence_value();
+
+    this->read_fence_values.add(fence_value);
+    return std::make_pair(std::move(fence_value), std::move(mem_range));
+}
+
+std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
+{
+    auto [fence_value, result_mem_range] = this->readback_buffer(commands, offset, size);
+    if (!fence_value)
+    {
+        assert(!size);
+        return {};
+    }
+
+    std::vector<uint8_t> result_bytes;
+    result_bytes.resize(static_cast<size_t>(size));
+    fence_value.wait(nullptr);
+    std::memcpy(result_bytes.data(), result_mem_range.cpu_data(), size);
+
+    return result_bytes;
 }
 
 ff::dx12::fence_value ff::dx12::resource::capture_texture(ff::dx12::commands* commands, const std::shared_ptr<DirectX::ScratchImage>& result)
@@ -199,7 +245,7 @@ void ff::dx12::resource::destroy(bool for_reset)
 
     if (!for_reset)
     {
-        auto fence_values = std::move(this->read_fence_values);
+        ff::dx12::fence_values fence_values = std::move(this->read_fence_values);
         fence_values.add(this->write_fence_value);
         this->write_fence_value = {};
 

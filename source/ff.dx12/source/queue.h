@@ -20,7 +20,7 @@ namespace ff::dx12
         void wait_for_idle();
 
         ff::dx12::commands new_commands(ID3D12PipelineStateX* initial_state = nullptr);
-        void execute(ff::dx12::commands& commands);
+        ff::dx12::fence_value execute(ff::dx12::commands& commands);
         void execute(ff::dx12::commands** commands, size_t count);
 
     private:

@@ -41,6 +41,10 @@ namespace ff::test::dx12
 
             ff::dx12::fence_value fence_value = r1.update_buffer(nullptr, data.data(), 0, ff::array_byte_size(data));
             fence_value.wait(nullptr);
+
+            std::vector<uint8_t> captured_data = r1.capture_buffer(nullptr, 0, ff::array_byte_size(data));
+            assert(ff::vector_byte_size(captured_data) == ff::array_byte_size(data));
+            assert(!std::memcmp(data.data(), captured_data.data(), ff::vector_byte_size(captured_data)));
         }
     };
 }

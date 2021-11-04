@@ -71,10 +71,14 @@ ff::dx12::commands ff::dx12::queue::new_commands(ID3D12PipelineStateX* initial_s
     return ff::dx12::commands(*this, list.Get(), allocator.Get(), std::move(fence), initial_state);
 }
 
-void ff::dx12::queue::execute(ff::dx12::commands& commands)
+ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
 {
+    ff::dx12::fence_value fence_value = commands.next_fence_value();
     ff::dx12::commands* p = &commands;
+
     this->execute(&p, 1);
+
+    return fence_value;
 }
 
 void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)

@@ -128,7 +128,17 @@ void ff::dx12::commands::copy_buffer(ff::dx12::resource* dest, uint64_t dest_off
 
     if (source)
     {
-        this->list->CopyBufferRegion(ff::dx12::get_resource(*dest), dest_offset, ff::dx12::get_resource(*source.heap()), 0, source.size());
+        this->list->CopyBufferRegion(ff::dx12::get_resource(*dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
+    }
+}
+
+void ff::dx12::commands::copy_buffer(ff::dx12::mem_range& dest, ff::dx12::resource* source, uint64_t source_offset, uint64_t source_size)
+{
+    assert(dest && source && source_size <= dest.size());
+
+    if (dest)
+    {
+        this->list->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(*source), source_offset, source_size);
     }
 }
 

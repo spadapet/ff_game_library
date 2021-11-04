@@ -32,12 +32,12 @@ ff::dx12::queue* ff::dx12::fence::queue() const
 
 ff::dx12::fence_value ff::dx12::fence::next_value()
 {
-    return ff::dx12::fence_value(this, this->next_value_.load());
+    return ff::dx12::fence_value(this, this->next_value_);
 }
 
 ff::dx12::fence_value ff::dx12::fence::signal(ff::dx12::queue* queue)
 {
-    return this->signal(this->next_value_.fetch_add(1), queue);
+    return this->signal(this->next_value_, queue);
 }
 
 ff::dx12::fence_value ff::dx12::fence::signal(uint64_t value, ff::dx12::queue* queue)
@@ -46,6 +46,8 @@ ff::dx12::fence_value ff::dx12::fence::signal(uint64_t value, ff::dx12::queue* q
 
     if (!this->complete(value))
     {
+        this->next_value_ = value + 1;
+
         if (queue)
         {
             ff::dx12::get_command_queue(*queue)->Signal(this->fence_.Get(), value);
@@ -61,7 +63,7 @@ ff::dx12::fence_value ff::dx12::fence::signal(uint64_t value, ff::dx12::queue* q
 
 ff::dx12::fence_value ff::dx12::fence::signal_later()
 {
-    return ff::dx12::fence_value(this, this->next_value_.fetch_add(1));
+    return ff::dx12::fence_value(this, this->next_value_++);
 }
 
 void ff::dx12::fence::wait(uint64_t value, ff::dx12::queue* queue)

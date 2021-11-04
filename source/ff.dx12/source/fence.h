@@ -41,6 +41,6 @@ namespace ff::dx12
         ff::dx12::queue* queue_;
         std::mutex completed_value_mutex;
         uint64_t completed_value;
-        std::atomic_uint64_t next_value_;
+        uint64_t next_value_;
     };
 }

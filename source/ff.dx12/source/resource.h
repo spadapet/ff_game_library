@@ -38,7 +38,8 @@ namespace ff::dx12
         ff::dx12::fence_value update_buffer(ff::dx12::commands* commands, const void* data, uint64_t offset, uint64_t size);
         ff::dx12::fence_value update_texture(ff::dx12::commands* commands, const DirectX::ScratchImage& data);
         ff::dx12::fence_value update_texture(ff::dx12::commands* commands, const DirectX::Image& data, size_t sub_index, const D3D12_BOX* dest_box);
-        ff::dx12::fence_value capture_buffer(ff::dx12::commands* commands, const std::shared_ptr<std::vector<uint8_t>>& result, uint64_t offset, uint64_t size);
+        std::pair<ff::dx12::fence_value, ff::dx12::mem_range> readback_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size);
+        std::vector<uint8_t> capture_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size);
         ff::dx12::fence_value capture_texture(ff::dx12::commands* commands, const std::shared_ptr<DirectX::ScratchImage>& result);
         ff::dx12::fence_value capture_texture(ff::dx12::commands* commands, const std::shared_ptr<DirectX::ScratchImage>& result, size_t sub_index, const D3D12_BOX* box);
 

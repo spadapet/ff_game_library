@@ -36,6 +36,7 @@ namespace ff::dx12
         void resource_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
         void resource_barrier(ff::dx12::resource* resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after);
         void copy_buffer(ff::dx12::resource* dest, uint64_t dest_offset, ff::dx12::mem_range& source);
+        void copy_buffer(ff::dx12::mem_range& dest, ff::dx12::resource* source, uint64_t source_offset, uint64_t source_size);
 
     private:
         friend ID3D12GraphicsCommandListX* ff::dx12::get_command_list(const ff::dx12::commands& obj);
