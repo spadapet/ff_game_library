@@ -45,8 +45,8 @@ namespace ff::dx12
             ff::stack_vector<std::pair<ff::dx12::mem_range, DirectX::Image>, 8> mem_ranges;
             size_t width;
             size_t height;
-            size_t mip_size;
-            size_t array_size;
+            size_t mip_count;
+            size_t array_count;
         };
 
         // Buffers
@@ -55,7 +55,7 @@ namespace ff::dx12
         std::vector<uint8_t> capture_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size);
 
         // Textures
-        ff::dx12::fence_value update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, const ff::point_size* dest_pos);
+        ff::dx12::fence_value update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, ff::point_size dest_pos);
         readback_texture_data readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
         DirectX::ScratchImage capture_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
 

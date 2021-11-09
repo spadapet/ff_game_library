@@ -8,7 +8,7 @@
 #include "queue.h"
 #include "resource.h"
 
-static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands)
+static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands, ff::dx12::fence_values* read_fence_values, ff::dx12::fence_value* write_fence_value)
 {
     std::unique_ptr<ff::dx12::commands> new_commands;
     if (!commands)
@@ -17,7 +17,41 @@ static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*
         commands = new_commands.get();
     }
 
+    if (read_fence_values)
+    {
+        commands->wait_before_execute().add(*read_fence_values);
+    }
+
+    if (write_fence_value)
+    {
+        commands->wait_before_execute().add(*write_fence_value);
+    }
+
     return new_commands;
+}
+
+static bool validate_texture_range(const D3D12_RESOURCE_DESC& desc, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect, size_t& width, size_t& height, size_t& mip_count, size_t& array_count)
+{
+    if (sub_count)
+    {
+        const size_t array_start = sub_index / desc.MipLevels;
+        const size_t array_end = (sub_index + sub_count) / desc.MipLevels;
+        const size_t mip_start = sub_index % desc.MipLevels;
+        const size_t mip_end = (sub_index + sub_count) % desc.MipLevels;
+
+        // For multiple images in an array, all of the mip levels must be captured too
+        if (array_start == array_end || (mip_start && mip_end))
+        {
+            width = source_rect ? source_rect->width() : static_cast<size_t>(desc.Width >> mip_start);
+            height = source_rect ? source_rect->height() : static_cast<size_t>(desc.Height >> mip_start);
+            mip_count = (array_start == array_end) ? mip_end - mip_start : static_cast<size_t>(desc.MipLevels);
+            array_count = (array_start != array_end) ? array_end - array_start : 1;
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 size_t ff::dx12::resource::readback_texture_data::image_count() const
@@ -156,7 +190,7 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, &this->read_fence_values, &this->write_fence_value);
     ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
@@ -165,9 +199,6 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
     }
 
     ::memcpy(mem_range.cpu_data(), data, static_cast<size_t>(size));
-
-    commands->wait_before_execute().add(this->read_fence_values);
-    commands->wait_before_execute().add(this->write_fence_value);
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
     commands->update_buffer(this, offset, mem_range);
@@ -185,15 +216,13 @@ std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readba
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, nullptr, &this->write_fence_value);
     ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
         assert(false);
         return {};
     }
-
-    commands->wait_before_execute().add(this->write_fence_value);
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
     commands->readback_buffer(mem_range, this, offset);
@@ -221,27 +250,46 @@ std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* comm
     return result_bytes;
 }
 
-ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, const ff::point_size* dest_pos)
+ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, ff::point_size dest_pos)
 {
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
-    commands->wait_before_execute().add(this->read_fence_values);
-    commands->wait_before_execute().add(this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, &this->read_fence_values, &this->write_fence_value);
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
+
+    size_t temp_width, temp_height, temp_mip_count, temp_array_count;
+    if (!::validate_texture_range(this->desc_, sub_index, sub_count, nullptr, temp_width, temp_height, temp_mip_count, temp_array_count))
+    {
+        assert(!sub_count);
+        return {};
+    }
 
     for (size_t i = 0; i < sub_count; i++)
     {
         const DirectX::Image& image = images[i];
-        ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(image.slicePitch, commands->next_fence_value());
-        uint8_t* dest_pixels = static_cast<uint8_t*>(mem_range.cpu_data());
-
-        for (const uint8_t* src_pixels = image.pixels, *src_pixels_end = image.pixels + image.slicePitch; src_pixels < src_pixels_end; src_pixels += image.rowPitch, dest_pixels += image.rowPitch)
+        size_t row_pitch, slice_pitch;
+        if (FAILED(DirectX::ComputePitch(this->desc_.Format, image.width, image.height, row_pitch, slice_pitch)))
         {
-            std::memcpy(dest_pixels, src_pixels, image.rowPitch);
+            assert(false);
+            return {};
         }
 
-        commands->update_texture(this, i + sub_index, dest_pos ? dest_pos[i] : ff::point_size{}, mem_range, D3D12_SUBRESOURCE_FOOTPRINT
+        const size_t scan_lines = DirectX::ComputeScanlines(this->desc_.Format, image.height);
+        row_pitch = ff::math::align_up<size_t>(row_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+        slice_pitch = row_pitch * scan_lines;
+
+        ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_texture(slice_pitch, commands->next_fence_value());
+        uint8_t* dest_pixels = static_cast<uint8_t*>(mem_range.cpu_data());
+        const uint8_t* src_pixels = image.pixels;
+
+        for (size_t y = 0; y < scan_lines; y++, src_pixels += image.rowPitch, dest_pixels += row_pitch)
         {
-            image.format, static_cast<UINT>(image.width), static_cast<UINT>(image.height), 1, static_cast<UINT>(image.rowPitch),
+            std::memcpy(dest_pixels, src_pixels, row_pitch);
+        }
+
+        const size_t relative_mip_level = i % this->desc_.MipLevels;
+        const ff::point_size pos(dest_pos.x >> relative_mip_level, dest_pos.y >> relative_mip_level);
+        commands->update_texture(this, sub_index + i, pos, mem_range, D3D12_SUBRESOURCE_FOOTPRINT
+        {
+            image.format, static_cast<UINT>(image.width), static_cast<UINT>(image.height), 1, static_cast<UINT>(row_pitch),
         });
     }
 
@@ -255,32 +303,13 @@ ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(f
     readback_texture_data result{};
     result.mem_ranges.reserve(sub_count);
 
-    if (sub_count)
+    if (!::validate_texture_range(this->desc_, sub_index, sub_count, source_rect, result.width, result.height, result.mip_count, result.array_count))
     {
-        const size_t array_start = sub_index / this->desc_.MipLevels;
-        const size_t array_end = (sub_index + sub_count) / this->desc_.MipLevels;
-        const size_t mip_start = sub_index % this->desc_.MipLevels;
-        const size_t mip_end = (sub_index + sub_count) % this->desc_.MipLevels;
-
-        if (array_start != array_end && (mip_start || mip_end))
-        {
-            // For multiple images in an array, all of the mip levels must be captured too
-            assert(false);
-            return {};
-        }
-
-        result.width = source_rect ? source_rect->width() : static_cast<size_t>(this->desc_.Width >> mip_start);
-        result.height = source_rect ? source_rect->height() : static_cast<size_t>(this->desc_.Height >> mip_start);
-        result.array_size = (array_start != array_end) ? array_end - array_start : 1;
-        result.mip_size = (array_start == array_end) ? mip_end - mip_start : static_cast<size_t>(this->desc_.MipLevels);
-    }
-    else
-    {
+        assert(!sub_count);
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
-    commands->wait_before_execute().add(this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, nullptr, &this->write_fence_value);
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
 
     for (size_t i = 0; i < sub_count; i++)
@@ -302,7 +331,11 @@ ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(f
             return {};
         }
 
-        ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(image.slicePitch, commands->next_fence_value());
+        const size_t scan_lines = DirectX::ComputeScanlines(this->desc_.Format, image.height);
+        image.rowPitch = ff::math::align_up<size_t>(image.rowPitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+        image.slicePitch = image.rowPitch * scan_lines;
+
+        ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_texture(image.slicePitch, commands->next_fence_value());
         if (!mem_range || !mem_range.cpu_data())
         {
             assert(false);
@@ -332,15 +365,14 @@ ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(f
 DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect)
 {
     readback_texture_data result = this->readback_texture(commands, sub_index, sub_count, source_rect);
-    if (!result.fence_value || !result.image_count())
+    if (!result.fence_value || !result.image_count() || result.array_count * result.mip_count != result.image_count())
     {
         assert(!sub_count);
         return {};
     }
 
     DirectX::ScratchImage scratch;
-    if (FAILED(scratch.Initialize2D(this->desc_.Format, result.width, result.height, result.array_size, result.mip_size)) ||
-        scratch.GetImageCount() != result.image_count())
+    if (FAILED(scratch.Initialize2D(this->desc_.Format, result.width, result.height, result.array_count, result.mip_count)))
     {
         assert(false);
         return {};
@@ -348,15 +380,11 @@ DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* co
 
     for (size_t i = 0; i < result.image_count(); i++)
     {
-        const DirectX::Image& dest_image = scratch.GetImages()[i];
-        const DirectX::Image& source_image = result.image(i);
-        const size_t row_size = std::min(dest_image.rowPitch, source_image.rowPitch);
-
-        for (uint8_t* dest_pixels = dest_image.pixels, *end_dest_pixels = dest_image.pixels + dest_image.slicePitch, *source_pixels = source_image.pixels;
-            dest_pixels < end_dest_pixels;
-            dest_pixels += dest_image.rowPitch, source_pixels += source_image.rowPitch)
+        const DirectX::Image& image = result.image(i);
+        if (FAILED(DirectX::CopyRectangle(image, DirectX::Rect(0, 0, image.width, image.height), scratch.GetImages()[i], DirectX::TEX_FILTER_DEFAULT, 0, 0)))
         {
-            std::memcpy(dest_pixels, source_pixels, row_size);
+            assert(false);
+            return {};
         }
     }
 

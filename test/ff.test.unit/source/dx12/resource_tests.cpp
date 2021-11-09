@@ -46,5 +46,29 @@ namespace ff::test::dx12
             assert(ff::vector_byte_size(captured_data) == ff::array_byte_size(data));
             assert(!std::memcmp(data.data(), captured_data.data(), ff::vector_byte_size(captured_data)));
         }
+
+        TEST_METHOD(update_texture)
+        {
+            DirectX::ScratchImage scratch_source;
+            scratch_source.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, 256, 256, 1, 4);
+            {
+                const DirectX::Image& first_source_image = *scratch_source.GetImages();
+                uint32_t color = 0xFF000000;
+
+                for (size_t y = 0; y < 256; y++)
+                {
+                    uint32_t* source_pixel = reinterpret_cast<uint32_t*>(first_source_image.pixels + y * first_source_image.rowPitch);
+
+                    for (size_t x = 0; x < 256; x++)
+                    {
+                        *source_pixel++ = color++;
+                    }
+                }
+            }
+
+            D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+
+            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 256, 256, 1, 4), D3D12_RESOURCE_STATE_COPY_DEST);
+        }
     };
 }
