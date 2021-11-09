@@ -9,29 +9,16 @@ ff::dx12::fence_values::fence_values(std::initializer_list<ff::dx12::fence_value
 
     for (const ff::dx12::fence_value& value : list)
     {
-        this->add(value);
+        this->internal_add(value);
     }
+
+    this->clear_completed();
 }
 
 void ff::dx12::fence_values::add(ff::dx12::fence_value fence_value)
 {
-    if (fence_value)
-    {
-        for (ff::dx12::fence_value& value : this->values_)
-        {
-            if (value.fence() == fence_value.fence())
-            {
-                if (value.get() < fence_value.get())
-                {
-                    value = fence_value;
-                }
-
-                return;
-            }
-        }
-
-        this->values_.push_back(fence_value);
-    }
+    this->internal_add(fence_value);
+    this->clear_completed();
 }
 
 void ff::dx12::fence_values::add(const ff::dx12::fence_values& fence_values)
@@ -40,8 +27,10 @@ void ff::dx12::fence_values::add(const ff::dx12::fence_values& fence_values)
 
     for (const ff::dx12::fence_value& value : fence_values.values_)
     {
-        this->add(value);
+        this->internal_add(value);
     }
+
+    this->clear_completed();
 }
 
 void ff::dx12::fence_values::reserve(size_t count)
@@ -54,9 +43,12 @@ void ff::dx12::fence_values::clear()
     this->values_.clear();
 }
 
-bool ff::dx12::fence_values::empty() const
+void ff::dx12::fence_values::clear_completed()
 {
-    return this->values_.empty();
+    std::remove_if(this->values_.begin(), this->values_.end(), [](ff::dx12::fence_value& value)
+        {
+            return value.complete();
+        });
 }
 
 void ff::dx12::fence_values::signal(ff::dx12::queue* queue)
@@ -65,6 +57,8 @@ void ff::dx12::fence_values::signal(ff::dx12::queue* queue)
     {
         value.signal(queue);
     }
+
+    this->clear();
 }
 
 void ff::dx12::fence_values::wait(ff::dx12::queue* queue)
@@ -103,6 +97,8 @@ void ff::dx12::fence_values::wait(ff::dx12::queue* queue)
                 nullptr);
         }
     }
+
+    this->clear();
 }
 
 bool ff::dx12::fence_values::complete()
@@ -115,10 +111,32 @@ bool ff::dx12::fence_values::complete()
         }
     }
 
+    this->clear();
     return true;
 }
 
 const ff::stack_vector<ff::dx12::fence_value, 4>& ff::dx12::fence_values::values() const
 {
     return this->values_;
+}
+
+void ff::dx12::fence_values::internal_add(ff::dx12::fence_value fence_value)
+{
+    if (fence_value)
+    {
+        for (ff::dx12::fence_value& value : this->values_)
+        {
+            if (value.fence() == fence_value.fence())
+            {
+                if (value.get() < fence_value.get())
+                {
+                    value = fence_value;
+                }
+
+                return;
+            }
+        }
+
+        this->values_.push_back(fence_value);
+    }
 }

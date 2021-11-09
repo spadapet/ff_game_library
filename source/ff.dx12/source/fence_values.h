@@ -19,7 +19,7 @@ namespace ff::dx12
         void add(const ff::dx12::fence_values& fence_values);
         void reserve(size_t count);
         void clear();
-        bool empty() const;
+        void clear_completed();
 
         void signal(ff::dx12::queue* queue);
         void wait(ff::dx12::queue* queue);
@@ -27,6 +27,8 @@ namespace ff::dx12
         const ff::stack_vector<ff::dx12::fence_value, 4>& values() const;
 
     private:
+        void internal_add(ff::dx12::fence_value fence_value);
+
         ff::stack_vector<ff::dx12::fence_value, 4> values_;
     };
 }

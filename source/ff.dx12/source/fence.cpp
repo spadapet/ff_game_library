@@ -68,14 +68,11 @@ ff::dx12::fence_value ff::dx12::fence::signal_later()
 
 void ff::dx12::fence::wait(uint64_t value, ff::dx12::queue* queue)
 {
-    if (!this->complete(value))
+    if ((!queue || queue != this->queue_) && !this->complete(value))
     {
         if (queue)
         {
-            if (queue != this->queue_)
-            {
-                ff::dx12::get_command_queue(*queue)->Wait(this->fence_.Get(), value);
-            }
+            ff::dx12::get_command_queue(*queue)->Wait(this->fence_.Get(), value);
         }
         else if (SUCCEEDED(this->fence_->SetEventOnCompletion(value, nullptr)))
         {

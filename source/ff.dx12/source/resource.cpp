@@ -8,6 +8,29 @@
 #include "queue.h"
 #include "resource.h"
 
+static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands)
+{
+    std::unique_ptr<ff::dx12::commands> new_commands;
+    if (!commands)
+    {
+        new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
+        commands = new_commands.get();
+    }
+
+    return new_commands;
+}
+
+size_t ff::dx12::resource::readback_texture_data::image_count() const
+{
+    return this->mem_ranges.size();
+}
+
+const DirectX::Image& ff::dx12::resource::readback_texture_data::image(size_t index)
+{
+    this->fence_value.wait(nullptr);
+    return this->mem_ranges[index].second;
+}
+
 ff::dx12::resource::resource(
     const D3D12_RESOURCE_DESC& desc,
     D3D12_RESOURCE_STATES initial_state,
@@ -133,13 +156,7 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands;
-    if (!commands)
-    {
-        new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
-        commands = new_commands.get();
-    }
-
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
@@ -153,24 +170,11 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
     commands->wait_before_execute().add(this->write_fence_value);
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
-    commands->copy_buffer(this, offset, mem_range);
+    commands->update_buffer(this, offset, mem_range);
     this->state(state_before, commands);
 
-    this->write_fence_value = new_commands
-        ? ff::dx12::copy_queue().execute(*new_commands)
-        : commands->next_fence_value();
-
+    this->write_fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
     return this->write_fence_value;
-}
-
-ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::ScratchImage& data)
-{
-    return ff::dx12::fence_value();
-}
-
-ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image& data, size_t sub_index, const D3D12_BOX* dest_box)
-{
-    return ff::dx12::fence_value();
 }
 
 std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readback_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
@@ -181,13 +185,7 @@ std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readba
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands;
-    if (!commands)
-    {
-        new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
-        commands = new_commands.get();
-    }
-
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
@@ -198,13 +196,10 @@ std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readba
     commands->wait_before_execute().add(this->write_fence_value);
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
-    commands->copy_buffer(mem_range, this, offset, size);
+    commands->readback_buffer(mem_range, this, offset);
     this->state(state_before, commands);
 
-    ff::dx12::fence_value fence_value = new_commands
-        ? ff::dx12::copy_queue().execute(*new_commands)
-        : commands->next_fence_value();
-
+    ff::dx12::fence_value fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
     this->read_fence_values.add(fence_value);
     return std::make_pair(std::move(fence_value), std::move(mem_range));
 }
@@ -226,14 +221,146 @@ std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* comm
     return result_bytes;
 }
 
-ff::dx12::fence_value ff::dx12::resource::capture_texture(ff::dx12::commands* commands, const std::shared_ptr<DirectX::ScratchImage>& result)
+ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, const ff::point_size* dest_pos)
 {
-    return ff::dx12::fence_value();
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
+    commands->wait_before_execute().add(this->read_fence_values);
+    commands->wait_before_execute().add(this->write_fence_value);
+    D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
+
+    for (size_t i = 0; i < sub_count; i++)
+    {
+        const DirectX::Image& image = images[i];
+        ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(image.slicePitch, commands->next_fence_value());
+        uint8_t* dest_pixels = static_cast<uint8_t*>(mem_range.cpu_data());
+
+        for (const uint8_t* src_pixels = image.pixels, *src_pixels_end = image.pixels + image.slicePitch; src_pixels < src_pixels_end; src_pixels += image.rowPitch, dest_pixels += image.rowPitch)
+        {
+            std::memcpy(dest_pixels, src_pixels, image.rowPitch);
+        }
+
+        commands->update_texture(this, i + sub_index, dest_pos ? dest_pos[i] : ff::point_size{}, mem_range, D3D12_SUBRESOURCE_FOOTPRINT
+        {
+            image.format, static_cast<UINT>(image.width), static_cast<UINT>(image.height), 1, static_cast<UINT>(image.rowPitch),
+        });
+    }
+
+    this->state(state_before, commands);
+    this->write_fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
+    return this->write_fence_value;
 }
 
-ff::dx12::fence_value ff::dx12::resource::capture_texture(ff::dx12::commands* commands, const std::shared_ptr<DirectX::ScratchImage>& result, size_t sub_index, const D3D12_BOX* box)
+ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect)
 {
-    return ff::dx12::fence_value();
+    readback_texture_data result{};
+    result.mem_ranges.reserve(sub_count);
+
+    if (sub_count)
+    {
+        const size_t array_start = sub_index / this->desc_.MipLevels;
+        const size_t array_end = (sub_index + sub_count) / this->desc_.MipLevels;
+        const size_t mip_start = sub_index % this->desc_.MipLevels;
+        const size_t mip_end = (sub_index + sub_count) % this->desc_.MipLevels;
+
+        if (array_start != array_end && (mip_start || mip_end))
+        {
+            // For multiple images in an array, all of the mip levels must be captured too
+            assert(false);
+            return {};
+        }
+
+        result.width = source_rect ? source_rect->width() : static_cast<size_t>(this->desc_.Width >> mip_start);
+        result.height = source_rect ? source_rect->height() : static_cast<size_t>(this->desc_.Height >> mip_start);
+        result.array_size = (array_start != array_end) ? array_end - array_start : 1;
+        result.mip_size = (array_start == array_end) ? mip_end - mip_start : static_cast<size_t>(this->desc_.MipLevels);
+    }
+    else
+    {
+        return {};
+    }
+
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
+    commands->wait_before_execute().add(this->write_fence_value);
+    D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
+
+    for (size_t i = 0; i < sub_count; i++)
+    {
+        const size_t relative_mip_level = i % this->desc_.MipLevels;
+        const size_t absolute_mip_level = (sub_index + i) % this->desc_.MipLevels;
+        const ff::rect_size rect = source_rect
+            ? ff::rect_size(source_rect->left >> relative_mip_level, source_rect->top >> relative_mip_level, source_rect->right >> relative_mip_level, source_rect->bottom >> relative_mip_level)
+            : ff::rect_size(0, 0, result.width >> absolute_mip_level, result.height >> absolute_mip_level);
+
+        DirectX::Image image;
+        image.format = this->desc_.Format;
+        image.width = rect.width();
+        image.height = rect.height();
+
+        if (FAILED(DirectX::ComputePitch(image.format, image.width, image.height, image.rowPitch, image.slicePitch)))
+        {
+            assert(false);
+            return {};
+        }
+
+        ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(image.slicePitch, commands->next_fence_value());
+        if (!mem_range || !mem_range.cpu_data())
+        {
+            assert(false);
+            return {};
+        }
+
+        image.pixels = static_cast<uint8_t*>(mem_range.cpu_data());
+
+        const D3D12_SUBRESOURCE_FOOTPRINT layout
+        {
+            image.format,
+            static_cast<UINT>(image.width),
+            static_cast<UINT>(image.height), 1, // depth
+            static_cast<UINT>(image.rowPitch),
+        };
+
+        commands->readback_texture(mem_range, layout, this, sub_index + i, rect);
+        result.mem_ranges.push_back(std::make_pair(std::move(mem_range), std::move(image)));
+    }
+
+    this->state(state_before, commands);
+    result.fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
+    this->read_fence_values.add(result.fence_value);
+    return result;
+}
+
+DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect)
+{
+    readback_texture_data result = this->readback_texture(commands, sub_index, sub_count, source_rect);
+    if (!result.fence_value || !result.image_count())
+    {
+        assert(!sub_count);
+        return {};
+    }
+
+    DirectX::ScratchImage scratch;
+    if (FAILED(scratch.Initialize2D(this->desc_.Format, result.width, result.height, result.array_size, result.mip_size)) ||
+        scratch.GetImageCount() != result.image_count())
+    {
+        assert(false);
+        return {};
+    }
+
+    for (size_t i = 0; i < result.image_count(); i++)
+    {
+        const DirectX::Image& dest_image = scratch.GetImages()[i];
+        const DirectX::Image& source_image = result.image(i);
+        const size_t row_size = std::min(dest_image.rowPitch, source_image.rowPitch);
+
+        for (uint8_t* dest_pixels = dest_image.pixels, *end_dest_pixels = dest_image.pixels + dest_image.slicePitch, *source_pixels = source_image.pixels;
+            dest_pixels < end_dest_pixels;
+            dest_pixels += dest_image.rowPitch, source_pixels += source_image.rowPitch)
+        {
+            std::memcpy(dest_pixels, source_pixels, row_size);
+        }
+    }
+
+    return scratch;
 }
 
 void ff::dx12::resource::destroy(bool for_reset)

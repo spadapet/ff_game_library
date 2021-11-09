@@ -6,6 +6,7 @@
 #include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
+#include "heap.h"
 #include "mem_range.h"
 
 ff::dx12::commands::commands(
@@ -122,24 +123,73 @@ void ff::dx12::commands::resource_barrier(ff::dx12::resource* resource, D3D12_RE
     }
 }
 
-void ff::dx12::commands::copy_buffer(ff::dx12::resource* dest, uint64_t dest_offset, ff::dx12::mem_range& source)
+void ff::dx12::commands::update_buffer(ff::dx12::resource* dest, uint64_t dest_offset, ff::dx12::mem_range& source)
 {
-    assert(dest && source);
-
-    if (source)
-    {
-        this->list->CopyBufferRegion(ff::dx12::get_resource(*dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
-    }
+    assert(source.heap() && source.heap()->cpu_usage());
+    this->list->CopyBufferRegion(ff::dx12::get_resource(*dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
 }
 
-void ff::dx12::commands::copy_buffer(ff::dx12::mem_range& dest, ff::dx12::resource* source, uint64_t source_offset, uint64_t source_size)
+void ff::dx12::commands::readback_buffer(ff::dx12::mem_range& dest, ff::dx12::resource* source, uint64_t source_offset)
 {
-    assert(dest && source && source_size <= dest.size());
+    assert(dest.heap() && dest.heap()->cpu_usage());
+    this->list->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(*source), source_offset, dest.size());
+}
 
-    if (dest)
+void ff::dx12::commands::update_texture(ff::dx12::resource* dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout)
+{
+    assert(source.cpu_data());
+
+    D3D12_TEXTURE_COPY_LOCATION source_location;
+    source_location.pResource = ff::dx12::get_resource(*source.heap());
+    source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    source_location.PlacedFootprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{ source.start(), source_layout };
+
+    this->list->CopyTextureRegion(
+        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(*dest), static_cast<UINT>(dest_sub_index)),
+        static_cast<UINT>(dest_pos.x), static_cast<UINT>(dest_pos.y), 0, // Z
+        &source_location, nullptr); // source box
+}
+
+void ff::dx12::commands::readback_texture(ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource* source, size_t source_sub_index, ff::rect_size source_rect)
+{
+    assert(dest.cpu_data());
+
+    const D3D12_BOX source_box
     {
-        this->list->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(*source), source_offset, source_size);
-    }
+        static_cast<UINT>(source_rect.left),
+        static_cast<UINT>(source_rect.top),
+        0,
+        static_cast<UINT>(source_rect.right),
+        static_cast<UINT>(source_rect.bottom),
+        1,
+    };
+
+    D3D12_TEXTURE_COPY_LOCATION dest_location;
+    dest_location.pResource = ff::dx12::get_resource(*dest.heap());
+    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    dest_location.PlacedFootprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{ dest.start(), dest_layout };
+
+    this->list->CopyTextureRegion(
+        &dest_location, 0, 0, 0, // X, Y, Z
+        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(*source), static_cast<UINT>(source_sub_index)), &source_box);
+}
+
+void ff::dx12::commands::copy_texture(ff::dx12::resource* dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource* source, size_t source_sub_index, ff::rect_size source_rect)
+{
+    const D3D12_BOX source_box
+    {
+        static_cast<UINT>(source_rect.left),
+        static_cast<UINT>(source_rect.top),
+        0,
+        static_cast<UINT>(source_rect.right),
+        static_cast<UINT>(source_rect.bottom),
+        1,
+    };
+
+    this->list->CopyTextureRegion(
+        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(*dest), static_cast<UINT>(dest_sub_index)),
+        static_cast<UINT>(dest_pos.x), static_cast<UINT>(dest_pos.y), 0, // Z
+        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(*source), static_cast<UINT>(source_sub_index)), &source_box);
 }
 
 void ff::dx12::commands::before_reset()
