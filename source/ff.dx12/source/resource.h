@@ -16,6 +16,7 @@ namespace ff::dx12
             D3D12_RESOURCE_STATES initial_state,
             D3D12_CLEAR_VALUE optimized_clear_value = {},
             std::shared_ptr<ff::dx12::mem_range> mem_range = {});
+        resource(const resource& other, ff::dx12::commands* commands);
         resource(resource&& other) noexcept;
         resource(const resource& other) = delete;
         ~resource();
@@ -42,7 +43,7 @@ namespace ff::dx12
             const DirectX::Image& image(size_t index);
 
             ff::dx12::fence_value fence_value;
-            ff::stack_vector<std::pair<ff::dx12::mem_range, DirectX::Image>, 8> mem_ranges;
+            std::vector<std::pair<ff::dx12::mem_range, DirectX::Image>> mem_ranges;
             size_t width;
             size_t height;
             size_t mip_count;

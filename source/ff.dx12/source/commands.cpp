@@ -96,17 +96,20 @@ ff::dx12::fence_values& ff::dx12::commands::wait_before_execute()
     return this->wait_before_execute_;
 }
 
-void ff::dx12::commands::resource_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after)
+void ff::dx12::commands::resource_barrier(const ff::dx12::resource* resource_before, const ff::dx12::resource* resource_after)
 {
     D3D12_RESOURCE_BARRIER desc{};
     desc.Type = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
     desc.Aliasing.pResourceBefore = resource_before ? ff::dx12::get_resource(*resource_before) : nullptr;
     desc.Aliasing.pResourceAfter = resource_after ? ff::dx12::get_resource(*resource_after) : nullptr;
 
-    this->list->ResourceBarrier(1, &desc);
+    if (desc.Aliasing.pResourceBefore != desc.Aliasing.pResourceAfter)
+    {
+        this->list->ResourceBarrier(1, &desc);
+    }
 }
 
-void ff::dx12::commands::resource_barrier(ff::dx12::resource* resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
+void ff::dx12::commands::resource_barrier(const ff::dx12::resource* resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
     assert(resource);
 
@@ -120,6 +123,17 @@ void ff::dx12::commands::resource_barrier(ff::dx12::resource* resource, D3D12_RE
         desc.Transition.StateAfter = state_after;
 
         this->list->ResourceBarrier(1, &desc);
+    }
+}
+
+void ff::dx12::commands::copy_resource(const ff::dx12::resource* dest_resource, const ff::dx12::resource* source_resource)
+{
+    ID3D12Resource* dest = ff::dx12::get_resource(*dest_resource);
+    ID3D12Resource* source = ff::dx12::get_resource(*source_resource);
+
+    if (dest != source)
+    {
+        this->list->CopyResource(dest, source);
     }
 }
 
