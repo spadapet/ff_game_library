@@ -231,24 +231,6 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
     }
 }
 
-size_t ff::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
-{
-    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
-    assert(fixed_sample_count == sample_count);
-
-    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS levels{};
-    levels.Format = format;
-    levels.SampleCount = static_cast<UINT>(fixed_sample_count);
-
-    while (fixed_sample_count > 1 && (FAILED(ff::dx12::device()->CheckFeatureSupport(
-        D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &levels, sizeof(levels))) || !levels.NumQualityLevels))
-    {
-        fixed_sample_count /= 2;
-    }
-
-    return std::max<size_t>(fixed_sample_count, 1);
-}
-
 bool ff::dx12::reset(bool force)
 {
     if (!force)

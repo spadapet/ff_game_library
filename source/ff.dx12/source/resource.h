@@ -1,6 +1,8 @@
 #pragma once
 
+#include "access.h"
 #include "fence_value.h"
+#include "fence_values.h"
 #include "mem_range.h"
 
 namespace ff::dx12
@@ -13,7 +15,7 @@ namespace ff::dx12
     public:
         resource(
             const D3D12_RESOURCE_DESC& desc,
-            D3D12_RESOURCE_STATES initial_state,
+            D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON,
             D3D12_CLEAR_VALUE optimized_clear_value = {},
             std::shared_ptr<ff::dx12::mem_range> mem_range = {});
         resource(const resource& other, ff::dx12::commands* commands);

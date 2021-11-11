@@ -128,8 +128,8 @@ void ff::dx12::commands::resource_barrier(const ff::dx12::resource* resource, D3
 
 void ff::dx12::commands::copy_resource(const ff::dx12::resource* dest_resource, const ff::dx12::resource* source_resource)
 {
-    ID3D12Resource* dest = ff::dx12::get_resource(*dest_resource);
-    ID3D12Resource* source = ff::dx12::get_resource(*source_resource);
+    ID3D12ResourceX* dest = ff::dx12::get_resource(*dest_resource);
+    ID3D12ResourceX* source = ff::dx12::get_resource(*source_resource);
 
     if (dest != source)
     {

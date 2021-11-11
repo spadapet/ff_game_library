@@ -3,6 +3,7 @@
 namespace ff::dx12
 {
     class commands;
+    class heap;
     class mem_buffer_base;
     class resource;
 

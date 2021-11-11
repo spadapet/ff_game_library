@@ -48,6 +48,4 @@ namespace ff::dx12
 
     void add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
     void remove_device_child(ff::dxgi::device_child_base* child);
-
-    size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 }

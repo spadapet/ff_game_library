@@ -89,7 +89,6 @@ namespace ff::test::dx12
             Assert::AreEqual(
                 ff::stable_hash_bytes(scratch_capture.GetPixels(), scratch_capture.GetPixelsSize()),
                 ff::stable_hash_bytes(scratch_capture2.GetPixels(), scratch_capture2.GetPixelsSize()));
-
         }
     };
 }

@@ -60,9 +60,9 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
-        std::array<ff::dx12_resource, BACK_BUFFER_COUNT> render_targets;
+        std::array<ff_dx::resource, BACK_BUFFER_COUNT> render_targets;
         std::array<uint64_t, BACK_BUFFER_COUNT> fence_values;
-        ff::dx12_descriptor_range views;
+        ff_dx::descriptor_range views;
         size_t back_buffer_index;
 #endif
         bool main_window;
