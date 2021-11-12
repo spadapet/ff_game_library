@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "texture_metadata.h"
 
-ff::texture_metadata::texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
+ff::texture_metadata::texture_metadata(ff::point_size size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
     : size_(size)
     , mip_count_(mip_count)
     , array_size_(array_size)
@@ -9,7 +9,7 @@ ff::texture_metadata::texture_metadata(ff::point_int size, size_t mip_count, siz
     , format_(format)
 {}
 
-ff::point_int ff::texture_metadata::size() const
+ff::point_size ff::texture_metadata::size() const
 {
     return this->size_;
 }
@@ -39,7 +39,7 @@ bool ff::texture_metadata::save_to_cache(ff::dict& dict, bool& allow_compress) c
     // The idea is to get to this metadata as fast as possible, no compression
     allow_compress = false;
 
-    dict.set<ff::point_int>("size", this->size_);
+    dict.set<ff::point_size>("size", this->size_);
     dict.set<size_t>("mip_count", this->mip_count_);
     dict.set<size_t>("array_size", this->array_size_);
     dict.set<size_t>("sample_count", this->sample_count_);
@@ -51,7 +51,7 @@ bool ff::texture_metadata::save_to_cache(ff::dict& dict, bool& allow_compress) c
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     return std::make_shared<ff::texture_metadata>(
-        dict.get<ff::point_int>("size"),
+        dict.get<ff::point_size>("size"),
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),
         dict.get<size_t>("sample_count"),
@@ -61,7 +61,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory
 std::shared_ptr<ff::resource_object_base> ff::internal::texture_metadata_factory::load_from_cache(const ff::dict& dict) const
 {
     return std::make_shared<ff::texture_metadata>(
-        dict.get<ff::point_int>("size"),
+        dict.get<ff::point_size>("size"),
         dict.get<size_t>("mip_count"),
         dict.get<size_t>("array_size"),
         dict.get<size_t>("sample_count"),

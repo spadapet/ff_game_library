@@ -7,9 +7,9 @@ namespace ff
         , public ff::dxgi::texture_metadata_base
     {
     public:
-        texture_metadata(ff::point_int size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format);
+        texture_metadata(ff::point_size size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format);
 
-        virtual ff::point_int size() const override;
+        virtual ff::point_size size() const override;
         virtual size_t mip_count() const override;
         virtual size_t array_size() const override;
         virtual size_t sample_count() const override;
@@ -19,7 +19,7 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        ff::point_int size_;
+        ff::point_size size_;
         size_t mip_count_;
         size_t array_size_;
         size_t sample_count_;

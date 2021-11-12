@@ -11,7 +11,7 @@ ff::dx11::texture::texture()
     ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
 }
 
-ff::dx11::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
+ff::dx11::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
     : sprite_type_(ff::dxgi::sprite_type::unknown)
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
@@ -88,23 +88,23 @@ void ff::dx11::texture::on_reset()
     // override this
 }
 
-ff::point_int ff::dx11::texture::size() const
+ff::point_size ff::dx11::texture::size() const
 {
     if (this->data_)
     {
         const DirectX::TexMetadata& md = this->data_->GetMetadata();
-        return ff::point_int(static_cast<int>(md.width), static_cast<int>(md.height));
+        return ff::point_size(md.width, md.height);
     }
 
     if (this->texture_)
     {
         D3D11_TEXTURE2D_DESC desc;
         this->texture_->GetDesc(&desc);
-        return ff::point_int(static_cast<int>(desc.Width), static_cast<int>(desc.Height));
+        return ff::point_size(desc.Width, desc.Height);
     }
 
     assert(false);
-    return ff::point_int{};
+    return {};
 }
 
 size_t ff::dx11::texture::mip_count() const
@@ -225,7 +225,7 @@ bool ff::dx11::texture::update(
     ff::dxgi::command_context_base& context,
     size_t array_index,
     size_t mip_index,
-    const ff::point_int& pos,
+    const ff::point_size& pos,
     const DirectX::Image& data)
 {
     if (this->format() != data.format)

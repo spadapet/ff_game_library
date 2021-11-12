@@ -10,7 +10,7 @@ ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_for
     this->assign(ff_dx::texture(ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_)));
 }
 
-ff::texture::texture(ff::point_int size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
+ff::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
 {
     this->assign(ff_dx::texture(size, format, mip_count, array_size, sample_count));
 }

@@ -1,14 +1,14 @@
 #include "pch.h"
 #include "viewport.h"
 
-ff::viewport::viewport(ff::point_int aspect, ff::rect_int padding)
+ff::viewport::viewport(ff::point_size aspect, ff::rect_size padding)
     : aspect(aspect.cast<float>().abs())
     , padding(padding.cast<float>())
     , last_view{}
     , last_target_size{}
 {}
 
-ff::rect_int ff::viewport::view(ff::point_int target_size)
+ff::rect_int ff::viewport::view(ff::point_size target_size)
 {
     if (target_size != this->last_target_size)
     {

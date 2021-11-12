@@ -220,7 +220,7 @@ ff::window_size ff::window::size()
     if (this->hwnd && ::GetClientRect(this->hwnd, &client_rect))
     {
         size.dpi_scale = this->dpi_scale();
-        size.pixel_size = ff::point_int(client_rect.right - client_rect.left, client_rect.bottom - client_rect.top);
+        size.pixel_size = ff::point_int(client_rect.right - client_rect.left, client_rect.bottom - client_rect.top).cast<size_t>();
         size.native_rotation = DMDO_DEFAULT;
         size.current_rotation = DMDO_DEFAULT;
 

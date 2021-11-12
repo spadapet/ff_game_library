@@ -7,7 +7,7 @@ namespace ff::test::graphics
     public:
         TEST_METHOD(create_depth)
         {
-            const ff::point_int size(64, 32);
+            const ff::point_size size(64, 32);
             const size_t sample_count = 2;
             ff_dx::depth depth(size, sample_count);
 

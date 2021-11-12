@@ -1187,11 +1187,11 @@ namespace
             // Palette
             this->palette_stack.push_back(nullptr);
             this->palette_texture = std::make_shared<ff::dx11::texture>(
-                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTES).cast<int>(), ff::dxgi::PALETTE_FORMAT);
+                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTES), ff::dxgi::PALETTE_FORMAT);
 
             this->palette_remap_stack.push_back(std::make_pair(::DEFAULT_PALETTE_REMAP.data(), ::DEFAULT_PALETTE_REMAP_HASH));
             this->palette_remap_texture = std::make_shared<ff::dx11::texture>(
-                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTE_REMAPS).cast<int>(), ff::dxgi::PALETTE_INDEX_FORMAT);
+                ff::point_size(ff::dxgi::palette_size, ::MAX_PALETTE_REMAPS), ff::dxgi::PALETTE_INDEX_FORMAT);
 
             // States
             this->sampler_stack.push_back(::get_texture_sampler_state(D3D11_FILTER_MIN_MAG_MIP_POINT));

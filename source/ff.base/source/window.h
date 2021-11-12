@@ -22,10 +22,10 @@ namespace ff
         bool operator==(const ff::window_size& other) const;
         bool operator!=(const ff::window_size& other) const;
 
-        ff::point_int rotated_pixel_size() const;
+        ff::point_size rotated_pixel_size() const;
         int rotated_degrees_from_native() const;
 
-        ff::point_int pixel_size;
+        ff::point_size pixel_size;
         double dpi_scale;
         int native_rotation; // DMDO_DEFAULT|90|180|270
         int current_rotation; // DMDO_DEFAULT|90|180|270

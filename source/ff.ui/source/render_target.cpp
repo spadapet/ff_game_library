@@ -5,7 +5,7 @@
 ff::internal::ui::render_target::render_target(size_t width, size_t height, size_t samples, bool srgb, bool needs_depth_stencil, std::string_view name)
     : name_(name)
 {
-    ff::point_int size = ff::point_size(width, height).cast<int>();
+    ff::point_size size(width, height);
     DXGI_FORMAT format = srgb ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT;
 
     this->msaa_texture_ = std::make_shared<ff::texture>(size, format, 1, 1, samples);

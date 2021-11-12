@@ -6,7 +6,7 @@ namespace ff::dx11
     {
     public:
         depth(size_t sample_count = 0);
-        depth(const ff::point_int& size, size_t sample_count = 0);
+        depth(const ff::point_size& size, size_t sample_count = 0);
         depth(depth&& other) noexcept = default;
         depth(const depth& other) = delete;
         virtual ~depth() override;
@@ -21,8 +21,8 @@ namespace ff::dx11
         ID3D11DepthStencilView* view() const;
 
         // depth_base
-        virtual ff::point_int size() const override;
-        virtual bool size(const ff::point_int& size) override;
+        virtual ff::point_size size() const override;
+        virtual bool size(const ff::point_size& size) override;
         virtual size_t sample_count() const override;
         virtual void clear(ff::dxgi::command_context_base& context, float depth, BYTE stencil) const override;
         virtual void clear_depth(ff::dxgi::command_context_base& context, float depth = 0.0f) const override;

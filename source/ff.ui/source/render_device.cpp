@@ -152,8 +152,8 @@ ff::internal::ui::render_device::render_device(bool srgb)
     ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
 
 #ifdef _DEBUG
-    this->empty_texture_rgb = std::make_shared<ff::texture>(ff::point_int(1, 1));
-    this->empty_texture_palette = std::make_shared<ff::texture>(ff::point_int(1, 1), ff::dxgi::PALETTE_INDEX_FORMAT);
+    this->empty_texture_rgb = std::make_shared<ff::texture>(ff::point_size(1, 1));
+    this->empty_texture_palette = std::make_shared<ff::texture>(ff::point_size(1, 1), ff::dxgi::PALETTE_INDEX_FORMAT);
 #endif
 
     this->caps.centerPixelOffset = 0;
@@ -229,7 +229,7 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
 void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data)
 {
     ff::texture* texture2 = ff::internal::ui::texture::get(texture)->internal_texture().get();
-    ff::point_int pos(static_cast<int>(x), static_cast<int>(y));
+    ff::point_size pos(x, y);
 
     size_t row_pitch, slice_pitch;
     DirectX::ComputePitch(texture2->format(), static_cast<size_t>(width), static_cast<size_t>(height), row_pitch, slice_pitch);
@@ -329,17 +329,17 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
         ID3D11ShaderResourceView* resourceView = surface2->msaa_texture()->dx11_texture_view();
         ff_dx::get_device_state().set_resources_ps(&resourceView, 0, 1);
 
-        ff::point_int size = surface2->resolved_texture()->size();
+        ff::point_size size = surface2->resolved_texture()->size();
 
         for (uint32_t i = 0; i < tile_count; i++)
         {
             const Noesis::Tile& tile = tiles[i];
 
             D3D11_RECT rect;
-            rect.left = tile.x;
-            rect.top = size.y - (tile.y + tile.height);
-            rect.right = tile.x + tile.width;
-            rect.bottom = size.y - tile.y;
+            rect.left = static_cast<LONG>(tile.x);
+            rect.top = static_cast<LONG>(size.y - static_cast<size_t>(tile.y + tile.height));
+            rect.right = static_cast<LONG>(tile.x + tile.width);
+            rect.bottom = static_cast<LONG>(size.y - tile.y);
             ff_dx::get_device_state().set_scissors(&rect, 1);
 
             ff_dx::get_device_state().draw(3, 0);

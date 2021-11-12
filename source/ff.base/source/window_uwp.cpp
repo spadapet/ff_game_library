@@ -480,7 +480,7 @@ ff::window_size ff::window::size()
         {
             Windows::Foundation::Rect bounds = this->core_window->Bounds;
             size.dpi_scale = this->dpi_scale();
-            size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<int>();
+            size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<size_t>();
             size.native_rotation = ::get_rotation(this->display_info_->NativeOrientation);
             size.current_rotation = ::get_rotation(this->display_info_->CurrentOrientation);
         });

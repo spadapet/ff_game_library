@@ -610,7 +610,7 @@ static bool create_outline_sprites(
         const DirectX::Image& src_image = *texture_info.rgb_scratch->GetImages();
         const DirectX::Image& dest_image = *outline_scratch.GetImages();
 
-        for (ff::point_int xy(src_rect.left, src_rect.top), dest_xy = ff::point_int{}; xy.y < src_rect.bottom; xy.y++, dest_xy.y++)
+        for (ff::point_int xy(src_rect.left, src_rect.top), dest_xy = {}; xy.y < src_rect.bottom; xy.y++, dest_xy.y++)
         {
             const uint8_t* src_row = src_image.pixels + src_image.rowPitch * xy.y + src_rect.left * pixel_size;
 

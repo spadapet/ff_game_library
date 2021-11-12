@@ -7,7 +7,7 @@ namespace ff::dxgi
     public:
         virtual ~texture_metadata_base() = default;
 
-        virtual ff::point_int size() const = 0;
+        virtual ff::point_size size() const = 0;
         virtual size_t mip_count() const = 0;
         virtual size_t array_size() const = 0;
         virtual size_t sample_count() const = 0;

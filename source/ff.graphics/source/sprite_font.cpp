@@ -185,9 +185,9 @@ bool ff::sprite_font::init_sprites()
     }
 
     std::vector<DirectX::ScratchImage> staging_scratches;
-    const ff::point_int staging_texture_size(1024, 1024);
-    ff::point_int staging_pos(0, 0);
-    int staging_row_height = 0;
+    const ff::point_size staging_texture_size(1024, 1024);
+    ff::point_size staging_pos(0, 0);
+    size_t staging_row_height = 0;
 
     DirectX::ScratchImage staging_scratch;
     if (FAILED(staging_scratch.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, staging_texture_size.x, staging_texture_size.y, 1, 1)))
@@ -250,7 +250,7 @@ bool ff::sprite_font::init_sprites()
             continue;
         }
 
-        ff::rect_int black_box(bounds.left, bounds.top, bounds.right, bounds.bottom);
+        ff::rect_size black_box = ff::rect_int(bounds.left, bounds.top, bounds.right, bounds.bottom).cast<size_t>();
         if (black_box.empty())
         {
             continue;
@@ -279,7 +279,7 @@ bool ff::sprite_font::init_sprites()
             {
                 // Filled up this texture, make a new one
 
-                staging_pos = ff::point_int{};
+                staging_pos = {};
                 staging_row_height = 0;
 
                 staging_scratches.push_back(std::move(staging_scratch));
@@ -325,7 +325,7 @@ bool ff::sprite_font::init_sprites()
             sprite_infos.push_back(sprite_info
                 {
                     staging_scratches.size(),
-                    ff::rect_int(staging_pos, staging_pos + black_box.size()).cast<float>(),
+                    ff::rect_size(staging_pos, staging_pos + black_box.size()).cast<float>(),
                     ff::point_float(-gm.leftSideBearing * design_unit_size, black_box.height() + gm.bottomSideBearing * design_unit_size),
                 });
 

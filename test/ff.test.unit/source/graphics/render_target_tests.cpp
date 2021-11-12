@@ -7,11 +7,11 @@ namespace ff::test::graphics
     public:
         TEST_METHOD(target_texture)
         {
-            ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_int(256, 256)));
+            ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::dxgi::DEFAULT_FORMAT);
-            Assert::IsTrue(target.size().pixel_size == ff::point_int(256, 256));
+            Assert::IsTrue(target.size().pixel_size == ff::point_size(256, 256));
         }
 
         TEST_METHOD(target_window)

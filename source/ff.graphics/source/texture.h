@@ -15,7 +15,7 @@ namespace ff
     {
     public:
         texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
-        texture(ff::point_int size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
+        texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1);
         texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown);
         texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count);
         texture(texture&& other) noexcept;
