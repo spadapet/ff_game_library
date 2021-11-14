@@ -99,7 +99,7 @@ size_t ff::dx11::buffer::size() const
 {
     D3D11_BUFFER_DESC desc;
     this->buffer_->GetDesc(&desc);
-    return static_cast<size_t>(desc.ByteWidth);
+    return static_cast<uint64_t>(desc.ByteWidth);
 }
 
 bool ff::dx11::buffer::writable() const

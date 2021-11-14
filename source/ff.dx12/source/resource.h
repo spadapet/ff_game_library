@@ -17,7 +17,8 @@ namespace ff::dx12
             const D3D12_RESOURCE_DESC& desc,
             D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON,
             D3D12_CLEAR_VALUE optimized_clear_value = {},
-            std::shared_ptr<ff::dx12::mem_range> mem_range = {});
+            std::shared_ptr<ff::dx12::mem_range> mem_range = {},
+            bool allocate_mem_range = true);
         resource(const resource& other, ff::dx12::commands* commands);
         resource(resource&& other) noexcept;
         resource(const resource& other) = delete;

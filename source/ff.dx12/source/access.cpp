@@ -12,6 +12,11 @@ ID3D12GraphicsCommandListX* ff::dx12::get_command_list(const ff::dx12::commands&
     return obj.list.Get();
 }
 
+ID3D12GraphicsCommandListX* ff::dx12::get_command_list(ff::dxgi::command_context_base& obj)
+{
+    return ff::dx12::get_command_list(ff::dx12::commands::get(obj));
+}
+
 ID3D12CommandAllocatorX* ff::dx12::get_command_allocator(const ff::dx12::commands& obj)
 {
     return obj.allocator.Get();

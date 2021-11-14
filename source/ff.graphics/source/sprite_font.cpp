@@ -294,12 +294,12 @@ bool ff::sprite_font::init_sprites()
             // Copy bits to the texture
 
             size_t pixel_stride = this->anti_alias ? 3 : 1;
-            for (int y = 0; y < black_box.height(); y++)
+            for (size_t y = 0; y < black_box.height(); y++)
             {
                 uint8_t* alpha_start = &glyph_bytes[y * black_box.width() * pixel_stride];
                 uint8_t* data_start = staging_scratch.GetImages()->pixels + (staging_pos.y + y) * staging_scratch.GetImages()->rowPitch + staging_pos.x * 4;
 
-                for (int x = 0; x < black_box.width(); x++)
+                for (size_t x = 0; x < black_box.width(); x++)
                 {
                     data_start[x * 4 + 0] = 255;
                     data_start[x * 4 + 1] = 255;

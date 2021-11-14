@@ -22,7 +22,7 @@ namespace ff::dx11
 
         // buffer_base
         virtual ff::dxgi::buffer_type type() const override;
-        virtual uint64_t size() const override;
+        virtual size_t size() const override;
         virtual bool writable() const override;
         virtual bool update(ff::dxgi::command_context_base& context, const void* data, size_t size, size_t min_buffer_size = 0) override;
         virtual void* map(ff::dxgi::command_context_base& context, size_t size) override;

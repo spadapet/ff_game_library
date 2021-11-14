@@ -10,6 +10,7 @@ namespace ff::dx12
     class resource;
 
     ID3D12GraphicsCommandListX* get_command_list(const ff::dx12::commands& obj);
+    ID3D12GraphicsCommandListX* get_command_list(ff::dxgi::command_context_base& obj);
     ID3D12CommandAllocatorX* get_command_allocator(const ff::dx12::commands& obj);
     std::unique_ptr<ff::dx12::fence>&& move_fence(ff::dx12::commands& obj);
     ID3D12CommandQueueX* get_command_queue(const ff::dx12::queue& obj);

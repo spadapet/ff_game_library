@@ -19,10 +19,10 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
     if (size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
     {
         this->resource_ = std::make_unique<ff::dx12::resource>(CD3DX12_RESOURCE_DESC::Tex2D(format,
-            static_cast<UINT>(size.x),
+            static_cast<UINT64>(size.x),
             static_cast<UINT>(size.y),
-            static_cast<UINT>(array_size),
-            static_cast<UINT>(mip_count),
+            static_cast<UINT16>(array_size),
+            static_cast<UINT16>(mip_count),
             static_cast<UINT>(ff::dx12::fix_sample_count(format, sample_count)), 0, // quality
             !ff::dxgi::compressed_format(format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE));
     }
@@ -94,7 +94,7 @@ ff::point_size ff::dx12::texture::size() const
     if (this->resource_)
     {
         const D3D12_RESOURCE_DESC& desc = this->resource_->desc();
-        return ff::point_size(desc.Width, desc.Height);
+        return ff::point_t<uint64_t>(desc.Width, desc.Height).cast<size_t>();
     }
 
     assert(false);
@@ -208,10 +208,10 @@ const ff::dx12::resource* ff::dx12::texture::resource() const
     {
         const DirectX::TexMetadata& md = this->data_->GetMetadata();
         this->resource_ = std::make_unique<ff::dx12::resource>(CD3DX12_RESOURCE_DESC::Tex2D(md.format,
-            static_cast<UINT>(md.width),
+            static_cast<UINT64>(md.width),
             static_cast<UINT>(md.height),
-            static_cast<UINT>(md.arraySize),
-            static_cast<UINT>(md.mipLevels),
+            static_cast<UINT16>(md.arraySize),
+            static_cast<UINT16>(md.mipLevels),
             1, 0, // quality
             !ff::dxgi::compressed_format(md.format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE),
             D3D12_RESOURCE_STATE_COPY_DEST);

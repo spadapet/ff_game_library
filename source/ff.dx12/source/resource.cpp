@@ -58,7 +58,8 @@ ff::dx12::resource::resource(
     const D3D12_RESOURCE_DESC& desc,
     D3D12_RESOURCE_STATES initial_state,
     D3D12_CLEAR_VALUE optimized_clear_value,
-    std::shared_ptr<ff::dx12::mem_range> mem_range)
+    std::shared_ptr<ff::dx12::mem_range> mem_range,
+    bool allocate_mem_range)
     : mem_range_(mem_range)
     , optimized_clear_value(optimized_clear_value)
     , state_(initial_state)
@@ -67,10 +68,20 @@ ff::dx12::resource::resource(
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0);
 
-    if (!mem_range || ff::math::align_up(mem_range->start(), this->alloc_info_.Alignment) != mem_range->start() || mem_range->size() < this->alloc_info_.SizeInBytes)
+    if (allocate_mem_range)
     {
-        ff::dx12::mem_allocator& allocator = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) ? ff::dx12::static_buffer_allocator() : ff::dx12::texture_allocator();
-        this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
+        if (!mem_range || ff::math::align_up(mem_range->start(), this->alloc_info_.Alignment) != mem_range->start() || mem_range->size() < this->alloc_info_.SizeInBytes)
+        {
+            ff::dx12::mem_allocator& allocator = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+                ? ff::dx12::static_buffer_allocator()
+                : ff::dx12::texture_allocator();
+            this->mem_range_ = std::make_shared<ff::dx12::mem_range>(
+                allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
+        }
+    }
+    else
+    {
+        assert(!mem_range);
     }
 
     this->reset();
@@ -126,12 +137,12 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
 
 ff::dx12::resource::operator bool() const
 {
-    return this->resource_ && this->mem_range_;
+    return this->resource_ != nullptr;
 }
 
 void ff::dx12::resource::active(bool value, ff::dx12::commands* commands)
 {
-    if (!value != !this->active())
+    if (this->mem_range_ && !value != !this->active())
     {
         this->mem_range_->active_resource(value ? this : nullptr, commands);
     }
@@ -139,7 +150,7 @@ void ff::dx12::resource::active(bool value, ff::dx12::commands* commands)
 
 bool ff::dx12::resource::active() const
 {
-    return this->mem_range_ && this->mem_range_->active_resource() == this;
+    return !this->mem_range_ || this->mem_range_->active_resource() == this;
 }
 
 void ff::dx12::resource::activated()
@@ -247,7 +258,7 @@ std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* comm
     std::vector<uint8_t> result_bytes;
     result_bytes.resize(static_cast<size_t>(size));
     fence_value.wait(nullptr);
-    std::memcpy(result_bytes.data(), result_mem_range.cpu_data(), size);
+    std::memcpy(result_bytes.data(), result_mem_range.cpu_data(), static_cast<size_t>(size));
 
     return result_bytes;
 }
@@ -393,7 +404,7 @@ DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* co
 
 void ff::dx12::resource::destroy(bool for_reset)
 {
-    if (this->active())
+    if (this->mem_range_ && this->active())
     {
         this->mem_range_->active_resource(nullptr, nullptr);
     }
@@ -424,16 +435,31 @@ void ff::dx12::resource::before_reset()
 
 bool ff::dx12::resource::reset()
 {
-    if (!this->mem_range_ ||
-        FAILED(ff::dx12::device()->CreatePlacedResource(
+    if (!this->mem_range_)
+    {
+        if (FAILED(ff::dx12::device()->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+            D3D12_HEAP_FLAG_NONE,
+            &this->desc_,
+            this->state_,
+            (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
+            IID_PPV_ARGS(&this->resource_))))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (FAILED(ff::dx12::device()->CreatePlacedResource(
             ff::dx12::get_heap(*this->mem_range_->heap()),
             this->mem_range_->start(),
             &this->desc_,
             this->state_,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&this->resource_))))
-    {
-        return false;
+        {
+            return false;
+        }
     }
 
     return true;
