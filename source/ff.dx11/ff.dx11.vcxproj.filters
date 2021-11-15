@@ -47,9 +47,6 @@
     <ClCompile Include="source\vertex.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\shader.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -102,9 +99,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\vertex.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\shader.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

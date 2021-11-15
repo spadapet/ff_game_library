@@ -10,13 +10,12 @@
 
 // Windows
 #include <d3d12.h>
-#include <d3dcompiler.h>
 
 // Vendor
 #include <directxtex/DirectXTex/d3dx12.h>
 
 // FF
-#include <ff.base.h>
+#include <ff.resource.h>
 #include <ff.dxgi.h>
 
 // DirectX interface usage

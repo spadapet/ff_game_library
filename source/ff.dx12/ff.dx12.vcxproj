@@ -67,6 +67,19 @@
     <ProjectReference Include="..\ff.dxgi\ff.dxgi.vcxproj">
       <Project>{a4ea1e4f-874e-4d9a-8ce1-5483c5c8c33e}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\ff.resource\ff.resource.vcxproj">
+      <Project>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.dx12.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

@@ -1,123 +1,123 @@
 {
-  "res:namespace": "assets::dx11",
+  "res:namespace": "assets::dx12",
 
-  "ff.dx11.line_vs":
+  "ff.dx12.line_vs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "vs_4_0",
+    "target": "vs_5_1",
     "entry": "line_vs"
   },
 
-  "ff.dx11.circle_vs":
+  "ff.dx12.circle_vs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "vs_4_0",
+    "target": "vs_5_1",
     "entry": "circle_vs"
   },
 
-  "ff.dx11.triangle_vs":
+  "ff.dx12.triangle_vs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "vs_4_0",
+    "target": "vs_5_1",
     "entry": "triangle_vs"
   },
 
-  "ff.dx11.sprite_vs":
+  "ff.dx12.sprite_vs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "vs_4_0",
+    "target": "vs_5_1",
     "entry": "sprite_vs"
   },
 
-  "ff.dx11.line_gs":
+  "ff.dx12.line_gs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "gs_4_0",
+    "target": "gs_5_1",
     "entry": "line_gs"
   },
 
-  "ff.dx11.circle_gs":
+  "ff.dx12.circle_gs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "gs_4_0",
+    "target": "gs_5_1",
     "entry": "circle_gs"
   },
 
-  "ff.dx11.triangle_gs":
+  "ff.dx12.triangle_gs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "gs_4_0",
+    "target": "gs_5_1",
     "entry": "triangle_gs"
   },
 
-  "ff.dx11.sprite_gs":
+  "ff.dx12.sprite_gs":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "gs_4_0",
+    "target": "gs_5_1",
     "entry": "sprite_gs"
   },
 
-  "ff.dx11.color_ps":
+  "ff.dx12.color_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "color_ps"
   },
 
-  "ff.dx11.palette_out_color_ps":
+  "ff.dx12.palette_out_color_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "palette_out_color_ps"
   },
 
-  "ff.dx11.sprite_ps":
+  "ff.dx12.sprite_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "sprite_ps"
   },
 
-  "ff.dx11.sprite_palette_ps":
+  "ff.dx12.sprite_palette_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "sprite_palette_ps"
   },
 
-  "ff.dx11.sprite_alpha_ps":
+  "ff.dx12.sprite_alpha_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "sprite_alpha_ps"
   },
 
-  "ff.dx11.palette_out_sprite_ps":
+  "ff.dx12.palette_out_sprite_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "palette_out_sprite_ps"
   },
 
-  "ff.dx11.palette_out_sprite_palette_ps":
+  "ff.dx12.palette_out_sprite_palette_ps":
   {
     "res:type": "shader",
     "file": "file:shaders.hlsl",
-    "target": "ps_4_0",
+    "target": "ps_5_1",
     "entry": "palette_out_sprite_palette_ps"
   }
 }

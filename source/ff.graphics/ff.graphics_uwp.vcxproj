@@ -25,6 +25,7 @@
     <ClCompile Include="source\palette_data.cpp" />
     <ClCompile Include="source\png_image.cpp" />
     <ClCompile Include="source\random_sprite.cpp" />
+    <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\sprite.cpp" />
     <ClCompile Include="source\sprite_font.cpp" />
     <ClCompile Include="source\sprite_list.cpp" />
@@ -50,6 +51,7 @@
     <ClInclude Include="source\palette_data.h" />
     <ClInclude Include="source\png_image.h" />
     <ClInclude Include="source\random_sprite.h" />
+    <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\sprite.h" />
     <ClInclude Include="source\sprite_base.h" />
     <ClInclude Include="source\sprite_font.h" />

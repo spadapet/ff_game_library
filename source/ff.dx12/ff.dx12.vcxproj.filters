@@ -139,5 +139,18 @@
     <Filter Include="source">
       <UniqueIdentifier>{6a731877-fc3e-4880-be95-3b812e16a23a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{40725706-2558-45c0-8ff5-d6baf4e69471}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders.hlsl">
+      <Filter>assets</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.dx12.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
   </ItemGroup>
 </Project>

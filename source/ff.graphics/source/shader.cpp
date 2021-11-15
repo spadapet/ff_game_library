@@ -85,6 +85,11 @@ static std::shared_ptr<ff::data_base> compile_shader(
     Microsoft::WRL::ComPtr<ID3DBlob> compile_errors_blob;
     ::shader_include shader_include(base_path);
 
+    UINT flags1 = D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
+    flags1 |= debug
+        ? (D3DCOMPILE_DEBUG | D3DCOMPILE_WARNINGS_ARE_ERRORS)
+        : (D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_WARNINGS_ARE_ERRORS);
+
     HRESULT hr = ::D3DCompile(
         file_data->data(),
         file_data->size(),
@@ -93,8 +98,8 @@ static std::shared_ptr<ff::data_base> compile_shader(
         &shader_include,
         std::string(entry).c_str(),
         std::string(target).c_str(),
-        debug ? (D3DCOMPILE_DEBUG | D3DCOMPILE_WARNINGS_ARE_ERRORS) : (D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_WARNINGS_ARE_ERRORS),
-        0, // effect flags
+        flags1,
+        0, // flags2
         &shader_blob,
         &compile_errors_blob);
 
@@ -136,11 +141,11 @@ static std::shared_ptr<ff::data_base> compile_shader(
     return nullptr;
 }
 
-ff::dx11::shader::shader(std::shared_ptr<ff::saved_data_base> saved_data)
+ff::shader::shader(std::shared_ptr<ff::saved_data_base> saved_data)
     : resource_file(saved_data, ".shader", true)
 {}
 
-std::shared_ptr<ff::resource_object_base> ff::dx11::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
+std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
     bool debug = dict.get<bool>("debug");
     std::filesystem::path file_path = dict.get<std::string>("file");
@@ -169,10 +174,10 @@ std::shared_ptr<ff::resource_object_base> ff::dx11::shader_factory::load_from_so
     }
 
     auto shader_saved_data = std::make_shared<ff::saved_data_static>(shader_data, shader_data->size(), ff::saved_data_type::none);
-    return std::make_shared<ff::dx11::shader>(shader_saved_data);
+    return std::make_shared<ff::shader>(shader_saved_data);
 }
 
-std::shared_ptr<ff::resource_object_base> ff::dx11::shader_factory::load_from_cache(const ff::dict& dict) const
+std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_cache(const ff::dict& dict) const
 {
     const ff::resource_object_factory_base* resource_file_factory = ff::resource_object_base::get_factory(typeid(ff::resource_file));
     if (resource_file_factory)
@@ -180,7 +185,7 @@ std::shared_ptr<ff::resource_object_base> ff::dx11::shader_factory::load_from_ca
         std::shared_ptr<ff::resource_file> file = std::dynamic_pointer_cast<ff::resource_file>(resource_file_factory->load_from_cache(dict));
         if (file)
         {
-            return std::make_shared<ff::dx11::shader>(file->saved_data());
+            return std::make_shared<ff::shader>(file->saved_data());
         }
     }
 

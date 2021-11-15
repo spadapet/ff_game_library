@@ -18,6 +18,7 @@
     <ClCompile Include="source\animation.cpp" />
     <ClCompile Include="source\animation_keys.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
+    <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\target_window.cpp" />
     <ClCompile Include="source\font_file.cpp" />
     <ClCompile Include="source\graphics.cpp" />
@@ -43,6 +44,7 @@
     <ClInclude Include="source\animation_keys.h" />
     <ClInclude Include="source\animation_player.h" />
     <ClInclude Include="source\animation_player_base.h" />
+    <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\target_window.h" />
     <ClInclude Include="source\font_file.h" />
     <ClInclude Include="source\graphics.h" />

@@ -2,6 +2,8 @@
 #include "globals.h"
 #include "init.h"
 
+#include "ff.dx12.res.h"
+
 static bool init_status;
 
 namespace
@@ -10,6 +12,8 @@ namespace
     {
         one_time_init(D3D_FEATURE_LEVEL feature_level)
         {
+            ff::global_resources::add(::assets::dx12::data());
+
             ::init_status = ff::dx12::init_globals(feature_level);
         }
 

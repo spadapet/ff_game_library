@@ -1,13 +1,16 @@
 #pragma once
 
-namespace ff::dx11
+namespace ff
 {
     class shader : public ff::resource_file
     {
     public:
         shader(std::shared_ptr<ff::saved_data_base> saved_data);
     };
+}
 
+namespace ff::internal
+{
     class shader_factory : public ff::resource_object_factory<shader>
     {
     public:

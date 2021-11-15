@@ -7,7 +7,6 @@
 #include "fixed_state.h"
 #include "globals.h"
 #include "object_cache.h"
-#include "shader.h"
 #include "target_access.h"
 #include "texture.h"
 #include "texture_view.h"
@@ -121,10 +120,10 @@ namespace
         }
 
         geometry_bucket(::geometry_bucket&& rhs) noexcept
-            : vs_res(std::move(rhs.vs_res))
-            , gs_res(std::move(rhs.gs_res))
-            , ps_res(std::move(rhs.ps_res))
-            , ps_palette_out_res(std::move(rhs.ps_palette_out_res))
+            : vs_res_name(std::move(rhs.vs_res_name))
+            , gs_res_name(std::move(rhs.gs_res_name))
+            , ps_res_name(std::move(rhs.ps_res_name))
+            , ps_palette_out_res_name(std::move(rhs.ps_palette_out_res_name))
             , layout(std::move(rhs.layout))
             , vs(std::move(rhs.vs))
             , gs(std::move(rhs.gs))
@@ -156,10 +155,10 @@ namespace
         {
             this->reset();
 
-            this->vs_res = ff::global_resources::get(vs_res);
-            this->gs_res = ff::global_resources::get(gs_res);
-            this->ps_res = ff::global_resources::get(ps_res);
-            this->ps_palette_out_res = ff::global_resources::get(ps_palette_out_res);
+            this->vs_res_name = vs_res;
+            this->gs_res_name = gs_res;
+            this->ps_res_name = ps_res;
+            this->ps_palette_out_res_name = ps_palette_out_res;
         }
 
         void reset()
@@ -265,25 +264,25 @@ namespace
         {
             if (!this->vs)
             {
-                this->vs = ff::dx11::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res.resource()->name(), this->layout, this->element_desc, this->element_count);
+                this->vs = ff::dx11::get_object_cache().get_vertex_shader_and_input_layout(this->vs_res_name, this->layout, this->element_desc, this->element_count);
             }
 
             if (!this->gs)
             {
-                this->gs = ff::dx11::get_object_cache().get_geometry_shader(this->gs_res.resource()->name());
+                this->gs = ff::dx11::get_object_cache().get_geometry_shader(this->gs_res_name);
             }
 
             Microsoft::WRL::ComPtr<ID3D11PixelShader>& ps = palette_out ? this->ps_palette_out : this->ps;
             if (!ps)
             {
-                ps = ff::dx11::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res.resource()->name() : this->ps_res.resource()->name());
+                ps = ff::dx11::get_object_cache().get_pixel_shader(palette_out ? this->ps_palette_out_res_name : this->ps_res_name);
             }
         }
 
-        ff::auto_resource<ff::dx11::shader> vs_res;
-        ff::auto_resource<ff::dx11::shader> gs_res;
-        ff::auto_resource<ff::dx11::shader> ps_res;
-        ff::auto_resource<ff::dx11::shader> ps_palette_out_res;
+        std::string vs_res_name;
+        std::string gs_res_name;
+        std::string ps_res_name;
+        std::string ps_palette_out_res_name;
 
         Microsoft::WRL::ComPtr<ID3D11InputLayout> layout;
         Microsoft::WRL::ComPtr<ID3D11VertexShader> vs;
@@ -1173,16 +1172,16 @@ namespace
             this->destroy();
 
             // Geometry buckets
-            this->get_geometry_bucket(::geometry_bucket_type::lines).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::circles).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::triangles).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::palette_sprites).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_palette_ps", "ff.shader.palette_out_sprite_palette_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::lines).reset("ff.dx11.line_vs", "ff.dx11.line_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::circles).reset("ff.dx11.circle_vs", "ff.dx11.circle_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::triangles).reset("ff.dx11.triangle_vs", "ff.dx11.triangle_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::sprites).reset("ff.dx11.sprite_vs", "ff.dx11.sprite_gs", "ff.dx11.sprite_ps", "ff.dx11.palette_out_sprite_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::palette_sprites).reset("ff.dx11.sprite_vs", "ff.dx11.sprite_gs", "ff.dx11.sprite_palette_ps", "ff.dx11.palette_out_sprite_palette_ps");
 
-            this->get_geometry_bucket(::geometry_bucket_type::lines_alpha).reset("ff.shader.line_vs", "ff.shader.line_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::circles_alpha).reset("ff.shader.circle_vs", "ff.shader.circle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::triangles_alpha).reset("ff.shader.triangle_vs", "ff.shader.triangle_gs", "ff.shader.color_ps", "ff.shader.palette_out_color_ps");
-            this->get_geometry_bucket(::geometry_bucket_type::sprites_alpha).reset("ff.shader.sprite_vs", "ff.shader.sprite_gs", "ff.shader.sprite_ps", "ff.shader.palette_out_sprite_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::lines_alpha).reset("ff.dx11.line_vs", "ff.dx11.line_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::circles_alpha).reset("ff.dx11.circle_vs", "ff.dx11.circle_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::triangles_alpha).reset("ff.dx11.triangle_vs", "ff.dx11.triangle_gs", "ff.dx11.color_ps", "ff.dx11.palette_out_color_ps");
+            this->get_geometry_bucket(::geometry_bucket_type::sprites_alpha).reset("ff.dx11.sprite_vs", "ff.dx11.sprite_gs", "ff.dx11.sprite_ps", "ff.dx11.palette_out_sprite_ps");
 
             // Palette
             this->palette_stack.push_back(nullptr);

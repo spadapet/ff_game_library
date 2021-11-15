@@ -18,7 +18,6 @@
     <ClCompile Include="source\globals.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\object_cache.cpp" />
-    <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\target_access.cpp" />
     <ClCompile Include="source\target_texture.cpp" />
     <ClCompile Include="source\texture.cpp" />
@@ -39,7 +38,6 @@
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\object_cache.h" />
     <ClInclude Include="source\operators.h" />
-    <ClInclude Include="source\shader.h" />
     <ClInclude Include="source\target_access.h" />
     <ClInclude Include="source\target_texture.h" />
     <ClInclude Include="source\texture.h" />

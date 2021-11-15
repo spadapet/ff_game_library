@@ -25,4 +25,3 @@
 #include "../source/ff.dx12/source/texture_view_access.h"
 
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "d3dcompiler.lib")

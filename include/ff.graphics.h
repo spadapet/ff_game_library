@@ -13,6 +13,7 @@
 #include "../source/ff.graphics/source/palette_data.h"
 #include "../source/ff.graphics/source/png_image.h"
 #include "../source/ff.graphics/source/random_sprite.h"
+#include "../source/ff.graphics/source/shader.h"
 #include "../source/ff.graphics/source/sprite.h"
 #include "../source/ff.graphics/source/sprite_base.h"
 #include "../source/ff.graphics/source/sprite_font.h"
@@ -25,4 +26,5 @@
 #include "../source/ff.graphics/source/texture_util.h"
 #include "../source/ff.graphics/source/viewport.h"
 
+#pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dwrite.lib")

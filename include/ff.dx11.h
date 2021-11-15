@@ -11,7 +11,6 @@
 #include "../source/ff.dx11/source/init.h"
 #include "../source/ff.dx11/source/object_cache.h"
 #include "../source/ff.dx11/source/operators.h"
-#include "../source/ff.dx11/source/shader.h"
 #include "../source/ff.dx11/source/target_access.h"
 #include "../source/ff.dx11/source/target_texture.h"
 #include "../source/ff.dx11/source/texture.h"
@@ -21,4 +20,3 @@
 #include "../source/ff.dx11/source/vertex.h"
 
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dcompiler.lib")
