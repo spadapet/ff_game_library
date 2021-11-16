@@ -44,6 +44,9 @@
     <ClCompile Include="source\sprite_data.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\draw_util.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -129,6 +132,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\palette_data_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_util.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

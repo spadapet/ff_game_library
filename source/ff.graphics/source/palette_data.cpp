@@ -19,7 +19,7 @@ ff::palette_data::palette_data(DirectX::ScratchImage&& scratch, std::unordered_m
 
             for (const uint8_t* start = image.pixels, *cur = start, *end = start + image.height * image.rowPitch; cur < end; cur += image.rowPitch)
             {
-                this->row_hashes.push_back(ff::stable_hash_bytes(cur, ff::constants::palette_row_bytes));
+                this->row_hashes.push_back(ff::stable_hash_bytes(cur, ff::dxgi::palette_row_bytes));
             }
 
             this->texture_ = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));

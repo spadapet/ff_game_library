@@ -130,7 +130,7 @@ static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_
 
     const DirectX::Image* image = scratch_final.GetImages();
     uint8_t* dest = image->pixels;
-    std::memset(dest, 0, ff::constants::palette_row_bytes);
+    std::memset(dest, 0, ff::dxgi::palette_row_bytes);
 
     for (const uint8_t* start = data->data(), *end = start + data->size(), *cur = start; cur < end; cur += 3, dest += 4)
     {

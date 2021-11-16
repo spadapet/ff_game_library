@@ -45,3 +45,16 @@ inline bool operator!=(const DirectX::XMFLOAT4X4& lhs, const DirectX::XMFLOAT4X4
 {
     return std::memcmp(&lhs, &rhs, sizeof(lhs)) != 0;
 }
+
+namespace std
+{
+    inline bool operator==(const DirectX::XMFLOAT4X4& lhs, const DirectX::XMFLOAT4X4& rhs)
+    {
+        return ::operator==(lhs, rhs);
+    }
+
+    inline bool operator!=(const DirectX::XMFLOAT4X4& lhs, const DirectX::XMFLOAT4X4& rhs)
+    {
+        return ::operator!=(lhs, rhs);
+    }
+}

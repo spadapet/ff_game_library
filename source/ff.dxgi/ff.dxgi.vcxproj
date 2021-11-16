@@ -15,6 +15,7 @@
     <ClCompile Include="source\device_child_base.cpp" />
     <ClCompile Include="source\draw_base.cpp" />
     <ClCompile Include="source\draw_ptr.cpp" />
+    <ClCompile Include="source\draw_util.cpp" />
     <ClCompile Include="source\format_util.cpp" />
     <ClCompile Include="source\globals.cpp" />
     <ClCompile Include="source\init.cpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="source\device_child_base.h" />
     <ClInclude Include="source\draw_base.h" />
     <ClInclude Include="source\draw_ptr.h" />
+    <ClInclude Include="source\draw_util.h" />
     <ClInclude Include="source\format_util.h" />
     <ClInclude Include="source\globals.h" />
     <ClInclude Include="source\init.h" />
