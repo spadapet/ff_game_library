@@ -65,6 +65,9 @@
     <ClCompile Include="source\depth.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\buffer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -132,6 +135,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\depth.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

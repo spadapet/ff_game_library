@@ -143,6 +143,9 @@
     <ClCompile Include="source\dx12\test_base.cpp">
       <Filter>source\dx12</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx12\dx12_buffer_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

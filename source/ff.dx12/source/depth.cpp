@@ -82,6 +82,7 @@ size_t ff::dx12::depth::sample_count() const
 
 void ff::dx12::depth::clear(ff::dxgi::command_context_base& context, float depth, BYTE stencil) const
 {
+    // TODO: Add function to command_list so that the depth resource can be marked as used (or mark it here)
     ID3D12GraphicsCommandListX* list = ff::dx12::get_command_list(context);
     list->ClearDepthStencilView(this->view(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, nullptr);
 }

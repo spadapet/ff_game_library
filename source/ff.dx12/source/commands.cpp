@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "heap.h"
 #include "mem_range.h"
+#include "queue.h"
 
 ff::dx12::commands::commands(
     ff::dx12::queue& queue,
@@ -45,6 +46,12 @@ ff::dx12::commands::commands(commands&& other) noexcept
 
 ff::dx12::commands::~commands()
 {
+    if (*this)
+    {
+        this->queue_->execute(*this);
+        assert(!*this);
+    }
+
     ff::dx12::remove_device_child(this);
 }
 

@@ -7,6 +7,7 @@ namespace ff::dxgi
     class buffer_base;
     class command_context_base;
     class sprite_data;
+    class target_base;
 }
 
 namespace ff::dxgi::draw_util
@@ -108,8 +109,39 @@ namespace ff::dxgi::draw_util
         uint8_t* data_end;
     };
 
+    struct alpha_geometry_entry
+    {
+        const ff::dxgi::draw_util::geometry_bucket* bucket;
+        size_t index;
+        float depth;
+    };
+
+    struct geometry_shader_constants_0
+    {
+        DirectX::XMFLOAT4X4 projection;
+        ff::point_float view_size;
+        ff::point_float view_scale;
+        float z_offset;
+        float padding[3];
+    };
+
+    struct geometry_shader_constants_1
+    {
+        std::vector<DirectX::XMFLOAT4X4> model;
+    };
+
+    struct pixel_shader_constants_0
+    {
+        std::array<ff::rect_float, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> texture_palette_sizes;
+    };
+
     ff::dxgi::draw_util::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_opaque);
     ff::dxgi::draw_util::alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque);
     ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque);
     ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque);
+
+    ff::rect_float get_rotated_view_rect(ff::dxgi::target_base& target, const ff::rect_float& view_rect);
+    DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect);
+    DirectX::XMMATRIX get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center);
+    bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix);
 }

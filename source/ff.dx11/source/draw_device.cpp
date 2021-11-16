@@ -101,32 +101,6 @@ namespace
         const D3D11_INPUT_ELEMENT_DESC* element_desc;
         size_t element_count;
     };
-
-    struct alpha_geometry_entry
-    {
-        const ff::dxgi::draw_util::geometry_bucket* bucket;
-        size_t index;
-        float depth;
-    };
-
-    struct geometry_shader_constants_0
-    {
-        DirectX::XMFLOAT4X4 projection;
-        ff::point_float view_size;
-        ff::point_float view_scale;
-        float z_offset;
-        float padding[3];
-    };
-
-    struct geometry_shader_constants_1
-    {
-        std::vector<DirectX::XMFLOAT4X4> model;
-    };
-
-    struct pixel_shader_constants_0
-    {
-        std::array<ff::rect_float, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> texture_palette_sizes;
-    };
 }
 
 static void get_alpha_blend(D3D11_RENDER_TARGET_BLEND_DESC& desc)
@@ -242,97 +216,6 @@ static ff::dx11::fixed_state create_pre_multiplied_alpha_draw_state()
     return state;
 }
 
-static ff::rect_float get_rotated_view_rect(ff::dxgi::target_base& target, const ff::rect_float& view_rect)
-{
-    ff::window_size size = target.size();
-    ff::rect_float rotated_view_rect;
-
-    switch (size.current_rotation)
-    {
-        default:
-            rotated_view_rect = view_rect;
-            break;
-
-        case DMDO_90:
-            {
-                float height = size.rotated_pixel_size().cast<float>().y;
-                rotated_view_rect.left = height - view_rect.bottom;
-                rotated_view_rect.top = view_rect.left;
-                rotated_view_rect.right = height - view_rect.top;
-                rotated_view_rect.bottom = view_rect.right;
-            } break;
-
-        case DMDO_180:
-            {
-                ff::point_float target_size = size.rotated_pixel_size().cast<float>();
-                rotated_view_rect.left = target_size.x - view_rect.right;
-                rotated_view_rect.top = target_size.y - view_rect.bottom;
-                rotated_view_rect.right = target_size.x - view_rect.left;
-                rotated_view_rect.bottom = target_size.y - view_rect.top;
-            } break;
-
-        case DMDO_270:
-            {
-                float width = size.rotated_pixel_size().cast<float>().x;
-                rotated_view_rect.left = view_rect.top;
-                rotated_view_rect.top = width - view_rect.right;
-                rotated_view_rect.right = view_rect.bottom;
-                rotated_view_rect.bottom = width - view_rect.left;
-            } break;
-    }
-
-    return rotated_view_rect;
-}
-
-static DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect)
-{
-    return DirectX::XMMatrixOrthographicOffCenterLH(
-        world_rect.left,
-        world_rect.right,
-        world_rect.bottom,
-        world_rect.top,
-        0, ff::dxgi::draw_util::MAX_RENDER_DEPTH);
-}
-
-static DirectX::XMMATRIX get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
-{
-    DirectX::XMMATRIX orientation_matrix;
-
-    int degrees = target.size().current_rotation;
-    switch (degrees)
-    {
-        default:
-            orientation_matrix = DirectX::XMMatrixIdentity();
-            break;
-
-        case DMDO_90:
-        case DMDO_270:
-            {
-                float view_height_per_width = view_rect.height() / view_rect.width();
-                float view_width_per_height = view_rect.width() / view_rect.height();
-
-                orientation_matrix =
-                    DirectX::XMMatrixTransformation2D(
-                        DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), 0, // scale center
-                        DirectX::XMVectorSet(view_height_per_width, view_width_per_height, 1, 1), // scale
-                        DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), // rotation center
-                        ff::math::pi<float>() * degrees / 2.0f, // rotation
-                        DirectX::XMVectorZero()); // translation
-            } break;
-
-        case DMDO_180:
-            orientation_matrix =
-                DirectX::XMMatrixAffineTransformation2D(
-                    DirectX::XMVectorSet(1, 1, 1, 1), // scale
-                    DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), // rotation center
-                    ff::math::pi<float>(), // rotation
-                    DirectX::XMVectorZero()); // translation
-            break;
-    }
-
-    return orientation_matrix;
-}
-
 static D3D11_VIEWPORT get_viewport(const ff::rect_float& view_rect)
 {
     D3D11_VIEWPORT viewport;
@@ -344,20 +227,6 @@ static D3D11_VIEWPORT get_viewport(const ff::rect_float& view_rect)
     viewport.MaxDepth = 1;
 
     return viewport;
-}
-
-static bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
-{
-    if (world_rect.width() != 0 && world_rect.height() != 0 && view_rect.width() > 0 && view_rect.height() > 0)
-    {
-        DirectX::XMMATRIX unoriented_view_matrix = ::get_view_matrix(world_rect);
-        DirectX::XMMATRIX orientation_matrix = ::get_orientation_matrix(target, view_rect, world_rect.center());
-        DirectX::XMStoreFloat4x4(&view_matrix, DirectX::XMMatrixTranspose(orientation_matrix * unoriented_view_matrix));
-
-        return true;
-    }
-
-    return false;
 }
 
 static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
@@ -381,7 +250,7 @@ static bool setup_render_target(ff::dxgi::target_base& target, ff::dxgi::depth_b
             }
         }
 
-        ff::rect_float rotated_view_rect = ::get_rotated_view_rect(target, view_rect);
+        ff::rect_float rotated_view_rect = ff::dxgi::draw_util::get_rotated_view_rect(target, view_rect);
         D3D11_VIEWPORT viewport = ::get_viewport(rotated_view_rect);
 
         ff::dx11::get_device_state().set_targets(&target_view, 1, depth_view);
@@ -448,7 +317,7 @@ namespace
         {
             this->end_draw();
 
-            if (::setup_view_matrix(target, view_rect, world_rect, this->view_matrix) &&
+            if (ff::dxgi::draw_util::setup_view_matrix(target, view_rect, world_rect, this->view_matrix) &&
                 ::setup_render_target(target, depth, view_rect))
             {
                 this->init_geometry_constant_buffers_0(target, view_rect, world_rect);
@@ -924,9 +793,9 @@ namespace
         {
             this->state = ::draw_device_internal::state_t::invalid;
 
-            this->geometry_constants_0 = ::geometry_shader_constants_0{};
-            this->geometry_constants_1 = ::geometry_shader_constants_1{};
-            this->pixel_constants_0 = ::pixel_shader_constants_0{};
+            this->geometry_constants_0 = ff::dxgi::draw_util::geometry_shader_constants_0{};
+            this->geometry_constants_1 = ff::dxgi::draw_util::geometry_shader_constants_1{};
+            this->pixel_constants_0 = ff::dxgi::draw_util::pixel_shader_constants_0{};
             this->geometry_constants_hash_0 = 0;
             this->geometry_constants_hash_1 = 0;
             this->pixel_constants_hash_0 = 0;
@@ -1035,7 +904,7 @@ namespace
             size_t hash0 = ff::stable_hash_func(this->geometry_constants_0);
             if (!this->geometry_constants_hash_0 || this->geometry_constants_hash_0 != hash0)
             {
-                this->geometry_constants_buffer_0.update(ff::dx11::get_device_state(), &this->geometry_constants_0, sizeof(::geometry_shader_constants_0));
+                this->geometry_constants_buffer_0.update(ff::dx11::get_device_state(), &this->geometry_constants_0, sizeof(ff::dxgi::draw_util::geometry_shader_constants_0));
                 this->geometry_constants_hash_0 = hash0;
             }
         }
@@ -1082,7 +951,7 @@ namespace
                 size_t hash0 = ff::stable_hash_func(this->pixel_constants_0);
                 if (!this->pixel_constants_hash_0 || this->pixel_constants_hash_0 != hash0)
                 {
-                    this->pixel_constants_buffer_0.update(ff::dx11::get_device_state(), &this->pixel_constants_0, sizeof(::pixel_shader_constants_0));
+                    this->pixel_constants_buffer_0.update(ff::dx11::get_device_state(), &this->pixel_constants_0, sizeof(ff::dxgi::draw_util::pixel_shader_constants_0));
                     this->pixel_constants_hash_0 = hash0;
                 }
             }
@@ -1285,12 +1154,12 @@ namespace
 
                 for (size_t i = 0; i < alpha_geometry_size; )
                 {
-                    const ::alpha_geometry_entry& entry = this->alpha_geometry[i];
+                    const ff::dxgi::draw_util::alpha_geometry_entry& entry = this->alpha_geometry[i];
                     size_t geometry_count = 1;
 
                     for (i++; i < alpha_geometry_size; i++, geometry_count++)
                     {
-                        const ::alpha_geometry_entry& entry2 = this->alpha_geometry[i];
+                        const ff::dxgi::draw_util::alpha_geometry_entry& entry2 = this->alpha_geometry[i];
                         if (entry2.bucket != entry.bucket ||
                             entry2.depth != entry.depth ||
                             entry2.index != entry.index + geometry_count)
@@ -1526,7 +1395,7 @@ namespace
             {
                 assert(!this->force_opaque);
 
-                this->alpha_geometry.push_back(::alpha_geometry_entry
+                this->alpha_geometry.push_back(ff::dxgi::draw_util::alpha_geometry_entry
                     {
                         &bucket,
                         bucket.count(),
@@ -1554,9 +1423,9 @@ namespace
         ff::dx11::buffer geometry_constants_buffer_0;
         ff::dx11::buffer geometry_constants_buffer_1;
         ff::dx11::buffer pixel_constants_buffer_0;
-        ::geometry_shader_constants_0 geometry_constants_0;
-        ::geometry_shader_constants_1 geometry_constants_1;
-        ::pixel_shader_constants_0 pixel_constants_0;
+        ff::dxgi::draw_util::geometry_shader_constants_0 geometry_constants_0;
+        ff::dxgi::draw_util::geometry_shader_constants_1 geometry_constants_1;
+        ff::dxgi::draw_util::pixel_shader_constants_0 pixel_constants_0;
         size_t geometry_constants_hash_0;
         size_t geometry_constants_hash_1;
         size_t pixel_constants_hash_0;
@@ -1597,7 +1466,7 @@ namespace
         unsigned int palette_remap_index;
 
         // Render data
-        std::vector<::alpha_geometry_entry> alpha_geometry;
+        std::vector<ff::dxgi::draw_util::alpha_geometry_entry> alpha_geometry;
         std::array<::dx11_geometry_bucket, static_cast<size_t>(ff::dxgi::draw_util::geometry_bucket_type::count)> geometry_buckets;
         ff::dxgi::draw_util::last_depth_type last_depth_type;
         float draw_depth;

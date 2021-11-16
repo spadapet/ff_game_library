@@ -49,6 +49,7 @@
     <ClCompile Include="source\data\persist_tests.cpp" />
     <ClCompile Include="source\data\value_tests.cpp" />
     <ClCompile Include="source\dx12\descriptor_allocator_tests.cpp" />
+    <ClCompile Include="source\dx12\dx12_buffer_tests.cpp" />
     <ClCompile Include="source\dx12\fence_tests.cpp" />
     <ClCompile Include="source\dx12\heap_tests.cpp" />
     <ClCompile Include="source\dx12\mem_allocator_tests.cpp" />
