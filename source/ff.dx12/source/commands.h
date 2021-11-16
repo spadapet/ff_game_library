@@ -5,6 +5,7 @@
 
 namespace ff::dx12
 {
+    class depth;
     class mem_range;
     class resource;
     class queue;
@@ -33,16 +34,20 @@ namespace ff::dx12
         void close();
 
         ff::dx12::fence_values& wait_before_execute();
+
         void resource_barrier(const ff::dx12::resource* resource_before, const ff::dx12::resource* resource_after);
         void resource_barrier(const ff::dx12::resource* resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after);
-        void copy_resource(const ff::dx12::resource* dest_resource, const ff::dx12::resource* source_resource);
 
-        void update_buffer(ff::dx12::resource* dest, uint64_t dest_offset, ff::dx12::mem_range& source);
-        void readback_buffer(ff::dx12::mem_range& dest, ff::dx12::resource* source, uint64_t source_offset);
+        void clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value);
 
-        void update_texture(ff::dx12::resource* dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
-        void readback_texture(ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource* source, size_t source_sub_index, ff::rect_size source_rect);
-        void copy_texture(ff::dx12::resource* dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource* source, size_t source_sub_index, ff::rect_size source_rect);
+        void update_buffer(const ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source);
+        void readback_buffer(const ff::dx12::mem_range& dest, const ff::dx12::resource& source, uint64_t source_offset);
+
+        void update_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
+        void readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
+
+        void copy_resource(const ff::dx12::resource& dest_resource, const ff::dx12::resource& source_resource);
+        void copy_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
 
     private:
         friend ID3D12GraphicsCommandListX* ff::dx12::get_command_list(const ff::dx12::commands& obj);

@@ -82,21 +82,23 @@ size_t ff::dx12::depth::sample_count() const
 
 void ff::dx12::depth::clear(ff::dxgi::command_context_base& context, float depth, BYTE stencil) const
 {
-    // TODO: Add function to command_list so that the depth resource can be marked as used (or mark it here)
-    ID3D12GraphicsCommandListX* list = ff::dx12::get_command_list(context);
-    list->ClearDepthStencilView(this->view(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, nullptr);
+    this->clear(ff::dx12::commands::get(context), &depth, &stencil);
 }
 
 void ff::dx12::depth::clear_depth(ff::dxgi::command_context_base& context, float depth) const
 {
-    ID3D12GraphicsCommandListX* list = ff::dx12::get_command_list(context);
-    list->ClearDepthStencilView(this->view(), D3D12_CLEAR_FLAG_DEPTH, depth, 0, 0, nullptr);
+    this->clear(ff::dx12::commands::get(context), &depth, nullptr);
 }
 
 void ff::dx12::depth::clear_stencil(ff::dxgi::command_context_base& context, BYTE stencil) const
 {
-    ID3D12GraphicsCommandListX* list = ff::dx12::get_command_list(context);
-    list->ClearDepthStencilView(this->view(), D3D12_CLEAR_FLAG_STENCIL, 0, stencil, 0, nullptr);
+    this->clear(ff::dx12::commands::get(context), nullptr, &stencil);
+}
+
+void ff::dx12::depth::clear(ff::dx12::commands& commands, const float* depth, const BYTE* stencil) const
+{
+    this->resource_->state(D3D12_RESOURCE_STATE_DEPTH_WRITE, &commands);
+    commands.clear(*this, depth, stencil);
 }
 
 ff::dx12::resource* ff::dx12::depth::resource() const

@@ -8,23 +8,13 @@
 #include "queue.h"
 #include "resource.h"
 
-static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands, ff::dx12::fence_values* read_fence_values, ff::dx12::fence_value* write_fence_value)
+static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands)
 {
     std::unique_ptr<ff::dx12::commands> new_commands;
     if (!commands)
     {
         new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
         commands = new_commands.get();
-    }
-
-    if (read_fence_values)
-    {
-        commands->wait_before_execute().add(*read_fence_values);
-    }
-
-    if (write_fence_value)
-    {
-        commands->wait_before_execute().add(*write_fence_value);
     }
 
     return new_commands;
@@ -90,12 +80,13 @@ ff::dx12::resource::resource(
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
-ff::dx12::resource::resource(const resource& other, ff::dx12::commands* commands)
+ff::dx12::resource::resource(resource& other, ff::dx12::commands* commands)
     : resource(other.desc_, D3D12_RESOURCE_STATE_COPY_DEST, other.optimized_clear_value)
 {
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, nullptr, &ff::dx12::fence_value(other.write_fence_value));
-    commands->copy_resource(this, &other);
-    this->write_fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
+    other.state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
+    commands->copy_resource(*this, other);
+    this->write_fence_value = commands->next_fence_value();
 }
 
 ff::dx12::resource::resource(resource&& other) noexcept
@@ -167,6 +158,32 @@ const std::shared_ptr<ff::dx12::mem_range>& ff::dx12::resource::mem_range() cons
 D3D12_RESOURCE_STATES ff::dx12::resource::state(D3D12_RESOURCE_STATES state, ff::dx12::commands* commands)
 {
     D3D12_RESOURCE_STATES state_before = this->state_;
+
+    if (commands)
+    {
+        bool for_write = (state & static_cast<D3D12_RESOURCE_STATES>(
+            D3D12_RESOURCE_STATE_RENDER_TARGET |
+            D3D12_RESOURCE_STATE_DEPTH_WRITE |
+            D3D12_RESOURCE_STATE_STREAM_OUT |
+            D3D12_RESOURCE_STATE_COPY_DEST |
+            D3D12_RESOURCE_STATE_RESOLVE_DEST |
+            D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE |
+            D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE |
+            D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE)) != 0;
+
+        commands->wait_before_execute().add(this->write_fence_value);
+
+        if (for_write)
+        {
+            commands->wait_before_execute().add(this->read_fence_values);
+            this->write_fence_value = commands->next_fence_value();
+        }
+        else
+        {
+            this->read_fence_values.add(commands->next_fence_value());
+        }
+    }
+
     if (state != this->state_)
     {
         this->state_ = state;
@@ -203,7 +220,7 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, &this->read_fence_values, &this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
@@ -214,11 +231,10 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
     ::memcpy(mem_range.cpu_data(), data, static_cast<size_t>(size));
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
-    commands->update_buffer(this, offset, mem_range);
+    commands->update_buffer(*this, offset, mem_range);
     this->state(state_before, commands);
 
-    this->write_fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
-    return this->write_fence_value;
+    return commands->next_fence_value();
 }
 
 std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readback_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
@@ -229,7 +245,7 @@ std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readba
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, nullptr, &this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(size, commands->next_fence_value());
     if (!mem_range || !mem_range.cpu_data())
     {
@@ -238,12 +254,10 @@ std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readba
     }
 
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
-    commands->readback_buffer(mem_range, this, offset);
+    commands->readback_buffer(mem_range, *this, offset);
     this->state(state_before, commands);
 
-    ff::dx12::fence_value fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
-    this->read_fence_values.add(fence_value);
-    return std::make_pair(std::move(fence_value), std::move(mem_range));
+    return std::make_pair(commands->next_fence_value(), std::move(mem_range));
 }
 
 std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
@@ -265,7 +279,7 @@ std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* comm
 
 ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, ff::point_size dest_pos)
 {
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, &this->read_fence_values, &this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_DEST, commands);
 
     size_t temp_width, temp_height, temp_mip_count, temp_array_count;
@@ -302,15 +316,14 @@ ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* com
 
         const size_t relative_mip_level = i % this->desc_.MipLevels;
         const ff::point_size pos(dest_pos.x >> relative_mip_level, dest_pos.y >> relative_mip_level);
-        commands->update_texture(this, sub_index + i, pos, mem_range, D3D12_SUBRESOURCE_FOOTPRINT
+        commands->update_texture(*this, sub_index + i, pos, mem_range, D3D12_SUBRESOURCE_FOOTPRINT
         {
             dest_image.format, static_cast<UINT>(dest_image.width), static_cast<UINT>(dest_image.height), 1, static_cast<UINT>(dest_image.rowPitch),
         });
     }
 
     this->state(state_before, commands);
-    this->write_fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
-    return this->write_fence_value;
+    return commands->next_fence_value();
 }
 
 ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect)
@@ -324,7 +337,7 @@ ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(f
         return {};
     }
 
-    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands, nullptr, &this->write_fence_value);
+    std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     D3D12_RESOURCE_STATES state_before = this->state(D3D12_RESOURCE_STATE_COPY_SOURCE, commands);
 
     for (size_t i = 0; i < sub_count; i++)
@@ -367,13 +380,12 @@ ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(f
             static_cast<UINT>(image.rowPitch),
         };
 
-        commands->readback_texture(mem_range, layout, this, sub_index + i, rect);
+        commands->readback_texture(mem_range, layout, *this, sub_index + i, rect);
         result.mem_ranges.push_back(std::make_pair(std::move(mem_range), std::move(image)));
     }
 
     this->state(state_before, commands);
-    result.fence_value = new_commands ? ff::dx12::copy_queue().execute(*new_commands) : commands->next_fence_value();
-    this->read_fence_values.add(result.fence_value);
+    result.fence_value = commands->next_fence_value();
     return result;
 }
 

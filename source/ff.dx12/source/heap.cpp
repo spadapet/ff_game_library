@@ -10,7 +10,7 @@ ff::dx12::heap::heap(uint64_t size, ff::dx12::heap::usage_t usage)
     : cpu_data_(nullptr)
     , size_(size)
     , usage_(usage)
-{
+        {
     this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::heap);
 }
@@ -81,7 +81,7 @@ void ff::dx12::heap::before_reset()
 bool ff::dx12::heap::reset()
 {
     D3D12_HEAP_PROPERTIES props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_NONE;
+    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED; // D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT
     D3D12_RESIDENCY_PRIORITY priority = D3D12_RESIDENCY_PRIORITY_NORMAL;
 
     switch (this->usage_)

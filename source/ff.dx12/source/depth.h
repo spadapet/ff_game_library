@@ -33,6 +33,8 @@ namespace ff::dx12
         virtual void clear_stencil(ff::dxgi::command_context_base& context, BYTE stencil) const override;
 
     private:
+        void clear(ff::dx12::commands& commands, const float* depth, const BYTE* stencil) const;
+
         // device_child_base
         virtual bool reset() override;
 
