@@ -211,6 +211,11 @@ std::shared_ptr<DirectX::ScratchImage> ff::dx11::texture::data() const
     return this->data_;
 }
 
+ff::dx11::texture& ff::dx11::texture::get(ff::dxgi::texture_base& obj)
+{
+    return static_cast<ff::dx11::texture&>(obj);
+}
+
 ID3D11Texture2D* ff::dx11::texture::dx11_texture() const
 {
     if (!this->texture_ && this->data_)

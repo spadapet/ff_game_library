@@ -17,6 +17,7 @@ namespace ff::dx11
         texture& operator=(const texture& other) = delete;
         operator bool() const;
 
+        static ff::dx11::texture& get(ff::dxgi::texture_base& obj);
         ID3D11Texture2D* dx11_texture() const;
 
         // texture_base

@@ -57,6 +57,7 @@
     <ClInclude Include="source\texture_view_base.h" />
     <ClInclude Include="source\transform.h" />
     <ClInclude Include="source\utility.h" />
+    <ClInclude Include="source\vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">

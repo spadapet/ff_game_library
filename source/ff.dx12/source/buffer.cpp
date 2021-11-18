@@ -6,11 +6,18 @@
 #include "resource.h"
 
 ff::dx12::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data)
-    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, initial_data)
+    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, initial_data, {})
 {}
 
-ff::dx12::buffer::buffer(ff::dx12::commands* commands, ff::dxgi::buffer_type type, const void* data, uint64_t data_size, std::shared_ptr<ff::data_base> initial_data)
+ff::dx12::buffer::buffer(
+    ff::dx12::commands* commands,
+    ff::dxgi::buffer_type type,
+    const void* data,
+    uint64_t data_size,
+    std::shared_ptr<ff::data_base> initial_data,
+    std::unique_ptr<std::vector<uint8_t>> mapped_mem)
     : initial_data(initial_data)
+    , mapped_mem(std::move(mapped_mem))
     , mapped_context(nullptr)
     , type_(type)
 {
@@ -65,7 +72,7 @@ bool ff::dx12::buffer::writable() const
 
 bool ff::dx12::buffer::update(ff::dxgi::command_context_base& context, const void* data, size_t data_size, size_t min_buffer_size)
 {
-    *this = ff::dx12::buffer(&ff::dx12::commands::get(context), this->type_, data, data_size, this->initial_data);
+    *this = ff::dx12::buffer(&ff::dx12::commands::get(context), this->type_, data, data_size, this->initial_data, std::move(this->mapped_mem));
     return true;
 }
 
@@ -73,8 +80,16 @@ void* ff::dx12::buffer::map(ff::dxgi::command_context_base& context, size_t size
 {
     if (size)
     {
-        this->mapped_mem = std::make_unique<std::vector<uint8_t>>();
-        this->mapped_mem->resize(size);
+        if (!this->mapped_mem)
+        {
+            this->mapped_mem = std::make_unique<std::vector<uint8_t>>();
+        }
+
+        if (this->mapped_mem->size() < size)
+        {
+            this->mapped_mem->resize(size);
+        }
+
         this->mapped_context = &context;
 
         return this->mapped_mem->data();
@@ -88,7 +103,9 @@ void ff::dx12::buffer::unmap()
     if (this->mapped_context)
     {
         ff::dx12::commands& commands = ff::dx12::commands::get(*this->mapped_context);
-        *this = ff::dx12::buffer(&commands, this->type_, this->mapped_mem->data(), this->mapped_mem->size(), this->initial_data);
+        const void* data = this->mapped_mem->data();
+        uint64_t data_size = this->mapped_mem->size();
+        *this = ff::dx12::buffer(&commands, this->type_, data, data_size, this->initial_data, std::move(this->mapped_mem));
     }
 }
 
@@ -97,7 +114,7 @@ bool ff::dx12::buffer::reset()
     *this = ff::dx12::buffer(nullptr, this->type_,
         this->initial_data ? this->initial_data->data() : nullptr,
         this->initial_data ? this->initial_data->size() : 0,
-        this->initial_data);
+        this->initial_data, std::move(this->mapped_mem));
 
     return *this;
 }

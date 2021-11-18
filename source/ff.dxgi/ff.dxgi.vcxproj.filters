@@ -137,6 +137,9 @@
     <ClInclude Include="source\draw_util.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\vertex.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

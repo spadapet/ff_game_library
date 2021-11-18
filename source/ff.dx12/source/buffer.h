@@ -30,7 +30,13 @@ namespace ff::dx12
         virtual void unmap() override;
 
     private:
-        buffer(ff::dx12::commands* commands, ff::dxgi::buffer_type type, const void* data, uint64_t data_size, std::shared_ptr<ff::data_base> initial_data);
+        buffer(
+            ff::dx12::commands* commands,
+            ff::dxgi::buffer_type type,
+            const void* data,
+            uint64_t data_size,
+            std::shared_ptr<ff::data_base> initial_data,
+            std::unique_ptr<std::vector<uint8_t>> mapped_mem);
 
         // device_child_base
         virtual bool reset() override;

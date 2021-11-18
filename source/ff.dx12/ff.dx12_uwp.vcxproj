@@ -26,6 +26,7 @@
     <ClCompile Include="source\mem_range.cpp" />
     <ClCompile Include="source\queue.cpp" />
     <ClCompile Include="source\queues.cpp" />
+    <ClCompile Include="source\residency.cpp" />
     <ClCompile Include="source\resource.cpp" />
     <ClCompile Include="source\target_access.cpp" />
     <ClCompile Include="source\texture.cpp" />
@@ -52,6 +53,7 @@
     <ClInclude Include="source\mem_range.h" />
     <ClInclude Include="source\queue.h" />
     <ClInclude Include="source\queues.h" />
+    <ClInclude Include="source\residency.h" />
     <ClInclude Include="source\resource.h" />
     <ClInclude Include="source\target_access.h" />
     <ClInclude Include="source\texture.h" />

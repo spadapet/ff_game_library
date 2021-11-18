@@ -30,5 +30,6 @@
 #include "../source/ff.dxgi/source/texture_view_base.h"
 #include "../source/ff.dxgi/source/transform.h"
 #include "../source/ff.dxgi/source/utility.h"
+#include "../source/ff.dxgi/source/vertex.h"
 
 #pragma comment(lib, "dxgi.lib")

@@ -19,6 +19,7 @@
 #include "../source/ff.dx12/source/queue.h"
 #include "../source/ff.dx12/source/queues.h"
 #include "../source/ff.dx12/source/resource.h"
+#include "../source/ff.dx12/source/residency.h"
 #include "../source/ff.dx12/source/target_access.h"
 #include "../source/ff.dx12/source/texture.h"
 #include "../source/ff.dx12/source/texture_util.h"
