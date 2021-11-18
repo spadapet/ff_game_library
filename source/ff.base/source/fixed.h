@@ -24,6 +24,10 @@ namespace ff
             : data(data << this_type::fixed_count)
         {}
 
+        constexpr fixed_t(size_t data)
+            : fixed_t(static_cast<int>(data))
+        {}
+
         constexpr fixed_t(float data)
             : data(static_cast<T>(data* this_type::fixed_max))
         {}
@@ -36,13 +40,14 @@ namespace ff
             : fixed_t(static_cast<int>(data))
         {}
 
-        constexpr fixed_t(size_t data)
-            : fixed_t(static_cast<int>(data))
-        {}
-
         operator T() const
         {
             return this->data >> this_type::fixed_count;
+        }
+
+        operator size_t() const
+        {
+            return static_cast<size_t>(static_cast<T>(*this));
         }
 
         operator float() const
