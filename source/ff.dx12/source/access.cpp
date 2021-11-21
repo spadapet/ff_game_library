@@ -22,11 +22,6 @@ ID3D12CommandAllocatorX* ff::dx12::get_command_allocator(const ff::dx12::command
     return obj.allocator.Get();
 }
 
-std::unique_ptr<ff::dx12::fence>&& ff::dx12::move_fence(ff::dx12::commands& obj)
-{
-    return std::move(obj.fence);
-}
-
 ID3D12CommandQueueX* ff::dx12::get_command_queue(const ff::dx12::queue& obj)
 {
     return obj.command_queue.Get();

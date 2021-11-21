@@ -584,15 +584,13 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::po
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_line_strip(points, count, &color2, 1, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_line(start, end, color2, thickness, pixel_thickness);
 }
 
@@ -610,8 +608,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const 
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const ff::rect_float& rect, int color)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_filled_rectangle(rect, color2);
 }
 
@@ -630,38 +627,33 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_triangles(const 
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int color)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_filled_circle(center, radius, color2);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color)
 {
-    DirectX::XMFLOAT4 inside_color2, outside_color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
+    const DirectX::XMFLOAT4 inside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color));
+    const DirectX::XMFLOAT4 outside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color));
     this->draw_filled_circle(center, radius, inside_color2, outside_color2);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_outline_rectangle(rect, color2, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness)
 {
-    DirectX::XMFLOAT4 color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(color), color2);
+    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
     this->draw_outline_circle(center, radius, color2, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness)
 {
-    DirectX::XMFLOAT4 inside_color2, outside_color2;
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color), inside_color2);
-    ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color), outside_color2);
+    const DirectX::XMFLOAT4 inside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color));
+    const DirectX::XMFLOAT4 outside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color));
     this->draw_outline_circle(center, radius, inside_color2, outside_color2, thickness, pixel_thickness);
 }
 
@@ -1115,7 +1107,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_opaque_geometry()
         {
             this->apply_geometry_buffer(*this->command_context_, bucket.bucket_type(), this->geometry_buffer(), this->target_requires_palette);
 
-            if (!custom_func || (*custom_func)(bucket.item_type(), true))
+            if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), true))
             {
                 this->draw(*this->command_context_, bucket.render_count(), bucket.render_start());
             }
@@ -1149,7 +1141,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_alpha_geometry()
 
             this->apply_geometry_buffer(*this->command_context_, entry.bucket->bucket_type(), this->geometry_buffer(), this->target_requires_palette);
 
-            if (!custom_func || (*custom_func)(entry.bucket->item_type(), false))
+            if (!custom_func || (*custom_func)(*this->command_context_, entry.bucket->item_type(), false))
             {
                 this->draw(*this->command_context_, geometry_count, entry.bucket->render_start() + entry.index);
             }

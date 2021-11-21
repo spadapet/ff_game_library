@@ -11,17 +11,13 @@
 #include "mem_range.h"
 #include "queue.h"
 
-ff::dx12::commands::commands(
-    ff::dx12::queue& queue,
-    ID3D12GraphicsCommandListX* list,
-    ID3D12CommandAllocatorX* allocator,
-    std::unique_ptr<ff::dx12::fence>&& fence,
-    ID3D12PipelineStateX* initial_state)
+ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands_data_cache&& data_cache, ID3D12CommandAllocatorX* allocator, ID3D12PipelineStateX* initial_state)
     : queue_(&queue)
-    , list(std::move(list))
+    , list(std::move(data_cache.list))
     , allocator(std::move(allocator))
     , state_(initial_state)
-    , fence(std::move(fence))
+    , resource_state(std::move(data_cache.resource_state))
+    , fence(std::move(data_cache.fence))
 {
     this->list->Reset(this->allocator.Get(), this->state_.Get());
 
@@ -104,6 +100,18 @@ ff::dx12::fence_values& ff::dx12::commands::wait_before_execute()
     return this->wait_before_execute_;
 }
 
+ff::dx12::commands_data_cache ff::dx12::commands::move_data_cache()
+{
+    this->resource_state.clear();
+
+    return ff::dx12::commands_data_cache
+    {
+        std::move(this->list),
+        std::move(this->resource_state),
+        std::move(this->fence),
+    };
+}
+
 void ff::dx12::commands::resource_barrier(const ff::dx12::resource* resource_before, const ff::dx12::resource* resource_after)
 {
     D3D12_RESOURCE_BARRIER desc{};
@@ -144,6 +152,12 @@ void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_
             stencil_value ? *stencil_value : 0,
             0, nullptr);
     }
+}
+
+void ff::dx12::commands::discard(const ff::dx12::depth& depth)
+{
+    // Right now the state is always D3D12_RESOURCE_STATE_DEPTH_WRITE, no need to transition
+    this->list->DiscardResource(ff::dx12::get_resource(*depth.resource()), nullptr);
 }
 
 void ff::dx12::commands::update_buffer(const ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source)

@@ -30,9 +30,8 @@ void ff::dx12::queue::wait_for_idle()
 
 ff::dx12::commands ff::dx12::queue::new_commands(ID3D12PipelineStateX* initial_state)
 {
-    Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
-    std::unique_ptr<ff::dx12::fence> fence;
+    ff::dx12::commands_data_cache cache;
     {
         std::scoped_lock lock(this->mutex);
 
@@ -46,29 +45,20 @@ ff::dx12::commands ff::dx12::queue::new_commands(ID3D12PipelineStateX* initial_s
             this->allocators.pop_front();
         }
 
-        if (this->lists.empty())
+        if (this->caches.empty())
         {
-            ff::dx12::device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&list));
+            ff::dx12::device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&cache.list));
+            cache.fence = std::make_unique<ff::dx12::fence>(this);
         }
         else
         {
-            list = std::move(this->lists.front());
-            this->lists.pop_front();
-        }
-
-        if (this->fences.empty())
-        {
-            fence = std::make_unique<ff::dx12::fence>(this);
-        }
-        else
-        {
-            fence = std::move(this->fences.front());
-            this->fences.pop_front();
+            cache = std::move(this->caches.front());
+            this->caches.pop_front();
         }
     }
 
     allocator->Reset();
-    return ff::dx12::commands(*this, list.Get(), allocator.Get(), std::move(fence), initial_state);
+    return ff::dx12::commands(*this, std::move(cache), allocator.Get(), initial_state);
 }
 
 ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
@@ -99,11 +89,10 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
             {
                 std::scoped_lock lock(this->mutex);
                 this->allocators.push_back(std::make_pair(cur.next_fence_value(), ff::dx12::get_command_allocator(cur)));
-                this->lists.push_front(ff::dx12::get_command_list(cur));
-                this->fences.push_front(std::move(ff::dx12::move_fence(cur)));
+                this->caches.push_front(cur.move_data_cache());
 
-                lists.push_back(this->lists.front().Get());
-                fence_values.add(this->fences.front()->next_value());
+                lists.push_back(this->caches.front().list.Get());
+                fence_values.add(this->caches.front().fence->next_value());
             }
 
             wait_before_execute.add(cur.wait_before_execute());
@@ -123,8 +112,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 void ff::dx12::queue::before_reset()
 {
     this->allocators.clear();
-    this->lists.clear();
-    this->fences.clear();
+    this->caches.clear();
 
     this->command_queue.Reset();
 }

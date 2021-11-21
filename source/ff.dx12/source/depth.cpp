@@ -15,13 +15,17 @@ ff::dx12::depth::depth(size_t sample_count)
 
 ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
 {
+    D3D12_CLEAR_VALUE clear_value{ ::DEPTH_STENCIL_FORMAT };
+
     this->resource_ = std::make_unique<ff::dx12::resource>(
         CD3DX12_RESOURCE_DESC::Tex2D(
             ::DEPTH_STENCIL_FORMAT,
             static_cast<UINT64>(std::max<size_t>(size.x, 1)),
             static_cast<UINT>(std::max<size_t>(size.y, 1)),
             1, 1, // array, mips
-            static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count))));
+            static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count))),
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        clear_value);
 
     bool status = this->reset();
     assert(status);
@@ -97,7 +101,6 @@ void ff::dx12::depth::clear_stencil(ff::dxgi::command_context_base& context, BYT
 
 void ff::dx12::depth::clear(ff::dx12::commands& commands, const float* depth, const BYTE* stencil) const
 {
-    this->resource_->state(D3D12_RESOURCE_STATE_DEPTH_WRITE, &commands);
     commands.clear(*this, depth, stencil);
 }
 

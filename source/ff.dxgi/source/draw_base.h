@@ -1,7 +1,10 @@
 #pragma once
 
+#include "color.h"
+
 namespace ff::dxgi
 {
+    class command_context_base;
     class matrix_stack;
     class palette_base;
     class sprite_data;
@@ -17,7 +20,7 @@ namespace ff::dxgi
     class draw_base
     {
     public:
-        using custom_context_func = typename std::function<bool(const std::type_info& vertex_type, bool opaque_only)>;
+        using custom_context_func = typename std::function<bool(ff::dxgi::command_context_base& context, const std::type_info& vertex_type, bool opaque_only)>;
 
         virtual ~draw_base() = default;
 

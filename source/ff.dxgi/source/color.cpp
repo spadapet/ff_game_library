@@ -56,16 +56,6 @@ const DirectX::XMFLOAT4& ff::dxgi::color_magenta()
     return ::color_mangenta;
 }
 
-DirectX::XMFLOAT4 ff::dxgi::palette_index_to_color(int index, float alpha)
-{
-    return DirectX::XMFLOAT4(index / 256.0f, 0.0f, 0.0f, alpha * (index != 0));
-}
-
-void ff::dxgi::palette_index_to_color(int index, DirectX::XMFLOAT4& color, float alpha)
-{
-    color = ff::dxgi::palette_index_to_color(index, alpha);
-}
-
 void ff::dxgi::palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count, float alpha)
 {
     for (size_t i = 0; i != count; i++, index++, color++)

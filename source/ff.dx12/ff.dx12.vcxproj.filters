@@ -71,6 +71,12 @@
     <ClCompile Include="source\residency.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\draw_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\vertex.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -144,6 +150,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\residency.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\vertex.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

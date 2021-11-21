@@ -23,6 +23,7 @@ namespace ff::dx12
 
         ff::dx12::resource* resource() const;
         D3D12_CPU_DESCRIPTOR_HANDLE view() const;
+        void discard(ff::dxgi::command_context_base& context) const;
 
         // depth_base
         virtual ff::point_size size() const override;

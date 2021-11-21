@@ -16,6 +16,7 @@
     <ClCompile Include="source\depth.cpp" />
     <ClCompile Include="source\descriptor_allocator.cpp" />
     <ClCompile Include="source\descriptor_range.cpp" />
+    <ClCompile Include="source\draw_device.cpp" />
     <ClCompile Include="source\fence.cpp" />
     <ClCompile Include="source\fence_value.cpp" />
     <ClCompile Include="source\fence_values.cpp" />
@@ -33,6 +34,7 @@
     <ClCompile Include="source\texture_util.cpp" />
     <ClCompile Include="source\texture_view.cpp" />
     <ClCompile Include="source\texture_view_access.cpp" />
+    <ClCompile Include="source\vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -43,6 +45,7 @@
     <ClInclude Include="source\descriptor_allocator.h" />
     <ClInclude Include="source\descriptor_range.h" />
     <ClInclude Include="source\device_reset_priority.h" />
+    <ClInclude Include="source\draw_device.h" />
     <ClInclude Include="source\fence.h" />
     <ClInclude Include="source\fence_value.h" />
     <ClInclude Include="source\fence_values.h" />
@@ -60,6 +63,7 @@
     <ClInclude Include="source\texture_util.h" />
     <ClInclude Include="source\texture_view.h" />
     <ClInclude Include="source\texture_view_access.h" />
+    <ClInclude Include="source\vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">
