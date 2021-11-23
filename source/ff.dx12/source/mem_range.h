@@ -27,10 +27,8 @@ namespace ff::dx12
         void* cpu_data() const;
         ff::dx12::heap* heap() const;
 
-        void active_resource(ff::dx12::resource* resource, ff::dx12::commands* commands);
+        void active_resource(ff::dx12::resource* resource);
         ff::dx12::resource* active_resource() const;
-
-        // TODO: Remember what memory is used for each command list
 
     private:
         void free_range();

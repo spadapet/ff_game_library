@@ -29,16 +29,15 @@ namespace ff::dx12
 
         operator bool() const;
 
-        void active(bool value, ff::dx12::commands* commands);
-        bool active() const;
-        void activated(); // notification from mem_range
-        void deactivated(); // notification from mem_range
-
         const std::shared_ptr<ff::dx12::mem_range>& mem_range() const;
-        D3D12_RESOURCE_STATES state(D3D12_RESOURCE_STATES state, ff::dx12::commands* commands);
-        D3D12_RESOURCE_STATES state() const;
         const D3D12_RESOURCE_DESC& desc() const;
         const D3D12_RESOURCE_ALLOCATION_INFO& alloc_info() const;
+        size_t sub_resource_count() const;
+
+        void global_activate();
+        bool global_active() const;
+        D3D12_RESOURCE_STATES global_state(D3D12_RESOURCE_STATES state, size_t sub_resource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+        D3D12_RESOURCE_STATES global_state(size_t sub_resource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) const;
 
         struct readback_texture_data
         {
@@ -75,9 +74,9 @@ namespace ff::dx12
         Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
         D3D12_CLEAR_VALUE optimized_clear_value;
-        D3D12_RESOURCE_STATES state_;
         D3D12_RESOURCE_DESC desc_;
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info_;
+        ff::stack_vector<D3D12_RESOURCE_STATES, 8> global_states_;
         ff::dx12::fence_values read_fence_values;
         ff::dx12::fence_value write_fence_value;
     };

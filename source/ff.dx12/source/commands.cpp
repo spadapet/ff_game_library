@@ -144,6 +144,8 @@ void ff::dx12::commands::resource_barrier(const ff::dx12::resource* resource, D3
 
 void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value)
 {
+    // TODO: transition, wait for reads/writes
+
     if (depth_value || stencil_value)
     {
         this->list->ClearDepthStencilView(depth.view(),
@@ -156,24 +158,35 @@ void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_
 
 void ff::dx12::commands::discard(const ff::dx12::depth& depth)
 {
+    // TODO: transition, wait for reads/writes
+
     // Right now the state is always D3D12_RESOURCE_STATE_DEPTH_WRITE, no need to transition
     this->list->DiscardResource(ff::dx12::get_resource(*depth.resource()), nullptr);
 }
 
 void ff::dx12::commands::update_buffer(const ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source)
 {
+    // TODO: transition, wait for reads/writes
+    // D3D12_RESOURCE_STATE_COPY_DEST
+
     assert(source.heap() && source.heap()->cpu_usage());
     this->list->CopyBufferRegion(ff::dx12::get_resource(dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
 }
 
 void ff::dx12::commands::readback_buffer(const ff::dx12::mem_range& dest, const ff::dx12::resource& source, uint64_t source_offset)
 {
+    // TODO: transition, wait for reads/writes
+    // D3D12_RESOURCE_STATE_COPY_SOURCE
+
     assert(dest.heap() && dest.heap()->cpu_usage());
     this->list->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(source), source_offset, dest.size());
 }
 
 void ff::dx12::commands::update_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout)
 {
+    // TODO: transition, wait for reads/writes
+    // D3D12_RESOURCE_STATE_COPY_DEST
+
     assert(source.cpu_data());
 
     D3D12_TEXTURE_COPY_LOCATION source_location;
@@ -189,6 +202,8 @@ void ff::dx12::commands::update_texture(const ff::dx12::resource& dest, size_t d
 
 void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
+    // TODO: transition, wait for reads/writes
+
     assert(dest.cpu_data());
 
     const D3D12_BOX source_box
@@ -213,6 +228,11 @@ void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const
 
 void ff::dx12::commands::copy_resource(const ff::dx12::resource& dest_resource, const ff::dx12::resource& source_resource)
 {
+    // TODO: transition, wait for reads/writes
+    // D3D12_RESOURCE_STATE_COPY_SOURCE
+    // D3D12_RESOURCE_STATE_COPY_DEST
+    // this->write_fence_value = commands->next_fence_value();
+
     ID3D12ResourceX* dest = ff::dx12::get_resource(dest_resource);
     ID3D12ResourceX* source = ff::dx12::get_resource(source_resource);
 
@@ -224,6 +244,8 @@ void ff::dx12::commands::copy_resource(const ff::dx12::resource& dest_resource, 
 
 void ff::dx12::commands::copy_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
+    // TODO: transition, wait for reads/writes
+
     const D3D12_BOX source_box
     {
         static_cast<UINT>(source_rect.left),

@@ -90,28 +90,9 @@ ff::dx12::heap* ff::dx12::mem_range::heap() const
     return *this ? &this->owner->heap() : nullptr;
 }
 
-void ff::dx12::mem_range::active_resource(ff::dx12::resource* resource, ff::dx12::commands* commands)
+void ff::dx12::mem_range::active_resource(ff::dx12::resource* resource)
 {
-    if (resource != this->active_resource_)
-    {
-        ff::dx12::resource* resource_before = this->active_resource_;
-        this->active_resource_ = resource;
-
-        if (resource_before)
-        {
-            resource_before->deactivated();
-        }
-
-        if (this->active_resource_)
-        {
-            this->active_resource_->activated();
-        }
-
-        if (commands)
-        {
-            commands->resource_barrier(resource_before, this->active_resource_);
-        }
-    }
+    this->active_resource_ = resource;
 }
 
 ff::dx12::resource* ff::dx12::mem_range::active_resource() const
