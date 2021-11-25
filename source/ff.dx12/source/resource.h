@@ -13,12 +13,8 @@ namespace ff::dx12
     class resource : private ff::dxgi::device_child_base
     {
     public:
-        resource(
-            const D3D12_RESOURCE_DESC& desc,
-            D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON,
-            D3D12_CLEAR_VALUE optimized_clear_value = {},
-            std::shared_ptr<ff::dx12::mem_range> mem_range = {},
-            bool allocate_mem_range = true);
+        resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
+        resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON, D3D12_CLEAR_VALUE optimized_clear_value = {}); // committed
         resource(resource& other, ff::dx12::commands* commands);
         resource(resource&& other) noexcept;
         resource(const resource& other) = delete;
@@ -34,10 +30,12 @@ namespace ff::dx12
         const D3D12_RESOURCE_ALLOCATION_INFO& alloc_info() const;
         size_t sub_resource_count() const;
 
-        void global_activate();
-        bool global_active() const;
-        D3D12_RESOURCE_STATES global_state(D3D12_RESOURCE_STATES state, size_t sub_resource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
-        D3D12_RESOURCE_STATES global_state(size_t sub_resource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) const;
+        void global_state(const D3D12_RESOURCE_STATES* states, size_t first_sub_resource, size_t count);
+        std::pair<D3D12_RESOURCE_STATES, bool> global_state(size_t first_sub_resource, size_t count) const;
+        ff::dx12::fence_values& global_reads();
+        const ff::dx12::fence_values& global_reads() const;
+        ff::dx12::fence_value& global_write();
+        const ff::dx12::fence_value& global_write() const;
 
         struct readback_texture_data
         {
@@ -65,19 +63,22 @@ namespace ff::dx12
     private:
         friend ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::resource& obj);
 
+        resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value, std::shared_ptr<ff::dx12::mem_range> mem_range, bool allocate_mem_range);
         void destroy(bool for_reset);
 
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
 
-        Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;
-        std::shared_ptr<ff::dx12::mem_range> mem_range_;
-        D3D12_CLEAR_VALUE optimized_clear_value;
         D3D12_RESOURCE_DESC desc_;
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info_;
-        ff::stack_vector<D3D12_RESOURCE_STATES, 8> global_states_;
-        ff::dx12::fence_values read_fence_values;
-        ff::dx12::fence_value write_fence_value;
+        D3D12_CLEAR_VALUE optimized_clear_value;
+        std::shared_ptr<ff::dx12::mem_range> mem_range_;
+        Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;
+
+        // Global state of the resource BETWEEN ExecuteCommandLists. Command lists must keep track of state while building the commands.
+        ff::stack_vector<D3D12_RESOURCE_STATES, 12> global_states_;
+        ff::dx12::fence_values global_reads_;
+        ff::dx12::fence_value global_write_;
     };
 }

@@ -18,20 +18,26 @@ namespace ff::test::dx12
 
         TEST_METHOD(simple_buffer)
         {
-            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Buffer(128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Buffer(128), D3D12_RESOURCE_STATE_COPY_DEST);
             Assert::IsTrue(r1);
 
-            ff::dx12::resource r2(CD3DX12_RESOURCE_DESC::Buffer(64), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_CLEAR_VALUE{}, r1.mem_range());
+            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Buffer(64), D3D12_RESOURCE_STATE_COPY_DEST);
             Assert::IsTrue(r2);
+
+            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Buffer(128), D3D12_RESOURCE_STATE_COPY_DEST);
+            Assert::IsTrue(r3);
         }
 
         TEST_METHOD(simple_texture)
         {
-            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128), D3D12_RESOURCE_STATE_COPY_DEST);
             Assert::IsTrue(r1);
 
-            ff::dx12::resource r2(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_CLEAR_VALUE{}, r1.mem_range());
+            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64), D3D12_RESOURCE_STATE_COPY_DEST);
             Assert::IsTrue(r2);
+
+            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128), D3D12_RESOURCE_STATE_COPY_DEST);
+            Assert::IsTrue(r3);
         }
 
         TEST_METHOD(update_buffer)

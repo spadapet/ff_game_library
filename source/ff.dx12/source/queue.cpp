@@ -31,7 +31,7 @@ void ff::dx12::queue::wait_for_idle()
 ff::dx12::commands ff::dx12::queue::new_commands(ID3D12PipelineStateX* initial_state)
 {
     Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
-    ff::dx12::commands_data_cache cache;
+    ff::dx12::commands::data_cache_t cache;
     {
         std::scoped_lock lock(this->mutex);
 
@@ -89,14 +89,11 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
             {
                 std::scoped_lock lock(this->mutex);
                 this->allocators.push_back(std::make_pair(cur.next_fence_value(), ff::dx12::get_command_allocator(cur)));
-                this->caches.push_front(cur.move_data_cache());
+                this->caches.push_front(cur.close());
 
                 lists.push_back(this->caches.front().list.Get());
                 fence_values.add(this->caches.front().fence->next_value());
             }
-
-            wait_before_execute.add(cur.wait_before_execute());
-            cur.close();
         }
 
         wait_before_execute.wait(this);

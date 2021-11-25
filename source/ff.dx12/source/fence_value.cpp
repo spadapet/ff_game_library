@@ -12,6 +12,21 @@ ff::dx12::fence_value::fence_value(ff::dx12::fence* fence, uint64_t value)
     , value_(value)
 {}
 
+ff::dx12::fence_value::fence_value(fence_value && other) noexcept
+{
+    *this = std::move(other);
+}
+
+ff::dx12::fence_value& ff::dx12::fence_value::operator=(fence_value&& other) noexcept
+{
+    this->fence_ = other.fence_;
+    this->value_ = other.value_;
+    other.fence_ = nullptr;
+    other.value_ = 0;
+
+    return *this;
+}
+
 bool ff::dx12::fence_value::operator==(const fence_value& other) const
 {
     return this->fence_ == other.fence_ && this->value_ == other.value_;

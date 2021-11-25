@@ -10,10 +10,10 @@ namespace ff::dx12
     public:
         fence_value();
         fence_value(ff::dx12::fence* fence, uint64_t value);
-        fence_value(fence_value&& other) noexcept = default;
+        fence_value(fence_value&& other) noexcept;
         fence_value(const fence_value& other) = default;
 
-        fence_value& operator=(fence_value&& other) noexcept = default;
+        fence_value& operator=(fence_value&& other) noexcept;
         fence_value& operator=(const fence_value& other) = default;
         bool operator==(const fence_value& other) const;
         bool operator!=(const fence_value& other) const;

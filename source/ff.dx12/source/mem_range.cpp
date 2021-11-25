@@ -6,7 +6,6 @@
 
 ff::dx12::mem_range::mem_range()
     : owner(nullptr)
-    , active_resource_(nullptr)
     , start_(0)
     , size_(0)
     , allocated_start_(0)
@@ -15,7 +14,6 @@ ff::dx12::mem_range::mem_range()
 
 ff::dx12::mem_range::mem_range(ff::dx12::mem_buffer_base& owner, uint64_t start, uint64_t size, uint64_t allocated_start, uint64_t allocated_size)
     : owner(&owner)
-    , active_resource_(nullptr)
     , start_(start)
     , size_(size)
     , allocated_start_(allocated_start)
@@ -24,7 +22,6 @@ ff::dx12::mem_range::mem_range(ff::dx12::mem_buffer_base& owner, uint64_t start,
 
 ff::dx12::mem_range::mem_range(mem_range&& other) noexcept
     : owner(nullptr)
-    , active_resource_(nullptr)
     , start_(0)
     , size_(0)
     , allocated_start_(0)
@@ -45,7 +42,6 @@ ff::dx12::mem_range& ff::dx12::mem_range::operator=(mem_range&& other) noexcept
         this->free_range();
 
         std::swap(this->owner, other.owner);
-        std::swap(this->active_resource_, other.active_resource_);
         std::swap(this->start_, other.start_);
         std::swap(this->size_, other.size_);
         std::swap(this->allocated_start_, other.allocated_start_);
@@ -90,25 +86,12 @@ ff::dx12::heap* ff::dx12::mem_range::heap() const
     return *this ? &this->owner->heap() : nullptr;
 }
 
-void ff::dx12::mem_range::active_resource(ff::dx12::resource* resource)
-{
-    this->active_resource_ = resource;
-}
-
-ff::dx12::resource* ff::dx12::mem_range::active_resource() const
-{
-    return this->active_resource_;
-}
-
 void ff::dx12::mem_range::free_range()
 {
-    assert(!this->active_resource_);
-
     if (*this)
     {
         this->owner->free_range(*this);
         this->owner = nullptr;
-        this->active_resource_ = nullptr;
         this->start_ = 0;
         this->size_ = 0;
         this->allocated_start_ = 0;

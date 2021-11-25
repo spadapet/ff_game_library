@@ -44,17 +44,25 @@ const DirectX::Image& ff::dx12::resource::readback_texture_data::image(size_t in
     return this->mem_ranges[index].second;
 }
 
+ff::dx12::resource::resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(desc, initial_state, optimized_clear_value, mem_range, true)
+{}
+
+ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(desc, initial_state, optimized_clear_value, {}, false)
+{}
+
 ff::dx12::resource::resource(
     const D3D12_RESOURCE_DESC& desc,
     D3D12_RESOURCE_STATES initial_state,
     D3D12_CLEAR_VALUE optimized_clear_value,
     std::shared_ptr<ff::dx12::mem_range> mem_range,
     bool allocate_mem_range)
-    : mem_range_(mem_range)
-    , optimized_clear_value(optimized_clear_value)
-    , global_states_(static_cast<size_t>(desc.MipLevels)* static_cast<size_t>(desc.DepthOrArraySize), initial_state)
-    , desc_(desc)
+    : desc_(desc)
     , alloc_info_(ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc))
+    , optimized_clear_value(optimized_clear_value)
+    , mem_range_(mem_range)
+    , global_states_(this->sub_resource_count(), initial_state)
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0 && desc.MipLevels * desc.DepthOrArraySize > 0);
 
@@ -105,21 +113,14 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
     {
         this->destroy(false);
 
-        bool active = other.global_active();
-
         std::swap(this->resource_, other.resource_);
         std::swap(this->mem_range_, other.mem_range_);
         std::swap(this->optimized_clear_value, other.optimized_clear_value);
         std::swap(this->desc_, other.desc_);
         std::swap(this->alloc_info_, other.alloc_info_);
         std::swap(this->global_states_, other.global_states_);
-        std::swap(this->read_fence_values, other.read_fence_values);
-        std::swap(this->write_fence_value, other.write_fence_value);
-
-        if (active)
-        {
-            this->global_activate();
-        }
+        std::swap(this->global_reads_, other.global_reads_);
+        std::swap(this->global_write_, other.global_write_);
     }
 
     return *this;
@@ -150,57 +151,55 @@ size_t ff::dx12::resource::sub_resource_count() const
     return static_cast<size_t>(this->desc_.MipLevels) * static_cast<size_t>(this->desc_.DepthOrArraySize);
 }
 
-void ff::dx12::resource::global_activate()
+void ff::dx12::resource::global_state(const D3D12_RESOURCE_STATES* states, size_t first_sub_resource, size_t count)
 {
-    if (this->mem_range_)
+    if (first_sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
     {
-        this->mem_range_->active_resource(this);
+        first_sub_resource = 0;
+        count = this->sub_resource_count();
     }
+
+    std::memcpy(this->global_states_.data() + first_sub_resource, states, sizeof(D3D12_RESOURCE_STATES) * count);
 }
 
-bool ff::dx12::resource::global_active() const
+std::pair<D3D12_RESOURCE_STATES, bool> ff::dx12::resource::global_state(size_t first_sub_resource, size_t count) const
 {
-    return !this->mem_range_ || this->mem_range_->active_resource() == this;
+    std::pair<D3D12_RESOURCE_STATES, bool> result{ D3D12_RESOURCE_STATE_COMMON, true };
+
+    if (first_sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+    {
+        first_sub_resource = 0;
+        count = this->sub_resource_count();
+    }
+
+    for (size_t i = first_sub_resource; i < first_sub_resource + count; i++)
+    {
+        D3D12_RESOURCE_STATES global_state = this->global_states_[i];
+        result.second = result.second && (i == first_sub_resource || result.first == global_state);
+        result.first |= global_state;
+    }
+
+    return result;
 }
 
-D3D12_RESOURCE_STATES ff::dx12::resource::global_state(D3D12_RESOURCE_STATES state, size_t sub_resource)
+ff::dx12::fence_values& ff::dx12::resource::global_reads()
 {
-    D3D12_RESOURCE_STATES old_states = D3D12_RESOURCE_STATE_COMMON;
-
-    if (sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
-    {
-        for (D3D12_RESOURCE_STATES& i : this->global_states_)
-        {
-            old_states |= i;
-            i = state;
-        }
-    }
-    else if (sub_resource < this->sub_resource_count())
-    {
-        old_states = this->global_states_[sub_resource];
-        this->global_states_[sub_resource] = state;
-    }
-
-    return old_states;
+    return this->global_reads_;
 }
 
-D3D12_RESOURCE_STATES ff::dx12::resource::global_state(size_t sub_resource) const
+const ff::dx12::fence_values& ff::dx12::resource::global_reads() const
 {
-    D3D12_RESOURCE_STATES states = D3D12_RESOURCE_STATE_COMMON;
+    return this->global_reads_;
+}
 
-    if (sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
-    {
-        for (D3D12_RESOURCE_STATES i : this->global_states_)
-        {
-            states |= i;
-        }
-    }
-    else if (sub_resource < this->sub_resource_count())
-    {
-        states = this->global_states_[sub_resource];
-    }
+ff::dx12::fence_value& ff::dx12::resource::global_write()
+{
+    return this->global_write_;
+}
 
-    return states;
+const ff::dx12::fence_value& ff::dx12::resource::global_write() const
+{
+    return this->global_write_;
 }
 
 ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* commands, const void* data, uint64_t offset, uint64_t size)
@@ -377,27 +376,18 @@ DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* co
 
 void ff::dx12::resource::destroy(bool for_reset)
 {
-    if (this->mem_range_ && this->mem_range_->active_resource() == this)
-    {
-        this->mem_range_->active_resource(nullptr);
-    }
-
     if (!for_reset)
     {
-        ff::dx12::fence_values fence_values = std::move(this->read_fence_values);
-        fence_values.add(this->write_fence_value);
-        this->write_fence_value = {};
+        ff::dx12::fence_values fence_values = std::move(this->global_reads_);
+        fence_values.add(std::move(this->global_write_));
 
         ff::dx12::keep_alive_resource(std::move(*this), std::move(fence_values));
 
         this->mem_range_.reset();
     }
-    else
-    {
-        this->read_fence_values.clear();
-        this->write_fence_value = {};
-    }
 
+    this->global_reads_.clear();
+    this->global_write_ = {};
     this->resource_.Reset();
 }
 
@@ -414,7 +404,7 @@ bool ff::dx12::resource::reset()
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
             &this->desc_,
-            this->global_state(0),
+            this->global_state(0, 1).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&this->resource_))))
         {
@@ -427,7 +417,7 @@ bool ff::dx12::resource::reset()
             ff::dx12::get_heap(*this->mem_range_->heap()),
             this->mem_range_->start(),
             &this->desc_,
-            this->global_state(0),
+            this->global_state(0, 1).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&this->resource_))))
         {

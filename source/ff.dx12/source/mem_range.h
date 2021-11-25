@@ -27,14 +27,10 @@ namespace ff::dx12
         void* cpu_data() const;
         ff::dx12::heap* heap() const;
 
-        void active_resource(ff::dx12::resource* resource);
-        ff::dx12::resource* active_resource() const;
-
     private:
         void free_range();
 
         ff::dx12::mem_buffer_base* owner;
-        ff::dx12::resource* active_resource_;
         uint64_t start_;
         uint64_t size_;
         uint64_t allocated_start_;

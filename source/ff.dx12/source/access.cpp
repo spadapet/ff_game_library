@@ -9,7 +9,7 @@
 
 ID3D12GraphicsCommandListX* ff::dx12::get_command_list(const ff::dx12::commands& obj)
 {
-    return obj.list.Get();
+    return obj.data_cache.list.Get();
 }
 
 ID3D12GraphicsCommandListX* ff::dx12::get_command_list(ff::dxgi::command_context_base& obj)
