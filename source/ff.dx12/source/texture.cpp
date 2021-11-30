@@ -213,8 +213,7 @@ const ff::dx12::resource* ff::dx12::texture::resource() const
             static_cast<UINT16>(md.arraySize),
             static_cast<UINT16>(md.mipLevels),
             1, 0, // quality
-            !ff::dxgi::compressed_format(md.format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE),
-            D3D12_RESOURCE_STATE_COPY_DEST);
+            !ff::dxgi::compressed_format(md.format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE));
 
         this->resource_->update_texture(nullptr, this->data_->GetImages(), 0, this->data_->GetImageCount(), ff::point_size{});
     }

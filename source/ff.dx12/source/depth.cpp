@@ -24,7 +24,6 @@ ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
             static_cast<UINT>(std::max<size_t>(size.y, 1)),
             1, 1, // array, mips
             static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count))),
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
         clear_value);
 
     bool status = this->reset();

@@ -23,7 +23,7 @@ ff::dx12::buffer::buffer(
 {
     if (data && data_size)
     {
-        this->resource_ = std::make_unique<ff::dx12::resource>(CD3DX12_RESOURCE_DESC::Buffer(data_size), D3D12_RESOURCE_STATE_COPY_DEST);
+        this->resource_ = std::make_unique<ff::dx12::resource>(CD3DX12_RESOURCE_DESC::Buffer(data_size));
         this->resource_->update_buffer(commands, data, 0, data_size);
     }
 

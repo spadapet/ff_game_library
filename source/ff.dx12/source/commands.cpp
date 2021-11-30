@@ -110,8 +110,9 @@ void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_
 void ff::dx12::commands::discard(const ff::dx12::depth& depth)
 {
     // TODO: transition, wait for reads/writes
+    // MSDN: All subresources in a resource must be in the RENDER_TARGET state, or DEPTH_WRITE state,
+    // for render targets / depth - stencil resources respectively, when ID3D12GraphicsCommandList::DiscardResource is called
 
-    // Right now the state is always D3D12_RESOURCE_STATE_DEPTH_WRITE, no need to transition
     this->list()->DiscardResource(ff::dx12::get_resource(*depth.resource()), nullptr);
 }
 

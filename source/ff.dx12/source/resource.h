@@ -13,8 +13,8 @@ namespace ff::dx12
     class resource : private ff::dxgi::device_child_base
     {
     public:
-        resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
-        resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON, D3D12_CLEAR_VALUE optimized_clear_value = {}); // committed
+        resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
+        resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // committed
         resource(resource& other, ff::dx12::commands* commands);
         resource(resource&& other) noexcept;
         resource(const resource& other) = delete;

@@ -316,7 +316,7 @@ namespace
             ff::rect_float rotated_view_rect = ff::dxgi::draw_util::get_rotated_view_rect(target, view_rect);
             D3D12_VIEWPORT viewport = ::get_viewport(rotated_view_rect);
 
-            // TODO: change state?
+            // TODO: change state? DEPTH_WRITE, RENDER_TARGET
             this->commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
             //ff::dx12::get_command_list(*this->commands)->OMSetRenderTargets(1, &target_view, TRUE, depth_view.ptr ? &depth_view : nullptr);
             //ff::dx12::get_command_list(*this->commands)->RSSetViewports(1, &viewport);

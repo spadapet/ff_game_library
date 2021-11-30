@@ -44,12 +44,12 @@ const DirectX::Image& ff::dx12::resource::readback_texture_data::image(size_t in
     return this->mem_ranges[index].second;
 }
 
-ff::dx12::resource::resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value)
-    : resource(desc, initial_state, optimized_clear_value, mem_range, true)
+ff::dx12::resource::resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, mem_range, true)
 {}
 
-ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value)
-    : resource(desc, initial_state, optimized_clear_value, {}, false)
+ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
 ff::dx12::resource::resource(
@@ -89,7 +89,7 @@ ff::dx12::resource::resource(
 }
 
 ff::dx12::resource::resource(resource& other, ff::dx12::commands* commands)
-    : resource(other.desc_, D3D12_RESOURCE_STATE_COMMON, other.optimized_clear_value)
+    : resource(other.desc_, other.optimized_clear_value)
 {
     std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     commands->copy_resource(*this, other);

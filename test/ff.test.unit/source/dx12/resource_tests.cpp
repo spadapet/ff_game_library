@@ -18,32 +18,32 @@ namespace ff::test::dx12
 
         TEST_METHOD(simple_buffer)
         {
-            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Buffer(128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Buffer(128));
             Assert::IsTrue(r1);
 
-            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Buffer(64), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Buffer(64));
             Assert::IsTrue(r2);
 
-            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Buffer(128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Buffer(128));
             Assert::IsTrue(r3);
         }
 
         TEST_METHOD(simple_texture)
         {
-            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128));
             Assert::IsTrue(r1);
 
-            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64));
             Assert::IsTrue(r2);
 
-            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128));
             Assert::IsTrue(r3);
         }
 
         TEST_METHOD(update_buffer)
         {
             const std::array<int, 8> data{ 1, 2, 3, 4, 5, 6, 7, 8 };
-            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Buffer(ff::array_byte_size(data)), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Buffer(ff::array_byte_size(data)));
 
             ff::dx12::fence_value fence_value = r1.update_buffer(nullptr, data.data(), 0, ff::array_byte_size(data));
             fence_value.wait(nullptr);
@@ -79,7 +79,7 @@ namespace ff::test::dx12
                 Assert::IsTrue(SUCCEEDED(hr));
             }
 
-            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 256, 256, 1, 4), D3D12_RESOURCE_STATE_COPY_DEST);
+            ff::dx12::resource r1(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 256, 256, 1, 4));
             ff::dx12::fence_value fence_value = r1.update_texture(nullptr, scratch_source_mips.GetImages(), 0, 4, {});
             fence_value.wait(nullptr);
 

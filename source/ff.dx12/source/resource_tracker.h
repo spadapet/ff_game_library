@@ -23,11 +23,13 @@ namespace ff::dx12
 
         void state_barrier(ff::dx12::resource& resource, size_t first_sub_resource, size_t count, D3D12_RESOURCE_STATES state);
         void uav_barrier(ff::dx12::resource& resource);
-        void alias_barrier(ff::dx12::resource& resource);
+        void alias_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
 
     private:
         struct resource_t
         {
+            resource_t(size_t sub_resource_count);
+
             bool all_same() const;
             void set_state(D3D12_RESOURCE_STATES state, size_t first_sub_resource, size_t count);
             void set_explicit(size_t first_sub_resource, size_t count);
