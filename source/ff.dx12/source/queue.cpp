@@ -3,6 +3,7 @@
 #include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
+#include "resource_tracker.h"
 #include "queue.h"
 
 ff::dx12::queue::queue(D3D12_COMMAND_LIST_TYPE type)
@@ -30,35 +31,34 @@ void ff::dx12::queue::wait_for_idle()
 
 ff::dx12::commands ff::dx12::queue::new_commands(ID3D12PipelineStateX* initial_state)
 {
-    Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
     ff::dx12::commands::data_cache_t cache;
+    std::scoped_lock lock(this->mutex);
+
+    if (this->caches.empty())
     {
-        std::scoped_lock lock(this->mutex);
-
-        if (this->allocators.empty() || !this->allocators.front().first.complete())
-        {
-            ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator));
-        }
-        else
-        {
-            allocator = std::move(this->allocators.front().second);
-            this->allocators.pop_front();
-        }
-
-        if (this->caches.empty())
-        {
-            ff::dx12::device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&cache.list));
-            cache.fence = std::make_unique<ff::dx12::fence>(this);
-        }
-        else
-        {
-            cache = std::move(this->caches.front());
-            this->caches.pop_front();
-        }
+        ff::dx12::device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&cache.list));
+        ff::dx12::device()->CreateCommandList1(0, this->type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&cache.list_before));
+        cache.resource_tracker = std::make_unique<ff::dx12::resource_tracker>();
+        cache.fence = std::make_unique<ff::dx12::fence>(this);
+    }
+    else
+    {
+        cache = std::move(this->caches.front());
+        this->caches.pop_front();
     }
 
-    allocator->Reset();
-    return ff::dx12::commands(*this, std::move(cache), allocator.Get(), initial_state);
+    if (this->allocators.empty() || !this->allocators.front().first.complete())
+    {
+        ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&cache.allocator));
+    }
+    else
+    {
+        cache.allocator = std::move(this->allocators.front().second);
+        this->allocators.pop_front();
+    }
+
+    cache.allocator->Reset();
+    return ff::dx12::commands(*this, std::move(cache), initial_state);
 }
 
 ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
@@ -73,37 +73,52 @@ ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
 
 void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 {
-    ff::stack_vector<ID3D12CommandList*, 16> lists;
-    ff::dx12::fence_values fence_values;
-    ff::dx12::fence_values wait_before_execute;
+    ff::stack_vector<ff::dx12::commands*, 32> valid_commands;
+    valid_commands.reserve(count);
 
-    if (count)
+    for (size_t i = 0; i < count; i++)
     {
-        lists.reserve(count);
-        fence_values.reserve(count);
-
-        for (size_t i = 0; i < count; i++)
+        if (commands[i] && *commands[i])
         {
-            ff::dx12::commands& cur = *commands[i];
-            if (cur)
-            {
-                std::scoped_lock lock(this->mutex);
-                this->allocators.push_back(std::make_pair(cur.next_fence_value(), ff::dx12::get_command_allocator(cur)));
-                this->caches.push_front(cur.close());
-
-                lists.push_back(this->caches.front().list.Get());
-                fence_values.add(this->caches.front().fence->next_value());
-            }
-        }
-
-        wait_before_execute.wait(this);
-
-        if (!lists.empty())
-        {
-            this->command_queue->ExecuteCommandLists(static_cast<UINT>(lists.size()), lists.data());
-            fence_values.signal(this);
+            valid_commands.push_back(commands[i]);
         }
     }
+
+    if (valid_commands.empty())
+    {
+        return;
+    }
+
+    ff::dx12::fence_values wait_before_execute;
+    ff::stack_vector<ID3D12CommandList*, 64> dx12_lists;
+    ff::dx12::fence_values fence_values;
+    dx12_lists.reserve(valid_commands.size() * 2);
+    fence_values.reserve(valid_commands.size());
+
+    for (size_t i = 0; i < valid_commands.size(); i++)
+    {
+        ff::dx12::commands* prev_commands = i ? valid_commands[i - 1] : nullptr;
+        ff::dx12::commands* next_commands = (i + 1 < valid_commands.size()) ? valid_commands[i + 1] : nullptr;
+        valid_commands[i]->flush(prev_commands, next_commands, wait_before_execute);
+    }
+
+    for (ff::dx12::commands* cur : valid_commands)
+    {
+        ff::dx12::commands::data_cache_t cache = cur->close();
+        dx12_lists.push_back(cache.list_before.Get());
+        dx12_lists.push_back(cache.list.Get());
+
+        ff::dx12::fence_value next_fence_value = cur->next_fence_value();
+        fence_values.add(next_fence_value);
+
+        std::scoped_lock lock(this->mutex);
+        this->allocators.push_back(std::make_pair(next_fence_value, std::move(cache.allocator)));
+        this->caches.push_front(std::move(cache));
+    }
+
+    wait_before_execute.wait(this);
+    this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
+    fence_values.signal(this);
 }
 
 void ff::dx12::queue::before_reset()

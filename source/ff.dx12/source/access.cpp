@@ -1,26 +1,10 @@
 #include "pch.h"
 #include "access.h"
-#include "commands.h"
 #include "descriptor_allocator.h"
 #include "fence.h"
 #include "heap.h"
 #include "queue.h"
 #include "resource.h"
-
-ID3D12GraphicsCommandListX* ff::dx12::get_command_list(const ff::dx12::commands& obj)
-{
-    return obj.data_cache.list.Get();
-}
-
-ID3D12GraphicsCommandListX* ff::dx12::get_command_list(ff::dxgi::command_context_base& obj)
-{
-    return ff::dx12::get_command_list(ff::dx12::commands::get(obj));
-}
-
-ID3D12CommandAllocatorX* ff::dx12::get_command_allocator(const ff::dx12::commands& obj)
-{
-    return obj.allocator.Get();
-}
 
 ID3D12CommandQueueX* ff::dx12::get_command_queue(const ff::dx12::queue& obj)
 {

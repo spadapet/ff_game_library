@@ -20,7 +20,7 @@ namespace ff::dx12
 
         void flush(ID3D12GraphicsCommandListX* list);
         void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker);
-        void finalize(ID3D12GraphicsCommandListX* list);
+        void finalize(D3D12_COMMAND_LIST_TYPE list_type);
         void reset();
 
         void state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size);

@@ -56,7 +56,7 @@ static bool allow_promotion(ff::dx12::resource& resource, ff::dx12::resource_sta
 
 // https://docs.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#common-state-promotion
 static bool allow_decay(
-    ID3D12CommandListX* list,
+    D3D12_COMMAND_LIST_TYPE list_type,
     ff::dx12::resource& resource,
     ff::dx12::resource_state::type_t type_before,
     D3D12_RESOURCE_STATES before_state,
@@ -66,7 +66,7 @@ static bool allow_decay(
     {
         const D3D12_RESOURCE_DESC& desc = resource.desc();
 
-        if (list->GetType() == D3D12_COMMAND_LIST_TYPE_COPY ||
+        if (list_type == D3D12_COMMAND_LIST_TYPE_COPY ||
             desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER ||
             (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS) != 0)
         {
@@ -164,7 +164,7 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
     }
 }
 
-void ff::dx12::resource_tracker::finalize(ID3D12GraphicsCommandListX* list)
+void ff::dx12::resource_tracker::finalize(D3D12_COMMAND_LIST_TYPE list_type)
 {
     for (auto& [resource, data] : this->resources)
     {
@@ -173,7 +173,7 @@ void ff::dx12::resource_tracker::finalize(ID3D12GraphicsCommandListX* list)
         for (size_t i = 0, count = all ? data.state.sub_resource_size() : 1; i < data.state.sub_resource_size(); i += count)
         {
             ff::dx12::resource_state::state_t state = data.state.get(i);
-            if (::allow_decay(list, *resource, state.second, state.first, D3D12_RESOURCE_STATE_COMMON))
+            if (::allow_decay(list_type, *resource, state.second, state.first, D3D12_RESOURCE_STATE_COMMON))
             {
                 data.state.set(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::decayed, i, count);
             }
