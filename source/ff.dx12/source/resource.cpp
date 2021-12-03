@@ -62,7 +62,7 @@ ff::dx12::resource::resource(
     , alloc_info_(ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc))
     , optimized_clear_value(optimized_clear_value)
     , mem_range_(mem_range)
-    , global_states_(this->sub_resource_count(), initial_state)
+    , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0 && desc.MipLevels * desc.DepthOrArraySize > 0);
 
@@ -118,7 +118,7 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
         std::swap(this->optimized_clear_value, other.optimized_clear_value);
         std::swap(this->desc_, other.desc_);
         std::swap(this->alloc_info_, other.alloc_info_);
-        std::swap(this->global_states_, other.global_states_);
+        std::swap(this->global_state_, other.global_state_);
         std::swap(this->global_reads_, other.global_reads_);
         std::swap(this->global_write_, other.global_write_);
     }
@@ -146,40 +146,24 @@ const D3D12_RESOURCE_ALLOCATION_INFO& ff::dx12::resource::alloc_info() const
     return this->alloc_info_;
 }
 
-size_t ff::dx12::resource::sub_resource_count() const
+size_t ff::dx12::resource::sub_resource_size() const
 {
-    return static_cast<size_t>(this->desc_.MipLevels) * static_cast<size_t>(this->desc_.DepthOrArraySize);
+    return this->array_size() * this->mip_size();
 }
 
-void ff::dx12::resource::global_state(const D3D12_RESOURCE_STATES* states, size_t first_sub_resource, size_t count)
+size_t ff::dx12::resource::array_size() const
 {
-    if (first_sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
-    {
-        first_sub_resource = 0;
-        count = this->sub_resource_count();
-    }
-
-    std::memcpy(this->global_states_.data() + first_sub_resource, states, sizeof(D3D12_RESOURCE_STATES) * count);
+    return static_cast<size_t>(this->desc_.DepthOrArraySize);
 }
 
-std::pair<D3D12_RESOURCE_STATES, bool> ff::dx12::resource::global_state(size_t first_sub_resource, size_t count) const
+size_t ff::dx12::resource::mip_size() const
 {
-    std::pair<D3D12_RESOURCE_STATES, bool> result{ D3D12_RESOURCE_STATE_COMMON, true };
+    return static_cast<size_t>(this->desc_.MipLevels);
+}
 
-    if (first_sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
-    {
-        first_sub_resource = 0;
-        count = this->sub_resource_count();
-    }
-
-    for (size_t i = first_sub_resource; i < first_sub_resource + count; i++)
-    {
-        D3D12_RESOURCE_STATES global_state = this->global_states_[i];
-        result.second = result.second && (i == first_sub_resource || result.first == global_state);
-        result.first |= global_state;
-    }
-
-    return result;
+ff::dx12::resource_state& ff::dx12::resource::global_state()
+{
+    return this->global_state_;
 }
 
 ff::dx12::fence_values& ff::dx12::resource::global_reads()
@@ -404,7 +388,7 @@ bool ff::dx12::resource::reset()
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
             &this->desc_,
-            this->global_state(0, 1).first,
+            this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&this->resource_))))
         {
@@ -417,7 +401,7 @@ bool ff::dx12::resource::reset()
             ff::dx12::get_heap(*this->mem_range_->heap()),
             this->mem_range_->start(),
             &this->desc_,
-            this->global_state(0, 1).first,
+            this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&this->resource_))))
         {

@@ -53,6 +53,7 @@
     <ClCompile Include="source\dx12\fence_tests.cpp" />
     <ClCompile Include="source\dx12\heap_tests.cpp" />
     <ClCompile Include="source\dx12\mem_allocator_tests.cpp" />
+    <ClCompile Include="source\dx12\resource_state_tests.cpp" />
     <ClCompile Include="source\dx12\resource_tests.cpp" />
     <ClCompile Include="source\dx12\test_base.cpp" />
     <ClCompile Include="source\graphics\buffer_tests.cpp" />

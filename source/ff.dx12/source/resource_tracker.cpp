@@ -4,9 +4,9 @@
 #include "resource_tracker.h"
 
 // https://docs.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#common-state-promotion
-static bool allow_promotion(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
+static bool allow_promotion(ff::dx12::resource& resource, ff::dx12::resource_state::type_t type_before, D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
-    if (state_before == D3D12_RESOURCE_STATE_COMMON)
+    if (type_before == ff::dx12::resource_state::type_t::global && state_before == D3D12_RESOURCE_STATE_COMMON)
     {
         const D3D12_RESOURCE_DESC& desc = resource.desc();
         D3D12_RESOURCE_STATES allowed_read_states, allowed_write_states;
@@ -58,11 +58,11 @@ static bool allow_promotion(ff::dx12::resource& resource, D3D12_RESOURCE_STATES 
 static bool allow_decay(
     ID3D12CommandListX* list,
     ff::dx12::resource& resource,
-    bool was_promoted,
+    ff::dx12::resource_state::type_t type_before,
     D3D12_RESOURCE_STATES before_state,
     D3D12_RESOURCE_STATES after_state)
 {
-    if (after_state == D3D12_RESOURCE_STATE_COMMON)
+    if (type_before != ff::dx12::resource_state::type_t::none && after_state == D3D12_RESOURCE_STATE_COMMON)
     {
         const D3D12_RESOURCE_DESC& desc = resource.desc();
 
@@ -78,7 +78,7 @@ static bool allow_decay(
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
             D3D12_RESOURCE_STATE_COPY_SOURCE;
 
-        if (was_promoted && (before_state & allowed_read_states) == before_state)
+        if (type_before == ff::dx12::resource_state::type_t::promoted && (before_state & allowed_read_states) == before_state)
         {
             return true;
         }
@@ -87,50 +87,10 @@ static bool allow_decay(
     return false;
 }
 
-ff::dx12::resource_tracker::resource_t::resource_t(size_t sub_resource_count)
-    : states(sub_resource_count, D3D12_RESOURCE_STATE_COMMON)
-    , explicit_state(sub_resource_count, false)
-{}
-
-bool ff::dx12::resource_tracker::resource_t::all_same() const
+ff::dx12::resource_tracker::resource_t::resource_t(size_t array_size, size_t mip_size)
+    : state(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::none, array_size, mip_size)
 {
-    if (!this->states.empty())
-    {
-        for (size_t i = 1; i < this->states.size(); i++)
-        {
-            if (this->states[i] != this->states[0])
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-void ff::dx12::resource_tracker::resource_t::set_state(D3D12_RESOURCE_STATES state, size_t first_sub_resource, size_t count)
-{
-    for (size_t i = first_sub_resource; i < first_sub_resource + count; i++)
-    {
-        this->states[i] = state;
-    }
-}
-
-void ff::dx12::resource_tracker::resource_t::set_explicit(size_t first_sub_resource, size_t count)
-{
-    for (size_t i = first_sub_resource; i < first_sub_resource + count; i++)
-    {
-        this->explicit_state[i] = true;
-    }
-}
-
-ff::dx12::resource_tracker::resource_tracker()
-{}
-
-void ff::dx12::resource_tracker::reset()
-{
-    this->resources.clear();
-    this->barriers_pending.clear();
+    assert(array_size * mip_size > 0);
 }
 
 void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandListX* list)
@@ -142,109 +102,138 @@ void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandListX* list)
     }
 }
 
-void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* before_list, ID3D12GraphicsCommandListX* list)
+void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker)
 {
-    this->flush(list);
+    ff::stack_vector<D3D12_RESOURCE_BARRIER, 32> first_barriers;
 
-    ff::stack_vector<D3D12_RESOURCE_BARRIER, 32> barriers_before;
-    ff::stack_vector<bool, 32> promoted;
+    static resource_map_t empty_resources;
+    resource_map_t& prev_resources = prev_tracker ? prev_tracker->resources : empty_resources;
 
     for (auto& [resource, data] : this->resources)
     {
-        promoted.clear();
-        promoted.resize(data.states.size(), false);
+        auto prev_i = prev_resources.find(resource);
 
-        for (D3D12_RESOURCE_BARRIER& barrier : data.barriers_before)
+        for (D3D12_RESOURCE_BARRIER& barrier : data.first_barriers)
         {
             bool all = (barrier.Transition.Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             size_t first_sub_resource = !all ? static_cast<size_t>(barrier.Transition.Subresource) : 0;
-            size_t count = all ? resource->sub_resource_count() : 1;
-            auto [global_state, all_global_state] = resource->global_state(first_sub_resource, count);
-            all = (all && all_global_state);
+            size_t count = all ? resource->sub_resource_size() : 1;
+            all = all && ((prev_i != prev_resources.end()) ? prev_i->second.state.all_same() : resource->global_state().all_same());
 
-            for (size_t i = first_sub_resource; i < first_sub_resource + count; i += all ? count : 1)
+            for (size_t i = first_sub_resource, ai = all ? count : 1; i < first_sub_resource + count; i += ai)
             {
-                if (!all_global_state)
-                {
-                    global_state = resource->global_state(i, 1).first;
-                }
+                ff::dx12::resource_state::state_t cur_state = (prev_i != prev_resources.end())
+                    ? prev_i->second.state.get(i, &resource->global_state())
+                    : resource->global_state().get(i);
 
-                if (global_state != barrier.Transition.StateAfter)
+                if (cur_state.first != barrier.Transition.StateAfter)
                 {
-                    if (::allow_promotion(*resource, global_state, barrier.Transition.StateAfter))
+                    bool promotion = ::allow_promotion(*resource, cur_state.second, cur_state.first, barrier.Transition.StateAfter);
+                    data.state.set(barrier.Transition.StateAfter, promotion ? ff::dx12::resource_state::type_t::promoted : ff::dx12::resource_state::type_t::barrier, i, ai);
+
+                    if (!promotion)
                     {
-                        for (size_t h = i; h < i + (all ? count : 1); h++)
-                        {
-                            promoted[h] = true;
-                        }
-                    }
-                    else
-                    {
-                        barrier.Transition.StateBefore = global_state;
+                        barrier.Transition.StateBefore = cur_state.first;
                         barrier.Transition.Subresource = all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : static_cast<UINT>(i);
-                        barriers_before.push_back(barrier);
-
-                        data.set_explicit(i, all ? count : 1);
+                        first_barriers.push_back(barrier);
                     }
                 }
             }
         }
 
-        // Check for state decay to common
-        for (size_t i = 0; i < data.states.size(); i++)
-        {
-            if (!data.explicit_state[i] && ::allow_decay(before_list, *resource, promoted[i], data.states[i], D3D12_RESOURCE_STATE_COMMON))
-            {
-                data.states[i] = D3D12_RESOURCE_STATE_COMMON;
-            }
-        }
+        data.first_barriers.clear();
 
-        resource->global_state(data.states.data(), 0, data.states.size());
+        if (prev_tracker)
+        {
+            resource_t& prev_res = (prev_i == prev_resources.end())
+                ? prev_resources.try_emplace(resource, resource->array_size(), resource->mip_size()).first->second
+                : prev_i->second;
+            prev_res.state.merge(data.state);
+        }
     }
 
-    this->resources.clear();
-
-    if (!barriers_before.empty())
+    if (prev_tracker)
     {
-        before_list->ResourceBarrier(static_cast<UINT>(barriers_before.size()), barriers_before.data());
+        this->resources.clear();
+        std::swap(this->resources, prev_resources);
+    }
+
+    if (!first_barriers.empty())
+    {
+        prev_list->ResourceBarrier(static_cast<UINT>(first_barriers.size()), first_barriers.data());
     }
 }
 
-void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, size_t first_sub_resource, size_t count, D3D12_RESOURCE_STATES state)
+void ff::dx12::resource_tracker::finalize(ID3D12GraphicsCommandListX* list)
 {
-    bool all = (first_sub_resource == 0 && count == resource.sub_resource_count());
-    if (!all && first_sub_resource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+    for (auto& [resource, data] : this->resources)
     {
-        all = true;
-        first_sub_resource = 0;
-        count = resource.sub_resource_count();
-    }
+        bool all = data.state.all_same();
 
-    auto [iter, first_transition] = this->resources.try_emplace(&resource, resource.sub_resource_count());
+        for (size_t i = 0, count = all ? data.state.sub_resource_size() : 1; i < data.state.sub_resource_size(); i += count)
+        {
+            ff::dx12::resource_state::state_t state = data.state.get(i);
+            if (::allow_decay(list, *resource, state.second, state.first, D3D12_RESOURCE_STATE_COMMON))
+            {
+                data.state.set(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::decayed, i, count);
+            }
+        }
+
+        resource->global_state().merge(data.state);
+    }
+}
+
+void ff::dx12::resource_tracker::reset()
+{
+    this->resources.clear();
+    this->barriers_pending.clear();
+}
+
+void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
+{
+    ID3D12ResourceX* dx12_res = ff::dx12::get_resource(resource);
+    bool all = (array_size * mip_size == resource.sub_resource_size());
+    auto [iter, first_transition] = this->resources.try_emplace(&resource, resource.array_size(), resource.mip_size());
+
     if (!first_transition)
     {
-        all = (all && iter->second.all_same());
-
-        for (size_t i = first_sub_resource; i < first_sub_resource + count; i += all ? count : 1)
+        if (all && iter->second.state.all_same())
         {
-            if (state != iter->second.states[i])
+            // all the same new, all the same old
+            D3D12_RESOURCE_STATES old_state = iter->second.state.get(0).first;
+            if (old_state != state)
             {
-                this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-                    ff::dx12::get_resource(resource), iter->second.states[i], state,
-                    all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : static_cast<UINT>(i)));
-
-                iter->second.set_explicit(i, all ? count : 1);
+                this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state, state));
+            }
+        }
+        else for (size_t ia = array_start; ia != array_start + array_size; ++ia)
+        {
+            for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
+            {
+                D3D12_RESOURCE_STATES old_state = iter->second.state.get(i).first;
+                if (old_state != state)
+                {
+                    this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state, state, static_cast<UINT>(i)));
+                }
             }
         }
     }
-    else for (size_t i = first_sub_resource; i < first_sub_resource + count; i += all ? count : 1)
+    else if (all)
     {
-        iter->second.barriers_before.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-            ff::dx12::get_resource(resource), D3D12_RESOURCE_STATE_COMMON, state,
-            all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : static_cast<UINT>(i)));
+        // first transition, all the same (before state doesn't matter yet)
+        iter->second.first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state));
+    }
+    else for (size_t ia = array_start; ia != array_start + array_size; ++ia)
+    {
+        // first transition, just some subresources (before state doesn't matter yet)
+        for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
+        {
+            iter->second.first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state, static_cast<UINT>(i)));
+        }
     }
 
-    iter->second.set_state(state, first_sub_resource, count);
+    ff::dx12::resource_state::type_t type = first_transition ? ff::dx12::resource_state::type_t::pending : ff::dx12::resource_state::type_t::barrier;
+    iter->second.state.set(state, type, array_start, array_size, mip_start, mip_size);
 }
 
 void ff::dx12::resource_tracker::uav_barrier(ff::dx12::resource& resource)

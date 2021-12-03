@@ -80,6 +80,9 @@
     <ClCompile Include="source\resource_tracker.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\resource_state.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -162,6 +165,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\resource_tracker.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\resource_state.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

@@ -457,7 +457,7 @@ namespace ff
         {
             if (count < this->size_)
             {
-                this->erase(this->cend() - count, this->cend());
+                this->erase(this->cend() - (this->size_ - count), this->cend());
             }
             else if (count > this->size_)
             {
@@ -471,11 +471,11 @@ namespace ff
         {
             if (count < this->size_)
             {
-                this->erase(this->cend() - count, this->cend());
+                this->erase(this->cend() - (this->size_ - count), this->cend());
             }
             else if (count > this->size_)
             {
-                this->insert(this->cend(), count, value);
+                this->insert(this->cend(), count - this->size_, value);
             }
         }
 
