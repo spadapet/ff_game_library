@@ -20,7 +20,7 @@ namespace ff::dx12
         texture& operator=(const texture& other) = delete;
         operator bool() const;
 
-        const ff::dx12::resource* resource() const;
+        ff::dx12::resource* resource() const;
 
         // texture_base
         virtual ff::dxgi::sprite_type sprite_type() const override;

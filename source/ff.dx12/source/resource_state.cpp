@@ -24,7 +24,7 @@ static void assert_type_change(ff::dx12::resource_state::type_t cur_type, ff::dx
             break;
 
         case ff::dx12::resource_state::type_t::decayed:
-            assert(cur_type == ff::dx12::resource_state::type_t::promoted);
+            assert(cur_type == ff::dx12::resource_state::type_t::promoted || cur_type == ff::dx12::resource_state::type_t::barrier);
             break;
 
         case ff::dx12::resource_state::type_t::barrier:
@@ -104,7 +104,7 @@ void ff::dx12::resource_state::set(D3D12_RESOURCE_STATES state, type_t type, siz
     else for (size_t i = array_start; i != array_start + array_size; ++i)
     {
         size_t sub = i * this->mip_size() + mip_start;
-        this->set(state, type, sub, sub + mip_size);
+        this->set(state, type, sub, mip_size);
     }
 }
 

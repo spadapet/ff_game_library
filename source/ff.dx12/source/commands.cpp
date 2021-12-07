@@ -81,19 +81,24 @@ void ff::dx12::commands::state(ID3D12PipelineStateX* state)
 
 void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)
 {
-    ff::dx12::resource_tracker* prev_tracker = prev_commands ? prev_commands->resource_tracker() : nullptr;
+    wait_before_execute.add(this->wait_before_execute);
+    this->wait_before_execute.clear();
 
-    this->resource_tracker()->flush(this->list());
+    ff::dx12::resource_tracker* resource_tracker = this->data_cache.resource_tracker.get();
+    resource_tracker->flush(this->list());
     this->list()->Close();
 
-    this->list_before()->Reset(this->data_cache.allocator.Get(), nullptr);
-    this->resource_tracker()->close(this->list_before(), prev_tracker);
-    this->list_before()->Close();
+    ID3D12GraphicsCommandListX* list_before = this->data_cache.list_before.Get();
+    list_before->Reset(this->data_cache.allocator.Get(), nullptr);
+
+    ff::dx12::resource_tracker* prev_tracker = prev_commands ? prev_commands->data_cache.resource_tracker.get() : nullptr;
+    resource_tracker->close(list_before, prev_tracker);
+    list_before->Close();
 
     if (!next_commands)
     {
-        this->resource_tracker()->finalize(this->list()->GetType());
-        this->resource_tracker()->reset();
+        resource_tracker->finalize(this->list()->GetType());
+        resource_tracker->reset();
     }
     else if (prev_tracker)
     {
@@ -242,18 +247,7 @@ ID3D12GraphicsCommandListX* ff::dx12::commands::list() const
     return this->data_cache.list.Get();
 }
 
-ID3D12GraphicsCommandListX* ff::dx12::commands::list_before() const
-{
-    return this->data_cache.list_before.Get();
-}
-
-ff::dx12::resource_tracker* ff::dx12::commands::resource_tracker() const
-{
-    return this->data_cache.resource_tracker.get();
-}
-
 void ff::dx12::commands::before_reset()
 {
     this->close();
-    assert(!*this);
 }

@@ -149,6 +149,9 @@
     <ClCompile Include="source\dx12\resource_state_tests.cpp">
       <Filter>source\dx12</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx12\resource_tracker_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

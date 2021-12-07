@@ -46,7 +46,7 @@ namespace ff::test::dx12
             Assert::IsTrue(rs1.all_same());
             Assert::IsTrue(rs2.all_same());
 
-            rs2.set(D3D12_RESOURCE_STATE_COPY_SOURCE, ff::dx12::resource_state::type_t::barrier, 0, 0, 0, 0);
+            rs2.set(D3D12_RESOURCE_STATE_COPY_SOURCE, ff::dx12::resource_state::type_t::barrier, 0, 1, 0, 1);
             Assert::IsFalse(rs2.all_same());
 
             rs1.merge(rs2);

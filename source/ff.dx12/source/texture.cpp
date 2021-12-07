@@ -202,7 +202,7 @@ std::shared_ptr<DirectX::ScratchImage> ff::dx12::texture::data() const
     return this->data_;
 }
 
-const ff::dx12::resource* ff::dx12::texture::resource() const
+ff::dx12::resource* ff::dx12::texture::resource() const
 {
     if (!this->resource_ && this->data_)
     {

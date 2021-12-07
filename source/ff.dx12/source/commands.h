@@ -53,8 +53,6 @@ namespace ff::dx12
 
     private:
         ID3D12GraphicsCommandListX* list() const;
-        ID3D12GraphicsCommandListX* list_before() const;
-        ff::dx12::resource_tracker* resource_tracker() const;
 
         // device_child_base
         virtual void before_reset() override;

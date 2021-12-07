@@ -128,14 +128,30 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
 
                 if (cur_state.first != barrier.Transition.StateAfter)
                 {
-                    bool promotion = ::allow_promotion(*resource, cur_state.second, cur_state.first, barrier.Transition.StateAfter);
-                    data.state.set(barrier.Transition.StateAfter, promotion ? ff::dx12::resource_state::type_t::promoted : ff::dx12::resource_state::type_t::barrier, i, ai);
+                    ff::dx12::resource_state::type_t type = ::allow_promotion(*resource, cur_state.second, cur_state.first, barrier.Transition.StateAfter)
+                        ? ff::dx12::resource_state::type_t::promoted
+                        : ff::dx12::resource_state::type_t::barrier;
 
-                    if (!promotion)
+                    if (type == ff::dx12::resource_state::type_t::barrier)
                     {
                         barrier.Transition.StateBefore = cur_state.first;
                         barrier.Transition.Subresource = all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : static_cast<UINT>(i);
                         first_barriers.push_back(barrier);
+                    }
+
+                    switch (data.state.get(i).second)
+                    {
+                        case ff::dx12::resource_state::type_t::pending:
+                            data.state.set(barrier.Transition.StateAfter, type, i, ai);
+                            break;
+
+                        case ff::dx12::resource_state::type_t::barrier:
+                            // This is fine, some other barrier was already set
+                            break;
+
+                        default:
+                            assert(false);
+                            break;
                     }
                 }
             }
@@ -194,46 +210,60 @@ void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, D3D
     ID3D12ResourceX* dx12_res = ff::dx12::get_resource(resource);
     bool all = (array_size * mip_size == resource.sub_resource_size());
     auto [iter, first_transition] = this->resources.try_emplace(&resource, resource.array_size(), resource.mip_size());
+    ff::dx12::resource_state& iter_state = iter->second.state;
+    auto& iter_first_barriers = iter->second.first_barriers;
 
     if (!first_transition)
     {
-        if (all && iter->second.state.all_same())
+        if (all && iter_state.all_same())
         {
             // all the same new, all the same old
-            D3D12_RESOURCE_STATES old_state = iter->second.state.get(0).first;
-            if (old_state != state)
+            ff::dx12::resource_state::state_t old_state = iter_state.get(0);
+            if (old_state.first != state)
             {
-                this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state, state));
+                this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state.first, state));
+                iter_state.set(state, ff::dx12::resource_state::type_t::barrier, 0, iter_state.sub_resource_size());
             }
         }
         else for (size_t ia = array_start; ia != array_start + array_size; ++ia)
         {
             for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
             {
-                D3D12_RESOURCE_STATES old_state = iter->second.state.get(i).first;
-                if (old_state != state)
+                ff::dx12::resource_state::state_t old_state = iter_state.get(i);
+                if (old_state.first != state)
                 {
-                    this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state, state, static_cast<UINT>(i)));
+                    if (old_state.second == ff::dx12::resource_state::type_t::none)
+                    {
+                        iter_first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state, static_cast<UINT>(i)));
+                        iter_state.set(state, ff::dx12::resource_state::type_t::pending, i, 1);
+                    }
+                    else
+                    {
+                        this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state.first, state, static_cast<UINT>(i)));
+                        iter_state.set(state, ff::dx12::resource_state::type_t::barrier, i, 1);
+                    }
                 }
             }
         }
     }
-    else if (all)
+    else
     {
-        // first transition, all the same (before state doesn't matter yet)
-        iter->second.first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state));
-    }
-    else for (size_t ia = array_start; ia != array_start + array_size; ++ia)
-    {
-        // first transition, just some subresources (before state doesn't matter yet)
-        for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
+        if (all)
         {
-            iter->second.first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state, static_cast<UINT>(i)));
+            // first transition, all the same (before state doesn't matter yet)
+            iter_first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state));
         }
-    }
+        else for (size_t ia = array_start; ia != array_start + array_size; ++ia)
+        {
+            // first transition, just some subresources (before state doesn't matter yet)
+            for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
+            {
+                iter_first_barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, state, state, static_cast<UINT>(i)));
+            }
+        }
 
-    ff::dx12::resource_state::type_t type = first_transition ? ff::dx12::resource_state::type_t::pending : ff::dx12::resource_state::type_t::barrier;
-    iter->second.state.set(state, type, array_start, array_size, mip_start, mip_size);
+        iter_state.set(state, ff::dx12::resource_state::type_t::pending, array_start, array_size, mip_start, mip_size);
+    }
 }
 
 void ff::dx12::resource_tracker::uav_barrier(ff::dx12::resource& resource)

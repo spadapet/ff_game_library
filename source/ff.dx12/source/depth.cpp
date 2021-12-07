@@ -2,6 +2,7 @@
 #include "access.h"
 #include "commands.h"
 #include "depth.h"
+#include "descriptor_allocator.h"
 #include "device_reset_priority.h"
 #include "globals.h"
 #include "resource.h"
@@ -14,6 +15,7 @@ ff::dx12::depth::depth(size_t sample_count)
 {}
 
 ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
+    : view_(ff::dx12::cpu_depth_descriptors().alloc_range(1))
 {
     D3D12_CLEAR_VALUE clear_value{ ::DEPTH_STENCIL_FORMAT };
 
@@ -23,7 +25,8 @@ ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
             static_cast<UINT64>(std::max<size_t>(size.x, 1)),
             static_cast<UINT>(std::max<size_t>(size.y, 1)),
             1, 1, // array, mips
-            static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count))),
+            static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count)), 0,
+            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         clear_value);
 
     bool status = this->reset();
@@ -120,7 +123,7 @@ bool ff::dx12::depth::reset()
     desc.Format = res_desc.Format;
     desc.ViewDimension = (res_desc.SampleDesc.Count > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 
-    ff::dx12::device()->CreateDepthStencilView(ff::dx12::get_resource(*this->resource_), &desc, this->view_.cpu_handle(0));
+    ff::dx12::device()->CreateDepthStencilView(ff::dx12::get_resource(*this->resource_), &desc, this->view());
 
     return true;
 }
