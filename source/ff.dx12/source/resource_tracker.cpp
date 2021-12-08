@@ -102,10 +102,11 @@ void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandListX* list)
     }
 }
 
-void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker)
+void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker)
 {
-    ff::stack_vector<D3D12_RESOURCE_BARRIER, 32> first_barriers;
+    assert(this->barriers_pending.empty()); // have to flush first
 
+    ff::stack_vector<D3D12_RESOURCE_BARRIER, 32> first_barriers;
     static resource_map_t empty_resources;
     resource_map_t& prev_resources = prev_tracker ? prev_tracker->resources : empty_resources;
 
@@ -122,37 +123,32 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
 
             for (size_t i = first_sub_resource, ai = all ? count : 1; i < first_sub_resource + count; i += ai)
             {
-                ff::dx12::resource_state::state_t cur_state = (prev_i != prev_resources.end())
+                ff::dx12::resource_state::state_t prev_state = (prev_i != prev_resources.end())
                     ? prev_i->second.state.get(i, &resource->global_state())
                     : resource->global_state().get(i);
+                ff::dx12::resource_state::state_t data_state = data.state.get(i);
 
-                if (cur_state.first != barrier.Transition.StateAfter)
+                if (prev_state.first != barrier.Transition.StateAfter)
                 {
-                    ff::dx12::resource_state::type_t type = ::allow_promotion(*resource, cur_state.second, cur_state.first, barrier.Transition.StateAfter)
+                    ff::dx12::resource_state::type_t type = ::allow_promotion(*resource, prev_state.second, prev_state.first, barrier.Transition.StateAfter)
                         ? ff::dx12::resource_state::type_t::promoted
                         : ff::dx12::resource_state::type_t::barrier;
 
                     if (type == ff::dx12::resource_state::type_t::barrier)
                     {
-                        barrier.Transition.StateBefore = cur_state.first;
+                        barrier.Transition.StateBefore = prev_state.first;
                         barrier.Transition.Subresource = all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : static_cast<UINT>(i);
                         first_barriers.push_back(barrier);
                     }
 
-                    switch (data.state.get(i).second)
+                    if (data_state.second == ff::dx12::resource_state::type_t::pending)
                     {
-                        case ff::dx12::resource_state::type_t::pending:
-                            data.state.set(barrier.Transition.StateAfter, type, i, ai);
-                            break;
-
-                        case ff::dx12::resource_state::type_t::barrier:
-                            // This is fine, some other barrier was already set
-                            break;
-
-                        default:
-                            assert(false);
-                            break;
+                        data.state.set(barrier.Transition.StateAfter, type, i, ai);
                     }
+                }
+                else if (data_state.second == ff::dx12::resource_state::type_t::pending)
+                {
+                    data.state.set(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::none, i, ai);
                 }
             }
         }
@@ -174,28 +170,33 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
         std::swap(this->resources, prev_resources);
     }
 
+    if (!next_tracker)
+    {
+        // Last resource tracker, so finalize the global resource state
+        D3D12_COMMAND_LIST_TYPE list_type = prev_list->GetType();
+
+        for (auto& [resource, data] : this->resources)
+        {
+            bool all = data.state.all_same();
+
+            for (size_t i = 0, count = all ? data.state.sub_resource_size() : 1; i < data.state.sub_resource_size(); i += count)
+            {
+                ff::dx12::resource_state::state_t state = data.state.get(i);
+                if (::allow_decay(list_type, *resource, state.second, state.first, D3D12_RESOURCE_STATE_COMMON))
+                {
+                    data.state.set(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::decayed, i, count);
+                }
+            }
+
+            resource->global_state().merge(data.state);
+        }
+
+        this->resources.clear();
+    }
+
     if (!first_barriers.empty())
     {
         prev_list->ResourceBarrier(static_cast<UINT>(first_barriers.size()), first_barriers.data());
-    }
-}
-
-void ff::dx12::resource_tracker::finalize(D3D12_COMMAND_LIST_TYPE list_type)
-{
-    for (auto& [resource, data] : this->resources)
-    {
-        bool all = data.state.all_same();
-
-        for (size_t i = 0, count = all ? data.state.sub_resource_size() : 1; i < data.state.sub_resource_size(); i += count)
-        {
-            ff::dx12::resource_state::state_t state = data.state.get(i);
-            if (::allow_decay(list_type, *resource, state.second, state.first, D3D12_RESOURCE_STATE_COMMON))
-            {
-                data.state.set(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::decayed, i, count);
-            }
-        }
-
-        resource->global_state().merge(data.state);
     }
 }
 
@@ -207,6 +208,16 @@ void ff::dx12::resource_tracker::reset()
 
 void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
 {
+    if (!array_size)
+    {
+        array_size = resource.array_size() - array_start;
+    }
+
+    if (!mip_size)
+    {
+        mip_size = resource.mip_size() - mip_start;
+    }
+
     ID3D12ResourceX* dx12_res = ff::dx12::get_resource(resource);
     bool all = (array_size * mip_size == resource.sub_resource_size());
     auto [iter, first_transition] = this->resources.try_emplace(&resource, resource.array_size(), resource.mip_size());

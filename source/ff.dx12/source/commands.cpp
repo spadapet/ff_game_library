@@ -92,18 +92,9 @@ void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::comm
     list_before->Reset(this->data_cache.allocator.Get(), nullptr);
 
     ff::dx12::resource_tracker* prev_tracker = prev_commands ? prev_commands->data_cache.resource_tracker.get() : nullptr;
-    resource_tracker->close(list_before, prev_tracker);
+    ff::dx12::resource_tracker* next_tracker = next_commands ? next_commands->data_cache.resource_tracker.get() : nullptr;
+    resource_tracker->close(list_before, prev_tracker, next_tracker);
     list_before->Close();
-
-    if (!next_commands)
-    {
-        resource_tracker->finalize(this->list()->GetType());
-        resource_tracker->reset();
-    }
-    else if (prev_tracker)
-    {
-        prev_tracker->reset();
-    }
 }
 
 ff::dx12::commands::data_cache_t ff::dx12::commands::close()

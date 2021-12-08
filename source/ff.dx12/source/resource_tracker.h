@@ -19,11 +19,10 @@ namespace ff::dx12
         resource_tracker& operator=(const resource_tracker& other) = delete;
 
         void flush(ID3D12GraphicsCommandListX* list);
-        void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker);
-        void finalize(D3D12_COMMAND_LIST_TYPE list_type);
+        void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker);
         void reset();
 
-        void state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size);
+        void state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
         void uav_barrier(ff::dx12::resource& resource);
         void alias_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
 

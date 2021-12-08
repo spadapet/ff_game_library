@@ -537,8 +537,7 @@ namespace ff::test::dx12
             tracker.state_barrier(*depth1.resource(), D3D12_RESOURCE_STATE_DEPTH_READ, 0, 1, 0, 1);
 
             tracker.flush(&command_list);
-            tracker.close(&command_list_before, nullptr);
-            tracker.finalize(command_list.GetType());
+            tracker.close(&command_list_before, nullptr, nullptr);
 
             Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_DEPTH_READ, depth1.resource()->global_state().get(0).first);
 
@@ -557,6 +556,103 @@ namespace ff::test::dx12
             Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_DEPTH_WRITE, command_list_before.barriers[0].Transition.StateAfter);
         }
 
+        TEST_METHOD(resource_tracker_multi_list_promote)
+        {
+            ff::dx12::resource res[3]
+            {
+                CD3DX12_RESOURCE_DESC::Buffer(32),
+                CD3DX12_RESOURCE_DESC::Buffer(32),
+                CD3DX12_RESOURCE_DESC::Buffer(32),
+            };
+
+            ::test_command_list lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+            ::test_command_list before_lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+
+            ff::dx12::resource_tracker trackers[3];
+            trackers[0].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
+            trackers[1].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state_barrier(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+            for (size_t i = 0; i < 3; i++)
+            {
+                trackers[i].flush(&lists[i]);
+            }
+
+            for (size_t i = 0; i < 3; i++)
+            {
+                trackers[i].close(&before_lists[i], i ? &trackers[i - 1] : nullptr, (i + 1 < 3) ? &trackers[i + 1] : nullptr);
+            }
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, res[0].global_state().get(0).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, res[1].global_state().get(0).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, res[2].global_state().get(0).first);
+        }
+
+        TEST_METHOD(resource_tracker_multi_list_barrier)
+        {
+            ff::dx12::resource res[3]
+            {
+                CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1),
+                CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1),
+                CD3DX12_RESOURCE_DESC::Buffer(32),
+            };
+
+            ::test_command_list lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+            ::test_command_list before_lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+
+            ff::dx12::resource_tracker trackers[3];
+            trackers[0].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
+            trackers[2].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state_barrier(res[0], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            trackers[1].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state_barrier(res[1], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            trackers[1].state_barrier(res[2], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state_barrier(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+            for (size_t i = 0; i < 3; i++)
+            {
+                trackers[i].flush(&lists[i]);
+            }
+
+            for (size_t i = 0; i < 3; i++)
+            {
+                trackers[i].close(&before_lists[i], i ? &trackers[i - 1] : nullptr, (i + 1 < 3) ? &trackers[i + 1] : nullptr);
+            }
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, res[0].global_state().get(0).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_INDEX_BUFFER, res[1].global_state().get(0).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, res[2].global_state().get(0).first);
+
+            Assert::AreEqual<size_t>(0, lists[0].barriers.size());
+            Assert::AreEqual<size_t>(0, lists[1].barriers.size());
+            Assert::AreEqual<size_t>(1, lists[2].barriers.size());
+
+            Assert::AreEqual<size_t>(0, before_lists[0].barriers.size());
+            Assert::AreEqual<size_t>(0, before_lists[1].barriers.size());
+            Assert::AreEqual<size_t>(3, before_lists[2].barriers.size());
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, lists[2].barriers[0].Type);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, lists[2].barriers[0].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_DEST, lists[2].barriers[0].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, lists[2].barriers[0].Transition.StateAfter);
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, before_lists[2].barriers[0].Type);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, before_lists[2].barriers[0].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_SOURCE, before_lists[2].barriers[0].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_DEST, before_lists[2].barriers[0].Transition.StateAfter);
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, before_lists[2].barriers[1].Type);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, before_lists[2].barriers[1].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_DEST, before_lists[2].barriers[1].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_INDEX_BUFFER, before_lists[2].barriers[1].Transition.StateAfter);
+
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, before_lists[2].barriers[2].Type);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, before_lists[2].barriers[2].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_DEST, before_lists[2].barriers[2].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_INDEX_BUFFER, before_lists[2].barriers[2].Transition.StateAfter);
+        }
+
     private:
         void resource_tracker_simple(D3D12_COMMAND_LIST_TYPE type)
         {
@@ -573,8 +669,7 @@ namespace ff::test::dx12
             ::test_command_list command_list(type);
             ::test_command_list command_list_before(type);
             tracker.flush(&command_list);
-            tracker.close(&command_list_before, nullptr);
-            tracker.finalize(command_list.GetType());
+            tracker.close(&command_list_before, nullptr, nullptr);
 
             Assert::AreEqual(tex1.resource()->sub_resource_size(), tex1.resource()->global_state().sub_resource_size());
             Assert::AreEqual(tex2.resource()->sub_resource_size(), tex2.resource()->global_state().sub_resource_size());

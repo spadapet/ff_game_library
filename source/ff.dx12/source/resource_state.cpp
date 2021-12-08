@@ -7,8 +7,11 @@ static void assert_type_change(ff::dx12::resource_state::type_t cur_type, ff::dx
     switch (new_type)
     {
         default:
-        case ff::dx12::resource_state::type_t::none:
             assert(false);
+            break;
+
+        case ff::dx12::resource_state::type_t::none:
+            assert(cur_type == ff::dx12::resource_state::type_t::pending);
             break;
 
         case ff::dx12::resource_state::type_t::global:
@@ -43,7 +46,6 @@ static void merge_state(ff::dx12::resource_state::state_t& dest, const ff::dx12:
     }
     else if (source.second != ff::dx12::resource_state::type_t::none)
     {
-        ::assert_type_change(dest.second, source.second);
         dest = source;
     }
 }

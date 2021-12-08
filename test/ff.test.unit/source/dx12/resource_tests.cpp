@@ -30,13 +30,13 @@ namespace ff::test::dx12
 
         TEST_METHOD(simple_texture)
         {
-            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128));
+            ff::dx12::resource r1({}, CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128, 1, 1));
             Assert::IsTrue(r1);
 
-            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64));
+            ff::dx12::resource r2(r1.mem_range(), CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64, 1, 1));
             Assert::IsTrue(r2);
 
-            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128));
+            ff::dx12::resource r3(CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 128, 128, 1, 1));
             Assert::IsTrue(r3);
         }
 
