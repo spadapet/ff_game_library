@@ -104,15 +104,16 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 
     for (ff::dx12::commands* cur : valid_commands)
     {
-        ff::dx12::commands::data_cache_t cache = cur->close();
-        dx12_lists.push_back(cache.list_before.Get());
-        dx12_lists.push_back(cache.list.Get());
-
         ff::dx12::fence_value next_fence_value = cur->next_fence_value();
         fence_values.add(next_fence_value);
 
+        ff::dx12::commands::data_cache_t cache = cur->close();
+        auto allocator_data = std::make_pair(next_fence_value, std::move(cache.allocator));
+        dx12_lists.push_back(cache.list_before.Get());
+        dx12_lists.push_back(cache.list.Get());
+
         std::scoped_lock lock(this->mutex);
-        this->allocators.push_back(std::make_pair(next_fence_value, std::move(cache.allocator)));
+        this->allocators.push_back(std::move(allocator_data));
         this->caches.push_front(std::move(cache));
     }
 

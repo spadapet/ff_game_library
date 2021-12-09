@@ -47,6 +47,7 @@ static std::unique_ptr<ff::dx12::mem_allocator_ring> readback_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator_ring> dynamic_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> static_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> texture_allocator;
+static std::unique_ptr<ff::dx12::mem_allocator> target_allocator;
 
 static std::mutex keep_alive_mutex;
 static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
@@ -152,6 +153,7 @@ static bool init_d3d(bool for_reset)
         ::dynamic_buffer_allocator = std::make_unique<ff::dx12::mem_allocator_ring>(one_meg, ff::dx12::heap::usage_t::gpu_buffers);
         ::static_buffer_allocator = std::make_unique<ff::dx12::mem_allocator>(one_meg, one_meg * 8, ff::dx12::heap::usage_t::gpu_buffers);
         ::texture_allocator = std::make_unique<ff::dx12::mem_allocator>(one_meg * 4, one_meg * 16, ff::dx12::heap::usage_t::gpu_textures);
+        ::target_allocator = std::make_unique<ff::dx12::mem_allocator>(one_meg * 4, one_meg * 16, ff::dx12::heap::usage_t::gpu_targets);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
@@ -183,6 +185,7 @@ static void destroy_d3d(bool for_reset)
         ::dynamic_buffer_allocator.reset();
         ::static_buffer_allocator.reset();
         ::texture_allocator.reset();
+        ::target_allocator.reset();
         ::queues.reset();
     }
 
@@ -462,4 +465,9 @@ ff::dx12::mem_allocator& ff::dx12::static_buffer_allocator()
 ff::dx12::mem_allocator& ff::dx12::texture_allocator()
 {
     return *::texture_allocator;
+}
+
+ff::dx12::mem_allocator& ff::dx12::target_allocator()
+{
+    return *::target_allocator;
 }

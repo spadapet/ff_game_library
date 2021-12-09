@@ -71,9 +71,10 @@ ff::dx12::resource::resource(
     {
         if (!mem_range || ff::math::align_up(mem_range->start(), this->alloc_info_.Alignment) != mem_range->start() || mem_range->size() < this->alloc_info_.SizeInBytes)
         {
+            bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
             ff::dx12::mem_allocator& allocator = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
                 ? ff::dx12::static_buffer_allocator()
-                : ff::dx12::texture_allocator();
+                : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
             this->mem_range_ = std::make_shared<ff::dx12::mem_range>(
                 allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
         }

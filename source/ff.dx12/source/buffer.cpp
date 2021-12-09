@@ -23,7 +23,7 @@ ff::dx12::buffer::buffer(
 {
     if (data && data_size)
     {
-        this->resource_ = std::make_unique<ff::dx12::resource>(CD3DX12_RESOURCE_DESC::Buffer(data_size));
+        this->resource_ = std::make_unique<ff::dx12::resource>(std::shared_ptr<ff::dx12::mem_range>(), CD3DX12_RESOURCE_DESC::Buffer(data_size));
         this->resource_->update_buffer(commands, data, 0, data_size);
     }
 
@@ -62,7 +62,11 @@ ff::dxgi::buffer_type ff::dx12::buffer::type() const
 
 size_t ff::dx12::buffer::size() const
 {
-    return this->resource_ ? static_cast<size_t>(this->resource_->mem_range()->size()): 0;
+    return this->resource_
+        ? static_cast<size_t>(this->resource_->mem_range()
+            ? this->resource_->mem_range()->size()
+            : this->resource_->alloc_info().SizeInBytes)
+        : 0;
 }
 
 bool ff::dx12::buffer::writable() const

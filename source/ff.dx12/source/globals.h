@@ -42,6 +42,7 @@ namespace ff::dx12
     ff::dx12::mem_allocator_ring& dynamic_buffer_allocator();
     ff::dx12::mem_allocator& static_buffer_allocator();
     ff::dx12::mem_allocator& texture_allocator();
+    ff::dx12::mem_allocator& target_allocator();
 
     bool init_globals(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
     void destroy_globals();

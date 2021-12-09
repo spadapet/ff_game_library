@@ -103,12 +103,6 @@ void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::comm
 
 ff::dx12::commands::data_cache_t ff::dx12::commands::close()
 {
-    if (this->data_cache.list)
-    {
-        this->data_cache.list->Close();
-    }
-
-    this->data_cache.allocator.Reset();
     this->data_cache.resource_tracker->reset();
     this->wait_before_execute.clear();
     this->state_.Reset();
@@ -260,5 +254,10 @@ void ff::dx12::commands::prepare_state(ff::dx12::resource& resource, D3D12_RESOU
 
 void ff::dx12::commands::before_reset()
 {
+    if (this->data_cache.list)
+    {
+        this->data_cache.list->Close();
+    }
+
     this->close();
 }
