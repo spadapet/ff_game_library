@@ -10,6 +10,7 @@ namespace ff::dx12
 {
     class commands;
     class mem_range;
+    class resource_tracker;
 
     class resource : private ff::dxgi::device_child_base
     {
@@ -34,10 +35,12 @@ namespace ff::dx12
         size_t mip_size() const;
 
         ff::dx12::resource_state& global_state();
-        ff::dx12::fence_values& global_reads();
-        const ff::dx12::fence_values& global_reads() const;
-        ff::dx12::fence_value& global_write();
-        const ff::dx12::fence_value& global_write() const;
+        void prepare_state(
+            ff::dx12::fence_values& wait_before_execute,
+            const ff::dx12::fence_value& next_fence_value,
+            ff::dx12::resource_tracker& tracker,
+            D3D12_RESOURCE_STATES state,
+            size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
 
         struct readback_texture_data
         {

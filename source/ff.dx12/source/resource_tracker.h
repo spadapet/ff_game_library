@@ -22,9 +22,9 @@ namespace ff::dx12
         void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker);
         void reset();
 
-        void state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
-        void uav_barrier(ff::dx12::resource& resource);
-        void alias_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
+        void state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
+        void uav(ff::dx12::resource& resource);
+        void alias(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
 
     private:
         struct resource_t

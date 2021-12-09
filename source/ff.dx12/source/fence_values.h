@@ -17,6 +17,7 @@ namespace ff::dx12
 
         void add(ff::dx12::fence_value fence_value);
         void add(const ff::dx12::fence_values& fence_values);
+        void add(const ff::dx12::fence_values& read_values, ff::dx12::fence_value write_value);
         void reserve(size_t count);
         void clear();
         void clear_completed();

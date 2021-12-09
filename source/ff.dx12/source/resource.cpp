@@ -7,6 +7,7 @@
 #include "mem_range.h"
 #include "queue.h"
 #include "resource.h"
+#include "resource_tracker.h"
 
 static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*& commands)
 {
@@ -166,24 +167,44 @@ ff::dx12::resource_state& ff::dx12::resource::global_state()
     return this->global_state_;
 }
 
-ff::dx12::fence_values& ff::dx12::resource::global_reads()
+void ff::dx12::resource::prepare_state(
+    ff::dx12::fence_values& wait_before_execute,
+    const ff::dx12::fence_value& next_fence_value,
+    ff::dx12::resource_tracker& tracker,
+    D3D12_RESOURCE_STATES state,
+    size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
 {
-    return this->global_reads_;
-}
+    const D3D12_RESOURCE_STATES write_states =
+        D3D12_RESOURCE_STATE_RENDER_TARGET |
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS |
+        D3D12_RESOURCE_STATE_DEPTH_WRITE |
+        D3D12_RESOURCE_STATE_STREAM_OUT |
+        D3D12_RESOURCE_STATE_COPY_DEST |
+        D3D12_RESOURCE_STATE_RESOLVE_DEST |
+        D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE |
+        D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE |
+        D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE;
 
-const ff::dx12::fence_values& ff::dx12::resource::global_reads() const
-{
-    return this->global_reads_;
-}
+    if ((state & write_states) != 0)
+    {
+        wait_before_execute.add(this->global_reads_, this->global_write_);
+        this->global_reads_.clear();
+        this->global_write_ = next_fence_value;
 
-ff::dx12::fence_value& ff::dx12::resource::global_write()
-{
-    return this->global_write_;
-}
+        if ((state & ~write_states) != 0)
+        {
+            this->global_reads_.add(next_fence_value);
+        }
+    }
+    else
+    {
+        wait_before_execute.add(this->global_write_);
+        this->global_reads_.clear();
+        this->global_reads_.add(next_fence_value);
+        this->global_write_ = {};
+    }
 
-const ff::dx12::fence_value& ff::dx12::resource::global_write() const
-{
-    return this->global_write_;
+    tracker.state(*this, state, array_start, array_size, mip_start, mip_size);
 }
 
 ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* commands, const void* data, uint64_t offset, uint64_t size)

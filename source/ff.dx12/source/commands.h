@@ -42,17 +42,23 @@ namespace ff::dx12
         void clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value);
         void discard(const ff::dx12::depth& depth);
 
-        void update_buffer(const ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source);
-        void readback_buffer(const ff::dx12::mem_range& dest, const ff::dx12::resource& source, uint64_t source_offset);
+        void clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color);
+        void discard(ff::dxgi::target_base& target);
 
-        void update_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
-        void readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
+        void update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source);
+        void readback_buffer(const ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset);
 
-        void copy_resource(const ff::dx12::resource& dest_resource, const ff::dx12::resource& source_resource);
-        void copy_texture(const ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
+        void update_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
+        void readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
+
+        void copy_resource(ff::dx12::resource& dest_resource, ff::dx12::resource& source_resource);
+        void copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
 
     private:
         ID3D12GraphicsCommandListX* list() const;
+        ff::dx12::resource_tracker* tracker() const;
+        void prepare_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state);
+        void prepare_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
 
         // device_child_base
         virtual void before_reset() override;

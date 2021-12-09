@@ -206,7 +206,7 @@ void ff::dx12::resource_tracker::reset()
     this->barriers_pending.clear();
 }
 
-void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
+void ff::dx12::resource_tracker::state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
 {
     if (!array_size)
     {
@@ -277,12 +277,12 @@ void ff::dx12::resource_tracker::state_barrier(ff::dx12::resource& resource, D3D
     }
 }
 
-void ff::dx12::resource_tracker::uav_barrier(ff::dx12::resource& resource)
+void ff::dx12::resource_tracker::uav(ff::dx12::resource& resource)
 {
     this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::UAV(ff::dx12::get_resource(resource)));
 }
 
-void ff::dx12::resource_tracker::alias_barrier(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after)
+void ff::dx12::resource_tracker::alias(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after)
 {
     this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Aliasing(
         resource_before ? ff::dx12::get_resource(*resource_before) : nullptr,

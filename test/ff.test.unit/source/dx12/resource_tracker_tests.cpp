@@ -533,8 +533,8 @@ namespace ff::test::dx12
             ::test_command_list command_list_before(D3D12_COMMAND_LIST_TYPE_DIRECT);
 
             ff::dx12::resource_tracker tracker;
-            tracker.state_barrier(*depth1.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, 0, 1, 0, 1);
-            tracker.state_barrier(*depth1.resource(), D3D12_RESOURCE_STATE_DEPTH_READ, 0, 1, 0, 1);
+            tracker.state(*depth1.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, 0, 1, 0, 1);
+            tracker.state(*depth1.resource(), D3D12_RESOURCE_STATE_DEPTH_READ, 0, 1, 0, 1);
 
             tracker.flush(&command_list);
             tracker.close(&command_list_before, nullptr, nullptr);
@@ -569,10 +569,10 @@ namespace ff::test::dx12
             ::test_command_list before_lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
 
             ff::dx12::resource_tracker trackers[3];
-            trackers[0].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
-            trackers[1].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
-            trackers[2].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
-            trackers[2].state_barrier(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            trackers[0].state(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
+            trackers[1].state(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
             for (size_t i = 0; i < 3; i++)
             {
@@ -602,13 +602,13 @@ namespace ff::test::dx12
             ::test_command_list before_lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
 
             ff::dx12::resource_tracker trackers[3];
-            trackers[0].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
-            trackers[2].state_barrier(res[0], D3D12_RESOURCE_STATE_COPY_DEST);
-            trackers[2].state_barrier(res[0], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            trackers[1].state_barrier(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
-            trackers[2].state_barrier(res[1], D3D12_RESOURCE_STATE_INDEX_BUFFER);
-            trackers[1].state_barrier(res[2], D3D12_RESOURCE_STATE_COPY_DEST);
-            trackers[2].state_barrier(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            trackers[0].state(res[0], D3D12_RESOURCE_STATE_COPY_SOURCE);
+            trackers[2].state(res[0], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state(res[0], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            trackers[1].state(res[1], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state(res[1], D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            trackers[1].state(res[2], D3D12_RESOURCE_STATE_COPY_DEST);
+            trackers[2].state(res[2], D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
             for (size_t i = 0; i < 3; i++)
             {
@@ -661,10 +661,10 @@ namespace ff::test::dx12
             ff::dx12::texture tex2(size, ff::dxgi::DEFAULT_FORMAT, 2, 2);
 
             ff::dx12::resource_tracker tracker;
-            tracker.state_barrier(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
-            tracker.state_barrier(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 1, 1, 0, 2);
-            tracker.state_barrier(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 1, 0, 1);
-            tracker.state_barrier(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 2, 0, 1);
+            tracker.state(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            tracker.state(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 1, 1, 0, 2);
+            tracker.state(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 1, 0, 1);
+            tracker.state(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 2, 0, 1);
 
             ::test_command_list command_list(type);
             ::test_command_list command_list_before(type);
