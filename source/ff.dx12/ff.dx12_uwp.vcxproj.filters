@@ -83,6 +83,15 @@
     <ClCompile Include="source\resource_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\object_cache.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\buffer_cpu.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\target_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -168,6 +177,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\resource_state.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\object_cache.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\buffer_cpu.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\target_texture.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

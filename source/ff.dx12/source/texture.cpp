@@ -60,6 +60,11 @@ ff::dx12::texture::~texture()
     ff::dx12::remove_device_child(this);
 }
 
+ff::dx12::texture& ff::dx12::texture::get(ff::dxgi::texture_base& other)
+{
+    return static_cast<ff::dx12::texture&>(other);
+}
+
 ff::dx12::texture& ff::dx12::texture::operator=(texture&& other) noexcept
 {
     return this->assign(std::move(other));
@@ -268,9 +273,12 @@ bool ff::dx12::texture::update(
             {
                 resource->update_texture(nullptr, &data, sub_index, 1, pos.cast<size_t>());
             });
+
+        return true;
     }
 
-    return true;
+    assert(false);
+    return false;
 }
 
 bool ff::dx12::texture::reset()
@@ -282,12 +290,12 @@ bool ff::dx12::texture::reset()
     return *this;
 }
 
-const ff::dxgi::texture_view_access_base& ff::dx12::texture::view_access() const
+ff::dxgi::texture_view_access_base& ff::dx12::texture::view_access()
 {
     return *this;
 }
 
-const ff::dxgi::texture_base* ff::dx12::texture::view_texture() const
+ff::dxgi::texture_base* ff::dx12::texture::view_texture()
 {
     return this;
 }

@@ -27,6 +27,7 @@ namespace ff::dx12
 
         operator bool() const;
 
+        const D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
         const std::shared_ptr<ff::dx12::mem_range>& mem_range() const;
         const D3D12_RESOURCE_DESC& desc() const;
         const D3D12_RESOURCE_ALLOCATION_INFO& alloc_info() const;

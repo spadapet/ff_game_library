@@ -19,8 +19,8 @@ namespace ff::dx11
         operator bool() const;
 
         // texture_view_base
-        virtual const ff::dxgi::texture_view_access_base& view_access() const override;
-        virtual const ff::dxgi::texture_base* view_texture() const override;
+        virtual ff::dxgi::texture_view_access_base& view_access() override;
+        virtual ff::dxgi::texture_base* view_texture() override;
 
         // texture_view_access
         virtual ID3D11ShaderResourceView* dx11_texture_view() const override;

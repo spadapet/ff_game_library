@@ -1,5 +1,6 @@
 static const float PI_F = 3.1415926535897932384626433832795f;
 static const float PI2_F = PI_F * 2;
+static const float Z_OFFSET = 0;
 
 struct line_geometry
 {
@@ -66,9 +67,7 @@ struct sprite_pixel
 cbuffer geometry_shader_constants_0 : register(b0)
 {
     matrix projection_;
-    float2 view_size_;
     float2 view_scale_;
-    float z_offset_;
 };
 
 cbuffer geometry_shader_constants_1 : register(b1)
@@ -188,7 +187,7 @@ void line_gs(point line_geometry input[1], inout TriangleStream<color_pixel> out
     float swap_side = !miters_on_same_side_of_line(dir_line, miter1, miter2);
     miter2 *= -2 * swap_side + 1;
 
-    float z = input[0].depth + z_offset_;
+    float z = input[0].depth + Z_OFFSET;
     matrix transform_matrix = mul(model_[input[0].world], projection_);
     float4 p1_up = mul(float4((pos1 + miter1) / aspect, z, 1), transform_matrix);
     float4 p1_down = mul(float4((pos1 - miter1) / aspect, z, 1), transform_matrix);
@@ -227,7 +226,7 @@ void circle_gs(point circle_geometry input[1], inout TriangleStream<color_pixel>
         thickness = float2(input[0].thickness, input[0].thickness);
     }
 
-    float z = input[0].pos.z + z_offset_;
+    float z = input[0].pos.z + Z_OFFSET;
     float2 center = input[0].pos.xy;
     float2 radius = float2(input[0].radius, input[0].radius);
     matrix transform_matrix = mul(model_[input[0].world], projection_);
@@ -262,7 +261,7 @@ void triangle_gs(point triangle_geometry input[1], inout TriangleStream<color_pi
 {
     color_pixel vertex;
 
-    float z = input[0].depth + z_offset_;
+    float z = input[0].depth + Z_OFFSET;
     float4 p0 = float4(input[0].pos0, z, 1);
     float4 p1 = float4(input[0].pos1, z, 1);
     float4 p2 = float4(input[0].pos2, z, 1);
@@ -304,7 +303,7 @@ void sprite_gs(point sprite_geometry input[1], inout TriangleStream<sprite_pixel
     };
 
     float4 rect = input[0].rect * float4(input[0].scale, input[0].scale);
-    float z = input[0].pos.z + z_offset_;
+    float z = input[0].pos.z + Z_OFFSET;
     float4 tl = float4(mul(rect.xy, rotate_matrix) + input[0].pos.xy, z, 1);
     float4 tr = float4(mul(rect.zy, rotate_matrix) + input[0].pos.xy, z, 1);
     float4 br = float4(mul(rect.zw, rotate_matrix) + input[0].pos.xy, z, 1);

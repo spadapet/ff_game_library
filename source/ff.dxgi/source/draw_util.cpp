@@ -388,11 +388,11 @@ void ff::dxgi::draw_util::draw_device_base::end_draw()
 
 void ff::dxgi::draw_util::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform)
 {
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette);
+    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
     if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible && sprite.view())
     {
         bool use_palette = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
-        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent && !this->target_requires_palette)
+        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent && !this->target_requires_palette_)
             ? (use_palette ? ff::dxgi::draw_util::geometry_bucket_type::palette_sprites : ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha)
             : (use_palette ? ff::dxgi::draw_util::geometry_bucket_type::palette_sprites : ff::dxgi::draw_util::geometry_bucket_type::sprites);
 
@@ -488,7 +488,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_filled_triangles(const ff::poin
         std::memcpy(input.position, points, sizeof(input.position));
         std::memcpy(input.color, colors, sizeof(input.color));
 
-        ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette);
+        ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette_);
         if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
         {
             ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha : ff::dxgi::draw_util::geometry_bucket_type::triangles;
@@ -561,7 +561,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_
     input.inside_color = inside_color;
     input.outside_color = outside_color;
 
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette);
+    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette_);
     if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
     {
         ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::circles_alpha : ff::dxgi::draw_util::geometry_bucket_type::circles;
@@ -669,7 +669,7 @@ void ff::dxgi::draw_util::draw_device_base::nudge_depth()
 
 void ff::dxgi::draw_util::draw_device_base::push_palette(ff::dxgi::palette_base* palette)
 {
-    assert(!this->target_requires_palette && palette);
+    assert(!this->target_requires_palette_ && palette);
     this->palette_stack.push_back(palette);
     this->palette_index = ff::constants::invalid_dword;
 
@@ -764,7 +764,11 @@ void ff::dxgi::draw_util::draw_device_base::pop_custom_context()
 
 void ff::dxgi::draw_util::draw_device_base::push_sampler_linear_filter(bool linear_filter)
 {
-    this->flush();
+    if (linear_filter != this->linear_sampler() && this->flush_for_sampler_change())
+    {
+        this->flush();
+    }
+
     this->sampler_stack.push_back(linear_filter);
 }
 
@@ -772,7 +776,11 @@ void ff::dxgi::draw_util::draw_device_base::pop_sampler_linear_filter()
 {
     assert(this->sampler_stack.size() > 1);
 
-    this->flush();
+    if (this->sampler_stack.back() != this->sampler_stack[this->sampler_stack.size() - 2] && this->flush_for_sampler_change())
+    {
+        this->flush();
+    }
+
     this->sampler_stack.pop_back();
 }
 
@@ -786,6 +794,21 @@ bool ff::dxgi::draw_util::draw_device_base::internal_valid() const
     return this->state != draw_device_base::state_t::invalid;
 }
 
+bool ff::dxgi::draw_util::draw_device_base::linear_sampler() const
+{
+    return this->sampler_stack.back();
+}
+
+bool ff::dxgi::draw_util::draw_device_base::target_requires_palette() const
+{
+    return this->target_requires_palette_;
+}
+
+bool ff::dxgi::draw_util::draw_device_base::pre_multiplied_alpha() const
+{
+    return this->force_pre_multiplied_alpha > 0;
+}
+
 ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options)
 {
     this->end_draw();
@@ -793,8 +816,8 @@ ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(ff
     if (ff::dxgi::draw_util::setup_view_matrix(target, view_rect, world_rect, this->view_matrix) &&
         (this->command_context_ = this->setup(target, depth, view_rect)) != nullptr)
     {
-        this->init_geometry_constant_buffers_0(target, view_rect, world_rect);
-        this->target_requires_palette = ff::dxgi::palette_format(target.format());
+        this->init_geometry_constant_buffer_0(target, view_rect, world_rect);
+        this->target_requires_palette_ = ff::dxgi::palette_format(target.format());
         this->force_pre_multiplied_alpha = ff::flags::has(options, ff::dxgi::draw_options::pre_multiplied_alpha) && ff::dxgi::supports_pre_multiplied_alpha(target.format()) ? 1 : 0;
         this->state = draw_device_base::state_t::drawing;
 
@@ -885,20 +908,18 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
 {
     if (this->last_depth_type != ff::dxgi::draw_util::last_depth_type::none && this->create_geometry_buffer())
     {
-        this->update_geometry_constant_buffers_0();
-        this->update_geometry_constant_buffers_1();
-        this->update_pixel_constant_buffers_0();
+        this->update_geometry_constant_buffer_0();
+        this->update_geometry_constant_buffer_1();
+        this->update_pixel_constant_buffer_0();
 
-        if (this->target_requires_palette || this->textures_using_palette_count)
+        if (this->target_requires_palette_ || this->textures_using_palette_count)
         {
-            this->update_palette_texture(*this->command_context_,
-                this->target_requires_palette, this->textures_using_palette_count,
+            this->update_palette_texture(*this->command_context_, this->textures_using_palette_count,
                 *this->palette_texture, this->palette_texture_hashes.data(), this->palette_to_index,
                 *this->palette_remap_texture, this->palette_remap_texture_hashes.data(), this->palette_remap_to_index);
         }
 
         this->apply_shader_input(*this->command_context_,
-            this->target_requires_palette, this->sampler_stack.back(),
             this->texture_count, this->textures.data(),
             this->textures_using_palette_count, this->textures_using_palette.data(),
             *this->palette_texture, *this->palette_remap_texture);
@@ -922,7 +943,11 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
         this->alpha_geometry.clear();
         this->last_depth_type = ff::dxgi::draw_util::last_depth_type::none;
 
-        this->command_context_ = this->internal_flush(*this->command_context_, end_draw);
+        this->command_context_ = this->internal_flush(this->command_context_, end_draw);
+    }
+    else if (end_draw)
+    {
+        this->command_context_ = this->internal_flush(this->command_context_, end_draw);
     }
 }
 
@@ -963,7 +988,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
 
     const DirectX::XMFLOAT2* dxpoints = reinterpret_cast<const DirectX::XMFLOAT2*>(points);
     bool closed = point_count > 2 && points[0] == points[point_count - 1];
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette);
+    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette_);
 
     for (size_t i = 0; i < point_count - 1; i++)
     {
@@ -982,7 +1007,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
         {
             input.color[0] = colors[i];
             input.color[1] = colors[i + 1];
-            alpha_type = ff::dxgi::draw_util::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette);
+            alpha_type = ff::dxgi::draw_util::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette_);
         }
 
         if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
@@ -993,13 +1018,13 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::init_geometry_constant_buffers_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
+void ff::dxgi::draw_util::draw_device_base::init_geometry_constant_buffer_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect)
 {
-    this->geometry_constants_0.view_size = view_rect.size() / static_cast<float>(target.size().dpi_scale);
-    this->geometry_constants_0.view_scale = world_rect.size() / this->geometry_constants_0.view_size;
+    ff::point_float view_size = view_rect.size() / static_cast<float>(target.size().dpi_scale);
+    this->geometry_constants_0.view_scale = world_rect.size() / view_size;
 }
 
-void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffers_0()
+void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_0()
 {
     this->geometry_constants_0.projection = this->view_matrix;
 
@@ -1011,7 +1036,7 @@ void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffers_0()
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffers_1()
+void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_1()
 {
     // Build up model matrix array
     size_t world_matrix_count = this->world_matrix_to_index.size();
@@ -1038,7 +1063,7 @@ void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffers_1()
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::update_pixel_constant_buffers_0()
+void ff::dxgi::draw_util::draw_device_base::update_pixel_constant_buffer_0()
 {
     if (this->textures_using_palette_count)
     {
@@ -1105,7 +1130,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_opaque_geometry()
 
         if (bucket.render_count())
         {
-            this->apply_geometry_buffer(*this->command_context_, bucket.bucket_type(), this->geometry_buffer(), this->target_requires_palette);
+            this->apply_geometry_state(*this->command_context_, bucket);
 
             if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), true))
             {
@@ -1121,7 +1146,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_alpha_geometry()
     if (alpha_geometry_size)
     {
         const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
-        this->apply_alpha_state(*this->command_context_, this->force_pre_multiplied_alpha);
+        this->apply_alpha_state(*this->command_context_);
 
         for (size_t i = 0; i < alpha_geometry_size; )
         {
@@ -1139,7 +1164,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_alpha_geometry()
                 }
             }
 
-            this->apply_geometry_buffer(*this->command_context_, entry.bucket->bucket_type(), this->geometry_buffer(), this->target_requires_palette);
+            this->apply_geometry_state(*this->command_context_, *entry.bucket);
 
             if (!custom_func || (*custom_func)(*this->command_context_, entry.bucket->item_type(), false))
             {
@@ -1194,7 +1219,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_world_matrix_index_no_fl
     return this->world_matrix_index;
 }
 
-unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(const ff::dxgi::texture_view_base& texture_view, bool use_palette)
+unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(ff::dxgi::texture_view_base& texture_view, bool use_palette)
 {
     if (use_palette)
     {
@@ -1237,7 +1262,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(c
     else
     {
         unsigned int palette_remap_index = 0;
-        if (this->target_requires_palette)
+        if (this->target_requires_palette_)
         {
             palette_remap_index = (this->palette_remap_index == ff::constants::invalid_dword) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
             if (palette_remap_index == ff::constants::invalid_dword)
@@ -1247,6 +1272,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(c
         }
 
         unsigned int texture_index = ff::constants::invalid_dword;
+        unsigned int sampler_index = static_cast<unsigned int>(this->sampler_stack.back());
 
         for (size_t i = this->texture_count; i != 0; i--)
         {
@@ -1268,7 +1294,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(c
             texture_index = static_cast<unsigned int>(this->texture_count++);
         }
 
-        return texture_index | (palette_remap_index << 16);
+        return texture_index | (sampler_index << 8) | (palette_remap_index << 16);
     }
 }
 
@@ -1276,7 +1302,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_index_no_flush()
 {
     if (this->palette_index == ff::constants::invalid_dword)
     {
-        if (this->target_requires_palette)
+        if (this->target_requires_palette_)
         {
             // Not converting palette to RGBA, so don't use a palette
             this->palette_index = 0;
@@ -1328,7 +1354,7 @@ int ff::dxgi::draw_util::draw_device_base::remap_palette_index(int color) const
     return this->palette_remap_stack.back().first[color];
 }
 
-void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(const ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
+void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
 {
     model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
     texture_index = this->get_texture_index_no_flush(texture_view, use_palette);

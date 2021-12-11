@@ -1,5 +1,6 @@
 static const float PI_F = 3.1415926535897932384626433832795f;
 static const float PI2_F = PI_F * 2;
+static const float Z_OFFSET = 0;
 
 struct line_geometry
 {
@@ -66,9 +67,7 @@ struct sprite_pixel
 cbuffer geometry_shader_constants_0 : register(b0)
 {
     matrix projection_;
-    float2 view_size_;
     float2 view_scale_;
-    float z_offset_;
 };
 
 cbuffer geometry_shader_constants_1 : register(b1)
@@ -76,7 +75,7 @@ cbuffer geometry_shader_constants_1 : register(b1)
     matrix model_[1024];
 };
 
-cbuffer pixel_shader_constants_0 : register(b0)
+cbuffer pixel_shader_constants_0 : register(b2)
 {
     float4 texture_palette_sizes_[32];
 };
@@ -85,7 +84,7 @@ Texture2D textures_[32] : register(t0);
 Texture2D<uint> textures_palette_[32] : register(t32);
 Texture2D palette_ : register(t64);
 Texture2D<uint> palette_remap_ : register(t65);
-SamplerState sampler_ : register(s0);
+SamplerState samplers_[2] : register(s0);
 
 line_geometry line_vs(line_geometry input)
 {
@@ -188,7 +187,7 @@ void line_gs(point line_geometry input[1], inout TriangleStream<color_pixel> out
     float swap_side = !miters_on_same_side_of_line(dir_line, miter1, miter2);
     miter2 *= -2 * swap_side + 1;
 
-    float z = input[0].depth + z_offset_;
+    float z = input[0].depth + Z_OFFSET;
     matrix transform_matrix = mul(model_[input[0].world], projection_);
     float4 p1_up = mul(float4((pos1 + miter1) / aspect, z, 1), transform_matrix);
     float4 p1_down = mul(float4((pos1 - miter1) / aspect, z, 1), transform_matrix);
@@ -227,7 +226,7 @@ void circle_gs(point circle_geometry input[1], inout TriangleStream<color_pixel>
         thickness = float2(input[0].thickness, input[0].thickness);
     }
 
-    float z = input[0].pos.z + z_offset_;
+    float z = input[0].pos.z + Z_OFFSET;
     float2 center = input[0].pos.xy;
     float2 radius = float2(input[0].radius, input[0].radius);
     matrix transform_matrix = mul(model_[input[0].world], projection_);
@@ -262,7 +261,7 @@ void triangle_gs(point triangle_geometry input[1], inout TriangleStream<color_pi
 {
     color_pixel vertex;
 
-    float z = input[0].depth + z_offset_;
+    float z = input[0].depth + Z_OFFSET;
     float4 p0 = float4(input[0].pos0, z, 1);
     float4 p1 = float4(input[0].pos1, z, 1);
     float4 p2 = float4(input[0].pos2, z, 1);
@@ -304,7 +303,7 @@ void sprite_gs(point sprite_geometry input[1], inout TriangleStream<sprite_pixel
     };
 
     float4 rect = input[0].rect * float4(input[0].scale, input[0].scale);
-    float z = input[0].pos.z + z_offset_;
+    float z = input[0].pos.z + Z_OFFSET;
     float4 tl = float4(mul(rect.xy, rotate_matrix) + input[0].pos.xy, z, 1);
     float4 tr = float4(mul(rect.zy, rotate_matrix) + input[0].pos.xy, z, 1);
     float4 br = float4(mul(rect.zw, rotate_matrix) + input[0].pos.xy, z, 1);
@@ -357,90 +356,22 @@ uint palette_out_color_ps(color_pixel input) : SV_TARGET
     return index;
 }
 
-float4 SampleSpriteTexture(float2 tex, uint ntex)
+float4 SampleSpriteTexture(float2 tex, uint ntex, uint nsampler)
 {
-    switch (ntex)
-    {
-    case 0: return textures_[0].Sample(sampler_, tex);
-    case 1: return textures_[1].Sample(sampler_, tex);
-    case 2: return textures_[2].Sample(sampler_, tex);
-    case 3: return textures_[3].Sample(sampler_, tex);
-    case 4: return textures_[4].Sample(sampler_, tex);
-    case 5: return textures_[5].Sample(sampler_, tex);
-    case 6: return textures_[6].Sample(sampler_, tex);
-    case 7: return textures_[7].Sample(sampler_, tex);
-    case 8: return textures_[8].Sample(sampler_, tex);
-    case 9: return textures_[9].Sample(sampler_, tex);
-    case 10: return textures_[10].Sample(sampler_, tex);
-    case 11: return textures_[11].Sample(sampler_, tex);
-    case 12: return textures_[12].Sample(sampler_, tex);
-    case 13: return textures_[13].Sample(sampler_, tex);
-    case 14: return textures_[14].Sample(sampler_, tex);
-    case 15: return textures_[15].Sample(sampler_, tex);
-    case 16: return textures_[16].Sample(sampler_, tex);
-    case 17: return textures_[17].Sample(sampler_, tex);
-    case 18: return textures_[18].Sample(sampler_, tex);
-    case 19: return textures_[19].Sample(sampler_, tex);
-    case 20: return textures_[20].Sample(sampler_, tex);
-    case 21: return textures_[21].Sample(sampler_, tex);
-    case 22: return textures_[22].Sample(sampler_, tex);
-    case 23: return textures_[23].Sample(sampler_, tex);
-    case 24: return textures_[24].Sample(sampler_, tex);
-    case 25: return textures_[25].Sample(sampler_, tex);
-    case 26: return textures_[26].Sample(sampler_, tex);
-    case 27: return textures_[27].Sample(sampler_, tex);
-    case 28: return textures_[28].Sample(sampler_, tex);
-    case 29: return textures_[29].Sample(sampler_, tex);
-    case 30: return textures_[30].Sample(sampler_, tex);
-    case 31: return textures_[31].Sample(sampler_, tex);
-    default: return (float4)0;
-    }
+    return textures_[NonUniformResourceIndex(ntex)].Sample(samplers_[NonUniformResourceIndex(nsampler)], tex);
 }
 
 uint SamplePaletteSpriteTexture(int3 tex, uint ntex)
 {
-    switch (ntex)
-    {
-    case 0: return textures_palette_[0].Load(tex);
-    case 1: return textures_palette_[1].Load(tex);
-    case 2: return textures_palette_[2].Load(tex);
-    case 3: return textures_palette_[3].Load(tex);
-    case 4: return textures_palette_[4].Load(tex);
-    case 5: return textures_palette_[5].Load(tex);
-    case 6: return textures_palette_[6].Load(tex);
-    case 7: return textures_palette_[7].Load(tex);
-    case 8: return textures_palette_[8].Load(tex);
-    case 9: return textures_palette_[9].Load(tex);
-    case 10: return textures_palette_[10].Load(tex);
-    case 11: return textures_palette_[11].Load(tex);
-    case 12: return textures_palette_[12].Load(tex);
-    case 13: return textures_palette_[13].Load(tex);
-    case 14: return textures_palette_[14].Load(tex);
-    case 15: return textures_palette_[15].Load(tex);
-    case 16: return textures_palette_[16].Load(tex);
-    case 17: return textures_palette_[17].Load(tex);
-    case 18: return textures_palette_[18].Load(tex);
-    case 19: return textures_palette_[19].Load(tex);
-    case 20: return textures_palette_[20].Load(tex);
-    case 21: return textures_palette_[21].Load(tex);
-    case 22: return textures_palette_[22].Load(tex);
-    case 23: return textures_palette_[23].Load(tex);
-    case 24: return textures_palette_[24].Load(tex);
-    case 25: return textures_palette_[25].Load(tex);
-    case 26: return textures_palette_[26].Load(tex);
-    case 27: return textures_palette_[27].Load(tex);
-    case 28: return textures_palette_[28].Load(tex);
-    case 29: return textures_palette_[29].Load(tex);
-    case 30: return textures_palette_[30].Load(tex);
-    case 31: return textures_palette_[31].Load(tex);
-    default: return 0;
-    }
+    return textures_palette_[NonUniformResourceIndex(ntex)].Load(tex);
 }
 
 // Texture: RGBA, Output: RGBA
 float4 sprite_ps(sprite_pixel input) : SV_TARGET
 {
-    float4 color = input.color * SampleSpriteTexture(input.uv, input.tex);
+    uint texture_index = input.tex & 0xFF;
+    uint sampler_index = (input.tex & 0xFF00) >> 8;
+    float4 color = input.color * SampleSpriteTexture(input.uv, texture_index, sampler_index);
 
     if (color.a == 0)
     {
@@ -476,7 +407,9 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
 // Texture: Alpha only, Output: RGBA (111A)
 float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
 {
-    float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, input.tex).a);
+    uint texture_index = input.tex & 0xFF;
+    uint sampler_index = (input.tex & 0xFF00) >> 8;
+    float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, texture_index, sampler_index).a);
 
     if (color.a == 0)
     {
@@ -490,9 +423,10 @@ float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
 uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
+    uint sampler_index = (input.tex & 0xFF00) >> 8;
     uint remap_index = (input.tex & 0xFF0000) >> 16;
 
-    float4 color = SampleSpriteTexture(input.uv, texture_index);
+    float4 color = SampleSpriteTexture(input.uv, texture_index, sampler_index);
     color.a *= input.color.a;
     uint index = ((uint)((input.color.r != 1) * input.color.r * 256) + (uint)((input.color.r == 1) * color.r * 256)) * (uint)(color.a != 0);
     index = palette_remap_.Load(int3(index, remap_index, 0));

@@ -3,6 +3,7 @@
 #include "fence.h"
 #include "globals.h"
 #include "mem_allocator.h"
+#include "object_cache.h"
 #include "queues.h"
 #include "resource.h"
 
@@ -39,6 +40,7 @@ static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
+static std::unique_ptr<ff::dx12::object_cache> object_cache;
 static std::unique_ptr<ff::dx12::queues> queues;
 static std::array<std::unique_ptr<ff::dx12::cpu_descriptor_allocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> cpu_descriptor_allocators;
 static std::array<std::unique_ptr<ff::dx12::gpu_descriptor_allocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> gpu_descriptor_allocators;
@@ -87,6 +89,26 @@ static void flush_keep_alive()
             break;
         }
     }
+}
+
+static void wait_for_keep_alive(bool for_reset)
+{
+    ff::dx12::fence_values values;
+    {
+        std::scoped_lock lock(::keep_alive_mutex);
+
+        if (for_reset)
+        {
+            ::keep_alive_resources.clear();
+        }
+        else for (auto& [resource, values] : ::keep_alive_resources)
+        {
+            values.add(values);
+        }
+    }
+
+    values.wait(nullptr);
+    ::flush_keep_alive();
 }
 
 static bool init_dxgi()
@@ -161,6 +183,7 @@ static bool init_d3d(bool for_reset)
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 2048);
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256, 256);
         ::queues = std::make_unique<ff::dx12::queues>();
+        ::object_cache = std::make_unique<ff::dx12::object_cache>();
     }
 
     return true;
@@ -170,6 +193,8 @@ static void destroy_d3d(bool for_reset)
 {
     if (!for_reset)
     {
+        ::wait_for_keep_alive(for_reset);
+
         for (auto& i : ::cpu_descriptor_allocators)
         {
             i.reset();
@@ -187,6 +212,7 @@ static void destroy_d3d(bool for_reset)
         ::texture_allocator.reset();
         ::target_allocator.reset();
         ::queues.reset();
+        ::object_cache.reset();
     }
 
     ::outputs_hash = 0;
@@ -364,6 +390,11 @@ IDXGIAdapterX* ff::dx12::adapter()
 ID3D12DeviceX* ff::dx12::device()
 {
     return ::device.Get();
+}
+
+ff::dx12::object_cache& ff::dx12::get_object_cache()
+{
+    return *::object_cache;
 }
 
 size_t ff::dx12::frame_count()

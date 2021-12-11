@@ -9,6 +9,8 @@ namespace ff::dx12
     class depth : public ff::dxgi::depth_base, private ff::dxgi::device_child_base
     {
     public:
+        static const DXGI_FORMAT FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
         depth(size_t sample_count = 0);
         depth(const ff::point_size& size, size_t sample_count = 0);
         depth(depth&& other) noexcept = default;
@@ -23,7 +25,6 @@ namespace ff::dx12
 
         ff::dx12::resource* resource() const;
         D3D12_CPU_DESCRIPTOR_HANDLE view() const;
-        void discard(ff::dxgi::command_context_base& context) const;
 
         // depth_base
         virtual ff::point_size size() const override;

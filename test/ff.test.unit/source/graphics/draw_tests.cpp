@@ -12,7 +12,7 @@ namespace ff::test::graphics
                 {
                     "sprites": { "res:type": "sprites", "optimize": false, "format": "bc3", "mips": "1",
                         "sprites": {
-                            "box": { "file": "file:test_texture.png", "pos": [ 0, 0], "size": [ 32, 32 ], "handle": [ 16, 16 ], "repeat": 8 }
+                            "box": { "file": "file:test_texture.png", "pos": [ 0, 0 ], "size": [ 32, 32 ], "handle": [ 16, 16 ], "repeat": 8 }
                         }
                     }
                 }

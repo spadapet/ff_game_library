@@ -39,14 +39,17 @@ static void assert_type_change(ff::dx12::resource_state::type_t cur_type, ff::dx
 
 static void merge_state(ff::dx12::resource_state::state_t& dest, const ff::dx12::resource_state::state_t& source)
 {
-    if (dest.second == ff::dx12::resource_state::type_t::global)
+    if (source.second != ff::dx12::resource_state::type_t::none)
     {
-        // Global always stays global
-        dest.first = source.first;
-    }
-    else if (source.second != ff::dx12::resource_state::type_t::none)
-    {
-        dest = source;
+        if (dest.second == ff::dx12::resource_state::type_t::global)
+        {
+            // Global always stays global
+            dest.first = source.first;
+        }
+        else
+        {
+            dest = source;
+        }
     }
 }
 

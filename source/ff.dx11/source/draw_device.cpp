@@ -305,14 +305,14 @@ namespace
             this->pre_multiplied_alpha_state = ::create_pre_multiplied_alpha_draw_state();
         }
 
-        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base& context, bool end_draw) override
+        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) override
         {
             if (end_draw)
             {
-                ff::dx11::device_state::get(context).set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
+                ff::dx11::device_state::get(*context).set_resources_ps(::NULL_TEXTURES.data(), 0, ::NULL_TEXTURES.size());
             }
 
-            return &context;
+            return context;
         }
 
         virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) override
@@ -331,7 +331,7 @@ namespace
         }
 
         virtual void update_palette_texture(ff::dxgi::command_context_base& context,
-            bool target_requires_palette, size_t textures_using_palette_count,
+            size_t textures_using_palette_count,
             ff::dxgi::texture_base& palette_texture, size_t* palette_texture_hashes, palette_to_index_t& palette_to_index,
             ff::dxgi::texture_base& palette_remap_texture, size_t* palette_remap_texture_hashes, palette_remap_to_index_t& palette_remap_to_index) override
         {
@@ -364,7 +364,7 @@ namespace
                 }
             }
 
-            if ((textures_using_palette_count || target_requires_palette) && !palette_remap_to_index.empty())
+            if ((textures_using_palette_count || this->target_requires_palette()) && !palette_remap_to_index.empty())
             {
                 ID3D11Resource* dest_remap_resource = ff::dx11::texture::get(palette_remap_texture).dx11_texture();
                 CD3D11_BOX box(0, 0, 0, static_cast<int>(ff::dxgi::palette_size), 1, 1);
@@ -387,9 +387,8 @@ namespace
         }
 
         virtual void apply_shader_input(ff::dxgi::command_context_base& context,
-            bool target_requires_palette, bool linear_sampler,
-            size_t texture_count, const ff::dxgi::texture_view_base** in_textures,
-            size_t textures_using_palette_count, const ff::dxgi::texture_view_base** in_textures_using_palette,
+            size_t texture_count, ff::dxgi::texture_view_base** in_textures,
+            size_t textures_using_palette_count, ff::dxgi::texture_view_base** in_textures_using_palette,
             ff::dxgi::texture_base& palette_texture, ff::dxgi::texture_base& palette_remap_texture) override
         {
             ff::dx11::device_state& state = ff::dx11::device_state::get(context);
@@ -400,7 +399,7 @@ namespace
             std::array<ID3D11Buffer*, 1> buffers_ps = { this->pixel_constants_buffer_0_.dx_buffer() };
             state.set_constants_ps(buffers_ps.data(), 0, buffers_ps.size());
 
-            std::array<ID3D11SamplerState*, 1> sample_states = { linear_sampler ? this->sampler_state_linear.Get() : this->sampler_state_point.Get() };
+            std::array<ID3D11SamplerState*, 1> sample_states = { this->linear_sampler() ? this->sampler_state_linear.Get() : this->sampler_state_point.Get() };
             state.set_samplers_ps(sample_states.data(), 0, sample_states.size());
 
             if (texture_count)
@@ -425,7 +424,7 @@ namespace
                 state.set_resources_ps(textures_using_palette.data(), ff::dxgi::draw_util::MAX_TEXTURES, textures_using_palette_count);
             }
 
-            if (textures_using_palette_count || target_requires_palette)
+            if (textures_using_palette_count || this->target_requires_palette())
             {
                 std::array<ID3D11ShaderResourceView*, 2> palettes =
                 {
@@ -443,16 +442,16 @@ namespace
             this->opaque_state.apply();
         }
 
-        virtual void apply_alpha_state(ff::dxgi::command_context_base& context, bool pre_multiplied_alpha) override
+        virtual void apply_alpha_state(ff::dxgi::command_context_base& context) override
         {
             ff::dx11::device_state::get(context).set_topology_ia(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-            ff::dx11::fixed_state& alpha_state = pre_multiplied_alpha ? this->pre_multiplied_alpha_state : this->alpha_state;
+            ff::dx11::fixed_state& alpha_state = this->pre_multiplied_alpha() ? this->pre_multiplied_alpha_state : this->alpha_state;
             alpha_state.apply();
         }
 
-        virtual void apply_geometry_buffer(ff::dxgi::command_context_base& context, ff::dxgi::draw_util::geometry_bucket_type bucket_type, ff::dxgi::buffer_base& geometry_buffer, bool target_requires_palette) override
+        virtual void apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
         {
-            this->get_geometry_bucket_shaders(bucket_type).apply(context, geometry_buffer, target_requires_palette);
+            this->get_geometry_bucket_shaders(bucket.bucket_type()).apply(context, this->geometry_buffer_, this->target_requires_palette());
         }
 
         virtual ff::dxgi::buffer_base& geometry_buffer() override
@@ -473,6 +472,11 @@ namespace
         virtual ff::dxgi::buffer_base& pixel_constants_buffer_0() override
         {
             return this->pixel_constants_buffer_0_;
+        }
+
+        virtual bool flush_for_sampler_change() const override
+        {
+            return true;
         }
 
         virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) override

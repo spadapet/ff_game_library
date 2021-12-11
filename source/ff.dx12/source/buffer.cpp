@@ -6,7 +6,7 @@
 #include "resource.h"
 
 ff::dx12::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data)
-    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, initial_data, {})
+    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, 0, initial_data, {})
 {}
 
 ff::dx12::buffer::buffer(
@@ -14,12 +14,14 @@ ff::dx12::buffer::buffer(
     ff::dxgi::buffer_type type,
     const void* data,
     uint64_t data_size,
+    size_t version,
     std::shared_ptr<ff::data_base> initial_data,
     std::unique_ptr<std::vector<uint8_t>> mapped_mem)
     : initial_data(initial_data)
     , mapped_mem(std::move(mapped_mem))
     , mapped_context(nullptr)
     , type_(type)
+    , version_(version ? version : 1)
 {
     if (data && data_size)
     {
@@ -47,12 +49,32 @@ const ff::dx12::buffer& ff::dx12::buffer::get(const ff::dxgi::buffer_base& obj)
 
 ff::dx12::buffer::operator bool() const
 {
-    return true;
+    return this->resource_ != nullptr;
 }
 
 ff::dx12::resource* ff::dx12::buffer::resource()
 {
     return this->resource_.get();
+}
+
+D3D12_VERTEX_BUFFER_VIEW ff::dx12::buffer::vertex_view(size_t vertex_stride, size_t start_vertex, size_t vertex_count) const
+{
+    D3D12_VERTEX_BUFFER_VIEW view;
+    view.BufferLocation = this->gpu_address() + (start_vertex * vertex_stride);
+    view.StrideInBytes = static_cast<UINT>(vertex_stride);
+    view.SizeInBytes = static_cast<UINT>(vertex_stride * (vertex_count ? vertex_count : (this->size() / vertex_stride) - start_vertex));
+
+    return view;
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer::gpu_address() const
+{
+    return this->resource_->gpu_address();
+}
+
+size_t ff::dx12::buffer::version() const
+{
+    return this->version_;
 }
 
 ff::dxgi::buffer_type ff::dx12::buffer::type() const
@@ -62,11 +84,7 @@ ff::dxgi::buffer_type ff::dx12::buffer::type() const
 
 size_t ff::dx12::buffer::size() const
 {
-    return this->resource_
-        ? static_cast<size_t>(this->resource_->mem_range()
-            ? this->resource_->mem_range()->size()
-            : this->resource_->alloc_info().SizeInBytes)
-        : 0;
+    return this->resource_ ? static_cast<size_t>(this->resource_->desc().Width) : 0;
 }
 
 bool ff::dx12::buffer::writable() const
@@ -76,7 +94,7 @@ bool ff::dx12::buffer::writable() const
 
 bool ff::dx12::buffer::update(ff::dxgi::command_context_base& context, const void* data, size_t data_size, size_t min_buffer_size)
 {
-    *this = ff::dx12::buffer(&ff::dx12::commands::get(context), this->type_, data, data_size, this->initial_data, std::move(this->mapped_mem));
+    *this = ff::dx12::buffer(&ff::dx12::commands::get(context), this->type_, data, data_size, this->version_ + 1, this->initial_data, std::move(this->mapped_mem));
     return true;
 }
 
@@ -109,7 +127,7 @@ void ff::dx12::buffer::unmap()
         ff::dx12::commands& commands = ff::dx12::commands::get(*this->mapped_context);
         const void* data = this->mapped_mem->data();
         uint64_t data_size = this->mapped_mem->size();
-        *this = ff::dx12::buffer(&commands, this->type_, data, data_size, this->initial_data, std::move(this->mapped_mem));
+        *this = ff::dx12::buffer(&commands, this->type_, data, data_size, this->version_ + 1, this->initial_data, std::move(this->mapped_mem));
     }
 }
 
@@ -117,7 +135,7 @@ bool ff::dx12::buffer::reset()
 {
     *this = ff::dx12::buffer(nullptr, this->type_,
         this->initial_data ? this->initial_data->data() : nullptr,
-        this->initial_data ? this->initial_data->size() : 0,
+        this->initial_data ? this->initial_data->size() : 0, this->version_ + 1,
         this->initial_data, std::move(this->mapped_mem));
 
     return *this;

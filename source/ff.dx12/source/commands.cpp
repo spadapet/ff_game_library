@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "access.h"
+#include "buffer.h"
 #include "commands.h"
 #include "depth.h"
 #include "descriptor_allocator.h"
@@ -15,15 +16,14 @@
 #include "target_access.h"
 
 ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache, ID3D12PipelineStateX* initial_state)
-    : queue_(&queue)
+    : type_(data_cache.list->GetType())
+    , queue_(&queue)
     , data_cache(std::move(data_cache))
-    , state_(initial_state)
+    , pipeline_state_(initial_state)
 {
-    ID3D12GraphicsCommandListX* list = this->data_cache.list.Get();
+    this->list(false)->Reset(this->data_cache.allocator.Get(), this->pipeline_state_.Get());
 
-    list->Reset(this->data_cache.allocator.Get(), this->state_.Get());
-
-    if (list->GetType() != D3D12_COMMAND_LIST_TYPE_COPY)
+    if (this->type_ != D3D12_COMMAND_LIST_TYPE_COPY)
     {
         ID3D12DescriptorHeap* heaps[2] =
         {
@@ -31,7 +31,7 @@ ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_ca
             ff::dx12::get_descriptor_heap(ff::dx12::gpu_sampler_descriptors()),
         };
 
-        list->SetDescriptorHeaps(2, heaps);
+        this->list(false)->SetDescriptorHeaps(2, heaps);
     }
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::commands);
@@ -74,23 +74,11 @@ ff::dx12::fence_value ff::dx12::commands::next_fence_value()
     return this->data_cache.fence->next_value();
 }
 
-void ff::dx12::commands::state(ID3D12PipelineStateX* state)
-{
-    if (this->state_.Get() != state)
-    {
-        this->state_ = state;
-        this->data_cache.list->SetPipelineState(state);
-    }
-}
-
 void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)
 {
     wait_before_execute.add(this->wait_before_execute);
     this->wait_before_execute.clear();
-
-    ID3D12GraphicsCommandListX* list = this->data_cache.list.Get();
-    this->tracker()->flush(list);
-    list->Close();
+    this->list()->Close();
 
     ID3D12GraphicsCommandListX* list_before = this->data_cache.list_before.Get();
     list_before->Reset(this->data_cache.allocator.Get(), nullptr);
@@ -105,14 +93,201 @@ ff::dx12::commands::data_cache_t ff::dx12::commands::close()
 {
     this->data_cache.resource_tracker->reset();
     this->wait_before_execute.clear();
-    this->state_.Reset();
+    this->pipeline_state_.Reset();
+    this->root_signature_.Reset();
 
     return data_cache_t(std::move(this->data_cache));
 }
 
+void ff::dx12::commands::pipeline_state(ID3D12PipelineStateX* state)
+{
+    if (this->pipeline_state_.Get() != state)
+    {
+        this->pipeline_state_ = state;
+        this->list(false)->SetPipelineState(state);
+    }
+}
+
+void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state)
+{
+    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state);
+}
+
+void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index)
+{
+    std::div_t dr = std::div(static_cast<int>(sub_index), static_cast<int>(resource.mip_size()));
+    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state,
+        static_cast<size_t>(dr.quot), 1, static_cast<size_t>(dr.rem), 1);
+}
+
+void ff::dx12::commands::root_signature(ID3D12RootSignature* signature)
+{
+    if (this->root_signature_.Get() != signature)
+    {
+        this->root_signature_ = signature;
+
+        if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+        {
+            this->list(false)->SetComputeRootSignature(signature);
+        }
+        else
+        {
+            this->list(false)->SetGraphicsRootSignature(signature);
+        }
+    }
+}
+
+void ff::dx12::commands::root_descriptors(size_t index, D3D12_GPU_DESCRIPTOR_HANDLE base_descriptor)
+{
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list(false)->SetComputeRootDescriptorTable(static_cast<UINT>(index), base_descriptor);
+    }
+    else
+    {
+        this->list(false)->SetGraphicsRootDescriptorTable(static_cast<UINT>(index), base_descriptor);
+    }
+}
+
+void ff::dx12::commands::root_constant(size_t index, uint32_t data, size_t data_index)
+{
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list(false)->SetComputeRoot32BitConstant(static_cast<UINT>(index), data, static_cast<UINT>(data_index));
+    }
+    else
+    {
+        this->list(false)->SetGraphicsRoot32BitConstant(static_cast<UINT>(index), data, static_cast<UINT>(data_index));
+    }
+}
+
+void ff::dx12::commands::root_constants(size_t index, const void* data, size_t size, size_t data_index)
+{
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list(false)->SetComputeRoot32BitConstants(static_cast<UINT>(index), static_cast<UINT>(size / 4), data, static_cast<UINT>(data_index));
+    }
+    else
+    {
+        this->list(false)->SetGraphicsRoot32BitConstants(static_cast<UINT>(index), static_cast<UINT>(size / 4), data, static_cast<UINT>(data_index));
+    }
+}
+
+void ff::dx12::commands::root_cbv(size_t index, ff::dx12::buffer& buffer, size_t offset)
+{
+    if (buffer)
+    {
+        this->root_cbv(index, *buffer.resource(), buffer.gpu_address() + offset);
+    }
+}
+
+void ff::dx12::commands::root_cbv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data)
+{
+    this->resource_state(resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list()->SetComputeRootConstantBufferView(static_cast<UINT>(index), data);
+    }
+    else
+    {
+        this->list()->SetGraphicsRootConstantBufferView(static_cast<UINT>(index), data);
+    }
+}
+
+void ff::dx12::commands::root_srv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data, bool ps_access, bool non_ps_access)
+{
+    this->resource_state(resource, static_cast<D3D12_RESOURCE_STATES>(
+        (ps_access ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : 0),
+        ((non_ps_access || !ps_access) ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : 0)));
+
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list()->SetComputeRootShaderResourceView(static_cast<UINT>(index), data);
+    }
+    else
+    {
+        this->list()->SetGraphicsRootShaderResourceView(static_cast<UINT>(index), data);
+    }
+}
+
+void ff::dx12::commands::root_uav(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data)
+{
+    this->resource_state(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+    {
+        this->list()->SetComputeRootUnorderedAccessView(static_cast<UINT>(index), data);
+    }
+    else
+    {
+        this->list()->SetGraphicsRootUnorderedAccessView(static_cast<UINT>(index), data);
+    }
+}
+
+void ff::dx12::commands::targets(ff::dxgi::target_base* targets, size_t count, ff::dxgi::depth_base* depth)
+{
+    ff::stack_vector<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> target_views;
+    for (size_t i = 0; i < count; i++)
+    {
+        ff::dx12::target_access& access = ff::dx12::target_access::get(targets[i]);
+        this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+        target_views.push_back(access.dx12_target_view());
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE depth_view = depth ? ff::dx12::depth::get(*depth).view() : D3D12_CPU_DESCRIPTOR_HANDLE{};
+    this->list()->OMSetRenderTargets(static_cast<UINT>(count), target_views.data(), FALSE, depth ? &depth_view : nullptr);
+}
+
+void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count)
+{
+    static D3D12_RECT scissor_rects[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] =
+    {
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+        D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
+    };
+
+    this->list(false)->RSSetViewports(static_cast<UINT>(count), viewports);
+    this->list(false)->RSSetScissorRects(static_cast<UINT>(count), scissor_rects);
+}
+
+void ff::dx12::commands::vertex_buffers(ff::dx12::resource* resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
+{
+    for (size_t i = 0; i < count; i++)
+    {
+        this->resource_state(resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    }
+
+    this->list()->IASetVertexBuffers(static_cast<UINT>(start), static_cast<UINT>(count), views);
+}
+
+void ff::dx12::commands::primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology)
+{
+    this->list(false)->IASetPrimitiveTopology(topology);
+}
+
+void ff::dx12::commands::draw(size_t start, size_t count)
+{
+    this->list()->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(start), 0);
+}
+
 void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value)
 {
-    this->prepare_state(*depth.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    this->resource_state(*depth.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     this->list()->ClearDepthStencilView(depth.view(),
         (depth_value ? D3D12_CLEAR_FLAG_DEPTH : static_cast<D3D12_CLEAR_FLAGS>(0)) | (stencil_value ? D3D12_CLEAR_FLAG_STENCIL : static_cast<D3D12_CLEAR_FLAGS>(0)),
@@ -123,29 +298,29 @@ void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_
 
 void ff::dx12::commands::discard(const ff::dx12::depth& depth)
 {
-    this->prepare_state(*depth.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    this->resource_state(*depth.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
     this->list()->DiscardResource(ff::dx12::get_resource(*depth.resource()), nullptr);
 }
 
 void ff::dx12::commands::clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color)
 {
     ff::dx12::target_access& access = ff::dx12::target_access::get(target);
-    this->prepare_state(access.target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    this->list()->ClearRenderTargetView(access.target_view(), static_cast<const float*>(&color.x), 0, nullptr);
+    this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    this->list()->ClearRenderTargetView(access.dx12_target_view(), static_cast<const float*>(&color.x), 0, nullptr);
 }
 
 void ff::dx12::commands::discard(ff::dxgi::target_base& target)
 {
     ff::dx12::target_access& access = ff::dx12::target_access::get(target);
-    this->prepare_state(access.target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    this->list()->DiscardResource(ff::dx12::get_resource(access.target_texture()), nullptr);
+    this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    this->list()->DiscardResource(ff::dx12::get_resource(access.dx12_target_texture()), nullptr);
 }
 
 void ff::dx12::commands::update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source)
 {
     assert(source.heap() && source.heap()->cpu_usage());
 
-    this->prepare_state(dest, D3D12_RESOURCE_STATE_COPY_DEST);
+    this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST);
     this->list()->CopyBufferRegion(ff::dx12::get_resource(dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
 }
 
@@ -153,7 +328,7 @@ void ff::dx12::commands::readback_buffer(const ff::dx12::mem_range& dest, ff::dx
 {
     assert(dest.heap() && dest.heap()->cpu_usage());
 
-    this->prepare_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    this->resource_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE);
     this->list()->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(source), source_offset, dest.size());
 }
 
@@ -161,7 +336,7 @@ void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_su
 {
     assert(source.cpu_data());
 
-    this->prepare_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
+    this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
 
     D3D12_TEXTURE_COPY_LOCATION source_location;
     source_location.pResource = ff::dx12::get_resource(*source.heap());
@@ -178,7 +353,7 @@ void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const
 {
     assert(dest.cpu_data());
 
-    this->prepare_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
+    this->resource_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
 
     const D3D12_BOX source_box
     {
@@ -202,15 +377,15 @@ void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const
 
 void ff::dx12::commands::copy_resource(ff::dx12::resource& dest_resource, ff::dx12::resource& source_resource)
 {
-    this->prepare_state(dest_resource, D3D12_RESOURCE_STATE_COPY_DEST);
-    this->prepare_state(source_resource, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    this->resource_state(dest_resource, D3D12_RESOURCE_STATE_COPY_DEST);
+    this->resource_state(source_resource, D3D12_RESOURCE_STATE_COPY_SOURCE);
     this->list()->CopyResource(ff::dx12::get_resource(dest_resource), ff::dx12::get_resource(source_resource));
 }
 
 void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
-    this->prepare_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
-    this->prepare_state(source, D3D12_RESOURCE_STATE_COPY_DEST, source_sub_index);
+    this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
+    this->resource_state(source, D3D12_RESOURCE_STATE_COPY_DEST, source_sub_index);
 
     const D3D12_BOX source_box
     {
@@ -228,28 +403,21 @@ void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_
         &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index)), &source_box);
 }
 
-ID3D12GraphicsCommandListX* ff::dx12::commands::list() const
+ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) const
 {
     ID3D12GraphicsCommandListX* list = this->data_cache.list.Get();
-    this->data_cache.resource_tracker->flush(list);
+
+    if (flush_resource_state)
+    {
+        this->data_cache.resource_tracker->flush(list);
+    }
+
     return list;
 }
 
 ff::dx12::resource_tracker* ff::dx12::commands::tracker() const
 {
     return this->data_cache.resource_tracker.get();
-}
-
-void ff::dx12::commands::prepare_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state)
-{
-    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state);
-}
-
-void ff::dx12::commands::prepare_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index)
-{
-    std::div_t dr = std::div(static_cast<int>(sub_index), static_cast<int>(resource.mip_size()));
-    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state,
-        static_cast<size_t>(dr.quot), 1, static_cast<size_t>(dr.rem), 1);
 }
 
 void ff::dx12::commands::before_reset()

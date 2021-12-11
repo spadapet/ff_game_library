@@ -14,15 +14,6 @@ static bool allow_promotion(ff::dx12::resource& resource, ff::dx12::resource_sta
         if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER || (desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS) != 0)
         {
             allowed_read_states =
-                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE |
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
-                D3D12_RESOURCE_STATE_COPY_SOURCE;
-
-            allowed_write_states = D3D12_RESOURCE_STATE_COPY_DEST;
-        }
-        else
-        {
-            allowed_read_states =
                 D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER |
                 D3D12_RESOURCE_STATE_INDEX_BUFFER |
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE |
@@ -38,6 +29,15 @@ static bool allow_promotion(ff::dx12::resource& resource, ff::dx12::resource_sta
                 D3D12_RESOURCE_STATE_RESOLVE_DEST |
                 D3D12_RESOURCE_STATE_RESOLVE_SOURCE |
                 D3D12_RESOURCE_STATE_PREDICATION;
+        }
+        else
+        {
+            allowed_read_states =
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE |
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
+                D3D12_RESOURCE_STATE_COPY_SOURCE;
+
+            allowed_write_states = D3D12_RESOURCE_STATE_COPY_DEST;
         }
 
         if ((state_after & allowed_read_states) == state_after)

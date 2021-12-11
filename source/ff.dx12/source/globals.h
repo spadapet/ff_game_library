@@ -8,6 +8,7 @@ namespace ff::dx12
     class gpu_descriptor_allocator;
     class mem_allocator;
     class mem_allocator_ring;
+    class object_cache;
     class queue;
     class resource;
     enum class device_reset_priority;
@@ -19,6 +20,7 @@ namespace ff::dx12
     IDXGIFactoryX* factory();
     IDXGIAdapterX* adapter();
     ID3D12DeviceX* device();
+    ff::dx12::object_cache& get_object_cache();
 
     size_t frame_count();
     void frame_complete();

@@ -20,6 +20,9 @@ namespace ff::dx12
         operator bool() const;
 
         ff::dx12::resource* resource();
+        D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, size_t start_vertex = 0, size_t vertex_count = 0) const;
+        D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
+        size_t version() const;
 
         // buffer_base
         virtual ff::dxgi::buffer_type type() const override;
@@ -35,6 +38,7 @@ namespace ff::dx12
             ff::dxgi::buffer_type type,
             const void* data,
             uint64_t data_size,
+            size_t version,
             std::shared_ptr<ff::data_base> initial_data,
             std::unique_ptr<std::vector<uint8_t>> mapped_mem);
 
@@ -46,5 +50,6 @@ namespace ff::dx12
         std::unique_ptr<std::vector<uint8_t>> mapped_mem;
         ff::dxgi::command_context_base* mapped_context;
         ff::dxgi::buffer_type type_;
+        size_t version_;
     };
 }

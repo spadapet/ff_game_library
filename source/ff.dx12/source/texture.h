@@ -16,6 +16,7 @@ namespace ff::dx12
         texture(const texture& other) = delete;
         virtual ~texture() override;
 
+        static texture& get(ff::dxgi::texture_base& other);
         texture& operator=(texture&& other) noexcept;
         texture& operator=(const texture& other) = delete;
         operator bool() const;
@@ -35,8 +36,8 @@ namespace ff::dx12
         virtual DXGI_FORMAT format() const override;
 
         // texture_view_base
-        virtual const ff::dxgi::texture_view_access_base& view_access() const override;
-        virtual const ff::dxgi::texture_base* view_texture() const override;
+        virtual ff::dxgi::texture_view_access_base& view_access() override;
+        virtual ff::dxgi::texture_base* view_texture() override;
 
         // texture_view_access
         virtual D3D12_CPU_DESCRIPTOR_HANDLE dx12_texture_view() const override;

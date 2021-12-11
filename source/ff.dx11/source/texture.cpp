@@ -285,12 +285,12 @@ bool ff::dx11::texture::reset()
     return *this;
 }
 
-const ff::dxgi::texture_view_access_base& ff::dx11::texture::view_access() const
+ff::dxgi::texture_view_access_base& ff::dx11::texture::view_access()
 {
     return *this;
 }
 
-const ff::dxgi::texture_base* ff::dx11::texture::view_texture() const
+ff::dxgi::texture_base* ff::dx11::texture::view_texture()
 {
     return this;
 }

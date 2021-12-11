@@ -123,11 +123,11 @@ namespace ff::dxgi::draw_util
 
     struct geometry_shader_constants_0
     {
+        static const size_t DWORD_COUNT = 18; // don't include padding
+
         DirectX::XMFLOAT4X4 projection;
-        ff::point_float view_size;
         ff::point_float view_scale;
-        float z_offset;
-        float padding[3];
+        float padding[2];
     };
 
     struct geometry_shader_constants_1
@@ -210,31 +210,34 @@ namespace ff::dxgi::draw_util
 
         virtual void internal_destroy() = 0;
         virtual void internal_reset() = 0;
-        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base& context, bool end_draw) = 0;
+        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
         virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) = 0;
 
         virtual ff::dxgi::buffer_base& geometry_buffer() = 0;
         virtual ff::dxgi::buffer_base& geometry_constants_buffer_0() = 0;
         virtual ff::dxgi::buffer_base& geometry_constants_buffer_1() = 0;
         virtual ff::dxgi::buffer_base& pixel_constants_buffer_0() = 0;
+        virtual bool flush_for_sampler_change() const = 0;
 
         virtual void update_palette_texture(ff::dxgi::command_context_base& context,
-            bool target_requires_palette, size_t textures_using_palette_count,
+            size_t textures_using_palette_count,
             ff::dxgi::texture_base& palette_texture, size_t* palette_texture_hashes, palette_to_index_t& palette_to_index,
             ff::dxgi::texture_base& palette_remap_texture, size_t* palette_remap_texture_hashes, palette_remap_to_index_t& palette_remap_to_index) = 0;
         virtual void apply_shader_input(ff::dxgi::command_context_base& context,
-            bool target_requires_palette, bool linear_sampler,
-            size_t texture_count, const ff::dxgi::texture_view_base** textures,
-            size_t textures_using_palette_count, const ff::dxgi::texture_view_base** textures_using_palette,
+            size_t texture_count, ff::dxgi::texture_view_base** textures,
+            size_t textures_using_palette_count, ff::dxgi::texture_view_base** textures_using_palette,
             ff::dxgi::texture_base& palette_texture, ff::dxgi::texture_base& palette_remap_texture) = 0;
         virtual void apply_opaque_state(ff::dxgi::command_context_base& context) = 0;
-        virtual void apply_alpha_state(ff::dxgi::command_context_base& context, bool force_pre_multiplied_alpha) = 0;
-        virtual void apply_geometry_buffer(ff::dxgi::command_context_base& context, ff::dxgi::draw_util::geometry_bucket_type bucket_type, ff::dxgi::buffer_base& geometry_buffer, bool target_requires_palette) = 0;
+        virtual void apply_alpha_state(ff::dxgi::command_context_base& context) = 0;
+        virtual void apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) = 0;
         virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) = 0;
         virtual void draw(ff::dxgi::command_context_base& context, size_t count, size_t start) = 0;
 
         ff::dxgi::device_child_base* as_device_child();
         bool internal_valid() const;
+        bool linear_sampler() const;
+        bool target_requires_palette() const;
+        bool pre_multiplied_alpha() const;
         ff::dxgi::draw_ptr internal_begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options);
 
     private:
@@ -247,10 +250,10 @@ namespace ff::dxgi::draw_util
 
         void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack);
         void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);
-        void init_geometry_constant_buffers_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect);
-        void update_geometry_constant_buffers_0();
-        void update_geometry_constant_buffers_1();
-        void update_pixel_constant_buffers_0();
+        void init_geometry_constant_buffer_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect);
+        void update_geometry_constant_buffer_0();
+        void update_geometry_constant_buffer_1();
+        void update_pixel_constant_buffer_0();
         bool create_geometry_buffer();
         void draw_opaque_geometry();
         void draw_alpha_geometry();
@@ -258,11 +261,11 @@ namespace ff::dxgi::draw_util
 
         unsigned int get_world_matrix_index();
         unsigned int get_world_matrix_index_no_flush();
-        unsigned int get_texture_index_no_flush(const ff::dxgi::texture_view_base& texture_view, bool use_palette);
+        unsigned int get_texture_index_no_flush(ff::dxgi::texture_view_base& texture_view, bool use_palette);
         unsigned int get_palette_index_no_flush();
         unsigned int get_palette_remap_index_no_flush();
         int remap_palette_index(int color) const;
-        void get_world_matrix_and_texture_index(const ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index);
+        void get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index);
         void get_world_matrix_and_texture_indexes(ff::dxgi::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index);
 
         void* add_geometry(const void* data, ff::dxgi::draw_util::geometry_bucket_type bucket_type, float depth);
@@ -298,13 +301,13 @@ namespace ff::dxgi::draw_util
         unsigned int world_matrix_index;
 
         // Textures
-        std::array<const ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES> textures;
-        std::array<const ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
+        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES> textures;
+        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
         size_t texture_count;
         size_t textures_using_palette_count;
 
         // Palettes
-        bool target_requires_palette;
+        bool target_requires_palette_;
 
         std::vector<ff::dxgi::palette_base*> palette_stack;
         std::shared_ptr<ff::dxgi::texture_base> palette_texture;

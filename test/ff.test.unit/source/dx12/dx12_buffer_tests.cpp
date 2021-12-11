@@ -13,7 +13,7 @@ namespace ff::test::dx12
 
             Assert::IsTrue(buffer);
             Assert::IsTrue(buffer.writable());
-            Assert::AreEqual<size_t>(65536, buffer.size());
+            Assert::AreEqual<size_t>(16, buffer.size());
             Assert::IsTrue(buffer.type() == ff::dxgi::buffer_type::index);
 
             std::vector<uint8_t> ints2 = buffer.resource()->capture_buffer(nullptr, 0, ff::array_byte_size(ints));
@@ -26,7 +26,7 @@ namespace ff::test::dx12
             const std::array<int, 4> ints{ 1, 2, 3, 4 };
             ff::dx12::buffer buffer(ff::dxgi::buffer_type::index);
 
-            Assert::IsTrue(buffer);
+            Assert::IsFalse(buffer);
             Assert::IsTrue(buffer.writable());
             Assert::AreEqual<size_t>(0, buffer.size());
             Assert::IsTrue(buffer.type() == ff::dxgi::buffer_type::index);
@@ -39,7 +39,8 @@ namespace ff::test::dx12
                 buffer.unmap();
             }
 
-            Assert::AreEqual<size_t>(65536, buffer.size());
+            Assert::IsTrue(buffer);
+            Assert::AreEqual<size_t>(16, buffer.size());
 
             std::vector<uint8_t> ints2 = buffer.resource()->capture_buffer(nullptr, 0, ff::array_byte_size(ints));
             Assert::AreEqual<size_t>(ff::array_byte_size(ints), ff::vector_byte_size(ints2));

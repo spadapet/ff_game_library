@@ -8,8 +8,6 @@
 #include "resource.h"
 #include "texture_util.h"
 
-static const DXGI_FORMAT DEPTH_STENCIL_FORMAT = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
 ff::dx12::depth::depth(size_t sample_count)
     : depth(ff::point_size(1, 1), sample_count)
 {}
@@ -17,15 +15,15 @@ ff::dx12::depth::depth(size_t sample_count)
 ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
     : view_(ff::dx12::cpu_depth_descriptors().alloc_range(1))
 {
-    D3D12_CLEAR_VALUE clear_value{ ::DEPTH_STENCIL_FORMAT };
+    D3D12_CLEAR_VALUE clear_value{ ff::dx12::depth::FORMAT };
 
     this->resource_ = std::make_unique<ff::dx12::resource>(
         CD3DX12_RESOURCE_DESC::Tex2D(
-            ::DEPTH_STENCIL_FORMAT,
+            ff::dx12::depth::FORMAT,
             static_cast<UINT64>(std::max<size_t>(size.x, 1)),
             static_cast<UINT>(std::max<size_t>(size.y, 1)),
             1, 1, // array, mips
-            static_cast<UINT>(ff::dx12::fix_sample_count(::DEPTH_STENCIL_FORMAT, sample_count)), 0,
+            static_cast<UINT>(ff::dx12::fix_sample_count(ff::dx12::depth::FORMAT, sample_count)), 0,
             D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         clear_value);
 
@@ -65,17 +63,7 @@ bool ff::dx12::depth::size(const ff::point_size& size)
 {
     if (this->size() != size)
     {
-        this->view_.free_range();
-        this->resource_.reset();
-
-        ff::dx12::depth new_depth(size, this->sample_count());
-        if (!new_depth)
-        {
-            assert(false);
-            return false;
-        }
-
-        *this = std::move(new_depth);
+        *this = ff::dx12::depth(size, this->sample_count());
     }
 
     return true;

@@ -63,12 +63,12 @@ bool ff::dx12::texture_view::reset()
     return *this;
 }
 
-const ff::dxgi::texture_view_access_base& ff::dx12::texture_view::view_access() const
+ff::dxgi::texture_view_access_base& ff::dx12::texture_view::view_access()
 {
     return *this;
 }
 
-const ff::dxgi::texture_base* ff::dx12::texture_view::view_texture() const
+ff::dxgi::texture_base* ff::dx12::texture_view::view_texture()
 {
     return this->texture_.get();
 }

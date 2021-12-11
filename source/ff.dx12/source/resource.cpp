@@ -67,16 +67,20 @@ ff::dx12::resource::resource(
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0 && desc.MipLevels * desc.DepthOrArraySize > 0);
 
+    bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+    bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
+
+    if (target && this->optimized_clear_value.Format == DXGI_FORMAT_UNKNOWN)
+    {
+        this->optimized_clear_value = { desc.Format };
+    }
+
     if (allocate_mem_range)
     {
         if (!mem_range || ff::math::align_up(mem_range->start(), this->alloc_info_.Alignment) != mem_range->start() || mem_range->size() < this->alloc_info_.SizeInBytes)
         {
-            bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-            ff::dx12::mem_allocator& allocator = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
-                ? ff::dx12::static_buffer_allocator()
-                : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
-            this->mem_range_ = std::make_shared<ff::dx12::mem_range>(
-                allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
+            ff::dx12::mem_allocator& allocator = buffer ? ff::dx12::static_buffer_allocator() : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
+            this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
         }
     }
     else
@@ -131,6 +135,11 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
 ff::dx12::resource::operator bool() const
 {
     return this->resource_ != nullptr;
+}
+
+const D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::resource::gpu_address() const
+{
+    return *this ? this->resource_->GetGPUVirtualAddress() : 0;
 }
 
 const std::shared_ptr<ff::dx12::mem_range>& ff::dx12::resource::mem_range() const

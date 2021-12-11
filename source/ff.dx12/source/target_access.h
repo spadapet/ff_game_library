@@ -9,7 +9,7 @@ namespace ff::dx12
     public:
         static target_access& get(ff::dxgi::target_base& obj);
 
-        virtual ff::dx12::resource& target_texture() = 0;
-        virtual D3D12_CPU_DESCRIPTOR_HANDLE target_view() = 0;
+        virtual ff::dx12::resource& dx12_target_texture() = 0;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE dx12_target_view() = 0;
     };
 }
