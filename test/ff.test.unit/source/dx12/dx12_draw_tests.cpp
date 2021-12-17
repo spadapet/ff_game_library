@@ -21,17 +21,12 @@ namespace ff::test::dx12
 
         TEST_METHOD(draw_shapes)
         {
-            auto result = ff::test::create_resources(R"(
-                {
-                    "sprites": { "res:type": "sprites", "optimize": false, "format": "bc3", "mips": "1",
-                        "sprites": {
-                            "box": { "file": "file:test_texture.png", "pos": [ 0, 0 ], "size": [ 32, 32 ], "handle": [ 16, 16 ], "repeat": 8 }
-                        }
-                    }
-                }
-            )");
-            auto& res = std::get<0>(result);
-            auto& temp_path = std::get<1>(result);
+            std::unique_ptr<ff::dx12::texture> test_texture;
+            {
+                ff::data_static texture_mem(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_TEXTURE));
+                ff::png_image_reader png(texture_mem.data(), texture_mem.size());
+                test_texture = std::make_unique<ff::dx12::texture>(std::make_shared<DirectX::ScratchImage>(std::move(*png.read())));
+            }
 
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
@@ -51,14 +46,18 @@ namespace ff::test::dx12
                     DirectX::XMFLOAT4(1, 1, 1, 1),
                 };
 
+                ff::dxgi::sprite_data test_sprite(test_texture.get(), ff::rect_float(0, 0, 32, 32), ff::point_float(16, 16), ff::point_float(1, 1), ff::dxgi::sprite_type::opaque);
+
                 draw->draw_filled_rectangle(ff::rect_float(32, 32, 224, 224), rectangle_colors.data());
+                draw->draw_sprite(test_sprite, ff::dxgi::pixel_transform(ff::point_fixed(40, 40)));
+                draw->draw_sprite(test_sprite, ff::dxgi::pixel_transform(ff::point_fixed(216, 216), ff::point_fixed(1, 1), 30));
                 draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::dxgi::color_yellow(), 4);
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
             target.post_render(ff::dx12::direct_queue().new_commands());
 
-            std::filesystem::path file_path = temp_path / "dx12_draw_shapes_test.png";
+            std::filesystem::path file_path = ff::filesystem::temp_directory_path() / "dx12_draw_shapes_test.png";
             {
                 ff::file_writer file_writer(file_path);
                 ff::png_image_writer png(file_writer);

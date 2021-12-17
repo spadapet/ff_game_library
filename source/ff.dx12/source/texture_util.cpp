@@ -60,6 +60,7 @@ void ff::dx12::create_shader_view(const ff::dx12::resource* resource, D3D12_CPU_
     D3D12_SHADER_RESOURCE_VIEW_DESC view_desc{};
     view_desc.Format = texture_desc.Format;
     view_desc.ViewDimension = ff::dx12::default_shader_dimension(texture_desc);
+    view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     switch (view_desc.ViewDimension)
     {

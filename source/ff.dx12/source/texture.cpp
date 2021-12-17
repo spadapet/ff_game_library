@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "descriptor_allocator.h"
 #include "device_reset_priority.h"
 #include "globals.h"
 #include "resource.h"
@@ -304,6 +305,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::texture::dx12_texture_view() const
 {
     if (!this->view_)
     {
+        this->view_ = ff::dx12::cpu_buffer_descriptors().alloc_range(1);
         ff::dx12::create_shader_view(this->resource(), this->view_.cpu_handle(0));
     }
 

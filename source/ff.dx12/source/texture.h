@@ -53,8 +53,8 @@ namespace ff::dx12
         virtual bool reset() override;
 
         mutable std::unique_ptr<ff::dx12::resource> resource_;
+        mutable ff::dx12::descriptor_range view_;
         std::shared_ptr<DirectX::ScratchImage> data_;
-        ff::dx12::descriptor_range view_;
         ff::dxgi::sprite_type sprite_type_;
     };
 }

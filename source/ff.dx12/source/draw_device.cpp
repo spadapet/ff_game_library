@@ -307,10 +307,10 @@ namespace
             // Create root signature
             {
                 CD3DX12_DESCRIPTOR_RANGE1 textures_range;
-                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 using_palette_textures;
-                using_palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 32, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+                using_palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 32, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures;
                 palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 64, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
