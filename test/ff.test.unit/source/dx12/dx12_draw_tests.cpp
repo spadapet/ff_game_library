@@ -30,7 +30,7 @@ namespace ff::test::dx12
 
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
-            target.pre_render(ff::dx12::direct_queue().new_commands(), &clear_color);
+            target.pre_render(&clear_color);
 
             // Draw
             {
@@ -55,7 +55,7 @@ namespace ff::test::dx12
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target.post_render(ff::dx12::direct_queue().new_commands());
+            target.present();
 
             std::filesystem::path file_path = ff::filesystem::temp_directory_path() / "dx12_draw_shapes_test.png";
             {

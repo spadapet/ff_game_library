@@ -77,8 +77,8 @@
     <ProjectReference Include="..\ff.data\ff.data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\ff.dx11\ff.dx11.vcxproj">
-      <Project>{52341559-1659-489d-82a8-f81b7aba39ed}</Project>
+    <ProjectReference Include="..\ff.dx12\ff.dx12.vcxproj">
+      <Project>{8670e093-edd1-451e-868e-acffb7258759}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.dxgi\ff.dxgi.vcxproj">
       <Project>{a4ea1e4f-874e-4d9a-8ce1-5483c5c8c33e}</Project>

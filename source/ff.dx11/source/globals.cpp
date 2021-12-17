@@ -301,6 +301,10 @@ void ff::dx11::trim()
     }
 }
 
+void ff::dx11::wait_for_idle()
+{
+}
+
 IDXGIFactoryX* ff::dx11::factory()
 {
     return ::factory.Get();

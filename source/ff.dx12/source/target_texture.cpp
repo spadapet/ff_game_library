@@ -6,6 +6,7 @@
 #include "target_texture.h"
 #include "texture.h"
 #include "texture_util.h"
+#include "queue.h"
 
 ff::dx12::target_texture::target_texture(
     const std::shared_ptr<ff::dx12::texture>& texture,
@@ -42,20 +43,37 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_texture::pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
-    if (clear_color)
+    if (*this)
     {
-        this->clear(context, *clear_color);
+        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
+
+        if (clear_color)
+        {
+            this->clear(commands, *clear_color);
+        }
+        else
+        {
+            commands.discard(*this);
+        }
+
+        return true;
     }
 
-    return true;
+    return false;
 }
 
-bool ff::dx12::target_texture::post_render(ff::dxgi::command_context_base& context)
+bool ff::dx12::target_texture::present()
 {
-    ff::dx12::commands::get(context).resource_state(*this->texture_->resource(), D3D12_RESOURCE_STATE_PRESENT);
+    // Transition
+    {
+        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
+        commands.resource_state(*this->texture_->resource(), D3D12_RESOURCE_STATE_PRESENT);
+    }
+
     this->render_presented_.notify(this);
+
     return true;
 }
 
@@ -67,6 +85,26 @@ ff::signal_sink<ff::dxgi::target_base*>& ff::dx12::target_texture::render_presen
 ff::dxgi::target_access_base& ff::dx12::target_texture::target_access()
 {
     return *this;
+}
+
+size_t ff::dx12::target_texture::target_array_start() const
+{
+    return this->array_start;
+}
+
+size_t ff::dx12::target_texture::target_array_size() const
+{
+    return this->array_count;
+}
+
+size_t ff::dx12::target_texture::target_mip_start() const
+{
+    return this->mip_level;
+}
+
+size_t ff::dx12::target_texture::target_mip_size() const
+{
+    return 1;
 }
 
 DXGI_FORMAT ff::dx12::target_texture::format() const

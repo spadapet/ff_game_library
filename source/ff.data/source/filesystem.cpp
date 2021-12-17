@@ -61,6 +61,12 @@ bool ff::filesystem::read_text_file(const std::filesystem::path& path, std::stri
     return true;
 }
 
+bool ff::filesystem::write_binary_file(const std::filesystem::path& path, const void* data, size_t size)
+{
+    ff::file_write file(path);
+    return file && file.write(data, size);
+}
+
 bool ff::filesystem::write_text_file(const std::filesystem::path& path, std::string_view text)
 {
     std::array<uint8_t, 3> bom = { 0xEF, 0xBB, 0xBF };

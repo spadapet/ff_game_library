@@ -73,6 +73,26 @@ ff::dxgi::texture_base* ff::dx12::texture_view::view_texture()
     return this->texture_.get();
 }
 
+size_t ff::dx12::texture_view::view_array_start() const
+{
+    return this->array_start_;
+}
+
+size_t ff::dx12::texture_view::view_array_size() const
+{
+    return this->array_count_;
+}
+
+size_t ff::dx12::texture_view::view_mip_start() const
+{
+    return this->mip_start_;
+}
+
+size_t ff::dx12::texture_view::view_mip_size() const
+{
+    return this->mip_count_;
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::texture_view::dx12_texture_view() const
 {
     if (!this->view_)

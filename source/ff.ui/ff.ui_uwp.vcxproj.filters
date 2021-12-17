@@ -32,9 +32,6 @@
     <ClCompile Include="source\key_map.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\render_device.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\converters.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -50,6 +47,12 @@
     <ClCompile Include="source\ui_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx11_render_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12_render_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -59,7 +62,6 @@
     <ClInclude Include="source\ui.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="ui_api.h" />
     <ClInclude Include="source\font_provider.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -84,9 +86,6 @@
     <ClInclude Include="source\key_map.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\render_device.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\converters.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -100,6 +99,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\ui_view.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx11_render_device.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_render_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

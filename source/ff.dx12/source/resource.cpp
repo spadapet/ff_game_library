@@ -53,6 +53,14 @@ ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE 
     : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
+ff::dx12::resource::resource(ID3D12ResourceX * swap_chain_resource)
+    : desc_(swap_chain_resource->GetDesc())
+    , alloc_info_{}
+    , optimized_clear_value{}
+    , resource_(swap_chain_resource)
+    , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
+{}
+
 ff::dx12::resource::resource(
     const D3D12_RESOURCE_DESC& desc,
     D3D12_RESOURCE_STATES initial_state,
@@ -292,12 +300,20 @@ ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* com
         dest_image.slicePitch = dest_image.rowPitch * scan_lines;
 
         ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_texture(dest_image.slicePitch, commands->next_fence_value());
-        dest_image.pixels = static_cast<uint8_t*>(mem_range.cpu_data());
-
-        if (!mem_range.cpu_data() || FAILED(DirectX::CopyRectangle(src_image, DirectX::Rect(0, 0, src_image.width, src_image.height), dest_image, DirectX::TEX_FILTER_DEFAULT, 0, 0)))
+        if (!mem_range.cpu_data())
         {
             assert(false);
             continue;
+        }
+
+        dest_image.pixels = static_cast<uint8_t*>(mem_range.cpu_data());
+
+        for (size_t y = 0; y < scan_lines; y++)
+        {
+            const uint8_t* src_row = src_image.pixels + (y * src_image.rowPitch);
+            uint8_t* dest_row = dest_image.pixels + (y * dest_image.rowPitch);
+
+            std::memcpy(dest_row, src_row, std::min(src_image.rowPitch, dest_image.rowPitch));
         }
 
         const size_t relative_mip_level = i % this->desc_.MipLevels;
@@ -413,7 +429,11 @@ void ff::dx12::resource::before_reset()
 
 bool ff::dx12::resource::reset()
 {
-    if (!this->mem_range_)
+    if (!this->alloc_info_.SizeInBytes)
+    {
+        // this resource shouldn't be recreated (like a swap chain buffer)
+    }
+    else if (!this->mem_range_)
     {
         if (FAILED(ff::dx12::device()->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),

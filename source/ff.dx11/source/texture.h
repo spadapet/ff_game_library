@@ -23,7 +23,7 @@ namespace ff::dx11
         // texture_base
         virtual ff::dxgi::sprite_type sprite_type() const override;
         virtual std::shared_ptr<DirectX::ScratchImage> data() const override;
-        virtual bool update(ff::dxgi::command_context_base& context, size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
+        virtual bool update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
 
         // texture_metadata_base
         virtual ff::point_size size() const override;
@@ -35,6 +35,10 @@ namespace ff::dx11
         // texture_view_base
         virtual ff::dxgi::texture_view_access_base& view_access() override;
         virtual ff::dxgi::texture_base* view_texture() override;
+        virtual size_t view_array_start() const override;
+        virtual size_t view_array_size() const override;
+        virtual size_t view_mip_start() const override;
+        virtual size_t view_mip_size() const override;
 
         // texture_view_access
         virtual ID3D11ShaderResourceView* dx11_texture_view() const override;

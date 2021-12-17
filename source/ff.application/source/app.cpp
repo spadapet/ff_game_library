@@ -240,11 +240,11 @@ static void frame_advance_and_render()
         }
     }
 
-    bool valid = ::target->pre_render(ff_dx::get_device_state(), &ff::dxgi::color_black());
+    bool valid = ::target->pre_render(&ff::dxgi::color_black());
     if (valid)
     {
         ::frame_render(advance_type);
-        valid = ::target->post_render(ff_dx::get_device_state());
+        valid = ::target->present();
         ::frame_presented();
     }
 

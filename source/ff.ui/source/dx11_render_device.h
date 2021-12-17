@@ -10,6 +10,9 @@ namespace ff::internal::ui
         render_device(bool srgb);
         virtual ~render_device() override;
 
+        ff::dxgi::command_context_base& render_begin(ff::dxgi::target_base* target, ff::dxgi::depth_base* depth, const ff::rect_float* view_rect);
+        void render_end();
+
         // Noesis::RenderDevice
         virtual const Noesis::DeviceCaps& GetCaps() const override;
         virtual Noesis::Ptr<Noesis::RenderTarget> CreateRenderTarget(const char* label, uint32_t width, uint32_t height, uint32_t sample_count, bool needs_stencil) override;

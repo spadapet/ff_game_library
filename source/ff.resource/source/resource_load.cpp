@@ -24,7 +24,7 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
     std::ostringstream str;
     str << ff::filesystem::to_string(name) << "." << ff::stable_hash_func(path_canon_lower) << (debug ? ".debug" : "") << ".pack";
     std::filesystem::path cache_path = ff::filesystem::user_local_path();
-    return (cache_path /= "cached_resources") /= str.str();
+    return (cache_path /= "ff.cache") /= str.str();
 }
 
 static bool load_cached_resources(const std::filesystem::path& path, ff::dict& dict)

@@ -8,6 +8,7 @@ namespace ff::dx11
 
     bool reset(bool force);
     void trim();
+    void wait_for_idle();
 
     IDXGIFactoryX* factory();
     IDXGIAdapterX* adapter();

@@ -29,7 +29,7 @@ namespace ff
         std::shared_ptr<DirectX::ScratchImage> palette() const;
 
         // resource_object_base
-        virtual ff::dict resource_get_siblings(const std::shared_ptr<resource>& self) const override;
+        virtual ff::dict resource_get_siblings(const std::shared_ptr<ff::resource>& self) const override;
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
 
         // sprite_base

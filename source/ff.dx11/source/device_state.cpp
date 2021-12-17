@@ -209,6 +209,14 @@ void ff::dx11::device_state::clear_depth_stencil(ID3D11DepthStencilView* view, b
     }
 }
 
+void ff::dx11::device_state::discard_view(ID3D11View* view)
+{
+    if (this->context)
+    {
+        this->context->DiscardView(view);
+    }
+}
+
 void ff::dx11::device_state::update_subresource(ID3D11Resource* dest, UINT dest_subresource, const D3D11_BOX* dest_box, const void* src_data, UINT src_row_pitch, UINT src_depth_pitch)
 {
     if (this->context)

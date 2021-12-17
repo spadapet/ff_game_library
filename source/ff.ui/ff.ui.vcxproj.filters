@@ -32,7 +32,7 @@
     <ClCompile Include="source\render_target.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\render_device.cpp">
+    <ClCompile Include="source\dx11_render_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\ui_view.cpp">
@@ -50,10 +50,12 @@
     <ClCompile Include="source\converters.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\dx12_render_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="ui_api.h" />
     <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -84,7 +86,7 @@
     <ClInclude Include="source\render_target.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\render_device.h">
+    <ClInclude Include="source\dx11_render_device.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\ui_view.h">
@@ -100,6 +102,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\converters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\dx12_render_device.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

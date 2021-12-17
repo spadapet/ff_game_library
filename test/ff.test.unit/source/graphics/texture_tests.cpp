@@ -25,9 +25,14 @@ namespace ff::test::graphics
             Assert::IsTrue(texture->array_size() == 1);
             Assert::IsTrue(texture->sample_count() == 1);
             Assert::IsTrue(texture->mip_count() == 4);
+            Assert::IsNotNull(texture->animation());
+#if DXVER == 11
             Assert::IsNotNull(texture->dx11_texture());
             Assert::IsNotNull(texture->dx11_texture_view());
-            Assert::IsNotNull(texture->animation());
+#elif DXVER == 12
+            Assert::IsNotNull(texture->resource());
+            Assert::AreNotEqual<size_t>(0, texture->dx12_texture_view().ptr);
+#endif
         }
 
         TEST_METHOD(convert)

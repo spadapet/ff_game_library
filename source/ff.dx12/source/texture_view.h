@@ -22,6 +22,10 @@ namespace ff::dx12
         // texture_view_base
         virtual ff::dxgi::texture_view_access_base& view_access() override;
         virtual ff::dxgi::texture_base* view_texture() override;
+        virtual size_t view_array_start() const override;
+        virtual size_t view_array_size() const override;
+        virtual size_t view_mip_start() const override;
+        virtual size_t view_mip_size() const override;
 
         // texture_view_access
         virtual D3D12_CPU_DESCRIPTOR_HANDLE dx12_texture_view() const override;

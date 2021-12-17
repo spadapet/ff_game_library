@@ -22,10 +22,14 @@ namespace ff::dx11
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool post_render(ff::dxgi::command_context_base& context) override;
+        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool present() override;
         virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
         virtual ff::dxgi::target_access_base& target_access() override;
+        virtual size_t target_array_start() const override;
+        virtual size_t target_array_size() const override;
+        virtual size_t target_mip_start() const override;
+        virtual size_t target_mip_size() const override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
 

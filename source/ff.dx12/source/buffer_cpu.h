@@ -27,6 +27,7 @@ namespace ff::dx12
     private:
         std::vector<uint8_t> data_;
         ff::dxgi::buffer_type type_;
+        size_t data_hash;
         size_t version_;
     };
 }

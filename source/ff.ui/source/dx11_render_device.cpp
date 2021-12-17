@@ -1,6 +1,6 @@
 #include "pch.h"
+#include "dx11_render_device.h"
 #include "texture.h"
-#include "render_device.h"
 #include "render_target.h"
 #include "ui.h"
 
@@ -167,6 +167,40 @@ ff::internal::ui::render_device::~render_device()
 {
     ff_dx::remove_device_child(this);
 }
+
+ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(ff::dxgi::target_base* target, ff::dxgi::depth_base* depth, const ff::rect_float* view_rect)
+{
+    ID3D11RenderTargetView* target_view = target ? ff_dx::target_access::get(*target).dx11_target_view() : nullptr;
+    ID3D11DepthStencilView* depth_view = depth ? ff_dx::depth::get(*depth).view() : nullptr;
+
+    if (target_view)
+    {
+        D3D11_VIEWPORT viewport{};
+        viewport.MaxDepth = 1;
+
+        if (view_rect)
+        {
+            viewport.TopLeftX = view_rect->left;
+            viewport.TopLeftY = view_rect->top;
+            viewport.Width = view_rect->width();
+            viewport.Height = view_rect->height();
+        }
+        else
+        {
+            ff::point_float target_size = target->size().pixel_size.cast<float>();
+            viewport.Width = target_size.x;
+            viewport.Height = target_size.y;
+        }
+
+        ff_dx::get_device_state().set_targets(&target_view, 1, depth_view);
+        ff_dx::get_device_state().set_viewports(&viewport, 1);
+    }
+
+    return ff_dx::get_device_state();
+}
+
+void ff::internal::ui::render_device::render_end()
+{}
 
 const Noesis::DeviceCaps& ff::internal::ui::render_device::GetCaps() const
 {

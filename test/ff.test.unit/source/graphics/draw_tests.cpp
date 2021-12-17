@@ -25,7 +25,7 @@ namespace ff::test::graphics
 
             ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
             static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
-            target.pre_render(ff_dx::get_device_state(), &clear_color);
+            target.pre_render(&clear_color);
 
             // Draw
             {
@@ -37,7 +37,7 @@ namespace ff::test::graphics
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target.post_render(ff_dx::get_device_state());
+            target.present();
 
             bool saved = ff::texture::get(*target.shared_texture()).resource_save_to_file(temp_path, "draw_device_test");
             Assert::IsTrue(saved);

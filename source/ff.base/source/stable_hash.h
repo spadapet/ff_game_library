@@ -2,6 +2,23 @@
 
 namespace ff
 {
+    struct stable_hash_data_t
+    {
+        stable_hash_data_t();
+        stable_hash_data_t(size_t data_size);
+
+        size_t hash() const;
+        operator size_t() const;
+
+    private:
+        friend ff::stable_hash_data_t stable_hash_incremental(const void* data, size_t size, const ff::stable_hash_data_t& prev_data) noexcept;
+
+        stable_hash_data_t(uint32_t a, uint32_t b, uint32_t c);
+
+        uint32_t a, b, c;
+    };
+
+    ff::stable_hash_data_t stable_hash_incremental(const void* data, size_t size, const ff::stable_hash_data_t& prev_data = ff::stable_hash_data_t()) noexcept;
     size_t stable_hash_bytes(const void* data, size_t size) noexcept;
 
     /// <summary>

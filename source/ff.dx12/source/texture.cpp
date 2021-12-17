@@ -231,12 +231,7 @@ ff::dx12::resource* ff::dx12::texture::resource() const
     return this->resource_.get();
 }
 
-bool ff::dx12::texture::update(
-    ff::dxgi::command_context_base& context,
-    size_t array_index,
-    size_t mip_index,
-    const ff::point_size& pos,
-    const DirectX::Image& data)
+bool ff::dx12::texture::update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data)
 {
     if (this->format() != data.format)
     {
@@ -270,16 +265,13 @@ bool ff::dx12::texture::update(
         UINT sub_index = ::D3D12CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), 0, static_cast<UINT>(this->mip_count()), static_cast<UINT>(this->array_size()));
         ff::dx12::resource* resource = this->resource_.get();
 
-        ff::thread_dispatch::get_game()->send([resource, sub_index, pos, &data, &context]()
+        ff::thread_dispatch::get_game()->send([resource, sub_index, pos, &data]()
             {
                 resource->update_texture(nullptr, &data, sub_index, 1, pos.cast<size_t>());
             });
-
-        return true;
     }
 
-    assert(false);
-    return false;
+    return true;
 }
 
 bool ff::dx12::texture::reset()
@@ -299,6 +291,26 @@ ff::dxgi::texture_view_access_base& ff::dx12::texture::view_access()
 ff::dxgi::texture_base* ff::dx12::texture::view_texture()
 {
     return this;
+}
+
+size_t ff::dx12::texture::view_array_start() const
+{
+    return 0;
+}
+
+size_t ff::dx12::texture::view_array_size() const
+{
+    return this->array_size();
+}
+
+size_t ff::dx12::texture::view_mip_start() const
+{
+    return 0;
+}
+
+size_t ff::dx12::texture::view_mip_size() const
+{
+    return this->mip_count();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::texture::dx12_texture_view() const

@@ -36,9 +36,6 @@ namespace ff
         void block_input_below(bool block);
         bool block_input_below() const;
 
-    protected:
-        virtual bool render_begin(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect);
-
     private:
         DirectX::XMMATRIX* matrix;
         bool focused_;

@@ -15,6 +15,6 @@ namespace ff::dxgi
 
         virtual ff::dxgi::sprite_type sprite_type() const = 0;
         virtual std::shared_ptr<DirectX::ScratchImage> data() const = 0;
-        virtual bool update(ff::dxgi::command_context_base& context, size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) = 0;
+        virtual bool update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) = 0;
     };
 }

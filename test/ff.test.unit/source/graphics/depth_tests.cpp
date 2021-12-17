@@ -14,8 +14,14 @@ namespace ff::test::graphics
             Assert::IsTrue(depth);
             Assert::IsTrue(depth.size() == size);
             Assert::IsTrue(depth.sample_count() == sample_count);
+
+#if DXVER == 11
             Assert::IsNotNull(depth.texture());
             Assert::IsNotNull(depth.view());
+#elif DXVER == 12
+            Assert::IsNotNull(depth.resource());
+            Assert::AreNotEqual<size_t>(0, depth.view().ptr);
+#endif
         }
     };
 }

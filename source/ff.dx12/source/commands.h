@@ -40,8 +40,8 @@ namespace ff::dx12
         ff::dx12::commands::data_cache_t close();
 
         void pipeline_state(ID3D12PipelineStateX* state);
-        void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state);
-        void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
+        void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
+        void resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
 
         void root_signature(ID3D12RootSignature* signature);
         void root_descriptors(size_t index, D3D12_GPU_DESCRIPTOR_HANDLE base_descriptor);
@@ -52,11 +52,15 @@ namespace ff::dx12
         void root_srv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data, bool ps_access = true, bool non_ps_access = true);
         void root_uav(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data);
 
-        void targets(ff::dxgi::target_base* targets, size_t count, ff::dxgi::depth_base* depth);
+        void targets(ff::dxgi::target_base** targets, size_t count, ff::dxgi::depth_base* depth);
         void viewports(const D3D12_VIEWPORT* viewports, size_t count);
-        void vertex_buffers(ff::dx12::resource* resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count);
+        void vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count);
+        void index_buffer(ff::dx12::resource& resource, const D3D12_INDEX_BUFFER_VIEW& view);
         void primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology);
+        void stencil(uint32_t value);
         void draw(size_t start, size_t count);
+        void draw(size_t start_index, size_t index_count, size_t start_vertex);
+        void resolve(ff::dx12::resource& dest_resource, size_t dest_sub_resource, ff::point_size dest_pos, ff::dx12::resource& src_resource, size_t src_sub_resource, ff::rect_size src_rect);
 
         void clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value);
         void discard(const ff::dx12::depth& depth);

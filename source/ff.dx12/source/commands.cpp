@@ -108,12 +108,12 @@ void ff::dx12::commands::pipeline_state(ID3D12PipelineStateX* state)
     }
 }
 
-void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state)
+void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
 {
-    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state);
+    resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state, array_start, array_size, mip_start, mip_size);
 }
 
-void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index)
+void ff::dx12::commands::resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index)
 {
     std::div_t dr = std::div(static_cast<int>(sub_index), static_cast<int>(resource.mip_size()));
     resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state,
@@ -225,13 +225,16 @@ void ff::dx12::commands::root_uav(size_t index, ff::dx12::resource& resource, D3
     }
 }
 
-void ff::dx12::commands::targets(ff::dxgi::target_base* targets, size_t count, ff::dxgi::depth_base* depth)
+void ff::dx12::commands::targets(ff::dxgi::target_base** targets, size_t count, ff::dxgi::depth_base* depth)
 {
     ff::stack_vector<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> target_views;
     for (size_t i = 0; i < count; i++)
     {
-        ff::dx12::target_access& access = ff::dx12::target_access::get(targets[i]);
-        this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+        ff::dxgi::target_base* target = targets[i];
+        ff::dx12::target_access& access = ff::dx12::target_access::get(*target);
+
+        this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET,
+            target->target_array_start(), target->target_array_size(), target->target_mip_start(), target->target_mip_size());
         target_views.push_back(access.dx12_target_view());
     }
 
@@ -265,14 +268,20 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
     this->list(false)->RSSetScissorRects(static_cast<UINT>(count), scissor_rects);
 }
 
-void ff::dx12::commands::vertex_buffers(ff::dx12::resource* resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
+void ff::dx12::commands::vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
 {
     for (size_t i = 0; i < count; i++)
     {
-        this->resource_state(resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     }
 
     this->list()->IASetVertexBuffers(static_cast<UINT>(start), static_cast<UINT>(count), views);
+}
+
+void ff::dx12::commands::index_buffer(ff::dx12::resource& resource, const D3D12_INDEX_BUFFER_VIEW& view)
+{
+    this->resource_state(resource, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    this->list()->IASetIndexBuffer(&view);
 }
 
 void ff::dx12::commands::primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology)
@@ -280,9 +289,32 @@ void ff::dx12::commands::primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology)
     this->list(false)->IASetPrimitiveTopology(topology);
 }
 
+void ff::dx12::commands::stencil(uint32_t value)
+{
+    this->list(false)->OMSetStencilRef(value);
+}
+
 void ff::dx12::commands::draw(size_t start, size_t count)
 {
     this->list()->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(start), 0);
+}
+
+void ff::dx12::commands::draw(size_t start_index, size_t index_count, size_t start_vertex)
+{
+    this->list()->DrawIndexedInstanced(static_cast<UINT>(index_count), 1, static_cast<UINT>(start_index), static_cast<UINT>(start_vertex), 0);
+}
+
+void ff::dx12::commands::resolve(ff::dx12::resource& dest_resource, size_t dest_sub_resource, ff::point_size dest_pos, ff::dx12::resource& src_resource, size_t src_sub_resource, ff::rect_size src_rect)
+{
+    this->resource_state_sub_index(dest_resource, D3D12_RESOURCE_STATE_RESOLVE_DEST, dest_sub_resource);
+    this->resource_state_sub_index(src_resource, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, src_sub_resource);
+
+    ff::rect_t<LONG> src_rect2 = src_rect.cast<LONG>();
+    D3D12_RECT src_rect3{ src_rect2.left, src_rect2.top, src_rect2.right, src_rect2.bottom };
+
+    this->list()->ResolveSubresourceRegion(
+        ff::dx12::get_resource(dest_resource), static_cast<UINT>(dest_sub_resource), static_cast<UINT>(dest_pos.x), static_cast<UINT>(dest_pos.y),
+        ff::dx12::get_resource(src_resource), static_cast<UINT>(src_sub_resource), &src_rect3, dest_resource.desc().Format, D3D12_RESOLVE_MODE_AVERAGE);
 }
 
 void ff::dx12::commands::clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value)
@@ -336,7 +368,7 @@ void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_su
 {
     assert(source.cpu_data());
 
-    this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
+    this->resource_state_sub_index(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
 
     D3D12_TEXTURE_COPY_LOCATION source_location;
     source_location.pResource = ff::dx12::get_resource(*source.heap());
@@ -353,7 +385,7 @@ void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const
 {
     assert(dest.cpu_data());
 
-    this->resource_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
+    this->resource_state_sub_index(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
 
     const D3D12_BOX source_box
     {
@@ -384,8 +416,8 @@ void ff::dx12::commands::copy_resource(ff::dx12::resource& dest_resource, ff::dx
 
 void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
-    this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
-    this->resource_state(source, D3D12_RESOURCE_STATE_COPY_DEST, source_sub_index);
+    this->resource_state_sub_index(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
+    this->resource_state_sub_index(source, D3D12_RESOURCE_STATE_COPY_DEST, source_sub_index);
 
     const D3D12_BOX source_box
     {

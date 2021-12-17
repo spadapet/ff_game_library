@@ -194,7 +194,7 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
     ff::init_graphics init_graphics;
 
     std::error_code ec;
-    if (!std::filesystem::exists(dump_source_file))
+    if (!std::filesystem::exists(dump_source_file, ec))
     {
         std::cerr << "File doesn't exist: " << dump_source_file << std::endl;
         return 1;

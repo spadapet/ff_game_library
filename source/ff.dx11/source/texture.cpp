@@ -226,12 +226,7 @@ ID3D11Texture2D* ff::dx11::texture::dx11_texture() const
     return this->texture_.Get();
 }
 
-bool ff::dx11::texture::update(
-    ff::dxgi::command_context_base& context,
-    size_t array_index,
-    size_t mip_index,
-    const ff::point_size& pos,
-    const DirectX::Image& data)
+bool ff::dx11::texture::update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data)
 {
     if (this->format() != data.format)
     {
@@ -266,10 +261,9 @@ bool ff::dx11::texture::update(
         UINT subresource = ::D3D11CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), static_cast<UINT>(this->mip_count()));
         ID3D11Texture2D* texture = this->texture_.Get();
 
-        ff::thread_dispatch::get_game()->send([texture, subresource, box, &data, &context]()
+        ff::thread_dispatch::get_game()->send([texture, subresource, box, &data]()
             {
-                ff::dx11::device_state::get(context).update_subresource(
-                    texture, subresource, &box, data.pixels, static_cast<UINT>(data.rowPitch), 0);
+                ff::dx11::get_device_state().update_subresource(texture, subresource, &box, data.pixels, static_cast<UINT>(data.rowPitch), 0);
             });
     }
 
@@ -293,6 +287,26 @@ ff::dxgi::texture_view_access_base& ff::dx11::texture::view_access()
 ff::dxgi::texture_base* ff::dx11::texture::view_texture()
 {
     return this;
+}
+
+size_t ff::dx11::texture::view_array_start() const
+{
+    return 0;
+}
+
+size_t ff::dx11::texture::view_array_size() const
+{
+    return this->array_size();
+}
+
+size_t ff::dx11::texture::view_mip_start() const
+{
+    return 0;
+}
+
+size_t ff::dx11::texture::view_mip_size() const
+{
+    return this->mip_count();
 }
 
 ID3D11ShaderResourceView* ff::dx11::texture::dx11_texture_view() const

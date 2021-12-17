@@ -46,11 +46,41 @@ inline constexpr static void final_hash_mix(uint32_t& a, uint32_t& b, uint32_t& 
     c ^= b; c -= ::rotate_bits(b, 24);
 }
 
-size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
+ff::stable_hash_data_t::stable_hash_data_t()
+    : a(0x9e3779b9)
+    , b(0x9e3779b9)
+    , c(0x9e3779b9)
+{}
+
+ff::stable_hash_data_t::stable_hash_data_t(size_t data_size)
+    : a(0x9e3779b9 + static_cast<uint32_t>(data_size))
+    , b(a)
+    , c(a)
+{}
+
+ff::stable_hash_data_t::stable_hash_data_t(uint32_t a, uint32_t b, uint32_t c)
+    : a(a)
+    , b(b)
+    , c(c)
+{}
+
+size_t ff::stable_hash_data_t::hash() const
 {
-    uint32_t a = 0x9e3779b9 + static_cast<uint32_t>(size);
-    uint32_t b = a;
-    uint32_t c = a;
+    stable_hash_data_t other = *this;
+    ::final_hash_mix(other.a, other.b, other.c);
+    return ::create_hash_result(other.b, other.c);
+}
+
+ff::stable_hash_data_t::operator size_t() const
+{
+    return this->hash();
+}
+
+ff::stable_hash_data_t ff::stable_hash_incremental(const void* data, size_t size, const ff::stable_hash_data_t& prev_data) noexcept
+{
+    uint32_t a = prev_data.a;
+    uint32_t b = prev_data.b;
+    uint32_t c = prev_data.c;
 
     if ((reinterpret_cast<size_t>(data) & 0x3) == 0)
     {
@@ -82,7 +112,6 @@ size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
             case 3: a += key_data[0] & 0xffffff; break;
             case 2: a += key_data[0] & 0xffff; break;
             case 1: a += key_data[0] & 0xff; break;
-            case 0: return ::create_hash_result(b, c);
         }
     }
     else if ((reinterpret_cast<size_t>(data) & 0x1) == 0)
@@ -158,9 +187,6 @@ size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
             case 1:
                 a += byte_data[0];
                 break;
-
-            case 0:
-                return ::create_hash_result(b, c);
         }
     }
     else
@@ -205,13 +231,13 @@ size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
             case 2: a += static_cast<uint32_t>(key_data[1]) << 8; [[fallthrough]];
             case 1: a += key_data[0];
                 break;
-
-            case 0:
-                return ::create_hash_result(b, c);
         }
     }
 
-    ::final_hash_mix(a, b, c);
+    return ff::stable_hash_data_t(a, b, c);
+}
 
-    return ::create_hash_result(b, c);
+size_t ff::stable_hash_bytes(const void* data, size_t size) noexcept
+{
+    return ff::stable_hash_incremental(data, size, ff::stable_hash_data_t(size));
 }

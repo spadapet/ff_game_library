@@ -75,7 +75,7 @@ std::shared_ptr<DirectX::ScratchImage> ff::texture::palette() const
     return this->palette_;
 }
 
-ff::dict ff::texture::resource_get_siblings(const std::shared_ptr<resource>& self) const
+ff::dict ff::texture::resource_get_siblings(const std::shared_ptr<ff::resource>& self) const
 {
     ff::value_ptr value;
     {

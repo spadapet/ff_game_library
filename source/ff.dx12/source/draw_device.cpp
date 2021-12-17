@@ -157,21 +157,11 @@ namespace
 
         Microsoft::WRL::ComPtr<ID3D12PipelineStateX> create_pipeline_state(state_t index) const
         {
-            auto vs_data = ff::dx12::get_object_cache().shader(this->vs_res_name);
-            auto gs_data = ff::dx12::get_object_cache().shader(this->gs_res_name);
-            auto ps_data = ff::dx12::get_object_cache().shader(ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
-
-            if (!vs_data || !gs_data || !ps_data)
-            {
-                assert(false);
-                return {};
-            }
-
             D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
             desc.pRootSignature = this->root_signature.Get();
-            desc.VS = CD3DX12_SHADER_BYTECODE(vs_data->data(), vs_data->size());
-            desc.GS = CD3DX12_SHADER_BYTECODE(gs_data->data(), gs_data->size());
-            desc.PS = CD3DX12_SHADER_BYTECODE(ps_data->data(), ps_data->size());
+            desc.VS = ff::dx12::get_object_cache().shader(this->vs_res_name);
+            desc.GS = ff::dx12::get_object_cache().shader(this->gs_res_name);
+            desc.PS = ff::dx12::get_object_cache().shader(ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
             desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
             desc.SampleMask = UINT_MAX;
             desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -371,7 +361,7 @@ namespace
                 this->pixel_constants_version_0 = 0;
 
                 this->commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
-                this->commands->targets(this->setup_target, 1, this->setup_depth);
+                this->commands->targets(&this->setup_target, 1, this->setup_depth);
                 this->commands->viewports(&this->setup_viewport, 1);
                 this->commands->root_signature(this->root_signature.Get());
                 this->commands->root_descriptors(3, this->samplers_gpu.gpu_handle(0));
@@ -464,12 +454,18 @@ namespace
 
             for (size_t i = 0; i < texture_count; i++)
             {
-                commands.resource_state(*ff::dx12::texture::get(*in_textures[i]->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                ff::dxgi::texture_view_base* view = in_textures[i];
+                commands.resource_state(
+                    *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
 
             for (size_t i = 0; i < textures_using_palette_count; i++)
             {
-                commands.resource_state(*ff::dx12::texture::get(*in_textures_using_palette[i]->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                ff::dxgi::texture_view_base* view = in_textures_using_palette[i];
+                commands.resource_state(
+                    *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
@@ -499,6 +495,7 @@ namespace
             }
 
             // Update texture descriptors
+            static std::vector<UINT> ones(std::max(ff::dxgi::draw_util::MAX_TEXTURES, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE), 1);
 
             if (texture_count)
             {
@@ -512,7 +509,7 @@ namespace
 
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(texture_count);
-                ff::dx12::device()->CopyDescriptors(1, &dest, &size, 1, views.data(), &size, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 commands.root_descriptors(4, dest_range.gpu_handle(0));
             }
 
@@ -528,7 +525,7 @@ namespace
 
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(textures_using_palette_count);
-                ff::dx12::device()->CopyDescriptors(1, &dest, &size, 1, views.data(), &size, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 commands.root_descriptors(5, dest_range.gpu_handle(0));
             }
 
@@ -542,8 +539,8 @@ namespace
                 };
 
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
-                UINT size = static_cast<UINT>(2);
-                ff::dx12::device()->CopyDescriptors(1, &dest, &size, 1, views.data(), &size, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                UINT size = static_cast<UINT>(views.size());
+                ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 commands.root_descriptors(6, dest_range.gpu_handle(0));
             }
         }
@@ -571,7 +568,8 @@ namespace
                 this->target_requires_palette());
 
             ff::dx12::commands& commands = ff::dx12::commands::get(context);
-            commands.vertex_buffers(this->geometry_buffer_.resource(), &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+            ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
+            commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
         }
 
         virtual ff::dxgi::buffer_base& geometry_buffer() override

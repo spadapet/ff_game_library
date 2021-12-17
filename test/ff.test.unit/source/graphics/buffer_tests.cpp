@@ -5,6 +5,7 @@ namespace ff::test::graphics
     TEST_CLASS(buffer_tests)
     {
     public:
+#if DXVER == 11
         TEST_METHOD(read_only_buffer)
         {
             const std::array<int, 4> ints{ 1, 2, 3, 4 };
@@ -31,5 +32,6 @@ namespace ff::test::graphics
             std::memcpy(data, ints.data(), ff::array_byte_size(ints));
             buffer.unmap();
         }
+#endif
     };
 }

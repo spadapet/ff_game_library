@@ -19,8 +19,7 @@ ff::target_window::target_window(ff::window* window)
     , full_screen_uwp(false)
 #endif
 #if DXVER == 12
-    , fence_values{}
-    , views(ff::graphics::dx12_descriptors_target().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
+    , target_views(ff_dx::cpu_target_descriptors().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
 #endif
 {
@@ -36,9 +35,7 @@ ff::target_window::target_window(ff::window* window)
 
 ff::target_window::~target_window()
 {
-#if DXVER == 12
-    ff::graphics::dx12_queues().wait_for_idle();
-#endif
+    ff_dx::wait_for_idle();
 
     if (this->main_window && this->swap_chain)
     {
@@ -81,19 +78,19 @@ void ff::target_window::clear(ff::dxgi::command_context_base& context, const Dir
     ff_dx::device_state::get(context).clear_target(this->dx11_target_view(), clear_color);
 }
 
-bool ff::target_window::pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
+bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
     {
-        this->clear(context, *clear_color);
+        this->clear(ff::dx11::get_device_state(), *clear_color);
     }
 
     return true;
 }
 
-bool ff::target_window::post_render(ff::dxgi::command_context_base& context)
+bool ff::target_window::present()
 {
-    ff_dx::device_state::get(context).set_targets(nullptr, 0, nullptr);
+    ff_dx::get_device_state().set_targets(nullptr, 0, nullptr);
 
     HRESULT hr = *this ? this->swap_chain->Present(1, 0) : E_FAIL;
     if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
@@ -122,27 +119,34 @@ void ff::target_window::internal_reset()
 
 #elif DXVER == 12
 
-ID3D12ResourceX* ff::target_window::texture()
+ff::dx12::resource& ff::target_window::dx12_target_texture()
 {
-    return this->render_targets[this->back_buffer_index].resource.Get();
+    return *this->target_textures[this->back_buffer_index];
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::view()
+D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::dx12_target_view()
 {
-    return this->views.cpu_handle(this->back_buffer_index);
+    return this->target_views.cpu_handle(this->back_buffer_index);
+}
+
+void ff::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
+{
+    ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
 bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
-        ff::graphics::dx12_queues().wait_for_fence(this->fence_values[this->back_buffer_index]);
-        ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_RENDER_TARGET);
-        ff::graphics::dx12_direct_commands()->DiscardResource(this->render_targets[this->back_buffer_index].resource.Get(), nullptr);
+        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
 
         if (clear_color)
         {
-            ff::graphics::dx12_direct_commands()->ClearRenderTargetView(this->view(), reinterpret_cast<const float*>(clear_color), 0, nullptr);
+            this->clear(commands, *clear_color);
+        }
+        else
+        {
+            commands.discard(*this);
         }
 
         return true;
@@ -151,37 +155,37 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
     return false;
 }
 
-bool ff::target_window::post_render()
+bool ff::target_window::present()
 {
     if (*this)
     {
-        ff::graphics::dx12_direct_commands().transition(this->render_targets[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        ff::graphics::dx12_direct_commands().execute(false);
+        // Transition
+        {
+            ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
+            commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
+        }
 
         HRESULT hr = this->swap_chain->Present(1, 0);
 
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
-            uint64_t fence_value = this->fence_values[this->back_buffer_index] = ff::graphics::dx12_direct_queue().signal_fence();
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
             this->render_presented_.notify(this);
-        }
-        else
-        {
-            return false;
+
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 void ff::target_window::before_resize()
 {
-    ff::graphics::dx12_queues().wait_for_idle();
+    ff_dx::wait_for_idle();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        this->render_targets[i] = {};
+        this->target_textures[i].reset();
     }
 }
 
@@ -201,6 +205,26 @@ ff::signal_sink<ff::dxgi::target_base*>& ff::target_window::render_presented()
 ff::dxgi::target_access_base& ff::target_window::target_access()
 {
     return *this;
+}
+
+size_t ff::target_window::target_array_start() const
+{
+    return 0;
+}
+
+size_t ff::target_window::target_array_size() const
+{
+    return 1;
+}
+
+size_t ff::target_window::target_mip_start() const
+{
+    return 0;
+}
+
+size_t ff::target_window::target_mip_size() const
+{
+    return 1;
 }
 
 bool ff::target_window::size(const ff::window_size& size)
@@ -255,7 +279,7 @@ bool ff::target_window::size(const ff::window_size& size)
 
 #elif DXVER == 12
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
-        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::dx12::direct_queue().get(); ???
+        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::dx12::get_command_queue(ff::dx12::direct_queue());
 #endif
 
         ff::thread_dispatch::get_main()->send([this, factory, device, &new_swap_chain, &desc]()
@@ -331,13 +355,19 @@ bool ff::target_window::size(const ff::window_size& size)
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
-        if (!this->render_targets[i].resource && FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&this->render_targets[i].resource))))
+        if (!this->target_textures[i])
         {
-            assert(false);
-            return false;
+            Microsoft::WRL::ComPtr<ID3D12ResourceX> resource;
+            if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))))
+            {
+                assert(false);
+                return false;
+            }
+
+            this->target_textures[i] = std::make_unique<ff::dx12::resource>(resource.Get());
         }
 
-        ff::graphics::dx12_device()->CreateRenderTargetView(this->render_targets[i].resource.Get(), nullptr, this->views.cpu_handle(i));
+        ff::dx12::create_target_view(this->target_textures[i].get(), this->target_views.cpu_handle(i));
     }
 #endif
 

@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "render_device.h"
+#include "dx11_render_device.h"
+#include "dx12_render_device.h"
 #include "ui.h"
 #include "ui_view.h"
 
@@ -210,52 +211,21 @@ void ff::ui_view::advance()
 
 void ff::ui_view::pre_render()
 {
+    ff::internal::ui::global_render_device()->render_begin(nullptr, nullptr, nullptr);
     this->internal_view_->GetRenderer()->RenderOffscreen();
+    ff::internal::ui::global_render_device()->render_end();
 }
 
 void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect)
 {
     ff::internal::ui::on_render_view(this);
 
-    if (this->render_begin(target, depth, view_rect))
-    {
-        this->internal_view_->GetRenderer()->Render();
-    }
-}
-
-bool ff::ui_view::render_begin(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect)
-{
     if (depth.size(target.size().pixel_size))
     {
-        ID3D11RenderTargetView* target_view = ff_dx::target_access::get(target).dx11_target_view();
-        ID3D11DepthStencilView* depth_view = ff_dx::depth::get(depth).view();
+        ff::dxgi::command_context_base& context = ff::internal::ui::global_render_device()->render_begin(&target, &depth, view_rect);
 
-        if (target_view && depth_view)
-        {
-            D3D11_VIEWPORT viewport{};
-            viewport.MaxDepth = 1;
+        this->internal_view_->GetRenderer()->Render();
 
-            if (view_rect)
-            {
-                viewport.TopLeftX = view_rect->left;
-                viewport.TopLeftY = view_rect->top;
-                viewport.Width = view_rect->width();
-                viewport.Height = view_rect->height();
-            }
-            else
-            {
-                ff::point_float target_size = target.size().pixel_size.cast<float>();
-                viewport.Width = target_size.x;
-                viewport.Height = target_size.y;
-            }
-
-            ff_dx::get_device_state().set_targets(&target_view, 1, depth_view);
-            ff_dx::get_device_state().set_viewports(&viewport, 1);
-
-            return true;
-        }
+        ff::internal::ui::global_render_device()->render_end();
     }
-
-    assert(false);
-    return false;
 }

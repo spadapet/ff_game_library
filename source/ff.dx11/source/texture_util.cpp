@@ -112,11 +112,7 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> ff::dx11::create_shader_view(
     return view;
 }
 
-Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::dx11::create_target_view(
-    ID3D11Texture2D* texture,
-    size_t array_start,
-    size_t array_count,
-    size_t mip_level)
+Microsoft::WRL::ComPtr<ID3D11RenderTargetView> ff::dx11::create_target_view(ID3D11Texture2D* texture, size_t array_start, size_t array_count, size_t mip_level)
 {
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view;
     if (texture)

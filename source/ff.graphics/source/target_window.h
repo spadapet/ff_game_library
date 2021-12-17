@@ -17,10 +17,14 @@ namespace ff
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool pre_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool post_render(ff::dxgi::command_context_base& context) override;
+        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool present() override;
         virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
         virtual ff::dxgi::target_access_base& target_access() override;
+        virtual size_t target_array_start() const override;
+        virtual size_t target_array_size() const override;
+        virtual size_t target_mip_start() const override;
+        virtual size_t target_mip_size() const override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
 
@@ -29,8 +33,8 @@ namespace ff
         virtual ID3D11Texture2D* dx11_target_texture() override;
         virtual ID3D11RenderTargetView* dx11_target_view() override;
 #elif DXVER == 12
-        virtual ID3D12ResourceX* texture() override;
-        virtual D3D12_CPU_DESCRIPTOR_HANDLE view() override;
+        virtual ff::dx12::resource& dx12_target_texture() override;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE dx12_target_view() override;
 #endif
 
         // target_window_base
@@ -60,9 +64,8 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
-        std::array<ff_dx::resource, BACK_BUFFER_COUNT> render_targets;
-        std::array<uint64_t, BACK_BUFFER_COUNT> fence_values;
-        ff_dx::descriptor_range views;
+        std::array<std::unique_ptr<ff_dx::resource>, BACK_BUFFER_COUNT> target_textures;
+        ff_dx::descriptor_range target_views;
         size_t back_buffer_index;
 #endif
         bool main_window;
