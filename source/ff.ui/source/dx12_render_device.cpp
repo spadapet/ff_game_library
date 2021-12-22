@@ -556,6 +556,7 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
     viewport.Height = size.y;
     viewport.MaxDepth = 1.0f;
 
+    this->target_format = single_target->format();
     this->commands->targets(&single_target, 1, surface2->depth().get());
     this->commands->viewports(&viewport, 1);
 }

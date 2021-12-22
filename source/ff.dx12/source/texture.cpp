@@ -12,13 +12,21 @@ ff::dx12::texture::texture()
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
-ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
+ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
     : sprite_type_(ff::dxgi::sprite_type::unknown)
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 
     if (size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
     {
+        D3D12_CLEAR_VALUE clear_value{};
+
+        if (optimized_clear_color)
+        {
+            clear_value.Format = format;
+            std::memcpy(clear_value.Color, optimized_clear_color, sizeof(clear_value.Color));
+        }
+
         this->resource_ = std::make_unique<ff::dx12::resource>(
             std::shared_ptr<ff::dx12::mem_range>(), 
             CD3DX12_RESOURCE_DESC::Tex2D(format,
@@ -27,7 +35,8 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
                 static_cast<UINT16>(array_size),
                 static_cast<UINT16>(mip_count),
                 static_cast<UINT>(ff::dx12::fix_sample_count(format, sample_count)), 0, // quality
-                !ff::dxgi::compressed_format(format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE));
+                !ff::dxgi::compressed_format(format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE),
+            clear_value);
     }
 
     this->sprite_type_ = ff::dxgi::palette_format(format)

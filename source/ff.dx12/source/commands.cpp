@@ -238,7 +238,19 @@ void ff::dx12::commands::targets(ff::dxgi::target_base** targets, size_t count, 
         target_views.push_back(access.dx12_target_view());
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE depth_view = depth ? ff::dx12::depth::get(*depth).view() : D3D12_CPU_DESCRIPTOR_HANDLE{};
+    D3D12_CPU_DESCRIPTOR_HANDLE depth_view{};
+    if (depth)
+    {
+        ff::dx12::depth& dx12_depth = ff::dx12::depth::get(*depth);
+        assert(dx12_depth);
+
+        if (dx12_depth)
+        {
+            depth_view = dx12_depth.view();
+            this->resource_state(*dx12_depth.resource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+        }
+    }
+
     this->list()->OMSetRenderTargets(static_cast<UINT>(count), target_views.data(), FALSE, depth ? &depth_view : nullptr);
 }
 
@@ -417,7 +429,7 @@ void ff::dx12::commands::copy_resource(ff::dx12::resource& dest_resource, ff::dx
 void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
     this->resource_state_sub_index(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
-    this->resource_state_sub_index(source, D3D12_RESOURCE_STATE_COPY_DEST, source_sub_index);
+    this->resource_state_sub_index(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
 
     const D3D12_BOX source_box
     {
