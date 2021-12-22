@@ -37,6 +37,7 @@ namespace ff::dx12
         size_t mip_size() const;
 
         ff::dx12::resource_state& global_state();
+        void tracker(ff::dx12::resource_tracker* value);
         void prepare_state(
             ff::dx12::fence_values& wait_before_execute,
             const ff::dx12::fence_value& next_fence_value,
@@ -87,5 +88,6 @@ namespace ff::dx12
         ff::dx12::fence_values global_reads_;
         ff::dx12::fence_value global_write_;
         ff::dx12::resource_state global_state_;
+        ff::dx12::resource_tracker* tracker_;
     };
 }

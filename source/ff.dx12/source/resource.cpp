@@ -53,12 +53,13 @@ ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE 
     : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
-ff::dx12::resource::resource(ID3D12ResourceX * swap_chain_resource)
+ff::dx12::resource::resource(ID3D12ResourceX* swap_chain_resource)
     : desc_(swap_chain_resource->GetDesc())
     , alloc_info_{}
     , optimized_clear_value{}
     , resource_(swap_chain_resource)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
+    , tracker_(nullptr)
 {}
 
 ff::dx12::resource::resource(
@@ -72,6 +73,7 @@ ff::dx12::resource::resource(
     , optimized_clear_value(optimized_clear_value)
     , mem_range_(mem_range)
     , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
+    , tracker_(nullptr)
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0 && desc.MipLevels * desc.DepthOrArraySize > 0);
 
@@ -110,6 +112,7 @@ ff::dx12::resource::resource(resource& other, ff::dx12::commands* commands)
 }
 
 ff::dx12::resource::resource(resource&& other) noexcept
+    : tracker_(nullptr)
 {
     *this = std::move(other);
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
@@ -135,6 +138,12 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
         std::swap(this->global_state_, other.global_state_);
         std::swap(this->global_reads_, other.global_reads_);
         std::swap(this->global_write_, other.global_write_);
+        std::swap(this->tracker_, other.tracker_);
+
+        if (this->tracker_)
+        {
+            this->tracker_->resource_moved(other, *this);
+        }
     }
 
     return *this;
@@ -183,6 +192,11 @@ size_t ff::dx12::resource::mip_size() const
 ff::dx12::resource_state& ff::dx12::resource::global_state()
 {
     return this->global_state_;
+}
+
+void ff::dx12::resource::tracker(ff::dx12::resource_tracker* value)
+{
+    this->tracker_ = value;
 }
 
 void ff::dx12::resource::prepare_state(
@@ -416,6 +430,9 @@ void ff::dx12::resource::destroy(bool for_reset)
 
         this->mem_range_.reset();
     }
+
+    assert(!this->tracker_);
+    this->tracker_ = nullptr;
 
     this->global_reads_.clear();
     this->global_write_ = {};

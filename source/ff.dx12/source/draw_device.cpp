@@ -87,7 +87,7 @@ namespace
             depth_disabled = 0,
             depth_enabled = 0b1000,
 
-            target_rgba = 0,
+            target_default = 0,
             target_bgra = 0b10000,
 
             count = 0b100000
@@ -134,13 +134,14 @@ namespace
             bool palette_out)
         {
             ff::dx12::commands& commands = ff::dx12::commands::get(context);
-            assert(target_format == DXGI_FORMAT_R8G8B8A8_UNORM || target_format == DXGI_FORMAT_B8G8R8A8_UNORM);
+            assert(palette_out || target_format == DXGI_FORMAT_R8G8B8A8_UNORM || target_format == DXGI_FORMAT_B8G8R8A8_UNORM);
+            assert(!palette_out || target_format == DXGI_FORMAT_R8_UINT);
 
             state_t index = ff::flags::combine(
                 (alpha ? (pre_multiplied_alpha ? state_t::blend_pma : state_t::blend_alpha) : state_t::blend_opaque),
                 (palette_out ? state_t::out_palette : state_t::out_color),
                 (has_depth ? state_t::depth_enabled : state_t::depth_disabled),
-                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM ? state_t::target_bgra : state_t::target_rgba));
+                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM ? state_t::target_bgra : state_t::target_default));
 
             auto& state = this->pipeline_states[static_cast<size_t>(index)];
 
@@ -193,7 +194,11 @@ namespace
                 desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
             }
 
-            if (ff::flags::has(index, state_t::target_bgra))
+            if (ff::flags::has(index, state_t::out_palette))
+            {
+                desc.RTVFormats[0] = DXGI_FORMAT_R8_UINT;
+            }
+            else if (ff::flags::has(index, state_t::target_bgra))
             {
                 desc.RTVFormats[0] = DXGI_FORMAT_B8G8R8A8_UNORM;
             }

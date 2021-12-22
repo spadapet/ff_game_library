@@ -20,6 +20,7 @@ namespace ff::dx12
 
         void flush(ID3D12GraphicsCommandListX* list);
         void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker);
+        void resource_moved(ff::dx12::resource& old_resource, ff::dx12::resource& new_resource);
         void reset();
 
         void state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);

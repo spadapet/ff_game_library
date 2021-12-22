@@ -189,6 +189,7 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
             }
 
             resource->global_state().merge(data.state);
+            resource->tracker(nullptr);
         }
 
         this->resources.clear();
@@ -200,8 +201,24 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
     }
 }
 
+void ff::dx12::resource_tracker::resource_moved(ff::dx12::resource& old_resource, ff::dx12::resource& new_resource)
+{
+    auto i = this->resources.find(&old_resource);
+    assert(i != this->resources.end());
+
+    auto h = this->resources.try_emplace(&new_resource, std::move(i->second));
+    assert(h.second);
+
+    this->resources.erase(i);
+}
+
 void ff::dx12::resource_tracker::reset()
 {
+    for (auto& [resource, data] : this->resources)
+    {
+        resource->tracker(nullptr);
+    }
+
     this->resources.clear();
     this->barriers_pending.clear();
 }
@@ -274,6 +291,7 @@ void ff::dx12::resource_tracker::state(ff::dx12::resource& resource, D3D12_RESOU
         }
 
         iter_state.set(state, ff::dx12::resource_state::type_t::pending, array_start, array_size, mip_start, mip_size);
+        resource.tracker(this);
     }
 }
 
