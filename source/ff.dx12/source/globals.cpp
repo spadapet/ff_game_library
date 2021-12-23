@@ -133,12 +133,20 @@ static void destroy_dxgi()
 
 static bool init_d3d(bool for_reset)
 {
-    if (!for_reset && DEBUG && ::IsDebuggerPresent())
+    if (!for_reset) // && DEBUG && ::IsDebuggerPresent())
     {
         Microsoft::WRL::ComPtr<ID3D12DebugX> debug_interface;
         if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface))))
         {
             debug_interface->EnableDebugLayer();
+        }
+
+        Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dred_settings;
+        if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&dred_settings))))
+        {
+            dred_settings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            dred_settings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            //dred_settings->SetWatsonDumpEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
         }
     }
 
@@ -217,6 +225,26 @@ static void destroy_d3d(bool for_reset)
 
     ::outputs_hash = 0;
     ::adapter.Reset();
+
+    if (::device && FAILED(::device->GetDeviceRemovedReason()))
+    {
+        Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataX> dred_data;
+        if (SUCCEEDED(::device.As(&dred_data)))
+        {
+            D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 dred_breadcrumbs;;
+            if (SUCCEEDED(dred_data->GetAutoBreadcrumbsOutput1(&dred_breadcrumbs)))
+            {
+                assert(false);
+            }
+
+            D3D12_DRED_PAGE_FAULT_OUTPUT dred_fault;
+            if (SUCCEEDED(dred_data->GetPageFaultAllocationOutput(&dred_fault)))
+            {
+                assert(false);
+            }
+        }
+    }
+
     ::device.Reset();
 }
 
