@@ -230,10 +230,13 @@ void ff::dx12::resource::prepare_state(
     }
     else
     {
-        wait_before_execute.add(this->global_write_);
-        this->global_reads_.clear();
+        if (this->global_write_)
+        {
+            wait_before_execute.add(this->global_write_);
+            this->global_write_ = {};
+        }
+
         this->global_reads_.add(next_fence_value);
-        this->global_write_ = {};
     }
 
     tracker.state(*this, state, array_start, array_size, mip_start, mip_size);

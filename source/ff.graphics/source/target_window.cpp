@@ -165,6 +165,12 @@ bool ff::target_window::present()
             commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
         }
 
+        if (this->frame_latency_handle)
+        {
+            // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
+            ff::wait_for_handle(this->frame_latency_handle, 1000);
+        }
+
         HRESULT hr = this->swap_chain->Present(1, 0);
 
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
@@ -192,6 +198,7 @@ void ff::target_window::before_resize()
 void ff::target_window::internal_reset()
 {
     this->before_resize();
+    this->frame_latency_handle.close();
     this->swap_chain.Reset();
 }
 
@@ -352,6 +359,7 @@ bool ff::target_window::size(const ff::window_size& size)
     }
 #elif DXVER == 12
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
+    this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {

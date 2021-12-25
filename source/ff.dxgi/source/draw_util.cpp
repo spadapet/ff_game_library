@@ -1128,10 +1128,8 @@ void ff::dxgi::draw_util::draw_device_base::draw_opaque_geometry()
             break;
         }
 
-        if (bucket.render_count())
+        if (bucket.render_count() && this->apply_geometry_state(*this->command_context_, bucket))
         {
-            this->apply_geometry_state(*this->command_context_, bucket);
-
             if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), true))
             {
                 this->draw(*this->command_context_, bucket.render_count(), bucket.render_start());
@@ -1164,11 +1162,12 @@ void ff::dxgi::draw_util::draw_device_base::draw_alpha_geometry()
                 }
             }
 
-            this->apply_geometry_state(*this->command_context_, *entry.bucket);
-
-            if (!custom_func || (*custom_func)(*this->command_context_, entry.bucket->item_type(), false))
+            if (this->apply_geometry_state(*this->command_context_, *entry.bucket))
             {
-                this->draw(*this->command_context_, geometry_count, entry.bucket->render_start() + entry.index);
+                if (!custom_func || (*custom_func)(*this->command_context_, entry.bucket->item_type(), false))
+                {
+                    this->draw(*this->command_context_, geometry_count, entry.bucket->render_start() + entry.index);
+                }
             }
         }
     }

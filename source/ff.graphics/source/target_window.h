@@ -67,6 +67,7 @@ namespace ff
         std::array<std::unique_ptr<ff_dx::resource>, BACK_BUFFER_COUNT> target_textures;
         ff_dx::descriptor_range target_views;
         size_t back_buffer_index;
+        ff::win_handle frame_latency_handle;
 #endif
         bool main_window;
         bool was_full_screen_on_close;

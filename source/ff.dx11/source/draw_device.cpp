@@ -449,9 +449,10 @@ namespace
             alpha_state.apply();
         }
 
-        virtual void apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
+        virtual bool apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
         {
             this->get_geometry_bucket_shaders(bucket.bucket_type()).apply(context, this->geometry_buffer_, this->target_requires_palette());
+            return true;
         }
 
         virtual ff::dxgi::buffer_base& geometry_buffer() override

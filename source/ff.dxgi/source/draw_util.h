@@ -229,7 +229,7 @@ namespace ff::dxgi::draw_util
             ff::dxgi::texture_base& palette_texture, ff::dxgi::texture_base& palette_remap_texture) = 0;
         virtual void apply_opaque_state(ff::dxgi::command_context_base& context) = 0;
         virtual void apply_alpha_state(ff::dxgi::command_context_base& context) = 0;
-        virtual void apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) = 0;
+        virtual bool apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) = 0;
         virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) = 0;
         virtual void draw(ff::dxgi::command_context_base& context, size_t count, size_t start) = 0;
 

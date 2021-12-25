@@ -69,10 +69,8 @@ namespace
     class dx12_state
     {
     private:
-        dx12_state(size_t item_size, const D3D12_INPUT_ELEMENT_DESC* element_desc, size_t element_count)
-            : item_size(item_size)
-            , element_desc(element_desc)
-            , element_count(element_count)
+        dx12_state(const D3D12_INPUT_ELEMENT_DESC* element_desc, size_t element_count)
+            : input_layout_desc{ element_desc, static_cast<UINT>(element_count) }
         {}
 
         enum class state_t
@@ -97,7 +95,7 @@ namespace
         template<typename T>
         static ::dx12_state create()
         {
-            return ::dx12_state(sizeof(T), T::layout().data(), T::layout().size());
+            return ::dx12_state(T::layout().data(), T::layout().size());
         }
 
         void reset(
@@ -124,9 +122,8 @@ namespace
             }
         }
 
-        void apply(
+        bool apply(
             ff::dxgi::command_context_base& context,
-            ff::dxgi::buffer_base& geometry_buffer,
             DXGI_FORMAT target_format,
             bool has_depth,
             bool alpha,
@@ -153,7 +150,10 @@ namespace
             if (state)
             {
                 ff::dx12::commands::get(context).pipeline_state(state.Get());
+                return true;
             }
+
+            return false;
         }
 
         Microsoft::WRL::ComPtr<ID3D12PipelineStateX> create_pipeline_state(state_t index) const
@@ -168,8 +168,7 @@ namespace
             desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
             desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
             desc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-            desc.InputLayout.NumElements = static_cast<UINT>(this->element_count);
-            desc.InputLayout.pInputElementDescs = this->element_desc;
+            desc.InputLayout = input_layout_desc;
             desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
             desc.NumRenderTargets = 1;
             desc.SampleDesc.Count = 1;
@@ -217,11 +216,8 @@ namespace
         std::string ps_palette_out_res_name;
 
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
+        D3D12_INPUT_LAYOUT_DESC input_layout_desc;
         std::array<Microsoft::WRL::ComPtr<ID3D12PipelineStateX>, static_cast<size_t>(state_t::count)> pipeline_states;
-
-        const D3D12_INPUT_ELEMENT_DESC* element_desc;
-        size_t element_count;
-        size_t item_size;
     };
 
     class dx12_draw_device : public ff::dxgi::draw_util::draw_device_base, public ff::dx12::draw_device
@@ -562,19 +558,23 @@ namespace
             commands.primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
-        virtual void apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
+        virtual bool apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
         {
-            this->state(bucket.bucket_type()).apply(context,
-                this->geometry_buffer_,
+            if (this->state(bucket.bucket_type()).apply(context,
                 this->setup_target->format(),
                 this->setup_depth != nullptr,
                 bucket.bucket_type() >= ff::dxgi::draw_util::geometry_bucket_type::first_alpha,
                 this->pre_multiplied_alpha(),
-                this->target_requires_palette());
+                this->target_requires_palette()))
+            {
+                ff::dx12::commands& commands = ff::dx12::commands::get(context);
+                ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
+                commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
 
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
-            ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
-            commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+                return true;
+            }
+
+            return false;
         }
 
         virtual ff::dxgi::buffer_base& geometry_buffer() override

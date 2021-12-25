@@ -133,14 +133,14 @@ static void destroy_dxgi()
 
 static bool init_d3d(bool for_reset)
 {
-    if (!for_reset) // && DEBUG && ::IsDebuggerPresent())
+    if (!for_reset && DEBUG && ::IsDebuggerPresent())
     {
         Microsoft::WRL::ComPtr<ID3D12DebugX> debug_interface;
         if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface))))
         {
             debug_interface->EnableDebugLayer();
         }
-
+#if 0
         Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dred_settings;
         if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&dred_settings))))
         {
@@ -148,6 +148,7 @@ static bool init_d3d(bool for_reset)
             dred_settings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
             //dred_settings->SetWatsonDumpEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
         }
+#endif
     }
 
     // Create the logical device
