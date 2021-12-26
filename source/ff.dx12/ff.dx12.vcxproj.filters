@@ -92,6 +92,9 @@
     <ClCompile Include="source\target_texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\buffer_upload.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -186,6 +189,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\target_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\buffer_upload.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

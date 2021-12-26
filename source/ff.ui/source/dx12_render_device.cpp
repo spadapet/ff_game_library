@@ -617,7 +617,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         this->commands->pipeline_state(pipeline_state);
         this->commands->stencil(batch.stencilRef);
         this->commands->vertex_buffers(&vertex_buffer, &vertex_view, 0, 1);
-        this->commands->index_buffer(*this->index_buffer.resource(), index_view);
+        this->commands->index_buffer(this->index_buffer.resource(), index_view);
     }
 
     // Update constant buffers

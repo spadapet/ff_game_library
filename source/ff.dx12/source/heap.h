@@ -26,6 +26,7 @@ namespace ff::dx12
 
         operator bool() const;
         void* cpu_data();
+        D3D12_GPU_VIRTUAL_ADDRESS gpu_data();
         uint64_t size() const;
         usage_t usage() const;
         bool cpu_usage() const;

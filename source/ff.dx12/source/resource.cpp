@@ -55,9 +55,9 @@ ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE 
 
 ff::dx12::resource::resource(ID3D12ResourceX* swap_chain_resource)
     : desc_(swap_chain_resource->GetDesc())
-    , alloc_info_{}
     , optimized_clear_value{}
     , resource_(swap_chain_resource)
+    , external_resource(true)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
     , tracker_(nullptr)
 {}
@@ -69,33 +69,26 @@ ff::dx12::resource::resource(
     std::shared_ptr<ff::dx12::mem_range> mem_range,
     bool allocate_mem_range)
     : desc_(desc)
-    , alloc_info_(ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc))
     , optimized_clear_value(optimized_clear_value)
     , mem_range_(mem_range)
+    , external_resource(false)
     , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
     , tracker_(nullptr)
 {
-    assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && this->alloc_info_.SizeInBytes > 0 && desc.MipLevels * desc.DepthOrArraySize > 0);
+    assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && desc.MipLevels * desc.DepthOrArraySize > 0);
 
-    bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
     bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-
     if (target && this->optimized_clear_value.Format == DXGI_FORMAT_UNKNOWN)
     {
         this->optimized_clear_value = { desc.Format };
     }
 
-    if (allocate_mem_range)
+    if (allocate_mem_range && !mem_range)
     {
-        if (!mem_range || ff::math::align_up(mem_range->start(), this->alloc_info_.Alignment) != mem_range->start() || mem_range->size() < this->alloc_info_.SizeInBytes)
-        {
-            ff::dx12::mem_allocator& allocator = buffer ? ff::dx12::static_buffer_allocator() : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
-            this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(this->alloc_info_.SizeInBytes, this->alloc_info_.Alignment));
-        }
-    }
-    else
-    {
-        assert(!mem_range);
+        bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+        D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
+        ff::dx12::mem_allocator& allocator = buffer ? ff::dx12::static_buffer_allocator() : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
+        this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(alloc_info.SizeInBytes, alloc_info.Alignment));
     }
 
     this->reset();
@@ -134,7 +127,6 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
         std::swap(this->mem_range_, other.mem_range_);
         std::swap(this->optimized_clear_value, other.optimized_clear_value);
         std::swap(this->desc_, other.desc_);
-        std::swap(this->alloc_info_, other.alloc_info_);
         std::swap(this->global_state_, other.global_state_);
         std::swap(this->global_reads_, other.global_reads_);
         std::swap(this->global_write_, other.global_write_);
@@ -167,11 +159,6 @@ const std::shared_ptr<ff::dx12::mem_range>& ff::dx12::resource::mem_range() cons
 const D3D12_RESOURCE_DESC& ff::dx12::resource::desc() const
 {
     return this->desc_;
-}
-
-const D3D12_RESOURCE_ALLOCATION_INFO& ff::dx12::resource::alloc_info() const
-{
-    return this->alloc_info_;
 }
 
 size_t ff::dx12::resource::sub_resource_size() const
@@ -244,7 +231,9 @@ void ff::dx12::resource::prepare_state(
 
 ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* commands, const void* data, uint64_t offset, uint64_t size)
 {
-    if (size && data && offset + size <= this->alloc_info_.SizeInBytes)
+    assert(this->desc_.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+
+    if (size && data && offset + size <= this->desc_.Width)
     {
         std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
         ff::dx12::mem_range mem_range = ff::dx12::upload_allocator().alloc_buffer(size, commands->next_fence_value());
@@ -263,7 +252,9 @@ ff::dx12::fence_value ff::dx12::resource::update_buffer(ff::dx12::commands* comm
 
 std::pair<ff::dx12::fence_value, ff::dx12::mem_range> ff::dx12::resource::readback_buffer(ff::dx12::commands* commands, uint64_t offset, uint64_t size)
 {
-    if (size && offset + size <= this->alloc_info_.SizeInBytes)
+    assert(this->desc_.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+
+    if (size && offset + size <= this->desc_.Width)
     {
         std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
         ff::dx12::mem_range mem_range = ff::dx12::readback_allocator().alloc_buffer(size, commands->next_fence_value());
@@ -297,6 +288,7 @@ std::vector<uint8_t> ff::dx12::resource::capture_buffer(ff::dx12::commands* comm
 
 ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* commands, const DirectX::Image* images, size_t sub_index, size_t sub_count, ff::point_size dest_pos)
 {
+    assert(this->desc_.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D);
     std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
 
     size_t temp_width, temp_height, temp_mip_count, temp_array_count;
@@ -346,6 +338,8 @@ ff::dx12::fence_value ff::dx12::resource::update_texture(ff::dx12::commands* com
 
 ff::dx12::resource::readback_texture_data ff::dx12::resource::readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect)
 {
+    assert(this->desc_.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D);
+
     readback_texture_data result{};
     result.mem_ranges.reserve(sub_count);
 
@@ -449,7 +443,7 @@ void ff::dx12::resource::before_reset()
 
 bool ff::dx12::resource::reset()
 {
-    if (!this->alloc_info_.SizeInBytes)
+    if (this->external_resource)
     {
         // this resource shouldn't be recreated (like a swap chain buffer)
     }

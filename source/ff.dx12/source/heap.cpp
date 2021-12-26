@@ -10,7 +10,7 @@ ff::dx12::heap::heap(uint64_t size, ff::dx12::heap::usage_t usage)
     : cpu_data_(nullptr)
     , size_(size)
     , usage_(usage)
-        {
+{
     this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::heap);
 }
@@ -55,6 +55,11 @@ void* ff::dx12::heap::cpu_data()
     }
 
     return nullptr;
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::heap::gpu_data()
+{
+    return this->cpu_data() ? this->cpu_resource->GetGPUVirtualAddress() : 0;
 }
 
 uint64_t ff::dx12::heap::size() const

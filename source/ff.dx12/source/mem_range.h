@@ -25,6 +25,7 @@ namespace ff::dx12
         uint64_t allocated_start() const;
         uint64_t allocated_size() const;
         void* cpu_data() const;
+        D3D12_GPU_VIRTUAL_ADDRESS gpu_data() const;
         ff::dx12::heap* heap() const;
 
     private:

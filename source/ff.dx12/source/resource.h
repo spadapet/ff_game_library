@@ -31,7 +31,6 @@ namespace ff::dx12
         const D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
         const std::shared_ptr<ff::dx12::mem_range>& mem_range() const;
         const D3D12_RESOURCE_DESC& desc() const;
-        const D3D12_RESOURCE_ALLOCATION_INFO& alloc_info() const;
         size_t sub_resource_size() const;
         size_t array_size() const;
         size_t mip_size() const;
@@ -79,10 +78,10 @@ namespace ff::dx12
         virtual bool reset() override;
 
         D3D12_RESOURCE_DESC desc_;
-        D3D12_RESOURCE_ALLOCATION_INFO alloc_info_;
         D3D12_CLEAR_VALUE optimized_clear_value;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;
+        bool external_resource;
 
         // Global state of the resource BETWEEN ExecuteCommandLists. Command lists must keep track of state while building the commands.
         ff::dx12::fence_values global_reads_;

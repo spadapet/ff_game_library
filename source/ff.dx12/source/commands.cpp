@@ -33,14 +33,6 @@ ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_ca
 
         this->list(false)->SetDescriptorHeaps(2, heaps);
     }
-
-    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::commands);
-}
-
-ff::dx12::commands::commands(commands&& other) noexcept
-{
-    *this = std::move(other);
-    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::commands);
 }
 
 ff::dx12::commands::~commands()
@@ -50,8 +42,6 @@ ff::dx12::commands::~commands()
         this->queue_->execute(*this);
         assert(!*this);
     }
-
-    ff::dx12::remove_device_child(this);
 }
 
 ff::dx12::commands& ff::dx12::commands::get(ff::dxgi::command_context_base& obj)
@@ -282,17 +272,24 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
 
 void ff::dx12::commands::vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
 {
-    for (size_t i = 0; i < count; i++)
+    if (resources)
     {
-        this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        for (size_t i = 0; i < count; i++)
+        {
+            this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        }
     }
 
     this->list()->IASetVertexBuffers(static_cast<UINT>(start), static_cast<UINT>(count), views);
 }
 
-void ff::dx12::commands::index_buffer(ff::dx12::resource& resource, const D3D12_INDEX_BUFFER_VIEW& view)
+void ff::dx12::commands::index_buffer(ff::dx12::resource* resource, const D3D12_INDEX_BUFFER_VIEW& view)
 {
-    this->resource_state(resource, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    if (resource)
+    {
+        this->resource_state(*resource, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    }
+
     this->list()->IASetIndexBuffer(&view);
 }
 
@@ -462,14 +459,4 @@ ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) 
 ff::dx12::resource_tracker* ff::dx12::commands::tracker() const
 {
     return this->data_cache.resource_tracker.get();
-}
-
-void ff::dx12::commands::before_reset()
-{
-    if (this->data_cache.list)
-    {
-        this->data_cache.list->Close();
-    }
-
-    this->close();
 }

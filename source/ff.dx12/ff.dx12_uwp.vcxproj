@@ -13,6 +13,7 @@
     <ClCompile Include="source\access.cpp" />
     <ClCompile Include="source\buffer.cpp" />
     <ClCompile Include="source\buffer_cpu.cpp" />
+    <ClCompile Include="source\buffer_upload.cpp" />
     <ClCompile Include="source\commands.cpp" />
     <ClCompile Include="source\depth.cpp" />
     <ClCompile Include="source\descriptor_allocator.cpp" />
@@ -46,6 +47,7 @@
     <ClInclude Include="source\access.h" />
     <ClInclude Include="source\buffer.h" />
     <ClInclude Include="source\buffer_cpu.h" />
+    <ClInclude Include="source\buffer_upload.h" />
     <ClInclude Include="source\commands.h" />
     <ClInclude Include="source\depth.h" />
     <ClInclude Include="source\descriptor_allocator.h" />

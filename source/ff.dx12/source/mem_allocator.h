@@ -14,6 +14,7 @@ namespace ff::dx12
         // Called from mem_range
         virtual void free_range(const ff::dx12::mem_range& range) = 0;
         virtual void* cpu_data(uint64_t start);
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_data(uint64_t start);
 
         // Called from mem_allocator_base
         virtual ff::dx12::heap& heap() = 0;
@@ -35,6 +36,7 @@ namespace ff::dx12
         // mem_buffer_base
         virtual void free_range(const ff::dx12::mem_range& range);
         virtual void* cpu_data(uint64_t start) override;
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_data(uint64_t start) override;
         virtual ff::dx12::heap& heap() override;
         virtual bool frame_complete() override;
         virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) override;
@@ -68,6 +70,7 @@ namespace ff::dx12
         // mem_buffer_base
         virtual void free_range(const ff::dx12::mem_range& range);
         virtual void* cpu_data(uint64_t start) override;
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_data(uint64_t start) override;
         virtual ff::dx12::heap& heap() override;
         virtual bool frame_complete() override;
         virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) override;

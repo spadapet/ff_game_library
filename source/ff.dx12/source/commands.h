@@ -1,7 +1,9 @@
 #pragma once
 
 #include "access.h"
+#include "fence.h"
 #include "fence_values.h"
+#include "resource_tracker.h"
 
 namespace ff::dx12
 {
@@ -12,7 +14,7 @@ namespace ff::dx12
     class resource_tracker;
     class queue;
 
-    class commands : public ff::dxgi::command_context_base, private ff::dxgi::device_child_base
+    class commands : public ff::dxgi::command_context_base
     {
     public:
         struct data_cache_t
@@ -25,9 +27,9 @@ namespace ff::dx12
         };
 
         commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache, ID3D12PipelineStateX* initial_state);
-        commands(commands&& other) noexcept;
+        commands(commands&& other) noexcept = default;
         commands(const commands& other) = delete;
-        virtual ~commands() override;
+        ~commands();
 
         static commands& get(ff::dxgi::command_context_base& obj);
         commands& operator=(commands&& other) noexcept = default;
@@ -55,7 +57,7 @@ namespace ff::dx12
         void targets(ff::dxgi::target_base** targets, size_t count, ff::dxgi::depth_base* depth);
         void viewports(const D3D12_VIEWPORT* viewports, size_t count);
         void vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count);
-        void index_buffer(ff::dx12::resource& resource, const D3D12_INDEX_BUFFER_VIEW& view);
+        void index_buffer(ff::dx12::resource* resource, const D3D12_INDEX_BUFFER_VIEW& view);
         void primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology);
         void stencil(uint32_t value);
         void draw(size_t start, size_t count);
@@ -80,9 +82,6 @@ namespace ff::dx12
     private:
         ID3D12GraphicsCommandListX* list(bool flush_resource_state = true) const;
         ff::dx12::resource_tracker* tracker() const;
-
-        // device_child_base
-        virtual void before_reset() override;
 
         D3D12_COMMAND_LIST_TYPE type_;
         ff::dx12::queue* queue_;

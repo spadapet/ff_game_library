@@ -81,6 +81,11 @@ void* ff::dx12::mem_range::cpu_data() const
     return *this ? this->owner->cpu_data(this->start_) : nullptr;
 }
 
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::mem_range::gpu_data() const
+{
+	return *this ? this->owner->gpu_data(this->start_) : 0;
+}
+
 ff::dx12::heap* ff::dx12::mem_range::heap() const
 {
     return *this ? &this->owner->heap() : nullptr;

@@ -7,6 +7,11 @@ void* ff::dx12::mem_buffer_base::cpu_data(uint64_t start)
     return nullptr;
 }
 
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::mem_buffer_base::gpu_data(uint64_t start)
+{
+    return 0;
+}
+
 uint64_t ff::dx12::mem_buffer_ring::range_t::after_end() const
 {
     return this->start + this->size;
@@ -42,6 +47,13 @@ void* ff::dx12::mem_buffer_ring::cpu_data(uint64_t start)
     assert(start <= this->heap_.size());
     uint8_t* data = reinterpret_cast<uint8_t*>(this->heap_.cpu_data());
     return data ? data + start : nullptr;
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::mem_buffer_ring::gpu_data(uint64_t start)
+{
+    assert(start <= this->heap_.size());
+    D3D12_GPU_VIRTUAL_ADDRESS data = this->heap_.gpu_data();
+    return data ? data + start : 0;
 }
 
 ff::dx12::heap& ff::dx12::mem_buffer_ring::heap()
@@ -180,6 +192,13 @@ void* ff::dx12::mem_buffer_free_list::cpu_data(uint64_t start)
     assert(start <= this->heap_.size());
     uint8_t* data = reinterpret_cast<uint8_t*>(this->heap_.cpu_data());
     return data ? data + start : nullptr;
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::mem_buffer_free_list::gpu_data(uint64_t start)
+{
+    assert(start <= this->heap_.size());
+    D3D12_GPU_VIRTUAL_ADDRESS data = this->heap_.gpu_data();
+    return data ? data + start : 0;
 }
 
 ff::dx12::heap& ff::dx12::mem_buffer_free_list::heap()

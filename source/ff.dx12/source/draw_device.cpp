@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "buffer.h"
 #include "buffer_cpu.h"
+#include "buffer_upload.h"
 #include "depth.h"
 #include "descriptor_allocator.h"
 #include "device_reset_priority.h"
@@ -568,8 +569,9 @@ namespace
                 this->target_requires_palette()))
             {
                 ff::dx12::commands& commands = ff::dx12::commands::get(context);
-                ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
-                commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+                //ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
+                //commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+                commands.vertex_buffers(nullptr, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
 
                 return true;
             }
@@ -619,7 +621,7 @@ namespace
         }
 
         // Constant data for shaders
-        ff::dx12::buffer geometry_buffer_;
+        ff::dx12::buffer_upload geometry_buffer_;
         ff::dx12::buffer_cpu geometry_constants_buffer_0_; // root constants
         ff::dx12::buffer geometry_constants_buffer_1_;
         ff::dx12::buffer pixel_constants_buffer_0_;
