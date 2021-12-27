@@ -53,8 +53,8 @@ namespace ff::internal::ui
         DXGI_FORMAT target_format;
 
         shader_t shaders[Noesis::Shader::Count];
-        ff::dx12::buffer vertex_buffer;
-        ff::dx12::buffer index_buffer;
+        ff::dx12::buffer_upload vertex_buffer;
+        ff::dx12::buffer_upload index_buffer;
         ff::dx12::buffer constant_buffers[5]; // 2 vs, 3 ps
 
         ff::dx12::descriptor_range samplers_cpu; // 64

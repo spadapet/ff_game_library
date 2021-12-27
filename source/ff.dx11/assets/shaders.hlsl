@@ -439,7 +439,8 @@ uint SamplePaletteSpriteTexture(int3 tex, uint ntex)
 // Texture: RGBA, Output: RGBA
 float4 sprite_ps(sprite_pixel input) : SV_TARGET
 {
-    float4 color = input.color * SampleSpriteTexture(input.uv, input.tex);
+    uint texture_index = input.tex & 0xFF;
+    float4 color = input.color * SampleSpriteTexture(input.uv, texture_index);
 
     if (color.a == 0)
     {
@@ -475,7 +476,8 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
 // Texture: Alpha only, Output: RGBA (111A)
 float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
 {
-    float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, input.tex).a);
+    uint texture_index = input.tex & 0xFF;
+    float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, texture_index).a);
 
     if (color.a == 0)
     {

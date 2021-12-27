@@ -32,7 +32,7 @@ D3D12_VERTEX_BUFFER_VIEW ff::dx12::buffer_upload::vertex_view(size_t vertex_stri
     return {};
 }
 
-D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t count) const
+D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t count, DXGI_FORMAT format) const
 {
     if (this->mem_range)
     {
@@ -41,7 +41,7 @@ D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t
         D3D12_INDEX_BUFFER_VIEW view;
         view.BufferLocation = this->gpu_address() + (start * 2);
         view.SizeInBytes = 2 * static_cast<UINT>(count ? count : (this->size() / 2 - start));
-        view.Format = DXGI_FORMAT_R16_UINT;
+        view.Format = format;
         return view;
     }
 

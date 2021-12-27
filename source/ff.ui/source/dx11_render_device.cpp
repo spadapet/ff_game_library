@@ -278,7 +278,7 @@ void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, ui
         reinterpret_cast<uint8_t*>(const_cast<void*>(data)),
     };
 
-    texture2->update(ff_dx::get_device_state(), 0, static_cast<size_t>(level), pos, image_data);
+    texture2->update(0, static_cast<size_t>(level), pos, image_data);
 }
 
 void ff::internal::ui::render_device::BeginOnscreenRender()

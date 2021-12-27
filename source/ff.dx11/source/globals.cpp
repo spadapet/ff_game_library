@@ -302,8 +302,10 @@ void ff::dx11::trim()
 }
 
 void ff::dx11::wait_for_idle()
-{
-}
+{}
+
+void ff::dx11::frame_complete()
+{}
 
 IDXGIFactoryX* ff::dx11::factory()
 {

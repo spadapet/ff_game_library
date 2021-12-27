@@ -16,7 +16,7 @@ namespace ff::dx12
         operator bool() const;
 
         D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const;
-        D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0) const;
+        D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const;
         D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
         size_t version() const;
 

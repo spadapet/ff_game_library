@@ -611,13 +611,11 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     {
         auto [pipeline_state, stride] = this->pipeline_state_and_stride(batch.shader.v, batch.renderState.v);
         D3D12_VERTEX_BUFFER_VIEW vertex_view = this->vertex_buffer.vertex_view(stride, static_cast<uint64_t>(batch.vertexOffset), static_cast<size_t>(batch.numVertices));
-        D3D12_INDEX_BUFFER_VIEW index_view = this->index_buffer.index_view();
-        ff::dx12::resource* vertex_buffer = this->vertex_buffer.resource();
 
         this->commands->pipeline_state(pipeline_state);
         this->commands->stencil(batch.stencilRef);
-        this->commands->vertex_buffers(&vertex_buffer, &vertex_view, 0, 1);
-        this->commands->index_buffer(this->index_buffer.resource(), index_view);
+        this->commands->vertex_buffers(nullptr, &vertex_view, 0, 1);
+        this->commands->index_buffer(nullptr, this->index_buffer.index_view());
     }
 
     // Update constant buffers

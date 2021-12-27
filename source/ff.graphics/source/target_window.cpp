@@ -188,6 +188,7 @@ bool ff::target_window::present()
 void ff::target_window::before_resize()
 {
     ff_dx::wait_for_idle();
+    this->frame_latency_handle.close();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
@@ -198,7 +199,6 @@ void ff::target_window::before_resize()
 void ff::target_window::internal_reset()
 {
     this->before_resize();
-    this->frame_latency_handle.close();
     this->swap_chain.Reset();
 }
 

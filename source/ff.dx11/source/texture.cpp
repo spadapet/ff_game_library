@@ -11,7 +11,7 @@ ff::dx11::texture::texture()
     ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
 }
 
-ff::dx11::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count)
+ff::dx11::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
     : sprite_type_(ff::dxgi::sprite_type::unknown)
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
