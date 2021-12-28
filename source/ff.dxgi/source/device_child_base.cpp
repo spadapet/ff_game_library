@@ -1,6 +1,17 @@
 #include "pch.h"
 #include "device_child_base.h"
 
+ff::dxgi::device_child_base::device_child_base(device_child_base&& other) noexcept
+{
+    // don't copy anything
+}
+
+ff::dxgi::device_child_base& ff::dxgi::device_child_base::operator=(ff::dxgi::device_child_base&& other) noexcept
+{
+    // don't copy anything
+    return *this;
+}
+
 bool ff::dxgi::device_child_base::reset()
 {
     return true;

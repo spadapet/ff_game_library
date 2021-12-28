@@ -7,7 +7,7 @@ namespace ff::dx11
     public:
         depth(size_t sample_count = 0);
         depth(const ff::point_size& size, size_t sample_count = 0);
-        depth(depth&& other) noexcept = default;
+        depth(depth&& other) noexcept;
         depth(const depth& other) = delete;
         virtual ~depth() override;
 

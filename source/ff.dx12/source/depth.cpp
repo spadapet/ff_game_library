@@ -33,6 +33,12 @@ ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
+ff::dx12::depth::depth(depth&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
+}
+
 ff::dx12::depth::~depth()
 {
     ff::dx12::remove_device_child(this);

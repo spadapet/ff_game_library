@@ -9,6 +9,8 @@ namespace ff::dx11
     bool reset(bool force);
     void trim();
     void wait_for_idle();
+    ff::dx11::device_state& frame_started();
+    ff::dx11::device_state& frame_commands();
     void frame_complete();
 
     IDXGIFactoryX* factory();

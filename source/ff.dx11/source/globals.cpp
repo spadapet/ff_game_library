@@ -304,6 +304,16 @@ void ff::dx11::trim()
 void ff::dx11::wait_for_idle()
 {}
 
+ff::dx11::device_state& ff::dx11::frame_started()
+{
+    return *::device_state;
+}
+
+ff::dx11::device_state& ff::dx11::frame_commands()
+{
+    return *::device_state;
+}
+
 void ff::dx11::frame_complete()
 {}
 
@@ -341,3 +351,4 @@ ff::dx11::object_cache& ff::dx11::get_object_cache()
 {
     return *::object_cache;
 }
+

@@ -138,15 +138,13 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
-        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
-
         if (clear_color)
         {
-            this->clear(commands, *clear_color);
+            this->clear(ff::dx12::frame_commands(), *clear_color);
         }
         else
         {
-            commands.discard(*this);
+            ff::dx12::frame_commands().discard(*this);
         }
 
         return true;
@@ -159,11 +157,8 @@ bool ff::target_window::present()
 {
     if (*this)
     {
-        // Transition
-        {
-            ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
-            commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        }
+        ff::dx12::frame_commands().resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
+        ff::dx12::frame_commands().queue().execute(ff::dx12::frame_commands());
 
         if (this->frame_latency_handle)
         {

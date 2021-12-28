@@ -302,6 +302,12 @@ ff::dx12::gpu_descriptor_allocator::gpu_descriptor_allocator(D3D12_DESCRIPTOR_HE
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::gpu_descriptor_allocator);
 }
 
+ff::dx12::gpu_descriptor_allocator::gpu_descriptor_allocator(gpu_descriptor_allocator&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::gpu_descriptor_allocator);
+}
+
 ff::dx12::gpu_descriptor_allocator::~gpu_descriptor_allocator()
 {
     ff::dx12::remove_device_child(this);

@@ -21,6 +21,12 @@ ff::dx11::target_texture::target_texture(
     ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
 }
 
+ff::dx11::target_texture::target_texture(target_texture&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
+}
+
 ff::dx11::target_texture::~target_texture()
 {
     ff::dx11::remove_device_child(this);

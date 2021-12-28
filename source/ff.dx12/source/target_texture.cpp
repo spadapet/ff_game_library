@@ -23,6 +23,12 @@ ff::dx12::target_texture::target_texture(
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
+ff::dx12::target_texture::target_texture(target_texture&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
+}
+
 ff::dx12::target_texture::~target_texture()
 {
     ff::dx12::remove_device_child(this);
@@ -47,15 +53,13 @@ bool ff::dx12::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
-        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
-
         if (clear_color)
         {
-            this->clear(commands, *clear_color);
+            this->clear(ff::dx12::frame_commands(), *clear_color);
         }
         else
         {
-            commands.discard(*this);
+            ff::dx12::frame_commands().discard(*this);
         }
 
         return true;
@@ -66,11 +70,7 @@ bool ff::dx12::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::dx12::target_texture::present()
 {
-    // Transition
-    {
-        ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
-        commands.resource_state(*this->texture_->resource(), D3D12_RESOURCE_STATE_PRESENT);
-    }
+    ff::dx12::frame_commands().resource_state(*this->texture_->resource(), D3D12_RESOURCE_STATE_PRESENT);
 
     this->render_presented_.notify(this);
 

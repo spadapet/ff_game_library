@@ -225,14 +225,7 @@ namespace
     {
     public:
         dx12_draw_device()
-            : geometry_buffer_(ff::dxgi::buffer_type::vertex)
-            , geometry_constants_buffer_0_(ff::dxgi::buffer_type::constant)
-            , geometry_constants_buffer_1_(ff::dxgi::buffer_type::constant)
-            , pixel_constants_buffer_0_(ff::dxgi::buffer_type::constant)
-            , geometry_constants_version_0(0)
-            , geometry_constants_version_1(0)
-            , pixel_constants_version_0(0)
-            , samplers_gpu(ff::dx12::gpu_sampler_descriptors().alloc_pinned_range(2))
+            : samplers_gpu(ff::dx12::gpu_sampler_descriptors().alloc_pinned_range(2))
             , states_
         {
             ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
@@ -354,22 +347,7 @@ namespace
 
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) override
         {
-            this->commands.reset();
-
-            if (!end_draw)
-            {
-                this->geometry_constants_version_0 = 0;
-                this->geometry_constants_version_1 = 0;
-                this->pixel_constants_version_0 = 0;
-
-                this->commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
-                this->commands->targets(&this->setup_target, 1, this->setup_depth);
-                this->commands->viewports(&this->setup_viewport, 1);
-                this->commands->root_signature(this->root_signature.Get());
-                this->commands->root_descriptors(3, this->samplers_gpu.gpu_handle(0));
-            }
-
-            return this->commands.get();
+            return this->commands;
         }
 
         virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) override
@@ -377,6 +355,17 @@ namespace
             this->setup_target = &target;
             this->setup_viewport = ::get_viewport(ff::dxgi::draw_util::get_rotated_view_rect(target, view_rect));
             this->setup_depth = depth;
+
+            this->geometry_constants_version_0 = 0;
+            this->geometry_constants_version_1 = 0;
+            this->pixel_constants_version_0 = 0;
+
+            this->commands = &ff::dx12::frame_commands();
+            this->commands->targets(&this->setup_target, 1, this->setup_depth);
+            this->commands->viewports(&this->setup_viewport, 1);
+            this->commands->root_signature(this->root_signature.Get());
+            this->commands->root_descriptors(3, this->samplers_gpu.gpu_handle(0));
+
 
             return this->internal_flush(nullptr, false);
         }
@@ -621,22 +610,23 @@ namespace
         }
 
         // Constant data for shaders
-        ff::dx12::buffer_upload geometry_buffer_;
-        ff::dx12::buffer_cpu geometry_constants_buffer_0_; // root constants
-        ff::dx12::buffer geometry_constants_buffer_1_;
-        ff::dx12::buffer pixel_constants_buffer_0_;
-        size_t geometry_constants_version_0, geometry_constants_version_1, pixel_constants_version_0;
+        ff::dx12::buffer_upload geometry_buffer_{ ff::dxgi::buffer_type::vertex };
+        ff::dx12::buffer_cpu geometry_constants_buffer_0_{ ff::dxgi::buffer_type::constant }; // root constants
+        ff::dx12::buffer geometry_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
+        ff::dx12::buffer pixel_constants_buffer_0_{ ff::dxgi::buffer_type::constant };
+        size_t geometry_constants_version_0{};
+        size_t geometry_constants_version_1{};
+        size_t pixel_constants_version_0{};
 
         // Render state
         ff::dx12::descriptor_range samplers_gpu; // 0:point, 1:linear
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
+        std::array<::dx12_state, static_cast<size_t>(ff::dxgi::draw_util::geometry_bucket_type::count)> states_;
+
+        ff::dx12::commands* commands{};
         ff::dxgi::target_base* setup_target{};
         ff::dxgi::depth_base* setup_depth{};
         D3D12_VIEWPORT setup_viewport{};
-
-        // Render data
-        std::array<::dx12_state, static_cast<size_t>(ff::dxgi::draw_util::geometry_bucket_type::count)> states_;
-        std::unique_ptr<ff::dx12::commands> commands;
     };
 }
 

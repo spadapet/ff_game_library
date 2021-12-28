@@ -386,7 +386,8 @@ static const std::string_view vertex_shaders_srgb[] =
 };
 
 ff::internal::ui::render_device::render_device(bool srgb)
-    : target_format(DXGI_FORMAT_UNKNOWN)
+    : commands(nullptr)
+    , target_format(DXGI_FORMAT_UNKNOWN)
     , vertex_buffer(ff::dxgi::buffer_type::vertex)
     , index_buffer(ff::dxgi::buffer_type::index)
     , constant_buffers
@@ -413,7 +414,7 @@ ff::internal::ui::render_device::~render_device()
 
 ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(ff::dxgi::target_base* target, ff::dxgi::depth_base* depth, const ff::rect_float* view_rect)
 {
-    this->commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
+    this->commands = &ff::dx12::frame_commands();
     this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     this->commands->root_signature(this->root_signature.Get());
 
@@ -446,7 +447,7 @@ ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(ff
 
 void ff::internal::ui::render_device::render_end()
 {
-    this->commands.reset();
+    this->commands = nullptr;
     this->target_format = DXGI_FORMAT_UNKNOWN;
 }
 

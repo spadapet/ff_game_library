@@ -60,7 +60,9 @@ ff::dx12::resource::resource(ID3D12ResourceX* swap_chain_resource)
     , external_resource(true)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
     , tracker_(nullptr)
-{}
+{
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
+}
 
 ff::dx12::resource::resource(
     const D3D12_RESOURCE_DESC& desc,

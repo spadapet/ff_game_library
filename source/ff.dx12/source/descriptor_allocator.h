@@ -93,11 +93,11 @@ namespace ff::dx12
     {
     public:
         cpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size);
-        cpu_descriptor_allocator(cpu_descriptor_allocator&& other) noexcept = default;
+        cpu_descriptor_allocator(cpu_descriptor_allocator&& other) noexcept = delete;
         cpu_descriptor_allocator(const cpu_descriptor_allocator& other) = delete;
         ~cpu_descriptor_allocator();
 
-        cpu_descriptor_allocator& operator=(cpu_descriptor_allocator&& other) noexcept = default;
+        cpu_descriptor_allocator& operator=(cpu_descriptor_allocator&& other) noexcept = delete;
         cpu_descriptor_allocator& operator=(const cpu_descriptor_allocator& other) = delete;
 
         ff::dx12::descriptor_range alloc_range(size_t count);
@@ -117,7 +117,7 @@ namespace ff::dx12
     {
     public:
         gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size);
-        gpu_descriptor_allocator(gpu_descriptor_allocator&& other) noexcept = default;
+        gpu_descriptor_allocator(gpu_descriptor_allocator&& other) noexcept;
         gpu_descriptor_allocator(const gpu_descriptor_allocator& other) = delete;
         ~gpu_descriptor_allocator();
 

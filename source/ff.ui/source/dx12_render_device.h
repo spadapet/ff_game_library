@@ -48,7 +48,7 @@ namespace ff::internal::ui
         std::pair<ID3D12PipelineStateX*, size_t> pipeline_state_and_stride(size_t shader_index, uint8_t render_state);
 
         Noesis::DeviceCaps caps;
-        std::unique_ptr<ff::dx12::commands> commands;
+        ff::dx12::commands* commands;
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
         DXGI_FORMAT target_format;
 

@@ -8,7 +8,7 @@ namespace ff::dx11
         buffer(ff::dxgi::buffer_type type);
         buffer(ff::dxgi::buffer_type type, size_t size);
         buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data, bool writable);
-        buffer(buffer&& other) noexcept = default;
+        buffer(buffer&& other) noexcept;
         buffer(const buffer& other) = delete;
         virtual ~buffer() override;
 

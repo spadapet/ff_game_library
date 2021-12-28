@@ -17,7 +17,7 @@ namespace ff::dx12
         };
 
         heap(uint64_t size, ff::dx12::heap::usage_t usage);
-        heap(heap&& other) noexcept = default;
+        heap(heap&& other) noexcept;
         heap(const heap& other) = delete;
         virtual ~heap() override;
 

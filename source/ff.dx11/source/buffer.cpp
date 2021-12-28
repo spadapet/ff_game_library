@@ -18,6 +18,12 @@ ff::dx11::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_ba
     : buffer(type, 0, initial_data, writable)
 {}
 
+ff::dx11::buffer::buffer(buffer&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
+}
+
 ff::dx11::buffer::buffer(ff::dxgi::buffer_type type, size_t size, std::shared_ptr<ff::data_base> initial_data, bool writable)
     : initial_data(initial_data)
     , mapped_context(nullptr)

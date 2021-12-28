@@ -10,6 +10,12 @@ ff::dx12::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_ba
     : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, 0, 0, initial_data, {})
 {}
 
+ff::dx12::buffer::buffer(buffer&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
+}
+
 ff::dx12::buffer::buffer(
     ff::dx12::commands* commands,
     ff::dxgi::buffer_type type,

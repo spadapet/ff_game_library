@@ -40,6 +40,8 @@ namespace ff::dx12
         operator bool() const;
         ff::dx12::queue& queue() const;
         ff::dx12::fence_value next_fence_value();
+
+        // For queue use only
         void flush(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);
         ff::dx12::commands::data_cache_t close();
 

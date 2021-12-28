@@ -11,10 +11,14 @@ ff::dx11::depth::depth(size_t sample_count)
     : depth(ff::point_size(1, 1), sample_count)
 {}
 
+ff::dx11::depth::depth(depth&& other) noexcept
+{
+    *this = std::move(other);
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
+}
+
 ff::dx11::depth::depth(const ff::point_size& size, size_t sample_count)
 {
-    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
-
     D3D11_TEXTURE2D_DESC texture_desc{};
     texture_desc.ArraySize = 1;
     texture_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -33,6 +37,8 @@ ff::dx11::depth::depth(const ff::point_size& size, size_t sample_count)
         SUCCEEDED(ff::dx11::device()->CreateTexture2D(&texture_desc, nullptr, this->texture_.GetAddressOf())) &&
         SUCCEEDED(ff::dx11::device()->CreateDepthStencilView(this->texture(), &view_desc, this->view_.GetAddressOf()));
     assert(status);
+
+    ff::dx11::add_device_child(this, ff::dx11::device_reset_priority::normal);
 }
 
 ff::dx11::depth::~depth()

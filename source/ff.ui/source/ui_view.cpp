@@ -222,10 +222,8 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
 
     if (depth.size(target.size().pixel_size))
     {
-        ff::dxgi::command_context_base& context = ff::internal::ui::global_render_device()->render_begin(&target, &depth, view_rect);
-
+        ff::internal::ui::global_render_device()->render_begin(&target, &depth, view_rect);
         this->internal_view_->GetRenderer()->Render();
-
         ff::internal::ui::global_render_device()->render_end();
     }
 }

@@ -10,7 +10,7 @@ namespace ff::dx11
     {
     public:
         target_texture(const std::shared_ptr<ff::dx11::texture>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);
-        target_texture(target_texture&& other) noexcept = default;
+        target_texture(target_texture&& other) noexcept;
         target_texture(const target_texture& other) = delete;
         virtual ~target_texture() override;
 

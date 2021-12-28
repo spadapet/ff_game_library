@@ -7,26 +7,6 @@
 #include "queues.h"
 #include "resource.h"
 
-namespace
-{
-    struct device_child_t
-    {
-        bool operator<(const device_child_t& other) const
-        {
-            return this->reset_priority < other.reset_priority;
-        }
-
-        bool operator==(const device_child_t& other) const
-        {
-            return this->reset_priority == other.reset_priority;
-        }
-
-        ff::dxgi::device_child_base* child;
-        ff::dx12::device_reset_priority reset_priority;
-        void* reset_data;
-    };
-}
-
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
@@ -35,7 +15,8 @@ static size_t adapters_hash;
 static size_t outputs_hash;
 
 static std::mutex device_children_mutex;
-static std::vector<::device_child_t> device_children;
+static ff::dxgi::device_child_base* first_device_child{};
+static ff::dxgi::device_child_base* last_device_child{};
 static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
@@ -50,6 +31,7 @@ static std::unique_ptr<ff::dx12::mem_allocator_ring> dynamic_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> static_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> texture_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> target_allocator;
+static std::unique_ptr<ff::dx12::commands> frame_commands;
 
 static std::mutex keep_alive_mutex;
 static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
@@ -200,6 +182,8 @@ static bool init_d3d(bool for_reset)
 
 static void destroy_d3d(bool for_reset)
 {
+    assert(!::frame_commands);
+
     if (!for_reset)
     {
         ::wait_for_keep_alive(for_reset);
@@ -227,6 +211,7 @@ static void destroy_d3d(bool for_reset)
     ::outputs_hash = 0;
     ::adapter.Reset();
 
+#if 0
     if (::device && FAILED(::device->GetDeviceRemovedReason()))
     {
         Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataX> dred_data;
@@ -245,6 +230,7 @@ static void destroy_d3d(bool for_reset)
             }
         }
     }
+#endif
 
     ::device.Reset();
 }
@@ -268,25 +254,108 @@ void ff::dx12::destroy_globals()
     ::destroy_dxgi();
 }
 
+static size_t device_child_count()
+{
+    size_t count = 0;
+    for (ff::dxgi::device_child_base* i = ::first_device_child, *prev = nullptr; i; prev = i, i = i->next_device_child_)
+    {
+        assert(i->prev_device_child_ == prev && (!prev || prev->next_device_child_ == i));
+        count++;
+    }
+
+    return count;
+}
+
+static bool has_device_child(ff::dxgi::device_child_base* child)
+{
+    bool found = false;
+
+    for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->next_device_child_)
+    {
+        if (child == i)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
 {
+    assert(!child->next_device_child_ && !child->prev_device_child_);
+    child->device_child_reset_priority_ = static_cast<int>(reset_priority);
+
     std::scoped_lock lock(::device_children_mutex);
-    ::device_children.push_back(::device_child_t{ child, reset_priority, nullptr });
+
+#ifdef _DEBUG
+    assert(!::has_device_child(child));
+    size_t old_count = ::device_child_count();
+#endif
+
+    if (::last_device_child)
+    {
+        child->prev_device_child_ = ::last_device_child;
+        ::last_device_child->next_device_child_ = child;
+    }
+
+    ::last_device_child = child;
+
+    if (!::first_device_child)
+    {
+        ::first_device_child = child;
+    }
+
+#ifdef _DEBUG
+    assert(::has_device_child(child));
+    assert(old_count + 1 == ::device_child_count());
+#endif
 }
 
 void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
 {
-    std::scoped_lock lock(::device_children_mutex);
-
-    for (auto i = ::device_children.cbegin(); i != ::device_children.cend(); i++)
+    assert(child->next_device_child_ || child->prev_device_child_ || (child == ::first_device_child && child == ::last_device_child));
     {
-        if (i->child == child)
+        std::scoped_lock lock(::device_children_mutex);
+
+#ifdef _DEBUG
+        assert(::has_device_child(child));
+        size_t old_count = ::device_child_count();
+#endif
+        ff::dxgi::device_child_base* prev = child->prev_device_child_;
+        ff::dxgi::device_child_base* next = child->next_device_child_;
+
+        if (child == ::last_device_child)
         {
-            ::device_children.erase(i);
-            ::removed_device_child.notify(child);
-            break;
+            ::last_device_child = prev;
         }
+
+        if (child == ::first_device_child)
+        {
+            ::first_device_child = next;
+        }
+
+        if (prev)
+        {
+            prev->next_device_child_ = next;
+        }
+
+        if (next)
+        {
+            next->prev_device_child_ = prev;
+        }
+
+        child->next_device_child_ = nullptr;
+        child->prev_device_child_ = nullptr;
+        child->device_child_reset_priority_ = 0;
+
+#ifdef _DEBUG
+        assert(!::has_device_child(child));
+        assert(::device_child_count() + 1 == old_count);
+#endif
     }
+
+    ::removed_device_child.notify(child);
 }
 
 bool ff::dx12::reset(bool force)
@@ -337,17 +406,38 @@ bool ff::dx12::reset(bool force)
         }
         else
         {
-            std::vector<::device_child_t> sorted_children;
+            struct device_child_t
+            {
+                bool operator<(const device_child_t& other) const
+                {
+                    return this->child->device_child_reset_priority_ < other.child->device_child_reset_priority_;
+                }
+
+                bool operator==(const device_child_t& other) const
+                {
+                    return this->child->device_child_reset_priority_ == other.child->device_child_reset_priority_;
+                }
+
+                ff::dxgi::device_child_base* child;
+                void* reset_data;
+            };
+
+            std::vector<device_child_t> sorted_children;
             {
                 std::scoped_lock lock(::device_children_mutex);
-                sorted_children = ::device_children;
+                sorted_children.reserve(::device_child_count());
+
+                for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->next_device_child_)
+                {
+                    sorted_children.push_back(device_child_t{ i, nullptr });
+                }
             }
 
             std::stable_sort(sorted_children.begin(), sorted_children.end());
 
             ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dxgi::device_child_base* child)
                 {
-                    for (::device_child_t& i : sorted_children)
+                    for (device_child_t& i : sorted_children)
                     {
                         if (i.child == child)
                         {
@@ -367,7 +457,7 @@ bool ff::dx12::reset(bool force)
                 }
             }
 
-            for (::device_child_t& i : sorted_children)
+            for (device_child_t& i : sorted_children)
             {
                 if (i.child && !i.child->reset(i.reset_data))
                 {
@@ -379,7 +469,7 @@ bool ff::dx12::reset(bool force)
                 i.reset_data = nullptr;
             }
 
-            for (::device_child_t& i : sorted_children)
+            for (device_child_t& i : sorted_children)
             {
                 if (i.child && !i.child->call_after_reset())
                 {
@@ -431,10 +521,25 @@ size_t ff::dx12::frame_count()
     return ::frame_count;
 }
 
+ff::dx12::commands& ff::dx12::frame_started()
+{
+    assert(!::frame_commands);
+    ::flush_keep_alive();
+    ::frame_commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
+    return *::frame_commands;
+}
+
+ff::dx12::commands& ff::dx12::frame_commands()
+{
+    assert(::frame_commands);
+    return *::frame_commands;
+}
+
 void ff::dx12::frame_complete()
 {
+    assert(::frame_commands);
+    ::frame_commands.reset();
     ::frame_complete_signal.notify(++::frame_count);
-    ::flush_keep_alive();
 }
 
 void ff::dx12::wait_for_idle()

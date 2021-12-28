@@ -23,6 +23,8 @@ namespace ff::dx12
     ff::dx12::object_cache& get_object_cache();
 
     size_t frame_count();
+    ff::dx12::commands& frame_started();
+    ff::dx12::commands& frame_commands();
     void frame_complete();
     void wait_for_idle();
     ff::signal_sink<size_t>& frame_complete_sink();

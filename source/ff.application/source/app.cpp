@@ -209,8 +209,6 @@ static void frame_render(ff::state::advance_t advance_type)
 
 static void frame_presented()
 {
-    ff_dx::frame_complete();
-
     if (::raw_startup_time)
     {
         double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
@@ -242,6 +240,8 @@ static void frame_advance_and_render()
         }
     }
 
+    ff_dx::frame_started();
+
     bool valid = ::target->pre_render(&ff::dxgi::color_black());
     if (valid)
     {
@@ -249,6 +249,8 @@ static void frame_advance_and_render()
         valid = ::target->present();
         ::frame_presented();
     }
+
+    ff_dx::frame_complete();
 
     if (!valid)
     {
