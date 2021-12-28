@@ -135,7 +135,7 @@ bool ff::dx12::buffer::update(ff::dxgi::command_context_base& context, const voi
     if (new_hash != this->data_hash)
     {
         *this = ff::dx12::buffer(
-            nullptr, // update ASAP, ignore passed-in context
+            &ff::dx12::commands::get(context),
             this->type_,
             data,
             data_size,
@@ -181,7 +181,7 @@ void ff::dx12::buffer::unmap()
         if (new_hash != this->data_hash)
         {
             *this = ff::dx12::buffer(
-                nullptr, // update ASAP, ignore mapping context
+                &ff::dx12::commands::get(*this->mapped_context),
                 this->type_,
                 data,
                 data_size,

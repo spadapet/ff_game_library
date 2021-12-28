@@ -240,7 +240,7 @@ bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t cou
     while (!handle_vector.empty())
     {
         size_t completed;
-        if (!this->wait_for_any_handle(handle_vector.data(), handle_vector.size(), completed, timeout_ms))
+        if (!this->wait_for_any_handle(handle_vector.data(), std::min(handle_vector.size(), ff::thread_dispatch::maximum_wait_objects), completed, timeout_ms))
         {
             return false;
         }

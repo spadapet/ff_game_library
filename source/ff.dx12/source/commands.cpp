@@ -15,14 +15,11 @@
 #include "resource_tracker.h"
 #include "target_access.h"
 
-ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache, ID3D12PipelineStateX* initial_state)
+ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache)
     : type_(data_cache.list->GetType())
     , queue_(&queue)
     , data_cache(std::move(data_cache))
-    , pipeline_state_(initial_state)
 {
-    this->list(false)->Reset(this->data_cache.allocator.Get(), this->pipeline_state_.Get());
-
     if (this->type_ != D3D12_COMMAND_LIST_TYPE_COPY)
     {
         ID3D12DescriptorHeap* heaps[2] =
@@ -70,13 +67,12 @@ void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::comm
     this->wait_before_execute.clear();
     this->list()->Close();
 
-    ID3D12GraphicsCommandListX* list_before = this->data_cache.list_before.Get();
-    list_before->Reset(this->data_cache.allocator.Get(), nullptr);
-
     ff::dx12::resource_tracker* prev_tracker = prev_commands ? prev_commands->tracker() : nullptr;
     ff::dx12::resource_tracker* next_tracker = next_commands ? next_commands->tracker() : nullptr;
-    this->tracker()->close(list_before, prev_tracker, next_tracker);
-    list_before->Close();
+    this->tracker()->close(this->data_cache.list_before.Get(), prev_tracker, next_tracker);
+    this->data_cache.list_before->Close();
+
+    ::ResetEvent(this->data_cache.lists_reset_event);
 }
 
 ff::dx12::commands::data_cache_t ff::dx12::commands::close()

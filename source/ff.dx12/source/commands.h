@@ -22,11 +22,13 @@ namespace ff::dx12
             Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list;
             Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list_before;
             Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
+            Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator_before;
             std::unique_ptr<ff::dx12::resource_tracker> resource_tracker;
             std::unique_ptr<ff::dx12::fence> fence;
+            ff::win_handle lists_reset_event;
         };
 
-        commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache, ID3D12PipelineStateX* initial_state);
+        commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache);
         commands(commands&& other) noexcept = default;
         commands(const commands& other) = delete;
         ~commands();
