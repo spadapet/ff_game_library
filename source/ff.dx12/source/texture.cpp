@@ -27,7 +27,7 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
             std::memcpy(clear_value.Color, optimized_clear_color, sizeof(clear_value.Color));
         }
 
-        this->resource_ = std::make_unique<ff::dx12::resource>(
+        this->resource_ = std::make_unique<ff::dx12::resource>( // TODO: no allocate, use committed resource?
             std::shared_ptr<ff::dx12::mem_range>(), 
             CD3DX12_RESOURCE_DESC::Tex2D(format,
                 static_cast<UINT64>(size.x),

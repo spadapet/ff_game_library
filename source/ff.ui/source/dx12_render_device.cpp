@@ -789,7 +789,7 @@ void ff::internal::ui::render_device::init_samplers()
 void ff::internal::ui::render_device::init_root_signature()
 {
     CD3DX12_DESCRIPTOR_RANGE1 ps_textures;
-    ps_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+    ps_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
     CD3DX12_DESCRIPTOR_RANGE1 ps_samplers;
     ps_samplers.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 5, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
