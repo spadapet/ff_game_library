@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "buffer.h"
-#include "buffer_cpu.h"
-#include "buffer_upload.h"
 #include "depth.h"
 #include "descriptor_allocator.h"
 #include "device_reset_priority.h"
@@ -124,14 +122,13 @@ namespace
         }
 
         bool apply(
-            ff::dxgi::command_context_base& context,
+            ff::dx12::commands& commands,
             DXGI_FORMAT target_format,
             bool has_depth,
             bool alpha,
             bool pre_multiplied_alpha,
             bool palette_out)
         {
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
             assert(palette_out || target_format == DXGI_FORMAT_R8G8B8A8_UNORM || target_format == DXGI_FORMAT_B8G8R8A8_UNORM);
             assert(!palette_out || target_format == DXGI_FORMAT_R8_UINT);
 
@@ -150,7 +147,7 @@ namespace
 
             if (state)
             {
-                ff::dx12::commands::get(context).pipeline_state(state.Get());
+                commands.pipeline_state(state.Get());
                 return true;
             }
 
@@ -375,8 +372,6 @@ namespace
             ff::dxgi::texture_base& palette_texture, size_t* palette_texture_hashes, palette_to_index_t& palette_to_index,
             ff::dxgi::texture_base& palette_remap_texture, size_t* palette_remap_texture_hashes, palette_remap_to_index_t& palette_remap_to_index) override
         {
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
-
             if (textures_using_palette_count && !palette_to_index.empty())
             {
                 ff::dx12::texture& dest_texture = ff::dx12::texture::get(palette_texture);
@@ -395,7 +390,7 @@ namespace
                         {
                             palette_texture_hashes[index] = row_hash;
                             ff::dx12::texture& src_texture = ff::dx12::texture::get(*palette_data->texture());
-                            commands.copy_texture(
+                            this->commands->copy_texture(
                                 *dest_texture.resource(), 0, ff::point_size(0, index),
                                 *src_texture.resource(), 0, ff::rect_size(0, palette_row, ff::dxgi::palette_size, palette_row + 1));
                         }
@@ -418,7 +413,7 @@ namespace
                     {
                         palette_remap_texture_hashes[row] = row_hash;
                         remap_image.pixels = const_cast<uint8_t*>(iter.second.first);
-                        dest_remap_texture.resource()->update_texture(&commands, &remap_image, 0, 1, ff::point_size(0, row));
+                        dest_remap_texture.resource()->update_texture(this->commands, &remap_image, 0, 1, ff::point_size(0, row));
                     }
                 }
             }
@@ -429,24 +424,22 @@ namespace
             size_t textures_using_palette_count, ff::dxgi::texture_view_base** in_textures_using_palette,
             ff::dxgi::texture_base& palette_texture, ff::dxgi::texture_base& palette_remap_texture) override
         {
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
-
             // Prepare all resource state ahead of time
 
             if (this->geometry_constants_buffer_1_)
             {
-                commands.resource_state(*this->geometry_constants_buffer_1_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                this->commands->resource_state(*this->geometry_constants_buffer_1_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             }
 
             if (this->pixel_constants_buffer_0_)
             {
-                commands.resource_state(*this->pixel_constants_buffer_0_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                this->commands->resource_state(*this->pixel_constants_buffer_0_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             }
 
             for (size_t i = 0; i < texture_count; i++)
             {
                 ff::dxgi::texture_view_base* view = in_textures[i];
-                commands.resource_state(
+                this->commands->resource_state(
                     *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
@@ -454,15 +447,15 @@ namespace
             for (size_t i = 0; i < textures_using_palette_count; i++)
             {
                 ff::dxgi::texture_view_base* view = in_textures_using_palette[i];
-                commands.resource_state(
+                this->commands->resource_state(
                     *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
             {
-                commands.resource_state(*ff::dx12::texture::get(palette_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                commands.resource_state(*ff::dx12::texture::get(palette_remap_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                this->commands->resource_state(*ff::dx12::texture::get(palette_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                this->commands->resource_state(*ff::dx12::texture::get(palette_remap_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
 
             // Update root constants
@@ -470,19 +463,19 @@ namespace
             if (this->geometry_constants_buffer_0_ && this->geometry_constants_version_0 != this->geometry_constants_buffer_0_.version())
             {
                 this->geometry_constants_version_0 = this->geometry_constants_buffer_0_.version();
-                commands.root_constants(0, this->geometry_constants_buffer_0_.data().data(), ff::dxgi::draw_util::geometry_shader_constants_0::DWORD_COUNT * 4);
+                this->commands->root_constants(0, this->geometry_constants_buffer_0_.data().data(), ff::dxgi::draw_util::geometry_shader_constants_0::DWORD_COUNT * 4);
             }
 
             if (geometry_constants_buffer_1_ && this->geometry_constants_version_1 != this->geometry_constants_buffer_1_.version())
             {
                 this->geometry_constants_version_1 = this->geometry_constants_buffer_1_.version();
-                commands.root_cbv(1, this->geometry_constants_buffer_1_);
+                this->commands->root_cbv(1, this->geometry_constants_buffer_1_);
             }
 
             if (this->pixel_constants_buffer_0_ && this->pixel_constants_version_0 != this->pixel_constants_buffer_0_.version())
             {
                 this->pixel_constants_version_0 = this->pixel_constants_buffer_0_.version();
-                commands.root_cbv(2, this->pixel_constants_buffer_0_);
+                this->commands->root_cbv(2, this->pixel_constants_buffer_0_);
             }
 
             // Update texture descriptors
@@ -490,7 +483,7 @@ namespace
 
             if (texture_count)
             {
-                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(texture_count, commands.next_fence_value());
+                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(texture_count, this->commands->next_fence_value());
                 std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ff::dxgi::draw_util::MAX_TEXTURES> views;
 
                 for (size_t i = 0; i < texture_count; i++)
@@ -501,12 +494,12 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(texture_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                commands.root_descriptors(4, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(4, dest_range.gpu_handle(0));
             }
 
             if (textures_using_palette_count)
             {
-                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(textures_using_palette_count, commands.next_fence_value());
+                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(textures_using_palette_count, this->commands->next_fence_value());
                 std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> views;
 
                 for (size_t i = 0; i < textures_using_palette_count; i++)
@@ -517,12 +510,12 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(textures_using_palette_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                commands.root_descriptors(5, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(5, dest_range.gpu_handle(0));
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
             {
-                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(2, commands.next_fence_value());
+                ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(2, this->commands->next_fence_value());
                 std::array<D3D12_CPU_DESCRIPTOR_HANDLE, 2> views
                 {
                     ff::dx12::texture_view_access::get(palette_texture).dx12_texture_view(),
@@ -532,36 +525,30 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(views.size());
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                commands.root_descriptors(6, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(6, dest_range.gpu_handle(0));
             }
         }
 
         virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override
         {
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
-            commands.primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+            this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
         virtual void apply_alpha_state(ff::dxgi::command_context_base& context) override
         {
-            ff::dx12::commands& commands = ff::dx12::commands::get(context);
-            commands.primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+            this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
         virtual bool apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
         {
-            if (this->state(bucket.bucket_type()).apply(context,
+            if (this->state(bucket.bucket_type()).apply(*this->commands,
                 this->setup_target->format(),
                 this->setup_depth != nullptr,
                 bucket.bucket_type() >= ff::dxgi::draw_util::geometry_bucket_type::first_alpha,
                 this->pre_multiplied_alpha(),
                 this->target_requires_palette()))
             {
-                ff::dx12::commands& commands = ff::dx12::commands::get(context);
-                //ff::dx12::resource* single_resource = this->geometry_buffer_.resource();
-                //commands.vertex_buffers(&single_resource, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
-                commands.vertex_buffers(nullptr, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
-
+                this->commands->vertex_buffers(nullptr, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
                 return true;
             }
 
@@ -600,7 +587,7 @@ namespace
 
         virtual void draw(ff::dxgi::command_context_base& context, size_t count, size_t start) override
         {
-            ff::dx12::commands::get(context).draw(start, count);
+            this->commands->draw(start, count);
         }
 
     private:

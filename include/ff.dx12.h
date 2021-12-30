@@ -3,8 +3,6 @@
 #include "../source/ff.dx12/pch.h"
 #include "../source/ff.dx12/source/access.h"
 #include "../source/ff.dx12/source/buffer.h"
-#include "../source/ff.dx12/source/buffer_cpu.h"
-#include "../source/ff.dx12/source/buffer_upload.h"
 #include "../source/ff.dx12/source/commands.h"
 #include "../source/ff.dx12/source/depth.h"
 #include "../source/ff.dx12/source/descriptor_allocator.h"

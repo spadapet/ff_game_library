@@ -49,6 +49,7 @@
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions>_WINDOWS;NOMINMAX;DXVER=$(DirectXVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4103</DisableSpecificWarnings>

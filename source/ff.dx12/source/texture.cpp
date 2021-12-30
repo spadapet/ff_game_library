@@ -17,7 +17,7 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 
-    if (size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
+    if (!ff::dxgi::compressed_format(format) && size.x > 0 && size.y > 0 && mip_count > 0 && array_size > 0 && sample_count > 0)
     {
         D3D12_CLEAR_VALUE clear_value{};
 
@@ -27,16 +27,19 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
             std::memcpy(clear_value.Color, optimized_clear_color, sizeof(clear_value.Color));
         }
 
-        this->resource_ = std::make_unique<ff::dx12::resource>( // TODO: no allocate, use committed resource?
-            std::shared_ptr<ff::dx12::mem_range>(), 
+        this->resource_ = std::make_unique<ff::dx12::resource>(
             CD3DX12_RESOURCE_DESC::Tex2D(format,
                 static_cast<UINT64>(size.x),
                 static_cast<UINT>(size.y),
                 static_cast<UINT16>(array_size),
                 static_cast<UINT16>(mip_count),
                 static_cast<UINT>(ff::dx12::fix_sample_count(format, sample_count)), 0, // quality
-                !ff::dxgi::compressed_format(format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE),
+                D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET),
             clear_value);
+    }
+    else
+    {
+        assert(false);
     }
 
     this->sprite_type_ = ff::dxgi::palette_format(format)
@@ -230,9 +233,7 @@ ff::dx12::resource* ff::dx12::texture::resource() const
                 static_cast<UINT64>(md.width),
                 static_cast<UINT>(md.height),
                 static_cast<UINT16>(md.arraySize),
-                static_cast<UINT16>(md.mipLevels),
-                1, 0, // quality
-                !ff::dxgi::compressed_format(md.format) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE));
+                static_cast<UINT16>(md.mipLevels)));
 
         this->resource_->update_texture(nullptr, this->data_->GetImages(), 0, this->data_->GetImageCount(), ff::point_size{});
     }

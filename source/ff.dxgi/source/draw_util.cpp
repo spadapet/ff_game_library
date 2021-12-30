@@ -774,9 +774,10 @@ void ff::dxgi::draw_util::draw_device_base::push_sampler_linear_filter(bool line
 
 void ff::dxgi::draw_util::draw_device_base::pop_sampler_linear_filter()
 {
-    assert(this->sampler_stack.size() > 1);
+    const size_t size = this->sampler_stack.size();
+    assert(size > 1);
 
-    if (this->sampler_stack.back() != this->sampler_stack[this->sampler_stack.size() - 2] && this->flush_for_sampler_change())
+    if (this->sampler_stack[size - 1] != this->sampler_stack[size - 2] && this->flush_for_sampler_change())
     {
         this->flush();
     }
@@ -796,7 +797,7 @@ bool ff::dxgi::draw_util::draw_device_base::internal_valid() const
 
 bool ff::dxgi::draw_util::draw_device_base::linear_sampler() const
 {
-    return this->sampler_stack.back();
+    return this->sampler_stack[this->sampler_stack.size() - 1];
 }
 
 bool ff::dxgi::draw_util::draw_device_base::target_requires_palette() const
@@ -1118,7 +1119,8 @@ bool ff::dxgi::draw_util::draw_device_base::create_geometry_buffer()
 
 void ff::dxgi::draw_util::draw_device_base::draw_opaque_geometry()
 {
-    const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+    const size_t custom_size = this->custom_context_stack.size();
+    const ff::dxgi::draw_base::custom_context_func* custom_func = custom_size ? &this->custom_context_stack[custom_size - 1] : nullptr;
     this->apply_opaque_state(*this->command_context_);
 
     for (ff::dxgi::draw_util::geometry_bucket& bucket : this->geometry_buckets)
@@ -1143,7 +1145,8 @@ void ff::dxgi::draw_util::draw_device_base::draw_alpha_geometry()
     const size_t alpha_geometry_size = this->alpha_geometry.size();
     if (alpha_geometry_size)
     {
-        const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+        const size_t custom_size = this->custom_context_stack.size();
+        const ff::dxgi::draw_base::custom_context_func* custom_func = custom_size ? &this->custom_context_stack[custom_size - 1] : nullptr;
         this->apply_alpha_state(*this->command_context_);
 
         for (size_t i = 0; i < alpha_geometry_size; )
@@ -1271,7 +1274,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
         }
 
         unsigned int texture_index = ff::constants::invalid_dword;
-        unsigned int sampler_index = static_cast<unsigned int>(this->sampler_stack.back());
+        unsigned int sampler_index = static_cast<unsigned int>(this->linear_sampler());
 
         for (size_t i = this->texture_count; i != 0; i--)
         {
@@ -1308,7 +1311,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_index_no_flush()
         }
         else
         {
-            ff::dxgi::palette_base* palette = this->palette_stack.back();
+            ff::dxgi::palette_base* palette = this->palette_stack[this->palette_stack.size() - 1];
             size_t palette_hash = palette ? palette->data()->row_hash(palette->current_row()) : 0;
             auto iter = this->palette_to_index.find(palette_hash);
 
@@ -1331,7 +1334,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_remap_index_no_f
 {
     if (this->palette_remap_index == ff::constants::invalid_dword)
     {
-        auto& remap_pair = this->palette_remap_stack.back();
+        auto& remap_pair = this->palette_remap_stack[this->palette_remap_stack.size() - 1];
         auto iter = this->palette_remap_to_index.find(remap_pair.second);
 
         if (iter == this->palette_remap_to_index.cend() && this->palette_remap_to_index.size() != ff::dxgi::draw_util::MAX_PALETTE_REMAPS)
@@ -1350,7 +1353,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_remap_index_no_f
 
 int ff::dxgi::draw_util::draw_device_base::remap_palette_index(int color) const
 {
-    return this->palette_remap_stack.back().first[color];
+    return this->palette_remap_stack[this->palette_remap_stack.size() - 1].first[color];
 }
 
 void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)

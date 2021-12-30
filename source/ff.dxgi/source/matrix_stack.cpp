@@ -9,7 +9,7 @@ ff::dxgi::matrix_stack::matrix_stack()
 
 const DirectX::XMFLOAT4X4& ff::dxgi::matrix_stack::matrix() const
 {
-    return this->stack.back();
+    return this->stack[this->stack.size() - 1];
 }
 
 void ff::dxgi::matrix_stack::push()
@@ -61,7 +61,7 @@ void ff::dxgi::matrix_stack::set(const DirectX::XMFLOAT4X4& matrix)
             this->push();
         }
 
-        this->stack.back() = matrix;
+        this->stack[this->stack.size() - 1] = matrix;
 
         this->matrix_changed_.notify(*this);
     }
@@ -78,7 +78,7 @@ void ff::dxgi::matrix_stack::transform(const DirectX::XMFLOAT4X4& matrix)
             this->push();
         }
 
-        DirectX::XMFLOAT4X4& my_matrix = this->stack.back();
+        DirectX::XMFLOAT4X4& my_matrix = this->stack[this->stack.size() - 1];
         DirectX::XMStoreFloat4x4(&my_matrix, DirectX::XMLoadFloat4x4(&matrix) * DirectX::XMLoadFloat4x4(&my_matrix));
 
         this->matrix_changed_.notify(*this);

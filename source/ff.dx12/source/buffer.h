@@ -1,13 +1,35 @@
 #pragma once
 
 #include "descriptor_range.h"
+#include "mem_range.h"
 
 namespace ff::dx12
 {
     class commands;
     class resource;
 
-    class buffer : public ff::dxgi::buffer_base, private ff::dxgi::device_child_base
+    class buffer_base : public ff::dxgi::buffer_base
+    {
+    public:
+        static ff::dx12::buffer_base& get(ff::dxgi::buffer_base& obj);
+        static const ff::dx12::buffer_base& get(const ff::dxgi::buffer_base& obj);
+
+        operator bool() const;
+
+        virtual bool valid() const = 0;
+        virtual size_t version() const = 0;
+
+        virtual ff::dx12::resource* resource();
+        virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const;
+        virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() const;
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
+    };
+
+    /// <summary>
+    /// Saves data in GPU default heap, copied from upload heap
+    /// </summary>
+    class buffer : public ff::dx12::buffer_base, private ff::dxgi::device_child_base
     {
     public:
         buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data = {});
@@ -15,20 +37,19 @@ namespace ff::dx12
         buffer(const buffer& other) = delete;
         virtual ~buffer() override;
 
-        static ff::dx12::buffer& get(ff::dxgi::buffer_base& obj);
-        static const ff::dx12::buffer& get(const ff::dxgi::buffer_base& obj);
         buffer& operator=(buffer&& other) noexcept = default;
-        buffer& operator=(const buffer & other) = delete;
-        operator bool() const;
+        buffer& operator=(const buffer& other) = delete;
 
-        ff::dx12::resource* resource();
-        D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const;
-        D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const;
-        D3D12_CPU_DESCRIPTOR_HANDLE constant_view() const;
-        D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
-        size_t version() const;
+        // ff::dx12::buffer_base
+        virtual bool valid() const override;
+        virtual size_t version() const override;
+        virtual ff::dx12::resource* resource() override;
+        virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const override;
+        virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const override;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() const override;
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
 
-        // buffer_base
+        // ff::dxgi::buffer_base
         virtual ff::dxgi::buffer_type type() const override;
         virtual size_t size() const override;
         virtual bool writable() const override;
@@ -57,6 +78,74 @@ namespace ff::dx12
         ff::dxgi::command_context_base* mapped_context;
         ff::dxgi::buffer_type type_;
         uint64_t data_size;
+        size_t data_hash;
+        size_t version_;
+    };
+
+    /// <summary>
+    /// Saves data in GPU upload heap
+    /// </summary>
+    class buffer_upload : public ff::dx12::buffer_base
+    {
+    public:
+        buffer_upload(ff::dxgi::buffer_type type);
+        buffer_upload(buffer_upload&& other) noexcept = default;
+        buffer_upload(const buffer_upload& other) = delete;
+
+        buffer_upload& operator=(buffer_upload&& other) noexcept = default;
+        buffer_upload& operator=(const buffer_upload& other) = delete;
+
+        // ff::dx12::buffer_base
+        virtual bool valid() const override;
+        virtual size_t version() const override;
+        virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const override;
+        virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const override;
+        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
+
+        // ff::dxgi::buffer_base
+        virtual ff::dxgi::buffer_type type() const override;
+        virtual size_t size() const override;
+        virtual bool writable() const override;
+        virtual bool update(ff::dxgi::command_context_base& context, const void* data, size_t size, size_t min_buffer_size = 0) override;
+        virtual void* map(ff::dxgi::command_context_base& context, size_t size) override;
+        virtual void unmap() override;
+
+    private:
+        ff::dx12::mem_range mem_range;
+        ff::dxgi::buffer_type type_;
+        size_t version_;
+    };
+
+    /// <summary>
+    /// Doesn't upload buffer data to GPU, just saved in CPU vector
+    /// </summary>
+    class buffer_cpu : public ff::dx12::buffer_base
+    {
+    public:
+        buffer_cpu(ff::dxgi::buffer_type type);
+        buffer_cpu(buffer_cpu&& other) noexcept = default;
+        buffer_cpu(const buffer_cpu& other) = delete;
+
+        buffer_cpu& operator=(buffer_cpu&& other) noexcept = default;
+        buffer_cpu& operator=(const buffer_cpu& other) = delete;
+
+        const std::vector<uint8_t>& data() const;
+
+        // ff::dx12::buffer_base
+        virtual bool valid() const override;
+        virtual size_t version() const override;
+
+        // ff::dxgi::buffer_base
+        virtual ff::dxgi::buffer_type type() const override;
+        virtual size_t size() const override;
+        virtual bool writable() const override;
+        virtual bool update(ff::dxgi::command_context_base& context, const void* data, size_t size, size_t min_buffer_size = 0) override;
+        virtual void* map(ff::dxgi::command_context_base& context, size_t size) override;
+        virtual void unmap() override;
+
+    private:
+        std::vector<uint8_t> data_;
+        ff::dxgi::buffer_type type_;
         size_t data_hash;
         size_t version_;
     };

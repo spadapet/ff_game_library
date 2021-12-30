@@ -288,7 +288,7 @@ void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::de
 
     std::scoped_lock lock(::device_children_mutex);
 
-#ifdef _DEBUG
+#if 0 && _DEBUG
     assert(!::has_device_child(child));
     size_t old_count = ::device_child_count();
 #endif
@@ -306,7 +306,7 @@ void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::de
         ::first_device_child = child;
     }
 
-#ifdef _DEBUG
+#if 0 && _DEBUG
     assert(::has_device_child(child));
     assert(old_count + 1 == ::device_child_count());
 #endif
@@ -318,7 +318,7 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
     {
         std::scoped_lock lock(::device_children_mutex);
 
-#ifdef _DEBUG
+#if 0 && _DEBUG
         assert(::has_device_child(child));
         size_t old_count = ::device_child_count();
 #endif
@@ -349,7 +349,7 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
         child->prev_device_child_ = nullptr;
         child->device_child_reset_priority_ = 0;
 
-#ifdef _DEBUG
+#if 0 && _DEBUG
         assert(!::has_device_child(child));
         assert(::device_child_count() + 1 == old_count);
 #endif
