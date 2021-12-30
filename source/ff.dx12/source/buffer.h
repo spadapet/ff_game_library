@@ -22,7 +22,7 @@ namespace ff::dx12
         virtual ff::dx12::resource* resource();
         virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const;
         virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const;
-        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() const;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view();
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
     };
 
@@ -46,7 +46,7 @@ namespace ff::dx12
         virtual ff::dx12::resource* resource() override;
         virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const override;
         virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const override;
-        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() const override;
+        virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() override;
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
 
         // ff::dxgi::buffer_base
@@ -66,7 +66,9 @@ namespace ff::dx12
             size_t data_hash,
             size_t version,
             std::shared_ptr<ff::data_base> initial_data,
-            std::unique_ptr<std::vector<uint8_t>> mapped_mem);
+            std::unique_ptr<std::vector<uint8_t>> mapped_mem = {},
+            std::unique_ptr<ff::dx12::resource>&& resource = {},
+            uint64_t resource_data_offset = 0);
 
         // device_child_base
         virtual bool reset() override;
@@ -77,6 +79,7 @@ namespace ff::dx12
         std::unique_ptr<std::vector<uint8_t>> mapped_mem;
         ff::dxgi::command_context_base* mapped_context;
         ff::dxgi::buffer_type type_;
+        uint64_t mem_start;
         uint64_t data_size;
         size_t data_hash;
         size_t version_;

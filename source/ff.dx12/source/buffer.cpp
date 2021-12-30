@@ -40,7 +40,7 @@ D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_base::index_view(size_t start, size_t c
     return {};
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::buffer_base::constant_view() const
+D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::buffer_base::constant_view()
 {
     assert(false);
     return {};
@@ -53,7 +53,7 @@ D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_base::gpu_address() const
 }
 
 ff::dx12::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data)
-    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, 0, 0, initial_data, {})
+    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, 0, 0, initial_data)
 {}
 
 ff::dx12::buffer::buffer(buffer&& other) noexcept
@@ -70,33 +70,34 @@ ff::dx12::buffer::buffer(
     size_t data_hash,
     size_t version,
     std::shared_ptr<ff::data_base> initial_data,
-    std::unique_ptr<std::vector<uint8_t>> mapped_mem)
-    : initial_data(initial_data)
+    std::unique_ptr<std::vector<uint8_t>> mapped_mem,
+    std::unique_ptr<ff::dx12::resource>&& resource,
+    uint64_t mem_start)
+    : resource_(std::move(resource))
+    , initial_data(initial_data)
     , mapped_mem(std::move(mapped_mem))
     , mapped_context(nullptr)
     , type_(type)
+    , mem_start(mem_start)
     , data_size(data_size)
-    , data_hash(data_hash)
+    , data_hash(data_hash ? ff::stable_hash_bytes(data, data_size) : data_hash)
     , version_(version ? version : 1)
 {
+    assert(mem_start == ff::math::align_up<uint64_t>(mem_start, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+
     if (data && data_size)
     {
-        D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(data_size);
-        D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc);
-        desc.Width = alloc_info.SizeInBytes;
-
-        this->data_hash = !this->data_hash ? ff::stable_hash_bytes(data, data_size) : this->data_hash;
-        this->resource_ = std::make_unique<ff::dx12::resource>(std::shared_ptr<ff::dx12::mem_range>(), desc);
-        this->resource_->update_buffer(commands, data, 0, data_size);
-
-        if (this->type_ == ff::dxgi::buffer_type::constant)
+        if (!this->resource_ || this->mem_start + this->data_size > this->resource_->mem_range()->size())
         {
-            this->constant_view_ = ff::dx12::cpu_buffer_descriptors().alloc_range(1);
-            D3D12_CONSTANT_BUFFER_VIEW_DESC view_desc{};
-            view_desc.BufferLocation = this->gpu_address();
-            view_desc.SizeInBytes = static_cast<UINT>(desc.Width);
-            ff::dx12::device()->CreateConstantBufferView(&view_desc, this->constant_view_.cpu_handle(0));
+            D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(data_size);
+            D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc);
+            desc.Width = alloc_info.SizeInBytes;
+
+            this->resource_ = std::make_unique<ff::dx12::resource>(std::shared_ptr<ff::dx12::mem_range>(), desc);
+            this->mem_start = 0;
         }
+
+        this->resource_->update_buffer(commands, data, this->mem_start, data_size);
     }
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
@@ -145,15 +146,26 @@ D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer::index_view(size_t start, size_t count,
     return view;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::buffer::constant_view() const
+D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::buffer::constant_view()
 {
     assert(this->type_ == ff::dxgi::buffer_type::constant);
-    return this->constant_view_ ? this->constant_view_.cpu_handle(0) : D3D12_CPU_DESCRIPTOR_HANDLE{};
+
+    if (!this->constant_view_)
+    {
+        this->constant_view_ = ff::dx12::cpu_buffer_descriptors().alloc_range(1);
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC view_desc{};
+        view_desc.BufferLocation = this->gpu_address();
+        view_desc.SizeInBytes = static_cast<UINT>(this->size());
+        ff::dx12::device()->CreateConstantBufferView(&view_desc, this->constant_view_.cpu_handle(0));
+    }
+
+    return this->constant_view_.cpu_handle(0);
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer::gpu_address() const
 {
-    return this->resource_->gpu_address();
+    return this->resource_->gpu_address() + this->mem_start;
 }
 
 ff::dxgi::buffer_type ff::dx12::buffer::type() const
@@ -184,10 +196,12 @@ bool ff::dx12::buffer::update(ff::dxgi::command_context_base& context, const voi
             new_hash,
             this->version_ + 1,
             this->initial_data,
-            std::move(this->mapped_mem));
+            std::move(this->mapped_mem),
+            std::move(this->resource_),
+            ff::math::align_up<uint64_t>(this->mem_start + this->data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
     }
 
-    return true;
+    return this->valid();
 }
 
 void* ff::dx12::buffer::map(ff::dxgi::command_context_base& context, size_t size)
