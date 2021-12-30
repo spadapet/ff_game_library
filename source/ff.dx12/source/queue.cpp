@@ -49,8 +49,17 @@ ff::dx12::commands ff::dx12::queue::new_commands()
     {
         this->new_allocators(cache.allocator, cache.allocator_before);
 
-        ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator.Get(), nullptr, IID_PPV_ARGS(&cache.list));
-        ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator_before.Get(), nullptr, IID_PPV_ARGS(&cache.list_before));
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
+        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list_before;
+
+        if (FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator.Get(), nullptr, IID_PPV_ARGS(&list))) ||
+            FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) ||
+            FAILED(list.As(&cache.list)) ||
+            FAILED(list_before.As(&cache.list_before)))
+        {
+            assert(false);
+        }
+
         cache.resource_tracker = std::make_unique<ff::dx12::resource_tracker>();
         cache.fence = std::make_unique<ff::dx12::fence>(this);
         cache.lists_reset_event = ff::win_handle::create_event(true);

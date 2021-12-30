@@ -38,19 +38,22 @@ void* ff::dx12::heap::cpu_data()
     {
         if (!this->cpu_data_)
         {
+            Microsoft::WRL::ComPtr<ID3D12Resource> cpu_resource;
+
             if (!this->cpu_resource && FAILED(ff::dx12::device()->CreatePlacedResource(
                 this->heap_.Get(),
                 0, // start
                 &CD3DX12_RESOURCE_DESC::Buffer(this->size_),
                 (this->usage_ == ff::dx12::heap::usage_t::upload) ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
                 nullptr, // clear value
-                IID_PPV_ARGS(&this->cpu_resource))))
+                IID_PPV_ARGS(&cpu_resource))))
             {
                 assert(false);
                 return nullptr;
             }
 
-            if (FAILED(this->cpu_resource->Map(0, nullptr, &this->cpu_data_)))
+            if (FAILED(cpu_resource.As(&this->cpu_resource)) ||
+                FAILED(this->cpu_resource->Map(0, nullptr, &this->cpu_data_)))
             {
                 assert(false);
                 return nullptr;

@@ -163,7 +163,7 @@ bool ff::target_window::present()
         if (this->frame_latency_handle)
         {
             // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
-            ff::wait_for_handle(this->frame_latency_handle, 1000);
+            ::WaitForSingleObject(this->frame_latency_handle, 1000);
         }
 
         HRESULT hr = this->swap_chain->Present(1, 0);
@@ -360,14 +360,16 @@ bool ff::target_window::size(const ff::window_size& size)
     {
         if (!this->target_textures[i])
         {
-            Microsoft::WRL::ComPtr<ID3D12ResourceX> resource;
-            if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))))
+            Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+            Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_x;
+            if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))) ||
+                FAILED(resource.As(&resource_x)))
             {
                 assert(false);
                 return false;
             }
 
-            this->target_textures[i] = std::make_unique<ff::dx12::resource>(resource.Get());
+            this->target_textures[i] = std::make_unique<ff::dx12::resource>(resource_x.Get());
         }
 
         ff::dx12::create_target_view(this->target_textures[i].get(), this->target_views.cpu_handle(i));

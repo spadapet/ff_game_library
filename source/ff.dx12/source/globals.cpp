@@ -40,14 +40,15 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 {
     for (size_t use_warp = 0; use_warp < 2; use_warp++)
     {
-        Microsoft::WRL::ComPtr<ID3D12DeviceX> device;
-        Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
+        Microsoft::WRL::ComPtr<ID3D12Device> device;
+        Microsoft::WRL::ComPtr<ID3D12DeviceX> device_x;
+        Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
 
         if (!use_warp || SUCCEEDED(::factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
         {
-            if (SUCCEEDED(::D3D12CreateDevice(adapter.Get(), ::feature_level, IID_PPV_ARGS(&device))))
+            if (SUCCEEDED(::D3D12CreateDevice(adapter.Get(), ::feature_level, IID_PPV_ARGS(&device))) && SUCCEEDED(device.As(&device_x)))
             {
-                return device;
+                return device_x;
             }
         }
     }
@@ -117,7 +118,7 @@ static bool init_d3d(bool for_reset)
 {
     if (!for_reset && DEBUG && ::IsDebuggerPresent())
     {
-        Microsoft::WRL::ComPtr<ID3D12DebugX> debug_interface;
+        Microsoft::WRL::ComPtr<ID3D12Debug> debug_interface;
         if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface))))
         {
             debug_interface->EnableDebugLayer();

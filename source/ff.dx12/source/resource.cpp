@@ -445,6 +445,8 @@ void ff::dx12::resource::before_reset()
 
 bool ff::dx12::resource::reset()
 {
+    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+
     if (this->external_resource)
     {
         // this resource shouldn't be recreated (like a swap chain buffer)
@@ -457,7 +459,8 @@ bool ff::dx12::resource::reset()
             &this->desc_,
             this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
-            IID_PPV_ARGS(&this->resource_))))
+            IID_PPV_ARGS(&resource))) ||
+            FAILED(resource.As(&this->resource_)))
         {
             return false;
         }
@@ -470,7 +473,8 @@ bool ff::dx12::resource::reset()
             &this->desc_,
             this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
-            IID_PPV_ARGS(&this->resource_))))
+            IID_PPV_ARGS(&resource))) ||
+            FAILED(resource.As(&this->resource_)))
         {
             return false;
         }
