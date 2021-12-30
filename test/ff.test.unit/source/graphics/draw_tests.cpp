@@ -25,6 +25,8 @@ namespace ff::test::graphics
 
             ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
             static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+
+            ff::dx12::frame_started();
             target.pre_render(&clear_color);
 
             // Draw
@@ -38,6 +40,7 @@ namespace ff::test::graphics
             }
 
             target.present();
+            ff::dx12::frame_complete();
 
             bool saved = ff::texture::get(*target.shared_texture()).resource_save_to_file(temp_path, "draw_device_test");
             Assert::IsTrue(saved);

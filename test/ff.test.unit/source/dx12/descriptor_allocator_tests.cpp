@@ -32,6 +32,7 @@ namespace ff::test::dx12
             Assert::IsTrue(range);
             Assert::AreEqual<size_t>(128, range.count());
 
+            ff::dx12::frame_started();
             fence.signal(nullptr);
             ff::dx12::frame_complete();
 

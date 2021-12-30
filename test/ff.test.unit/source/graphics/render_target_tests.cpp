@@ -41,14 +41,18 @@ namespace ff::test::graphics
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());
 
+            ff::dx12::frame_started();
             Assert::IsTrue(target.pre_render(&ff::dxgi::color_magenta()));
             Assert::IsTrue(target.present());
+            ff::dx12::frame_complete();
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());
 
+            ff::dx12::frame_started();
             Assert::IsTrue(target.pre_render(&ff::dxgi::color_yellow()));
             Assert::IsTrue(target.present());
+            ff::dx12::frame_complete();
 
 #endif
         }

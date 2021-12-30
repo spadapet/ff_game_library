@@ -43,6 +43,7 @@ namespace ff::test::dx12
             Assert::IsNotNull(range.cpu_data());
             void* data = range.cpu_data();
 
+            ff::dx12::frame_started();
             fence.signal(nullptr);
             ff::dx12::frame_complete();
 
@@ -88,6 +89,7 @@ namespace ff::test::dx12
             Assert::AreEqual<uint64_t>(0, range.allocated_start());
             Assert::IsNull(range.cpu_data());
 
+            ff::dx12::frame_started();
             ff::dx12::frame_complete();
 
             range = allocator.alloc_bytes(one_meg);

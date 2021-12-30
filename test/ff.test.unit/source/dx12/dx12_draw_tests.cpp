@@ -14,9 +14,12 @@ namespace ff::test::dx12
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(32, 32)));
             ff::dx12::depth depth;
 
+            ff::dx12::frame_started();
             ff::dxgi::draw_ptr draw = dd->begin_draw(target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
             Assert::IsTrue(draw);
+
             draw.reset();
+            ff::dx12::frame_complete();
         }
 
         TEST_METHOD(draw_shapes)
@@ -30,6 +33,8 @@ namespace ff::test::dx12
 
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+
+            ff::dx12::frame_started();
             target.pre_render(&clear_color);
 
             // Draw
@@ -56,6 +61,7 @@ namespace ff::test::dx12
             }
 
             target.present();
+            ff::dx12::frame_complete();
 
             std::filesystem::path file_path = ff::filesystem::temp_directory_path() / "dx12_draw_shapes_test.png";
             {
