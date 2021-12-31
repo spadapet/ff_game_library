@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../source/ff.base/pch.h"
+#include "../source/ff.base/source/assert.h"
 #include "../source/ff.base/source/constants.h"
 #include "../source/ff.base/source/end_scope_action.h"
 #include "../source/ff.base/source/filesystem.h"

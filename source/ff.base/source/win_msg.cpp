@@ -19,7 +19,7 @@ int ff::handle_messages_until_quit()
 
 #else
 
-static bool got_quit_message = false;
+static bool got_quit_message_ = false;
 static int exit_code;
 
 static void handle_message(::MSG& msg)
@@ -30,7 +30,7 @@ static void handle_message(::MSG& msg)
 
 static bool wait_for_message()
 {
-    if (!::got_quit_message)
+    if (!::got_quit_message_)
     {
         // This is better than calling GetMessage because it allows APCs to be called
 
@@ -59,22 +59,27 @@ bool ff::handle_messages()
         }
         else
         {
-            ::got_quit_message = true;
+            ::got_quit_message_ = true;
             ::exit_code = static_cast<int>(msg.wParam);
         }
     }
 
-    return !::got_quit_message;
+    return !::got_quit_message_;
 }
 
 int ff::handle_messages_until_quit()
 {
-    for (bool quit = ::got_quit_message; !quit; )
+    for (bool quit = ::got_quit_message_; !quit; )
     {
         quit = !::wait_for_message();
     }
 
     return ::exit_code;
+}
+
+bool ff::got_quit_message()
+{
+    return ::got_quit_message_;
 }
 
 #endif

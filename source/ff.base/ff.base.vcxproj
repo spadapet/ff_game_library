@@ -10,6 +10,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\assert.cpp" />
     <ClCompile Include="source\end_scope_action.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\frame_allocator.cpp" />
@@ -32,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\assert.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\end_scope_action.h" />
     <ClInclude Include="source\filesystem.h" />
