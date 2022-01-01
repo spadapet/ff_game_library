@@ -255,105 +255,20 @@ void ff::dx12::destroy_globals()
     ::destroy_dxgi();
 }
 
-static size_t device_child_count()
-{
-    size_t count = 0;
-    for (ff::dxgi::device_child_base* i = ::first_device_child, *prev = nullptr; i; prev = i, i = i->next_device_child_)
-    {
-        assert(i->prev_device_child_ == prev && (!prev || prev->next_device_child_ == i));
-        count++;
-    }
-
-    return count;
-}
-
-static bool has_device_child(ff::dxgi::device_child_base* child)
-{
-    bool found = false;
-
-    for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->next_device_child_)
-    {
-        if (child == i)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
 {
-    assert(!child->next_device_child_ && !child->prev_device_child_);
     child->device_child_reset_priority_ = static_cast<int>(reset_priority);
 
     std::scoped_lock lock(::device_children_mutex);
-
-#if 0 && _DEBUG
-    assert(!::has_device_child(child));
-    size_t old_count = ::device_child_count();
-#endif
-
-    if (::last_device_child)
-    {
-        child->prev_device_child_ = ::last_device_child;
-        ::last_device_child->next_device_child_ = child;
-    }
-
-    ::last_device_child = child;
-
-    if (!::first_device_child)
-    {
-        ::first_device_child = child;
-    }
-
-#if 0 && _DEBUG
-    assert(::has_device_child(child));
-    assert(old_count + 1 == ::device_child_count());
-#endif
+    ff::intrusive_list::add(::first_device_child, ::last_device_child, child);
 }
 
 void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
 {
-    assert(child->next_device_child_ || child->prev_device_child_ || (child == ::first_device_child && child == ::last_device_child));
+    // lock scope
     {
         std::scoped_lock lock(::device_children_mutex);
-
-#if 0 && _DEBUG
-        assert(::has_device_child(child));
-        size_t old_count = ::device_child_count();
-#endif
-        ff::dxgi::device_child_base* prev = child->prev_device_child_;
-        ff::dxgi::device_child_base* next = child->next_device_child_;
-
-        if (child == ::last_device_child)
-        {
-            ::last_device_child = prev;
-        }
-
-        if (child == ::first_device_child)
-        {
-            ::first_device_child = next;
-        }
-
-        if (prev)
-        {
-            prev->next_device_child_ = next;
-        }
-
-        if (next)
-        {
-            next->prev_device_child_ = prev;
-        }
-
-        child->next_device_child_ = nullptr;
-        child->prev_device_child_ = nullptr;
-        child->device_child_reset_priority_ = 0;
-
-#if 0 && _DEBUG
-        assert(!::has_device_child(child));
-        assert(::device_child_count() + 1 == old_count);
-#endif
+        ff::intrusive_list::remove(::first_device_child, ::last_device_child, child);
     }
 
     ::removed_device_child.notify(child);
@@ -426,9 +341,10 @@ bool ff::dx12::reset(bool force)
             std::vector<device_child_t> sorted_children;
             {
                 std::scoped_lock lock(::device_children_mutex);
-                sorted_children.reserve(::device_child_count());
 
-                for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->next_device_child_)
+                sorted_children.reserve(ff::intrusive_list::count(::first_device_child));
+
+                for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->intrusive_next_)
                 {
                     sorted_children.push_back(device_child_t{ i, nullptr });
                 }
@@ -472,7 +388,7 @@ bool ff::dx12::reset(bool force)
 
             for (device_child_t& i : sorted_children)
             {
-                if (i.child && !i.child->call_after_reset())
+                if (i.child && !i.child->after_reset())
                 {
                     assert(false);
                     status = false;

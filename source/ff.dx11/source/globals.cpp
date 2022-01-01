@@ -274,7 +274,7 @@ bool ff::dx11::reset(bool force)
 
             for (::device_child_t& i : sorted_children)
             {
-                if (i.child && !i.child->call_after_reset())
+                if (i.child && !i.child->after_reset())
                 {
                     assert(false);
                     status = false;

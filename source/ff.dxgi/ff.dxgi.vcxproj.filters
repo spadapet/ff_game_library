@@ -140,6 +140,9 @@
     <ClInclude Include="source\vertex.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\intrusive_list.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

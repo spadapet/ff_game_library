@@ -19,12 +19,17 @@ namespace
                 ::EnableMouseInPointer(TRUE);
             }
 #endif
+
+#ifdef TRACK_MEMORY_ALLOCATIONS
             ff::memory::start_tracking_allocations();
+#endif
         }
 
         ~one_time_init_base()
         {
+#ifdef TRACK_MEMORY_ALLOCATIONS
             ff::memory::stop_tracking_allocations();
+#endif
         }
 
     private:

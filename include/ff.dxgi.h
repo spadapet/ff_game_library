@@ -13,6 +13,7 @@
 #include "../source/ff.dxgi/source/format_util.h"
 #include "../source/ff.dxgi/source/globals.h"
 #include "../source/ff.dxgi/source/init.h"
+#include "../source/ff.dxgi/source/intrusive_list.h"
 #include "../source/ff.dxgi/source/matrix.h"
 #include "../source/ff.dxgi/source/matrix_stack.h"
 #include "../source/ff.dxgi/source/operators.h"

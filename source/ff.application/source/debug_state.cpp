@@ -240,7 +240,7 @@ void ff::debug_state::debug_page_update_stats(size_t page, bool update_fast_numb
 
 size_t ff::debug_state::debug_page_info_count(size_t page) const
 {
-#ifdef _DEBUG
+#ifdef TRACK_MEMORY_ALLOCATIONS
     return 4;
 #else
     return 3;
@@ -265,10 +265,12 @@ void ff::debug_state::debug_page_info(size_t page, size_t index, std::string& ou
 
         case 2:
             str << "Total:" << std::fixed << std::setprecision(2) << (this->advance_time_total + this->render_time + this->flip_time) * 1000.0 << "ms\n";
+            break;
 
         case 3:
             out_color = DirectX::XMFLOAT4(.5, .5, .5, 1);
             str << "Memory:" << std::fixed << std::setprecision(3) << this->mem_stats.current / 1000000.0 << " MB (#" << this->mem_stats.count << ")";
+            break;
     }
 
     out_text = str.str();
