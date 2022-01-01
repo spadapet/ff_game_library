@@ -47,8 +47,12 @@ namespace ff::internal
 #define check_hr_ret(exp) { if(FAILED(exp)) return; }
 #define check_hr_ret_val(exp, val) { if(FAILED(exp)) return (val); }
 
-#define fail() assert_msg(false, nullptr);
-#define fail_msg(txt) assert_msg(false, txt);
+#define fail() assert(false)
+#define fail_ret() assert_ret(false)
+#define fail_ret_val(val) assert_ret_val(false, val)
+#define fail_msg(txt) assert_msg(false, txt)
+#define fail_msg_ret(txt) assert_msg_ret(false, txt)
+#define fail_msg_ret_val(txt, val) assert_msg_ret_val(false, txt, val)
 
 #ifdef _DEBUG
 

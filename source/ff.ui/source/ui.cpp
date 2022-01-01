@@ -46,9 +46,7 @@ static void noesis_log_handler(const char* filename, uint32_t line, uint32_t lev
     std::string_view channel2 = channel;
     std::string_view message2 = message;
 
-    std::ostringstream str;
-    str << "[NOESIS/" << channel2 << "/" << log_level << "] " << message2;
-    ff::log::write(str.str());
+    ff::log::write(ff::log::type::ui, "[NOESIS/", channel2, "/", log_level, "] ", message2);
 
     if (::log_handler)
     {
@@ -128,9 +126,7 @@ static size_t noesis_alloc_size(void* user, void* ptr)
 
 static void noesis_dump_mem_usage()
 {
-    std::ostringstream str;
-    str << "[NOESIS/Mem] Now: " << Noesis::GetAllocatedMemory() << ", Total: " << Noesis::GetAllocatedMemoryAccum();
-    ff::log::write(str.str());
+    ff::log::write(ff::log::type::ui, "NOESIS memory now: ", Noesis::GetAllocatedMemory(), ", Total: ", Noesis::GetAllocatedMemoryAccum());
 }
 
 static Noesis::MemoryCallbacks memory_callbacks =

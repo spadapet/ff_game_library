@@ -40,16 +40,11 @@ void ff::internal::app::load_settings()
             assert(false);
         }
 
-        std::ostringstream str;
-        str << "App load settings: " << ff::filesystem::to_string(settings_path) << std::endl;
-        ::named_settings.print(str);
-        ff::log::write(str.str());
+        ff::log::write(ff::log::type::application, "Load settings: ", ff::filesystem::to_string(settings_path), "\r\n", ::named_settings);
     }
     else
     {
-        std::ostringstream str;
-        str << "No settings file: " << ff::filesystem::to_string(settings_path);
-        ff::log::write(str.str());
+        ff::log::write(ff::log::type::application, "No settings file: ", ff::filesystem::to_string(settings_path));
     }
 
     ::settings_changed = false;
@@ -61,10 +56,7 @@ bool ff::internal::app::save_settings()
     if (::settings_changed)
     {
         std::filesystem::path settings_path = ::settings_path();
-        std::ostringstream str;
-        str << "App save settings: " << ff::filesystem::to_string(settings_path) << std::endl;
-        ::named_settings.print(str);
-        ff::log::write(str.str());
+        ff::log::write(ff::log::type::application, "Save settings: ", ff::filesystem::to_string(settings_path), "\r\n", ::named_settings);
 
         if (!::named_settings.save(ff::file_writer(settings_path)))
         {

@@ -87,6 +87,7 @@ namespace ff
         void print(std::ostream& output) const;
         void print_tree(std::ostream& output) const;
         void debug_print_tree() const;
+        std::ostream& operator<<(std::ostream& ostream) const;
 
         bool equals(const value* other) const;
         void add_ref() const;
@@ -106,4 +107,9 @@ namespace ff
         const value_type* type_;
         mutable std::atomic_int refs;
     };
+}
+
+namespace std
+{
+    std::ostream& operator<<(std::ostream& ostream, const ff::value& value);
 }

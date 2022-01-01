@@ -80,13 +80,11 @@ ff::memory::allocation_stats ff::memory::stop_tracking_allocations()
     {
         _CrtSetAllocHook(::old_hook);
 
-        std::ostringstream status;
-        status
-            << "CRT memory allocations:" << std::endl
-            << "  Total: " << stats.total << " bytes" << std::endl
-            << "  Max:   " << stats.maximum << " bytes" << std::endl
-            << "  Count: " << stats.count << " allocations";
-        ff::log::write_debug(status);
+        ff::log::write(ff::log::type::base_memory,
+            "CRT memory allocations:\r\n",
+            "  Total: ", stats.total, " bytes\r\n",
+            "  Max:   ", stats.maximum, " bytes\r\n",
+            "  Count: ", stats.count, " allocations");
 
         ::total_bytes = 0;
         ::current_bytes = 0;

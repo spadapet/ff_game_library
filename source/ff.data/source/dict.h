@@ -21,6 +21,7 @@ namespace ff
         dict& operator=(const dict& other) = default;
         dict& operator=(dict&& other) = default;
         bool operator==(const dict& other) const;
+        std::ostream& operator<<(std::ostream& ostream) const;
 
         bool empty() const;
         size_t size() const;
@@ -104,4 +105,9 @@ namespace ff
 
         map_type map;
     };
+}
+
+namespace std
+{
+    std::ostream& operator<<(std::ostream& ostream, const ff::dict& value);
 }

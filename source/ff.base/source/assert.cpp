@@ -7,16 +7,23 @@
 
 #ifdef _DEBUG
 
-static std::atomic_int showing_assert_dialog = 0;
+static std::atomic_int handling_assert = 0;
 static std::function<bool(const char*, const char*, const char*, unsigned int)> assert_listener_;
 
 bool ff::internal::assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {
-    bool nested = ::showing_assert_dialog.fetch_add(1) != 0;
-    if (!nested && ::assert_listener_ && ::assert_listener_(exp, text, file, line))
+    bool nested = ::handling_assert.fetch_add(1) != 0;
+    if (nested)
     {
-        // Handled by the listener
-        ::showing_assert_dialog.fetch_sub(1);
+        // Assert during an assert, could be different threads, but just break immediately
+        ::handling_assert.fetch_sub(1);
+        return false;
+    }
+
+    if (::assert_listener_ && ::assert_listener_(exp, text, file, line))
+    {
+        // Handled by the listener (most likely a test a running)
+        ::handling_assert.fetch_sub(1);
         return true;
     }
 
@@ -24,31 +31,31 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     bool ignored = true;
 
     _snprintf_s(dialog_text, _countof(dialog_text), _TRUNCATE,
-        "ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)\r\n\r\nBreak?",
-        text ? text : "",
-        exp ? exp : "",
-        file ? file : "",
-        line);
+        "ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)",
+        text ? text : "", exp ? exp : "", file ? file : "", line);
+    std::string_view dialog_text_view(dialog_text);
+    std::wstring message_text = ff::string::to_wstring(dialog_text_view) + L"\r\n\r\nBreak?";
 
-    ff::log::write_debug(std::string_view(dialog_text));
+    ff::log::write(ff::log::type::debug, dialog_text_view);
 
 #if UWP_APP
     ignored = false;
 #else
 
-    bool main_thread = ff::thread_dispatch::get_main()->current_thread() || ff::thread_dispatch::get_game()->current_thread();
+    // Only the main thread should show dialog UI
+    bool main_thread = ff::thread_dispatch::get_main()->current_thread();
 
     if (nested || !main_thread || ff::got_quit_message() || ::IsDebuggerPresent())
     {
         ignored = false;
     }
-    else if (::MessageBox(nullptr, ff::string::to_wstring(std::string_view(dialog_text)).c_str(), L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
+    else if (::MessageBox(nullptr, message_text.c_str(), L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
     {
         ignored = false;
     }
 #endif
 
-    ::showing_assert_dialog.fetch_sub(1);
+    ::handling_assert.fetch_sub(1);
 
     return ignored;
 }

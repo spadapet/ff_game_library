@@ -373,8 +373,8 @@ private:
         {
             size_t offset = error_pos - json_text.data();
             std::ostringstream str;
-            str << "Failed to read JSON import file: " << path << std::endl <<
-                "Failed parsing JSON at pos: " << offset << std::endl <<
+            str << "Failed to read JSON import file: " << path << "\r\n" <<
+                "Failed parsing JSON at pos: " << offset << "\r\n" <<
                 "  -->" << json_text.substr(offset, std::min<size_t>(32, json_text.size() - offset));
             this->add_error(str.str());
             return false;

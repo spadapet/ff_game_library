@@ -216,7 +216,7 @@ static void json_write_array(const ff::value_vector& values, size_t spaces, std:
     size_t size = values.size();
     if (size)
     {
-        output << std::endl;
+        output << "\r\n";
         std::string indent(spaces + ::INDENT_SPACES, ' ');
 
         for (size_t i = 0; i < size; i++)
@@ -230,7 +230,7 @@ static void json_write_array(const ff::value_vector& values, size_t spaces, std:
                 output << ',';
             }
 
-            output << std::endl;
+            output << "\r\n";
         }
 
         output << std::string(spaces, ' ');
@@ -259,7 +259,7 @@ static bool json_write_value(const ff::value* value, size_t spaces, std::ostream
         ff::value_ptr dict_value = value->convert_or_default<ff::dict>();
         if (dict_value->get<ff::dict>().size())
         {
-            output << std::endl << std::string(spaces, ' ');
+            output << "\r\n" << std::string(spaces, ' ');
         }
         else
         {
@@ -272,7 +272,7 @@ static bool json_write_value(const ff::value* value, size_t spaces, std::ostream
     {
         if (value->get<ff::value_vector>().size())
         {
-            output << std::endl << std::string(spaces, ' ');
+            output << "\r\n" << std::string(spaces, ' ');
         }
         else
         {
@@ -300,7 +300,7 @@ static void json_write_object(const ff::dict& dict, size_t spaces, std::ostream&
 
     if (!names.empty())
     {
-        output << std::endl;
+        output << "\r\n";
         std::string indent(spaces + INDENT_SPACES, ' ');
 
         for (size_t i = 0; i < names.size(); i++)
@@ -317,7 +317,7 @@ static void json_write_object(const ff::dict& dict, size_t spaces, std::ostream&
                 output << ',';
             }
 
-            output << std::endl;
+            output << "\r\n";
         }
 
         output << std::string(spaces, ' ');

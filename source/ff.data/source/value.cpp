@@ -83,11 +83,13 @@ void ff::value::print_tree(std::ostream& output) const
 
 void ff::value::debug_print_tree() const
 {
-#ifdef _DEBUG
-    std::ostringstream output;
-    this->print_tree(output);
-    ff::log::write_debug(output);
-#endif
+    ff::log::write(ff::log::type::debug, *this);
+}
+
+std::ostream& ff::value::operator<<(std::ostream& ostream) const
+{
+    this->print_tree(ostream);
+    return ostream;
 }
 
 const ff::value_type* ff::value::type() const
@@ -201,4 +203,9 @@ ff::value_ptr ff::value::try_convert(std::type_index type_index) const
     }
 
     return new_val;
+}
+
+std::ostream& std::operator<<(std::ostream& ostream, const ff::value& value)
+{
+    return value.operator<<(ostream);
 }

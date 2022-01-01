@@ -52,6 +52,12 @@ bool ff::dict::operator==(const dict& other) const
     return false;
 }
 
+std::ostream& ff::dict::operator<<(std::ostream& ostream) const
+{
+    this->print(ostream);
+    return ostream;
+}
+
 bool ff::dict::empty() const
 {
     return this->map.empty();
@@ -292,11 +298,7 @@ void ff::dict::print(std::ostream& output) const
 
 void ff::dict::debug_print() const
 {
-#ifdef _DEBUG
-    std::ostringstream output;
-    this->print(output);
-    ff::log::write_debug(output.str());
-#endif
+    ff::log::write(ff::log::type::debug, *this);
 }
 
 ff::value_ptr ff::dict::get_by_path(std::string_view path) const
@@ -328,4 +330,9 @@ ff::value_ptr ff::dict::get_by_path(std::string_view path) const
     }
 
     return nullptr;
+}
+
+std::ostream& std::operator<<(std::ostream& ostream, const ff::dict& value)
+{
+    return value.operator<<(ostream);
 }

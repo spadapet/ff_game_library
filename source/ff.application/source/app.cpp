@@ -214,9 +214,7 @@ static void frame_presented()
         double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
         ::raw_startup_time = 0;
 
-        std::ostringstream str;
-        str << "App startup time: " << std::fixed << std::setprecision(3) << seconds << "s";
-        ff::log::write(str.str());
+        ff::log::write(ff::log::type::application, "Startup time: ", &std::fixed, std::setprecision(3), seconds, "s");
     }
 }
 
@@ -356,12 +354,12 @@ static void start_game_thread()
 {
     if (::game_thread_dispatch)
     {
-        ff::log::write("Unpause game thread");
+        ff::log::write(ff::log::type::application, "Unpause game thread");
         ::game_thread_dispatch->post(::start_game_state);
     }
     else if (::game_thread_state != ::game_thread_state_t::stopped)
     {
-        ff::log::write("Start game thread");
+        ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
         ff::thread_pool::get()->add_thread(::game_thread);
         ff::wait_for_event_and_reset(::game_thread_event);
@@ -376,7 +374,7 @@ static void pause_game_thread()
             {
                 if (::game_thread_state == ::game_thread_state_t::running)
                 {
-                    ff::log::write("Pause game thread");
+                    ff::log::write(ff::log::type::application, "Pause game thread");
                     ::game_thread_state = ::game_thread_state_t::pausing;
                 }
                 else
@@ -396,7 +394,7 @@ static void stop_game_thread()
 {
     if (::game_thread_dispatch)
     {
-        ff::log::write("Stop game thread");
+        ff::log::write(ff::log::type::application, "Stop game thread");
 
         ::game_thread_dispatch->post([]()
             {
@@ -441,7 +439,7 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_DESTROY:
-            ff::log::write("App window destroyed");
+            ff::log::write(ff::log::type::application, "Window destroyed");
             ::stop_game_thread();
             break;
 
@@ -449,12 +447,12 @@ static void handle_window_message(ff::window_message& message)
             switch (message.wp)
             {
                 case PBT_APMSUSPEND:
-                    ff::log::write("App suspending");
+                    ff::log::write(ff::log::type::application, "Suspending");
                     ::pause_game_thread();
                     break;
 
                 case PBT_APMRESUMEAUTOMATIC:
-                    ff::log::write("App resuming");
+                    ff::log::write(ff::log::type::application, "Resuming");
                     ::start_game_thread();
                     break;
             }
@@ -544,20 +542,13 @@ static void init_log()
     std::filesystem::path path = ::log_file_path();
     ::log_file = std::make_unique<std::ofstream>(path);
     ff::log::file(::log_file.get());
-
-    std::ostringstream str;
-    str << "App init (" << ff::app_product_name() << ")";
-    ff::log::write(str.str());
-
-    str.str(std::string());
-    str.clear();
-    str << "Log: " << ff::filesystem::to_string(path);
-    ff::log::write(str.str());
+    ff::log::write(ff::log::type::application, "Init (", ff::app_product_name(), ")");
+    ff::log::write(ff::log::type::application, "Log: ", ff::filesystem::to_string(path));
 }
 
 static void destroy_log()
 {
-    ff::log::write("App destroyed");
+    ff::log::write(ff::log::type::application, "Destroyed");
     ff::log::file(nullptr);
     ::log_file.reset();
 }

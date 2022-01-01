@@ -377,8 +377,8 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
         draw->push_no_overlap();
 
         std::ostringstream str;
-        str << "<F8> Close debug info" << std::endl
-            << "<Ctrl-F8> Page " << this->debug_page + 1 << "/" << this->total_page_count() << ": " << page->debug_page_name(sub_page_index) << std::endl
+        str << "<F8> Close debug info\n"
+            << "<Ctrl-F8> Page " << this->debug_page + 1 << "/" << this->total_page_count() << ": " << page->debug_page_name(sub_page_index) << "\n"
             << "Time:" << std::fixed << std::setprecision(2) << this->total_seconds << "s, FPS:" << std::setprecision(1) << this->last_rps;
 
         font->draw_text(draw, str.str(), ff::dxgi::transform(ff::point_float(8, 8)), ff::dxgi::color_black());

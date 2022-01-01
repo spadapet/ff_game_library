@@ -79,11 +79,8 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
             info.weak_value = value;
             info.weak_loading_info = loading_info;
 
-#if DEBUG_RES > 1
-            std::ostringstream str;
-            str << "[ff/res] Load: " << name;
-            ff::log::write_debug(str);
-#endif
+            ff::log::write(ff::log::type::resource_load, name);
+
             ff::thread_pool::get()->add_task([this, loading_info]()
                 {
                     ff::value_ptr new_value = this->create_resource_objects(loading_info, loading_info->owner->dict_value);
@@ -135,12 +132,8 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
         {
             ff::wait_for_handle(load_event);
 
-#if DEBUG_RES > 0
-            double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
-            std::ostringstream str;
-            str << "[ff/res] Waited: " << value->name() << " (" << std::fixed << std::setprecision(1) << seconds * 1000.0 << "ms)";
-            ff::log::write_debug(str);
-#endif
+            const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+            ff::log::write(ff::log::type::resource, "Waited: ", value->name(), " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
         }
     }
 
@@ -198,11 +191,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
     assert(loading_info->blocked_count > 0);
     bool loading_done = loading_info->blocked_count > 0 && !--loading_info->blocked_count;
 
-#if DEBUG_RES > 1
-    std::ostringstream str;
-    str << "[ff/res] Update: " << loading_info->name << " (" << loading_info->blocked_count << (loading_done ? ", done)" : ", blocked)");
-    ff::log::write_debug(str);
-#endif
+    ff::log::write(ff::log::type::resource_load, "Update: ", loading_info->name, " (", loading_info->blocked_count, (loading_done ? ", done)" : ", blocked)"));
 
     if (loading_done)
     {
@@ -235,11 +224,8 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
         {
             std::unique_lock loading_lock(parent_loading_info->mutex);
 
-#if DEBUG_RES > 1
-            std::ostringstream str;
-            str << "[ff/res] Unblocking: '" << parent_loading_info->name << "' unblocked by '" << loading_info->name << "'";
-            ff::log::write_debug(str);
-#endif
+            ff::log::write(ff::log::type::resource_load, "Unblocking: '", parent_loading_info->name, "' unblocked by '", loading_info->name, "'");
+
             this->update_resource_object_info(parent_loading_info, parent_loading_info->final_value);
         }
     }
@@ -331,11 +317,8 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
 
                     if (ref_loading_info->blocked_count)
                     {
-#if DEBUG_RES > 1
-                        std::ostringstream str;
-                        str << "[ff/res] Blocking: '" << loading_info->name << "' blocked by '" << ref_loading_info->name << "'";
-                        ff::log::write_debug(str);
-#endif
+                        ff::log::write(ff::log::type::resource_load, "Blocking: '", loading_info->name, "' blocked by '", ref_loading_info->name, "'");
+
                         loading_info->blocked_count++;
                         ref_loading_info->parent_loading_infos.push_back(loading_info);
                     }
@@ -348,15 +331,12 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
         {
             std::string_view loc_name = str.substr(ff::internal::LOC_PREFIX.size());
             value = this->get_localized_value(loc_name);
-#if DEBUG_RES > 0
+
             if (!value)
             {
-                std::ostringstream error;
-                error << "Missing localized resource value: " << loc_name;
-                ff::log::write_debug(error);
-                assert(false);
+                ff::log::write(ff::log::type::resource, "Missing localized resource value: ",  loc_name);
+                assert_msg(false, "Missing localized resource value");
             }
-#endif
         }
     }
     else if (value->is_type<ff::saved_data_base>())

@@ -119,7 +119,7 @@ ff::load_resources_result ff::load_resources_from_json(std::string_view json_tex
     {
         std::ostringstream str;
         size_t i = error_pos - json_text.data();
-        str << "Failed parsing JSON at pos: " << i << std::endl << "  -->" << json_text.substr(i, std::min<size_t>(32, json_text.size() - i));
+        str << "Failed parsing JSON at pos: " << i << "\r\n  -->" << json_text.substr(i, std::min<size_t>(32, json_text.size() - i));
 
         ff::load_resources_result result{};
         result.errors.push_back(str.str());
