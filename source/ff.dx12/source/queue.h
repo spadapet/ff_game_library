@@ -37,7 +37,7 @@ namespace ff::dx12
         Microsoft::WRL::ComPtr<ID3D12CommandQueueX> command_queue;
 
         std::mutex mutex;
-        std::list<ff::dx12::commands::data_cache_t> caches;
+        std::list<std::unique_ptr<ff::dx12::commands::data_cache_t>> caches;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators_before;
     };

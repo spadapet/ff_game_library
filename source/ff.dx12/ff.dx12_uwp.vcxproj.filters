@@ -68,9 +68,6 @@
     <ClCompile Include="source\buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\residency.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\draw_device.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -87,6 +84,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\target_texture.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\pageable.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -161,9 +161,6 @@
     <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\residency.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\draw_device.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -180,6 +177,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\target_texture.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\pageable.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

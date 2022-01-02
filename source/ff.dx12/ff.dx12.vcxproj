@@ -28,7 +28,7 @@
     <ClCompile Include="source\object_cache.cpp" />
     <ClCompile Include="source\queue.cpp" />
     <ClCompile Include="source\queues.cpp" />
-    <ClCompile Include="source\residency.cpp" />
+    <ClCompile Include="source\pageable.cpp" />
     <ClCompile Include="source\resource.cpp" />
     <ClCompile Include="source\resource_state.cpp" />
     <ClCompile Include="source\resource_tracker.cpp" />
@@ -61,7 +61,7 @@
     <ClInclude Include="source\object_cache.h" />
     <ClInclude Include="source\queue.h" />
     <ClInclude Include="source\queues.h" />
-    <ClInclude Include="source\residency.h" />
+    <ClInclude Include="source\pageable.h" />
     <ClInclude Include="source\resource.h" />
     <ClInclude Include="source\resource_state.h" />
     <ClInclude Include="source\resource_tracker.h" />

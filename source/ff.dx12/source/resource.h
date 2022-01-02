@@ -4,6 +4,7 @@
 #include "fence_value.h"
 #include "fence_values.h"
 #include "mem_range.h"
+#include "pageable.h"
 #include "resource_state.h"
 
 namespace ff::dx12

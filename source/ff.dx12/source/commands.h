@@ -10,6 +10,7 @@ namespace ff::dx12
     class buffer;
     class depth;
     class mem_range;
+    class pageable_base;
     class resource;
     class resource_tracker;
     class queue;
@@ -19,16 +20,24 @@ namespace ff::dx12
     public:
         struct data_cache_t
         {
+            data_cache_t(ff::dx12::queue* queue);
+            data_cache_t(data_cache_t&& other) noexcept = delete;
+            data_cache_t(const data_cache_t& other) = delete;
+
+            data_cache_t& operator=(data_cache_t&& other) noexcept = delete;
+            data_cache_t& operator=(const data_cache_t& other) = delete;
+
             Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list;
             Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list_before;
             Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
             Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator_before;
-            std::unique_ptr<ff::dx12::resource_tracker> resource_tracker;
-            std::unique_ptr<ff::dx12::fence> fence;
+            std::unordered_set<ff::dx12::pageable_base*> residency_set;
+            ff::dx12::resource_tracker resource_tracker;
+            ff::dx12::fence fence;
             ff::win_handle lists_reset_event;
         };
 
-        commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache);
+        commands(ff::dx12::queue& queue, std::unique_ptr<ff::dx12::commands::data_cache_t>&& data_cache);
         commands(commands&& other) noexcept = default;
         commands(const commands& other) = delete;
         ~commands();
@@ -42,8 +51,8 @@ namespace ff::dx12
         ff::dx12::fence_value next_fence_value();
 
         // For queue use only
-        void flush(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);
-        ff::dx12::commands::data_cache_t close();
+        void close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);
+        std::unique_ptr<ff::dx12::commands::data_cache_t> take_data();
 
         void pipeline_state(ID3D12PipelineStateX* state);
         void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
@@ -89,7 +98,7 @@ namespace ff::dx12
 
         D3D12_COMMAND_LIST_TYPE type_;
         ff::dx12::queue* queue_;
-        ff::dx12::commands::data_cache_t data_cache;
+        std::unique_ptr<ff::dx12::commands::data_cache_t> data_cache;
         ff::dx12::fence_values wait_before_execute;
         Microsoft::WRL::ComPtr<ID3D12PipelineStateX> pipeline_state_;
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature_;

@@ -15,8 +15,13 @@
 #include "resource_tracker.h"
 #include "target_access.h"
 
-ff::dx12::commands::commands(ff::dx12::queue& queue, ff::dx12::commands::data_cache_t&& data_cache)
-    : type_(data_cache.list->GetType())
+ff::dx12::commands::data_cache_t::data_cache_t(ff::dx12::queue* queue)
+    : fence(queue)
+    , lists_reset_event(ff::win_handle::create_event(true))
+{}
+
+ff::dx12::commands::commands(ff::dx12::queue& queue, std::unique_ptr<ff::dx12::commands::data_cache_t>&& data_cache)
+    : type_(data_cache->list->GetType())
     , queue_(&queue)
     , data_cache(std::move(data_cache))
 {
@@ -48,7 +53,7 @@ ff::dx12::commands& ff::dx12::commands::get(ff::dxgi::command_context_base& obj)
 
 ff::dx12::commands::operator bool() const
 {
-    return this->data_cache.allocator;
+    return this->data_cache && this->data_cache->allocator;
 }
 
 ff::dx12::queue& ff::dx12::commands::queue() const
@@ -58,10 +63,10 @@ ff::dx12::queue& ff::dx12::commands::queue() const
 
 ff::dx12::fence_value ff::dx12::commands::next_fence_value()
 {
-    return this->data_cache.fence->next_value();
+    return this->data_cache->fence.next_value();
 }
 
-void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)
+void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)
 {
     wait_before_execute.add(this->wait_before_execute);
     this->wait_before_execute.clear();
@@ -69,20 +74,21 @@ void ff::dx12::commands::flush(ff::dx12::commands* prev_commands, ff::dx12::comm
 
     ff::dx12::resource_tracker* prev_tracker = prev_commands ? prev_commands->tracker() : nullptr;
     ff::dx12::resource_tracker* next_tracker = next_commands ? next_commands->tracker() : nullptr;
-    this->tracker()->close(this->data_cache.list_before.Get(), prev_tracker, next_tracker);
-    this->data_cache.list_before->Close();
+    this->tracker()->close(this->data_cache->list_before.Get(), prev_tracker, next_tracker);
+    this->data_cache->list_before->Close();
 
-    ::ResetEvent(this->data_cache.lists_reset_event);
+    ::ResetEvent(this->data_cache->lists_reset_event);
 }
 
-ff::dx12::commands::data_cache_t ff::dx12::commands::close()
+std::unique_ptr<ff::dx12::commands::data_cache_t> ff::dx12::commands::take_data()
 {
-    this->data_cache.resource_tracker->reset();
+    this->tracker()->reset();
+    this->data_cache->residency_set.clear();
     this->wait_before_execute.clear();
     this->pipeline_state_.Reset();
     this->root_signature_.Reset();
 
-    return data_cache_t(std::move(this->data_cache));
+    return std::move(this->data_cache);
 }
 
 void ff::dx12::commands::pipeline_state(ID3D12PipelineStateX* state)
@@ -442,11 +448,11 @@ void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_
 
 ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) const
 {
-    ID3D12GraphicsCommandListX* list = this->data_cache.list.Get();
+    ID3D12GraphicsCommandListX* list = this->data_cache->list.Get();
 
     if (flush_resource_state)
     {
-        this->data_cache.resource_tracker->flush(list);
+        this->tracker()->flush(list);
     }
 
     return list;
@@ -454,5 +460,5 @@ ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) 
 
 ff::dx12::resource_tracker* ff::dx12::commands::tracker() const
 {
-    return this->data_cache.resource_tracker.get();
+    return &this->data_cache->resource_tracker;
 }

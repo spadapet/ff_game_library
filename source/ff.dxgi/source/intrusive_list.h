@@ -23,7 +23,7 @@ namespace ff::intrusive_list
     };
 
     template<class T, class = std::enable_if_t<std::is_base_of_v<ff::intrusive_list::data<T>, T>>>
-    void add(T*& list_front, T*& list_back, T* item)
+    void add_back(T*& list_front, T*& list_back, T* item)
     {
         assert(!item->intrusive_next_ && !item->intrusive_prev_);
 
@@ -38,6 +38,25 @@ namespace ff::intrusive_list
         if (!list_front)
         {
             list_front = item;
+        }
+    }
+
+    template<class T, class = std::enable_if_t<std::is_base_of_v<ff::intrusive_list::data<T>, T>>>
+    void add_front(T*& list_front, T*& list_back, T* item)
+    {
+        assert(!item->intrusive_next_ && !item->intrusive_prev_);
+
+        if (list_front)
+        {
+            item->intrusive_next_ = list_front;
+            list_front->intrusive_prev_ = item;
+        }
+
+        list_front = item;
+
+        if (!list_back)
+        {
+            list_back = item;
         }
     }
 

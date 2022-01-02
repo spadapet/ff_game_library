@@ -260,7 +260,7 @@ void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::de
     child->device_child_reset_priority_ = static_cast<int>(reset_priority);
 
     std::scoped_lock lock(::device_children_mutex);
-    ff::intrusive_list::add(::first_device_child, ::last_device_child, child);
+    ff::intrusive_list::add_back(::first_device_child, ::last_device_child, child);
 }
 
 void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)

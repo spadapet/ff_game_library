@@ -34,35 +34,32 @@ void ff::dx12::queue::wait_for_idle()
 ff::dx12::commands ff::dx12::queue::new_commands()
 {
     // Access cache
-    ff::dx12::commands::data_cache_t cache;
+    std::unique_ptr<ff::dx12::commands::data_cache_t> cache;
     {
         std::scoped_lock lock(this->mutex);
 
-        if (!this->caches.empty() && ff::is_event_set(this->caches.front().lists_reset_event))
+        if (!this->caches.empty() && ff::is_event_set(this->caches.front()->lists_reset_event))
         {
             cache = std::move(this->caches.front());
             this->caches.pop_front();
         }
     }
 
-    if (!cache.list)
+    if (!cache)
     {
-        this->new_allocators(cache.allocator, cache.allocator_before);
+        cache = std::make_unique<ff::dx12::commands::data_cache_t>(this);
+        this->new_allocators(cache->allocator, cache->allocator_before);
 
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list_before;
 
-        if (FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator.Get(), nullptr, IID_PPV_ARGS(&list))) ||
-            FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache.allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) ||
-            FAILED(list.As(&cache.list)) ||
-            FAILED(list_before.As(&cache.list_before)))
+        if (FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator.Get(), nullptr, IID_PPV_ARGS(&list))) ||
+            FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) ||
+            FAILED(list.As(&cache->list)) ||
+            FAILED(list_before.As(&cache->list_before)))
         {
             assert(false);
         }
-
-        cache.resource_tracker = std::make_unique<ff::dx12::resource_tracker>();
-        cache.fence = std::make_unique<ff::dx12::fence>(this);
-        cache.lists_reset_event = ff::win_handle::create_event(true);
     }
 
     return ff::dx12::commands(*this, std::move(cache));
@@ -108,7 +105,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
     {
         ff::dx12::commands* prev_commands = i ? valid_commands[i - 1] : nullptr;
         ff::dx12::commands* next_commands = (i + 1 < valid_commands.size()) ? valid_commands[i + 1] : nullptr;
-        valid_commands[i]->flush(prev_commands, next_commands, wait_before_execute);
+        valid_commands[i]->close_command_lists(prev_commands, next_commands, wait_before_execute);
     }
 
     for (ff::dx12::commands* cur : valid_commands)
@@ -116,17 +113,17 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         ff::dx12::fence_value next_fence_value = cur->next_fence_value();
         fence_values.add(next_fence_value);
 
-        ff::dx12::commands::data_cache_t cache = cur->close();
-        auto allocator_data = std::make_pair(next_fence_value, std::move(cache.allocator));
-        auto allocator_before_data = std::make_pair(next_fence_value, std::move(cache.allocator_before));
-        dx12_lists.push_back(cache.list_before.Get());
-        dx12_lists.push_back(cache.list.Get());
+        std::unique_ptr<ff::dx12::commands::data_cache_t> cache = cur->take_data();
+        auto allocator_data = std::make_pair(next_fence_value, std::move(cache->allocator));
+        auto allocator_before_data = std::make_pair(next_fence_value, std::move(cache->allocator_before));
+        dx12_lists.push_back(cache->list_before.Get());
+        dx12_lists.push_back(cache->list.Get());
 
         std::scoped_lock lock(this->mutex);
         this->allocators.push_back(std::move(allocator_data));
         this->allocators_before.push_back(std::move(allocator_before_data));
         this->caches.push_back(std::move(cache));
-        caches_to_reset.push_back(&this->caches.back());
+        caches_to_reset.push_back(this->caches.back().get());
     }
 
     wait_before_execute.wait(this);
@@ -196,9 +193,9 @@ void ff::dx12::queue::wait_for_tasks()
 
         for (const auto& i : this->caches)
         {
-            if (!ff::is_event_set(i.lists_reset_event))
+            if (!ff::is_event_set(i->lists_reset_event))
             {
-                handles.push_back(i.lists_reset_event);
+                handles.push_back(i->lists_reset_event);
             }
         }
     }
