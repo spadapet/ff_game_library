@@ -25,6 +25,7 @@ namespace ff::log
         data,
         dx11,
         dx12,
+        dx12_residency,
         dxgi,
         graphics,
         input,
@@ -55,5 +56,14 @@ namespace ff::log
             ff::internal::log::write(str);
             ff::internal::log::write_debug(str);
         }
+    }
+
+    template<class... Args>
+    void write_debug_fail(ff::log::type type, Args&&... args)
+    {
+        ff::log::write(type, std::forward<Args>(args)...);
+#ifdef _DEBUG
+        __debugbreak();
+#endif
     }
 }

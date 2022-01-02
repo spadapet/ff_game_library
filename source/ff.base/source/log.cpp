@@ -27,6 +27,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::data, { "ff/data", true } },
     { ff::log::type::dx11, { "ff/dx11", true } },
     { ff::log::type::dx12, { "ff/dx12", true } },
+    { ff::log::type::dx12_residency, { "ff/dx12_residency", true } },
     { ff::log::type::dxgi, { "ff/dxgi", true } },
     { ff::log::type::graphics, { "ff/graph", true } },
     { ff::log::type::input, { "ff/input", true } },
@@ -90,7 +91,7 @@ ff::log::type ff::log::lookup_type(std::string_view name)
         }
     }
 
-    fail_msg("Invalid log type name");
+    debug_fail_msg("Invalid log type name");
     return ff::log::type::none;
 }
 

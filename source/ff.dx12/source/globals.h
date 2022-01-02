@@ -4,6 +4,7 @@ namespace ff::dx12
 {
     class commands;
     class cpu_descriptor_allocator;
+    class fence;
     class fence_values;
     class gpu_descriptor_allocator;
     class mem_allocator;
@@ -21,6 +22,9 @@ namespace ff::dx12
     IDXGIAdapterX* adapter();
     ID3D12DeviceX* device();
     ff::dx12::object_cache& get_object_cache();
+
+    const DXGI_QUERY_VIDEO_MEMORY_INFO& get_video_memory_info();
+    ff::dx12::fence& residency_fence();
 
     size_t frame_count();
     ff::dx12::commands& frame_started();

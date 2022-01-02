@@ -4,7 +4,7 @@
 #include "fence_value.h"
 #include "fence_values.h"
 #include "mem_range.h"
-#include "pageable.h"
+#include "residency.h"
 #include "resource_state.h"
 
 namespace ff::dx12
@@ -13,7 +13,7 @@ namespace ff::dx12
     class mem_range;
     class resource_tracker;
 
-    class resource : private ff::dxgi::device_child_base
+    class resource : private ff::dxgi::device_child_base, public ff::dx12::residency_access
     {
     public:
         resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
@@ -68,6 +68,9 @@ namespace ff::dx12
         readback_texture_data readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
         DirectX::ScratchImage capture_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
 
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
+
     private:
         friend ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::resource& obj);
 
@@ -81,6 +84,7 @@ namespace ff::dx12
         D3D12_RESOURCE_DESC desc_;
         D3D12_CLEAR_VALUE optimized_clear_value;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
+        std::unique_ptr<ff::dx12::residency_data> residency_data_;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;
         bool external_resource;
 

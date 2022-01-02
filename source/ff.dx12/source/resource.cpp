@@ -127,6 +127,7 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
 
         std::swap(this->resource_, other.resource_);
         std::swap(this->mem_range_, other.mem_range_);
+        std::swap(this->residency_data_, other.residency_data_);
         std::swap(this->optimized_clear_value, other.optimized_clear_value);
         std::swap(this->desc_, other.desc_);
         std::swap(this->global_state_, other.global_state_);
@@ -418,6 +419,22 @@ DirectX::ScratchImage ff::dx12::resource::capture_texture(ff::dx12::commands* co
     return scratch;
 }
 
+ff::dx12::residency_data* ff::dx12::resource::residency_data()
+{
+    if (this->residency_data_)
+    {
+        return this->residency_data_.get();
+    }
+
+    if (this->mem_range_)
+    {
+        return this->mem_range_->residency_data();
+    }
+
+    assert(this->external_resource);
+    return nullptr;
+}
+
 void ff::dx12::resource::destroy(bool for_reset)
 {
     if (!for_reset)
@@ -435,6 +452,7 @@ void ff::dx12::resource::destroy(bool for_reset)
 
     this->global_reads_.clear();
     this->global_write_ = {};
+    this->residency_data_.reset();
     this->resource_.Reset();
 }
 
@@ -453,17 +471,23 @@ bool ff::dx12::resource::reset()
     }
     else if (!this->mem_range_)
     {
+        Microsoft::WRL::ComPtr<ID3D12Pageable> pageable;
+
         if (FAILED(ff::dx12::device()->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
+            D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT,
             &this->desc_,
             this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
             IID_PPV_ARGS(&resource))) ||
-            FAILED(resource.As(&this->resource_)))
+            FAILED(resource.As(&this->resource_)) ||
+            FAILED(resource.As(&pageable)))
         {
             return false;
         }
+
+        D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, ff::dx12::resident_t::evicted);
     }
     else
     {

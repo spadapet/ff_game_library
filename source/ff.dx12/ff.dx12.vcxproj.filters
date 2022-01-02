@@ -68,7 +68,7 @@
     <ClCompile Include="source\buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\pageable.cpp">
+    <ClCompile Include="source\residency.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\draw_device.cpp">
@@ -161,7 +161,7 @@
     <ClInclude Include="source\buffer.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\pageable.h">
+    <ClInclude Include="source\residency.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\draw_device.h">

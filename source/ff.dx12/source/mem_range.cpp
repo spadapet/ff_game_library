@@ -91,6 +91,11 @@ ff::dx12::heap* ff::dx12::mem_range::heap() const
     return *this ? &this->owner->heap() : nullptr;
 }
 
+ff::dx12::residency_data* ff::dx12::mem_range::residency_data()
+{
+    return this->heap() ? this->heap()->residency_data() : nullptr;
+}
+
 void ff::dx12::mem_range::free_range()
 {
     if (*this)

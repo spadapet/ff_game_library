@@ -86,16 +86,22 @@ bool ff::dx12::heap::cpu_usage() const
     return this->usage_ == ff::dx12::heap::usage_t::upload || this->usage_ == ff::dx12::heap::usage_t::readback;
 }
 
+ff::dx12::residency_data* ff::dx12::heap::residency_data()
+{
+    return this->residency_data_.get();
+}
+
 void ff::dx12::heap::before_reset()
 {
     this->cpu_unmap();
+    this->residency_data_.reset();
     this->heap_.Reset();
 }
 
 bool ff::dx12::heap::reset()
 {
     D3D12_HEAP_PROPERTIES props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED; // D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT
+    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
     D3D12_RESIDENCY_PRIORITY priority = D3D12_RESIDENCY_PRIORITY_NORMAL;
 
     switch (this->usage_)
@@ -133,6 +139,8 @@ bool ff::dx12::heap::reset()
     {
         ID3D12Pageable* p = this->heap_.Get();
         ff::dx12::device()->SetResidencyPriority(1, &p, &priority);
+
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(p, this->size_, ff::dx12::resident_t::evicted);
 
         return true;
     }

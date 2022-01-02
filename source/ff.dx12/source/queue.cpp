@@ -3,6 +3,7 @@
 #include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
+#include "residency.h"
 #include "resource_tracker.h"
 #include "queue.h"
 
@@ -93,6 +94,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         return;
     }
 
+    std::unordered_set<ff::dx12::residency_data*> residency_set;
     ff::dx12::fence_values wait_before_execute;
     ff::stack_vector<ID3D12CommandList*, 64> dx12_lists;
     ff::stack_vector<ff::dx12::commands::data_cache_t*, 32> caches_to_reset;
@@ -118,6 +120,8 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         auto allocator_before_data = std::make_pair(next_fence_value, std::move(cache->allocator_before));
         dx12_lists.push_back(cache->list_before.Get());
         dx12_lists.push_back(cache->list.Get());
+        residency_set.merge(cache->residency_set);
+        cache->residency_set.clear();
 
         std::scoped_lock lock(this->mutex);
         this->allocators.push_back(std::move(allocator_data));
@@ -126,8 +130,10 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         caches_to_reset.push_back(this->caches.back().get());
     }
 
+    ff::dx12::residency_data::make_resident(residency_set, wait_before_execute);
     wait_before_execute.wait(this);
     this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
+
     fence_values.signal(this);
 
     ff::thread_pool::get()->add_task([this, caches_to_reset = std::move(caches_to_reset)]()

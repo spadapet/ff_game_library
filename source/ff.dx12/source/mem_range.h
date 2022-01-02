@@ -1,5 +1,7 @@
 #pragma once
 
+#include "residency.h"
+
 namespace ff::dx12
 {
     class commands;
@@ -7,7 +9,7 @@ namespace ff::dx12
     class mem_buffer_base;
     class resource;
 
-    class mem_range
+    class mem_range : public ff::dx12::residency_access
     {
     public:
         mem_range();
@@ -27,6 +29,9 @@ namespace ff::dx12
         void* cpu_data() const;
         D3D12_GPU_VIRTUAL_ADDRESS gpu_data() const;
         ff::dx12::heap* heap() const;
+
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
 
     private:
         void free_range();

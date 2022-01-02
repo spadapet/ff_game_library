@@ -21,6 +21,11 @@ static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
+static ff::win_handle video_memory_change_event;
+static DWORD video_memory_change_event_cookie{};
+static DXGI_QUERY_VIDEO_MEMORY_INFO video_memory_info{};
+static std::unique_ptr<ff::dx12::fence> residency_fence;
+
 static std::unique_ptr<ff::dx12::object_cache> object_cache;
 static std::unique_ptr<ff::dx12::queues> queues;
 static std::array<std::unique_ptr<ff::dx12::cpu_descriptor_allocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> cpu_descriptor_allocators;
@@ -54,6 +59,21 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
     }
 
     return nullptr;
+}
+
+static void update_video_memory_info()
+{
+    if (!::video_memory_change_event || ff::is_event_set(::video_memory_change_event))
+    {
+        ::video_memory_info = ff::dxgi::get_video_memory_info(ff::dx12::adapter());
+
+        if (::video_memory_change_event)
+        {
+            ::ResetEvent(::video_memory_change_event);
+        }
+
+        ff::log::write(ff::log::type::dx12_residency, "Video memory budget:", ::video_memory_info.Budget, " bytes, Usage:", ::video_memory_info.CurrentUsage, " bytes");
+    }
 }
 
 static void flush_keep_alive()
@@ -157,6 +177,14 @@ static bool init_d3d(bool for_reset)
     }
 
     ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
+    ::update_video_memory_info();
+    ::video_memory_change_event = ff::win_handle::create_event();
+
+    if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
+    {
+        ::video_memory_change_event.close();
+        ::video_memory_change_event_cookie = 0;
+    }
 
     if (!for_reset)
     {
@@ -176,6 +204,7 @@ static bool init_d3d(bool for_reset)
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256, 256);
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
+        ::residency_fence = std::make_unique<ff::dx12::fence>(nullptr);
     }
 
     return true;
@@ -207,6 +236,15 @@ static void destroy_d3d(bool for_reset)
         ::target_allocator.reset();
         ::queues.reset();
         ::object_cache.reset();
+        ::residency_fence.reset();
+    }
+
+    if (::video_memory_change_event)
+    {
+        ::adapter->UnregisterVideoMemoryBudgetChangeNotification(::video_memory_change_event_cookie);
+        ::video_memory_change_event_cookie = 0;
+        ::video_memory_info = {};
+        ::video_memory_change_event.close();
     }
 
     ::outputs_hash = 0;
@@ -428,6 +466,16 @@ ID3D12DeviceX* ff::dx12::device()
     return ::device.Get();
 }
 
+const DXGI_QUERY_VIDEO_MEMORY_INFO& ff::dx12::get_video_memory_info()
+{
+    return ::video_memory_info;
+}
+
+ff::dx12::fence& ff::dx12::residency_fence()
+{
+    return *::residency_fence;
+}
+
 ff::dx12::object_cache& ff::dx12::get_object_cache()
 {
     return *::object_cache;
@@ -442,6 +490,7 @@ ff::dx12::commands& ff::dx12::frame_started()
 {
     assert(!::frame_commands);
     ::flush_keep_alive();
+    ::update_video_memory_info();
     ::frame_commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
     return *::frame_commands;
 }

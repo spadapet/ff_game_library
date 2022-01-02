@@ -9,8 +9,10 @@ namespace ff::dx12
 {
     class buffer;
     class depth;
+    class descriptor_range;
     class mem_range;
-    class pageable_base;
+    class residency_access;
+    class residency_data;
     class resource;
     class resource_tracker;
     class queue;
@@ -31,7 +33,7 @@ namespace ff::dx12
             Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list_before;
             Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
             Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator_before;
-            std::unordered_set<ff::dx12::pageable_base*> residency_set;
+            std::unordered_set<ff::dx12::residency_data*> residency_set;
             ff::dx12::resource_tracker resource_tracker;
             ff::dx12::fence fence;
             ff::win_handle lists_reset_event;
@@ -59,7 +61,7 @@ namespace ff::dx12
         void resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
 
         void root_signature(ID3D12RootSignature* signature);
-        void root_descriptors(size_t index, D3D12_GPU_DESCRIPTOR_HANDLE base_descriptor);
+        void root_descriptors(size_t index, ff::dx12::descriptor_range& range, size_t base_index = 0);
         void root_constant(size_t index, uint32_t data, size_t data_index = 0);
         void root_constants(size_t index, const void* data, size_t size, size_t data_index = 0);
         void root_cbv(size_t index, ff::dx12::buffer& buffer, size_t offset = 0);
@@ -83,11 +85,11 @@ namespace ff::dx12
         void clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color);
         void discard(ff::dxgi::target_base& target);
 
-        void update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source);
-        void readback_buffer(const ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset);
+        void update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, ff::dx12::mem_range& source);
+        void readback_buffer(ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset);
 
-        void update_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
-        void readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
+        void update_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout);
+        void readback_texture(ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
 
         void copy_resource(ff::dx12::resource& dest_resource, ff::dx12::resource& source_resource);
         void copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
@@ -95,6 +97,7 @@ namespace ff::dx12
     private:
         ID3D12GraphicsCommandListX* list(bool flush_resource_state = true) const;
         ff::dx12::resource_tracker* tracker() const;
+        void keep_resident(ff::dx12::residency_access& access);
 
         D3D12_COMMAND_LIST_TYPE type_;
         ff::dx12::queue* queue_;

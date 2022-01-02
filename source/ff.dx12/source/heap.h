@@ -1,10 +1,11 @@
 #pragma once
 
 #include "access.h"
+#include "residency.h"
 
 namespace ff::dx12
 {
-    class heap : private ff::dxgi::device_child_base
+    class heap : private ff::dxgi::device_child_base, public ff::dx12::residency_access
     {
     public:
         enum class usage_t
@@ -31,6 +32,9 @@ namespace ff::dx12
         usage_t usage() const;
         bool cpu_usage() const;
 
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
+
     private:
         friend ID3D12HeapX* ff::dx12::get_heap(const ff::dx12::heap& obj);
         friend ID3D12ResourceX* ff::dx12::get_resource(ff::dx12::heap& obj);
@@ -41,6 +45,8 @@ namespace ff::dx12
 
         void cpu_unmap();
 
+        std::unique_ptr<ff::dx12::residency_data> residency_data_;
+        ff::signal_connection evicting_connection;
         Microsoft::WRL::ComPtr<ID3D12HeapX> heap_;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> cpu_resource;
         void* cpu_data_;

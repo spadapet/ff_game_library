@@ -705,7 +705,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         D3D12_CPU_DESCRIPTOR_HANDLE dest = texture_views_gpu.cpu_handle(0);
         UINT dest_size = static_cast<UINT>(texture_views.size());
         ff::dx12::device()->CopyDescriptors(1, &dest, &dest_size, dest_size, texture_views.data(), ones, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        this->commands->root_descriptors(5, texture_views_gpu.gpu_handle(0));
+        this->commands->root_descriptors(5, texture_views_gpu);
     }
 
     // Copy sampler descriptors
@@ -714,7 +714,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         D3D12_CPU_DESCRIPTOR_HANDLE dest = samplers_gpu.cpu_handle(0);
         UINT dest_size = static_cast<UINT>(samplers.size());
         ff::dx12::device()->CopyDescriptors(1, &dest, &dest_size, dest_size, samplers.data(), ones, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-        this->commands->root_descriptors(6, samplers_gpu.gpu_handle(0));
+        this->commands->root_descriptors(6, samplers_gpu);
     }
 
     this->commands->draw(batch.startIndex, batch.numIndices, 0);

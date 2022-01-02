@@ -361,7 +361,7 @@ namespace
             this->commands->targets(&this->setup_target, 1, this->setup_depth);
             this->commands->viewports(&this->setup_viewport, 1);
             this->commands->root_signature(this->root_signature.Get());
-            this->commands->root_descriptors(3, this->samplers_gpu.gpu_handle(0));
+            this->commands->root_descriptors(3, this->samplers_gpu);
 
 
             return this->internal_flush(nullptr, false);
@@ -494,7 +494,7 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(texture_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(4, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(4, dest_range);
             }
 
             if (textures_using_palette_count)
@@ -510,7 +510,7 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(textures_using_palette_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(5, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(5, dest_range);
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
@@ -525,7 +525,7 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(views.size());
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(6, dest_range.gpu_handle(0));
+                this->commands->root_descriptors(6, dest_range);
             }
         }
 

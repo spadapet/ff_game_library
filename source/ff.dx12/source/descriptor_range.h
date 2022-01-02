@@ -1,10 +1,12 @@
 #pragma once
 
+#include "residency.h"
+
 namespace ff::dx12
 {
     class descriptor_buffer_base;
 
-    class descriptor_range
+    class descriptor_range : public ff::dx12::residency_access
     {
     public:
         descriptor_range();
@@ -22,6 +24,9 @@ namespace ff::dx12
         void free_range();
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(size_t index) const;
         D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(size_t index) const;
+
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
 
     private:
         ff::dx12::descriptor_buffer_base* owner;

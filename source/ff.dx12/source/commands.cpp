@@ -83,7 +83,6 @@ void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, 
 std::unique_ptr<ff::dx12::commands::data_cache_t> ff::dx12::commands::take_data()
 {
     this->tracker()->reset();
-    this->data_cache->residency_set.clear();
     this->wait_before_execute.clear();
     this->pipeline_state_.Reset();
     this->root_signature_.Reset();
@@ -102,11 +101,14 @@ void ff::dx12::commands::pipeline_state(ID3D12PipelineStateX* state)
 
 void ff::dx12::commands::resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size)
 {
+    this->keep_resident(resource);
     resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state, array_start, array_size, mip_start, mip_size);
 }
 
 void ff::dx12::commands::resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index)
 {
+    this->keep_resident(resource);
+
     std::div_t dr = std::div(static_cast<int>(sub_index), static_cast<int>(resource.mip_size()));
     resource.prepare_state(this->wait_before_execute, this->next_fence_value(), *this->tracker(), state,
         static_cast<size_t>(dr.quot), 1, static_cast<size_t>(dr.rem), 1);
@@ -129,15 +131,17 @@ void ff::dx12::commands::root_signature(ID3D12RootSignature* signature)
     }
 }
 
-void ff::dx12::commands::root_descriptors(size_t index, D3D12_GPU_DESCRIPTOR_HANDLE base_descriptor)
+void ff::dx12::commands::root_descriptors(size_t index, ff::dx12::descriptor_range& range, size_t base_index)
 {
+    this->keep_resident(range);
+
     if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
     {
-        this->list(false)->SetComputeRootDescriptorTable(static_cast<UINT>(index), base_descriptor);
+        this->list(false)->SetComputeRootDescriptorTable(static_cast<UINT>(index), range.gpu_handle(base_index));
     }
     else
     {
-        this->list(false)->SetGraphicsRootDescriptorTable(static_cast<UINT>(index), base_descriptor);
+        this->list(false)->SetGraphicsRootDescriptorTable(static_cast<UINT>(index), range.gpu_handle(base_index));
     }
 }
 
@@ -274,12 +278,9 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
 
 void ff::dx12::commands::vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
 {
-    if (resources)
+    for (size_t i = 0; resources && i < count; i++)
     {
-        for (size_t i = 0; i < count; i++)
-        {
-            this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        }
+        this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     }
 
     this->list()->IASetVertexBuffers(static_cast<UINT>(start), static_cast<UINT>(count), views);
@@ -359,26 +360,29 @@ void ff::dx12::commands::discard(ff::dxgi::target_base& target)
     this->list()->DiscardResource(ff::dx12::get_resource(access.dx12_target_texture()), nullptr);
 }
 
-void ff::dx12::commands::update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, const ff::dx12::mem_range& source)
+void ff::dx12::commands::update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, ff::dx12::mem_range& source)
 {
     assert(source.heap() && source.heap()->cpu_usage());
 
+    this->keep_resident(source);
     this->resource_state(dest, D3D12_RESOURCE_STATE_COPY_DEST);
     this->list()->CopyBufferRegion(ff::dx12::get_resource(dest), dest_offset, ff::dx12::get_resource(*source.heap()), source.start(), source.size());
 }
 
-void ff::dx12::commands::readback_buffer(const ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset)
+void ff::dx12::commands::readback_buffer(ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset)
 {
     assert(dest.heap() && dest.heap()->cpu_usage());
 
+    this->keep_resident(dest);
     this->resource_state(source, D3D12_RESOURCE_STATE_COPY_SOURCE);
     this->list()->CopyBufferRegion(ff::dx12::get_resource(*dest.heap()), dest.start(), ff::dx12::get_resource(source), source_offset, dest.size());
 }
 
-void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, const ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout)
+void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::mem_range& source, const D3D12_SUBRESOURCE_FOOTPRINT& source_layout)
 {
     assert(source.cpu_data());
 
+    this->keep_resident(source);
     this->resource_state_sub_index(dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
 
     D3D12_TEXTURE_COPY_LOCATION source_location;
@@ -392,10 +396,11 @@ void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_su
         &source_location, nullptr); // source box
 }
 
-void ff::dx12::commands::readback_texture(const ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
+void ff::dx12::commands::readback_texture(ff::dx12::mem_range& dest, const D3D12_SUBRESOURCE_FOOTPRINT& dest_layout, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect)
 {
     assert(dest.cpu_data());
 
+    this->keep_resident(dest);
     this->resource_state_sub_index(source, D3D12_RESOURCE_STATE_COPY_SOURCE, source_sub_index);
 
     const D3D12_BOX source_box
@@ -461,4 +466,14 @@ ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) 
 ff::dx12::resource_tracker* ff::dx12::commands::tracker() const
 {
     return &this->data_cache->resource_tracker;
+}
+
+void ff::dx12::commands::keep_resident(ff::dx12::residency_access& access)
+{
+    ff::dx12::residency_data* data = access.residency_data();
+    if (data)
+    {
+        data->keep_resident(this->next_fence_value());
+        this->data_cache->residency_set.insert(data);
+    }
 }

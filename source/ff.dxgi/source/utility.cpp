@@ -51,6 +51,33 @@ size_t ff::dxgi::get_outputs_hash(IDXGIFactoryX* factory, IDXGIAdapterX* adapter
     return !outputs.empty() ? ff::stable_hash_bytes(outputs.data(), ff::vector_byte_size(outputs)) : 0;
 }
 
+DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapterX* adapter)
+{
+    DXGI_QUERY_VIDEO_MEMORY_INFO info{};
+
+    if (adapter)
+    {
+        DXGI_QUERY_VIDEO_MEMORY_INFO info1;
+        if (SUCCEEDED(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &info1)))
+        {
+            info.AvailableForReservation += info1.AvailableForReservation;
+            info.Budget += info1.Budget;
+            info.CurrentReservation += info1.CurrentReservation;
+            info.CurrentUsage += info1.CurrentUsage;
+        }
+
+        if (SUCCEEDED(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &info1)))
+        {
+            info.AvailableForReservation += info1.AvailableForReservation;
+            info.Budget += info1.Budget;
+            info.CurrentReservation += info1.CurrentReservation;
+            info.CurrentUsage += info1.CurrentUsage;
+        }
+    }
+
+    return info;
+}
+
 DXGI_MODE_ROTATION ff::dxgi::get_dxgi_rotation(int dmod)
 {
     switch (dmod)

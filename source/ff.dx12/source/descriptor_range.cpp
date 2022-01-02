@@ -78,3 +78,9 @@ D3D12_GPU_DESCRIPTOR_HANDLE ff::dx12::descriptor_range::gpu_handle(size_t index)
     assert(index < this->count_);
     return this->owner->gpu_handle(this->start_ + index);
 }
+
+ff::dx12::residency_data* ff::dx12::descriptor_range::residency_data()
+{
+    // Descriptor heap residency isn't supported (yet?)
+    return nullptr;
+}
