@@ -10,10 +10,10 @@ static ff::dx12::residency_data* pageable_front{};
 static ff::dx12::residency_data* pageable_back{};
 static std::atomic_uint32_t usage_counter{ 0 };
 
-ff::dx12::residency_data::residency_data(Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, ff::dx12::resident_t residency)
-    : pageable_(std::move(pageable))
-    , size_(size)
-    , residency_(residency)
+ff::dx12::residency_data::residency_data(Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, bool resident)
+    : pageable(std::move(pageable))
+    , size(size)
+    , resident(resident)
     , usage_counter(0)
 {
     std::scoped_lock lock(::pageable_mutex);
@@ -26,51 +26,50 @@ ff::dx12::residency_data::~residency_data()
     ff::intrusive_list::remove(::pageable_front, ::pageable_back, this);
 }
 
-void ff::dx12::residency_data::keep_resident(ff::dx12::fence_value value)
-{
-    this->keep_resident_.add(value);
-}
-
-bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_values& wait_values)
+bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_value commands_fence_value, ff::dx12::fence_values& wait_values)
 {
     ff::stack_vector<ID3D12Pageable*, 256> make_resident;
     ff::stack_vector<ID3D12Pageable*, 256> make_evicted;
+    ff::dx12::fence_value resident_fence_value = ff::dx12::residency_fence().signal_later();
     uint64_t make_resident_size = 0;
     uint64_t make_evicted_size = 0;
+    bool make_resident_succeeded = true;
 
     const uint64_t available_space = ff::dx12::get_video_memory_info().Budget - ff::dx12::get_video_memory_info().CurrentUsage;
     const uint32_t new_usage_counter = ::usage_counter.fetch_add(1) + 1;
 
-    // Move used data to the front of MRU and ensure the data made resident
+    // Find data that needs to be made resident
+    for (ff::dx12::residency_data* data : residency_set)
+    {
+        data->usage_counter = new_usage_counter;
+
+        if (!data->resident)
+        {
+            make_resident.push_back(data->pageable.Get());
+            make_resident_size += data->size;
+
+            data->resident = true;
+            data->resident_value = resident_fence_value;
+        }
+        else if (data->resident_value.complete())
+        {
+            data->resident_value = {};
+        }
+        else
+        {
+            // Still becoming resident from a different call to make_resident
+            wait_values.add(data->resident_value);
+        }
+    }
+
+    // Move used data to the front of MRU
     {
         std::scoped_lock lock(::pageable_mutex);
 
         for (ff::dx12::residency_data* data : residency_set)
         {
-            if (data->residency_ == ff::dx12::resident_t::evicted)
-            {
-                make_resident.push_back(data->pageable_.Get());
-                make_resident_size += data->size_;
-
-                data->residency_ = ff::dx12::resident_t::resident;
-                data->resident_value = ff::dx12::residency_fence().next_value();
-            }
-            else if (data->resident_value.complete())
-            {
-                data->resident_value = {};
-            }
-            else
-            {
-                wait_values.add(data->resident_value);
-            }
-
-            data->usage_counter = new_usage_counter;
-
-            if (data != ::pageable_front)
-            {
-                ff::intrusive_list::remove(::pageable_front, ::pageable_back, data);
-                ff::intrusive_list::add_front(::pageable_front, ::pageable_back, data);
-            }
+            ff::intrusive_list::remove(::pageable_front, ::pageable_back, data);
+            ff::intrusive_list::add_front(::pageable_front, ::pageable_back, data);
         }
     }
 
@@ -78,46 +77,35 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
     // 1) Evict data that isn't being used by the GPU at the moment
     // 2) Wait for GPU work to finish, then any resident data should be able to be evicted
     {
-        uint64_t delta_resident_size = make_resident_size;
         ff::dx12::fence_values wait_to_evict;
-
-        for (size_t pass = 0; pass < 2 && delta_resident_size > available_space; pass++)
+        uint64_t delta_resident_size = make_resident_size;
+        static const bool debug_residency = false; // DEBUG; // evict everything that isn't needed right now
         {
-            if (pass == 1)
-            {
-                // Block the CPU until relevant GPU work is done
-                wait_to_evict.wait(nullptr);
-            }
-
             std::scoped_lock lock(::pageable_mutex);
 
             for (ff::dx12::residency_data* data = ::pageable_back;
-                data && data->usage_counter != new_usage_counter && delta_resident_size > available_space;
+                data && data->usage_counter != new_usage_counter && (delta_resident_size > available_space || debug_residency);
                 data = data->intrusive_prev_)
             {
-                if (data->residency_ != ff::dx12::resident_t::evicted)
+                if (data->resident)
                 {
-                    if (data->keep_resident_.complete())
-                    {
-                        make_evicted.push_back(data->pageable_.Get());
-                        data->residency_ = ff::dx12::resident_t::evicted;
-                        data->resident_value = {};
+                    data->resident = false;
+                    data->resident_value = {};
 
-                        make_evicted_size += data->size_;
-                        delta_resident_size -= std::min(data->size_, delta_resident_size);
-                    }
-                    else
-                    {
-                        wait_to_evict.add(data->keep_resident_);
-                    }
+                    wait_to_evict.add(data->keep_resident);
+                    make_evicted.push_back(data->pageable.Get());
+                    make_evicted_size += data->size;
+                    delta_resident_size -= std::min(data->size, delta_resident_size);
                 }
             }
         }
 
-        if (delta_resident_size > available_space)
+        if (delta_resident_size > available_space && !debug_residency)
         {
             ff::log::write_debug_fail(ff::log::type::dx12_residency, "Over budget by:", delta_resident_size - available_space, " bytes, Available:", available_space, " bytes");
         }
+
+        wait_to_evict.wait(nullptr);
     }
 
     if (!make_evicted.empty())
@@ -129,33 +117,36 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
     if (!make_resident.empty())
     {
         ff::log::write(ff::log::type::dx12_residency, "Making resident:", make_resident_size, " bytes, Allocation count:", make_resident.size());
-        ff::dx12::fence_value fence_value = ff::dx12::residency_fence().signal_later();
 
-        if (FAILED(ff::dx12::device()->EnqueueMakeResident(
+        if (SUCCEEDED(ff::dx12::device()->EnqueueMakeResident(
             D3D12_RESIDENCY_FLAG_NONE,
             static_cast<UINT>(make_resident.size()),
             make_resident.data(),
-            ff::dx12::get_fence(*fence_value.fence()),
-            fence_value.get())))
+            ff::dx12::get_fence(*resident_fence_value.fence()),
+            resident_fence_value.get())))
+        {
+            wait_values.add(resident_fence_value);
+        }
+        else
         {
             ff::log::write_debug_fail(ff::log::type::dx12_residency, "Failed to make enough data resident");
-
-            for (ff::dx12::residency_data* data : residency_set)
-            {
-                // Couldn't make the data resident, go back to being evicted
-                if (data->residency_ == ff::dx12::resident_t::resident && data->resident_value == fence_value)
-                {
-                    data->residency_ = ff::dx12::resident_t::evicted;
-                    data->resident_value = {};
-                }
-            }
-
-            // No need to signal the fence value, nothing will wait for it
-            return false;
+            make_resident_succeeded = false;
         }
-
-        wait_values.add(fence_value);
     }
 
-    return true;
+    for (ff::dx12::residency_data* data : residency_set)
+    {
+        if (make_resident_succeeded)
+        {
+            data->keep_resident.add(commands_fence_value);
+        }
+        else if (data->resident && data->resident_value == resident_fence_value)
+        {
+            // Couldn't make the data resident, go back to being evicted
+            data->resident = false;
+            data->resident_value = {};
+        }
+    }
+
+    return make_resident_succeeded;
 }

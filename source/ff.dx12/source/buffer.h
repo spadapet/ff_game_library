@@ -8,7 +8,7 @@ namespace ff::dx12
     class commands;
     class resource;
 
-    class buffer_base : public ff::dxgi::buffer_base
+    class buffer_base : public ff::dxgi::buffer_base, public ff::dx12::residency_access
     {
     public:
         static ff::dx12::buffer_base& get(ff::dxgi::buffer_base& obj);
@@ -24,6 +24,9 @@ namespace ff::dx12
         virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view();
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
+
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
     };
 
     /// <summary>
@@ -48,6 +51,9 @@ namespace ff::dx12
         virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE constant_view() override;
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
+
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
 
         // ff::dxgi::buffer_base
         virtual ff::dxgi::buffer_type type() const override;
@@ -104,6 +110,9 @@ namespace ff::dx12
         virtual D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const override;
         virtual D3D12_INDEX_BUFFER_VIEW index_view(size_t start = 0, size_t count = 0, DXGI_FORMAT format = DXGI_FORMAT_R16_UINT) const override;
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
+
+        // ff::dx12::residency_access
+        virtual ff::dx12::residency_data* residency_data() override;
 
         // ff::dxgi::buffer_base
         virtual ff::dxgi::buffer_type type() const override;

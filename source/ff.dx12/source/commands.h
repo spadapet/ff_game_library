@@ -8,6 +8,7 @@
 namespace ff::dx12
 {
     class buffer;
+    class buffer_base;
     class depth;
     class descriptor_range;
     class mem_range;
@@ -71,8 +72,8 @@ namespace ff::dx12
 
         void targets(ff::dxgi::target_base** targets, size_t count, ff::dxgi::depth_base* depth);
         void viewports(const D3D12_VIEWPORT* viewports, size_t count);
-        void vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count);
-        void index_buffer(ff::dx12::resource* resource, const D3D12_INDEX_BUFFER_VIEW& view);
+        void vertex_buffers(ff::dx12::buffer_base** buffers, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count);
+        void index_buffer(ff::dx12::buffer_base& buffer, const D3D12_INDEX_BUFFER_VIEW& view);
         void primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology);
         void stencil(uint32_t value);
         void draw(size_t start, size_t count);

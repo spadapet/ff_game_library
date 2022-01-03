@@ -276,21 +276,32 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
     this->list(false)->RSSetScissorRects(static_cast<UINT>(count), scissor_rects);
 }
 
-void ff::dx12::commands::vertex_buffers(ff::dx12::resource** resources, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
+void ff::dx12::commands::vertex_buffers(ff::dx12::buffer_base** buffers, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
 {
-    for (size_t i = 0; resources && i < count; i++)
+    for (size_t i = 0; buffers && i < count; i++)
     {
-        this->resource_state(*resources[i], D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        if (buffers[i]->resource())
+        {
+            this->resource_state(*buffers[i]->resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        }
+        else
+        {
+            this->keep_resident(*buffers[i]);
+        }
     }
 
     this->list()->IASetVertexBuffers(static_cast<UINT>(start), static_cast<UINT>(count), views);
 }
 
-void ff::dx12::commands::index_buffer(ff::dx12::resource* resource, const D3D12_INDEX_BUFFER_VIEW& view)
+void ff::dx12::commands::index_buffer(ff::dx12::buffer_base& buffer, const D3D12_INDEX_BUFFER_VIEW& view)
 {
-    if (resource)
+    if (buffer.resource())
     {
-        this->resource_state(*resource, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+        this->resource_state(*buffer.resource(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    }
+    else
+    {
+        this->keep_resident(buffer);
     }
 
     this->list()->IASetIndexBuffer(&view);
@@ -473,7 +484,6 @@ void ff::dx12::commands::keep_resident(ff::dx12::residency_access& access)
     ff::dx12::residency_data* data = access.residency_data();
     if (data)
     {
-        data->keep_resident(this->next_fence_value());
         this->data_cache->residency_set.insert(data);
     }
 }

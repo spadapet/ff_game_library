@@ -74,10 +74,17 @@ void ff::dx12::fence::wait(uint64_t value, ff::dx12::queue* queue)
         {
             ff::dx12::get_command_queue(*queue)->Wait(this->fence_.Get(), value);
         }
-        else if (SUCCEEDED(this->fence_->SetEventOnCompletion(value, nullptr)))
+        else
         {
-            std::scoped_lock lock(this->completed_value_mutex);
-            this->completed_value = std::max(this->completed_value, value);
+            if (SUCCEEDED(this->fence_->SetEventOnCompletion(value, nullptr)))
+            {
+                ff::timer timer;
+
+                std::scoped_lock lock(this->completed_value_mutex);
+                this->completed_value = std::max(this->completed_value, value);
+
+                ff::log::write(ff::log::type::dx12, "CPU block on fence waited ", &std::fixed, std::setprecision(2), timer.tick() * 1000.0, "ms");
+            }
         }
     }
 }

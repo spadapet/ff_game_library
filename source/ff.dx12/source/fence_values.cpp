@@ -96,12 +96,16 @@ void ff::dx12::fence_values::wait(ff::dx12::queue* queue)
 
         if (!actual_fences.empty())
         {
+            ff::timer timer;
+
             ff::dx12::device()->SetEventOnMultipleFenceCompletion(
                 actual_fences.data(),
                 actual_values.data(),
                 static_cast<UINT>(actual_fences.size()),
                 D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL,
                 nullptr);
+
+            ff::log::write(ff::log::type::dx12, "CPU block on ", actual_fences.size(), " fence(s) waited ", &std::fixed, std::setprecision(2), timer.tick() * 1000.0, "ms");
         }
     }
 

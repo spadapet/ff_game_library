@@ -24,7 +24,11 @@ ff::dx12::buffer_base::operator bool() const
 
 ff::dx12::resource* ff::dx12::buffer_base::resource()
 {
-    assert(false);
+    return nullptr;
+}
+
+ff::dx12::residency_data* ff::dx12::buffer_base::residency_data()
+{
     return nullptr;
 }
 
@@ -168,6 +172,11 @@ D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer::gpu_address() const
     return this->resource_->gpu_address() + this->mem_start;
 }
 
+ff::dx12::residency_data* ff::dx12::buffer::residency_data()
+{
+    return this->resource_->residency_data();
+}
+
 ff::dxgi::buffer_type ff::dx12::buffer::type() const
 {
     return this->type_;
@@ -300,6 +309,11 @@ D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t
 D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_upload::gpu_address() const
 {
     return this->mem_range ? this->mem_range.gpu_data() : 0;
+}
+
+ff::dx12::residency_data* ff::dx12::buffer_upload::residency_data()
+{
+    return this->mem_range.residency_data();
 }
 
 ff::dxgi::buffer_type ff::dx12::buffer_upload::type() const

@@ -548,7 +548,8 @@ namespace
                 this->pre_multiplied_alpha(),
                 this->target_requires_palette()))
             {
-                this->commands->vertex_buffers(nullptr, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+                ff::dx12::buffer_base* single_buffer = &this->geometry_buffer_;
+                this->commands->vertex_buffers(&single_buffer, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
                 return true;
             }
 

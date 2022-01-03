@@ -487,7 +487,7 @@ bool ff::dx12::resource::reset()
         }
 
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
-        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, ff::dx12::resident_t::evicted);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, false);
     }
     else
     {

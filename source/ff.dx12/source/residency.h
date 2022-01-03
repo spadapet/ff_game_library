@@ -6,16 +6,10 @@ namespace ff::dx12
 {
     class fence_values;
 
-    enum class resident_t
-    {
-        evicted,
-        resident,
-    };
-
     class residency_data : public ff::intrusive_list::data<residency_data>
     {
     public:
-        residency_data(Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, ff::dx12::resident_t residency);
+        residency_data(Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, bool resident);
         residency_data(residency_data&& other) noexcept = delete;
         residency_data(const residency_data& other) = delete;
         ~residency_data();
@@ -23,16 +17,14 @@ namespace ff::dx12
         residency_data& operator=(residency_data&& other) noexcept = delete;
         residency_data& operator=(const residency_data& other) = delete;
 
-        void keep_resident(ff::dx12::fence_value value);
-
-        static bool make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_values& wait_values);
+        static bool make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_value commands_fence_value, ff::dx12::fence_values& wait_values);
 
     private:
-        Microsoft::WRL::ComPtr<ID3D12Pageable> pageable_;
-        uint64_t size_;
-        ff::dx12::resident_t residency_;
+        Microsoft::WRL::ComPtr<ID3D12Pageable> pageable;
+        uint64_t size;
+        bool resident;
         ff::dx12::fence_value resident_value;
-        ff::dx12::fence_values keep_resident_;
+        ff::dx12::fence_values keep_resident;
         uint32_t usage_counter;
     };
 

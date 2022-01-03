@@ -99,6 +99,8 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
     ff::stack_vector<ID3D12CommandList*, 64> dx12_lists;
     ff::stack_vector<ff::dx12::commands::data_cache_t*, 32> caches_to_reset;
     ff::dx12::fence_values fence_values;
+    ff::dx12::fence_value next_fence_value;
+
     dx12_lists.reserve(valid_commands.size() * 2);
     caches_to_reset.reserve(valid_commands.size());
     fence_values.reserve(valid_commands.size());
@@ -112,7 +114,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 
     for (ff::dx12::commands* cur : valid_commands)
     {
-        ff::dx12::fence_value next_fence_value = cur->next_fence_value();
+        next_fence_value = cur->next_fence_value();
         fence_values.add(next_fence_value);
 
         std::unique_ptr<ff::dx12::commands::data_cache_t> cache = cur->take_data();
@@ -130,10 +132,9 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         caches_to_reset.push_back(this->caches.back().get());
     }
 
-    ff::dx12::residency_data::make_resident(residency_set, wait_before_execute);
+    ff::dx12::residency_data::make_resident(residency_set, next_fence_value, wait_before_execute);
     wait_before_execute.wait(this);
     this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
-
     fence_values.signal(this);
 
     ff::thread_pool::get()->add_task([this, caches_to_reset = std::move(caches_to_reset)]()
