@@ -87,6 +87,13 @@ static bool allow_decay(
     return false;
 }
 
+static constexpr bool needs_transition(D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
+{
+    return (state_after == D3D12_RESOURCE_STATE_COMMON)
+        ? (state_before != D3D12_RESOURCE_STATE_COMMON)
+        : ((state_before & state_after) != state_after);
+}
+
 ff::dx12::resource_tracker::resource_t::resource_t(size_t array_size, size_t mip_size)
     : state(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::none, array_size, mip_size)
 {
@@ -128,7 +135,7 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, re
                     : resource->global_state().get(i);
                 ff::dx12::resource_state::state_t data_state = data.state.get(i);
 
-                if (prev_state.first != barrier.Transition.StateAfter)
+                if (::needs_transition(prev_state.first, barrier.Transition.StateAfter))
                 {
                     ff::dx12::resource_state::type_t type = ::allow_promotion(*resource, prev_state.second, prev_state.first, barrier.Transition.StateAfter)
                         ? ff::dx12::resource_state::type_t::promoted
@@ -247,7 +254,7 @@ void ff::dx12::resource_tracker::state(ff::dx12::resource& resource, D3D12_RESOU
         {
             // all the same new, all the same old
             ff::dx12::resource_state::state_t old_state = iter_state.get(0);
-            if (old_state.first != state)
+            if (::needs_transition(old_state.first, state))
             {
                 this->barriers_pending.push_back(CD3DX12_RESOURCE_BARRIER::Transition(dx12_res, old_state.first, state));
                 iter_state.set(state, ff::dx12::resource_state::type_t::barrier, 0, iter_state.sub_resource_size());
@@ -258,7 +265,7 @@ void ff::dx12::resource_tracker::state(ff::dx12::resource& resource, D3D12_RESOU
             for (size_t i = ia * resource.mip_size() + mip_start, i2 = i + mip_size; i != i2; ++i)
             {
                 ff::dx12::resource_state::state_t old_state = iter_state.get(i);
-                if (old_state.first != state)
+                if (::needs_transition(old_state.first, state))
                 {
                     if (old_state.second == ff::dx12::resource_state::type_t::none)
                     {

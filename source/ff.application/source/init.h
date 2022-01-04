@@ -11,6 +11,7 @@ namespace ff
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func;
         std::function<double()> get_time_scale_func;
         std::function<ff::state::advance_t()> get_advance_type_func;
+        std::function<bool(DirectX::XMFLOAT4&)> get_clear_color_func;
 #if UWP_APP
         bool use_swap_chain_panel;
 #endif

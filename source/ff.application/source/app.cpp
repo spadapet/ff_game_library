@@ -240,7 +240,12 @@ static void frame_advance_and_render()
 
     ff_dx::frame_started();
 
-    bool valid = ::target->pre_render(&ff::dxgi::color_black());
+    DirectX::XMFLOAT4 clear_color;
+    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func
+        ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
+        : &ff::dxgi::color_black();
+
+    bool valid = ::target->pre_render(clear_color2);
     if (valid)
     {
         ::frame_render(advance_type);
