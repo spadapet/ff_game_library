@@ -391,8 +391,8 @@ namespace
                             palette_texture_hashes[index] = row_hash;
                             ff::dx12::texture& src_texture = ff::dx12::texture::get(*palette_data->texture());
                             this->commands->copy_texture(
-                                *dest_texture.resource(), 0, ff::point_size(0, index),
-                                *src_texture.resource(), 0, ff::rect_size(0, palette_row, ff::dxgi::palette_size, palette_row + 1));
+                                *dest_texture.dx12_resource_updated(*this->commands), 0, ff::point_size(0, index),
+                                *src_texture.dx12_resource_updated(*this->commands), 0, ff::rect_size(0, palette_row, ff::dxgi::palette_size, palette_row + 1));
                         }
                     }
                 }
@@ -401,7 +401,7 @@ namespace
             if ((textures_using_palette_count || this->target_requires_palette()) && !palette_remap_to_index.empty())
             {
                 ff::dx12::texture& dest_remap_texture = ff::dx12::texture::get(palette_remap_texture);
-                DXGI_FORMAT dest_format = dest_remap_texture.resource()->desc().Format;
+                DXGI_FORMAT dest_format = dest_remap_texture.dx12_resource_updated(*this->commands)->desc().Format;
                 DirectX::Image remap_image{ ff::dxgi::palette_size, 1, dest_format, ff::dxgi::palette_size, ff::dxgi::palette_size };
 
                 for (const auto& iter : palette_remap_to_index)
@@ -413,7 +413,7 @@ namespace
                     {
                         palette_remap_texture_hashes[row] = row_hash;
                         remap_image.pixels = const_cast<uint8_t*>(iter.second.first);
-                        dest_remap_texture.resource()->update_texture(this->commands, &remap_image, 0, 1, ff::point_size(0, row));
+                        dest_remap_texture.update(*this->commands, 0, 0, ff::point_size(0, row), remap_image);
                     }
                 }
             }
@@ -440,7 +440,7 @@ namespace
             {
                 ff::dxgi::texture_view_base* view = in_textures[i];
                 this->commands->resource_state(
-                    *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    this->resource_from(view), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
 
@@ -448,14 +448,14 @@ namespace
             {
                 ff::dxgi::texture_view_base* view = in_textures_using_palette[i];
                 this->commands->resource_state(
-                    *ff::dx12::texture::get(*view->view_texture()).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                    this->resource_from(view), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
             {
-                this->commands->resource_state(*ff::dx12::texture::get(palette_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                this->commands->resource_state(*ff::dx12::texture::get(palette_remap_texture).resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                this->commands->resource_state(this->resource_from(palette_texture), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                this->commands->resource_state(this->resource_from(palette_remap_texture), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             }
 
             // Update root constants
@@ -595,6 +595,17 @@ namespace
         ::dx12_state& state(ff::dxgi::draw_util::geometry_bucket_type type)
         {
             return this->states_[static_cast<size_t>(type)];
+        }
+
+        ff::dx12::resource& resource_from(ff::dxgi::texture_base& texture_base)
+        {
+            ff::dx12::texture& texture = ff::dx12::texture::get(texture_base);
+            return *texture.dx12_resource_updated(*this->commands);
+        }
+
+        ff::dx12::resource& resource_from(ff::dxgi::texture_view_base* view)
+        {
+            return this->resource_from(*view->view_texture());
         }
 
         // Constant data for shaders

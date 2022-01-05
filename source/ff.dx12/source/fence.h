@@ -25,6 +25,7 @@ namespace ff::dx12
         ff::dx12::fence_value signal(uint64_t value, ff::dx12::queue* queue);
         ff::dx12::fence_value signal_later();
         void wait(uint64_t value, ff::dx12::queue* queue);
+        bool set_event(uint64_t value, HANDLE handle);
         bool complete(uint64_t value);
 
         static void wait(ff::dx12::fence_value* values, size_t count, ff::dx12::queue* queue);

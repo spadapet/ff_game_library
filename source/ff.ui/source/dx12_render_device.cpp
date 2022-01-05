@@ -404,12 +404,12 @@ ff::internal::ui::render_device::render_device(bool srgb)
     this->caps.linearRendering = srgb;
     this->reset();
 
-    ff_dx::add_device_child(this, ff_dx::device_reset_priority::normal);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
 ff::internal::ui::render_device::~render_device()
 {
-    ff_dx::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(ff::dxgi::target_base* target, ff::dxgi::depth_base* depth, const ff::rect_float* view_rect)
@@ -527,7 +527,7 @@ void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, ui
         reinterpret_cast<uint8_t*>(const_cast<void*>(data)),
     };
 
-    texture2->update(0, static_cast<size_t>(level), pos, image_data);
+    texture2->update(*this->commands, 0, static_cast<size_t>(level), pos, image_data);
 }
 
 void ff::internal::ui::render_device::BeginOnscreenRender()
@@ -575,7 +575,7 @@ void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* 
             ff::point_size dst(static_cast<size_t>(tile.x), size.y - static_cast<size_t>(tile.y + tile.height));
             ff::rect_size src(dst, dst + ff::point_t<uint32_t>(tile.width, tile.height).cast<size_t>());
 
-            this->commands->resolve(*surface2->resolved_texture()->resource(), 0, dst, *surface2->msaa_texture()->resource(), 0, src);
+            this->commands->resolve(*surface2->resolved_texture()->dx12_resource(), 0, dst, *surface2->msaa_texture()->dx12_resource(), 0, src);
         }
     }
 }
@@ -667,18 +667,18 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
 
     if (batch.pattern)
     {
-        ff::internal::ui::texture* t = ff::internal::ui::texture::get(batch.pattern);
-        this->commands->resource_state(*t->internal_texture()->resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        ff::dx12::texture& t = *ff::internal::ui::texture::get(batch.pattern)->internal_texture().get();
+        this->commands->resource_state(*t.dx12_resource_updated(*this->commands), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-        bool palette = ff::dxgi::palette_format(t->internal_texture()->format());
+        bool palette = ff::dxgi::palette_format(t.format());
         if (palette && ff::ui::global_palette())
         {
-            ff_dx::texture& pt = ff_dx::texture::get(*ff::ui::global_palette()->data()->texture());
-            this->commands->resource_state(*pt.resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            ff::dx12::texture& pt = ff::dx12::texture::get(*ff::ui::global_palette()->data()->texture());
+            this->commands->resource_state(*pt.dx12_resource_updated(*this->commands), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             texture_views[6] = pt.dx12_texture_view();
         }
 
-        texture_views[palette ? 5 : 0] = t->internal_texture()->dx12_texture_view();
+        texture_views[palette ? 5 : 0] = t.dx12_texture_view();
         samplers[0] = this->samplers_cpu.cpu_handle(batch.patternSampler.v);
     }
 
@@ -686,9 +686,9 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     {
         if (batchTexture)
         {
-            ff::internal::ui::texture* t = ff::internal::ui::texture::get(batchTexture);
-            this->commands->resource_state(*t->internal_texture()->resource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-            texture_views[index] = t->internal_texture()->dx12_texture_view();
+            ff::dx12::texture& t = *ff::internal::ui::texture::get(batchTexture)->internal_texture().get();
+            this->commands->resource_state(*t.dx12_resource_updated(*this->commands), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            texture_views[index] = t.dx12_texture_view();
             samplers[index] = this->samplers_cpu.cpu_handle(batchSampler.v);
         }
     };

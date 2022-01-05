@@ -23,7 +23,7 @@ namespace ff::dx11
         // texture_base
         virtual ff::dxgi::sprite_type sprite_type() const override;
         virtual std::shared_ptr<DirectX::ScratchImage> data() const override;
-        virtual bool update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
+        virtual bool update(ff::dxgi::command_context_base& context, size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
 
         // texture_metadata_base
         virtual ff::point_size size() const override;

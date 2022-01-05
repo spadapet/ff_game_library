@@ -25,6 +25,7 @@ namespace ff::dx12
 
     const DXGI_QUERY_VIDEO_MEMORY_INFO& get_video_memory_info();
     ff::dx12::fence& residency_fence();
+    bool supports_create_heap_not_resident();
 
     size_t frame_count();
     ff::dx12::commands& frame_started();

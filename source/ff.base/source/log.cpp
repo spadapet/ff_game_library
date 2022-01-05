@@ -27,6 +27,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::data, { "ff/data", true } },
     { ff::log::type::dx11, { "ff/dx11", true } },
     { ff::log::type::dx12, { "ff/dx12", true } },
+    { ff::log::type::dx12_fence, { "ff/dx12_fence", false } },
     { ff::log::type::dx12_residency, { "ff/dx12_residency", true } },
     { ff::log::type::dxgi, { "ff/dxgi", true } },
     { ff::log::type::graphics, { "ff/graph", true } },

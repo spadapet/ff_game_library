@@ -21,12 +21,13 @@ namespace ff::dx12
         texture& operator=(const texture& other) = delete;
         operator bool() const;
 
-        ff::dx12::resource* resource() const;
+        ff::dx12::resource* dx12_resource_updated(ff::dx12::commands& commands);
+        ff::dx12::resource* dx12_resource() const;
 
         // texture_base
         virtual ff::dxgi::sprite_type sprite_type() const override;
         virtual std::shared_ptr<DirectX::ScratchImage> data() const override;
-        virtual bool update(size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
+        virtual bool update(ff::dxgi::command_context_base& context, size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data) override;
 
         // texture_metadata_base
         virtual ff::point_size size() const override;
@@ -56,9 +57,10 @@ namespace ff::dx12
         // device_child_base
         virtual bool reset() override;
 
-        mutable std::unique_ptr<ff::dx12::resource> resource_;
+        std::unique_ptr<ff::dx12::resource> resource_;
         mutable ff::dx12::descriptor_range view_;
         std::shared_ptr<DirectX::ScratchImage> data_;
         ff::dxgi::sprite_type sprite_type_;
+        bool upload_data_pending;
     };
 }

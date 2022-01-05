@@ -63,6 +63,7 @@ namespace ff
         double old_seconds;
         double advance_time_total;
         double advance_time_average;
+        double vsync_time;
         double render_time;
         double flip_time;
         double bank_time;

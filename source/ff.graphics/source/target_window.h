@@ -40,6 +40,7 @@ namespace ff
         // target_window_base
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
+        virtual void vsync() override;
         virtual bool allow_full_screen() const override;
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;
@@ -65,6 +66,8 @@ namespace ff
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
 #elif DXVER == 12
         std::array<std::unique_ptr<ff_dx::resource>, BACK_BUFFER_COUNT> target_textures;
+        std::array<ff_dx::fence_value, BACK_BUFFER_COUNT> target_fence_values;
+        ff::win_handle target_ready_event;
         ff_dx::descriptor_range target_views;
         size_t back_buffer_index;
         ff::win_handle frame_latency_handle;

@@ -52,7 +52,7 @@ uint64_t ff::dx12::fence_value::get() const
     return this->value_;
 }
 
-void ff::dx12::fence_value::signal(ff::dx12::queue* queue)
+void ff::dx12::fence_value::signal(ff::dx12::queue* queue) const
 {
     if (this->fence_)
     {
@@ -60,7 +60,7 @@ void ff::dx12::fence_value::signal(ff::dx12::queue* queue)
     }
 }
 
-void ff::dx12::fence_value::wait(ff::dx12::queue* queue)
+void ff::dx12::fence_value::wait(ff::dx12::queue* queue) const
 {
     if (this->fence_)
     {
@@ -68,7 +68,21 @@ void ff::dx12::fence_value::wait(ff::dx12::queue* queue)
     }
 }
 
-bool ff::dx12::fence_value::complete()
+bool ff::dx12::fence_value::set_event(HANDLE handle) const
+{
+    if (this->fence_)
+    {
+        return this->fence_->set_event(this->value_, handle);
+    }
+    else if (handle)
+    {
+        ::SetEvent(handle);
+    }
+
+    return false;
+}
+
+bool ff::dx12::fence_value::complete() const
 {
     return !this->fence_ || this->fence_->complete(this->value_);
 }

@@ -69,6 +69,7 @@ ff::debug_state::debug_state()
     , old_seconds(0)
     , advance_time_total(0)
     , advance_time_average(0)
+    , vsync_time(0)
     , render_time(0)
     , flip_time(0)
     , bank_time(0)
@@ -264,7 +265,7 @@ void ff::debug_state::debug_page_info(size_t page, size_t index, std::string& ou
             break;
 
         case 2:
-            str << "Total:" << std::fixed << std::setprecision(2) << (this->advance_time_total + this->render_time + this->flip_time) * 1000.0 << "ms\n";
+            str << "Total:" << std::fixed << std::setprecision(2) << (this->advance_time_total + this->vsync_time + this->render_time + this->flip_time) * 1000.0 << "ms\n";
             break;
 
         case 3:
@@ -340,6 +341,7 @@ void ff::debug_state::update_stats()
         this->advance_count = ft.advance_count;
         this->advance_time_total = advance_time_total_int / freq_d;
         this->advance_time_average = ft.advance_count ? this->advance_time_total / std::min(ft.advance_count, ft.advance_times.size()) : 0.0;
+        this->vsync_time = ft.vsync_time / freq_d;
         this->render_time = ft.render_time / freq_d;
         this->flip_time = ft.flip_time / freq_d;
         this->bank_time = gt.unused_advance_seconds;
@@ -348,7 +350,7 @@ void ff::debug_state::update_stats()
     ff::debug_state::frame_t frame_info;
     frame_info.advance_time = (float)(advance_time_total_int / freq_d);
     frame_info.render_time = (float)(ft.render_time / freq_d);
-    frame_info.total_time = (float)((advance_time_total_int + ft.render_time + ft.flip_time) / freq_d);
+    frame_info.total_time = (float)((advance_time_total_int + ft.vsync_time + ft.render_time + ft.flip_time) / freq_d);
 
     this->frames[this->frames_end] = frame_info;
     this->frames_end = (this->frames_end + 1) % this->frames.size();

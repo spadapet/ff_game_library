@@ -22,9 +22,10 @@ namespace ff::dx12
         ff::dx12::fence* fence() const;
         uint64_t get() const;
 
-        void signal(ff::dx12::queue* queue);
-        void wait(ff::dx12::queue* queue);
-        bool complete();
+        void signal(ff::dx12::queue* queue) const;
+        void wait(ff::dx12::queue* queue) const;
+        bool set_event(HANDLE handle) const;
+        bool complete() const;
 
     private:
         ff::dx12::fence* fence_;

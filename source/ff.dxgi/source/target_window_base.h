@@ -12,6 +12,7 @@ namespace ff::dxgi
         virtual bool size(const ff::window_size& size) = 0;
         virtual ff::signal_sink<ff::window_size>& size_changed() = 0;
 
+        virtual void vsync() = 0;
         virtual bool allow_full_screen() const = 0;
         virtual bool full_screen() = 0;
         virtual bool full_screen(bool value) = 0;

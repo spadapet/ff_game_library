@@ -19,6 +19,7 @@ ff::target_window::target_window(ff::window* window)
     , full_screen_uwp(false)
 #endif
 #if DXVER == 12
+    , target_ready_event(ff::win_handle::create_event())
     , target_views(ff_dx::cpu_target_descriptors().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
 #endif
@@ -78,6 +79,11 @@ void ff::target_window::clear(ff::dxgi::command_context_base& context, const Dir
     ff_dx::device_state::get(context).clear_target(this->dx11_target_view(), clear_color);
 }
 
+void ff::target_window::vsync()
+{
+    // present() already blocks for vsync
+}
+
 bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (clear_color)
@@ -134,6 +140,29 @@ void ff::target_window::clear(ff::dxgi::command_context_base& context, const Dir
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
+void ff::target_window::vsync()
+{
+    if (*this)
+    {
+        ff::stack_vector<HANDLE, 2> handles;
+
+        if (this->frame_latency_handle)
+        {
+            handles.push_back(this->frame_latency_handle);
+        }
+
+        if (this->target_fence_values[this->back_buffer_index].set_event(this->target_ready_event))
+        {
+            handles.push_back(this->target_ready_event);
+        }
+
+        if (!handles.empty())
+        {
+            ::WaitForMultipleObjects(static_cast<DWORD>(handles.size()), handles.data(), TRUE, INFINITE);
+        }
+    }
+}
+
 bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
@@ -158,16 +187,9 @@ bool ff::target_window::present()
     if (*this)
     {
         ff::dx12::frame_commands().resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        ff::dx12::frame_commands().queue().execute(ff::dx12::frame_commands());
-
-        if (this->frame_latency_handle)
-        {
-            // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
-            ::WaitForSingleObject(this->frame_latency_handle, 1000);
-        }
+        this->target_fence_values[this->back_buffer_index] = ff::dx12::frame_commands().queue().execute(ff::dx12::frame_commands());
 
         HRESULT hr = this->swap_chain->Present(1, 0);
-
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
@@ -188,6 +210,7 @@ void ff::target_window::before_resize()
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
     {
         this->target_textures[i].reset();
+        this->target_fence_values[i] = {};
     }
 }
 

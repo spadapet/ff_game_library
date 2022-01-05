@@ -50,10 +50,12 @@ ff::dx12::fence_value ff::dx12::fence::signal(uint64_t value, ff::dx12::queue* q
 
         if (queue)
         {
+            ff::log::write(ff::log::type::dx12_fence, "GPU signal fence:", this, ", value:", value, ", queue:", queue);
             ff::dx12::get_command_queue(*queue)->Signal(this->fence_.Get(), value);
         }
         else
         {
+            ff::log::write(ff::log::type::dx12_fence, "CPU signal fence:", this, ", value:", value);
             this->fence_->Signal(value);
         }
     }
@@ -72,20 +74,44 @@ void ff::dx12::fence::wait(uint64_t value, ff::dx12::queue* queue)
     {
         if (queue)
         {
+            ff::log::write(ff::log::type::dx12_fence, "GPU wait fence:", this, ", value:", value, ", queue:", queue);
             ff::dx12::get_command_queue(*queue)->Wait(this->fence_.Get(), value);
         }
         else
         {
+            ff::log::write(ff::log::type::dx12_fence, "CPU wait fence:", this, ", value:", value);
+
+            ff::timer timer;
+
             if (SUCCEEDED(this->fence_->SetEventOnCompletion(value, nullptr)))
             {
-                ff::timer timer;
-
                 std::scoped_lock lock(this->completed_value_mutex);
                 this->completed_value = std::max(this->completed_value, value);
-
-                ff::log::write(ff::log::type::dx12, "CPU block on fence waited ", &std::fixed, std::setprecision(2), timer.tick() * 1000.0, "ms");
             }
+
+            ff::log::write(ff::log::type::dx12_fence, "CPU block on fence waited ", &std::fixed, std::setprecision(2), timer.tick() * 1000.0, "ms");
         }
+    }
+}
+
+bool ff::dx12::fence::set_event(uint64_t value, HANDLE handle)
+{
+    if (handle)
+    {
+        ::ResetEvent(handle);
+
+        if (this->complete(value) || FAILED(this->fence_->SetEventOnCompletion(value, handle)))
+        {
+            ::SetEvent(handle);
+            return false;
+        }
+
+        return true;
+    }
+    else
+    {
+        this->wait(value, nullptr);
+        return false;
     }
 }
 

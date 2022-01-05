@@ -200,8 +200,8 @@ static bool init_d3d(bool for_reset)
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 32);
-        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 7936);
-        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256, 256);
+        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 7936); // max is 1,000,000 so quite a way to go
+        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256, 1792); // max is 2048
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
         ::residency_fence = std::make_unique<ff::dx12::fence>(nullptr);
@@ -474,6 +474,17 @@ const DXGI_QUERY_VIDEO_MEMORY_INFO& ff::dx12::get_video_memory_info()
 ff::dx12::fence& ff::dx12::residency_fence()
 {
     return *::residency_fence;
+}
+
+static bool supports_create_heap_not_resident()
+{
+    return !::IsDebuggerPresent() || !::GetModuleHandle(L"DXCaptureReplay.dll");
+}
+
+bool ff::dx12::supports_create_heap_not_resident()
+{
+    static bool value = ::supports_create_heap_not_resident();
+    return value;
 }
 
 ff::dx12::object_cache& ff::dx12::get_object_cache()

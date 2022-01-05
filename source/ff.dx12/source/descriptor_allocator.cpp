@@ -290,9 +290,6 @@ bool ff::dx12::cpu_descriptor_allocator::reset(void* data)
 
 ff::dx12::gpu_descriptor_allocator::gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size)
 {
-    pinned_size = ff::math::nearest_power_of_two(pinned_size);
-    ring_size = ff::math::nearest_power_of_two(ring_size);
-
     D3D12_DESCRIPTOR_HEAP_DESC desc{ type, static_cast<UINT>(pinned_size + ring_size), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE };
     ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&this->descriptor_heap));
 

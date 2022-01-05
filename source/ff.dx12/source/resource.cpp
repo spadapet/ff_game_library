@@ -472,10 +472,18 @@ bool ff::dx12::resource::reset()
     else if (!this->mem_range_)
     {
         Microsoft::WRL::ComPtr<ID3D12Pageable> pageable;
+        D3D12_HEAP_FLAGS heap_flags = D3D12_HEAP_FLAG_NONE;
+        bool starts_resident = true;
+
+        if (ff::dx12::supports_create_heap_not_resident())
+        {
+            heap_flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
+            starts_resident = false;
+        }
 
         if (FAILED(ff::dx12::device()->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT,
+            heap_flags,
             &this->desc_,
             this->global_state_.get(0).first,
             (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
@@ -487,7 +495,7 @@ bool ff::dx12::resource::reset()
         }
 
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
-        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, false);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, starts_resident);
     }
     else
     {

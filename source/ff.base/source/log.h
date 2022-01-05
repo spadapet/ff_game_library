@@ -25,6 +25,7 @@ namespace ff::log
         data,
         dx11,
         dx12,
+        dx12_fence,
         dx12_residency,
         dxgi,
         graphics,

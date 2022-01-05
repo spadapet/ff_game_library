@@ -70,7 +70,7 @@ bool ff::dx12::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::dx12::target_texture::present()
 {
-    ff::dx12::frame_commands().resource_state(*this->texture_->resource(), D3D12_RESOURCE_STATE_PRESENT);
+    ff::dx12::frame_commands().resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
 
     this->render_presented_.notify(this);
 
@@ -119,7 +119,7 @@ ff::window_size ff::dx12::target_texture::size() const
 
 ff::dx12::resource& ff::dx12::target_texture::dx12_target_texture()
 {
-    return *this->texture_->resource();
+    return *this->texture_->dx12_resource();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_texture::dx12_target_view()

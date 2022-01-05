@@ -245,6 +245,9 @@ static void frame_advance_and_render()
         ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
         : &ff::dxgi::color_black();
 
+    ::target->vsync();
+    ::frame_time.vsync_time = ::timer.current_stored_raw_time();
+
     bool valid = ::target->pre_render(clear_color2);
     if (valid)
     {

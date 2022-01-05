@@ -101,8 +101,15 @@ void ff::dx12::heap::before_reset()
 bool ff::dx12::heap::reset()
 {
     D3D12_HEAP_PROPERTIES props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
     D3D12_RESIDENCY_PRIORITY priority = D3D12_RESIDENCY_PRIORITY_NORMAL;
+    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_NONE;
+    bool starts_resident = true;
+
+    if (ff::dx12::supports_create_heap_not_resident())
+    {
+        flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
+        starts_resident = false;
+    }
 
     switch (this->usage_)
     {
@@ -140,7 +147,7 @@ bool ff::dx12::heap::reset()
         ID3D12Pageable* p = this->heap_.Get();
         ff::dx12::device()->SetResidencyPriority(1, &p, &priority);
 
-        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(p, this->size_, false);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(p, this->size_, starts_resident);
 
         return true;
     }
