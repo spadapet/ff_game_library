@@ -4,9 +4,11 @@
 #include "globals.h"
 #include "mem_allocator.h"
 #include "object_cache.h"
+#include "queue.h"
 #include "queues.h"
 #include "resource.h"
 
+// DX12 globals
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
@@ -14,17 +16,26 @@ static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
 static size_t outputs_hash;
 
+// Device children
 static std::mutex device_children_mutex;
-static ff::dxgi::device_child_base* first_device_child{};
-static ff::dxgi::device_child_base* last_device_child{};
-static ff::signal<ff::dxgi::device_child_base*> removed_device_child;
+static ff::dxgi::device_child_base* first_device_child;
+static ff::dxgi::device_child_base* last_device_child;
+static ff::signal<ff::dxgi::device_child_base*> removed_device_child_signal;
+
+// Frame data
+static std::unique_ptr<ff::dx12::commands> frame_commands;
 static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
+// GPU memory residency
 static ff::win_handle video_memory_change_event;
 static DWORD video_memory_change_event_cookie{};
 static DXGI_QUERY_VIDEO_MEMORY_INFO video_memory_info{};
 static std::unique_ptr<ff::dx12::fence> residency_fence;
+
+// Resource keep alive until unused by GPU
+static std::mutex keep_alive_mutex;
+static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
 
 static std::unique_ptr<ff::dx12::object_cache> object_cache;
 static std::unique_ptr<ff::dx12::queues> queues;
@@ -36,10 +47,6 @@ static std::unique_ptr<ff::dx12::mem_allocator_ring> dynamic_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> static_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> texture_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> target_allocator;
-static std::unique_ptr<ff::dx12::commands> frame_commands;
-
-static std::mutex keep_alive_mutex;
-static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
 
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 {
@@ -53,11 +60,13 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
         {
             if (SUCCEEDED(::D3D12CreateDevice(adapter.Get(), ::feature_level, IID_PPV_ARGS(&device))) && SUCCEEDED(device.As(&device_x)))
             {
+                ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, WARP=", use_warp);
                 return device_x;
             }
         }
     }
 
+    ff::log::write_debug_fail(ff::log::type::dx12, "D3D12CreateDevice failed");
     return nullptr;
 }
 
@@ -119,13 +128,10 @@ static bool init_dxgi()
     ::DXGIDeclareAdapterRemovalSupport();
 
     ::factory = ff::dxgi::create_factory();
-    if (::factory)
-    {
-        ::adapters_hash = ff::dxgi::get_adapters_hash(::factory.Get());
-        return true;
-    }
+    assert_ret_val(::factory, false);
+    ::adapters_hash = ff::dxgi::get_adapters_hash(::factory.Get());
 
-    return false;
+    return true;
 }
 
 static void destroy_dxgi()
@@ -143,26 +149,15 @@ static bool init_d3d(bool for_reset)
         {
             debug_interface->EnableDebugLayer();
         }
-#if 0
-        Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dred_settings;
-        if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&dred_settings))))
-        {
-            dred_settings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-            dred_settings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-            //dred_settings->SetWatsonDumpEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-        }
-#endif
+
+        // Could also check for ID3D12DeviceRemovedExtendedDataSettings
     }
 
     // Create the logical device
     {
         assert(!::device);
-
         ::device = ::create_dx12_device();
-        if (!::device)
-        {
-            return false;
-        }
+        assert_ret_val(::device, false);
     }
 
     // Break on debug error
@@ -196,22 +191,20 @@ static bool init_d3d(bool for_reset)
     // Find the physical adapter for the logical device
     {
         assert(!::adapter);
-
         LUID luid = ::device->GetAdapterLuid();
-        if (FAILED(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter))))
-        {
-            return false;
-        }
+        assert_hr_ret_val(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
+        ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
     }
 
-    ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
-    ::update_video_memory_info();
-    ::video_memory_change_event = ff::win_handle::create_event();
-
-    if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
+    // Video memory for residency
     {
-        ::video_memory_change_event.close();
-        ::video_memory_change_event_cookie = 0;
+        ::update_video_memory_info();
+        ::video_memory_change_event = ff::win_handle::create_event();
+        if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
+        {
+            ::video_memory_change_event.close();
+            ::video_memory_change_event_cookie = 0;
+        }
     }
 
     if (!for_reset)
@@ -229,7 +222,7 @@ static bool init_d3d(bool for_reset)
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
         ::cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = std::make_unique<ff::dx12::cpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 32);
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 7936); // max is 1,000,000 so quite a way to go
-        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 256, 1792); // max is 2048
+        ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, 1920); // max is 2048
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
         ::residency_fence = std::make_unique<ff::dx12::fence>(nullptr);
@@ -277,28 +270,6 @@ static void destroy_d3d(bool for_reset)
 
     ::outputs_hash = 0;
     ::adapter.Reset();
-
-#if 0
-    if (::device && FAILED(::device->GetDeviceRemovedReason()))
-    {
-        Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedDataX> dred_data;
-        if (SUCCEEDED(::device.As(&dred_data)))
-        {
-            D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 dred_breadcrumbs;;
-            if (SUCCEEDED(dred_data->GetAutoBreadcrumbsOutput1(&dred_breadcrumbs)))
-            {
-                assert(false);
-            }
-
-            D3D12_DRED_PAGE_FAULT_OUTPUT dred_fault;
-            if (SUCCEEDED(dred_data->GetPageFaultAllocationOutput(&dred_fault)))
-            {
-                assert(false);
-            }
-        }
-    }
-#endif
-
     ::device.Reset();
 }
 
@@ -306,13 +277,9 @@ bool ff::dx12::init_globals(D3D_FEATURE_LEVEL feature_level)
 {
     ::feature_level = feature_level;
 
-    if (::init_dxgi() && ::init_d3d(false))
-    {
-        return true;
-    }
-
-    assert(false);
-    return false;
+    assert_ret_val(::init_dxgi(), false);
+    assert_ret_val(::init_d3d(false), false);
+    return true;
 }
 
 void ff::dx12::destroy_globals()
@@ -337,34 +304,29 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
         ff::intrusive_list::remove(::first_device_child, ::last_device_child, child);
     }
 
-    ::removed_device_child.notify(child);
+    ::removed_device_child_signal.notify(child);
 }
 
 bool ff::dx12::reset(bool force)
 {
-    if (!force)
+    if (!::factory->IsCurrent())
     {
-        if (FAILED(::device->GetDeviceRemovedReason()))
-        {
-            force = true;
-        }
-        else if (!::factory->IsCurrent())
-        {
-            ::factory = ff::dxgi::create_factory();
-            if (!::factory)
-            {
-                return false;
-            }
+        ::factory = ff::dxgi::create_factory();
+        assert_ret_val(::factory, false);
 
-            if (::adapters_hash != ff::dxgi::get_adapters_hash(::factory.Get()))
-            {
-                force = true;
-            }
-            else if (::outputs_hash != ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get()))
+        if (!force)
+        {
+            if (::adapters_hash != ff::dxgi::get_adapters_hash(::factory.Get()) ||
+                ::outputs_hash != ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get()))
             {
                 force = true;
             }
         }
+    }
+
+    if (!force && FAILED(::device->GetDeviceRemovedReason()))
+    {
+        force = true;
     }
 
     bool status = true;
@@ -372,101 +334,92 @@ bool ff::dx12::reset(bool force)
     if (force)
     {
         static bool resetting = false;
-        if (resetting)
-        {
-            assert(false);
-            return false;
-        }
+        assert_ret_val(!resetting, false);
 
         resetting = true;
+        ff::end_scope_action end_scope_action([]()
+        {
+            resetting = false;
+        });
 
         ::destroy_d3d(true);
+        assert_ret_val(::init_d3d(true), false);
 
-        if (!::init_d3d(true))
+        struct device_child_t
         {
-            status = false;
-        }
-        else
+            bool operator<(const device_child_t& other) const
+            {
+                return this->child->device_child_reset_priority_ < other.child->device_child_reset_priority_;
+            }
+
+            bool operator==(const device_child_t& other) const
+            {
+                return this->child->device_child_reset_priority_ == other.child->device_child_reset_priority_;
+            }
+
+            ff::dxgi::device_child_base* child;
+            void* reset_data;
+        };
+
+        std::vector<device_child_t> sorted_children;
         {
-            struct device_child_t
+            std::scoped_lock lock(::device_children_mutex);
+
+            sorted_children.reserve(ff::intrusive_list::count(::first_device_child));
+
+            for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->intrusive_next_)
             {
-                bool operator<(const device_child_t& other) const
-                {
-                    return this->child->device_child_reset_priority_ < other.child->device_child_reset_priority_;
-                }
-
-                bool operator==(const device_child_t& other) const
-                {
-                    return this->child->device_child_reset_priority_ == other.child->device_child_reset_priority_;
-                }
-
-                ff::dxgi::device_child_base* child;
-                void* reset_data;
-            };
-
-            std::vector<device_child_t> sorted_children;
-            {
-                std::scoped_lock lock(::device_children_mutex);
-
-                sorted_children.reserve(ff::intrusive_list::count(::first_device_child));
-
-                for (ff::dxgi::device_child_base* i = ::first_device_child; i; i = i->intrusive_next_)
-                {
-                    sorted_children.push_back(device_child_t{ i, nullptr });
-                }
-            }
-
-            std::stable_sort(sorted_children.begin(), sorted_children.end());
-
-            ff::signal_connection connection = ::removed_device_child.connect([&sorted_children](ff::dxgi::device_child_base* child)
-                {
-                    for (device_child_t& i : sorted_children)
-                    {
-                        if (i.child == child)
-                        {
-                            i.child = nullptr;
-                            break;
-                        }
-                    }
-                });
-
-            ff::frame_allocator allocator;
-
-            for (auto i = sorted_children.rbegin(); i != sorted_children.rend(); i++)
-            {
-                if (i->child)
-                {
-                    i->reset_data = i->child->before_reset(allocator);
-                }
-            }
-
-            for (device_child_t& i : sorted_children)
-            {
-                if (i.child && !i.child->reset(i.reset_data))
-                {
-                    assert(false);
-                    status = false;
-                    i.child = nullptr;
-                }
-
-                i.reset_data = nullptr;
-            }
-
-            for (device_child_t& i : sorted_children)
-            {
-                if (i.child && !i.child->after_reset())
-                {
-                    assert(false);
-                    status = false;
-                    i.child = nullptr;
-                }
+                sorted_children.push_back(device_child_t{ i, nullptr });
             }
         }
 
-        resetting = false;
+        std::stable_sort(sorted_children.begin(), sorted_children.end());
+
+        ff::signal_connection connection = ::removed_device_child_signal.connect([&sorted_children](ff::dxgi::device_child_base* child)
+        {
+            for (device_child_t& i : sorted_children)
+            {
+                if (i.child == child)
+                {
+                    i.child = nullptr;
+                    break;
+                }
+            }
+        });
+
+        ff::frame_allocator allocator;
+
+        for (auto i = sorted_children.rbegin(); i != sorted_children.rend(); i++)
+        {
+            if (i->child)
+            {
+                i->reset_data = i->child->before_reset(allocator);
+            }
+        }
+
+        for (device_child_t& i : sorted_children)
+        {
+            if (i.child && !i.child->reset(i.reset_data))
+            {
+                debug_fail_msg("Failed to reset graphics object");
+                status = false;
+                i.child = nullptr;
+            }
+
+            i.reset_data = nullptr;
+        }
+
+        for (device_child_t& i : sorted_children)
+        {
+            if (i.child && !i.child->after_reset())
+            {
+                debug_fail_msg("Failed to reset graphics object");
+                status = false;
+                i.child = nullptr;
+            }
+        }
     }
 
-    assert(status);
     return status;
 }
 
@@ -530,11 +483,11 @@ size_t ff::dx12::frame_count()
 
 ff::dx12::commands& ff::dx12::frame_started()
 {
-    assert(!::frame_commands);
     ::flush_keep_alive();
     ::update_video_memory_info();
-    ::frame_commands = std::make_unique<ff::dx12::commands>(ff::dx12::direct_queue().new_commands());
-    return *::frame_commands;
+
+    assert(!::frame_commands);
+    return *(::frame_commands = ff::dx12::direct_queue().new_commands());
 }
 
 ff::dx12::commands& ff::dx12::frame_commands()

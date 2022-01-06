@@ -32,7 +32,7 @@ void ff::dx12::queue::wait_for_idle()
     fence.signal(this).wait(nullptr);
 }
 
-ff::dx12::commands ff::dx12::queue::new_commands()
+std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
 {
     // Access cache
     std::unique_ptr<ff::dx12::commands::data_cache_t> cache;
@@ -63,7 +63,7 @@ ff::dx12::commands ff::dx12::queue::new_commands()
         }
     }
 
-    return ff::dx12::commands(*this, std::move(cache));
+    return std::make_unique<ff::dx12::commands>(*this, std::move(cache));
 }
 
 ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)

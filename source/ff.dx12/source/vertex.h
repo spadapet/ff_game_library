@@ -1,5 +1,8 @@
 #pragma once
 
+/// <summary>
+/// Used by ff::dx12::draw_device for rendering 2D graphics
+/// </summary>
 namespace ff::dx12::vertex
 {
     struct line_geometry : public ff::dxgi::vertex::line_geometry

@@ -14,7 +14,7 @@ static std::unique_ptr<ff::dx12::commands> get_copy_commands(ff::dx12::commands*
     std::unique_ptr<ff::dx12::commands> new_commands;
     if (!commands)
     {
-        new_commands = std::make_unique<ff::dx12::commands>(ff::dx12::copy_queue().new_commands());
+        new_commands = ff::dx12::copy_queue().new_commands();
         commands = new_commands.get();
     }
 

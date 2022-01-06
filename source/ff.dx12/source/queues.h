@@ -1,17 +1,20 @@
 #pragma once
 
-#include "queue.h"
-
 namespace ff::dx12
 {
+    class queue;
+
+    /// <summary>
+    /// Owns the DX12 queues. This should not be shared across threads.
+    /// </summary>
     class queues
     {
     public:
-        queues();
-        queues(queues&& other) noexcept = delete;
+        queues() = default;
+        queues(queues&& other) noexcept = default;
         queues(const queues& other) = delete;
     
-        queues& operator=(queues&& other) noexcept = delete;
+        queues& operator=(queues&& other) noexcept = default;
         queues& operator=(const queues& other) = delete;
 
         ff::dx12::queue& direct();
@@ -21,8 +24,8 @@ namespace ff::dx12
         void wait_for_idle();
 
     private:
-        ff::dx12::queue direct_queue;
-        ff::dx12::queue compute_queue;
-        ff::dx12::queue copy_queue;
+        std::unique_ptr<ff::dx12::queue> direct_queue;
+        std::unique_ptr<ff::dx12::queue> compute_queue;
+        std::unique_ptr<ff::dx12::queue> copy_queue;
     };
 }
