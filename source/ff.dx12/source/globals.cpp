@@ -173,18 +173,15 @@ static bool init_d3d(bool for_reset)
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
 
-            //D3D12_MESSAGE_ID hide[] =
-            //{
-            //    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-            //    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
-            //    D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
-            //};
-            //
-            //D3D12_INFO_QUEUE_FILTER filter;
-            //memset(&filter, 0, sizeof(filter));
-            //filter.DenyList.NumIDs = _countof(hide);
-            //filter.DenyList.pIDList = hide;
-            //info_queue->AddStorageFilterEntries(&filter);
+            D3D12_MESSAGE_ID hide_ids[] =
+            {
+                D3D12_MESSAGE_ID_CREATEPIPELINESTATE_CACHEDBLOBADAPTERMISMATCH,
+            };
+            
+            D3D12_INFO_QUEUE_FILTER filter{};
+            filter.DenyList.NumIDs = _countof(hide_ids);
+            filter.DenyList.pIDList = hide_ids;
+            info_queue->AddStorageFilterEntries(&filter);
         }
     }
 

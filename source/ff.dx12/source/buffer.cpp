@@ -84,7 +84,7 @@ ff::dx12::buffer::buffer(
     , type_(type)
     , mem_start(mem_start)
     , data_size(data_size)
-    , data_hash(data_hash ? ff::stable_hash_bytes(data, data_size) : data_hash)
+    , data_hash(data_hash ? ff::stable_hash_bytes(data, static_cast<size_t>(data_size)) : data_hash)
     , version_(version ? version : 1)
 {
     assert(mem_start == ff::math::align_up<uint64_t>(mem_start, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
@@ -184,7 +184,7 @@ ff::dxgi::buffer_type ff::dx12::buffer::type() const
 
 size_t ff::dx12::buffer::size() const
 {
-    return  this->resource_ ? this->data_size : 0;
+    return  this->resource_ ? static_cast<size_t>(this->data_size) : 0;
 }
 
 bool ff::dx12::buffer::writable() const
@@ -323,7 +323,7 @@ ff::dxgi::buffer_type ff::dx12::buffer_upload::type() const
 
 size_t ff::dx12::buffer_upload::size() const
 {
-    return this->mem_range ? this->mem_range.size() : 0;
+    return this->mem_range ? static_cast<size_t>(this->mem_range.size()) : 0;
 }
 
 bool ff::dx12::buffer_upload::writable() const
