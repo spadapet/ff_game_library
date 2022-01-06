@@ -661,25 +661,25 @@ namespace ff::test::dx12
             ff::dx12::texture tex2(size, ff::dxgi::DEFAULT_FORMAT, 2, 2);
 
             ff::dx12::resource_tracker tracker;
-            tracker.state(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
-            tracker.state(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 1, 1, 0, 2);
-            tracker.state(*tex1.resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 1, 0, 1);
-            tracker.state(*tex2.resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 2, 0, 1);
+            tracker.state(*tex1.dx12_resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            tracker.state(*tex2.dx12_resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 1, 1, 0, 2);
+            tracker.state(*tex1.dx12_resource(), D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 1, 0, 1);
+            tracker.state(*tex2.dx12_resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 2, 0, 1);
 
             ::test_command_list command_list(type);
             ::test_command_list command_list_before(type);
             tracker.flush(&command_list);
             tracker.close(&command_list_before, nullptr, nullptr);
 
-            Assert::AreEqual(tex1.resource()->sub_resource_size(), tex1.resource()->global_state().sub_resource_size());
-            Assert::AreEqual(tex2.resource()->sub_resource_size(), tex2.resource()->global_state().sub_resource_size());
+            Assert::AreEqual(tex1.dx12_resource()->sub_resource_size(), tex1.dx12_resource()->global_state().sub_resource_size());
+            Assert::AreEqual(tex2.dx12_resource()->sub_resource_size(), tex2.dx12_resource()->global_state().sub_resource_size());
 
             bool decayed = (type == D3D12_COMMAND_LIST_TYPE_COPY);
-            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_SOURCE, tex1.resource()->global_state().get(0).first);
-            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_DEST, tex2.resource()->global_state().get(0).first);
-            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_DEST, tex2.resource()->global_state().get(2).first);
-            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, tex2.resource()->global_state().get(1).first);
-            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, tex2.resource()->global_state().get(3).first);
+            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_SOURCE, tex1.dx12_resource()->global_state().get(0).first);
+            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_DEST, tex2.dx12_resource()->global_state().get(0).first);
+            Assert::AreEqual<UINT>(decayed ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_COPY_DEST, tex2.dx12_resource()->global_state().get(2).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, tex2.dx12_resource()->global_state().get(1).first);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COMMON, tex2.dx12_resource()->global_state().get(3).first);
 
             Assert::AreEqual<size_t>(2, command_list.barriers.size());
 

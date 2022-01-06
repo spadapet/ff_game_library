@@ -62,6 +62,7 @@ namespace ff::test::dx12
 
             target.present();
             ff::dx12::frame_complete();
+            ff::dx12::wait_for_idle();
 
             std::filesystem::path file_path = ff::filesystem::temp_directory_path() / "dx12_draw_shapes_test.png";
             {

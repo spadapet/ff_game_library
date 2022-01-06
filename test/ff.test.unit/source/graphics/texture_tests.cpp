@@ -30,7 +30,7 @@ namespace ff::test::graphics
             Assert::IsNotNull(texture->dx11_texture());
             Assert::IsNotNull(texture->dx11_texture_view());
 #elif DXVER == 12
-            Assert::IsNotNull(texture->resource());
+            Assert::IsNotNull(texture->dx12_resource());
             Assert::AreNotEqual<size_t>(0, texture->dx12_texture_view().ptr);
 #endif
         }

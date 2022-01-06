@@ -165,6 +165,34 @@ static bool init_d3d(bool for_reset)
         }
     }
 
+    // Break on debug error
+    if (DEBUG && ::IsDebuggerPresent())
+    {
+        Microsoft::WRL::ComPtr<ID3D12InfoQueue> info_queue;
+
+        if (SUCCEEDED(::device.As(&info_queue)))
+        {
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
+            info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
+
+            //D3D12_MESSAGE_ID hide[] =
+            //{
+            //    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+            //    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+            //    D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
+            //};
+            //
+            //D3D12_INFO_QUEUE_FILTER filter;
+            //memset(&filter, 0, sizeof(filter));
+            //filter.DenyList.NumIDs = _countof(hide);
+            //filter.DenyList.pIDList = hide;
+            //info_queue->AddStorageFilterEntries(&filter);
+        }
+    }
+
     // Find the physical adapter for the logical device
     {
         assert(!::adapter);
@@ -443,8 +471,7 @@ bool ff::dx12::reset(bool force)
 }
 
 void ff::dx12::trim()
-{
-}
+{}
 
 D3D_FEATURE_LEVEL ff::dx12::feature_level()
 {
@@ -478,7 +505,11 @@ ff::dx12::fence& ff::dx12::residency_fence()
 
 static bool supports_create_heap_not_resident()
 {
+#if UWP_APP
+    return true;
+#else
     return !::IsDebuggerPresent() || !::GetModuleHandle(L"DXCaptureReplay.dll");
+#endif
 }
 
 bool ff::dx12::supports_create_heap_not_resident()

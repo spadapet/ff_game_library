@@ -41,6 +41,7 @@ namespace ff::test::graphics
 
             target.present();
             ff::dx12::frame_complete();
+            ff::dx12::wait_for_idle();
 
             bool saved = ff::texture::get(*target.shared_texture()).resource_save_to_file(temp_path, "draw_device_test");
             Assert::IsTrue(saved);
