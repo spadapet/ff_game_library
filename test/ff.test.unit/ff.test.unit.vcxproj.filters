@@ -83,19 +83,10 @@
     <ClCompile Include="source\graphics\shader_tests.cpp">
       <Filter>source\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="source\graphics\buffer_tests.cpp">
-      <Filter>source\graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="source\graphics\depth_tests.cpp">
-      <Filter>source\graphics</Filter>
-    </ClCompile>
     <ClCompile Include="source\graphics\viewport_tests.cpp">
       <Filter>source\graphics</Filter>
     </ClCompile>
     <ClCompile Include="source\graphics\texture_tests.cpp">
-      <Filter>source\graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="source\graphics\render_target_tests.cpp">
       <Filter>source\graphics</Filter>
     </ClCompile>
     <ClCompile Include="source\graphics\sprite_tests.cpp">
@@ -115,9 +106,6 @@
     </ClCompile>
     <ClCompile Include="source\base\filesystem_tests.cpp">
       <Filter>source\base</Filter>
-    </ClCompile>
-    <ClCompile Include="source\graphics\draw_tests.cpp">
-      <Filter>source\graphics</Filter>
     </ClCompile>
     <ClCompile Include="source\graphics\random_sprite_tests.cpp">
       <Filter>source\graphics</Filter>
@@ -153,6 +141,15 @@
       <Filter>source\dx12</Filter>
     </ClCompile>
     <ClCompile Include="source\dx12\dx12_draw_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\depth_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\draw_tests.cpp">
+      <Filter>source\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="source\dx12\render_target_tests.cpp">
       <Filter>source\dx12</Filter>
     </ClCompile>
   </ItemGroup>

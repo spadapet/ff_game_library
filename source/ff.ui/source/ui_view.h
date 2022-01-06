@@ -17,8 +17,8 @@ namespace ff
         Noesis::IView* internal_view() const;
         Noesis::FrameworkElement* content() const;
         Noesis::Visual* hit_test(ff::point_float screen_pos) const;
-        Noesis::Cursor cursor() const;
-        void cursor(Noesis::Cursor cursor);
+        Noesis::CursorType cursor() const;
+        void cursor(Noesis::CursorType cursor);
         void size(const ff::window_size& value);
         void size(ff::dxgi::target_window_base& target);
         ff::point_float screen_to_content(ff::point_float pos) const;
@@ -44,7 +44,7 @@ namespace ff
         double counter;
         ff::signal_connection target_size_changed;
         ff::window_size current_size;
-        Noesis::Cursor cursor_;
+        Noesis::CursorType cursor_;
         Noesis::Ptr<Noesis::Grid> view_grid;
         Noesis::Ptr<Noesis::Viewbox> view_box;
         Noesis::Ptr<Noesis::IView> internal_view_;

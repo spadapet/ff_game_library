@@ -238,7 +238,7 @@ static void frame_advance_and_render()
         }
     }
 
-    ff_dx::frame_started();
+    ff::dx12::frame_started();
 
     DirectX::XMFLOAT4 clear_color;
     const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func
@@ -256,7 +256,7 @@ static void frame_advance_and_render()
         ::frame_presented();
     }
 
-    ff_dx::frame_complete();
+    ff::dx12::frame_complete();
 
     if (!valid)
     {
@@ -324,7 +324,7 @@ static void pause_game_state()
     {
         ::game_thread_state = ::game_thread_state_t::paused;
         ff::internal::app::request_save_settings();
-        ff_dx::trim();
+        ff::dx12::trim();
     }
 }
 
@@ -586,7 +586,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = std::make_unique<ff::target_window>(ff::window::main());
-    ::depth = std::make_unique<ff_dx::depth>(::target->size().pixel_size);
+    ::depth = std::make_unique<ff::dx12::depth>(::target->size().pixel_size);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);

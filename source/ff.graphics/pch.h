@@ -15,15 +15,8 @@
 // FF
 #include <ff.base.h>
 #include <ff.data.h>
-#include <ff.resource.h>
-
-#if DXVER == 11
-#include <ff.dx11.h>
-namespace ff_dx = ff::dx11;
-#elif DXVER == 12
 #include <ff.dx12.h>
-namespace ff_dx = ff::dx12;
-#endif
+#include <ff.resource.h>
 
 // DirectWrite interace usage
 

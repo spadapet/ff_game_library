@@ -17,8 +17,6 @@
     <ClCompile Include="source\draw_ptr.cpp" />
     <ClCompile Include="source\draw_util.cpp" />
     <ClCompile Include="source\format_util.cpp" />
-    <ClCompile Include="source\globals.cpp" />
-    <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\sprite_data.cpp" />
@@ -38,8 +36,6 @@
     <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\draw_util.h" />
     <ClInclude Include="source\format_util.h" />
-    <ClInclude Include="source\globals.h" />
-    <ClInclude Include="source\init.h" />
     <ClInclude Include="source\intrusive_list.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />

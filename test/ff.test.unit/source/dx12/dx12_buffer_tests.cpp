@@ -33,8 +33,8 @@ namespace ff::test::dx12
 
             // Copy data
             {
-                ff::dx12::commands commands = ff::dx12::direct_queue().new_commands();
-                void* data = buffer.map(commands, ff::array_byte_size(ints));
+                auto commands = ff::dx12::direct_queue().new_commands();
+                void* data = buffer.map(*commands, ff::array_byte_size(ints));
                 std::memcpy(data, ints.data(), ff::array_byte_size(ints));
                 buffer.unmap();
             }

@@ -48,24 +48,23 @@
     <ClCompile Include="source\data\json_tests.cpp" />
     <ClCompile Include="source\data\persist_tests.cpp" />
     <ClCompile Include="source\data\value_tests.cpp" />
+    <ClCompile Include="source\dx12\depth_tests.cpp" />
     <ClCompile Include="source\dx12\descriptor_allocator_tests.cpp" />
+    <ClCompile Include="source\dx12\draw_tests.cpp" />
     <ClCompile Include="source\dx12\dx12_buffer_tests.cpp" />
     <ClCompile Include="source\dx12\dx12_draw_tests.cpp" />
     <ClCompile Include="source\dx12\fence_tests.cpp" />
     <ClCompile Include="source\dx12\heap_tests.cpp" />
     <ClCompile Include="source\dx12\mem_allocator_tests.cpp" />
+    <ClCompile Include="source\dx12\render_target_tests.cpp" />
     <ClCompile Include="source\dx12\resource_state_tests.cpp" />
     <ClCompile Include="source\dx12\resource_tests.cpp" />
     <ClCompile Include="source\dx12\resource_tracker_tests.cpp" />
     <ClCompile Include="source\dx12\test_base.cpp" />
-    <ClCompile Include="source\graphics\buffer_tests.cpp" />
-    <ClCompile Include="source\graphics\depth_tests.cpp" />
-    <ClCompile Include="source\graphics\draw_tests.cpp" />
     <ClCompile Include="source\graphics\font_tests.cpp" />
     <ClCompile Include="source\graphics\palette_tests.cpp" />
     <ClCompile Include="source\graphics\animation_tests.cpp" />
     <ClCompile Include="source\graphics\random_sprite_tests.cpp" />
-    <ClCompile Include="source\graphics\render_target_tests.cpp" />
     <ClCompile Include="source\graphics\shader_tests.cpp" />
     <ClCompile Include="source\graphics\sprite_tests.cpp" />
     <ClCompile Include="source\graphics\texture_tests.cpp" />
@@ -95,9 +94,6 @@
     </ProjectReference>
     <ProjectReference Include="..\..\source\ff.data\ff.data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.dx11\ff.dx11.vcxproj">
-      <Project>{52341559-1659-489d-82a8-f81b7aba39ed}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\source\ff.dx12\ff.dx12.vcxproj">
       <Project>{8670e093-edd1-451e-868e-acffb7258759}</Project>

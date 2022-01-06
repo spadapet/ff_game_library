@@ -30,9 +30,6 @@
     <ProjectReference Include="..\..\source\ff.data\ff.data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.dx11\ff.dx11.vcxproj">
-      <Project>{52341559-1659-489d-82a8-f81b7aba39ed}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\source\ff.dxgi\ff.dxgi.vcxproj">
       <Project>{a4ea1e4f-874e-4d9a-8ce1-5483c5c8c33e}</Project>
     </ProjectReference>

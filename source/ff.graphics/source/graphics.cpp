@@ -95,7 +95,7 @@ static void flush_graphics_commands()
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
             lock.unlock();
 
-            ff_dx::reset(force);
+            ff::dx12::reset(force);
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {

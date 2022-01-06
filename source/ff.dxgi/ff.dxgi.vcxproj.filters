@@ -2,12 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\init.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\globals.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\utility.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -50,12 +44,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\init.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\globals.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\operators.h">
       <Filter>source</Filter>
     </ClInclude>

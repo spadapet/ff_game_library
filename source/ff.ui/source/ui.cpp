@@ -3,8 +3,7 @@
 #include "font_provider.h"
 #include "init.h"
 #include "key_map.h"
-#include "dx11_render_device.h"
-#include "dx12_render_device.h"
+#include "render_device.h"
 #include "resource_cache.h"
 #include "set_panel_child_focus_action.h"
 #include "texture_provider.h"
@@ -138,13 +137,13 @@ static Noesis::MemoryCallbacks memory_callbacks =
     ::noesis_alloc_size,
 };
 
-static void update_cursor_callback(void* user, Noesis::IView* internal_view, Noesis::Cursor cursor)
+static void update_cursor_callback(void* user, Noesis::IView* internal_view, Noesis::Cursor* cursor)
 {
     for (ff::ui_view* view : ::views)
     {
         if (view->internal_view() == internal_view)
         {
-            view->cursor(cursor);
+            view->cursor(cursor ? cursor->Type() : Noesis::CursorType_None);
             break;
         }
     }

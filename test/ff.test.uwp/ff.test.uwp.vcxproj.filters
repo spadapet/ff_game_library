@@ -102,6 +102,7 @@
     </None>
     <None Include="$(NoesisDll)" />
     <None Include="$(NoesisDll)" />
+    <None Include="$(NoesisDll)" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="ui_assets\assets.xaml.res.json">

@@ -17,12 +17,11 @@
     </ClCompile>
     <ClCompile Include="source\converters.cpp" />
     <ClCompile Include="source\delegate_command.cpp" />
-    <ClCompile Include="source\dx11_render_device.cpp" />
-    <ClCompile Include="source\dx12_render_device.cpp" />
     <ClCompile Include="source\font_provider.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\key_map.cpp" />
     <ClCompile Include="source\notify_property_changed_base.cpp" />
+    <ClCompile Include="source\render_device.cpp" />
     <ClCompile Include="source\render_target.cpp" />
     <ClCompile Include="source\resource_cache.cpp" />
     <ClCompile Include="source\set_panel_child_focus_action.cpp" />
@@ -37,12 +36,11 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\converters.h" />
     <ClInclude Include="source\delegate_command.h" />
-    <ClInclude Include="source\dx11_render_device.h" />
-    <ClInclude Include="source\dx12_render_device.h" />
     <ClInclude Include="source\font_provider.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\key_map.h" />
     <ClInclude Include="source\notify_property_changed_base.h" />
+    <ClInclude Include="source\render_device.h" />
     <ClInclude Include="source\render_target.h" />
     <ClInclude Include="source\resource_cache.h" />
     <ClInclude Include="source\set_panel_child_focus_action.h" />

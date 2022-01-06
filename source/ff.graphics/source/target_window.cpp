@@ -18,15 +18,13 @@ ff::target_window::target_window(ff::window* window)
     , cached_full_screen_uwp(false)
     , full_screen_uwp(false)
 #endif
-#if DXVER == 12
     , target_ready_event(ff::win_handle::create_event())
-    , target_views(ff_dx::cpu_target_descriptors().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
+    , target_views(ff::dx12::cpu_target_descriptors().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
-#endif
 {
     this->size(this->window->size());
 
-    ff_dx::add_device_child(this, ff_dx::device_reset_priority::target_window);
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
 
     if (this->main_window)
     {
@@ -36,7 +34,7 @@ ff::target_window::target_window(ff::window* window)
 
 ff::target_window::~target_window()
 {
-    ff_dx::wait_for_idle();
+    ff::dx12::wait_for_idle();
 
     if (this->main_window && this->swap_chain)
     {
@@ -44,7 +42,7 @@ ff::target_window::~target_window()
     }
 
     ff::graphics::defer::remove_target(this);
-    ff_dx::remove_device_child(this);
+    ff::dx12::remove_device_child(this);
 }
 
 ff::target_window::operator bool() const
@@ -61,69 +59,6 @@ ff::window_size ff::target_window::size() const
 {
     return this->cached_size;
 }
-
-#if DXVER == 11
-
-ID3D11Texture2D* ff::target_window::dx11_target_texture()
-{
-    return this->texture_.Get();
-}
-
-ID3D11RenderTargetView* ff::target_window::dx11_target_view()
-{
-    return this->view_.Get();
-}
-
-void ff::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
-{
-    ff_dx::device_state::get(context).clear_target(this->dx11_target_view(), clear_color);
-}
-
-void ff::target_window::vsync()
-{
-    // present() already blocks for vsync
-}
-
-bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
-{
-    if (clear_color)
-    {
-        this->clear(ff::dx11::get_device_state(), *clear_color);
-    }
-
-    return true;
-}
-
-bool ff::target_window::present()
-{
-    ff_dx::get_device_state().set_targets(nullptr, 0, nullptr);
-
-    HRESULT hr = *this ? this->swap_chain->Present(1, 0) : E_FAIL;
-    if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
-    {
-        this->render_presented_.notify(this);
-        return true;
-    }
-
-    return false;
-}
-
-void ff::target_window::before_resize()
-{
-    this->view_.Reset();
-    this->texture_.Reset();
-}
-
-void ff::target_window::internal_reset()
-{
-    this->swap_chain.Reset();
-    this->view_.Reset();
-    this->texture_.Reset();
-
-    ff_dx::get_device_state().clear();
-}
-
-#elif DXVER == 12
 
 ff::dx12::resource& ff::target_window::dx12_target_texture()
 {
@@ -204,7 +139,7 @@ bool ff::target_window::present()
 
 void ff::target_window::before_resize()
 {
-    ff_dx::wait_for_idle();
+    ff::dx12::wait_for_idle();
     this->frame_latency_handle.close();
 
     for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
@@ -219,8 +154,6 @@ void ff::target_window::internal_reset()
     this->before_resize();
     this->swap_chain.Reset();
 }
-
-#endif
 
 ff::signal_sink<ff::dxgi::target_base*>& ff::target_window::render_presented()
 {
@@ -269,8 +202,7 @@ bool ff::target_window::size(const ff::window_size& size)
         this->swap_chain->GetDesc1(&desc);
         if (FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
     }
     else if (!this->swap_chain) // first init on UI thread, reset is on game thread
@@ -285,66 +217,49 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-#if DXVER == 12
         desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT; // sets latency to 1 frame
-#endif
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
-#if DXVER == 11
-        Microsoft::WRL::ComPtr<ID3D11DeviceX> device = ff_dx::device();
-        Microsoft::WRL::ComPtr<IDXGIDeviceX> dxgi_device;
-        Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
-        Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
-
-        if (FAILED(device.As(&dxgi_device)) || FAILED(dxgi_device->GetParent(IID_PPV_ARGS(&adapter))) || FAILED(adapter->GetParent(IID_PPV_ARGS(&factory))))
-        {
-            assert(false);
-            return false;
-        }
-
-#elif DXVER == 12
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
         Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::dx12::get_command_queue(ff::dx12::direct_queue());
-#endif
 
         ff::thread_dispatch::get_main()->send([this, factory, device, &new_swap_chain, &desc]()
-            {
+        {
 #if UWP_APP
-                if (this->window)
+            if (this->window)
+            {
+                Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel = this->window->swap_chain_panel();
+                this->use_xaml_composition = (swap_chain_panel != nullptr);
+
+                if (this->use_xaml_composition)
                 {
-                    Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel = this->window->swap_chain_panel();
-                    this->use_xaml_composition = (swap_chain_panel != nullptr);
+                    Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
 
-                    if (this->use_xaml_composition)
+                    if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(IID_PPV_ARGS(&native_panel))) ||
+                        FAILED(factory->CreateSwapChainForComposition(device.Get(), &desc, nullptr, &new_swap_chain)) ||
+                        FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
                     {
-                        Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
-
-                        if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(IID_PPV_ARGS(&native_panel))) ||
-                            FAILED(factory->CreateSwapChainForComposition(device.Get(), &desc, nullptr, &new_swap_chain)) ||
-                            FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
-                        {
-                            assert(false);
-                        }
-                    }
-                    else if (FAILED(factory->CreateSwapChainForCoreWindow(device.Get(), reinterpret_cast<IUnknown*>(this->window->handle()), &desc, nullptr, &new_swap_chain)))
-                    {
-                        assert(false);
+                        debug_fail();
                     }
                 }
+                else if (FAILED(factory->CreateSwapChainForCoreWindow(device.Get(), reinterpret_cast<IUnknown*>(this->window->handle()), &desc, nullptr, &new_swap_chain)))
+                {
+                    debug_fail();
+                }
+            }
 #else
-                if (!*this->window ||
-                    FAILED(factory->CreateSwapChainForHwnd(device.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
-                    FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
-                {
-                    assert(false);
-                }
+            if (!*this->window ||
+                FAILED(factory->CreateSwapChainForHwnd(device.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
+                FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
+            {
+                debug_fail();
+            }
 #endif
-            });
+        });
 
         if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)))
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
     }
 
@@ -364,18 +279,9 @@ bool ff::target_window::size(const ff::window_size& size)
 #endif
         FAILED(this->swap_chain->SetRotation(display_rotation)))
     {
-        assert(false);
-        return false;
+        debug_fail_ret_val(false);
     }
 
-#if DXVER == 11
-    if ((!this->texture_ && FAILED(this->swap_chain->GetBuffer(0, IID_PPV_ARGS(&this->texture_)))) ||
-        (!this->view_ && (this->view_ = ff::dx11::create_target_view(this->texture_.Get())) == nullptr))
-    {
-        assert(false);
-        return false;
-    }
-#elif DXVER == 12
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
     this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
 
@@ -388,8 +294,7 @@ bool ff::target_window::size(const ff::window_size& size)
             if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))) ||
                 FAILED(resource.As(&resource_x)))
             {
-                assert(false);
-                return false;
+                debug_fail_ret_val(false);
             }
 
             this->target_textures[i] = std::make_unique<ff::dx12::resource>(resource_x.Get());
@@ -397,7 +302,6 @@ bool ff::target_window::size(const ff::window_size& size)
 
         ff::dx12::create_target_view(this->target_textures[i].get(), this->target_views.cpu_handle(i));
     }
-#endif
 
     this->size_changed_.notify(size);
 
@@ -475,8 +379,7 @@ bool ff::target_window::reset()
 
     if (!this->window || !this->size(this->window->size()))
     {
-        assert(false);
-        return false;
+        debug_fail_ret_val(false);
     }
 
     if (this->main_window && this->swap_chain && full_screen)

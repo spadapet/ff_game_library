@@ -248,7 +248,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
                 return nullptr;
             }
 
-            texture_views.push_back(std::make_shared<ff_dx::texture_view>(texture));
+            texture_views.push_back(texture);
         }
     }
 

@@ -23,7 +23,6 @@ namespace ff::log
         audio,
         base_memory,
         data,
-        dx11,
         dx12,
         dx12_fence,
         dx12_residency,

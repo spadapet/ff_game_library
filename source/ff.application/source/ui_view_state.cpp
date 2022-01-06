@@ -48,7 +48,7 @@ ff::state::cursor_t ff::ui_view_state::cursor()
     default:
         return ff::state::cursor_t::default;
 
-    case Noesis::Cursor_Hand:
+    case Noesis::CursorType_Hand:
         return ff::state::cursor_t::hand;
     }
 }

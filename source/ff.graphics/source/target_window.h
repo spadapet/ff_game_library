@@ -2,7 +2,7 @@
 
 namespace ff
 {
-    class target_window : public ff::dxgi::target_window_base, public ff_dx::target_access, private ff::dxgi::device_child_base
+    class target_window : public ff::dxgi::target_window_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {
     public:
         target_window();
@@ -29,13 +29,8 @@ namespace ff
         virtual ff::window_size size() const override;
 
         // target_access
-#if DXVER == 11
-        virtual ID3D11Texture2D* dx11_target_texture() override;
-        virtual ID3D11RenderTargetView* dx11_target_view() override;
-#elif DXVER == 12
         virtual ff::dx12::resource& dx12_target_texture() override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE dx12_target_view() override;
-#endif
 
         // target_window_base
         virtual bool size(const ff::window_size& size) override;
@@ -60,18 +55,15 @@ namespace ff
         ff::signal<ff::window_size> size_changed_;
         ff::signal<ff::dxgi::target_base*> render_presented_;
         ff::signal_connection window_message_connection;
-        Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
-#if DXVER == 11
-        Microsoft::WRL::ComPtr<ID3D11Texture2D> texture_;
-        Microsoft::WRL::ComPtr<ID3D11RenderTargetView> view_;
-#elif DXVER == 12
-        std::array<std::unique_ptr<ff_dx::resource>, BACK_BUFFER_COUNT> target_textures;
-        std::array<ff_dx::fence_value, BACK_BUFFER_COUNT> target_fence_values;
-        ff::win_handle target_ready_event;
-        ff_dx::descriptor_range target_views;
-        size_t back_buffer_index;
         ff::win_handle frame_latency_handle;
-#endif
+        ff::win_handle target_ready_event;
+        Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
+
+        std::array<std::unique_ptr<ff::dx12::resource>, BACK_BUFFER_COUNT> target_textures;
+        std::array<ff::dx12::fence_value, BACK_BUFFER_COUNT> target_fence_values;
+        ff::dx12::descriptor_range target_views;
+        size_t back_buffer_index;
+
         bool main_window;
         bool was_full_screen_on_close;
 #if UWP_APP

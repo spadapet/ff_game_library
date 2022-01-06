@@ -1,6 +1,5 @@
 #include "pch.h"
-#include "dx11_render_device.h"
-#include "dx12_render_device.h"
+#include "render_device.h"
 #include "ui.h"
 #include "ui_view.h"
 
@@ -15,7 +14,7 @@ ff::ui_view::ui_view(Noesis::FrameworkElement* content, bool per_pixel_anti_alia
     , block_input_below_(false)
     , counter(0)
     , current_size{}
-    , cursor_(Noesis::Cursor_Arrow)
+    , cursor_(Noesis::CursorType_Arrow)
     , view_grid(Noesis::MakePtr<Noesis::Grid>())
     , view_box(Noesis::MakePtr<Noesis::Viewbox>())
     , internal_view_(Noesis::GUI::CreateView(this->view_box))
@@ -76,12 +75,12 @@ Noesis::Visual* ff::ui_view::hit_test(ff::point_float screen_pos) const
     return ht.visualHit;
 }
 
-Noesis::Cursor ff::ui_view::cursor() const
+Noesis::CursorType ff::ui_view::cursor() const
 {
     return this->cursor_;
 }
 
-void ff::ui_view::cursor(Noesis::Cursor cursor)
+void ff::ui_view::cursor(Noesis::CursorType cursor)
 {
     this->cursor_ = cursor;
 }

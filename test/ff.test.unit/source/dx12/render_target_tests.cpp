@@ -7,7 +7,7 @@ namespace ff::test::graphics
     public:
         TEST_METHOD(target_texture)
         {
-            ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
+            ff::dx12::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::dxgi::DEFAULT_FORMAT);
@@ -18,24 +18,6 @@ namespace ff::test::graphics
         {
             ff::target_window target;
 
-#if DXVER == 11
-
-            Assert::IsNotNull(target.dx11_target_view());
-            Assert::IsNotNull(target.dx11_target_texture());
-            Assert::IsTrue(target.allow_full_screen());
-            Assert::IsFalse(target.full_screen());
-
-            Assert::IsTrue(target.pre_render(&ff::dxgi::color_magenta()));
-            Assert::IsTrue(target.present());
-
-            Assert::IsNotNull(target.dx11_target_view());
-            Assert::IsNotNull(target.dx11_target_texture());
-
-            Assert::IsTrue(target.pre_render(&ff::dxgi::color_yellow()));
-            Assert::IsTrue(target.present());
-
-#elif DXVER == 12
-
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());
             Assert::IsTrue(target.allow_full_screen());
@@ -53,8 +35,6 @@ namespace ff::test::graphics
             Assert::IsTrue(target.pre_render(&ff::dxgi::color_yellow()));
             Assert::IsTrue(target.present());
             ff::dx12::frame_complete();
-
-#endif
         }
     };
 }

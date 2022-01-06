@@ -7,18 +7,18 @@
 
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
-    this->assign(ff_dx::texture(ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_)));
+    this->assign(ff::dx12::texture(ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_)));
 }
 
 ff::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
 {
-    this->assign(ff_dx::texture(size, format, mip_count, array_size, sample_count, optimized_clear_color));
+    this->assign(ff::dx12::texture(size, format, mip_count, array_size, sample_count, optimized_clear_color));
 }
 
 ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::dxgi::sprite_type sprite_type)
     : palette_(palette)
 {
-    this->assign(ff_dx::texture(data, sprite_type));
+    this->assign(ff::dx12::texture(data, sprite_type));
 }
 
 ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count)
@@ -33,7 +33,7 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
         if (new_data)
         {
             sprite_type = (new_data == other_data) ? other.sprite_type() : ff::dxgi::get_sprite_type(*new_data);
-            this->assign(ff_dx::texture(new_data, sprite_type));
+            this->assign(ff::dx12::texture(new_data, sprite_type));
         }
     }
 

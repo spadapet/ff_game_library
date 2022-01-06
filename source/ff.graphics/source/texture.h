@@ -7,7 +7,7 @@
 namespace ff
 {
     class texture
-        : public ff_dx::texture
+        : public ff::dx12::texture
         , public ff::resource_object_base
         , public ff::sprite_base
         , public ff::animation_base

@@ -23,7 +23,7 @@ namespace ff::test::graphics
             ff::auto_resource<ff::sprite_resource> sprites_res = res->get_resource_object("sprites.box[7]");
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
-            ff_dx::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
+            ff::dx12::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
             static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
 
             ff::dx12::frame_started();
@@ -31,8 +31,8 @@ namespace ff::test::graphics
 
             // Draw
             {
-                ff_dx::depth depth;
-                std::unique_ptr<ff_dx::draw_device> draw_device = ff_dx::draw_device::create();
+                ff::dx12::depth depth;
+                std::unique_ptr<ff::dx12::draw_device> draw_device = ff::dx12::draw_device::create();
                 ff::dxgi::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
                 draw->draw_sprite(sprite->sprite_data(), ff::dxgi::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));
                 draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::dxgi::color_yellow(), 4);
