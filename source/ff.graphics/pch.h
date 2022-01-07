@@ -4,17 +4,11 @@
 #include <d3dcompiler.h>
 #include <dwrite_3.h>
 
-#if UWP_APP
-#include <windows.ui.xaml.media.dxinterop.h>
-#endif
-
 // Vendor
 #include <directxtex/DirectXTex/DirectXTex.h>
 #include <libpng/png.h>
 
 // FF
-#include <ff.base.h>
-#include <ff.data.h>
 #include <ff.dx12.h>
 #include <ff.resource.h>
 

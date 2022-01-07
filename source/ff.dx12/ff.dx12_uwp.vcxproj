@@ -34,6 +34,7 @@
     <ClCompile Include="source\resource_tracker.cpp" />
     <ClCompile Include="source\target_access.cpp" />
     <ClCompile Include="source\target_texture.cpp" />
+    <ClCompile Include="source\target_window.cpp" />
     <ClCompile Include="source\texture.cpp" />
     <ClCompile Include="source\texture_util.cpp" />
     <ClCompile Include="source\texture_view.cpp" />
@@ -67,6 +68,7 @@
     <ClInclude Include="source\resource_tracker.h" />
     <ClInclude Include="source\target_access.h" />
     <ClInclude Include="source\target_texture.h" />
+    <ClInclude Include="source\target_window.h" />
     <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_util.h" />
     <ClInclude Include="source\texture_view.h" />
@@ -77,14 +79,8 @@
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex_uwp.vcxproj">
       <Project>{57ae618b-7b0e-4f51-b623-d1b5b90d11c9}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
-      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\ff.dxgi\ff.dxgi_uwp.vcxproj">
       <Project>{8d48c235-4204-4094-b2c0-442dd544ee54}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.resource\ff.resource_uwp.vcxproj">
-      <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

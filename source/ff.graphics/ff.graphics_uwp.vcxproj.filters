@@ -56,9 +56,6 @@
     <ClCompile Include="source\random_sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\target_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\texture.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -129,9 +126,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\random_sprite.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_window.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\texture.h">

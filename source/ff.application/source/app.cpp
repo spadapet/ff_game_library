@@ -57,7 +57,7 @@ static ff::state_wrapper game_state;
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
-static std::unique_ptr<ff::target_window> target;
+static std::unique_ptr<ff::dxgi::target_window_base> target;
 static std::unique_ptr<ff::dxgi::depth_base> depth;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::atomic<const wchar_t*> window_cursor;
@@ -585,7 +585,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::app_time.time_scale = 1.0;
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
-    ::target = std::make_unique<ff::target_window>(ff::window::main());
+    ::target = std::make_unique<ff::dx12::target_window>(ff::window::main());
     ::depth = std::make_unique<ff::dx12::depth>(::target->size().pixel_size);
 
     ff::internal::app::load_settings();
@@ -627,7 +627,7 @@ const ff::frame_time_t& ff::frame_time()
     return ::frame_time;
 }
 
-ff::target_window& ff::app_render_target()
+ff::dxgi::target_window_base& ff::app_render_target()
 {
     return *::target;
 }

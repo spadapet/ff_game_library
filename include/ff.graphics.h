@@ -20,7 +20,6 @@
 #include "../source/ff.graphics/source/sprite_list.h"
 #include "../source/ff.graphics/source/sprite_optimizer.h"
 #include "../source/ff.graphics/source/sprite_resource.h"
-#include "../source/ff.graphics/source/target_window.h"
 #include "../source/ff.graphics/source/texture.h"
 #include "../source/ff.graphics/source/texture_metadata.h"
 #include "../source/ff.graphics/source/texture_util.h"

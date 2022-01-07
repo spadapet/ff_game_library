@@ -1,17 +1,22 @@
 #include "pch.h"
 #include "sprite.h"
 
-ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, const ff::dxgi::sprite_data& sprite_data)
+ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture>& texture, const ff::dxgi::sprite_data& sprite_data)
     : name_(std::move(name))
-    , view(view)
-    , sprite_data_(this->view.get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
+    , texture_(texture)
+    , sprite_data_(texture->dxgi_texture().get(), sprite_data.texture_uv(), sprite_data.world(), sprite_data.type())
 {}
 
-ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type)
+ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture>& texture, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type)
     : name_(std::move(name))
-    , view(view)
-    , sprite_data_(this->view.get(), rect, handle, scale, type)
+    , texture_(texture)
+    , sprite_data_(texture->dxgi_texture().get(), rect, handle, scale, type)
 {}
+
+const std::shared_ptr<ff::texture>& ff::sprite::texture() const
+{
+    return this->texture_;
+}
 
 std::string_view ff::sprite::name() const
 {

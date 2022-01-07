@@ -18,7 +18,7 @@ namespace
 {
     struct one_time_init_grahics
     {
-        one_time_init_grahics()
+        one_time_init_grahics(const ff::dxgi::client_functions& client_functions)
         {
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::animation_factory>("animation");
@@ -32,7 +32,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
-            ::init_graphics_status = ff::internal::graphics::init();
+            ::init_graphics_status = ff::internal::graphics::init(client_functions);
         }
 
         ~one_time_init_grahics()
@@ -47,13 +47,36 @@ static int init_graphics_refs;
 static std::unique_ptr<one_time_init_grahics> init_graphics_data;
 static std::mutex init_graphics_mutex;
 
+static std::shared_ptr<ff::data_base> host_shader_data(std::string_view name)
+{
+    ff::auto_resource<ff::resource_file> res(name);
+    return res.object() ? res.object()->loaded_data() : nullptr;
+}
+
+static const ff::dxgi::host_functions& get_dxgi_host_functions()
+{
+    static ff::dxgi::host_functions host_functions
+    {
+        ff::graphics::defer::set_full_screen_target,
+        ff::graphics::defer::remove_target,
+        ff::graphics::defer::resize_target,
+        ff::graphics::defer::full_screen,
+        ff::graphics::defer::validate_device,
+        ff::global_resources::add,
+        ::host_shader_data,
+    };
+
+    return host_functions;
+}
+
 ff::init_graphics::init_graphics()
+    : init_dx12(::get_dxgi_host_functions())
 {
     std::scoped_lock lock(::init_graphics_mutex);
 
     if (::init_graphics_refs++ == 0 && this->init_resource && this->init_dx12)
     {
-        ::init_graphics_data = std::make_unique<one_time_init_grahics>();
+        ::init_graphics_data = std::make_unique<one_time_init_grahics>(init_dx12.client_functions());
     }
 }
 

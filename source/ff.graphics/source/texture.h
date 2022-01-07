@@ -7,8 +7,7 @@
 namespace ff
 {
     class texture
-        : public ff::dx12::texture
-        , public ff::resource_object_base
+        : public ff::resource_object_base
         , public ff::sprite_base
         , public ff::animation_base
         , public ff::animation_player_base
@@ -17,16 +16,17 @@ namespace ff
         texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format = DXGI_FORMAT_UNKNOWN, size_t new_mip_count = 1);
         texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const DirectX::XMFLOAT4* optimized_clear_color = nullptr);
         texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette = nullptr, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown);
+        texture(const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture);
         texture(const texture& other, DXGI_FORMAT new_format, size_t new_mip_count);
-        texture(texture&& other) noexcept;
+        texture(texture&& other) noexcept = default;
         texture(const texture& other) = delete;
 
-        static texture& get(ff::dxgi::texture_base& other);
-        static const texture& get(const ff::dxgi::texture_base& other);
-        texture& operator=(texture&& other) noexcept;
+        texture& operator=(texture&& other) noexcept = default;
         texture& operator=(const texture& other) = delete;
+        operator bool() const;
 
-        std::shared_ptr<DirectX::ScratchImage> palette() const;
+        const std::shared_ptr<DirectX::ScratchImage>& palette() const;
+        const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture() const;
 
         // resource_object_base
         virtual ff::dict resource_get_siblings(const std::shared_ptr<ff::resource>& self) const override;
@@ -52,10 +52,12 @@ namespace ff
         virtual const ff::animation_base* animation() const override;
 
     protected:
-        virtual void on_reset() override;
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
+        void assign(const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture);
+
+        std::shared_ptr<ff::dxgi::texture_base> dxgi_texture_;
         std::shared_ptr<DirectX::ScratchImage> palette_;
         ff::dxgi::sprite_data sprite_data_;
     };

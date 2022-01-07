@@ -10,6 +10,4 @@
 #include <xaudio2.h>
 
 // FF
-#include <ff.base.h>
-#include <ff.data.h>
 #include <ff.resource.h>

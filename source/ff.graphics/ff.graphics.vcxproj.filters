@@ -26,9 +26,6 @@
     <ClCompile Include="source\animation_player.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\target_window.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\sprite.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -102,9 +99,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\animation_player_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\target_window.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\sprite.h">

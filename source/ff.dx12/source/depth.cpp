@@ -62,7 +62,7 @@ ff::dx12::depth::operator bool() const
 ff::point_size ff::dx12::depth::size() const
 {
     const D3D12_RESOURCE_DESC& desc = this->resource_->desc();
-    return ff::point_size(static_cast<size_t>(desc.Width), desc.Height);
+    return ff::point_size(desc.Width, desc.Height);
 }
 
 bool ff::dx12::depth::size(const ff::point_size& size)

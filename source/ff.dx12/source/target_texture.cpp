@@ -9,11 +9,11 @@
 #include "queue.h"
 
 ff::dx12::target_texture::target_texture(
-    const std::shared_ptr<ff::dx12::texture>& texture,
+    const std::shared_ptr<ff::dxgi::texture_base>& texture,
     size_t array_start,
     size_t array_count,
     size_t mip_level)
-    : texture_(texture)
+    : texture_(std::dynamic_pointer_cast<ff::dx12::texture>(texture))
     , view_(ff::dx12::cpu_target_descriptors().alloc_range(1))
     , array_start(array_start)
     , array_count(array_count ? array_count : texture->array_size() - array_start)

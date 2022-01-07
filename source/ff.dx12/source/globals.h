@@ -16,6 +16,7 @@ namespace ff::dx12
 
     bool reset(bool force);
     void trim();
+    const ff::dxgi::host_functions& host_functions();
 
     D3D_FEATURE_LEVEL feature_level();
     IDXGIFactoryX* factory();
@@ -53,7 +54,7 @@ namespace ff::dx12
     ff::dx12::mem_allocator& texture_allocator();
     ff::dx12::mem_allocator& target_allocator();
 
-    bool init_globals(D3D_FEATURE_LEVEL feature_level = D3D_FEATURE_LEVEL_11_0);
+    bool init_globals(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level);
     void destroy_globals();
 
     void add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority);

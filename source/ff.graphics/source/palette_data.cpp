@@ -32,12 +32,12 @@ ff::palette_data::palette_data(std::shared_ptr<ff::texture>&& texture, std::vect
     , row_hashes(std::move(row_hashes))
     , name_to_remap(std::move(name_to_remap))
 {
-    assert(this->texture_ && this->texture_->size().cast<size_t>().x == ff::dxgi::palette_size);
+    assert(this->texture_ && this->texture_->dxgi_texture()->size().cast<size_t>().x == ff::dxgi::palette_size);
 }
 
 ff::palette_data::operator bool() const
 {
-    return this->texture_ && *this->texture_ && this->texture_->size().cast<size_t>().x == ff::dxgi::palette_size;
+    return this->texture_ && *this->texture_ && this->texture_->dxgi_texture()->size().cast<size_t>().x == ff::dxgi::palette_size;
 }
 
 size_t ff::palette_data::row_size() const
@@ -50,9 +50,9 @@ size_t ff::palette_data::row_hash(size_t index) const
     return this->row_hashes[index];
 }
 
-const std::shared_ptr<ff::dxgi::texture_base> ff::palette_data::texture() const
+const std::shared_ptr<ff::dxgi::texture_base>& ff::palette_data::texture() const
 {
-    return this->texture_;
+    return this->texture_->dxgi_texture();
 }
 
 std::shared_ptr<ff::data_base> ff::palette_data::remap(std::string_view name) const

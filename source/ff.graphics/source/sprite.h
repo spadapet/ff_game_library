@@ -3,6 +3,7 @@
 #include "animation_base.h"
 #include "animation_player_base.h"
 #include "sprite_base.h"
+#include "texture.h"
 
 namespace ff
 {
@@ -12,13 +13,15 @@ namespace ff
         , public ff::animation_player_base
     {
     public:
-        sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, const ff::dxgi::sprite_data& sprite_data);
-        sprite(std::string&& name, const std::shared_ptr<ff::dxgi::texture_view_base>& view, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type);
+        sprite(std::string&& name, const std::shared_ptr<ff::texture>& texture, const ff::dxgi::sprite_data& sprite_data);
+        sprite(std::string&& name, const std::shared_ptr<ff::texture>& texture, ff::rect_float rect, ff::point_float handle, ff::point_float scale, ff::dxgi::sprite_type type);
         sprite(sprite&& other) noexcept = default;
         sprite(const sprite& other) = default;
 
         sprite& operator=(sprite&& other) noexcept = default;
         sprite& operator=(const sprite& other) = default;
+
+        const std::shared_ptr<ff::texture>& texture() const;
 
         // sprite_base
         virtual std::string_view name() const override;
@@ -41,7 +44,7 @@ namespace ff
 
     private:
         std::string name_;
-        std::shared_ptr<ff::dxgi::texture_view_base> view;
+        std::shared_ptr<ff::texture> texture_;
         ff::dxgi::sprite_data sprite_data_;
     };
 }

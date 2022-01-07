@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "palette_data.h"
-#include "sprite_base.h"
 #include "sprite_optimizer.h"
 #include "texture.h"
 #include "texture_util.h"
@@ -14,7 +13,7 @@ namespace
     // Info about where each sprite came from and where it's going
     struct optimized_sprite_info
     {
-        optimized_sprite_info(const ff::sprite_base* sprite, size_t sprite_index)
+        optimized_sprite_info(const ff::sprite* sprite, size_t sprite_index)
             : sprite(sprite)
             , dest_sprite_type(ff::dxgi::sprite_type::unknown)
             , source_rect(sprite->sprite_data().texture_rect().offset(0.5f, 0.5f).cast<int>())
@@ -56,7 +55,7 @@ namespace
             return this->source_rect.height() > other.source_rect.height();
         }
 
-        const ff::sprite_base* sprite;
+        const ff::sprite* sprite;
         ff::dxgi::sprite_type dest_sprite_type;
         ff::rect_int source_rect;
         ff::rect_int dest_rect;
@@ -330,14 +329,14 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
     return sprites_done == sprites.size();
 }
 
-static std::vector<::optimized_sprite_info> create_sprite_infos(const std::vector<const ff::sprite_base*>& original_sprites)
+static std::vector<::optimized_sprite_info> create_sprite_infos(const std::vector<ff::sprite>& original_sprites)
 {
     std::vector<::optimized_sprite_info> sprite_infos;
     sprite_infos.reserve(original_sprites.size());
 
     for (size_t i = 0; i < original_sprites.size(); i++)
     {
-        sprite_infos.emplace_back(original_sprites[i], i);
+        sprite_infos.emplace_back(&original_sprites[i], i);
     }
 
     return sprite_infos;
@@ -351,7 +350,7 @@ static bool create_original_textures(
 {
     for (const ::optimized_sprite_info& sprite_info : sprite_infos)
     {
-        const ff::texture* texture = &ff::texture::get(*sprite_info.sprite->sprite_data().view()->view_texture());
+        const ff::texture* texture = sprite_info.sprite->texture().get();
         if (!palette_data)
         {
             palette_data = texture->palette();
@@ -359,7 +358,7 @@ static bool create_original_textures(
 
         if (original_textures.find(texture) == original_textures.cend())
         {
-            if (texture->format() != format && (!ff::dxgi::color_format(texture->format()) || !ff::dxgi::color_format(format)))
+            if (texture->dxgi_texture()->format() != format && (!ff::dxgi::color_format(texture->dxgi_texture()->format()) || !ff::dxgi::color_format(format)))
             {
                 assert(false);
                 return false;
@@ -374,7 +373,7 @@ static bool create_original_textures(
                 return false;
             }
 
-            texure_info.rgb_scratch = texure_info.rgb_texture->data();
+            texure_info.rgb_scratch = texure_info.rgb_texture->dxgi_texture()->data();
             if (!texure_info.rgb_scratch)
             {
                 assert(false);
@@ -452,11 +451,10 @@ static bool copy_optimized_sprites(
 {
     for (::optimized_sprite_info& sprite : sprite_infos)
     {
-        auto iter = original_textures.find(&ff::texture::get(*sprite.sprite->sprite_data().view()->view_texture()));
+        auto iter = original_textures.find(sprite.sprite->texture().get());
         if (sprite.dest_texture >= texture_infos.size() || iter == original_textures.cend())
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
 
         ::original_texture_info& original_info = iter->second;
@@ -491,15 +489,13 @@ static bool convert_final_textures(
             std::make_shared<DirectX::ScratchImage>(std::move(texure_info.scratch_texture)), palette_scratch);
         if (!*rgb_texture)
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
 
         texure_info.final_texture = std::make_shared<ff::texture>(*rgb_texture, format, mip_count);
         if (!*texure_info.final_texture)
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
     }
 
@@ -527,7 +523,7 @@ static bool create_final_sprites(
     return true;
 }
 
-std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<const ff::sprite_base*>& old_sprites, DXGI_FORMAT new_format, size_t new_mip_count)
+std::vector<ff::sprite> ff::internal::optimize_sprites(const std::vector<ff::sprite>& old_sprites, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     std::vector<ff::sprite> new_sprites;
 
@@ -583,7 +579,7 @@ static bool create_outline_sprites(
     for (::optimized_sprite_info& sprite_info : sprite_infos)
     {
         const ff::dxgi::sprite_data& sprite_data = sprite_info.sprite->sprite_data();
-        const ff::texture* original_texture = &ff::texture::get(*sprite_data.view()->view_texture());
+        const ff::texture* original_texture = sprite_info.sprite->texture().get();
         auto iter = original_textures.find(original_texture);
         if (iter == original_textures.cend())
         {
@@ -661,8 +657,8 @@ static bool create_outline_sprites(
 
         outline_sprite_list.emplace_back(
             std::string(sprite_info.sprite->name()),
-            std::shared_ptr<ff::dxgi::texture_view_base>(outline_texture),
-            ff::rect_float(ff::point_float{}, outline_texture->size().cast<float>()),
+            outline_texture,
+            ff::rect_float(ff::point_float{}, outline_texture->dxgi_texture()->size().cast<float>()),
             sprite_data.handle() + ff::point_float(1, 1),
             sprite_data.scale(),
             ff::dxgi::sprite_type::unknown);
@@ -671,7 +667,7 @@ static bool create_outline_sprites(
     return true;
 }
 
-std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<const ff::sprite_base*>& old_sprites, DXGI_FORMAT new_format, size_t new_mip_count)
+std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<ff::sprite>& old_sprites, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     std::vector<ff::sprite> new_sprites;
 
@@ -689,15 +685,8 @@ std::vector<ff::sprite> ff::internal::outline_sprites(const std::vector<const ff
     if (!::create_original_textures(new_format, sprite_infos, original_textures, palette_data) ||
         !::create_outline_sprites(new_format, sprite_infos, original_textures, outline_textures, new_sprites, palette_data))
     {
-        assert(false);
-        return new_sprites;
+        debug_fail_ret_val(new_sprites);
     }
 
-    std::vector<const ff::sprite_base*> new_sprite_pointers;
-    for (auto& sprite : new_sprites)
-    {
-        new_sprite_pointers.push_back(&sprite);
-    }
-
-    return ff::internal::optimize_sprites(new_sprite_pointers, new_format, new_mip_count);
+    return ff::internal::optimize_sprites(new_sprites, new_format, new_mip_count);
 }

@@ -26,6 +26,7 @@
 #include "../source/ff.dx12/source/resource_tracker.h"
 #include "../source/ff.dx12/source/target_access.h"
 #include "../source/ff.dx12/source/target_texture.h"
+#include "../source/ff.dx12/source/target_window.h"
 #include "../source/ff.dx12/source/texture.h"
 #include "../source/ff.dx12/source/texture_util.h"
 #include "../source/ff.dx12/source/texture_view.h"

@@ -340,29 +340,22 @@ bool ff::sprite_font::init_sprites()
 
     staging_scratches.push_back(std::move(staging_scratch));
 
-    std::vector<std::shared_ptr<ff::dxgi::texture_view_base>> textures;
+    std::vector<std::shared_ptr<ff::texture>> textures;
     for (DirectX::ScratchImage& scratch : staging_scratches)
     {
-        std::shared_ptr<ff::dxgi::texture_view_base> view = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
-        textures.push_back(std::move(view));
+        auto shared_scratch = std::make_shared<DirectX::ScratchImage>(std::move(scratch));
+        textures.push_back(std::make_shared<ff::texture>(shared_scratch));
     }
 
     std::vector<ff::sprite> sprite_vector;
-    std::vector<const ff::sprite_base*> sprite_pointers;
     sprite_vector.reserve(sprite_infos.size());
-    sprite_pointers.reserve(sprite_infos.size());
 
     for (const sprite_info& info : sprite_infos)
     {
         sprite_vector.emplace_back("", textures[info.texture_index], info.pos, info.handle, ff::point_float(1, 1), ff::dxgi::sprite_type::unknown);
     }
 
-    for (const ff::sprite& sprite : sprite_vector)
-    {
-        sprite_pointers.push_back(&sprite);
-    }
-
-    this->sprites = std::make_shared<ff::sprite_list>(ff::internal::optimize_sprites(sprite_pointers, DXGI_FORMAT_BC2_UNORM, 1));
+    this->sprites = std::make_shared<ff::sprite_list>(ff::internal::optimize_sprites(sprite_vector, DXGI_FORMAT_BC2_UNORM, 1));
     if (this->sprites->size() != sprite_infos.size())
     {
         return false;
@@ -370,7 +363,7 @@ bool ff::sprite_font::init_sprites()
 
     if (this->outline_thickness)
     {
-        this->outline_sprites = std::make_shared<ff::sprite_list>(ff::internal::outline_sprites(sprite_pointers, DXGI_FORMAT_BC2_UNORM, 1));
+        this->outline_sprites = std::make_shared<ff::sprite_list>(ff::internal::outline_sprites(sprite_vector, DXGI_FORMAT_BC2_UNORM, 1));
         if (this->outline_sprites->size() != sprite_infos.size())
         {
             return false;

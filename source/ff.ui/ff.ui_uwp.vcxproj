@@ -74,20 +74,11 @@
     <ProjectReference Include="..\..\vendor\ff.vendor.noesis_interactivity_uwp.vcxproj">
       <Project>{7d54169c-9751-4157-9b9f-33fcf6c7b496}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
-      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.data\ff.data_uwp.vcxproj">
-      <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\ff.graphics\ff.graphics_uwp.vcxproj">
       <Project>{eabbdac6-970e-403e-a7c9-ecc410b2a040}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.input\ff.input_uwp.vcxproj">
       <Project>{f3f87d0d-69b7-4187-95b0-bfc0dd83e311}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.resource\ff.resource_uwp.vcxproj">
-      <Project>{aa32970a-8178-4979-8c52-ea30eebb77c9}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

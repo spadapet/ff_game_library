@@ -1,6 +1,11 @@
 #pragma once
 
-namespace ff
+#include "descriptor_range.h"
+#include "fence_value.h"
+#include "resource.h"
+#include "target_access.h"
+
+namespace ff::dx12
 {
     class target_window : public ff::dxgi::target_window_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {

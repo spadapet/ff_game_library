@@ -1,8 +1,6 @@
 #pragma once
 
 // FF
-#include <ff.base.h>
-#include <ff.data.h>
 #include <ff.resource.h>
 
 // Windows

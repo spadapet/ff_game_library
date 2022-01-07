@@ -4,6 +4,7 @@ namespace ff::graphics
 {
     IDWriteFactoryX* write_factory();
     IDWriteInMemoryFontFileLoader* write_font_loader();
+    const ff::dxgi::client_functions& client_functions();
 }
 
 namespace ff::graphics::defer
@@ -17,6 +18,6 @@ namespace ff::graphics::defer
 
 namespace ff::internal::graphics
 {
-    bool init();
+    bool init(const ff::dxgi::client_functions& client_functions);
     void destroy();
 }

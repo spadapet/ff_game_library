@@ -1,13 +1,17 @@
 #include "pch.h"
-#include "graphics.h"
+#include "commands.h"
+#include "descriptor_allocator.h"
+#include "device_reset_priority.h"
+#include "globals.h"
 #include "target_window.h"
 #include "texture_util.h"
+#include "queue.h"
 
-ff::target_window::target_window()
+ff::dx12::target_window::target_window()
     : target_window(ff::window::main())
 {}
 
-ff::target_window::target_window(ff::window* window)
+ff::dx12::target_window::target_window(ff::window* window)
     : window(window)
     , cached_size{}
     , main_window(ff::window::main() == window)
@@ -19,7 +23,7 @@ ff::target_window::target_window(ff::window* window)
     , full_screen_uwp(false)
 #endif
     , target_ready_event(ff::win_handle::create_event())
-    , target_views(ff::dx12::cpu_target_descriptors().alloc_range(ff::target_window::BACK_BUFFER_COUNT))
+    , target_views(ff::dx12::cpu_target_descriptors().alloc_range(ff::dx12::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
 {
     this->size(this->window->size());
@@ -28,11 +32,11 @@ ff::target_window::target_window(ff::window* window)
 
     if (this->main_window)
     {
-        ff::graphics::defer::set_full_screen_target(this);
+        ff::dx12::host_functions().full_screen_target(this);
     }
 }
 
-ff::target_window::~target_window()
+ff::dx12::target_window::~target_window()
 {
     ff::dx12::wait_for_idle();
 
@@ -41,41 +45,41 @@ ff::target_window::~target_window()
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
 
-    ff::graphics::defer::remove_target(this);
+    ff::dx12::host_functions().remove_target(this);
     ff::dx12::remove_device_child(this);
 }
 
-ff::target_window::operator bool() const
+ff::dx12::target_window::operator bool() const
 {
     return this->swap_chain && this->window;
 }
 
-DXGI_FORMAT ff::target_window::format() const
+DXGI_FORMAT ff::dx12::target_window::format() const
 {
     return DXGI_FORMAT_B8G8R8A8_UNORM;
 }
 
-ff::window_size ff::target_window::size() const
+ff::window_size ff::dx12::target_window::size() const
 {
     return this->cached_size;
 }
 
-ff::dx12::resource& ff::target_window::dx12_target_texture()
+ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
     return *this->target_textures[this->back_buffer_index];
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff::target_window::dx12_target_view()
+D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
     return this->target_views.cpu_handle(this->back_buffer_index);
 }
 
-void ff::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
+void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
 {
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-void ff::target_window::vsync()
+void ff::dx12::target_window::vsync()
 {
     if (*this)
     {
@@ -98,7 +102,7 @@ void ff::target_window::vsync()
     }
 }
 
-bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
@@ -117,7 +121,7 @@ bool ff::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
     return false;
 }
 
-bool ff::target_window::present()
+bool ff::dx12::target_window::present()
 {
     if (*this)
     {
@@ -137,55 +141,55 @@ bool ff::target_window::present()
     return false;
 }
 
-void ff::target_window::before_resize()
+void ff::dx12::target_window::before_resize()
 {
     ff::dx12::wait_for_idle();
     this->frame_latency_handle.close();
 
-    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
+    for (size_t i = 0; i < ff::dx12::target_window::BACK_BUFFER_COUNT; i++)
     {
         this->target_textures[i].reset();
         this->target_fence_values[i] = {};
     }
 }
 
-void ff::target_window::internal_reset()
+void ff::dx12::target_window::internal_reset()
 {
     this->before_resize();
     this->swap_chain.Reset();
 }
 
-ff::signal_sink<ff::dxgi::target_base*>& ff::target_window::render_presented()
+ff::signal_sink<ff::dxgi::target_base*>& ff::dx12::target_window::render_presented()
 {
     return this->render_presented_;
 }
 
-ff::dxgi::target_access_base& ff::target_window::target_access()
+ff::dxgi::target_access_base& ff::dx12::target_window::target_access()
 {
     return *this;
 }
 
-size_t ff::target_window::target_array_start() const
+size_t ff::dx12::target_window::target_array_start() const
 {
     return 0;
 }
 
-size_t ff::target_window::target_array_size() const
+size_t ff::dx12::target_window::target_array_size() const
 {
     return 1;
 }
 
-size_t ff::target_window::target_mip_start() const
+size_t ff::dx12::target_window::target_mip_start() const
 {
     return 0;
 }
 
-size_t ff::target_window::target_mip_size() const
+size_t ff::dx12::target_window::target_mip_size() const
 {
     return 1;
 }
 
-bool ff::target_window::size(const ff::window_size& size)
+bool ff::dx12::target_window::size(const ff::window_size& size)
 {
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.rotated_pixel_size().cast<UINT>();
@@ -212,7 +216,7 @@ bool ff::target_window::size(const ff::window_size& size)
         desc.Height = buffer_size.y;
         desc.Format = this->format();
         desc.SampleDesc.Count = 1;
-        desc.BufferCount = ff::target_window::BACK_BUFFER_COUNT;
+        desc.BufferCount = ff::dx12::target_window::BACK_BUFFER_COUNT;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -285,7 +289,7 @@ bool ff::target_window::size(const ff::window_size& size)
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
     this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
 
-    for (size_t i = 0; i < ff::target_window::BACK_BUFFER_COUNT; i++)
+    for (size_t i = 0; i < ff::dx12::target_window::BACK_BUFFER_COUNT; i++)
     {
         if (!this->target_textures[i])
         {
@@ -308,17 +312,17 @@ bool ff::target_window::size(const ff::window_size& size)
     return true;
 }
 
-ff::signal_sink<ff::window_size>& ff::target_window::size_changed()
+ff::signal_sink<ff::window_size>& ff::dx12::target_window::size_changed()
 {
     return this->size_changed_;
 }
 
-bool ff::target_window::allow_full_screen() const
+bool ff::dx12::target_window::allow_full_screen() const
 {
     return this->main_window;
 }
 
-bool ff::target_window::full_screen()
+bool ff::dx12::target_window::full_screen()
 {
     if (this->main_window && *this)
     {
@@ -340,7 +344,7 @@ bool ff::target_window::full_screen()
     return this->was_full_screen_on_close;
 }
 
-bool ff::target_window::full_screen(bool value)
+bool ff::dx12::target_window::full_screen(bool value)
 {
     if (this->main_window && *this && !value != !this->full_screen())
     {
@@ -365,7 +369,7 @@ bool ff::target_window::full_screen(bool value)
     return false;
 }
 
-bool ff::target_window::reset()
+bool ff::dx12::target_window::reset()
 {
     BOOL full_screen = FALSE;
     if (this->main_window && this->swap_chain)
@@ -390,21 +394,21 @@ bool ff::target_window::reset()
     return *this;
 }
 
-void ff::target_window::handle_message(ff::window_message& msg)
+void ff::dx12::target_window::handle_message(ff::window_message& msg)
 {
     switch (msg.msg)
     {
         case WM_ACTIVATE:
             if (LOWORD(msg.wp) == WA_INACTIVE && this->main_window)
             {
-                ff::graphics::defer::full_screen(false);
+                ff::dx12::host_functions().defer_full_screen(false);
             }
             break;
 
         case WM_SIZE:
             if (msg.wp != SIZE_MINIMIZED)
             {
-                ff::graphics::defer::resize_target(this, this->window->size());
+                ff::dx12::host_functions().defer_resize(this, this->window->size());
             }
             break;
 
@@ -426,14 +430,14 @@ void ff::target_window::handle_message(ff::window_message& msg)
         case WM_SYSKEYDOWN:
             if (this->main_window && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::graphics::defer::full_screen(!this->full_screen());
+                ff::dx12::host_functions().defer_full_screen(!this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }
             else if (this->main_window && msg.wp == VK_BACK)
             {
 #ifdef _DEBUG
-                ff::graphics::defer::validate_device(true);
+                ff::dx12::host_functions().defer_validate_device(true);
 #endif
             }
             break;
@@ -454,7 +458,7 @@ void ff::target_window::handle_message(ff::window_message& msg)
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
                 {
-                    ff::graphics::defer::resize_target(this, this->window->size());
+                    ff::dx12::host_functions().defer_resize(this, this->window->size());
                 }
             }
             break;

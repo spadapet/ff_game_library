@@ -7,7 +7,7 @@ namespace ff::test::graphics
     public:
         TEST_METHOD(target_texture)
         {
-            ff::dx12::target_texture target(std::make_shared<ff::texture>(ff::point_size(256, 256)));
+            ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
 
             Assert::IsTrue(target);
             Assert::IsTrue(target.format() == ff::dxgi::DEFAULT_FORMAT);
@@ -16,7 +16,7 @@ namespace ff::test::graphics
 
         TEST_METHOD(target_window)
         {
-            ff::target_window target;
+            ff::dx12::target_window target;
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());

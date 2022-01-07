@@ -9,12 +9,12 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
     DXGI_FORMAT format = srgb ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT;
 
     this->msaa_texture_ = std::make_shared<ff::texture>(size, format, 1, 1, samples);
-    this->msaa_target_ = std::make_shared<ff::dx12::target_texture>(this->msaa_texture_);
+    this->msaa_target_ = ff::graphics::client_functions().create_target_for_texture(this->msaa_texture_->dxgi_texture(), 0, 0, 0);
 
-    if (this->msaa_texture_->sample_count() > 1)
+    if (this->msaa_texture_->dxgi_texture()->sample_count() > 1)
     {
         this->resolved_texture_ = std::make_shared<ff::texture>(size, format);
-        this->resolved_target_ = std::make_shared<ff::dx12::target_texture>(this->resolved_texture_);
+        this->resolved_target_ = ff::graphics::client_functions().create_target_for_texture(this->resolved_texture_->dxgi_texture(), 0, 0, 0);
     }
     else
     {
@@ -26,7 +26,7 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
 
     if (needs_depth_stencil)
     {
-        this->depth_ = std::make_shared<ff::dx12::depth>(size, this->msaa_texture_->sample_count());
+        this->depth_ = std::make_shared<ff::dx12::depth>(size, this->msaa_texture_->dxgi_texture()->sample_count());
     }
 }
 
@@ -34,11 +34,13 @@ ff::internal::ui::render_target::render_target(const render_target& rhs, std::st
     : name_(name)
     , depth_(rhs.depth_)
 {
-    this->resolved_texture_ = std::make_shared<ff::texture>(rhs.resolved_texture_->size(), rhs.resolved_texture_->format());
-    this->resolved_target_ = std::make_shared<ff::dx12::target_texture>(this->resolved_texture_);
+    this->resolved_texture_ = std::make_shared<ff::texture>(
+        rhs.resolved_texture_->dxgi_texture()->size(),
+        rhs.resolved_texture_->dxgi_texture()->format());
+    this->resolved_target_ = ff::graphics::client_functions().create_target_for_texture(this->resolved_texture_->dxgi_texture(), 0, 0, 0);
     this->resolved_texture_wrapper = Noesis::MakePtr<ff::internal::ui::texture>(this->resolved_texture_, name);
 
-    if (rhs.msaa_texture_->sample_count() > 1)
+    if (rhs.msaa_texture_->dxgi_texture()->sample_count() > 1)
     {
         this->msaa_texture_ = rhs.msaa_texture_;
         this->msaa_target_ = rhs.msaa_target_;

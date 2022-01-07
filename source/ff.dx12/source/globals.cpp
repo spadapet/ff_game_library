@@ -12,6 +12,7 @@
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
+static const ff::dxgi::host_functions* host_functions;
 static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
 static size_t outputs_hash;
@@ -173,15 +174,18 @@ static bool init_d3d(bool for_reset)
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
 
-            D3D12_MESSAGE_ID hide_ids[] =
-            {
-                D3D12_MESSAGE_ID_CREATEPIPELINESTATE_CACHEDBLOBADAPTERMISMATCH,
-            };
-            
-            D3D12_INFO_QUEUE_FILTER filter{};
-            filter.DenyList.NumIDs = _countof(hide_ids);
-            filter.DenyList.pIDList = hide_ids;
-            info_queue->AddStorageFilterEntries(&filter);
+            //D3D12_MESSAGE_ID hide[] =
+            //{
+            //    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
+            //    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
+            //    D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
+            //};
+            //
+            //D3D12_INFO_QUEUE_FILTER filter;
+            //memset(&filter, 0, sizeof(filter));
+            //filter.DenyList.NumIDs = _countof(hide);
+            //filter.DenyList.pIDList = hide;
+            //info_queue->AddStorageFilterEntries(&filter);
         }
     }
 
@@ -270,12 +274,14 @@ static void destroy_d3d(bool for_reset)
     ::device.Reset();
 }
 
-bool ff::dx12::init_globals(D3D_FEATURE_LEVEL feature_level)
+bool ff::dx12::init_globals(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
 {
+    ::host_functions = &host_functions;
     ::feature_level = feature_level;
 
     assert_ret_val(::init_dxgi(), false);
     assert_ret_val(::init_d3d(false), false);
+
     return true;
 }
 
@@ -283,6 +289,9 @@ void ff::dx12::destroy_globals()
 {
     ::destroy_d3d(false);
     ::destroy_dxgi();
+
+    ::feature_level = {};
+    ::host_functions = {};
 }
 
 void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
@@ -422,6 +431,11 @@ bool ff::dx12::reset(bool force)
 
 void ff::dx12::trim()
 {}
+
+const ff::dxgi::host_functions& ff::dx12::host_functions()
+{
+    return *::host_functions;
+}
 
 D3D_FEATURE_LEVEL ff::dx12::feature_level()
 {

@@ -19,11 +19,11 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
             ff::init_ui init_ui(test_uwp::get_init_ui_params());
             ff::internal::ui::init_game_thread();
-            ff::target_window target;
-            ff::dx12::depth depth;
+            auto target = ff::graphics::client_functions().create_target_for_window({});
+            auto depth = ff::graphics::client_functions().create_depth({}, {});
             ff::ui_view view("overlay.xaml");
 
-            view.size(target);
+            view.size(*target);
             {
                 Noesis::Button* button = view.content()->FindName<Noesis::Button>("button");
                 Noesis::Storyboard* anim = view.content()->FindResource<Noesis::Storyboard>("RotateAnim");
@@ -53,11 +53,11 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 ff::ui::state_rendering();
                 view.pre_render();
 
-                target.pre_render(&bg_color);
-                view.render(target, depth);
+                target->pre_render(&bg_color);
+                view.render(*target, *depth);
 
                 ff::ui::state_rendered();
-                target.present();
+                target->present();
 
                 thread_dispatch.flush();
             }

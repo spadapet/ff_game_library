@@ -36,19 +36,19 @@ const std::shared_ptr<ff::texture>& ff::internal::ui::texture::internal_texture(
 uint32_t ff::internal::ui::texture::GetWidth() const
 {
     auto texture = this->internal_texture();
-    return static_cast<uint32_t>(texture ? texture->size().x : 0);
+    return static_cast<uint32_t>(texture ? texture->dxgi_texture()->size().x : 0);
 }
 
 uint32_t ff::internal::ui::texture::GetHeight() const
 {
     auto texture = this->internal_texture();
-    return static_cast<uint32_t>(texture ? texture->size().y : 0);
+    return static_cast<uint32_t>(texture ? texture->dxgi_texture()->size().y : 0);
 }
 
 bool ff::internal::ui::texture::HasMipMaps() const
 {
     auto texture = this->internal_texture();
-    return texture && texture->mip_count() > 1;
+    return texture && texture->dxgi_texture()->mip_count() > 1;
 }
 
 bool ff::internal::ui::texture::IsInverted() const
@@ -59,5 +59,5 @@ bool ff::internal::ui::texture::IsInverted() const
 bool ff::internal::ui::texture::HasAlpha() const
 {
     auto texture = this->internal_texture();
-    return ff::flags::has(texture->sprite_type(), ff::dxgi::sprite_type::transparent);
+    return ff::flags::has(texture->dxgi_texture()->sprite_type(), ff::dxgi::sprite_type::transparent);
 }

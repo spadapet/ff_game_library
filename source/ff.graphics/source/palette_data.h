@@ -21,7 +21,7 @@ namespace ff
 
         virtual size_t row_size() const override;
         virtual size_t row_hash(size_t index) const override;
-        virtual const std::shared_ptr<ff::dxgi::texture_base> texture() const override;
+        virtual const std::shared_ptr<ff::dxgi::texture_base>& texture() const override;
         virtual std::shared_ptr<ff::data_base> remap(std::string_view name) const override;
 
         // palette_base

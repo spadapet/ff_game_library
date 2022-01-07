@@ -36,6 +36,7 @@
     <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\draw_util.h" />
     <ClInclude Include="source\format_util.h" />
+    <ClInclude Include="source\interop.h" />
     <ClInclude Include="source\intrusive_list.h" />
     <ClInclude Include="source\matrix.h" />
     <ClInclude Include="source\matrix_stack.h" />
@@ -59,9 +60,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex_uwp.vcxproj">
       <Project>{57ae618b-7b0e-4f51-b623-d1b5b90d11c9}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.base\ff.base_uwp.vcxproj">
-      <Project>{ea1c6536-053d-4947-89ad-ce4fce4671c2}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.data\ff.data_uwp.vcxproj">
       <Project>{d8b24569-074b-41e2-9f23-094d2cc61fa4}</Project>

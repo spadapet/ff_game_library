@@ -57,7 +57,7 @@ bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
     std::vector<const ff::texture*> textures;
     for (auto& sprite : this->sprites)
     {
-        const ff::texture* texture = &ff::texture::get(*sprite.sprite_data().view()->view_texture());
+        const ff::texture* texture = sprite.texture().get();
         if (std::find(textures.cbegin(), textures.cend(), texture) == textures.cend())
         {
             textures.push_back(texture);
@@ -90,8 +90,8 @@ bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
             ff::data_writer writer(sprite_bytes);
             for (auto& sprite : this->sprites)
             {
+                size_t texture_index = std::find(textures.cbegin(), textures.cend(), sprite.texture().get()) - textures.cbegin();
                 const ff::dxgi::sprite_data& sprite_data = sprite.sprite_data();
-                size_t texture_index = std::find(textures.cbegin(), textures.cend(), sprite_data.view()->view_texture()) - textures.cbegin();
 
                 ff::save(writer, texture_index);
                 ff::save(writer, sprite.name());
@@ -132,7 +132,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
     }
 
     ff::dict sprites_dict = dict.get<ff::dict>("sprites");
-    std::unordered_map<std::wstring, std::shared_ptr<ff::dxgi::texture_view_base>> texture_views;
+    std::unordered_map<std::wstring, std::shared_ptr<ff::texture>> texture_views;
     std::vector<ff::sprite> sprites;
 
     for (auto& sprite_iter : sprites_dict)
@@ -159,7 +159,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         ff::point_float scale = sprite_dict.get<ff::point_float>("scale", ff::point_float(1, 1));
         size_t repeat = sprite_dict.get<size_t>("repeat", 1);
 
-        std::shared_ptr<ff::dxgi::texture_view_base> texture_view;
+        std::shared_ptr<ff::texture> texture_view;
         auto iter = texture_views.find(full_file.native());
         if (iter != texture_views.cend())
         {
@@ -185,7 +185,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
         if (size == ff::point_float{} && handle == ff::point_float{})
         {
-            size = texture_view->view_texture()->size().cast<float>();
+            size = texture_view->dxgi_texture()->size().cast<float>();
         }
 
         if (size.x < 1 || size.y < 1)
@@ -211,19 +211,10 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
     if (optimize)
     {
-        std::vector<const ff::sprite_base*> sprite_pointers;
-        sprite_pointers.reserve(sprites.size());
-
-        for (auto& sprite : sprites)
-        {
-            sprite_pointers.push_back(&sprite);
-        }
-
-        std::vector<ff::sprite> new_sprites = ff::internal::optimize_sprites(sprite_pointers, format, mip_count);
+        std::vector<ff::sprite> new_sprites = ff::internal::optimize_sprites(sprites, format, mip_count);
         if (new_sprites.size() != sprites.size())
         {
-            assert(false);
-            return nullptr;
+            debug_fail_ret_val(nullptr);
         }
 
         std::swap(sprites, new_sprites);
@@ -234,7 +225,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
 
 std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::load_from_cache(const ff::dict& dict) const
 {
-    std::vector<std::shared_ptr<ff::dxgi::texture_view_base>> texture_views;
+    std::vector<std::shared_ptr<ff::texture>> texture_views;
     {
         std::vector<ff::value_ptr> texture_values = dict.get<std::vector<ff::value_ptr>>("textures");
         texture_views.reserve(texture_values.size());
@@ -242,12 +233,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         for (auto& value : texture_values)
         {
             std::shared_ptr<ff::texture> texture = std::dynamic_pointer_cast<ff::texture>(value->get<ff::resource_object_base>());
-            if (!texture)
-            {
-                assert(false);
-                return nullptr;
-            }
-
+            assert_ret_val(texture, nullptr);
             texture_views.push_back(texture);
         }
     }
@@ -280,7 +266,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
                 texture_index < texture_views.size())
             {
                 auto& view = texture_views[texture_index];
-                sprites.emplace_back(std::move(name), view, ff::dxgi::sprite_data(view.get(), texture_uv, world, type));
+                sprites.emplace_back(std::move(name), view, ff::dxgi::sprite_data(view->dxgi_texture().get(), texture_uv, world, type));
             }
             else
             {

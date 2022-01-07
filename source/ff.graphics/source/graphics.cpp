@@ -22,6 +22,7 @@ namespace
 
 static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
 static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> write_font_loader;
+static const ff::dxgi::client_functions* client_functions;
 
 static std::mutex graphics_mutex;
 static ff::dxgi::target_window_base* defer_full_screen_target;
@@ -43,8 +44,10 @@ static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> create_write_font_l
         ? write_font_loader : nullptr;
 }
 
-bool ff::internal::graphics::init()
+bool ff::internal::graphics::init(const ff::dxgi::client_functions& client_functions)
 {
+    ::client_functions = &client_functions;
+
     if (!(::write_factory = ::create_write_factory()) ||
         !(::write_font_loader = ::create_write_font_loader()))
     {
@@ -59,6 +62,7 @@ void ff::internal::graphics::destroy()
 {
     ::write_font_loader.Reset();
     ::write_factory.Reset();
+    ::client_functions = nullptr;
 }
 
 IDWriteFactoryX* ff::graphics::write_factory()
@@ -69,6 +73,11 @@ IDWriteFactoryX* ff::graphics::write_factory()
 IDWriteInMemoryFontFileLoader* ff::graphics::write_font_loader()
 {
     return ::write_font_loader.Get();
+}
+
+const ff::dxgi::client_functions& ff::graphics::client_functions()
+{
+    return *::client_functions;
 }
 
 static void flush_graphics_commands()
@@ -95,7 +104,7 @@ static void flush_graphics_commands()
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
             lock.unlock();
 
-            ff::dx12::reset(force);
+            ff::graphics::client_functions().reset_device(force);
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {
