@@ -23,7 +23,7 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool frame_started(const DirectX::XMFLOAT4* clear_color) override;
         virtual bool present() override;
         virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
         virtual ff::dxgi::target_access_base& target_access() override;

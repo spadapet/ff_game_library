@@ -313,6 +313,11 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
     ::removed_device_child_signal.notify(child);
 }
 
+const ff::dxgi::host_functions& ff::dxgi_host()
+{
+    return *::host_functions;
+}
+
 bool ff::dx12::reset(bool force)
 {
     if (!::factory->IsCurrent())
@@ -430,11 +435,8 @@ bool ff::dx12::reset(bool force)
 }
 
 void ff::dx12::trim()
-{}
-
-const ff::dxgi::host_functions& ff::dx12::host_functions()
 {
-    return *::host_functions;
+    ff::dx12::wait_for_idle();
 }
 
 D3D_FEATURE_LEVEL ff::dx12::feature_level()
@@ -492,10 +494,15 @@ size_t ff::dx12::frame_count()
     return ::frame_count;
 }
 
-ff::dx12::commands& ff::dx12::frame_started()
+ff::dx12::commands& ff::dx12::frame_started(ff::dxgi::target_window_base* target)
 {
     ::flush_keep_alive();
     ::update_video_memory_info();
+
+    if (target)
+    {
+        target->wait_for_render_ready();
+    }
 
     assert(!::frame_commands);
     return *(::frame_commands = ff::dx12::direct_queue().new_commands());

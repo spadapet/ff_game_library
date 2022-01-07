@@ -32,6 +32,10 @@ ff::thread_pool::~thread_pool()
     }
 
     this->flush();
+    {
+        // Tasks may still own the lock for a short time, wait for them to release it
+        std::scoped_lock lock(this->mutex);
+    }
 
     if (::main_thread_pool == this)
     {

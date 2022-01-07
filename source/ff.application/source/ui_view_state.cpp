@@ -38,7 +38,7 @@ void ff::ui_view_state::render(ff::dxgi::target_base& target, ff::dxgi::depth_ba
 
 void ff::ui_view_state::frame_rendering(ff::state::advance_t type)
 {
-    this->view_->pre_render();
+    this->view_->frame_started();
 }
 
 ff::state::cursor_t ff::ui_view_state::cursor()

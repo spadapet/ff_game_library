@@ -1,5 +1,10 @@
 #pragma once
 
+namespace ff
+{
+    const ff::dxgi::host_functions& dxgi_host();
+}
+
 namespace ff::dx12
 {
     class commands;
@@ -16,7 +21,6 @@ namespace ff::dx12
 
     bool reset(bool force);
     void trim();
-    const ff::dxgi::host_functions& host_functions();
 
     D3D_FEATURE_LEVEL feature_level();
     IDXGIFactoryX* factory();
@@ -29,7 +33,7 @@ namespace ff::dx12
     bool supports_create_heap_not_resident();
 
     size_t frame_count();
-    ff::dx12::commands& frame_started();
+    ff::dx12::commands& frame_started(ff::dxgi::target_window_base* target = nullptr);
     ff::dx12::commands& frame_commands();
     void frame_complete();
     void wait_for_idle();

@@ -48,7 +48,7 @@ namespace ff
         ff::auto_resource<ff::sprite_font> font;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
-        std::unique_ptr<ff::dx12::draw_device> draw_device;
+        std::unique_ptr<ff::dxgi::draw_device_base> draw_device;
 
         ff::memory::allocation_stats mem_stats;
         size_t total_advance_count;

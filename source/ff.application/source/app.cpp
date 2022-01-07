@@ -57,8 +57,8 @@ static ff::state_wrapper game_state;
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
-static std::unique_ptr<ff::dxgi::target_window_base> target;
-static std::unique_ptr<ff::dxgi::depth_base> depth;
+static std::shared_ptr<ff::dxgi::target_window_base> target;
+static std::shared_ptr<ff::dxgi::depth_base> depth;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
@@ -238,17 +238,15 @@ static void frame_advance_and_render()
         }
     }
 
-    ff::dx12::frame_started();
-
     DirectX::XMFLOAT4 clear_color;
     const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func
         ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
         : &ff::dxgi::color_black();
 
-    ::target->vsync();
+    ff::dxgi_client().frame_started(::target.get());
     ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
-    bool valid = ::target->pre_render(clear_color2);
+    bool valid = ::target->frame_started(clear_color2);
     if (valid)
     {
         ::frame_render(advance_type);
@@ -256,7 +254,7 @@ static void frame_advance_and_render()
         ::frame_presented();
     }
 
-    ff::dx12::frame_complete();
+    ff::dxgi_client().frame_complete();
 
     if (!valid)
     {
@@ -324,7 +322,7 @@ static void pause_game_state()
     {
         ::game_thread_state = ::game_thread_state_t::paused;
         ff::internal::app::request_save_settings();
-        ff::dx12::trim();
+        ff::dxgi_client().trim_device();
     }
 }
 
@@ -585,8 +583,8 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::app_time.time_scale = 1.0;
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
-    ::target = std::make_unique<ff::dx12::target_window>(ff::window::main());
-    ::depth = std::make_unique<ff::dx12::depth>(::target->size().pixel_size);
+    ::target = ff::dxgi_client().create_target_for_window(ff::window::main());
+    ::depth = ff::dxgi_client().create_depth(::target->size().pixel_size, 0);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);

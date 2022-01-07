@@ -1,5 +1,10 @@
 #pragma once
 
+namespace ff
+{
+    const ff::dxgi::client_functions& dxgi_client();
+}
+
 namespace ff::graphics
 {
     IDWriteFactoryX* write_factory();

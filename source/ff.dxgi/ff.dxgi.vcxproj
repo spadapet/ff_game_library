@@ -14,6 +14,7 @@
     <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\device_child_base.cpp" />
     <ClCompile Include="source\draw_base.cpp" />
+    <ClCompile Include="source\draw_device_base.cpp" />
     <ClCompile Include="source\draw_ptr.cpp" />
     <ClCompile Include="source\draw_util.cpp" />
     <ClCompile Include="source\format_util.cpp" />
@@ -33,6 +34,7 @@
     <ClInclude Include="source\depth_base.h" />
     <ClInclude Include="source\device_child_base.h" />
     <ClInclude Include="source\draw_base.h" />
+    <ClInclude Include="source\draw_device_base.h" />
     <ClInclude Include="source\draw_ptr.h" />
     <ClInclude Include="source\draw_util.h" />
     <ClInclude Include="source\format_util.h" />

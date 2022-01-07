@@ -218,7 +218,7 @@ namespace
         std::array<Microsoft::WRL::ComPtr<ID3D12PipelineStateX>, static_cast<size_t>(state_t::count)> pipeline_states;
     };
 
-    class dx12_draw_device : public ff::dxgi::draw_util::draw_device_base, public ff::dx12::draw_device
+    class dx12_draw_device : public ff::dxgi::draw_util::draw_device_base, public ff::dxgi::draw_device_base
     {
     public:
         dx12_draw_device()
@@ -629,12 +629,7 @@ namespace
     };
 }
 
-std::unique_ptr<ff::dx12::draw_device> ff::dx12::draw_device::create()
+std::unique_ptr<ff::dxgi::draw_device_base> ff::dx12::create_draw_device()
 {
     return std::make_unique<::dx12_draw_device>();
-}
-
-ff::dxgi::draw_ptr ff::dx12::draw_device::begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_fixed& view_rect, const ff::rect_fixed& world_rect, ff::dxgi::draw_options options)
-{
-    return this->begin_draw(target, depth, std::floor(view_rect).cast<float>(), std::floor(world_rect).cast<float>(), options);
 }

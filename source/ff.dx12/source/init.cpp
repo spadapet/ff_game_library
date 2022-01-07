@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "commands.h"
 #include "depth.h"
+#include "draw_device.h"
 #include "globals.h"
 #include "init.h"
 #include "target_texture.h"
@@ -34,6 +35,11 @@ static int init_refs;
 static std::unique_ptr<::one_time_init> init_data;
 static std::mutex init_mutex;
 
+ff::dxgi::command_context_base& frame_context()
+{
+    return ff::dx12::frame_commands();
+}
+
 std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
 {
     return std::make_shared<ff::dx12::texture>(size, format, mip_count, array_size, sample_count, optimized_clear_color);
@@ -63,11 +69,6 @@ std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(const std::shar
     return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level);
 }
 
-ff::dxgi::command_context_base& frame_context()
-{
-    return ff::dx12::frame_commands();
-}
-
 ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
     : client_functions_
 {
@@ -82,6 +83,7 @@ ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE
     ::create_depth,
     ::create_target_for_window,
     ::create_target_for_texture,
+    ff::dx12::create_draw_device,
 }
 {
     std::scoped_lock lock(::init_mutex);

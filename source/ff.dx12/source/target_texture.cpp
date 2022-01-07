@@ -49,7 +49,7 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_texture::pre_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_texture::frame_started(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {

@@ -11,12 +11,6 @@ namespace ff::dxgi
     struct pixel_transform;
     struct transform;
 
-    enum class draw_options
-    {
-        none = 0x00,
-        pre_multiplied_alpha = 0x01,
-    };
-
     class draw_base
     {
     public:

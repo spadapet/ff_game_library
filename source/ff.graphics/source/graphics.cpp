@@ -65,6 +65,11 @@ void ff::internal::graphics::destroy()
     ::client_functions = nullptr;
 }
 
+const ff::dxgi::client_functions& ff::dxgi_client()
+{
+    return *::client_functions;
+}
+
 IDWriteFactoryX* ff::graphics::write_factory()
 {
     return ::write_factory.Get();
@@ -73,11 +78,6 @@ IDWriteFactoryX* ff::graphics::write_factory()
 IDWriteInMemoryFontFileLoader* ff::graphics::write_font_loader()
 {
     return ::write_font_loader.Get();
-}
-
-const ff::dxgi::client_functions& ff::graphics::client_functions()
-{
-    return *::client_functions;
 }
 
 static void flush_graphics_commands()
@@ -104,7 +104,7 @@ static void flush_graphics_commands()
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
             lock.unlock();
 
-            ff::graphics::client_functions().reset_device(force);
+            ff::dxgi_client().reset_device(force);
         }
         else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
         {

@@ -8,6 +8,7 @@
 #include "../source/ff.dxgi/source/depth_base.h"
 #include "../source/ff.dxgi/source/device_child_base.h"
 #include "../source/ff.dxgi/source/draw_base.h"
+#include "../source/ff.dxgi/source/draw_device_base.h"
 #include "../source/ff.dxgi/source/draw_ptr.h"
 #include "../source/ff.dxgi/source/draw_util.h"
 #include "../source/ff.dxgi/source/format_util.h"

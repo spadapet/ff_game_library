@@ -22,7 +22,7 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool pre_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool frame_started(const DirectX::XMFLOAT4* clear_color) override;
         virtual bool present() override;
         virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
         virtual ff::dxgi::target_access_base& target_access() override;
@@ -40,7 +40,7 @@ namespace ff::dx12
         // target_window_base
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
-        virtual void vsync() override;
+        virtual void wait_for_render_ready() override;
         virtual bool allow_full_screen() const override;
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;

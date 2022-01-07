@@ -11,7 +11,7 @@ namespace ff
 
         void destroy();
         virtual void advance();
-        virtual void pre_render();
+        virtual void frame_started();
         virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_float* view_rect = nullptr);
 
         Noesis::IView* internal_view() const;

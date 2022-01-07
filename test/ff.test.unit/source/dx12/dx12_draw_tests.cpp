@@ -8,7 +8,7 @@ namespace ff::test::dx12
     public:
         TEST_METHOD(noop_draw)
         {
-            auto dd = ff::dx12::draw_device::create();
+            auto dd = ff::dxgi_client().create_draw_device();
             Assert::IsTrue(dd->valid());
 
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(32, 32)));
@@ -35,12 +35,12 @@ namespace ff::test::dx12
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
 
             ff::dx12::frame_started();
-            target.pre_render(&clear_color);
+            target.frame_started(&clear_color);
 
             // Draw
             {
                 ff::dx12::depth depth;
-                std::unique_ptr<ff::dx12::draw_device> draw_device = ff::dx12::draw_device::create();
+                std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi_client().create_draw_device();
                 ff::dxgi::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
 
                 std::array<DirectX::XMFLOAT4, 4> rectangle_colors

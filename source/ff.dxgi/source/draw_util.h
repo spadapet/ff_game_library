@@ -15,6 +15,8 @@ namespace ff::dxgi
     class target_base;
     class texture_base;
     class texture_view_base;
+
+    enum class draw_options;
 }
 
 namespace ff::dxgi::draw_util

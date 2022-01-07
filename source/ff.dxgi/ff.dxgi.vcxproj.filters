@@ -41,6 +41,9 @@
     <ClCompile Include="source\draw_util.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\draw_device_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -132,6 +135,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\interop.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\draw_device_base.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

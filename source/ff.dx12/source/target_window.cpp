@@ -32,7 +32,7 @@ ff::dx12::target_window::target_window(ff::window* window)
 
     if (this->main_window)
     {
-        ff::dx12::host_functions().full_screen_target(this);
+        ff::dxgi_host().full_screen_target(this);
     }
 }
 
@@ -45,7 +45,7 @@ ff::dx12::target_window::~target_window()
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
 
-    ff::dx12::host_functions().remove_target(this);
+    ff::dxgi_host().remove_target(this);
     ff::dx12::remove_device_child(this);
 }
 
@@ -79,7 +79,7 @@ void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, con
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-void ff::dx12::target_window::vsync()
+void ff::dx12::target_window::wait_for_render_ready()
 {
     if (*this)
     {
@@ -102,7 +102,7 @@ void ff::dx12::target_window::vsync()
     }
 }
 
-bool ff::dx12::target_window::pre_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_window::frame_started(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
@@ -401,14 +401,14 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_ACTIVATE:
             if (LOWORD(msg.wp) == WA_INACTIVE && this->main_window)
             {
-                ff::dx12::host_functions().defer_full_screen(false);
+                ff::dxgi_host().defer_full_screen(false);
             }
             break;
 
         case WM_SIZE:
             if (msg.wp != SIZE_MINIMIZED)
             {
-                ff::dx12::host_functions().defer_resize(this, this->window->size());
+                ff::dxgi_host().defer_resize(this, this->window->size());
             }
             break;
 
@@ -430,14 +430,14 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_SYSKEYDOWN:
             if (this->main_window && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::dx12::host_functions().defer_full_screen(!this->full_screen());
+                ff::dxgi_host().defer_full_screen(!this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }
             else if (this->main_window && msg.wp == VK_BACK)
             {
 #ifdef _DEBUG
-                ff::dx12::host_functions().defer_validate_device(true);
+                ff::dxgi_host().defer_validate_device(true);
 #endif
             }
             break;
@@ -458,7 +458,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
                 {
-                    ff::dx12::host_functions().defer_resize(this, this->window->size());
+                    ff::dxgi_host().defer_resize(this, this->window->size());
                 }
             }
             break;

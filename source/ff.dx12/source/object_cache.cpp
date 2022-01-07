@@ -297,7 +297,7 @@ D3D12_SHADER_BYTECODE ff::dx12::object_cache::shader(const std::string& name)
     auto i = this->shaders.find(name);
     if (i == this->shaders.end())
     {
-        auto shader_data = ff::dx12::host_functions().shader_data(name);
+        auto shader_data = ff::dxgi_host().shader_data(name);
         if (shader_data)
         {
             i = this->shaders.try_emplace(name, shader_data).first;

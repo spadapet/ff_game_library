@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "buffer_base.h"
 #include "depth_base.h"
+#include "draw_device_base.h"
 #include "draw_util.h"
 #include "format_util.h"
 #include "matrix.h"

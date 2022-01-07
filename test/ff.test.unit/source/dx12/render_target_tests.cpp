@@ -24,7 +24,7 @@ namespace ff::test::graphics
             Assert::IsFalse(target.full_screen());
 
             ff::dx12::frame_started();
-            Assert::IsTrue(target.pre_render(&ff::dxgi::color_magenta()));
+            Assert::IsTrue(target.frame_started(&ff::dxgi::color_magenta()));
             Assert::IsTrue(target.present());
             ff::dx12::frame_complete();
 
@@ -32,7 +32,7 @@ namespace ff::test::graphics
             Assert::IsTrue(target.dx12_target_texture());
 
             ff::dx12::frame_started();
-            Assert::IsTrue(target.pre_render(&ff::dxgi::color_yellow()));
+            Assert::IsTrue(target.frame_started(&ff::dxgi::color_yellow()));
             Assert::IsTrue(target.present());
             ff::dx12::frame_complete();
         }

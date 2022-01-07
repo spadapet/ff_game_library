@@ -21,7 +21,7 @@ namespace ff::dxgi
     {
         std::function<bool(bool force)> reset_device;
         std::function<void()> trim_device;
-        std::function<void()> frame_started;
+        std::function<void(ff::dxgi::target_window_base*)> frame_started;
         std::function<void()> frame_complete;
         std::function<void()> wait_for_idle;
         std::function<ff::dxgi::command_context_base&()> frame_context;
@@ -30,5 +30,6 @@ namespace ff::dxgi
         std::function<std::shared_ptr<ff::dxgi::depth_base>(ff::point_size size, size_t sample_count)> create_depth;
         std::function<std::shared_ptr<ff::dxgi::target_window_base>(ff::window*)> create_target_for_window;
         std::function<std::shared_ptr<ff::dxgi::target_base>(const std::shared_ptr<ff::dxgi::texture_base>&, size_t array_start, size_t array_count, size_t mip_level)> create_target_for_texture;
+        std::function<std::unique_ptr<ff::dxgi::draw_device_base>()> create_draw_device;
     };
 }

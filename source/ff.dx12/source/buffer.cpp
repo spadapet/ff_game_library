@@ -260,12 +260,11 @@ bool ff::dx12::buffer::reset()
 
 ff::dx12::buffer_upload::buffer_upload(ff::dxgi::buffer_type type)
     : type_(type)
-    , version_(0)
 {}
 
 bool ff::dx12::buffer_upload::valid() const
 {
-    return this->mem_range;
+    return this->mem_gpu_address != 0 && this->mem_size > 0;
 }
 
 size_t ff::dx12::buffer_upload::version() const
@@ -275,7 +274,7 @@ size_t ff::dx12::buffer_upload::version() const
 
 D3D12_VERTEX_BUFFER_VIEW ff::dx12::buffer_upload::vertex_view(size_t vertex_stride, uint64_t start_offset, size_t vertex_count) const
 {
-    if (this->mem_range)
+    if (this->valid())
     {
         assert(this->type_ == ff::dxgi::buffer_type::vertex);
 
@@ -292,7 +291,7 @@ D3D12_VERTEX_BUFFER_VIEW ff::dx12::buffer_upload::vertex_view(size_t vertex_stri
 
 D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t count, DXGI_FORMAT format) const
 {
-    if (this->mem_range)
+    if (this->valid())
     {
         assert(this->type_ == ff::dxgi::buffer_type::index);
 
@@ -308,12 +307,12 @@ D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_upload::index_view(size_t start, size_t
 
 D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_upload::gpu_address() const
 {
-    return this->mem_range ? this->mem_range.gpu_data() : 0;
+    return this->mem_gpu_address;
 }
 
 ff::dx12::residency_data* ff::dx12::buffer_upload::residency_data()
 {
-    return this->mem_range.residency_data();
+    return this->mem_residency_data;
 }
 
 ff::dxgi::buffer_type ff::dx12::buffer_upload::type() const
@@ -323,7 +322,7 @@ ff::dxgi::buffer_type ff::dx12::buffer_upload::type() const
 
 size_t ff::dx12::buffer_upload::size() const
 {
-    return this->mem_range ? this->mem_range.size() : 0;
+    return this->mem_size;
 }
 
 bool ff::dx12::buffer_upload::writable() const
@@ -345,16 +344,25 @@ bool ff::dx12::buffer_upload::update(ff::dxgi::command_context_base& context, co
 
 void* ff::dx12::buffer_upload::map(ff::dxgi::command_context_base& context, size_t size)
 {
+    this->version_ = (this->version_ + 1) ? this->version_ + 1 : 1;
+
     if (size)
     {
         ff::dx12::commands& commands = ff::dx12::commands::get(context);
-        this->mem_range = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
-        this->version_ = (this->version_ + 1) ? this->version_ + 1 : 1;
-        return this->mem_range.cpu_data();
+        ff::dx12::mem_range mem = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
+
+        this->mem_residency_data = mem.residency_data();
+        this->mem_gpu_address = mem.gpu_data();
+        this->mem_size = mem.size();
+
+        return mem.cpu_data();
     }
     else
     {
-        this->mem_range = {};
+        this->mem_residency_data = nullptr;
+        this->mem_gpu_address = 0;
+        this->mem_size = 0;
+
         return nullptr;
     }
 }

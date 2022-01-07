@@ -55,7 +55,7 @@ ff::debug_state::debug_state()
     , debug_page(0)
     , font("ff.debug_font")
     , input_mapping("ff.debug_page_input")
-    , draw_device(ff::dx12::draw_device::create())
+    , draw_device(ff::dxgi_client().create_draw_device())
     , mem_stats{}
     , total_advance_count(0)
     , total_render_count(0)

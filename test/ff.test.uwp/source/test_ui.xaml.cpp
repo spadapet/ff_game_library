@@ -19,8 +19,8 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
             ff::init_ui init_ui(test_uwp::get_init_ui_params());
             ff::internal::ui::init_game_thread();
-            auto target = ff::graphics::client_functions().create_target_for_window({});
-            auto depth = ff::graphics::client_functions().create_depth({}, {});
+            auto target = ff::dxgi_client().create_target_for_window({});
+            auto depth = ff::dxgi_client().create_depth({}, {});
             ff::ui_view view("overlay.xaml");
 
             view.size(*target);
@@ -50,14 +50,14 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 ff::ui::state_advance_input();
                 view.advance();
 
+                ff::dxgi_client().frame_started(target.get());
                 ff::ui::state_rendering();
-                view.pre_render();
-
-                target->pre_render(&bg_color);
+                view.frame_started();
+                target->frame_started(&bg_color);
                 view.render(*target, *depth);
-
                 ff::ui::state_rendered();
                 target->present();
+                ff::dxgi_client().frame_complete();
 
                 thread_dispatch.flush();
             }

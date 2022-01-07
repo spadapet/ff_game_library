@@ -8,18 +8,18 @@
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     auto data = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
-    this->assign(ff::graphics::client_functions().create_static_texture(data, ff::dxgi::sprite_type::unknown));
+    this->assign(ff::dxgi_client().create_static_texture(data, ff::dxgi::sprite_type::unknown));
 }
 
 ff::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
 {
-    this->assign(ff::graphics::client_functions().create_render_texture(size, format, mip_count, array_size, sample_count, optimized_clear_color));
+    this->assign(ff::dxgi_client().create_render_texture(size, format, mip_count, array_size, sample_count, optimized_clear_color));
 }
 
 ff::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, const std::shared_ptr<DirectX::ScratchImage>& palette, ff::dxgi::sprite_type sprite_type)
     : palette_(palette)
 {
-    this->assign(ff::graphics::client_functions().create_static_texture(data, sprite_type));
+    this->assign(ff::dxgi_client().create_static_texture(data, sprite_type));
 }
 
 ff::texture::texture(const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture)
@@ -39,7 +39,7 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
         if (new_data)
         {
             sprite_type = (new_data == other_data) ? other.dxgi_texture_->sprite_type() : ff::dxgi::get_sprite_type(*new_data);
-            this->assign(ff::graphics::client_functions().create_static_texture(new_data, sprite_type));
+            this->assign(ff::dxgi_client().create_static_texture(new_data, sprite_type));
         }
     }
 

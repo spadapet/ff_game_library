@@ -208,7 +208,7 @@ void ff::ui_view::advance()
     }
 }
 
-void ff::ui_view::pre_render()
+void ff::ui_view::frame_started()
 {
     ff::internal::ui::global_render_device()->render_begin(nullptr, nullptr, nullptr);
     this->internal_view_->GetRenderer()->RenderOffscreen();

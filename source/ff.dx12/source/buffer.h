@@ -123,9 +123,11 @@ namespace ff::dx12
         virtual void unmap() override;
 
     private:
-        ff::dx12::mem_range mem_range;
         ff::dxgi::buffer_type type_;
-        size_t version_;
+        ff::dx12::residency_data* mem_residency_data{};
+        D3D12_GPU_VIRTUAL_ADDRESS mem_gpu_address{};
+        size_t mem_size{};
+        size_t version_{};
     };
 
     /// <summary>
