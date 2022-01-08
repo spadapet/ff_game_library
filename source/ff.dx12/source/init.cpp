@@ -53,8 +53,8 @@ std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_
 std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count)
 {
     return size
-        ? std::make_shared<ff::dx12::depth>(sample_count)
-        : std::make_shared<ff::dx12::depth>(size, sample_count);
+        ? std::make_shared<ff::dx12::depth>(size, sample_count)
+        : std::make_shared<ff::dx12::depth>(sample_count);
 }
 
 std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window)
