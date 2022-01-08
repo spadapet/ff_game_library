@@ -505,7 +505,11 @@ ff::dx12::commands& ff::dx12::frame_started(ff::dxgi::target_window_base* target
     }
 
     assert(!::frame_commands);
-    return *(::frame_commands = ff::dx12::direct_queue().new_commands());
+    ::frame_commands = ff::dx12::direct_queue().new_commands();
+
+    ff::dxgi_host().frame_started();
+
+    return *::frame_commands;
 }
 
 ff::dx12::commands& ff::dx12::frame_commands()
@@ -519,6 +523,7 @@ void ff::dx12::frame_complete()
     assert(::frame_commands);
     ::frame_commands.reset();
     ::frame_complete_signal.notify(++::frame_count);
+    ff::dxgi_host().frame_complete();
 }
 
 void ff::dx12::wait_for_idle()

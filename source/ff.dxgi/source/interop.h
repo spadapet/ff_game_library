@@ -8,6 +8,8 @@ namespace ff::dxgi
 
     struct host_functions
     {
+        std::function<void()> frame_started;
+        std::function<void()> frame_complete;
         std::function<void(ff::dxgi::target_window_base*)> full_screen_target;
         std::function<void(ff::dxgi::target_window_base*)> remove_target;
         std::function<void(ff::dxgi::target_window_base*, const ff::window_size&)> defer_resize;

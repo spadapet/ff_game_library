@@ -25,4 +25,6 @@ namespace ff::internal::graphics
 {
     bool init(const ff::dxgi::client_functions& client_functions);
     void destroy();
+    void frame_started();
+    void frame_complete();
 }

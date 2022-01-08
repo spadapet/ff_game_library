@@ -120,9 +120,12 @@ static void flush_graphics_commands()
     }
 }
 
-static void post_flush_graphics_commands()
+void ff::internal::graphics::frame_started()
+{}
+
+void ff::internal::graphics::frame_complete()
 {
-    ff::thread_dispatch::get_game()->post(::flush_graphics_commands);
+    ::flush_graphics_commands();
 }
 
 void ff::graphics::defer::set_full_screen_target(ff::dxgi::target_window_base* target)
@@ -178,8 +181,6 @@ void ff::graphics::defer::resize_target(ff::dxgi::target_window_base* target, co
         {
             ::defer_sizes.push_back(std::make_pair(target, size));
         }
-
-        ::post_flush_graphics_commands();
     }
 }
 
@@ -190,8 +191,6 @@ void ff::graphics::defer::validate_device(bool force)
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
         force ? ::defer_flags_t::validate_force : ::defer_flags_t::validate_check);
-
-    ::post_flush_graphics_commands();
 }
 
 void ff::graphics::defer::full_screen(bool value)
@@ -201,6 +200,4 @@ void ff::graphics::defer::full_screen(bool value)
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
         value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
-
-    ::post_flush_graphics_commands();
 }

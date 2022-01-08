@@ -57,6 +57,8 @@ static const ff::dxgi::host_functions& get_dxgi_host_functions()
 {
     static ff::dxgi::host_functions host_functions
     {
+        ff::internal::graphics::frame_started,
+        ff::internal::graphics::frame_complete,
         ff::graphics::defer::set_full_screen_target,
         ff::graphics::defer::remove_target,
         ff::graphics::defer::resize_target,

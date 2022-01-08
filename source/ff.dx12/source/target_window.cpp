@@ -51,7 +51,7 @@ ff::dx12::target_window::~target_window()
 
 ff::dx12::target_window::operator bool() const
 {
-    return this->swap_chain && this->window;
+    return this->swap_chain && this->window && this->target_textures[this->back_buffer_index];
 }
 
 DXGI_FORMAT ff::dx12::target_window::format() const
