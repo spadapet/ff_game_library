@@ -50,13 +50,14 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 ff::ui::state_advance_input();
                 view.advance();
 
-                ff::dxgi_client().frame_started(target.get());
+                ff::dxgi_client().frame_started();
+                target->wait_for_render_ready();
+                target->begin_render(&bg_color);
                 ff::ui::state_rendering();
                 view.frame_started();
-                target->frame_started(&bg_color);
                 view.render(*target, *depth);
                 ff::ui::state_rendered();
-                target->present();
+                target->end_render();
                 ff::dxgi_client().frame_complete();
 
                 thread_dispatch.flush();

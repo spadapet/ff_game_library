@@ -35,7 +35,7 @@ namespace ff::test::dx12
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
 
             ff::dx12::frame_started();
-            target.frame_started(&clear_color);
+            target.begin_render(&clear_color);
 
             // Draw
             {
@@ -60,7 +60,7 @@ namespace ff::test::dx12
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target.present();
+            target.end_render();
             ff::dx12::frame_complete();
             ff::dx12::wait_for_idle();
 

@@ -63,7 +63,7 @@ static const ff::dxgi::host_functions& get_dxgi_host_functions()
         ff::graphics::defer::remove_target,
         ff::graphics::defer::resize_target,
         ff::graphics::defer::full_screen,
-        ff::graphics::defer::validate_device,
+        ff::graphics::defer::reset_device,
         ff::global_resources::add,
         ::host_shader_data,
     };

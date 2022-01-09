@@ -243,14 +243,15 @@ static void frame_advance_and_render()
         ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
         : &ff::dxgi::color_black();
 
-    ff::dxgi_client().frame_started(::target.get());
+    ff::dxgi_client().frame_started();
+    ::target->wait_for_render_ready();
     ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
-    bool valid = ::target->frame_started(clear_color2);
+    bool valid = ::target->begin_render(clear_color2);
     if (valid)
     {
         ::frame_render(advance_type);
-        valid = ::target->present();
+        valid = ::target->end_render();
         ::frame_presented();
     }
 
@@ -258,7 +259,7 @@ static void frame_advance_and_render()
 
     if (!valid)
     {
-        ff::graphics::defer::validate_device(false);
+        ff::graphics::defer::reset_device(false);
     }
 
     ::frame_update_cursor();

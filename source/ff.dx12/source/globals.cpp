@@ -318,7 +318,7 @@ const ff::dxgi::host_functions& ff::dxgi_host()
     return *::host_functions;
 }
 
-bool ff::dx12::reset(bool force)
+bool ff::dx12::reset_device(bool force)
 {
     if (!::factory->IsCurrent())
     {
@@ -434,9 +434,24 @@ bool ff::dx12::reset(bool force)
     return status;
 }
 
-void ff::dx12::trim()
+void ff::dx12::trim_device()
 {
     ff::dx12::wait_for_idle();
+}
+
+bool ff::dx12::device_valid()
+{
+    return ::device->GetDeviceRemovedReason() == S_OK;
+}
+
+void ff::dx12::remove_device()
+{
+    debug_fail_msg("Removing DX12 device");
+
+    if (ff::dx12::device_valid())
+    {
+        ::device->RemoveDevice();
+    }
 }
 
 D3D_FEATURE_LEVEL ff::dx12::feature_level()
@@ -494,36 +509,36 @@ size_t ff::dx12::frame_count()
     return ::frame_count;
 }
 
-ff::dx12::commands& ff::dx12::frame_started(ff::dxgi::target_window_base* target)
+void ff::dx12::frame_started()
 {
+    assert(!::frame_commands);
+
     ::flush_keep_alive();
     ::update_video_memory_info();
-
-    if (target)
-    {
-        target->wait_for_render_ready();
-    }
-
-    assert(!::frame_commands);
     ::frame_commands = ff::dx12::direct_queue().new_commands();
 
     ff::dxgi_host().frame_started();
+}
 
-    return *::frame_commands;
+void ff::dx12::frame_complete()
+{
+    assert(::frame_commands);
+
+    ::frame_commands.reset();
+    ::frame_complete_signal.notify(++::frame_count);
+
+    ff::dxgi_host().frame_complete();
+
+    if (!ff::dx12::device_valid())
+    {
+        ff::dx12::reset_device(true);
+    }
 }
 
 ff::dx12::commands& ff::dx12::frame_commands()
 {
     assert(::frame_commands);
     return *::frame_commands;
-}
-
-void ff::dx12::frame_complete()
-{
-    assert(::frame_commands);
-    ::frame_commands.reset();
-    ::frame_complete_signal.notify(++::frame_count);
-    ff::dxgi_host().frame_complete();
 }
 
 void ff::dx12::wait_for_idle()

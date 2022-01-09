@@ -72,11 +72,11 @@ std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(const std::shar
 ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
     : client_functions_
 {
-    ff::dx12::reset,
-    ff::dx12::trim,
+    ff::dx12::reset_device,
+    ff::dx12::trim_device,
+    ff::dx12::wait_for_idle,
     ff::dx12::frame_started,
     ff::dx12::frame_complete,
-    ff::dx12::wait_for_idle,
     ::frame_context,
     ::create_render_texture,
     ::create_static_texture,

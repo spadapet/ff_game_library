@@ -11,9 +11,8 @@ namespace ff::dxgi
         virtual ~target_base() = default;
 
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) = 0;
-        virtual bool frame_started(const DirectX::XMFLOAT4* clear_color = nullptr) = 0;
-        virtual bool present() = 0;
-        virtual ff::signal_sink<target_base*>& render_presented() = 0;
+        virtual bool begin_render(const DirectX::XMFLOAT4* clear_color = nullptr) = 0;
+        virtual bool end_render() = 0;
 
         virtual ff::dxgi::target_access_base& target_access() = 0;
         virtual size_t target_array_start() const = 0;

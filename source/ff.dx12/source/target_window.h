@@ -22,9 +22,8 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool frame_started(const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool present() override;
-        virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
+        virtual bool begin_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool end_render() override;
         virtual ff::dxgi::target_access_base& target_access() override;
         virtual size_t target_array_start() const override;
         virtual size_t target_array_size() const override;
@@ -58,7 +57,6 @@ namespace ff::dx12
         ff::window* window;
         ff::window_size cached_size;
         ff::signal<ff::window_size> size_changed_;
-        ff::signal<ff::dxgi::target_base*> render_presented_;
         ff::signal_connection window_message_connection;
         ff::win_handle frame_latency_handle;
         ff::win_handle target_ready_event;

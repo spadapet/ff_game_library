@@ -19,8 +19,11 @@ namespace ff::dx12
     class resource;
     enum class device_reset_priority;
 
-    bool reset(bool force);
-    void trim();
+    bool reset_device(bool force);
+    void trim_device();
+    bool device_valid();
+    void remove_device();
+    void wait_for_idle();
 
     D3D_FEATURE_LEVEL feature_level();
     IDXGIFactoryX* factory();
@@ -31,14 +34,13 @@ namespace ff::dx12
     const DXGI_QUERY_VIDEO_MEMORY_INFO& get_video_memory_info();
     ff::dx12::fence& residency_fence();
     bool supports_create_heap_not_resident();
+    void keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fence_values&& fence_values);
 
     size_t frame_count();
-    ff::dx12::commands& frame_started(ff::dxgi::target_window_base* target = nullptr);
-    ff::dx12::commands& frame_commands();
+    void frame_started();
     void frame_complete();
-    void wait_for_idle();
+    ff::dx12::commands& frame_commands();
     ff::signal_sink<size_t>& frame_complete_sink();
-    void keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fence_values&& fence_values);
 
     ff::dx12::queue& direct_queue();
     ff::dx12::queue& copy_queue();

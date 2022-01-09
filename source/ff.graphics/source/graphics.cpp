@@ -11,9 +11,9 @@ namespace
         full_screen_true = 0x002,
         full_screen_bits = 0x00f,
 
-        validate_check = 0x010,
-        validate_force = 0x020,
-        validate_bits = 0x0f0,
+        reset_check = 0x010,
+        reset_force = 0x020,
+        reset_bits = 0x0f0,
 
         swap_chain_size = 0x100,
         swap_chain_bits = 0xf00,
@@ -98,10 +98,10 @@ static void flush_graphics_commands()
                 target->full_screen(full_screen);
             }
         }
-        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::validate_bits))
+        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
         {
-            bool force = ff::flags::has(::defer_flags, ::defer_flags_t::validate_force);
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits);
+            bool force = ff::flags::has(::defer_flags, ::defer_flags_t::reset_force);
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::reset_bits);
             lock.unlock();
 
             ff::dxgi_client().reset_device(force);
@@ -184,13 +184,13 @@ void ff::graphics::defer::resize_target(ff::dxgi::target_window_base* target, co
     }
 }
 
-void ff::graphics::defer::validate_device(bool force)
+void ff::graphics::defer::reset_device(bool force)
 {
     std::scoped_lock lock(::graphics_mutex);
 
     ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::validate_bits),
-        force ? ::defer_flags_t::validate_force : ::defer_flags_t::validate_check);
+        ff::flags::clear(::defer_flags, ::defer_flags_t::reset_bits),
+        force ? ::defer_flags_t::reset_force : ::defer_flags_t::reset_check);
 }
 
 void ff::graphics::defer::full_screen(bool value)

@@ -102,7 +102,7 @@ void ff::dx12::target_window::wait_for_render_ready()
     }
 }
 
-bool ff::dx12::target_window::frame_started(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_window::begin_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
@@ -121,7 +121,7 @@ bool ff::dx12::target_window::frame_started(const DirectX::XMFLOAT4* clear_color
     return false;
 }
 
-bool ff::dx12::target_window::present()
+bool ff::dx12::target_window::end_render()
 {
     if (*this)
     {
@@ -132,8 +132,6 @@ bool ff::dx12::target_window::present()
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-            this->render_presented_.notify(this);
-
             return true;
         }
     }
@@ -157,11 +155,6 @@ void ff::dx12::target_window::internal_reset()
 {
     this->before_resize();
     this->swap_chain.Reset();
-}
-
-ff::signal_sink<ff::dxgi::target_base*>& ff::dx12::target_window::render_presented()
-{
-    return this->render_presented_;
 }
 
 ff::dxgi::target_access_base& ff::dx12::target_window::target_access()
@@ -298,6 +291,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
             if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))) ||
                 FAILED(resource.As(&resource_x)))
             {
+                ff::dx12::remove_device();
                 debug_fail_ret_val(false);
             }
 
@@ -437,7 +431,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             else if (this->main_window && msg.wp == VK_BACK)
             {
 #ifdef _DEBUG
-                ff::dxgi_host().defer_validate_device(true);
+                ff::dxgi_host().defer_reset_device(true);
 #endif
             }
             break;

@@ -27,8 +27,8 @@ namespace ff::test::graphics
             auto target_texture = ff::dxgi_client().create_render_texture(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color);
             auto target = ff::dxgi_client().create_target_for_texture(target_texture, 0, 0, 0);
 
-            ff::dxgi_client().frame_started(nullptr);
-            target->frame_started(&clear_color);
+            ff::dxgi_client().frame_started();
+            target->begin_render(&clear_color);
 
             // Draw
             {
@@ -40,7 +40,7 @@ namespace ff::test::graphics
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target->present();
+            target->end_render();
             ff::dxgi_client().frame_complete();
             ff::dxgi_client().wait_for_idle();
 

@@ -23,9 +23,8 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool frame_started(const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool present() override;
-        virtual ff::signal_sink<ff::dxgi::target_base*>& render_presented() override;
+        virtual bool begin_render(const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool end_render() override;
         virtual ff::dxgi::target_access_base& target_access() override;
         virtual size_t target_array_start() const override;
         virtual size_t target_array_size() const override;
@@ -44,7 +43,6 @@ namespace ff::dx12
 
         std::shared_ptr<ff::dx12::texture> texture_;
         ff::dx12::descriptor_range view_;
-        ff::signal<ff::dxgi::target_base*> render_presented_;
         size_t array_start;
         size_t array_count;
         size_t mip_level;

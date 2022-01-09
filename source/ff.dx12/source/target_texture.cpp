@@ -49,7 +49,7 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_texture::frame_started(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_texture::begin_render(const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
@@ -68,18 +68,10 @@ bool ff::dx12::target_texture::frame_started(const DirectX::XMFLOAT4* clear_colo
     return false;
 }
 
-bool ff::dx12::target_texture::present()
+bool ff::dx12::target_texture::end_render()
 {
     ff::dx12::frame_commands().resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
-
-    this->render_presented_.notify(this);
-
     return true;
-}
-
-ff::signal_sink<ff::dxgi::target_base*>& ff::dx12::target_texture::render_presented()
-{
-    return this->render_presented_;
 }
 
 ff::dxgi::target_access_base& ff::dx12::target_texture::target_access()
