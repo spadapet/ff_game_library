@@ -245,11 +245,15 @@ ff::dx12::descriptor_range ff::dx12::cpu_descriptor_allocator::alloc_range(size_
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
     size_t bucket_size = ff::math::nearest_power_of_two(std::max(this->bucket_size, count));
     D3D12_DESCRIPTOR_HEAP_DESC desc{ this->type, static_cast<UINT>(bucket_size) };
-    ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap));
 
-    this->buckets.emplace_front(descriptor_heap.Get(), 0, bucket_size);
+    if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptor_heap))))
+    {
+        descriptor_heap->SetName(L"cpu_descriptor_allocator");
+        this->buckets.emplace_front(descriptor_heap.Get(), 0, bucket_size);
+        return this->buckets.front().alloc_range(count);
+    }
 
-    return this->buckets.front().alloc_range(count);
+    debug_fail_ret_val(ff::dx12::descriptor_range{});
 }
 
 void* ff::dx12::cpu_descriptor_allocator::before_reset(ff::frame_allocator& allocator)
@@ -277,6 +281,7 @@ bool ff::dx12::cpu_descriptor_allocator::reset(void* data)
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
         if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(desc++, IID_PPV_ARGS(&descriptor_heap))))
         {
+            descriptor_heap->SetName(L"cpu_descriptor_allocator");
             bucket.set(descriptor_heap.Get());
         }
         else
@@ -291,10 +296,12 @@ bool ff::dx12::cpu_descriptor_allocator::reset(void* data)
 ff::dx12::gpu_descriptor_allocator::gpu_descriptor_allocator(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc{ type, static_cast<UINT>(pinned_size + ring_size), D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE };
-    ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&this->descriptor_heap));
-
-    this->pinned = std::make_unique<ff::dx12::descriptor_buffer_free_list>(this->descriptor_heap.Get(), 0, pinned_size);
-    this->ring = std::make_unique<ff::dx12::descriptor_buffer_ring>(this->descriptor_heap.Get(), pinned_size, ring_size);
+    if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&this->descriptor_heap))))
+    {
+        this->descriptor_heap->SetName(L"gpu_descriptor_allocator");
+        this->pinned = std::make_unique<ff::dx12::descriptor_buffer_free_list>(this->descriptor_heap.Get(), 0, pinned_size);
+        this->ring = std::make_unique<ff::dx12::descriptor_buffer_ring>(this->descriptor_heap.Get(), pinned_size, ring_size);
+    }
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::gpu_descriptor_allocator);
 }
@@ -312,20 +319,33 @@ ff::dx12::gpu_descriptor_allocator::~gpu_descriptor_allocator()
 
 ff::dx12::descriptor_range ff::dx12::gpu_descriptor_allocator::alloc_range(size_t count, ff::dx12::fence_value fence_value)
 {
-    return this->ring->alloc_range(count, fence_value);
+    return this->ring ? this->ring->alloc_range(count, fence_value) : ff::dx12::descriptor_range{};
 }
 
 ff::dx12::descriptor_range ff::dx12::gpu_descriptor_allocator::alloc_pinned_range(size_t count)
 {
-    return this->pinned->alloc_range(count);
+    return this->pinned ? this->pinned->alloc_range(count) : ff::dx12::descriptor_range{};
 }
 
 void* ff::dx12::gpu_descriptor_allocator::before_reset(ff::frame_allocator& allocator)
 {
-    D3D12_DESCRIPTOR_HEAP_DESC* desc = allocator.emplace<D3D12_DESCRIPTOR_HEAP_DESC>(this->descriptor_heap->GetDesc());
-    this->descriptor_heap.Reset();
-    this->pinned->set(nullptr);
-    this->ring->set(nullptr);
+    D3D12_DESCRIPTOR_HEAP_DESC* desc = nullptr;
+
+    if (this->descriptor_heap)
+    {
+        desc = allocator.emplace<D3D12_DESCRIPTOR_HEAP_DESC>(this->descriptor_heap->GetDesc());
+        this->descriptor_heap.Reset();
+    }
+
+    if (this->pinned)
+    {
+        this->pinned->set(nullptr);
+    }
+
+    if (this->ring)
+    {
+        this->ring->set(nullptr);
+    }
 
     return desc;
 }
@@ -333,10 +353,12 @@ void* ff::dx12::gpu_descriptor_allocator::before_reset(ff::frame_allocator& allo
 bool ff::dx12::gpu_descriptor_allocator::reset(void* data)
 {
     const D3D12_DESCRIPTOR_HEAP_DESC* desc = reinterpret_cast<const D3D12_DESCRIPTOR_HEAP_DESC*>(data);
-    if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(desc, IID_PPV_ARGS(&this->descriptor_heap))))
+    if (desc && SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(desc, IID_PPV_ARGS(&this->descriptor_heap))))
     {
+        this->descriptor_heap->SetName(L"gpu_descriptor_allocator");
         this->pinned->set(this->descriptor_heap.Get());
         this->ring->set(this->descriptor_heap.Get());
+
         return true;
     }
 
