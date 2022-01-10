@@ -18,7 +18,7 @@ namespace ff::test::dx12
 
         TEST_METHOD(cpu_signal)
         {
-            ff::dx12::fence fence(nullptr);
+            ff::dx12::fence fence("", nullptr);
 
             Assert::IsTrue(fence.complete(0));
             Assert::IsTrue(fence.complete(1));
@@ -36,7 +36,7 @@ namespace ff::test::dx12
 
         TEST_METHOD(cpu_wait)
         {
-            ff::dx12::fence fence(nullptr);
+            ff::dx12::fence fence("", nullptr);
 
             std::thread thread([&fence]()
                 {

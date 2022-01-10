@@ -19,7 +19,7 @@ namespace ff::test::dx12
         TEST_METHOD(gpu_alloc)
         {
             ff::dx12::gpu_descriptor_allocator allocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 256);
-            ff::dx12::fence fence(nullptr);
+            ff::dx12::fence fence("", nullptr);
 
             ff::dx12::descriptor_range range = allocator.alloc_range(1024, fence.next_value());
             Assert::IsFalse(range);

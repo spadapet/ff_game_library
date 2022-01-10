@@ -6,8 +6,24 @@
 // Don't create resident or zeroed:
 // https://devblogs.microsoft.com/directx/coming-to-directx-12-more-control-over-memory-allocation/
 
-ff::dx12::heap::heap(uint64_t size, ff::dx12::heap::usage_t usage)
-    : cpu_data_(nullptr)
+std::string_view ff::dx12::heap::usage_name(ff::dx12::heap::usage_t usage)
+{
+    switch (usage)
+    {
+        default: debug_fail_ret_val("");
+        case ff::dx12::heap::usage_t::upload: return "upload";
+        case ff::dx12::heap::usage_t::readback: return "readback";
+        case ff::dx12::heap::usage_t::gpu_buffers: return "gpu_buffers";
+        case ff::dx12::heap::usage_t::gpu_textures: return "gpu_textures";
+        case ff::dx12::heap::usage_t::gpu_targets: return "gpu_targets";
+    }
+
+    return std::string_view();
+}
+
+ff::dx12::heap::heap(std::string_view name, uint64_t size, ff::dx12::heap::usage_t usage)
+    : name_(name)
+    , cpu_data_(nullptr)
     , size_(size)
     , usage_(usage)
 {
@@ -30,6 +46,11 @@ ff::dx12::heap::~heap()
 ff::dx12::heap::operator bool() const
 {
     return this->heap_ != nullptr;
+}
+
+const std::string& ff::dx12::heap::name() const
+{
+    return this->name_;
 }
 
 void* ff::dx12::heap::cpu_data()
@@ -144,6 +165,8 @@ bool ff::dx12::heap::reset()
     CD3DX12_HEAP_DESC desc(this->size_, props, 0, flags);
     if (SUCCEEDED(ff::dx12::device()->CreateHeap(&desc, IID_PPV_ARGS(&this->heap_))))
     {
+        this->heap_->SetName(ff::string::to_wstring(this->name_).c_str());
+
         ID3D12Pageable* p = this->heap_.Get();
         ff::dx12::device()->SetResidencyPriority(1, &p, &priority);
 
@@ -152,7 +175,7 @@ bool ff::dx12::heap::reset()
         return true;
     }
 
-    assert(false);
+    ff::dx12::device_fatal_error("Heap creation failure (out of memory)");
     return false;
 }
 

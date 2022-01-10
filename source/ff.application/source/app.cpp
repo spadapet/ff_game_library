@@ -247,21 +247,14 @@ static void frame_advance_and_render()
     ::target->wait_for_render_ready();
     ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
-    bool valid = ::target->begin_render(clear_color2);
-    if (valid)
+    if (::target->begin_render(clear_color2))
     {
         ::frame_render(advance_type);
-        valid = ::target->end_render();
+        ::target->end_render();
         ::frame_presented();
     }
 
     ff::dxgi_client().frame_complete();
-
-    if (!valid)
-    {
-        ff::graphics::defer::reset_device(false);
-    }
-
     ::frame_update_cursor();
 }
 

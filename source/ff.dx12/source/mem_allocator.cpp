@@ -28,7 +28,7 @@ uint64_t ff::dx12::mem_buffer_free_list::range_t::after_end() const
 }
 
 ff::dx12::mem_buffer_ring::mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage)
-    : heap_(size, usage)
+    : heap_(ff::string::concat("Ring ", ff::dx12::heap::usage_name(usage), " heap (", size, ")"), size, usage)
 {}
 
 ff::dx12::mem_buffer_ring::~mem_buffer_ring()
@@ -142,7 +142,7 @@ ff::dx12::mem_range ff::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64
 }
 
 ff::dx12::mem_buffer_free_list::mem_buffer_free_list(uint64_t size, ff::dx12::heap::usage_t usage)
-    : heap_(size, usage)
+    : heap_(ff::string::concat("Free list ", ff::dx12::heap::usage_name(usage), " heap (", size, ")"), size, usage)
 {
     this->free_ranges.emplace_back(range_t{ 0, size });
 }

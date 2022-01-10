@@ -16,10 +16,10 @@ namespace ff::dx12
     class resource : private ff::dxgi::device_child_base, public ff::dx12::residency_access
     {
     public:
-        resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
-        resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // committed
-        resource(ID3D12ResourceX* swap_chain_resource);
-        resource(resource& other, ff::dx12::commands* commands);
+        resource(std::string_view name, std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // placed
+        resource(std::string_view name, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value = {}); // committed
+        resource(std::string_view name, ID3D12ResourceX* swap_chain_resource);
+        resource(std::string_view name, resource& other, ff::dx12::commands* commands);
         resource(resource&& other) noexcept;
         resource(const resource& other) = delete;
         ~resource();
@@ -28,6 +28,7 @@ namespace ff::dx12
         resource& operator=(const resource& other) = delete;
 
         operator bool() const;
+        const std::string& name() const;
 
         const D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
         const std::shared_ptr<ff::dx12::mem_range>& mem_range() const;
@@ -74,7 +75,7 @@ namespace ff::dx12
     private:
         friend ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::resource& obj);
 
-        resource(const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value, std::shared_ptr<ff::dx12::mem_range> mem_range, bool allocate_mem_range);
+        resource(std::string_view name, const D3D12_RESOURCE_DESC& desc, D3D12_RESOURCE_STATES initial_state, D3D12_CLEAR_VALUE optimized_clear_value, std::shared_ptr<ff::dx12::mem_range> mem_range, bool allocate_mem_range);
         void destroy(bool for_reset);
 
         // device_child_base
@@ -83,6 +84,7 @@ namespace ff::dx12
 
         D3D12_RESOURCE_DESC desc_;
         D3D12_CLEAR_VALUE optimized_clear_value;
+        std::string name_;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
         std::unique_ptr<ff::dx12::residency_data> residency_data_;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_;

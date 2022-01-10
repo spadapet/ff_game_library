@@ -97,7 +97,7 @@ ff::dx12::buffer::buffer(
             D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc);
             desc.Width = alloc_info.SizeInBytes;
 
-            this->resource_ = std::make_unique<ff::dx12::resource>(std::shared_ptr<ff::dx12::mem_range>(), desc);
+            this->resource_ = std::make_unique<ff::dx12::resource>("Buffer", std::shared_ptr<ff::dx12::mem_range>(), desc);
             this->mem_start = 0;
         }
 

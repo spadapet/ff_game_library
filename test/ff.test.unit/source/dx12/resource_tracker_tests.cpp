@@ -560,9 +560,9 @@ namespace ff::test::dx12
         {
             ff::dx12::resource res[3]
             {
-                CD3DX12_RESOURCE_DESC::Buffer(32),
-                CD3DX12_RESOURCE_DESC::Buffer(32),
-                CD3DX12_RESOURCE_DESC::Buffer(32),
+                { "", CD3DX12_RESOURCE_DESC::Buffer(32) },
+                { "", CD3DX12_RESOURCE_DESC::Buffer(32) },
+                { "", CD3DX12_RESOURCE_DESC::Buffer(32) },
             };
 
             ::test_command_list lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
@@ -593,9 +593,9 @@ namespace ff::test::dx12
         {
             ff::dx12::resource res[3]
             {
-                CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1),
-                CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1),
-                CD3DX12_RESOURCE_DESC::Buffer(32),
+                { "", CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1) },
+                { "", CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1) },
+                { "", CD3DX12_RESOURCE_DESC::Buffer(32) },
             };
 
             ::test_command_list lists[3]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };

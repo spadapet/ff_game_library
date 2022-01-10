@@ -10,6 +10,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="source\buffer_base.cpp" />
     <ClCompile Include="source\color.cpp" />
     <ClCompile Include="source\data_blob.cpp" />
     <ClCompile Include="source\device_child_base.cpp" />

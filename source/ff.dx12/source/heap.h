@@ -17,7 +17,9 @@ namespace ff::dx12
             gpu_targets,
         };
 
-        heap(uint64_t size, ff::dx12::heap::usage_t usage);
+        static std::string_view usage_name(ff::dx12::heap::usage_t usage);
+
+        heap(std::string_view name, uint64_t size, ff::dx12::heap::usage_t usage);
         heap(heap&& other) noexcept;
         heap(const heap& other) = delete;
         virtual ~heap() override;
@@ -26,6 +28,7 @@ namespace ff::dx12
         heap& operator=(const heap& other) = delete;
 
         operator bool() const;
+        const std::string& name() const;
         void* cpu_data();
         D3D12_GPU_VIRTUAL_ADDRESS gpu_data();
         uint64_t size() const;
@@ -46,6 +49,7 @@ namespace ff::dx12
         void cpu_unmap();
 
         std::unique_ptr<ff::dx12::residency_data> residency_data_;
+        std::string name_;
         ff::signal_connection evicting_connection;
         Microsoft::WRL::ComPtr<ID3D12HeapX> heap_;
         Microsoft::WRL::ComPtr<ID3D12ResourceX> cpu_resource;

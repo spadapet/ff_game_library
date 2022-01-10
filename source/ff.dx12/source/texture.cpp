@@ -7,6 +7,9 @@
 #include "texture.h"
 #include "texture_util.h"
 
+static std::atomic_int dynamic_texture_counter;
+static std::atomic_int static_texture_counter;
+
 ff::dx12::texture::texture()
     : sprite_type_(ff::dxgi::sprite_type::unknown)
     , upload_data_pending(false)
@@ -31,6 +34,7 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
         }
 
         this->resource_ = std::make_unique<ff::dx12::resource>(
+            ff::string::concat("Dynamic texture ", ::dynamic_texture_counter.fetch_add(1)),
             CD3DX12_RESOURCE_DESC::Tex2D(format,
                 static_cast<UINT64>(size.x),
                 static_cast<UINT>(size.y),
@@ -59,6 +63,7 @@ ff::dx12::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, f
     const DirectX::TexMetadata& md = this->data_->GetMetadata();
 
     this->resource_ = std::make_unique<ff::dx12::resource>(
+        ff::string::concat("Static texture ", ::static_texture_counter.fetch_add(1)),
         std::shared_ptr<ff::dx12::mem_range>(),
         CD3DX12_RESOURCE_DESC::Tex2D(md.format,
             static_cast<UINT64>(md.width),

@@ -20,4 +20,20 @@ namespace ff::string
 
     std::string date();
     std::string time();
+
+    template<class... Args>
+    std::string concat(Args&&... args)
+    {
+        std::ostringstream ostr;
+        (ostr << ... << args);
+        return ostr.str();
+    }
+
+    template<class... Args>
+    std::wstring concatw(Args&&... args)
+    {
+        std::ostringstream ostr;
+        (ostr << ... << args);
+        return ff::string::to_wstring(ostr.str());
+    }
 }

@@ -7,8 +7,9 @@
 #include "resource_tracker.h"
 #include "queue.h"
 
-ff::dx12::queue::queue(D3D12_COMMAND_LIST_TYPE type)
+ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)
     : type(type)
+    , name_(name)
 {
     this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::queue);
@@ -26,9 +27,14 @@ ff::dx12::queue::operator bool() const
     return this->command_queue != nullptr;
 }
 
+const std::string& ff::dx12::queue::name() const
+{
+    return this->name_;
+}
+
 void ff::dx12::queue::wait_for_idle()
 {
-    ff::dx12::fence fence(this);
+    ff::dx12::fence fence(this->name_ + " idle fence", this);
     fence.signal(this).wait(nullptr);
 }
 
@@ -53,11 +59,18 @@ std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
 
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list_before;
+        static std::atomic_int list_counter;
+        static std::atomic_int list_before_counter;
 
-        if (FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator.Get(), nullptr, IID_PPV_ARGS(&list))) ||
-            FAILED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) ||
-            FAILED(list.As(&cache->list)) ||
-            FAILED(list_before.As(&cache->list_before)))
+        if (SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator.Get(), nullptr, IID_PPV_ARGS(&list))) &&
+            SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) &&
+            SUCCEEDED(list.As(&cache->list)) &&
+            SUCCEEDED(list_before.As(&cache->list_before)))
+        {
+            list->SetName(ff::string::concatw(this->name_, " commands ", list_counter.fetch_add(1)).c_str());
+            list_before->SetName(ff::string::concatw(this->name_, " commands before ", list_before_counter.fetch_add(1)).c_str());
+        }
+        else
         {
             assert(false);
         }
@@ -169,24 +182,25 @@ void ff::dx12::queue::new_allocators(Microsoft::WRL::ComPtr<ID3D12CommandAllocat
         }
     }
 
+    static std::atomic_int allocator_counter;
+    static std::atomic_int allocator_before_counter;
+
     if (allocator)
     {
-        HRESULT hr = allocator->Reset();
-        assert(SUCCEEDED(hr));
+        verify_hr(allocator->Reset());
     }
-    else
+    else if (SUCCEEDED(ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator))))
     {
-        ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator));
+        allocator->SetName(ff::string::concatw(this->name_, " allocator ", allocator_counter.fetch_add(1)).c_str());
     }
 
     if (allocator_before)
     {
-        HRESULT hr = allocator_before->Reset();
-        assert(SUCCEEDED(hr));
+        verify_hr(allocator_before->Reset());
     }
-    else
+    else if (SUCCEEDED(ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator_before))))
     {
-        ff::dx12::device()->CreateCommandAllocator(this->type, IID_PPV_ARGS(&allocator_before));
+        allocator_before->SetName(ff::string::concatw(this->name_, " allocator before ", allocator_before_counter.fetch_add(1)).c_str());
     }
 }
 
@@ -224,5 +238,7 @@ void ff::dx12::queue::before_reset()
 bool ff::dx12::queue::reset()
 {
     const D3D12_COMMAND_QUEUE_DESC command_queue_desc{ this->type };
-    return SUCCEEDED(ff::dx12::device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue)));
+    assert_hr_ret_val(ff::dx12::device()->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&this->command_queue)), false);
+    this->command_queue->SetName(ff::string::to_wstring(this->name_).c_str());
+    return true;
 }

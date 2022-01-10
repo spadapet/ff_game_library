@@ -5,8 +5,9 @@
 #include "globals.h"
 #include "queue.h"
 
-ff::dx12::fence::fence(ff::dx12::queue* queue, uint64_t initial_value)
+ff::dx12::fence::fence(std::string_view name, ff::dx12::queue* queue, uint64_t initial_value)
     : queue_(queue)
+    , name_(name)
     , completed_value(initial_value ? initial_value : 1)
     , next_value_(this->completed_value + 1)
 {
@@ -23,6 +24,11 @@ ff::dx12::fence::~fence()
 ff::dx12::fence::operator bool() const
 {
     return this->fence_ != nullptr;
+}
+
+const std::string& ff::dx12::fence::name() const
+{
+    return this->name_;
 }
 
 ff::dx12::queue* ff::dx12::fence::queue() const
@@ -44,7 +50,7 @@ ff::dx12::fence_value ff::dx12::fence::signal(uint64_t value, ff::dx12::queue* q
 {
     assert(!queue || queue == this->queue_);
 
-    if (!this->complete(value))
+    if (*this && !this->complete(value))
     {
         this->next_value_ = value + 1;
 
@@ -70,7 +76,7 @@ ff::dx12::fence_value ff::dx12::fence::signal_later()
 
 void ff::dx12::fence::wait(uint64_t value, ff::dx12::queue* queue)
 {
-    if ((!queue || queue != this->queue_) && !this->complete(value))
+    if (*this && (!queue || queue != this->queue_) && !this->complete(value))
     {
         if (queue)
         {
@@ -100,7 +106,7 @@ bool ff::dx12::fence::set_event(uint64_t value, HANDLE handle)
     {
         ::ResetEvent(handle);
 
-        if (this->complete(value) || FAILED(this->fence_->SetEventOnCompletion(value, handle)))
+        if (!*this || this->complete(value) || FAILED(this->fence_->SetEventOnCompletion(value, handle)))
         {
             ::SetEvent(handle);
             return false;
@@ -166,8 +172,7 @@ void ff::dx12::fence::wait(ff::dx12::fence_value* values, size_t count, ff::dx12
 
         for (size_t i = 0; i < actual_wrappers.size(); i++)
         {
-            bool complete = actual_wrappers[i]->complete(actual_values[i]);
-            assert(complete);
+            verify(actual_wrappers[i]->complete(actual_values[i]));
         }
     }
 }
@@ -205,5 +210,7 @@ void ff::dx12::fence::before_reset()
 
 bool ff::dx12::fence::reset()
 {
-    return SUCCEEDED(ff::dx12::device()->CreateFence(this->completed_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence_)));
+    assert_hr_ret_val(ff::dx12::device()->CreateFence(this->completed_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&this->fence_)), false);
+    this->fence_->SetName(ff::string::to_wstring(this->name_).c_str());
+    return true;
 }

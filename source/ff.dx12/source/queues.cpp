@@ -6,7 +6,7 @@ ff::dx12::queue& ff::dx12::queues::direct()
 {
     if (!this->direct_queue)
     {
-        this->direct_queue = std::make_unique<ff::dx12::queue>(D3D12_COMMAND_LIST_TYPE_DIRECT);
+        this->direct_queue = std::make_unique<ff::dx12::queue>("Direct queue", D3D12_COMMAND_LIST_TYPE_DIRECT);
     }
 
     return *this->direct_queue;
@@ -16,7 +16,7 @@ ff::dx12::queue& ff::dx12::queues::compute()
 {
     if (!this->compute_queue)
     {
-        this->compute_queue = std::make_unique<ff::dx12::queue>(D3D12_COMMAND_LIST_TYPE_COMPUTE);
+        this->compute_queue = std::make_unique<ff::dx12::queue>("Compute queue", D3D12_COMMAND_LIST_TYPE_COMPUTE);
     }
 
     return *this->compute_queue;
@@ -26,7 +26,7 @@ ff::dx12::queue& ff::dx12::queues::copy()
 {
     if (!this->copy_queue)
     {
-        this->copy_queue = std::make_unique<ff::dx12::queue>(D3D12_COMMAND_LIST_TYPE_COPY);
+        this->copy_queue = std::make_unique<ff::dx12::queue>("Copy queue", D3D12_COMMAND_LIST_TYPE_COPY);
     }
 
     return *this->copy_queue;

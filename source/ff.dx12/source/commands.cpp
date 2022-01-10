@@ -15,8 +15,10 @@
 #include "resource_tracker.h"
 #include "target_access.h"
 
+static std::atomic_int data_counter;
+
 ff::dx12::commands::data_cache_t::data_cache_t(ff::dx12::queue* queue)
-    : fence(queue)
+    : fence(queue->name() + " fence", queue)
     , lists_reset_event(ff::win_handle::create_event(true))
 {}
 

@@ -226,7 +226,7 @@ static bool init_d3d(bool for_reset)
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, 1920); // max is 2048
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
-        ::residency_fence = std::make_unique<ff::dx12::fence>(nullptr);
+        ::residency_fence = std::make_unique<ff::dx12::fence>("Memory residency fence", nullptr);
     }
 
     return true;
@@ -444,9 +444,9 @@ bool ff::dx12::device_valid()
     return ::device->GetDeviceRemovedReason() == S_OK;
 }
 
-void ff::dx12::remove_device()
+void ff::dx12::device_fatal_error(std::string_view reason)
 {
-    debug_fail_msg("Removing DX12 device");
+    ff::log::write_debug_fail(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
 
     if (ff::dx12::device_valid())
     {

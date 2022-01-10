@@ -8,6 +8,8 @@
 #include "resource.h"
 #include "texture_util.h"
 
+static std::atomic_int depth_counter;
+
 ff::dx12::depth::depth(size_t sample_count)
     : depth(ff::point_size(1, 1), sample_count)
 {}
@@ -18,6 +20,7 @@ ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
     D3D12_CLEAR_VALUE clear_value{ ff::dx12::depth::FORMAT };
 
     this->resource_ = std::make_unique<ff::dx12::resource>(
+        ff::string::concat("Depth buffer ", ::depth_counter.fetch_add(1)),
         CD3DX12_RESOURCE_DESC::Tex2D(
             ff::dx12::depth::FORMAT,
             static_cast<UINT64>(std::max<size_t>(size.x, 1)),

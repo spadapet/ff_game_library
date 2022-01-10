@@ -12,6 +12,8 @@ namespace ff::dxgi
         constant,
     };
 
+    std::string_view buffer_type_name(ff::dxgi::buffer_type type);
+
     class buffer_base
     {
     public:

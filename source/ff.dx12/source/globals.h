@@ -22,7 +22,7 @@ namespace ff::dx12
     bool reset_device(bool force);
     void trim_device();
     bool device_valid();
-    void remove_device();
+    void device_fatal_error(std::string_view reason);
     void wait_for_idle();
 
     D3D_FEATURE_LEVEL feature_level();

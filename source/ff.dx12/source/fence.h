@@ -10,7 +10,7 @@ namespace ff::dx12
     class fence : private ff::dxgi::device_child_base
     {
     public:
-        fence(ff::dx12::queue* queue, uint64_t initial_value = 1);
+        fence(std::string_view name, ff::dx12::queue* queue, uint64_t initial_value = 1);
         fence(fence&& other) noexcept = delete;
         fence(const fence& other) = delete;
         virtual ~fence() override;
@@ -19,6 +19,7 @@ namespace ff::dx12
         fence& operator=(const fence& other) = delete;
 
         operator bool() const;
+        const std::string& name() const;
         ff::dx12::queue* queue() const;
         ff::dx12::fence_value next_value();
         ff::dx12::fence_value signal(ff::dx12::queue* queue);
@@ -40,6 +41,7 @@ namespace ff::dx12
 
         Microsoft::WRL::ComPtr<ID3D12FenceX> fence_;
         ff::dx12::queue* queue_;
+        std::string name_;
         std::mutex completed_value_mutex;
         uint64_t completed_value;
         uint64_t next_value_;

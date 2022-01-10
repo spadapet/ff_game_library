@@ -104,7 +104,7 @@ void ff::dx12::target_window::wait_for_render_ready()
 
 bool ff::dx12::target_window::begin_render(const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this)
+    if (*this && ff::dx12::device_valid())
     {
         if (clear_color)
         {
@@ -123,7 +123,7 @@ bool ff::dx12::target_window::begin_render(const DirectX::XMFLOAT4* clear_color)
 
 bool ff::dx12::target_window::end_render()
 {
-    if (*this)
+    if (*this && ff::dx12::device_valid())
     {
         ff::dx12::frame_commands().resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
         this->target_fence_values[this->back_buffer_index] = ff::dx12::frame_commands().queue().execute(ff::dx12::frame_commands());
@@ -199,7 +199,8 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         this->swap_chain->GetDesc1(&desc);
         if (FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
-            debug_fail_ret_val(false);
+            ff::dx12::device_fatal_error("Swap chain resize failed");
+            return false;
         }
     }
     else if (!this->swap_chain) // first init on UI thread, reset is on game thread
@@ -256,7 +257,8 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 
         if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)))
         {
-            debug_fail_ret_val(false);
+            ff::dx12::device_fatal_error("Swap chain creation failed");
+            return false;
         }
     }
 
@@ -291,11 +293,11 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
             if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))) ||
                 FAILED(resource.As(&resource_x)))
             {
-                ff::dx12::remove_device();
-                debug_fail_ret_val(false);
+                ff::dx12::device_fatal_error("Swap chain get buffer failed");
+                return false;
             }
 
-            this->target_textures[i] = std::make_unique<ff::dx12::resource>(resource_x.Get());
+            this->target_textures[i] = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource_x.Get());
         }
 
         ff::dx12::create_target_view(this->target_textures[i].get(), this->target_views.cpu_handle(i));

@@ -20,7 +20,7 @@ namespace ff::test::dx12
         {
             const uint64_t one_meg = 1024 * 1024;
             ff::dx12::mem_allocator_ring allocator(one_meg, ff::dx12::heap::usage_t::upload);
-            ff::dx12::fence fence(nullptr);
+            ff::dx12::fence fence("", nullptr);
 
             ff::dx12::mem_range range = allocator.alloc_buffer(1024, fence.next_value());
             Assert::IsTrue(range);

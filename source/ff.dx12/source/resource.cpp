@@ -45,16 +45,17 @@ const DirectX::Image& ff::dx12::resource::readback_texture_data::image(size_t in
     return this->mem_ranges[index].second;
 }
 
-ff::dx12::resource::resource(std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
-    : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, mem_range, true)
+ff::dx12::resource::resource(std::string_view name, std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(name, desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, mem_range, true)
 {}
 
-ff::dx12::resource::resource(const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
-    : resource(desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
+ff::dx12::resource::resource(std::string_view name, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
+    : resource(name, desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
-ff::dx12::resource::resource(ID3D12ResourceX* swap_chain_resource)
-    : desc_(swap_chain_resource->GetDesc())
+ff::dx12::resource::resource(std::string_view name, ID3D12ResourceX* swap_chain_resource)
+    : name_(name)
+    , desc_(swap_chain_resource->GetDesc())
     , optimized_clear_value{}
     , resource_(swap_chain_resource)
     , external_resource(true)
@@ -65,12 +66,14 @@ ff::dx12::resource::resource(ID3D12ResourceX* swap_chain_resource)
 }
 
 ff::dx12::resource::resource(
+    std::string_view name,
     const D3D12_RESOURCE_DESC& desc,
     D3D12_RESOURCE_STATES initial_state,
     D3D12_CLEAR_VALUE optimized_clear_value,
     std::shared_ptr<ff::dx12::mem_range> mem_range,
     bool allocate_mem_range)
-    : desc_(desc)
+    : name_(name)
+    , desc_(desc)
     , optimized_clear_value(optimized_clear_value)
     , mem_range_(mem_range)
     , external_resource(false)
@@ -99,8 +102,8 @@ ff::dx12::resource::resource(
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
-ff::dx12::resource::resource(resource& other, ff::dx12::commands* commands)
-    : resource(other.desc_, other.optimized_clear_value)
+ff::dx12::resource::resource(std::string_view name, resource& other, ff::dx12::commands* commands)
+    : resource(name, other.desc_, other.optimized_clear_value)
 {
     std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     commands->copy_resource(*this, other);
@@ -129,6 +132,7 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
         std::swap(this->mem_range_, other.mem_range_);
         std::swap(this->residency_data_, other.residency_data_);
         std::swap(this->optimized_clear_value, other.optimized_clear_value);
+        std::swap(this->name_, other.name_);
         std::swap(this->desc_, other.desc_);
         std::swap(this->global_state_, other.global_state_);
         std::swap(this->global_reads_, other.global_reads_);
@@ -147,6 +151,11 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
 ff::dx12::resource::operator bool() const
 {
     return this->resource_ != nullptr;
+}
+
+const std::string& ff::dx12::resource::name() const
+{
+    return this->name_;
 }
 
 const D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::resource::gpu_address() const
@@ -511,6 +520,8 @@ bool ff::dx12::resource::reset()
             return false;
         }
     }
+
+    this->resource_->SetName(ff::string::to_wstring(this->name_).c_str());
 
     return true;
 }

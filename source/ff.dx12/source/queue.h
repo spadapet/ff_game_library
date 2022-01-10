@@ -8,7 +8,7 @@ namespace ff::dx12
     class queue : private ff::dxgi::device_child_base
     {
     public:
-        queue(D3D12_COMMAND_LIST_TYPE type);
+        queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type);
         queue(queue&& other) noexcept = delete;
         queue(const queue& other) = delete;
         virtual ~queue() override;
@@ -17,6 +17,7 @@ namespace ff::dx12
         queue& operator=(const queue& other) = delete;
 
         operator bool() const;
+        const std::string& name() const;
         void wait_for_idle();
 
         std::unique_ptr<ff::dx12::commands> new_commands();
@@ -37,6 +38,7 @@ namespace ff::dx12
         Microsoft::WRL::ComPtr<ID3D12CommandQueueX> command_queue;
 
         std::mutex mutex;
+        std::string name_;
         std::list<std::unique_ptr<ff::dx12::commands::data_cache_t>> caches;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators_before;
