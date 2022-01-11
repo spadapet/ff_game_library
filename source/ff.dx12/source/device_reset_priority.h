@@ -8,6 +8,7 @@ namespace ff::dx12
         heap,
         cpu_descriptor_allocator,
         gpu_descriptor_allocator,
+        mem_buffer_ring,
         resource,
         queue,
         commands,

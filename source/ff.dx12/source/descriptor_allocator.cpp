@@ -150,6 +150,13 @@ ff::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
 void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeapX* descriptor_heap)
 {
     this->descriptor_heap = descriptor_heap;
+
+    if (!this->descriptor_heap)
+    {
+        std::scoped_lock lock(this->ranges_mutex);
+        this->ranges.clear();
+        this->allocated_range_count = 0;
+    }
 }
 
 ff::dx12::descriptor_range ff::dx12::descriptor_buffer_ring::alloc_range(size_t count, ff::dx12::fence_value fence_value)

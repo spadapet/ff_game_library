@@ -344,6 +344,11 @@ namespace
 
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) override
         {
+            if (end_draw)
+            {
+                this->commands = nullptr;
+            }
+
             return this->commands;
         }
 

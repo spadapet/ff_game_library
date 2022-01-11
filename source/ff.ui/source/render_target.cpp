@@ -8,12 +8,14 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
     ff::point_size size(width, height);
     DXGI_FORMAT format = srgb ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT;
 
-    this->msaa_texture_ = std::make_shared<ff::texture>(size, format, 1, 1, samples);
+    auto msaa_dxgi_texture = ff::dxgi_client().create_render_texture(size, format, 1, 1, samples, nullptr);
+    this->msaa_texture_ = std::make_shared<ff::texture>(msaa_dxgi_texture);
     this->msaa_target_ = ff::dxgi_client().create_target_for_texture(this->msaa_texture_->dxgi_texture(), 0, 0, 0);
 
     if (this->msaa_texture_->dxgi_texture()->sample_count() > 1)
     {
-        this->resolved_texture_ = std::make_shared<ff::texture>(size, format);
+        auto resolved_dxgi_texture = ff::dxgi_client().create_render_texture(size, format, 1, 1, 1, nullptr);
+        this->resolved_texture_ = std::make_shared<ff::texture>(resolved_dxgi_texture);
         this->resolved_target_ = ff::dxgi_client().create_target_for_texture(this->resolved_texture_->dxgi_texture(), 0, 0, 0);
     }
     else
@@ -34,9 +36,8 @@ ff::internal::ui::render_target::render_target(const render_target& rhs, std::st
     : name_(name)
     , depth_(rhs.depth_)
 {
-    this->resolved_texture_ = std::make_shared<ff::texture>(
-        rhs.resolved_texture_->dxgi_texture()->size(),
-        rhs.resolved_texture_->dxgi_texture()->format());
+    auto resolved_dxgi_texture = ff::dxgi_client().create_render_texture(rhs.resolved_texture_->dxgi_texture()->size(), rhs.resolved_texture_->dxgi_texture()->format(), 1, 1, 1, nullptr);
+    this->resolved_texture_ = std::make_shared<ff::texture>(resolved_dxgi_texture);
     this->resolved_target_ = ff::dxgi_client().create_target_for_texture(this->resolved_texture_->dxgi_texture(), 0, 0, 0);
     this->resolved_texture_wrapper = Noesis::MakePtr<ff::internal::ui::texture>(this->resolved_texture_, name);
 

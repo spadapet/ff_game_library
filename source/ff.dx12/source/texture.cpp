@@ -259,6 +259,11 @@ ff::dx12::resource* ff::dx12::texture::dx12_resource() const
     return this->resource_.get();
 }
 
+D3D12_CLEAR_VALUE ff::dx12::texture::optimized_clear_value() const
+{
+    return this->resource_ ? this->resource_->optimized_clear_value() : D3D12_CLEAR_VALUE{};
+}
+
 bool ff::dx12::texture::update(ff::dxgi::command_context_base& context, size_t array_index, size_t mip_index, const ff::point_size& pos, const DirectX::Image& data)
 {
     if (this->format() != data.format)
@@ -289,9 +294,19 @@ bool ff::dx12::texture::update(ff::dxgi::command_context_base& context, size_t a
 
 bool ff::dx12::texture::reset()
 {
-    *this = this->data_
-        ? ff::dx12::texture(this->data_, this->sprite_type())
-        : ff::dx12::texture(this->size(), this->format(), this->mip_count(), this->array_size(), this->sample_count());
+    if (this->data_)
+    {
+        *this = ff::dx12::texture(this->data_, this->sprite_type());
+    }
+    else
+    {
+        D3D12_CLEAR_VALUE clear_value = this->optimized_clear_value();
+        const DirectX::XMFLOAT4* clear_color = (clear_value.Format != DXGI_FORMAT_UNKNOWN)
+            ? reinterpret_cast<const DirectX::XMFLOAT4*>(&clear_value.Color)
+            : nullptr;
+        
+        *this = ff::dx12::texture(this->size(), this->format(), this->mip_count(), this->array_size(), this->sample_count(), clear_color);
+    }
 
     return *this;
 }

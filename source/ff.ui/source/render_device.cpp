@@ -504,7 +504,8 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
         }
     }
 
-    texture = std::make_shared<ff::texture>(std::make_shared<DirectX::ScratchImage>(std::move(scratch)));
+    auto dxgi_texture = ff::dxgi_client().create_static_texture(std::make_shared<DirectX::ScratchImage>(std::move(scratch)), ff::dxgi::sprite_type::unknown);
+    texture = std::make_shared<ff::texture>(dxgi_texture);
 
     return *new ff::internal::ui::texture(texture, name);
 }

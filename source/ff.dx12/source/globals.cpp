@@ -104,26 +104,6 @@ static void flush_keep_alive()
     }
 }
 
-static void wait_for_keep_alive(bool for_reset)
-{
-    ff::dx12::fence_values values;
-    {
-        std::scoped_lock lock(::keep_alive_mutex);
-
-        if (for_reset)
-        {
-            ::keep_alive_resources.clear();
-        }
-        else for (auto& [resource, values] : ::keep_alive_resources)
-        {
-            values.add(values);
-        }
-    }
-
-    values.wait(nullptr);
-    ::flush_keep_alive();
-}
-
 static bool init_dxgi()
 {
     ::DXGIDeclareAdapterRemovalSupport();
@@ -174,18 +154,15 @@ static bool init_d3d(bool for_reset)
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_INFO, FALSE);
             info_queue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_MESSAGE, FALSE);
 
-            //D3D12_MESSAGE_ID hide[] =
-            //{
-            //    D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,
-            //    D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,
-            //    D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
-            //};
-            //
-            //D3D12_INFO_QUEUE_FILTER filter;
-            //memset(&filter, 0, sizeof(filter));
-            //filter.DenyList.NumIDs = _countof(hide);
-            //filter.DenyList.pIDList = hide;
-            //info_queue->AddStorageFilterEntries(&filter);
+            D3D12_MESSAGE_ID hide[] =
+            {
+                D3D12_MESSAGE_ID_CREATEPIPELINESTATE_CACHEDBLOBADAPTERMISMATCH,
+            };
+            
+            D3D12_INFO_QUEUE_FILTER filter{};
+            filter.DenyList.NumIDs = _countof(hide);
+            filter.DenyList.pIDList = hide;
+            info_queue->AddStorageFilterEntries(&filter);
         }
     }
 
@@ -236,10 +213,10 @@ static void destroy_d3d(bool for_reset)
 {
     assert(!::frame_commands);
 
+    ff::dx12::wait_for_idle();
+
     if (!for_reset)
     {
-        ::wait_for_keep_alive(for_reset);
-
         for (auto& i : ::cpu_descriptor_allocators)
         {
             i.reset();
@@ -330,6 +307,7 @@ bool ff::dx12::reset_device(bool force)
             if (::adapters_hash != ff::dxgi::get_adapters_hash(::factory.Get()) ||
                 ::outputs_hash != ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get()))
             {
+                ff::log::write(ff::log::type::dx12, "DXGI adapters or outputs changed");
                 force = true;
             }
         }
@@ -337,6 +315,7 @@ bool ff::dx12::reset_device(bool force)
 
     if (!force && FAILED(::device->GetDeviceRemovedReason()))
     {
+        ff::log::write(ff::log::type::dx12, "DX12 device was reset/removed");
         force = true;
     }
 
@@ -344,6 +323,8 @@ bool ff::dx12::reset_device(bool force)
 
     if (force)
     {
+        ff::log::write(ff::log::type::dx12, "Recreating DX12 device");
+
         static bool resetting = false;
         assert_ret_val(!resetting, false);
 
@@ -446,7 +427,7 @@ bool ff::dx12::device_valid()
 
 void ff::dx12::device_fatal_error(std::string_view reason)
 {
-    ff::log::write_debug_fail(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
+    ff::log::write(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
 
     if (ff::dx12::device_valid())
     {

@@ -10,6 +10,7 @@
 ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)
     : type(type)
     , name_(name)
+    , idle_fence(this->name_ + " idle fence", this)
 {
     this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::queue);
@@ -34,8 +35,7 @@ const std::string& ff::dx12::queue::name() const
 
 void ff::dx12::queue::wait_for_idle()
 {
-    ff::dx12::fence fence(this->name_ + " idle fence", this);
-    fence.signal(this).wait(nullptr);
+    this->idle_fence.signal(this).wait(nullptr);
 }
 
 std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()

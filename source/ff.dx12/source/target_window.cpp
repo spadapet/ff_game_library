@@ -433,7 +433,16 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             else if (this->main_window && msg.wp == VK_BACK)
             {
 #ifdef _DEBUG
-                ff::dxgi_host().defer_reset_device(true);
+#if !UWP_APP
+                if (::GetKeyState(VK_SHIFT) < 0)
+                {
+                    ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
+                }
+                else
+#endif
+                {
+                    ff::dxgi_host().defer_reset_device(true);
+                }
 #endif
             }
             break;

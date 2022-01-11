@@ -23,6 +23,7 @@ namespace ff::dx12
 
         ff::dx12::resource* dx12_resource_updated(ff::dx12::commands& commands);
         ff::dx12::resource* dx12_resource() const;
+        D3D12_CLEAR_VALUE optimized_clear_value() const;
 
         // texture_base
         virtual ff::dxgi::sprite_type sprite_type() const override;

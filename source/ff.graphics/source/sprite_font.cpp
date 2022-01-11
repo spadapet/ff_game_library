@@ -344,7 +344,8 @@ bool ff::sprite_font::init_sprites()
     for (DirectX::ScratchImage& scratch : staging_scratches)
     {
         auto shared_scratch = std::make_shared<DirectX::ScratchImage>(std::move(scratch));
-        textures.push_back(std::make_shared<ff::texture>(shared_scratch));
+        auto dxgi_texture = ff::dxgi_client().create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
+        textures.push_back(std::make_shared<ff::texture>(dxgi_texture));
     }
 
     std::vector<ff::sprite> sprite_vector;

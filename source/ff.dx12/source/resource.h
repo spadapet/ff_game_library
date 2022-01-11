@@ -36,6 +36,7 @@ namespace ff::dx12
         size_t sub_resource_size() const;
         size_t array_size() const;
         size_t mip_size() const;
+        D3D12_CLEAR_VALUE optimized_clear_value() const;
 
         ff::dx12::resource_state& global_state();
         void tracker(ff::dx12::resource_tracker* value);
@@ -83,7 +84,7 @@ namespace ff::dx12
         virtual bool reset() override;
 
         D3D12_RESOURCE_DESC desc_;
-        D3D12_CLEAR_VALUE optimized_clear_value;
+        D3D12_CLEAR_VALUE optimized_clear_value_;
         std::string name_;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
         std::unique_ptr<ff::dx12::residency_data> residency_data_;

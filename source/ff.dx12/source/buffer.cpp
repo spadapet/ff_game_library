@@ -255,7 +255,7 @@ bool ff::dx12::buffer::reset()
         this->initial_data,
         std::move(this->mapped_mem));
 
-    return *this;
+    return !this->initial_data || *this;
 }
 
 ff::dx12::buffer_upload::buffer_upload(ff::dxgi::buffer_type type)

@@ -10,8 +10,10 @@ static ff::dx12::residency_data* pageable_front{};
 static ff::dx12::residency_data* pageable_back{};
 static std::atomic_uint32_t usage_counter{ 0 };
 
-ff::dx12::residency_data::residency_data(Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, bool resident)
-    : pageable(std::move(pageable))
+ff::dx12::residency_data::residency_data(std::string_view name, ff::dx12::residency_access* owner, Microsoft::WRL::ComPtr<ID3D12Pageable>&& pageable, uint64_t size, bool resident)
+    : name(name)
+    , owner(owner)
+    , pageable(std::move(pageable))
     , size(size)
     , resident(resident)
     , usage_counter(0)
@@ -50,6 +52,8 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
 
             data->resident = true;
             data->resident_value = resident_fence_value;
+
+            ff::log::write(ff::log::type::dx12_residency, "Make data resident:", static_cast<void*>(data), ", name:", data->name);
         }
         else if (data->resident_value.complete())
         {
@@ -96,6 +100,8 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
                     make_evicted.push_back(data->pageable.Get());
                     make_evicted_size += data->size;
                     delta_resident_size -= std::min(data->size, delta_resident_size);
+
+                    ff::log::write(ff::log::type::dx12_residency, "Evict data:", static_cast<void*>(data), ", name:", data->name);
                 }
             }
         }

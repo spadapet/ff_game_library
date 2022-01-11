@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "device_reset_priority.h"
 #include "globals.h"
 #include "mem_allocator.h"
 
@@ -29,11 +30,14 @@ uint64_t ff::dx12::mem_buffer_free_list::range_t::after_end() const
 
 ff::dx12::mem_buffer_ring::mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage)
     : heap_(ff::string::concat("Ring ", ff::dx12::heap::usage_name(usage), " heap (", size, ")"), size, usage)
-{}
+{
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::mem_buffer_ring);
+}
 
 ff::dx12::mem_buffer_ring::~mem_buffer_ring()
 {
     assert(this->allocated_range_count.load() == 0);
+    ff::dx12::remove_device_child(this);
 }
 
 void ff::dx12::mem_buffer_ring::free_range(const ff::dx12::mem_range& range)
@@ -139,6 +143,12 @@ ff::dx12::mem_range ff::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64
     }
 
     return ff::dx12::mem_range();
+}
+
+void ff::dx12::mem_buffer_ring::before_reset()
+{
+    this->ranges.clear();
+    this->allocated_range_count = 0;
 }
 
 ff::dx12::mem_buffer_free_list::mem_buffer_free_list(uint64_t size, ff::dx12::heap::usage_t usage)

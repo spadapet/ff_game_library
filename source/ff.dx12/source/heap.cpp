@@ -170,7 +170,7 @@ bool ff::dx12::heap::reset()
         ID3D12Pageable* p = this->heap_.Get();
         ff::dx12::device()->SetResidencyPriority(1, &p, &priority);
 
-        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(p, this->size_, starts_resident);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(this->name_, this, p, this->size_, starts_resident);
 
         return true;
     }

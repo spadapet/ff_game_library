@@ -39,6 +39,7 @@ namespace ff::dx12
 
         std::mutex mutex;
         std::string name_;
+        ff::dx12::fence idle_fence;
         std::list<std::unique_ptr<ff::dx12::commands::data_cache_t>> caches;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators;
         std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators_before;

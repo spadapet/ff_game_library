@@ -22,7 +22,7 @@ namespace ff::dx12
         virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) = 0;
     };
 
-    class mem_buffer_ring : public ff::dx12::mem_buffer_base
+    class mem_buffer_ring : public ff::dx12::mem_buffer_base, private ff::dxgi::device_child_base
     {
     public:
         mem_buffer_ring(uint64_t size, ff::dx12::heap::usage_t usage);
@@ -50,6 +50,9 @@ namespace ff::dx12
             uint64_t size;
             ff::dx12::fence_value fence_value;
         };
+
+        // device_child_base
+        virtual void before_reset() override;
 
         ff::dx12::heap heap_;
         std::list<range_t> ranges;

@@ -203,7 +203,7 @@ bool ff::dx12::fence::complete(uint64_t value)
 
 void ff::dx12::fence::before_reset()
 {
-    this->completed_value = std::max(this->completed_value, this->fence_->GetCompletedValue());
+    this->completed_value = 1;
     this->next_value_ = this->completed_value + 1;
     this->fence_.Reset();
 }

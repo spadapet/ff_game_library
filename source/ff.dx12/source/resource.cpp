@@ -56,7 +56,7 @@ ff::dx12::resource::resource(std::string_view name, const D3D12_RESOURCE_DESC& d
 ff::dx12::resource::resource(std::string_view name, ID3D12ResourceX* swap_chain_resource)
     : name_(name)
     , desc_(swap_chain_resource->GetDesc())
-    , optimized_clear_value{}
+    , optimized_clear_value_{}
     , resource_(swap_chain_resource)
     , external_resource(true)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
@@ -74,7 +74,7 @@ ff::dx12::resource::resource(
     bool allocate_mem_range)
     : name_(name)
     , desc_(desc)
-    , optimized_clear_value(optimized_clear_value)
+    , optimized_clear_value_(optimized_clear_value)
     , mem_range_(mem_range)
     , external_resource(false)
     , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
@@ -83,9 +83,9 @@ ff::dx12::resource::resource(
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && desc.MipLevels * desc.DepthOrArraySize > 0);
 
     bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-    if (target && this->optimized_clear_value.Format == DXGI_FORMAT_UNKNOWN)
+    if (target && this->optimized_clear_value_.Format == DXGI_FORMAT_UNKNOWN)
     {
-        this->optimized_clear_value = { desc.Format };
+        this->optimized_clear_value_ = { desc.Format };
     }
 
     if (allocate_mem_range && !mem_range)
@@ -103,7 +103,7 @@ ff::dx12::resource::resource(
 }
 
 ff::dx12::resource::resource(std::string_view name, resource& other, ff::dx12::commands* commands)
-    : resource(name, other.desc_, other.optimized_clear_value)
+    : resource(name, other.desc_, other.optimized_clear_value_)
 {
     std::unique_ptr<ff::dx12::commands> new_commands = ::get_copy_commands(commands);
     commands->copy_resource(*this, other);
@@ -131,7 +131,7 @@ ff::dx12::resource& ff::dx12::resource::operator=(resource&& other) noexcept
         std::swap(this->resource_, other.resource_);
         std::swap(this->mem_range_, other.mem_range_);
         std::swap(this->residency_data_, other.residency_data_);
-        std::swap(this->optimized_clear_value, other.optimized_clear_value);
+        std::swap(this->optimized_clear_value_, other.optimized_clear_value_);
         std::swap(this->name_, other.name_);
         std::swap(this->desc_, other.desc_);
         std::swap(this->global_state_, other.global_state_);
@@ -186,6 +186,11 @@ size_t ff::dx12::resource::array_size() const
 size_t ff::dx12::resource::mip_size() const
 {
     return static_cast<size_t>(this->desc_.MipLevels);
+}
+
+D3D12_CLEAR_VALUE ff::dx12::resource::optimized_clear_value() const
+{
+    return this->optimized_clear_value_;
 }
 
 ff::dx12::resource_state& ff::dx12::resource::global_state()
@@ -477,6 +482,7 @@ bool ff::dx12::resource::reset()
     if (this->external_resource)
     {
         // this resource shouldn't be recreated (like a swap chain buffer)
+        return true;
     }
     else if (!this->mem_range_)
     {
@@ -495,7 +501,7 @@ bool ff::dx12::resource::reset()
             heap_flags,
             &this->desc_,
             this->global_state_.get(0).first,
-            (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
+            (this->optimized_clear_value_.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value_ : nullptr,
             IID_PPV_ARGS(&resource))) ||
             FAILED(resource.As(&this->resource_)) ||
             FAILED(resource.As(&pageable)))
@@ -504,7 +510,7 @@ bool ff::dx12::resource::reset()
         }
 
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
-        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(std::move(pageable), alloc_info.SizeInBytes, starts_resident);
+        this->residency_data_ = std::make_unique<ff::dx12::residency_data>(this->name_, this, std::move(pageable), alloc_info.SizeInBytes, starts_resident);
     }
     else
     {
@@ -513,7 +519,7 @@ bool ff::dx12::resource::reset()
             this->mem_range_->start(),
             &this->desc_,
             this->global_state_.get(0).first,
-            (this->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value : nullptr,
+            (this->optimized_clear_value_.Format != DXGI_FORMAT_UNKNOWN) ? &this->optimized_clear_value_ : nullptr,
             IID_PPV_ARGS(&resource))) ||
             FAILED(resource.As(&this->resource_)))
         {
@@ -521,7 +527,11 @@ bool ff::dx12::resource::reset()
         }
     }
 
-    this->resource_->SetName(ff::string::to_wstring(this->name_).c_str());
+    if (this->resource_)
+    {
+        this->resource_->SetName(ff::string::to_wstring(this->name_).c_str());
+        return true;
+    }
 
-    return true;
+    return false;
 }
