@@ -29,8 +29,8 @@ namespace ff::dx12
 
         operator bool() const;
         const std::string& name() const;
-        void* cpu_data();
-        D3D12_GPU_VIRTUAL_ADDRESS gpu_data();
+        void* cpu_data() const;
+        D3D12_GPU_VIRTUAL_ADDRESS gpu_data() const;
         uint64_t size() const;
         usage_t usage() const;
         bool cpu_usage() const;
@@ -40,13 +40,11 @@ namespace ff::dx12
 
     private:
         friend ID3D12HeapX* ff::dx12::get_heap(const ff::dx12::heap& obj);
-        friend ID3D12ResourceX* ff::dx12::get_resource(ff::dx12::heap& obj);
+        friend ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::heap& obj);
 
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
-
-        void cpu_unmap();
 
         std::unique_ptr<ff::dx12::residency_data> residency_data_;
         std::string name_;

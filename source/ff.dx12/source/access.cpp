@@ -26,9 +26,9 @@ ID3D12HeapX* ff::dx12::get_heap(const ff::dx12::heap& obj)
     return obj.heap_.Get();
 }
 
-ID3D12ResourceX* ff::dx12::get_resource(ff::dx12::heap& obj)
+ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::heap& obj)
 {
-    return obj.cpu_data() ? obj.cpu_resource.Get() : nullptr;
+    return obj.cpu_resource.Get();
 }
 
 ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::resource& obj)

@@ -39,7 +39,7 @@ ff::dx12::heap::heap(heap&& other) noexcept
 
 ff::dx12::heap::~heap()
 {
-    this->cpu_unmap();
+    this->before_reset();
     ff::dx12::remove_device_child(this);
 }
 
@@ -53,43 +53,14 @@ const std::string& ff::dx12::heap::name() const
     return this->name_;
 }
 
-void* ff::dx12::heap::cpu_data()
+void* ff::dx12::heap::cpu_data() const
 {
-    if (this->heap_ && this->cpu_usage())
-    {
-        if (!this->cpu_data_)
-        {
-            Microsoft::WRL::ComPtr<ID3D12Resource> cpu_resource;
-
-            if (!this->cpu_resource && FAILED(ff::dx12::device()->CreatePlacedResource(
-                this->heap_.Get(),
-                0, // start
-                &CD3DX12_RESOURCE_DESC::Buffer(this->size_),
-                (this->usage_ == ff::dx12::heap::usage_t::upload) ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
-                nullptr, // clear value
-                IID_PPV_ARGS(&cpu_resource))))
-            {
-                assert(false);
-                return nullptr;
-            }
-
-            if (FAILED(cpu_resource.As(&this->cpu_resource)) ||
-                FAILED(this->cpu_resource->Map(0, nullptr, &this->cpu_data_)))
-            {
-                assert(false);
-                return nullptr;
-            }
-        }
-
-        return this->cpu_data_;
-    }
-
-    return nullptr;
+    return this->cpu_data_;
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::heap::gpu_data()
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::heap::gpu_data() const
 {
-    return this->cpu_data() ? this->cpu_resource->GetGPUVirtualAddress() : 0;
+    return this->cpu_resource ? this->cpu_resource->GetGPUVirtualAddress() : 0;
 }
 
 uint64_t ff::dx12::heap::size() const
@@ -114,7 +85,17 @@ ff::dx12::residency_data* ff::dx12::heap::residency_data()
 
 void ff::dx12::heap::before_reset()
 {
-    this->cpu_unmap();
+    if (this->cpu_resource)
+    {
+        if (this->cpu_data_)
+        {
+            this->cpu_resource->Unmap(0, nullptr);
+            this->cpu_data_ = nullptr;
+        }
+
+        this->cpu_resource.Reset();
+    }
+
     this->residency_data_.reset();
     this->heap_.Reset();
 }
@@ -165,30 +146,32 @@ bool ff::dx12::heap::reset()
     CD3DX12_HEAP_DESC desc(this->size_, props, 0, flags);
     if (SUCCEEDED(ff::dx12::device()->CreateHeap(&desc, IID_PPV_ARGS(&this->heap_))))
     {
-        this->heap_->SetName(ff::string::to_wstring(this->name_).c_str());
-
         ID3D12Pageable* p = this->heap_.Get();
         ff::dx12::device()->SetResidencyPriority(1, &p, &priority);
 
+        this->heap_->SetName(ff::string::to_wstring(this->name_).c_str());
         this->residency_data_ = std::make_unique<ff::dx12::residency_data>(this->name_, this, p, this->size_, starts_resident);
+
+        if (this->cpu_usage())
+        {
+            Microsoft::WRL::ComPtr<ID3D12Resource> cpu_resource;
+
+            if (FAILED(ff::dx12::device()->CreatePlacedResource(
+                    this->heap_.Get(),
+                    0, // start
+                    &CD3DX12_RESOURCE_DESC::Buffer(this->size_),
+                    (this->usage_ == ff::dx12::heap::usage_t::upload) ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
+                    nullptr, // clear value
+                    IID_PPV_ARGS(&cpu_resource))) ||
+                FAILED(cpu_resource.As(&this->cpu_resource)) ||
+                FAILED(this->cpu_resource->Map(0, nullptr, &this->cpu_data_)))
+            {
+                debug_fail_ret_val(false);
+            }
+        }
 
         return true;
     }
 
-    ff::dx12::device_fatal_error("Heap creation failure (out of memory)");
     return false;
-}
-
-void ff::dx12::heap::cpu_unmap()
-{
-    if (this->cpu_resource)
-    {
-        if (this->cpu_data_)
-        {
-            this->cpu_resource->Unmap(0, nullptr);
-            this->cpu_data_ = nullptr;
-        }
-
-        this->cpu_resource.Reset();
-    }
 }

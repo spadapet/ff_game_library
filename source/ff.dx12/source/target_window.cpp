@@ -219,9 +219,9 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
-        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> device = ff::dx12::get_command_queue(ff::dx12::direct_queue());
+        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> command_queue = ff::dx12::get_command_queue(ff::dx12::direct_queue());
 
-        ff::thread_dispatch::get_main()->send([this, factory, device, &new_swap_chain, &desc]()
+        ff::thread_dispatch::get_main()->send([this, factory, command_queue, &new_swap_chain, &desc]()
         {
 #if UWP_APP
             if (this->window)
@@ -234,20 +234,20 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
                     Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
 
                     if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(IID_PPV_ARGS(&native_panel))) ||
-                        FAILED(factory->CreateSwapChainForComposition(device.Get(), &desc, nullptr, &new_swap_chain)) ||
+                        FAILED(factory->CreateSwapChainForComposition(command_queue.Get(), &desc, nullptr, &new_swap_chain)) ||
                         FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
                     {
                         debug_fail();
                     }
                 }
-                else if (FAILED(factory->CreateSwapChainForCoreWindow(device.Get(), reinterpret_cast<IUnknown*>(this->window->handle()), &desc, nullptr, &new_swap_chain)))
+                else if (FAILED(factory->CreateSwapChainForCoreWindow(command_queue.Get(), reinterpret_cast<IUnknown*>(this->window->handle()), &desc, nullptr, &new_swap_chain)))
                 {
                     debug_fail();
                 }
             }
 #else
             if (!*this->window ||
-                FAILED(factory->CreateSwapChainForHwnd(device.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
+                FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
                 FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
             {
                 debug_fail();
@@ -436,6 +436,8 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
 #if !UWP_APP
                 if (::GetKeyState(VK_SHIFT) < 0)
                 {
+                    // Since this happens on the UI thread, the game thread could be in the middle of anything.
+                    // It's risky to access the DX12 device from this thread, but this is for debugging only.
                     ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
                 }
                 else

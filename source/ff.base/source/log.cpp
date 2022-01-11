@@ -19,7 +19,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
 {
     { ff::log::type::none, { "ff", false } },
     { ff::log::type::normal, { "ff/game", true } },
-    { ff::log::type::debug, { "ff/debug", DEBUG ? true : false } },
+    { ff::log::type::debug, { "ff/debug", DEBUG } },
 
     { ff::log::type::application, { "ff/app", true } },
     { ff::log::type::audio, { "ff/audio", true } },
@@ -27,7 +27,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::data, { "ff/data", true } },
     { ff::log::type::dx12, { "ff/dx12", true } },
     { ff::log::type::dx12_fence, { "ff/dx12_fence", false } },
-    { ff::log::type::dx12_residency, { "ff/dx12_residency", true } },
+    { ff::log::type::dx12_residency, { "ff/dx12_residency", DEBUG } },
     { ff::log::type::dxgi, { "ff/dxgi", true } },
     { ff::log::type::graphics, { "ff/graph", true } },
     { ff::log::type::input, { "ff/input", true } },

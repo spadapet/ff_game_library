@@ -12,6 +12,6 @@ namespace ff::dx12
     ID3D12DescriptorHeapX* get_descriptor_heap(const ff::dx12::gpu_descriptor_allocator& obj);
     ID3D12FenceX* get_fence(const ff::dx12::fence& obj);
     ID3D12HeapX* get_heap(const ff::dx12::heap& obj);
-    ID3D12ResourceX* get_resource(ff::dx12::heap& obj);
+    ID3D12ResourceX* get_resource(const ff::dx12::heap& obj);
     ID3D12ResourceX* get_resource(const ff::dx12::resource& obj);
 }
