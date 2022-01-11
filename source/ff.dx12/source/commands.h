@@ -18,6 +18,9 @@ namespace ff::dx12
     class resource_tracker;
     class queue;
 
+    /// <summary>
+    /// Wrapper for DX12 command lists, with automatic resource management (states and residency)
+    /// </summary>
     class commands : public ff::dxgi::command_context_base
     {
     public:

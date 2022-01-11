@@ -2,6 +2,9 @@
 
 namespace ff::dx12
 {
+    // These functions are the only way to access the internal DX12 objects from
+    // the wrapper objects in this library. Wrapper objects shouldn't expose them in any other way.
+
     class fence;
     class gpu_descriptor_allocator;
     class heap;

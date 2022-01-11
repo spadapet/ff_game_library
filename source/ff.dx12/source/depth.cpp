@@ -30,8 +30,7 @@ ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
             D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         clear_value);
 
-    bool status = this->reset();
-    assert(status);
+    verify(this->reset());
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }

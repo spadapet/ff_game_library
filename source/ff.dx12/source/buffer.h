@@ -8,6 +8,9 @@ namespace ff::dx12
     class commands;
     class resource;
 
+    /// <summary>
+    /// Base class for any type of DX12 buffer resource
+    /// </summary>
     class buffer_base : public ff::dxgi::buffer_base, public ff::dx12::residency_access
     {
     public:
