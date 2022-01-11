@@ -11,7 +11,7 @@
     <ClCompile>
       <PrecompiledHeaderFile>DirectXTexP.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>directxtex_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>directxtex_inc\Shaders\Compiled;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>	
   <ItemGroup>
