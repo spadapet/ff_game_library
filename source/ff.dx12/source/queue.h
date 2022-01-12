@@ -5,6 +5,8 @@
 
 namespace ff::dx12
 {
+    enum class gpu_event;
+
     class queue : private ff::dxgi::device_child_base
     {
     public:
@@ -19,6 +21,8 @@ namespace ff::dx12
         operator bool() const;
         const std::string& name() const;
         void wait_for_idle();
+        void begin_event(ff::dx12::gpu_event type);
+        void end_event();
 
         std::unique_ptr<ff::dx12::commands> new_commands();
         ff::dx12::fence_value execute(ff::dx12::commands& commands);

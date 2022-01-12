@@ -214,6 +214,8 @@ namespace ff::dxgi::draw_util
         virtual void internal_reset() = 0;
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
         virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) = 0;
+        virtual void internal_flush_begin(ff::dxgi::command_context_base* context);
+        virtual void internal_flush_end(ff::dxgi::command_context_base* context);
 
         virtual ff::dxgi::buffer_base& geometry_buffer() = 0;
         virtual ff::dxgi::buffer_base& geometry_constants_buffer_0() = 0;

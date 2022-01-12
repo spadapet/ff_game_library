@@ -31,11 +31,18 @@
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 
+  <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(ConfigurationType)' != 'StaticLibrary' ">
+    <!-- For UWP builds, these files are copied in cpp.props as None.DeploymentContent -->
+    <Copy SourceFiles="$(NoesisDll);$(WinPixDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
+  </Target>
+
   <ItemDefinitionGroup>
     <!-- Compiler options -->
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;$(WinPixIncDir)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -102,6 +109,8 @@
     </ResourceCompile>
     <!-- Linker options -->
     <Link>
+      <AdditionalLibraryDirectories>$(NoesisLibDir);$(WinPixLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>
       <GenerateDebugInformation Condition=" '$(Configuration)' != 'Debug' ">true</GenerateDebugInformation>

@@ -21,6 +21,7 @@
     <ClCompile Include="source\fence_value.cpp" />
     <ClCompile Include="source\fence_values.cpp" />
     <ClCompile Include="source\globals.cpp" />
+    <ClCompile Include="source\gpu_event.cpp" />
     <ClCompile Include="source\heap.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\mem_allocator.cpp" />
@@ -51,6 +52,7 @@
     <ClInclude Include="source\descriptor_range.h" />
     <ClInclude Include="source\device_reset_priority.h" />
     <ClInclude Include="source\draw_device.h" />
+    <ClInclude Include="source\gpu_event.h" />
     <ClInclude Include="source\fence.h" />
     <ClInclude Include="source\fence_value.h" />
     <ClInclude Include="source\fence_values.h" />
@@ -92,6 +94,7 @@
     <None Include="assets\shaders.hlsl">
       <FileType>Document</FileType>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

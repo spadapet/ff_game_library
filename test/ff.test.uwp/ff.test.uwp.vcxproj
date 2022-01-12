@@ -7,14 +7,6 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalIncludeDirectories>$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;$(FFRoot)vendor\libpng_inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <AdditionalLibraryDirectories>$(NoesisLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="app.xaml.h">
@@ -69,9 +61,6 @@
     </None>
     <None Include="ui_assets\theme\NoesisTheme.Styles.xaml">
       <FileType>Document</FileType>
-    </None>
-    <None Include="$(NoesisDll)">
-      <DeploymentContent>true</DeploymentContent>
     </None>
     <Page Include="source\test_ui.xaml" />
   </ItemGroup>

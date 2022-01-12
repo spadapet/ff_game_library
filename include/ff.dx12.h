@@ -13,6 +13,7 @@
 #include "../source/ff.dx12/source/fence_value.h"
 #include "../source/ff.dx12/source/fence_values.h"
 #include "../source/ff.dx12/source/globals.h"
+#include "../source/ff.dx12/source/gpu_event.h"
 #include "../source/ff.dx12/source/heap.h"
 #include "../source/ff.dx12/source/init.h"
 #include "../source/ff.dx12/source/mem_allocator.h"
@@ -33,3 +34,9 @@
 #include "../source/ff.dx12/source/texture_view_access.h"
 
 #pragma comment(lib, "d3d12.lib")
+
+#if UWP_APP
+#pragma comment(lib, "WinPixEventRuntime_UAP.lib")
+#else
+#pragma comment(lib, "WinPixEventRuntime.lib")
+#endif

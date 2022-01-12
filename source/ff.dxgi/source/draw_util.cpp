@@ -910,6 +910,7 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
 {
     if (this->last_depth_type != ff::dxgi::draw_util::last_depth_type::none && this->create_geometry_buffer())
     {
+        this->internal_flush_begin(this->command_context_);
         this->update_geometry_constant_buffer_0();
         this->update_geometry_constant_buffer_1();
         this->update_pixel_constant_buffer_0();
@@ -928,6 +929,7 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
 
         this->draw_opaque_geometry();
         this->draw_alpha_geometry();
+        this->internal_flush_end(this->command_context_);
 
         // Reset draw data
 
@@ -1410,3 +1412,9 @@ ff::dxgi::draw_util::geometry_bucket& ff::dxgi::draw_util::draw_device_base::get
 {
     return this->geometry_buckets[static_cast<size_t>(type)];
 }
+
+void ff::dxgi::draw_util::draw_device_base::internal_flush_begin(ff::dxgi::command_context_base* context)
+{}
+
+void ff::dxgi::draw_util::draw_device_base::internal_flush_end(ff::dxgi::command_context_base * context)
+{}

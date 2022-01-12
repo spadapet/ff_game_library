@@ -17,6 +17,7 @@ namespace ff::dx12
     class resource;
     class resource_tracker;
     class queue;
+    enum class gpu_event;
 
     /// <summary>
     /// Wrapper for DX12 command lists, with automatic resource management (states and residency)
@@ -55,6 +56,10 @@ namespace ff::dx12
         operator bool() const;
         ff::dx12::queue& queue() const;
         ff::dx12::fence_value next_fence_value();
+
+        // PIX events
+        void begin_event(ff::dx12::gpu_event type);
+        void end_event();
 
         // For queue use only
         void close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);

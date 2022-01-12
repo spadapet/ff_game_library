@@ -5,6 +5,7 @@
 #include "device_reset_priority.h"
 #include "draw_device.h"
 #include "globals.h"
+#include "gpu_event.h"
 #include "object_cache.h"
 #include "target_access.h"
 #include "texture.h"
@@ -346,6 +347,7 @@ namespace
         {
             if (end_draw)
             {
+                this->commands->end_event();
                 this->commands = nullptr;
             }
 
@@ -363,13 +365,23 @@ namespace
             this->pixel_constants_version_0 = 0;
 
             this->commands = &ff::dx12::frame_commands();
+            this->commands->begin_event(ff::dx12::gpu_event::draw_2d);
             this->commands->targets(&this->setup_target, 1, this->setup_depth);
             this->commands->viewports(&this->setup_viewport, 1);
             this->commands->root_signature(this->root_signature.Get());
             this->commands->root_descriptors(3, this->samplers_gpu);
 
-
             return this->internal_flush(nullptr, false);
+        }
+
+        virtual void internal_flush_begin(ff::dxgi::command_context_base* context) override
+        {
+            this->commands->begin_event(ff::dx12::gpu_event::draw_batch);
+        }
+
+        virtual void internal_flush_end(ff::dxgi::command_context_base* context) override
+        {
+            this->commands->end_event();
         }
 
         virtual void update_palette_texture(ff::dxgi::command_context_base& context,
@@ -377,6 +389,8 @@ namespace
             ff::dxgi::texture_base& palette_texture, size_t* palette_texture_hashes, palette_to_index_t& palette_to_index,
             ff::dxgi::texture_base& palette_remap_texture, size_t* palette_remap_texture_hashes, palette_remap_to_index_t& palette_remap_to_index) override
         {
+            this->commands->begin_event(ff::dx12::gpu_event::update_palette);
+
             if (textures_using_palette_count && !palette_to_index.empty())
             {
                 ff::dx12::texture& dest_texture = ff::dx12::texture::get(palette_texture);
@@ -422,6 +436,8 @@ namespace
                     }
                 }
             }
+
+            this->commands->end_event();
         }
 
         virtual void apply_shader_input(ff::dxgi::command_context_base& context,

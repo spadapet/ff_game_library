@@ -3,9 +3,12 @@
 #include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
+#include "gpu_event.h"
 #include "residency.h"
 #include "resource_tracker.h"
 #include "queue.h"
+
+#include <pix3.h>
 
 ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)
     : type(type)
@@ -36,6 +39,16 @@ const std::string& ff::dx12::queue::name() const
 void ff::dx12::queue::wait_for_idle()
 {
     this->idle_fence.signal(this).wait(nullptr);
+}
+
+void ff::dx12::queue::begin_event(ff::dx12::gpu_event type)
+{
+    ::PIXBeginEvent(this->command_queue.Get(), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+}
+
+void ff::dx12::queue::end_event()
+{
+    ::PIXEndEvent(this->command_queue.Get());
 }
 
 std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()

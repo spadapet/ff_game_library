@@ -92,6 +92,9 @@
     <ClCompile Include="source\target_window.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\gpu_event.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -188,6 +191,12 @@
     <ClInclude Include="source\target_window.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\events.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\gpu_event.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
@@ -206,5 +215,6 @@
     <None Include="assets\shaders.hlsl">
       <Filter>assets</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

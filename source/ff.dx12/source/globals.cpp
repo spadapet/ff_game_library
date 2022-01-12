@@ -2,6 +2,7 @@
 #include "descriptor_allocator.h"
 #include "fence.h"
 #include "globals.h"
+#include "gpu_event.h"
 #include "mem_allocator.h"
 #include "object_cache.h"
 #include "queue.h"
@@ -496,6 +497,7 @@ void ff::dx12::frame_started()
 
     ::flush_keep_alive();
     ::update_video_memory_info();
+    ff::dx12::direct_queue().begin_event(ff::dx12::gpu_event::render_frame);
     ::frame_commands = ff::dx12::direct_queue().new_commands();
 
     ff::dxgi_host().frame_started();
@@ -507,6 +509,7 @@ void ff::dx12::frame_complete()
 
     ::frame_commands.reset();
     ::frame_complete_signal.notify(++::frame_count);
+    ff::dx12::direct_queue().end_event();
 
     ff::dxgi_host().frame_complete();
 

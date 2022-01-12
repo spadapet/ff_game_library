@@ -8,12 +8,15 @@
 #include "device_reset_priority.h"
 #include "fence.h"
 #include "globals.h"
+#include "gpu_event.h"
 #include "heap.h"
 #include "mem_range.h"
 #include "queue.h"
 #include "resource.h"
 #include "resource_tracker.h"
 #include "target_access.h"
+
+#include <pix3.h>
 
 static std::atomic_int data_counter;
 
@@ -66,6 +69,16 @@ ff::dx12::queue& ff::dx12::commands::queue() const
 ff::dx12::fence_value ff::dx12::commands::next_fence_value()
 {
     return this->data_cache->fence.next_value();
+}
+
+void ff::dx12::commands::begin_event(ff::dx12::gpu_event type)
+{
+    ::PIXBeginEvent(this->list(false), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+}
+
+void ff::dx12::commands::end_event()
+{
+    ::PIXEndEvent(this->list(false));
 }
 
 void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)
