@@ -1,0 +1,15 @@
+{
+  "res:namespace": "assets::xaml",
+
+  "application_resources.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../../ff.resource.editor.designer/application_resources.xaml"
+  },
+
+  "application_theme.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../../ff.resource.editor.designer/application_theme.xaml"
+  }
+}

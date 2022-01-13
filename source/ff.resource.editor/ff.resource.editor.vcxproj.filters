@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="source\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\assets\xaml.res.cpp">
+      <Filter>source\assets</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{f7f96725-97f7-4a38-9c9a-2f833f5e7ed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{97b52f41-16aa-487e-9a31-8b2c4cddb8e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\assets">
+      <UniqueIdentifier>{83975541-9861-4e51-bc86-97d8d51a93ea}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="source\resource.rc">
+      <Filter>source</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\xaml.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
+  </ItemGroup>
+</Project>

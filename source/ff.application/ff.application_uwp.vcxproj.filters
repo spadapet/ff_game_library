@@ -35,7 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="application_api.h" />
     <ClInclude Include="source\app.h">
       <Filter>source</Filter>
     </ClInclude>
