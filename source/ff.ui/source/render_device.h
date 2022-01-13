@@ -1,7 +1,5 @@
 #pragma once
 
-#if DXVER == 12
-
 namespace ff::internal::ui
 {
     class render_device : public Noesis::RenderDevice, private ff::dxgi::device_child_base
@@ -61,5 +59,3 @@ namespace ff::internal::ui
         ff::dx12::descriptor_range empty_views_cpu; // 3 (constant buffer, color texture, palette texture)
     };
 }
-
-#endif

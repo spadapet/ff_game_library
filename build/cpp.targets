@@ -31,7 +31,7 @@
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 
-  <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(ConfigurationType)' != 'StaticLibrary' ">
+  <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(Configuration)' != 'Release' And '$(ConfigurationType)' != 'StaticLibrary' ">
     <!-- For UWP builds, these files are copied in cpp.props as None.DeploymentContent -->
     <Copy SourceFiles="$(NoesisDll);$(WinPixDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
   </Target>
@@ -55,7 +55,7 @@
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;DXVER=$(DirectXVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
@@ -67,6 +67,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Full</Optimization>
       <PreprocessorDefinitions>NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Profile' ">PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck></SDLCheck>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' == 'Debug' ">

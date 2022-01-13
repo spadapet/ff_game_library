@@ -35,8 +35,8 @@
 
 #pragma comment(lib, "d3d12.lib")
 
-#if UWP_APP
+#if defined(_WIN64) && UWP_APP
 #pragma comment(lib, "WinPixEventRuntime_UAP.lib")
-#else
+#elif defined(_WIN64)
 #pragma comment(lib, "WinPixEventRuntime.lib")
 #endif

@@ -5,7 +5,7 @@
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <NoesisVersion>3.1.2</NoesisVersion>
-    <DefaultDirectXVersion>12</DefaultDirectXVersion>
+    <WinPixVersion>1.0.210818001</WinPixVersion>
 
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
@@ -42,10 +42,9 @@
     <IntDir>$(ProjectOutRoot)obj\</IntDir>
     <OutDir>$(ProjectOutRoot)bin\</OutDir>
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
+  </PropertyGroup>
 
-    <!-- Graphics -->
-    <DirectXVersion Condition=" '$(DirectXVersion)' == '' ">$(DefaultDirectXVersion)</DirectXVersion>
-
+  <PropertyGroup Condition="Exists('$(PackagesRoot)ffui.$(NoesisVersion)')">
     <!-- Noesis -->
     <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\</NoesisLibDir>
@@ -57,9 +56,11 @@
     <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\uwp_x86\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\uwp_x86_64\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'UWP' And !Exists('$(NoesisDll)') ">$(NoesisDll.Replace("\uwp_", "\windows_"))</NoesisDll>
-    
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)')">
     <!-- WinPix -->
-    <WinPixRoot Condition=" '$(WinPixRoot)' == '' And '$(XPlatform)' == 'x64' ">$(PackagesRoot)WinPixEventRuntime.1.0.210818001\</WinPixRoot>
+    <WinPixRoot Condition=" '$(WinPixRoot)' == '' And '$(XPlatform)' == 'x64' ">$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
     <WinPixLibDir Condition=" '$(XPlatform)' == 'x64' ">$(WinPixRoot)bin\x64\</WinPixLibDir>
     <WinPixIncDir Condition=" '$(XPlatform)' == 'x64' ">$(WinPixRoot)Include\WinPixEventRuntime\</WinPixIncDir>
     <WinPixDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(WinPixLibDir)WinPixEventRuntime_UAP.dll</WinPixDll>
@@ -103,12 +104,20 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Profile|Win32">
+      <Configuration>Profile</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Profile|x64">
+      <Configuration>Profile</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
@@ -119,18 +128,22 @@
       <Configuration>Debug</Configuration>
       <Platform>ARM</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Profile|ARM">
+      <Configuration>Profile</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Release|ARM">
       <Configuration>Release</Configuration>
       <Platform>ARM</Platform>
     </ProjectConfiguration>-->
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(AppType)' == 'UWP' And '$(ConfigurationType)' != 'StaticLibrary' ">
+  <ItemGroup Condition=" '$(AppType)' == 'UWP' And '$(Configuration)' != 'Release' And '$(ConfigurationType)' != 'StaticLibrary' ">
     <!-- For Desktop builds, these files are copied in AfterBuild2 in cpp.targets -->
-    <None Include="$(NoesisDll)">
+    <None Condition="Exists('$(NoesisDll)')" Include="$(NoesisDll)">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="$(WinPixDll)">
+    <None Condition="Exists('$(WinPixDll)')" Include="$(WinPixDll)">
       <DeploymentContent>true</DeploymentContent>
     </None>
   </ItemGroup>
@@ -142,8 +155,8 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
 
-  <!-- Release-only properties, possibly used by Cpp.props -->
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' " Label="Configuration">
+  <!-- Release/Profile properties, possibly used by Cpp.props -->
+  <PropertyGroup Condition=" '$(Configuration)' != 'Debug' " Label="Configuration">
     <LinkIncremental>false</LinkIncremental>
     <UseDebugLibraries>false</UseDebugLibraries>
     <UseDotNetNativeToolchain Condition=" '$(UseDotNetNativeToolchain)' == '' And '$(AppType)' == 'UWP' And '$(ConfigurationType)' == 'Application' ">true</UseDotNetNativeToolchain>

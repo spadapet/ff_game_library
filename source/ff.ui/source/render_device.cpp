@@ -4,8 +4,6 @@
 #include "texture.h"
 #include "ui.h"
 
-#if DXVER == 12
-
 static void set_filter(Noesis::MinMagFilter::Enum minmag, Noesis::MipFilter::Enum mip, D3D12_SAMPLER_DESC& desc)
 {
     switch (minmag)
@@ -879,5 +877,3 @@ std::pair<ID3D12PipelineStateX*, size_t> ff::internal::ui::render_device::pipeli
 
     return std::make_pair(i->second.Get(), shader.stride);
 }
-
-#endif
