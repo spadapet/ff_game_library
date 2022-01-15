@@ -55,7 +55,6 @@ ff::debug_state::debug_state()
     , debug_page(0)
     , font("ff.debug_font")
     , input_mapping("ff.debug_page_input")
-    , draw_device(ff::dxgi_client().create_draw_device())
     , mem_stats{}
     , total_advance_count(0)
     , total_render_count(0)
@@ -195,7 +194,7 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target
                 ff::rect_float target_rect(0, 0, rotated_size.x, rotated_size.y);
                 ff::rect_float scaled_target_rect = target_rect / static_cast<float>(target.size().dpi_scale);
 
-                ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, scaled_target_rect);
+                ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, nullptr, target_rect, scaled_target_rect);
                 if (draw)
                 {
                     DirectX::XMFLOAT4 color = ff::dxgi::color_magenta();

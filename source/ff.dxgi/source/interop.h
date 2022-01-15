@@ -26,13 +26,14 @@ namespace ff::dxgi
         std::function<void()> wait_for_idle;
         std::function<void()> frame_started;
         std::function<void()> frame_complete;
-        std::function<ff::dxgi::command_context_base&()> frame_context;
+        std::function<ff::dxgi::command_context_base& ()> frame_context;
+        std::function<ff::dxgi::draw_device_base&()> global_draw_device;
 
         std::function<std::shared_ptr<ff::dxgi::texture_base>(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)> create_render_texture;
         std::function<std::shared_ptr<ff::dxgi::texture_base>(const std::shared_ptr<DirectX::ScratchImage>&, ff::dxgi::sprite_type)> create_static_texture;
         std::function<std::shared_ptr<ff::dxgi::depth_base>(ff::point_size size, size_t sample_count)> create_depth;
         std::function<std::shared_ptr<ff::dxgi::target_window_base>(ff::window*)> create_target_for_window;
-        std::function<std::shared_ptr<ff::dxgi::target_base>(const std::shared_ptr<ff::dxgi::texture_base>&, size_t array_start, size_t array_count, size_t mip_level)> create_target_for_texture;
+        std::function<std::shared_ptr<ff::dxgi::target_base>(const std::shared_ptr<ff::dxgi::texture_base>&, size_t array_start, size_t array_count, size_t mip_level, int dmdo_native, int dmdo_rotate, double dpi_scale)> create_target_for_texture;
         std::function<std::unique_ptr<ff::dxgi::draw_device_base>()> create_draw_device;
     };
 }

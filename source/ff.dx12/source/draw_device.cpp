@@ -354,10 +354,12 @@ namespace
             return this->commands;
         }
 
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) override
+        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation) override
         {
+            const ff::rect_float rotated_view_rect = !ignore_orientation ? target.size().rotate_rect(view_rect) : view_rect;
+
             this->setup_target = &target;
-            this->setup_viewport = ::get_viewport(ff::dxgi::draw_util::get_rotated_view_rect(target, view_rect));
+            this->setup_viewport = ::get_viewport(rotated_view_rect);
             this->setup_depth = depth;
 
             this->geometry_constants_version_0 = 0;

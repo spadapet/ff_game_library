@@ -33,12 +33,9 @@ std::shared_ptr<ff::state> ff::ui_view_state::advance_time()
 
 void ff::ui_view_state::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
-    this->view_->render(this->target_override ? *this->target_override : target, this->depth_override ? *this->depth_override : depth);
-}
-
-void ff::ui_view_state::frame_rendering(ff::state::advance_t type)
-{
-    this->view_->frame_started();
+    this->view_->render(
+        this->target_override ? *this->target_override : target,
+        this->depth_override ? *this->depth_override : depth);
 }
 
 ff::state::cursor_t ff::ui_view_state::cursor()

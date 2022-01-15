@@ -1,6 +1,7 @@
 #pragma once
 
 #include "point.h"
+#include "rect.h"
 #include "signal.h"
 
 namespace ff
@@ -24,6 +25,60 @@ namespace ff
 
         ff::point_size rotated_pixel_size() const;
         int rotated_degrees_from_native() const;
+
+        template<class T>
+        ff::rect_t<T> rotate_rect(const ff::rect_t<T>& rect) const
+        {
+            const ff::point_t<T> size = this->pixel_size.cast<T>();
+
+            switch (this->current_rotation)
+            {
+                default:
+                    return rect;
+
+                case DMDO_90:
+                    return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+
+                case DMDO_180:
+                    return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
+
+                case DMDO_270:
+                    return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+            }
+        }
+
+        template<class T>
+        ff::point_t<T> rotate_point(const ff::point_t<T>& point) const
+        {
+            return this->rotate_rect<T>({ point, point }).top_left();
+        }
+
+        template<class T>
+        ff::rect_t<T> unrotate_rect(const ff::rect_t<T>& rect) const
+        {
+            const ff::point_t<T> size = this->rotated_pixel_size().cast<T>();
+
+            switch (this->current_rotation)
+            {
+                default:
+                    return rect;
+
+                case DMDO_90:
+                    return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+
+                case DMDO_180:
+                    return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
+
+                case DMDO_270:
+                    return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+            }
+        }
+
+        template<class T>
+        ff::point_t<T> unrotate_point(const ff::point_t<T>& point) const
+        {
+            return this->unrotate_rect<T>({ point, point }).top_left();
+        }
 
         ff::point_size pixel_size;
         double dpi_scale;

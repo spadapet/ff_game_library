@@ -147,10 +147,9 @@ namespace ff::dxgi::draw_util
     ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque);
     ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque);
 
-    ff::rect_float get_rotated_view_rect(ff::dxgi::target_base& target, const ff::rect_float& view_rect);
     DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect);
     DirectX::XMMATRIX get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center);
-    bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix);
+    bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix, bool ignore_orientation);
 
     class draw_device_base : public ff::dxgi::draw_base, private ff::dxgi::device_child_base
     {
@@ -213,7 +212,7 @@ namespace ff::dxgi::draw_util
         virtual void internal_destroy() = 0;
         virtual void internal_reset() = 0;
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect) = 0;
+        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation) = 0;
         virtual void internal_flush_begin(ff::dxgi::command_context_base* context);
         virtual void internal_flush_end(ff::dxgi::command_context_base* context);
 
@@ -250,7 +249,7 @@ namespace ff::dxgi::draw_util
 
         void destroy();
         void flush(bool end_draw = false);
-        ff::dxgi::command_context_base* setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect);
+        ff::dxgi::command_context_base* setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation);
 
         void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack);
         void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);

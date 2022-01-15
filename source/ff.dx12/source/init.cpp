@@ -40,6 +40,11 @@ ff::dxgi::command_context_base& frame_context()
     return ff::dx12::frame_commands();
 }
 
+ff::dxgi::draw_device_base& global_draw_device()
+{
+    return ff::dx12::get_draw_device();
+}
+
 std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
 {
     return std::make_shared<ff::dx12::texture>(size, format, mip_count, array_size, sample_count, optimized_clear_color);
@@ -64,9 +69,16 @@ std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::windo
         : std::make_shared<ff::dx12::target_window>();
 }
 
-std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(const std::shared_ptr<ff::dxgi::texture_base>& texture, size_t array_start, size_t array_count, size_t mip_level)
+std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
+    const std::shared_ptr<ff::dxgi::texture_base>& texture,
+    size_t array_start,
+    size_t array_count,
+    size_t mip_level,
+    int dmdo_native,
+    int dmdo_rotate,
+    double dpi_scale)
 {
-    return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level);
+    return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level, dmdo_native, dmdo_rotate, dpi_scale);
 }
 
 ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
@@ -78,6 +90,7 @@ ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE
     ff::dx12::frame_started,
     ff::dx12::frame_complete,
     ::frame_context,
+    ::global_draw_device,
     ::create_render_texture,
     ::create_static_texture,
     ::create_depth,

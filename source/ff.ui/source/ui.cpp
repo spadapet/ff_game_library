@@ -367,7 +367,7 @@ void ff::internal::ui::unregister_view(ff::ui_view* view)
     }
 }
 
-void ff::internal::ui::on_render_view(ff::ui_view* view)
+ff::internal::ui::render_device* ff::internal::ui::on_render_view(ff::ui_view* view)
 {
     if (std::find(::rendered_views.cbegin(), ::rendered_views.cend(), view) == ::rendered_views.cend())
     {
@@ -383,6 +383,8 @@ void ff::internal::ui::on_render_view(ff::ui_view* view)
 
         ::input_views.push_back(view);
     }
+
+    return ff::internal::ui::global_render_device();
 }
 
 void ff::internal::ui::on_focus_view(ff::ui_view* view, bool focused)
@@ -413,6 +415,8 @@ void ff::ui::state_advance_input()
 
     for (const ff::input_device_event& event : device_events)
     {
+        const ff::point_float event_posf = event.pos.cast<float>();
+
         switch (event.type)
         {
             case ff::input_device_event_type::key_press:
@@ -443,8 +447,7 @@ void ff::ui::state_advance_input()
                     {
                         bool handled = false;
                         ff::ui_view* view = *i;
-                        ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                        ff::point_int pos = posf.cast<int>();
+                        ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                         if (event.count == 2)
                         {
@@ -474,7 +477,7 @@ void ff::ui::state_advance_input()
                             break;
                         }
 
-                        if (view && view->hit_test(posf))
+                        if (view && view->hit_test(event_posf))
                         {
                             break;
                         }
@@ -486,8 +489,7 @@ void ff::ui::state_advance_input()
                 for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
-                    ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                    ff::point_int pos = posf.cast<int>();
+                    ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                     if (view->internal_view()->MouseMove(pos.x, pos.y))
                     {
@@ -499,7 +501,7 @@ void ff::ui::state_advance_input()
                         view = nullptr;
                     }
 
-                    if (view && view->hit_test(posf))
+                    if (view && view->hit_test(event_posf))
                     {
                         break;
                     }
@@ -510,8 +512,7 @@ void ff::ui::state_advance_input()
                 for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
-                    ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                    ff::point_int pos = posf.cast<int>();
+                    ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                     if (view->internal_view()->MouseHWheel(pos.x, pos.y, event.count))
                     {
@@ -524,8 +525,7 @@ void ff::ui::state_advance_input()
                 for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
-                    ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                    ff::point_int pos = posf.cast<int>();
+                    ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                     if (view->internal_view()->MouseWheel(pos.x, pos.y, event.count))
                     {
@@ -539,8 +539,7 @@ void ff::ui::state_advance_input()
                 {
                     bool handled = false;
                     ff::ui_view* view = *i;
-                    ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                    ff::point_int pos = posf.cast<int>();
+                    ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                     if (event.count == 0)
                     {
@@ -566,7 +565,7 @@ void ff::ui::state_advance_input()
                         break;
                     }
 
-                    if (view && view->hit_test(posf))
+                    if (view && view->hit_test(event_posf))
                     {
                         break;
                     }
@@ -577,8 +576,7 @@ void ff::ui::state_advance_input()
                 for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
-                    ff::point_float posf = view->screen_to_view(event.pos.cast<float>());
-                    ff::point_int pos = posf.cast<int>();
+                    ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
 
                     if (view->internal_view()->TouchMove(pos.x, pos.y, event.id))
                     {
@@ -590,7 +588,7 @@ void ff::ui::state_advance_input()
                         view = nullptr;
                     }
 
-                    if (view && view->hit_test(posf))
+                    if (view && view->hit_test(event_posf))
                     {
                         break;
                     }

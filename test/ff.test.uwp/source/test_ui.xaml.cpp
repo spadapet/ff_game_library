@@ -21,7 +21,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
             ff::internal::ui::init_game_thread();
             auto target = ff::dxgi_client().create_target_for_window({});
             auto depth = ff::dxgi_client().create_depth({}, {});
-            ff::ui_view view("overlay.xaml");
+            ff::ui_view view("overlay.xaml", ff::ui_view_options::cache_render);
 
             view.size(*target);
             {
@@ -54,7 +54,6 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
                 target->wait_for_render_ready();
                 target->begin_render(&bg_color);
                 ff::ui::state_rendering();
-                view.frame_started();
                 view.render(*target, *depth);
                 ff::ui::state_rendered();
                 target->end_render();

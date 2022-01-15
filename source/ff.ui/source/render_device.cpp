@@ -410,35 +410,38 @@ ff::internal::ui::render_device::~render_device()
     ff::dx12::remove_device_child(this);
 }
 
-ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(ff::dxgi::target_base* target, ff::dxgi::depth_base* depth, const ff::rect_float* view_rect)
+ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin()
 {
+    assert_msg(!this->commands, "render_device::render_begin called while already rendering");
+
     this->commands = &ff::dx12::frame_commands();
     this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     this->commands->root_signature(this->root_signature.Get());
 
-    if (target)
-    {
-        D3D12_VIEWPORT viewport{};
-        viewport.MaxDepth = 1;
+    return *this->commands;
+}
 
-        if (view_rect)
-        {
-            viewport.TopLeftX = view_rect->left;
-            viewport.TopLeftY = view_rect->top;
-            viewport.Width = view_rect->width();
-            viewport.Height = view_rect->height();
-        }
-        else
-        {
-            ff::point_float target_size = target->size().pixel_size.cast<float>();
-            viewport.Width = target_size.x;
-            viewport.Height = target_size.y;
-        }
+ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(
+    ff::dxgi::target_base& target,
+    ff::dxgi::depth_base& depth,
+    const ff::rect_size& view_rect)
+{
+    this->render_begin();
 
-        this->target_format = target->format();
-        this->commands->targets(&target, 1, depth);
-        this->commands->viewports(&viewport, 1);
-    }
+    assert(depth.size() == target.size().rotated_pixel_size());
+    depth.clear_stencil(*this->commands, 0);
+
+    D3D12_VIEWPORT viewport{};
+    viewport.MaxDepth = 1;
+    viewport.TopLeftX = static_cast<float>(view_rect.left);
+    viewport.TopLeftY = static_cast<float>(view_rect.top);
+    viewport.Width = static_cast<float>(view_rect.width());
+    viewport.Height = static_cast<float>(view_rect.height());
+
+    ff::dxgi::target_base* single_target = &target;
+    this->target_format = target.format();
+    this->commands->targets(&single_target, 1, &depth);
+    this->commands->viewports(&viewport, 1);
 
     return *this->commands;
 }

@@ -277,6 +277,7 @@ private:
     void orientation_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
         this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
+        this->main_window->notify_message(ff::window_message{ WM_SIZE, SIZE_RESTORED });
     }
 
     void gamepad_added(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)

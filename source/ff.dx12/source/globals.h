@@ -30,6 +30,7 @@ namespace ff::dx12
     IDXGIAdapterX* adapter();
     ID3D12DeviceX* device();
     ff::dx12::object_cache& get_object_cache();
+    ff::dxgi::draw_device_base& get_draw_device();
 
     const DXGI_QUERY_VIDEO_MEMORY_INFO& get_video_memory_info();
     ff::dx12::fence& residency_fence();

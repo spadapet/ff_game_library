@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "descriptor_allocator.h"
+#include "draw_device.h"
 #include "fence.h"
 #include "globals.h"
 #include "gpu_event.h"
@@ -39,6 +40,7 @@ static std::unique_ptr<ff::dx12::fence> residency_fence;
 static std::mutex keep_alive_mutex;
 static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
 
+static std::unique_ptr<ff::dxgi::draw_device_base> draw_device;
 static std::unique_ptr<ff::dx12::object_cache> object_cache;
 static std::unique_ptr<ff::dx12::queues> queues;
 static std::array<std::unique_ptr<ff::dx12::cpu_descriptor_allocator>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> cpu_descriptor_allocators;
@@ -204,6 +206,7 @@ static bool init_d3d(bool for_reset)
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, 1920); // max is 2048
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
+        ::draw_device = ff::dx12::create_draw_device();
         ::residency_fence = std::make_unique<ff::dx12::fence>("Memory residency fence", nullptr);
     }
 
@@ -218,6 +221,8 @@ static void destroy_d3d(bool for_reset)
 
     if (!for_reset)
     {
+        ::draw_device.reset();
+
         for (auto& i : ::cpu_descriptor_allocators)
         {
             i.reset();
@@ -484,6 +489,11 @@ bool ff::dx12::supports_create_heap_not_resident()
 ff::dx12::object_cache& ff::dx12::get_object_cache()
 {
     return *::object_cache;
+}
+
+ff::dxgi::draw_device_base& ff::dx12::get_draw_device()
+{
+	return *::draw_device;
 }
 
 size_t ff::dx12::frame_count()

@@ -18,7 +18,6 @@ namespace ff
 
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
-        virtual void frame_rendering(ff::state::advance_t type) override;
         virtual ff::state::cursor_t cursor() override;
 
     private:

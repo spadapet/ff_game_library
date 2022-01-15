@@ -238,48 +238,6 @@ ff::dxgi::draw_util::alpha_type ff::dxgi::draw_util::get_alpha_type(const ff::dx
     return type;
 }
 
-ff::rect_float ff::dxgi::draw_util::get_rotated_view_rect(ff::dxgi::target_base& target, const ff::rect_float& view_rect)
-{
-    ff::window_size size = target.size();
-    ff::rect_float rotated_view_rect;
-
-    switch (size.current_rotation)
-    {
-        default:
-            rotated_view_rect = view_rect;
-            break;
-
-        case DMDO_90:
-            {
-                float height = size.rotated_pixel_size().cast<float>().y;
-                rotated_view_rect.left = height - view_rect.bottom;
-                rotated_view_rect.top = view_rect.left;
-                rotated_view_rect.right = height - view_rect.top;
-                rotated_view_rect.bottom = view_rect.right;
-            } break;
-
-        case DMDO_180:
-            {
-                ff::point_float target_size = size.rotated_pixel_size().cast<float>();
-                rotated_view_rect.left = target_size.x - view_rect.right;
-                rotated_view_rect.top = target_size.y - view_rect.bottom;
-                rotated_view_rect.right = target_size.x - view_rect.left;
-                rotated_view_rect.bottom = target_size.y - view_rect.top;
-            } break;
-
-        case DMDO_270:
-            {
-                float width = size.rotated_pixel_size().cast<float>().x;
-                rotated_view_rect.left = view_rect.top;
-                rotated_view_rect.top = width - view_rect.right;
-                rotated_view_rect.right = view_rect.bottom;
-                rotated_view_rect.bottom = width - view_rect.left;
-            } break;
-    }
-
-    return rotated_view_rect;
-}
-
 DirectX::XMMATRIX ff::dxgi::draw_util::get_view_matrix(const ff::rect_float& world_rect)
 {
     return DirectX::XMMatrixOrthographicOffCenterLH(
@@ -329,14 +287,13 @@ DirectX::XMMATRIX ff::dxgi::draw_util::get_orientation_matrix(ff::dxgi::target_b
     return orientation_matrix;
 }
 
-bool ff::dxgi::draw_util::setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix)
+bool ff::dxgi::draw_util::setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix, bool ignore_orientation)
 {
     if (world_rect.width() != 0 && world_rect.height() != 0 && view_rect.width() > 0 && view_rect.height() > 0)
     {
         DirectX::XMMATRIX unoriented_view_matrix = ff::dxgi::draw_util::get_view_matrix(world_rect);
-        DirectX::XMMATRIX orientation_matrix = ff::dxgi::draw_util::get_orientation_matrix(target, view_rect, world_rect.center());
+        DirectX::XMMATRIX orientation_matrix = !ignore_orientation ? ff::dxgi::draw_util::get_orientation_matrix(target, view_rect, world_rect.center()) : DirectX::XMMatrixIdentity();
         DirectX::XMStoreFloat4x4(&view_matrix, DirectX::XMMatrixTranspose(orientation_matrix * unoriented_view_matrix));
-
         return true;
     }
 
@@ -815,8 +772,10 @@ ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(ff
 {
     this->end_draw();
 
-    if (ff::dxgi::draw_util::setup_view_matrix(target, view_rect, world_rect, this->view_matrix) &&
-        (this->command_context_ = this->setup(target, depth, view_rect)) != nullptr)
+    bool ignore_orientation = ff::flags::has(options, ff::dxgi::draw_options::ignore_orientation);
+
+    if (ff::dxgi::draw_util::setup_view_matrix(target, view_rect, world_rect, this->view_matrix, ignore_orientation) &&
+        (this->command_context_ = this->setup(target, depth, view_rect, ignore_orientation)) != nullptr)
     {
         this->init_geometry_constant_buffer_0(target, view_rect, world_rect);
         this->target_requires_palette_ = ff::dxgi::palette_format(target.format());
@@ -955,14 +914,14 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
     }
 }
 
-ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect)
+ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation)
 {
     if (depth && !depth->size(target.size().pixel_size))
     {
         return nullptr;
     }
 
-    ff::dxgi::command_context_base* context = this->internal_setup(target, depth, view_rect);
+    ff::dxgi::command_context_base* context = this->internal_setup(target, depth, view_rect, ignore_orientation);
 
     if (context && depth)
     {

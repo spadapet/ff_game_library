@@ -41,6 +41,6 @@ namespace ff::internal::ui
 
     void register_view(ff::ui_view* view);
     void unregister_view(ff::ui_view* view);
-    void on_render_view(ff::ui_view* view);
+    ff::internal::ui::render_device* on_render_view(ff::ui_view* view);
     void on_focus_view(ff::ui_view* view, bool focused);
 }

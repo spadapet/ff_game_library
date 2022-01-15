@@ -10,13 +10,20 @@ namespace ff::dx12
     class target_texture : public ff::dxgi::target_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {
     public:
-        target_texture(const std::shared_ptr<ff::dxgi::texture_base>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0);
+        target_texture(
+            const std::shared_ptr<ff::dxgi::texture_base>& texture,
+            size_t array_start = 0,
+            size_t array_count = 0,
+            size_t mip_level = 0,
+            int dmdo_native = DMDO_DEFAULT,
+            int dmdo_rotate = DMDO_DEFAULT,
+            double dpi_scale = 0.0);
         target_texture(target_texture&& other) noexcept;
         target_texture(const target_texture& other) = delete;
         virtual ~target_texture() override;
 
         target_texture& operator=(target_texture&& other) noexcept = default;
-        target_texture& operator=(const target_texture & other) = delete;
+        target_texture& operator=(const target_texture& other) = delete;
         operator bool() const;
 
         const std::shared_ptr<ff::dx12::texture>& shared_texture() const;
@@ -46,5 +53,8 @@ namespace ff::dx12
         size_t array_start;
         size_t array_count;
         size_t mip_level;
+        int dmdo_native;
+        int dmdo_rotate;
+        double dpi_scale;
     };
 }

@@ -12,12 +12,18 @@ ff::dx12::target_texture::target_texture(
     const std::shared_ptr<ff::dxgi::texture_base>& texture,
     size_t array_start,
     size_t array_count,
-    size_t mip_level)
+    size_t mip_level,
+    int dmdo_native,
+    int dmdo_rotate,
+    double dpi_scale)
     : texture_(std::dynamic_pointer_cast<ff::dx12::texture>(texture))
     , view_(ff::dx12::cpu_target_descriptors().alloc_range(1))
     , array_start(array_start)
     , array_count(array_count ? array_count : texture->array_size() - array_start)
     , mip_level(mip_level)
+    , dmdo_native(dmdo_native)
+    , dmdo_rotate(dmdo_rotate)
+    , dpi_scale(dpi_scale > 0.0 ? dpi_scale : 1.0)
 {
     this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
@@ -106,7 +112,9 @@ DXGI_FORMAT ff::dx12::target_texture::format() const
 
 ff::window_size ff::dx12::target_texture::size() const
 {
-    return ff::window_size{ this->texture_->size(), 1.0, DMDO_DEFAULT, DMDO_DEFAULT };
+    ff::window_size result{ this->texture_->size(), this->dpi_scale, this->dmdo_native, this->dmdo_rotate };
+    result.pixel_size = result.rotated_pixel_size();
+    return result;
 }
 
 ff::dx12::resource& ff::dx12::target_texture::dx12_target_texture()
