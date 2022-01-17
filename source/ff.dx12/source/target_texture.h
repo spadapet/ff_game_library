@@ -15,7 +15,6 @@ namespace ff::dx12
             size_t array_start = 0,
             size_t array_count = 0,
             size_t mip_level = 0,
-            int dmdo_native = DMDO_DEFAULT,
             int dmdo_rotate = DMDO_DEFAULT,
             double dpi_scale = 0.0);
         target_texture(target_texture&& other) noexcept;
@@ -53,7 +52,6 @@ namespace ff::dx12
         size_t array_start;
         size_t array_count;
         size_t mip_level;
-        int dmdo_native;
         int dmdo_rotate;
         double dpi_scale;
     };

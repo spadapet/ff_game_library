@@ -25,7 +25,7 @@ namespace ff::test::graphics
 
             static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
             auto target_texture = ff::dxgi_client().create_render_texture(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color);
-            auto target = ff::dxgi_client().create_target_for_texture(target_texture, 0, 0, 0, 0, 0, 0);
+            auto target = ff::dxgi_client().create_target_for_texture(target_texture, 0, 0, 0, 0, 0);
 
             ff::dxgi_client().frame_started();
             target->begin_render(&clear_color);

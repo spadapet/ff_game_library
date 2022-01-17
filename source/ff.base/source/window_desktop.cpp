@@ -221,8 +221,6 @@ ff::window_size ff::window::size()
     {
         size.dpi_scale = this->dpi_scale();
         size.pixel_size = ff::point_int(client_rect.right - client_rect.left, client_rect.bottom - client_rect.top).cast<size_t>();
-        size.native_rotation = DMDO_DEFAULT;
-        size.current_rotation = DMDO_DEFAULT;
 
         MONITORINFOEX mi{};
         mi.cbSize = sizeof(mi);
@@ -233,7 +231,7 @@ ff::window_size ff::window::size()
         HMONITOR monitor = ::MonitorFromWindow(this->hwnd, MONITOR_DEFAULTTOPRIMARY);
         if (::GetMonitorInfo(monitor, &mi) && ::EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm))
         {
-            size.current_rotation = dm.dmDisplayOrientation;
+            size.rotation = dm.dmDisplayOrientation;
         }
     }
 

@@ -262,9 +262,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         }
     }
 
-    DXGI_MODE_ROTATION display_rotation = ff::dxgi::get_display_rotation(
-        ff::dxgi::get_dxgi_rotation(size.native_rotation),
-        ff::dxgi::get_dxgi_rotation(size.current_rotation));
+    DXGI_MODE_ROTATION display_rotation = ff::dxgi::get_dxgi_rotation(size.rotation, true);
 
 #if UWP_APP
     // Scale the back buffer to the panel

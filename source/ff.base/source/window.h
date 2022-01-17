@@ -23,27 +23,19 @@ namespace ff
         bool operator==(const ff::window_size& other) const;
         bool operator!=(const ff::window_size& other) const;
 
-        ff::point_size rotated_pixel_size() const;
-        int rotated_degrees_from_native() const;
+        ff::point_size rotated_pixel_size() const; // as vivible on screen
+        int rotated_degrees(bool ccw = false) const;
 
         template<class T>
         ff::rect_t<T> rotate_rect(const ff::rect_t<T>& rect) const
         {
             const ff::point_t<T> size = this->pixel_size.cast<T>();
-
-            switch (this->current_rotation)
+            switch (this->rotation)
             {
-                default:
-                    return rect;
-
-                case DMDO_90:
-                    return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
-
-                case DMDO_180:
-                    return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-
-                case DMDO_270:
-                    return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+                default: return rect;
+                case DMDO_90: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+                case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
+                case DMDO_270: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
             }
         }
 
@@ -56,21 +48,13 @@ namespace ff
         template<class T>
         ff::rect_t<T> unrotate_rect(const ff::rect_t<T>& rect) const
         {
-            const ff::point_t<T> size = this->rotated_pixel_size().cast<T>();
-
-            switch (this->current_rotation)
+            const ff::point_t<T> size = this->pixel_size.cast<T>();
+            switch (this->rotation)
             {
-                default:
-                    return rect;
-
-                case DMDO_90:
-                    return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
-
-                case DMDO_180:
-                    return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-
-                case DMDO_270:
-                    return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+                default: return rect;
+                case DMDO_90: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+                case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
+                case DMDO_270: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
             }
         }
 
@@ -82,8 +66,7 @@ namespace ff
 
         ff::point_size pixel_size;
         double dpi_scale;
-        int native_rotation; // DMDO_DEFAULT|90|180|270
-        int current_rotation; // DMDO_DEFAULT|90|180|270
+        int rotation; // DMDO_DEFAULT|90|180|270
     };
 
     enum class window_type

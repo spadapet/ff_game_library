@@ -13,7 +13,6 @@ ff::dx12::target_texture::target_texture(
     size_t array_start,
     size_t array_count,
     size_t mip_level,
-    int dmdo_native,
     int dmdo_rotate,
     double dpi_scale)
     : texture_(std::dynamic_pointer_cast<ff::dx12::texture>(texture))
@@ -21,7 +20,6 @@ ff::dx12::target_texture::target_texture(
     , array_start(array_start)
     , array_count(array_count ? array_count : texture->array_size() - array_start)
     , mip_level(mip_level)
-    , dmdo_native(dmdo_native)
     , dmdo_rotate(dmdo_rotate)
     , dpi_scale(dpi_scale > 0.0 ? dpi_scale : 1.0)
 {
@@ -112,7 +110,7 @@ DXGI_FORMAT ff::dx12::target_texture::format() const
 
 ff::window_size ff::dx12::target_texture::size() const
 {
-    ff::window_size result{ this->texture_->size(), this->dpi_scale, this->dmdo_native, this->dmdo_rotate };
+    ff::window_size result{ this->texture_->size(), this->dpi_scale, this->dmdo_rotate };
     result.pixel_size = result.rotated_pixel_size();
     return result;
 }

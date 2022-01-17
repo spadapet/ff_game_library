@@ -455,21 +455,44 @@ void ff::window::notify_message(ff::window_message& message)
     this->message_signal.notify(message);
 }
 
-static int get_rotation(Windows::Graphics::Display::DisplayOrientations orientation)
+// https://docs.microsoft.com/en-us/uwp/api/windows.graphics.display.displayorientations?view=winrt-22000
+static int get_rotation(Windows::Graphics::Display::DisplayOrientations native, Windows::Graphics::Display::DisplayOrientations current)
 {
-    switch (orientation)
+    switch (native)
     {
         default:
-            return DMDO_DEFAULT;
+            switch (current)
+            {
+                default:
+                    return DMDO_DEFAULT;
+
+                case Windows::Graphics::Display::DisplayOrientations::Portrait:
+                    return DMDO_90;
+
+                case Windows::Graphics::Display::DisplayOrientations::LandscapeFlipped:
+                    return DMDO_180;
+
+                case Windows::Graphics::Display::DisplayOrientations::PortraitFlipped:
+                    return DMDO_270;
+            }
+            break;
 
         case Windows::Graphics::Display::DisplayOrientations::Portrait:
-            return DMDO_90;
+            switch (current)
+            {
+                default:
+                    return DMDO_DEFAULT;
 
-        case Windows::Graphics::Display::DisplayOrientations::LandscapeFlipped:
-            return DMDO_180;
+                case Windows::Graphics::Display::DisplayOrientations::LandscapeFlipped:
+                    return DMDO_90;
 
-        case Windows::Graphics::Display::DisplayOrientations::PortraitFlipped:
-            return DMDO_270;
+                case Windows::Graphics::Display::DisplayOrientations::PortraitFlipped:
+                    return DMDO_180;
+
+                case Windows::Graphics::Display::DisplayOrientations::Landscape:
+                    return DMDO_270;
+            }
+            break;
     }
 }
 
@@ -478,13 +501,12 @@ ff::window_size ff::window::size()
     ff::window_size size{};
 
     ff::thread_dispatch::get_main()->send([this, &size]()
-        {
-            Windows::Foundation::Rect bounds = this->core_window->Bounds;
-            size.dpi_scale = this->dpi_scale();
-            size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<size_t>();
-            size.native_rotation = ::get_rotation(this->display_info_->NativeOrientation);
-            size.current_rotation = ::get_rotation(this->display_info_->CurrentOrientation);
-        });
+    {
+        Windows::Foundation::Rect bounds = this->core_window->Bounds;
+        size.dpi_scale = this->dpi_scale();
+        size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<size_t>();
+        size.rotation = ::get_rotation(this->display_info_->NativeOrientation, this->display_info_->CurrentOrientation);
+    });
 
     return size;
 }

@@ -252,7 +252,7 @@ DirectX::XMMATRIX ff::dxgi::draw_util::get_orientation_matrix(ff::dxgi::target_b
 {
     DirectX::XMMATRIX orientation_matrix;
 
-    int degrees = target.size().current_rotation;
+    int degrees = target.size().rotation;
     switch (degrees)
     {
         default:

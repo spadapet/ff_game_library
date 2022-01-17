@@ -105,7 +105,7 @@ void ff::ui_view::internal_size(const ff::window_size& value)
     if (value != this->current_size)
     {
         const float dpi_scale = static_cast<float>(value.dpi_scale);
-        const float rotate_degrees_cw = static_cast<float>((360 - value.rotated_degrees_from_native()) % 360);
+        const float rotate_degrees_cw = static_cast<float>(value.rotated_degrees(true));
         const ff::point_float dip_size = value.pixel_size.cast<float>() / dpi_scale;
         const ff::point_t<uint32_t> rotated_pixel_size = value.rotated_pixel_size().cast<uint32_t>();
 
@@ -222,9 +222,7 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
                 this->cache_texture = std::make_shared<ff::texture>(dxgi_texture);
             }
 
-            this->cache_target = ff::dxgi_client().create_target_for_texture(
-                this->cache_texture->dxgi_texture(), 0, 0, 0,
-                target_size.native_rotation, target_size.current_rotation, target_size.dpi_scale);
+            this->cache_target = ff::dxgi_client().create_target_for_texture(this->cache_texture->dxgi_texture(), 0, 0, 0, target_size.rotation, target_size.dpi_scale);
         }
     }
 

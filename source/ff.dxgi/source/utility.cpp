@@ -78,78 +78,20 @@ DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapterX* adap
     return info;
 }
 
-DXGI_MODE_ROTATION ff::dxgi::get_dxgi_rotation(int dmod)
+DXGI_MODE_ROTATION ff::dxgi::get_dxgi_rotation(int dmod, bool ccw)
 {
     switch (dmod)
     {
         default:
-        case DMDO_DEFAULT:
             return DXGI_MODE_ROTATION_IDENTITY;
 
         case DMDO_90:
-            return DXGI_MODE_ROTATION_ROTATE90;
+            return ccw ? DXGI_MODE_ROTATION_ROTATE270 : DXGI_MODE_ROTATION_ROTATE90;
 
         case DMDO_180:
             return DXGI_MODE_ROTATION_ROTATE180;
 
         case DMDO_270:
-            return DXGI_MODE_ROTATION_ROTATE270;
+            return ccw ? DXGI_MODE_ROTATION_ROTATE90 : DXGI_MODE_ROTATION_ROTATE270;
     }
-
-    return DXGI_MODE_ROTATION();
-}
-
-// This method determines the rotation between the display device's native orientation and the
-// current display orientation.
-DXGI_MODE_ROTATION ff::dxgi::get_display_rotation(DXGI_MODE_ROTATION native_orientation, DXGI_MODE_ROTATION current_orientation)
-{
-    DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
-
-    switch (native_orientation)
-    {
-        default:
-            switch (current_orientation)
-            {
-                case DXGI_MODE_ROTATION_IDENTITY:
-                    rotation = DXGI_MODE_ROTATION_IDENTITY;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE90:
-                    rotation = DXGI_MODE_ROTATION_ROTATE270;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE180:
-                    rotation = DXGI_MODE_ROTATION_ROTATE180;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE270:
-                    rotation = DXGI_MODE_ROTATION_ROTATE90;
-                    break;
-            }
-            break;
-
-        case DXGI_MODE_ROTATION_ROTATE90:
-        case DXGI_MODE_ROTATION_ROTATE270:
-            switch (current_orientation)
-            {
-                case DXGI_MODE_ROTATION_IDENTITY:
-                    rotation = DXGI_MODE_ROTATION_ROTATE90;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE90:
-                    rotation = DXGI_MODE_ROTATION_IDENTITY;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE180:
-                    rotation = DXGI_MODE_ROTATION_ROTATE270;
-                    break;
-
-                case DXGI_MODE_ROTATION_ROTATE270:
-                    rotation = DXGI_MODE_ROTATION_ROTATE180;
-                    break;
-            }
-            break;
-    }
-
-    return rotation;
 }

@@ -74,11 +74,10 @@ std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
     size_t array_start,
     size_t array_count,
     size_t mip_level,
-    int dmdo_native,
     int dmdo_rotate,
     double dpi_scale)
 {
-    return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level, dmdo_native, dmdo_rotate, dpi_scale);
+    return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level, dmdo_rotate, dpi_scale);
 }
 
 ff::dx12::init::init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
