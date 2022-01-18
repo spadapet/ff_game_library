@@ -4,12 +4,32 @@
   "application_resources.xaml":
   {
     "res:type": "file",
-    "file": "file:../../ff.resource.editor.designer/application_resources.xaml"
+    "file": "file:../xaml/application_resources.xaml"
   },
 
-  "application_theme.xaml":
+  "NoesisTheme.Brushes.DarkBlue.xaml":
   {
     "res:type": "file",
-    "file": "file:../../ff.resource.editor.designer/application_theme.xaml"
+    "file": "file:../xaml/NoesisTheme.Brushes.DarkBlue.xaml"
+  },
+  "NoesisTheme.Colors.Dark.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.Colors.Dark.xaml"
+  },
+  "NoesisTheme.DarkBlue.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.DarkBlue.xaml"
+  },
+  "NoesisTheme.Fonts.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.Fonts.xaml"
+  },
+  "NoesisTheme.Styles.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.Styles.xaml"
   }
 }
