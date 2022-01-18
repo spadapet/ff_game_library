@@ -6,7 +6,7 @@ ff::internal::ui::render_target::render_target(size_t width, size_t height, size
     : name_(name)
 {
     ff::point_size size(width, height);
-    DXGI_FORMAT format = srgb ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT;
+    DXGI_FORMAT format = srgb ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
 
     auto msaa_dxgi_texture = ff::dxgi_client().create_render_texture(size, format, 1, 1, samples, nullptr);
     this->msaa_texture_ = std::make_shared<ff::texture>(msaa_dxgi_texture);

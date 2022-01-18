@@ -578,7 +578,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main());
-    ::depth = ff::dxgi_client().create_depth(::target->size().pixel_size, 0);
+    ::depth = ff::dxgi_client().create_depth(::target->size().physical_pixel_size(), 0);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);

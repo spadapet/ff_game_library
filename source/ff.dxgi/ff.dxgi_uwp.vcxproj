@@ -19,6 +19,7 @@
     <ClCompile Include="source\draw_ptr.cpp" />
     <ClCompile Include="source\draw_util.cpp" />
     <ClCompile Include="source\format_util.cpp" />
+    <ClCompile Include="source\interop.cpp" />
     <ClCompile Include="source\matrix.cpp" />
     <ClCompile Include="source\matrix_stack.cpp" />
     <ClCompile Include="source\sprite_data.cpp" />

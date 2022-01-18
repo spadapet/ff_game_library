@@ -109,7 +109,7 @@ static DirectX::ScratchImage load_texture_png(
 static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     DirectX::ScratchImage scratch_final;
-    if (new_format != ff::dxgi::PALETTE_FORMAT || new_mip_count > 1)
+    if (new_format != DXGI_FORMAT_R8G8B8A8_UNORM || new_mip_count > 1)
     {
         assert(false);
         return scratch_final;
@@ -122,7 +122,7 @@ static DirectX::ScratchImage load_texture_pal(const ff::resource_file& resource_
         return scratch_final;
     }
 
-    if (FAILED(scratch_final.Initialize2D(ff::dxgi::PALETTE_FORMAT, ff::dxgi::palette_size, 1, 1, 1)))
+    if (FAILED(scratch_final.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, ff::dxgi::palette_size, 1, 1, 1)))
     {
         assert(false);
         return scratch_final;

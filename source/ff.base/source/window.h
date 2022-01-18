@@ -23,13 +23,13 @@ namespace ff
         bool operator==(const ff::window_size& other) const;
         bool operator!=(const ff::window_size& other) const;
 
-        ff::point_size rotated_pixel_size() const; // as vivible on screen
+        ff::point_size physical_pixel_size() const; // as vivible on screen
         int rotated_degrees(bool ccw = false) const;
 
         template<class T>
-        ff::rect_t<T> rotate_rect(const ff::rect_t<T>& rect) const
+        ff::rect_t<T> logical_to_physical_rect(const ff::rect_t<T>& rect) const
         {
-            const ff::point_t<T> size = this->pixel_size.cast<T>();
+            const ff::point_t<T> size = this->logical_pixel_size.cast<T>();
             switch (this->rotation)
             {
                 default: return rect;
@@ -40,15 +40,15 @@ namespace ff
         }
 
         template<class T>
-        ff::point_t<T> rotate_point(const ff::point_t<T>& point) const
+        ff::point_t<T> logical_to_physical_point(const ff::point_t<T>& point) const
         {
-            return this->rotate_rect<T>({ point, point }).top_left();
+            return this->logical_to_physical_rect<T>({ point, point }).top_left();
         }
 
         template<class T>
-        ff::rect_t<T> unrotate_rect(const ff::rect_t<T>& rect) const
+        ff::rect_t<T> physical_to_logical_rect(const ff::rect_t<T>& rect) const
         {
-            const ff::point_t<T> size = this->pixel_size.cast<T>();
+            const ff::point_t<T> size = this->logical_pixel_size.cast<T>();
             switch (this->rotation)
             {
                 default: return rect;
@@ -59,12 +59,12 @@ namespace ff
         }
 
         template<class T>
-        ff::point_t<T> unrotate_point(const ff::point_t<T>& point) const
+        ff::point_t<T> physical_to_logical_point(const ff::point_t<T>& point) const
         {
-            return this->unrotate_rect<T>({ point, point }).top_left();
+            return this->physical_to_logical_rect<T>({ point, point }).top_left();
         }
 
-        ff::point_size pixel_size;
+        ff::point_size logical_pixel_size;
         double dpi_scale;
         int rotation; // DMDO_DEFAULT|90|180|270
     };

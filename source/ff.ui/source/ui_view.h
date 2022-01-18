@@ -30,6 +30,7 @@ namespace ff
         void cursor(Noesis::CursorType cursor);
         void size(const ff::window_size& value);
         void size(ff::dxgi::target_window_base& target);
+        void viewport(const ff::rect_float& rect);
 
         ff::point_float screen_to_content(ff::point_float pos) const;
         ff::point_float content_to_screen(ff::point_float pos) const;
@@ -57,6 +58,7 @@ namespace ff
         ff::signal<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&> rendering_;
         ff::signal<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&> rendered_;
         ff::window_size current_size;
+        ff::rect_float viewport_;
         std::shared_ptr<ff::texture> cache_texture;
         std::shared_ptr<ff::dxgi::target_base> cache_target;
 

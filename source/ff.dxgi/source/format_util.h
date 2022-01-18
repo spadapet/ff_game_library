@@ -2,11 +2,6 @@
 
 namespace ff::dxgi
 {
-    const DXGI_FORMAT DEFAULT_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
-    const DXGI_FORMAT DEFAULT_FORMAT_SRGB = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-    const DXGI_FORMAT PALETTE_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
-    const DXGI_FORMAT PALETTE_INDEX_FORMAT = DXGI_FORMAT_R8_UINT;
-
     bool compressed_format(DXGI_FORMAT format);
     bool color_format(DXGI_FORMAT format);
     bool palette_format(DXGI_FORMAT format);

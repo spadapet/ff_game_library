@@ -111,7 +111,7 @@ DXGI_FORMAT ff::dx12::target_texture::format() const
 ff::window_size ff::dx12::target_texture::size() const
 {
     ff::window_size result{ this->texture_->size(), this->dpi_scale, this->dmdo_rotate };
-    result.pixel_size = result.rotated_pixel_size();
+    result.logical_pixel_size = result.physical_pixel_size();
     return result;
 }
 

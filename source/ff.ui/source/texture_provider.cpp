@@ -5,7 +5,7 @@
 #include "ui.h"
 
 ff::internal::ui::texture_provider::texture_provider()
-    : placeholder_texture(std::make_shared<ff::texture>(ff::dxgi_client().create_render_texture(ff::point_size(1, 1), ff::dxgi::DEFAULT_FORMAT, 1, 1, 1, nullptr)))
+    : placeholder_texture(std::make_shared<ff::texture>(ff::dxgi_client().create_render_texture(ff::point_size(1, 1), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, nullptr)))
 {}
 
 Noesis::TextureInfo ff::internal::ui::texture_provider::GetTextureInfo(const Noesis::Uri& uri)

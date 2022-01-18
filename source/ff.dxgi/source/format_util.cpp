@@ -75,18 +75,18 @@ DXGI_FORMAT ff::dxgi::fix_format(DXGI_FORMAT format, size_t texture_width, size_
 {
     if (format == DXGI_FORMAT_UNKNOWN)
     {
-        format = ff::dxgi::DEFAULT_FORMAT;
+        format = DXGI_FORMAT_R8G8B8A8_UNORM;
     }
     else if (ff::dxgi::compressed_format(format))
     {
         // Compressed images have size restrictions. Upon failure, just use RGB
         if (texture_width % 4 || texture_height % 4)
         {
-            format = ff::dxgi::DEFAULT_FORMAT;
+            format = DXGI_FORMAT_R8G8B8A8_UNORM;
         }
         else if (mip_count > 1 && (ff::math::nearest_power_of_two(texture_width) != texture_width || ff::math::nearest_power_of_two(texture_height) != texture_height))
         {
-            format = ff::dxgi::DEFAULT_FORMAT;
+            format = DXGI_FORMAT_R8G8B8A8_UNORM;
         }
     }
 

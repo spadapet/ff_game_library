@@ -277,7 +277,6 @@ private:
     void orientation_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
         this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
-        this->main_window->notify_message(ff::window_message{ WM_SIZE, SIZE_RESTORED });
     }
 
     void gamepad_added(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)
@@ -504,7 +503,7 @@ ff::window_size ff::window::size()
     {
         Windows::Foundation::Rect bounds = this->core_window->Bounds;
         size.dpi_scale = this->dpi_scale();
-        size.pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<size_t>();
+        size.logical_pixel_size = (ff::point_double(bounds.Width, bounds.Height) * size.dpi_scale).cast<size_t>();
         size.rotation = ::get_rotation(this->display_info_->NativeOrientation, this->display_info_->CurrentOrientation);
     });
 

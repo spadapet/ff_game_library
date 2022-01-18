@@ -365,7 +365,7 @@ static bool create_original_textures(
                 return false;
             }
 
-            DXGI_FORMAT capture_format = ff::dxgi::color_format(format) ? ff::dxgi::DEFAULT_FORMAT : format;
+            DXGI_FORMAT capture_format = ff::dxgi::color_format(format) ? DXGI_FORMAT_R8G8B8A8_UNORM : format;
             ::original_texture_info texure_info;
             texure_info.rgb_texture = std::make_shared<ff::texture>(*texture, capture_format, 1);
             if (!texure_info.rgb_texture)
@@ -429,7 +429,7 @@ static bool compute_optimized_sprites(std::vector<::optimized_sprite_info>& spri
 
 static bool create_optimized_textures(DXGI_FORMAT format, std::vector<::optimized_texture_info>& texture_infos)
 {
-    format = ff::dxgi::color_format(format) ? ff::dxgi::DEFAULT_FORMAT : format;
+    format = ff::dxgi::color_format(format) ? DXGI_FORMAT_R8G8B8A8_UNORM : format;
 
     for (::optimized_texture_info& texture : texture_infos)
     {

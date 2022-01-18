@@ -185,7 +185,7 @@ size_t ff::dx12::target_window::target_mip_size() const
 bool ff::dx12::target_window::size(const ff::window_size& size)
 {
     ff::window_size old_size = this->cached_size;
-    ff::point_t<UINT> buffer_size = size.rotated_pixel_size().cast<UINT>();
+    ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
     this->cached_size = size;
 #if UWP_APP
     this->cached_full_screen_uwp = false;
@@ -400,7 +400,8 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SIZE:
-            if (msg.wp != SIZE_MINIMIZED)
+        case WM_DISPLAYCHANGE:
+            if (msg.msg == WM_DISPLAYCHANGE || msg.wp != SIZE_MINIMIZED)
             {
                 ff::dxgi_host().defer_resize(this, this->window->size());
             }

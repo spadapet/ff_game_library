@@ -116,7 +116,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
     if (format == DXGI_FORMAT_UNKNOWN)
     {
         assert(false);
-        format = ff::dxgi::DEFAULT_FORMAT;
+        format = DXGI_FORMAT_R8G8B8A8_UNORM;
     }
 
     if (mip_count > 1 && !ff::dxgi::color_format(format))
@@ -168,7 +168,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         else
         {
             std::shared_ptr<ff::texture> texture = std::make_shared<ff::texture>(full_file,
-                (optimize && ff::dxgi::color_format(format)) ? ff::dxgi::DEFAULT_FORMAT : format,
+                (optimize && ff::dxgi::color_format(format)) ? DXGI_FORMAT_R8G8B8A8_UNORM : format,
                 optimize ? 1 : mip_count);
 
             if (!*texture)

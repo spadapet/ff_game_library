@@ -428,7 +428,7 @@ ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(
 {
     this->render_begin();
 
-    assert(depth.size() == target.size().rotated_pixel_size());
+    assert(depth.size() == target.size().physical_pixel_size());
     depth.clear_stencil(*this->commands, 0);
 
     D3D12_VIEWPORT viewport{};
@@ -472,7 +472,7 @@ Noesis::Ptr<Noesis::RenderTarget> ff::internal::ui::render_device::CloneRenderTa
 Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(const char* label, uint32_t width, uint32_t height, uint32_t mip_count, Noesis::TextureFormat::Enum format, const void** data)
 {
     std::string_view name(label ? label : "");
-    DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT);
+    DXGI_FORMAT format2 = (format == Noesis::TextureFormat::R8) ? DXGI_FORMAT_R8_UNORM : (this->caps.linearRendering ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM);
     std::shared_ptr<ff::texture> texture;
 
     DirectX::ScratchImage scratch;
@@ -740,13 +740,13 @@ bool ff::internal::ui::render_device::reset()
     // null texture descriptors
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC rgb_desc{};
-        rgb_desc.Format = ff::dxgi::DEFAULT_FORMAT;
+        rgb_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         rgb_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         rgb_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         rgb_desc.Texture2D.MipLevels = 1;
 
         D3D12_SHADER_RESOURCE_VIEW_DESC palette_desc{};
-        palette_desc.Format = ff::dxgi::PALETTE_INDEX_FORMAT;
+        palette_desc.Format = DXGI_FORMAT_R8_UINT;
         palette_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         palette_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         palette_desc.Texture2D.MipLevels = 1;

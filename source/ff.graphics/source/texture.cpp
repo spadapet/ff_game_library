@@ -79,7 +79,7 @@ bool ff::texture::resource_save_to_file(const std::filesystem::path& directory_p
     {
         if (!ff::dxgi::palette_format(data->GetMetadata().format))
         {
-            data = ff::dxgi::convert_texture_data(data, ff::dxgi::DEFAULT_FORMAT, this->dxgi_texture_->mip_count());
+            data = ff::dxgi::convert_texture_data(data, DXGI_FORMAT_R8G8B8A8_UNORM, this->dxgi_texture_->mip_count());
         }
 
         for (size_t i = 0; i < data->GetImageCount(); i++)

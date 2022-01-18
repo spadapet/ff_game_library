@@ -800,10 +800,10 @@ bool ff::dxgi::draw_util::draw_device_base::reset()
 
     // Palette
     this->palette_stack.push_back(nullptr);
-    this->palette_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ff::dxgi::draw_util::MAX_PALETTES), ff::dxgi::PALETTE_FORMAT);
+    this->palette_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ff::dxgi::draw_util::MAX_PALETTES), DXGI_FORMAT_R8G8B8A8_UNORM);
 
     this->palette_remap_stack.push_back(std::make_pair(ff::dxgi::draw_util::default_palette_remap().data(), ff::dxgi::draw_util::default_palette_remap_hash()));
-    this->palette_remap_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ff::dxgi::draw_util::MAX_PALETTE_REMAPS), ff::dxgi::PALETTE_INDEX_FORMAT);
+    this->palette_remap_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ff::dxgi::draw_util::MAX_PALETTE_REMAPS), DXGI_FORMAT_R8_UINT);
 
     // States
     this->sampler_stack.push_back(false);
@@ -916,7 +916,7 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
 
 ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation)
 {
-    if (depth && !depth->size(target.size().pixel_size))
+    if (depth && !depth->size(target.size().physical_pixel_size()))
     {
         return nullptr;
     }

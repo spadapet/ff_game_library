@@ -15,6 +15,7 @@ ff::ui_view::ui_view(Noesis::FrameworkElement* content, ff::ui_view_options opti
     , cache_render(ff::flags::has(options, ff::ui_view_options::cache_render))
     , counter(0)
     , current_size{}
+    , viewport_{}
     , cursor_(Noesis::CursorType_Arrow)
     , view_grid(Noesis::MakePtr<Noesis::Grid>())
     , view_box(Noesis::MakePtr<Noesis::Viewbox>())
@@ -100,14 +101,19 @@ void ff::ui_view::size(ff::dxgi::target_window_base& target)
     });
 }
 
+void ff::ui_view::viewport(const ff::rect_float& rect)
+{
+    this->viewport_ = rect;
+}
+
 void ff::ui_view::internal_size(const ff::window_size& value)
 {
     if (value != this->current_size)
     {
         const float dpi_scale = static_cast<float>(value.dpi_scale);
         const float rotate_degrees_cw = static_cast<float>(value.rotated_degrees(true));
-        const ff::point_float dip_size = value.pixel_size.cast<float>() / dpi_scale;
-        const ff::point_t<uint32_t> rotated_pixel_size = value.rotated_pixel_size().cast<uint32_t>();
+        const ff::point_float dip_size = value.logical_pixel_size.cast<float>() / dpi_scale;
+        const ff::point_t<uint32_t> physical_pixel_size = value.physical_pixel_size().cast<uint32_t>();
 
         // Size for Grid that owns the content and gets rotated
         this->view_grid->SetWidth(dip_size.x);
@@ -115,7 +121,7 @@ void ff::ui_view::internal_size(const ff::window_size& value)
         this->rotate_transform->SetAngle(rotate_degrees_cw);
 
         // Size for internal Noesis view
-        this->internal_view_->SetSize(rotated_pixel_size.x, rotated_pixel_size.y);
+        this->internal_view_->SetSize(physical_pixel_size.x, physical_pixel_size.y);
         this->internal_view_->SetScale(dpi_scale);
 
         this->current_size = value;
@@ -137,12 +143,28 @@ ff::point_float ff::ui_view::content_to_screen(ff::point_float pos) const
 
 ff::point_float ff::ui_view::screen_to_view(ff::point_float pos) const
 {
-    return this->current_size.rotate_point(pos);
+    if (this->viewport_)
+    {
+        pos = (this->viewport_.area() > 0.0f)
+            ? (pos - this->viewport_.top_left()) * this->current_size.logical_pixel_size.cast<float>() / this->viewport_.size()
+            : ff::point_float{};
+    }
+
+    return this->current_size.logical_to_physical_point(pos);
 }
 
 ff::point_float ff::ui_view::view_to_screen(ff::point_float pos) const
 {
-    return this->current_size.unrotate_point(pos);
+    pos = this->current_size.physical_to_logical_point(pos);
+
+    if (this->viewport_)
+    {
+        pos = (this->viewport_.area() > 0.0f)
+            ? pos * this->viewport_.size() / this->current_size.logical_pixel_size.cast<float>() + this->viewport_.top_left()
+            : this->viewport_.top_left();
+    }
+
+    return pos;
 }
 
 void ff::ui_view::focused(bool focus)
@@ -199,8 +221,8 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
 {
     ff::internal::ui::render_device& render_device = *ff::internal::ui::on_render_view(this);
     const ff::window_size target_size = target.size();
-    const ff::point_size rotated_pixel_size = target_size.rotated_pixel_size();
-    const ff::rect_size rotated_pixel_rect({}, rotated_pixel_size);
+    const ff::point_size physical_pixel_size = target_size.physical_pixel_size();
+    const ff::rect_size rotated_pixel_rect({}, physical_pixel_size);
 
     if (this->update_render)
     {
@@ -214,11 +236,11 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
         {
             this->cache_target.reset();
 
-            if (!this->cache_texture || this->cache_texture->dxgi_texture()->size() != rotated_pixel_size)
+            if (!this->cache_texture || this->cache_texture->dxgi_texture()->size() != physical_pixel_size)
             {
                 this->cache_texture.reset();
-                const DXGI_FORMAT cache_format = render_device.GetCaps().linearRendering ? ff::dxgi::DEFAULT_FORMAT_SRGB : ff::dxgi::DEFAULT_FORMAT;
-                auto dxgi_texture = ff::dxgi_client().create_render_texture(rotated_pixel_size, cache_format, 1, 1, 1, &ff::dxgi::color_none());
+                const DXGI_FORMAT cache_format = render_device.GetCaps().linearRendering ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+                auto dxgi_texture = ff::dxgi_client().create_render_texture(physical_pixel_size, cache_format, 1, 1, 1, &ff::dxgi::color_none());
                 this->cache_texture = std::make_shared<ff::texture>(dxgi_texture);
             }
 
@@ -228,7 +250,7 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
 
     ff::dxgi::target_base& render_target = this->cache_target ? *this->cache_target : target;
 
-    if ((this->update_render || !this->cache_render) && depth.size(rotated_pixel_size))
+    if ((this->update_render || !this->cache_render) && depth.size(physical_pixel_size))
     {
         this->rendering_.notify(this, render_target, depth);
         ff::dxgi::command_context_base& context = render_device.render_begin(render_target, depth, rotated_pixel_rect);

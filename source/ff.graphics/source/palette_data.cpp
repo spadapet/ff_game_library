@@ -106,7 +106,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::palette_data_factory::lo
 {
     std::filesystem::path full_path = dict.get<std::string>("file");
     std::shared_ptr<DirectX::ScratchImage> scratch_palette;
-    std::shared_ptr<DirectX::ScratchImage> scratch_data = ff::internal::load_texture_data(full_path, ff::dxgi::DEFAULT_FORMAT, 1, scratch_palette);
+    std::shared_ptr<DirectX::ScratchImage> scratch_data = ff::internal::load_texture_data(full_path, DXGI_FORMAT_R8G8B8A8_UNORM, 1, scratch_palette);
     std::unordered_map<std::string, std::shared_ptr<ff::data_base>> name_to_remap;
 
     if (!scratch_data || !scratch_data->GetImageCount())
