@@ -10,8 +10,8 @@ namespace ff::test::graphics
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
 
             Assert::IsTrue(target);
-            Assert::IsTrue(target.format() == ff::dxgi::DEFAULT_FORMAT);
-            Assert::IsTrue(target.size().pixel_size == ff::point_size(256, 256));
+            Assert::IsTrue(target.format() == DXGI_FORMAT_R8G8B8A8_UNORM);
+            Assert::IsTrue(target.size().logical_pixel_size == ff::point_size(256, 256));
         }
 
         TEST_METHOD(target_window)

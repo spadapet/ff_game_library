@@ -262,8 +262,6 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         }
     }
 
-    DXGI_MODE_ROTATION display_rotation = ff::dxgi::get_dxgi_rotation(size.rotation, true);
-
 #if UWP_APP
     // Scale the back buffer to the panel
     DXGI_MATRIX_3X2_F inverse_scale{};
@@ -274,7 +272,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #if UWP_APP
         (this->use_xaml_composition && FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale))) ||
 #endif
-        FAILED(this->swap_chain->SetRotation(display_rotation)))
+        FAILED(this->swap_chain->SetRotation(ff::dxgi::get_dxgi_rotation(size.rotation))))
     {
         debug_fail_ret_val(false);
     }

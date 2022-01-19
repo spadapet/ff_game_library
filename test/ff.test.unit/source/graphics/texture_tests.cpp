@@ -32,7 +32,7 @@ namespace ff::test::graphics
         {
             ff::resource_file file(".png", ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_TEXTURE));
             ff::texture texture(file);
-            Assert::IsTrue(texture.dxgi_texture()->format() == ff::dxgi::DEFAULT_FORMAT);
+            Assert::IsTrue(texture.dxgi_texture()->format() == DXGI_FORMAT_R8G8B8A8_UNORM);
 
             ff::texture converted_texture(texture, DXGI_FORMAT_BC1_UNORM, 2);
             Assert::IsTrue(converted_texture.dxgi_texture()->format() == DXGI_FORMAT_BC1_UNORM);

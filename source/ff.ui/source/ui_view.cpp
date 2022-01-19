@@ -111,7 +111,7 @@ void ff::ui_view::internal_size(const ff::window_size& value)
     if (value != this->current_size)
     {
         const float dpi_scale = static_cast<float>(value.dpi_scale);
-        const float rotate_degrees_cw = static_cast<float>(value.rotated_degrees(true));
+        const float rotate_degrees_cw = static_cast<float>(value.rotated_degrees());
         const ff::point_float dip_size = value.logical_pixel_size.cast<float>() / dpi_scale;
         const ff::point_t<uint32_t> physical_pixel_size = value.physical_pixel_size().cast<uint32_t>();
 

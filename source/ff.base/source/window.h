@@ -33,9 +33,9 @@ namespace ff
             switch (this->rotation)
             {
                 default: return rect;
-                case DMDO_90: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+                case DMDO_90: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
                 case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-                case DMDO_270: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+                case DMDO_270: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left }; 
             }
         }
 
@@ -52,9 +52,9 @@ namespace ff
             switch (this->rotation)
             {
                 default: return rect;
-                case DMDO_90: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+                case DMDO_90: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
                 case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-                case DMDO_270: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+                case DMDO_270: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right }; 
             }
         }
 

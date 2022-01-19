@@ -593,8 +593,8 @@ namespace ff::test::dx12
         {
             ff::dx12::resource res[3]
             {
-                { "", CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1) },
-                { "", CD3DX12_RESOURCE_DESC::Tex2D(ff::dxgi::DEFAULT_FORMAT, 32, 32, 1, 1) },
+                { "", CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 32, 32, 1, 1) },
+                { "", CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8G8B8A8_UNORM, 32, 32, 1, 1) },
                 { "", CD3DX12_RESOURCE_DESC::Buffer(32) },
             };
 
@@ -657,8 +657,8 @@ namespace ff::test::dx12
         void resource_tracker_simple(D3D12_COMMAND_LIST_TYPE type)
         {
             const ff::point_size size(32, 32);
-            ff::dx12::texture tex1(size, ff::dxgi::DEFAULT_FORMAT);
-            ff::dx12::texture tex2(size, ff::dxgi::DEFAULT_FORMAT, 2, 2);
+            ff::dx12::texture tex1(size, DXGI_FORMAT_R8G8B8A8_UNORM);
+            ff::dx12::texture tex2(size, DXGI_FORMAT_R8G8B8A8_UNORM, 2, 2);
 
             ff::dx12::resource_tracker tracker;
             tracker.state(*tex1.dx12_resource(), D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
