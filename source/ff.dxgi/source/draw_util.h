@@ -33,13 +33,6 @@ namespace ff::dxgi::draw_util
     const std::array<uint8_t, ff::dxgi::palette_size>& default_palette_remap();
     size_t default_palette_remap_hash();
 
-    enum class alpha_type
-    {
-        opaque,
-        transparent,
-        invisible,
-    };
-
     enum class last_depth_type
     {
         none,
@@ -142,15 +135,6 @@ namespace ff::dxgi::draw_util
         std::array<ff::rect_float, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> texture_palette_sizes;
     };
 
-    ff::dxgi::draw_util::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_opaque);
-    ff::dxgi::draw_util::alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque);
-    ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque);
-    ff::dxgi::draw_util::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque);
-
-    DirectX::XMMATRIX get_view_matrix(const ff::rect_float& world_rect);
-    DirectX::XMMATRIX get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center);
-    bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix, bool ignore_orientation);
-
     class draw_device_base : public ff::dxgi::draw_base, private ff::dxgi::device_child_base
     {
     public:
@@ -212,7 +196,7 @@ namespace ff::dxgi::draw_util
         virtual void internal_destroy() = 0;
         virtual void internal_reset() = 0;
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation) = 0;
+        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) = 0;
         virtual void internal_flush_begin(ff::dxgi::command_context_base* context);
         virtual void internal_flush_end(ff::dxgi::command_context_base* context);
 
@@ -249,7 +233,7 @@ namespace ff::dxgi::draw_util
 
         void destroy();
         void flush(bool end_draw = false);
-        ff::dxgi::command_context_base* setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation);
+        ff::dxgi::command_context_base* setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation);
 
         void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack);
         void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);
@@ -280,57 +264,57 @@ namespace ff::dxgi::draw_util
             invalid,
             valid,
             drawing,
-        } state;
+        } state{};
 
-        ff::dxgi::command_context_base* command_context_;
+        ff::dxgi::command_context_base* command_context_{};
 
         // Constant data for shaders
-        ff::dxgi::draw_util::geometry_shader_constants_0 geometry_constants_0;
-        ff::dxgi::draw_util::geometry_shader_constants_1 geometry_constants_1;
-        ff::dxgi::draw_util::pixel_shader_constants_0 pixel_constants_0;
-        size_t geometry_constants_hash_0;
-        size_t geometry_constants_hash_1;
-        size_t pixel_constants_hash_0;
+        ff::dxgi::draw_util::geometry_shader_constants_0 geometry_constants_0{};
+        ff::dxgi::draw_util::geometry_shader_constants_1 geometry_constants_1{};
+        ff::dxgi::draw_util::pixel_shader_constants_0 pixel_constants_0{};
+        size_t geometry_constants_hash_0{};
+        size_t geometry_constants_hash_1{};
+        size_t pixel_constants_hash_0{};
 
         // Render state
         std::vector<bool> sampler_stack;
         std::vector<ff::dxgi::draw_base::custom_context_func> custom_context_stack;
 
         // Matrixes
-        DirectX::XMFLOAT4X4 view_matrix;
+        DirectX::XMFLOAT4X4 view_matrix{};
         ff::dxgi::matrix_stack world_matrix_stack_;
         ff::signal_connection world_matrix_stack_changing_connection;
         std::unordered_map<DirectX::XMFLOAT4X4, unsigned int, ff::stable_hash<DirectX::XMFLOAT4X4>> world_matrix_to_index;
-        unsigned int world_matrix_index;
+        unsigned int world_matrix_index{};
 
         // Textures
-        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES> textures;
-        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> textures_using_palette;
-        size_t texture_count;
-        size_t textures_using_palette_count;
+        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES> textures{};
+        std::array<ff::dxgi::texture_view_base*, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> textures_using_palette{};
+        size_t texture_count{};
+        size_t textures_using_palette_count{};
 
         // Palettes
-        bool target_requires_palette_;
+        bool target_requires_palette_{};
 
         std::vector<ff::dxgi::palette_base*> palette_stack;
         std::shared_ptr<ff::dxgi::texture_base> palette_texture;
-        std::array<size_t, ff::dxgi::draw_util::MAX_PALETTES> palette_texture_hashes;
+        std::array<size_t, ff::dxgi::draw_util::MAX_PALETTES> palette_texture_hashes{};
         palette_to_index_t palette_to_index;
-        unsigned int palette_index;
+        unsigned int palette_index{};
 
         std::vector<std::pair<const uint8_t*, size_t>> palette_remap_stack;
         std::shared_ptr<ff::dxgi::texture_base> palette_remap_texture;
-        std::array<size_t, ff::dxgi::draw_util::MAX_PALETTE_REMAPS> palette_remap_texture_hashes;
+        std::array<size_t, ff::dxgi::draw_util::MAX_PALETTE_REMAPS> palette_remap_texture_hashes{};
         palette_remap_to_index_t palette_remap_to_index;
-        unsigned int palette_remap_index;
+        unsigned int palette_remap_index{};
 
         // Render data
         std::vector<ff::dxgi::draw_util::alpha_geometry_entry> alpha_geometry;
         std::array<ff::dxgi::draw_util::geometry_bucket, static_cast<size_t>(ff::dxgi::draw_util::geometry_bucket_type::count)> geometry_buckets;
-        ff::dxgi::draw_util::last_depth_type last_depth_type;
-        float draw_depth;
-        int force_no_overlap;
-        int force_opaque;
-        int force_pre_multiplied_alpha;
+        ff::dxgi::draw_util::last_depth_type last_depth_type{};
+        float draw_depth{};
+        int force_no_overlap{};
+        int force_opaque{};
+        int force_pre_multiplied_alpha{};
     };
 }

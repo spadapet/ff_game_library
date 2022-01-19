@@ -16,7 +16,9 @@
 #include "resource_tracker.h"
 #include "target_access.h"
 
+#ifdef _WIN64
 #include <pix3.h>
+#endif
 
 static std::atomic_int data_counter;
 
@@ -73,12 +75,16 @@ ff::dx12::fence_value ff::dx12::commands::next_fence_value()
 
 void ff::dx12::commands::begin_event(ff::dx12::gpu_event type)
 {
+#ifdef _WIN64
     ::PIXBeginEvent(this->list(false), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+#endif
 }
 
 void ff::dx12::commands::end_event()
 {
+#ifdef _WIN64
     ::PIXEndEvent(this->list(false));
+#endif
 }
 
 void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)

@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "gpu_event.h"
 
+#ifdef _WIN64
 #include <pix3.h>
+#endif
 
 const char* ff::dx12::gpu_event_name(ff::dx12::gpu_event type)
 {
@@ -17,5 +19,9 @@ const char* ff::dx12::gpu_event_name(ff::dx12::gpu_event type)
 
 uint64_t ff::dx12::gpu_event_color(ff::dx12::gpu_event type)
 {
+#ifdef _WIN64
     return ::PIX_COLOR_INDEX(static_cast<uint8_t>(type));
+#else
+    return 0;
+#endif
 }

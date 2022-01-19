@@ -44,7 +44,9 @@ void ff::internal::log::write(std::string_view text)
         *::file_stream << text;
     }
 
+#ifdef _DEBUG
     std::cerr << text;
+#endif
 }
 
 void ff::internal::log::write_debug(std::string_view text)

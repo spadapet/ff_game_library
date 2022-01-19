@@ -11,7 +11,7 @@ namespace ff::dxgi
     {
         none = 0x00,
         pre_multiplied_alpha = 0x01,
-        ignore_orientation = 0x02,
+        ignore_rotation = 0x02,
     };
 
     class draw_device_base

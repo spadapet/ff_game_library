@@ -47,8 +47,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
     std::string_view entry,
     std::string_view target,
     const std::unordered_map<std::string_view, std::string_view>& defines,
-    bool debug,
-    std::vector<std::string>& compile_errors)
+    ff::resource_load_context& context)
 {
     if (entry.empty() || target.empty() || !file_data)
     {
@@ -85,10 +84,10 @@ static std::shared_ptr<ff::data_base> compile_shader(
     Microsoft::WRL::ComPtr<ID3DBlob> compile_errors_blob;
     ::shader_include shader_include(base_path);
 
-    UINT flags1 = D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
-    flags1 |= debug
-        ? (D3DCOMPILE_DEBUG | D3DCOMPILE_WARNINGS_ARE_ERRORS)
-        : (D3DCOMPILE_OPTIMIZATION_LEVEL3 | D3DCOMPILE_WARNINGS_ARE_ERRORS);
+    UINT flags1 = D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+    flags1 |= context.debug()
+        ? (D3DCOMPILE_DEBUG | D3DCOMPILE_DEBUG_NAME_FOR_SOURCE)
+        : D3DCOMPILE_OPTIMIZATION_LEVEL3;
 
     HRESULT hr = ::D3DCompile(
         file_data->data(),
@@ -113,12 +112,42 @@ static std::shared_ptr<ff::data_base> compile_shader(
 
             for (std::string_view error : ff::string::split(errors, "\r\n"))
             {
-                compile_errors.emplace_back(error);
+                std::ostringstream str;
+                str << "Shader compiler error: " << error;
+                context.add_error(str.str());
             }
         }
 
         return nullptr;
     }
+
+#if OUTPUT_PDB
+    Microsoft::WRL::ComPtr<ID3DBlob> pdb_blob;
+    Microsoft::WRL::ComPtr<ID3DBlob> pdb_name_blob;
+    if (SUCCEEDED(::D3DGetBlobPart(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), D3D_BLOB_PDB, 0, pdb_blob.GetAddressOf())) &&
+        SUCCEEDED(::D3DGetBlobPart(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), D3D_BLOB_DEBUG_NAME, 0, pdb_name_blob.GetAddressOf())))
+    {
+        struct shader_debug_name_t
+        {
+            uint16_t flags;
+            uint16_t name_length; // Length of the debug name, without null terminator.
+                                  // Followed by NameLength bytes of the UTF-8-encoded name.
+                                  // Followed by a null terminator.
+                                  // Followed by [0-3] zero bytes to align to a 4-byte boundary.
+        };
+
+        const shader_debug_name_t* debug_name_data = reinterpret_cast<const shader_debug_name_t*>(pdb_name_blob->GetBufferPointer());
+        std::string_view name(reinterpret_cast<const char*>(debug_name_data + 1), static_cast<size_t>(debug_name_data->name_length));
+        auto pdb_data = std::make_shared<ff::dxgi::data_blob_dx>(pdb_blob.Get());
+        context.add_output_file(name, pdb_data);
+    }
+
+    Microsoft::WRL::ComPtr<ID3DBlob> stripped_blob;
+    if (SUCCEEDED(::D3DStripShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), D3DCOMPILER_STRIP_DEBUG_INFO, stripped_blob.GetAddressOf())))
+    {
+        shader_blob = stripped_blob;
+    }
+#endif
 
     return std::make_shared<ff::dxgi::data_blob_dx>(shader_blob.Get());
 }
@@ -128,14 +157,13 @@ static std::shared_ptr<ff::data_base> compile_shader(
     std::string_view entry,
     std::string_view target,
     const std::unordered_map<std::string_view, std::string_view>& defines,
-    bool debug,
-    std::vector<std::string>& compile_errors)
+    ff::resource_load_context& context)
 {
     std::shared_ptr<ff::data_base> file_data = std::make_shared<ff::data_mem_mapped>(file_path);
     if (file_data->size())
     {
         std::filesystem::path base_path = file_path.parent_path();
-        return ::compile_shader(file_data, file_path, base_path, entry, target, defines, debug, compile_errors);
+        return ::compile_shader(file_data, file_path, base_path, entry, target, defines, context);
     }
 
     return nullptr;
@@ -147,7 +175,6 @@ ff::shader::shader(std::shared_ptr<ff::saved_data_base> saved_data)
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const
 {
-    bool debug = dict.get<bool>("debug");
     std::filesystem::path file_path = dict.get<std::string>("file");
     std::string entry = dict.get<std::string>("entry", "main");
     std::string target = dict.get<std::string>("target");
@@ -158,16 +185,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_fro
         defines.try_emplace(i.first, i.second->get<std::string>());
     }
 
-    std::vector<std::string> compile_errors;
-    std::shared_ptr<ff::data_base> shader_data = ::compile_shader(file_path, entry, target, defines, debug, compile_errors);
-
-    for (const std::string& error : compile_errors)
-    {
-        std::ostringstream str;
-        str << "Shader compiler error: " << error;
-        context.add_error(str.str());
-    }
-
+    std::shared_ptr<ff::data_base> shader_data = ::compile_shader(file_path, entry, target, defines, context);
     if (!shader_data)
     {
         return nullptr;

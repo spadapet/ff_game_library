@@ -9,7 +9,7 @@ static std::vector<std::string> get_command_line()
 static void show_usage()
 {
     std::cerr << "Command line options:" << std::endl;
-    std::cerr << "  1) ff.resource.build.exe -in \"input file\" [-out \"output file\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
+    std::cerr << "  1) ff.resource.build.exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
     std::cerr << "  2) ff.resource.build.exe -dump \"pack file\"" << std::endl;
     std::cerr << "  3) ff.resource.build.exe -dumpbin \"pack file\"" << std::endl;
     std::cerr << std::endl;
@@ -90,6 +90,7 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
 static bool compile_resource_pack(
     const std::filesystem::path& input_file,
     const std::filesystem::path& output_file,
+    const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     bool debug)
 {
@@ -101,8 +102,7 @@ static bool compile_resource_pack(
             std::cerr << error << std::endl;
         }
 
-        assert(false);
-        return false;
+        debug_fail_ret_val(false);
     }
 
     auto data = std::make_shared<std::vector<uint8_t>>();
@@ -111,8 +111,7 @@ static bool compile_resource_pack(
         ff::data_writer data_writer(data);
         if (!result.dict.save(data_writer))
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
     }
 
@@ -121,8 +120,7 @@ static bool compile_resource_pack(
         ff::file_writer writer(output_file);
         if (!writer || writer.write(data->data(), data->size()) != data->size())
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
         }
     }
 
@@ -131,8 +129,19 @@ static bool compile_resource_pack(
         std::ofstream header_stream(header_file);
         if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
         {
-            assert(false);
-            return false;
+            debug_fail_ret_val(false);
+        }
+    }
+
+    if (!pdb_output.empty())
+    {
+        for (const auto& [name, data] : result.output_files)
+        {
+            std::filesystem::path path = pdb_output / name;
+            if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
+            {
+                debug_fail_ret_val(false);
+            }
         }
     }
 
@@ -255,6 +264,7 @@ int main()
     std::vector<std::filesystem::path> refs;
     std::filesystem::path input_file;
     std::filesystem::path output_file;
+    std::filesystem::path pdb_output;
     std::filesystem::path header_file;
     std::filesystem::path dump_source_file;
     bool debug = false;
@@ -274,6 +284,10 @@ int main()
         else if (arg == "-out" && i + 1 < args.size())
         {
             output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+        }
+        else if (arg == "-pdb" && i + 1 < args.size())
+        {
+            pdb_output = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
         else if (arg == "-header" && i + 1 < args.size())
         {
@@ -382,7 +396,7 @@ int main()
             }
         }
 
-        if (!::compile_resource_pack(input_file, output_file, header_file, debug))
+        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, debug))
         {
             std::cerr << "ff.resource.build: Compile failed" << std::endl;
             return 6;

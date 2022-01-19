@@ -129,7 +129,7 @@ namespace ff::dx12
         ff::dxgi::buffer_type type_;
         ff::dx12::residency_data* mem_residency_data{};
         D3D12_GPU_VIRTUAL_ADDRESS mem_gpu_address{};
-        size_t mem_size{};
+        uint64_t mem_size{};
         size_t version_{};
     };
 

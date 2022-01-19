@@ -190,9 +190,9 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target
         case ff::state::advance_t::stopped:
             {
                 ff::window_size size = target.size();
-                ff::point_float rotated_size = size.physical_pixel_size().cast<float>();
+                ff::point_float rotated_size = size.logical_pixel_size.cast<float>();
                 ff::rect_float target_rect(0, 0, rotated_size.x, rotated_size.y);
-                ff::rect_float scaled_target_rect = target_rect / static_cast<float>(target.size().dpi_scale);
+                ff::rect_float scaled_target_rect = target_rect / static_cast<float>(size.dpi_scale);
 
                 ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, nullptr, target_rect, scaled_target_rect);
                 if (draw)
@@ -372,9 +372,10 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
         return;
     }
 
-    ff::point_float target_size = target.size().physical_pixel_size().cast<float>();
+    ff::window_size size = target.size();
+    ff::point_float target_size = size.logical_pixel_size.cast<float>();
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
-    ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, &depth, target_rect, target_rect / static_cast<float>(target.size().dpi_scale));
+    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, &depth, target_rect, target_rect / static_cast<float>(size.dpi_scale));
     if (draw)
     {
         draw->push_no_overlap();
@@ -426,11 +427,11 @@ void ff::debug_state::render_charts(ff::dxgi::target_base& target)
     const float scale = 16;
     const float view_fps_inverse = 1 / view_fps;
 
-    ff::point_float target_size = target.size().physical_pixel_size().cast<float>();
+    ff::point_float target_size = target.size().logical_pixel_size.cast<float>();
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
     ff::rect_float world_rect = ff::rect_float(0, 1, view_seconds, 0);
 
-    ff::dxgi::draw_ptr draw = this->draw_device->begin_draw(target, nullptr, target_rect, world_rect);
+    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, nullptr, target_rect, world_rect);
     if (draw)
     {
         std::array<ff::point_float, ff::debug_state::MAX_QUEUE_SIZE> advance_points{};

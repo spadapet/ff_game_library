@@ -20,10 +20,13 @@ namespace ff
 {
     struct load_resources_result
     {
+        using output_files_t = typename std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>>;
+
         bool status;
         std::vector<std::string> errors;
         std::string namespace_;
         ff::dict dict;
+        output_files_t output_files;
     };
 
     load_resources_result load_resources_from_file(const std::filesystem::path& path, bool use_cache, bool debug);

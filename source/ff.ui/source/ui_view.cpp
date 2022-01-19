@@ -111,14 +111,14 @@ void ff::ui_view::internal_size(const ff::window_size& value)
     if (value != this->current_size)
     {
         const float dpi_scale = static_cast<float>(value.dpi_scale);
-        const float rotate_degrees_cw = static_cast<float>(value.rotated_degrees());
+        const float rotate_degrees_ccw = static_cast<float>(value.rotated_degrees(true));
         const ff::point_float dip_size = value.logical_pixel_size.cast<float>() / dpi_scale;
         const ff::point_t<uint32_t> physical_pixel_size = value.physical_pixel_size().cast<uint32_t>();
 
         // Size for Grid that owns the content and gets rotated
         this->view_grid->SetWidth(dip_size.x);
         this->view_grid->SetHeight(dip_size.y);
-        this->rotate_transform->SetAngle(rotate_degrees_cw);
+        this->rotate_transform->SetAngle(rotate_degrees_ccw);
 
         // Size for internal Noesis view
         this->internal_view_->SetSize(physical_pixel_size.x, physical_pixel_size.y);
@@ -269,7 +269,7 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
     {
         ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(
             target, nullptr, rotated_pixel_rect.cast<float>(), rotated_pixel_rect.cast<float>(),
-            ff::flags::combine(ff::dxgi::draw_options::pre_multiplied_alpha, ff::dxgi::draw_options::ignore_orientation));
+            ff::flags::combine(ff::dxgi::draw_options::pre_multiplied_alpha, ff::dxgi::draw_options::ignore_rotation));
 
         if (draw)
         {

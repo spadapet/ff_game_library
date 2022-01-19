@@ -19,6 +19,9 @@ ff::resource_load_context& ff::resource_load_context::null()
         virtual void add_error(std::string_view text)
         {}
 
+        virtual void add_output_file(std::string_view name, const std::shared_ptr<ff::data_base>& data) override
+        {}
+
         virtual bool debug() const
         {
             return false;

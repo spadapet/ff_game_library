@@ -27,15 +27,27 @@ namespace ff
         int rotated_degrees(bool ccw = false) const;
 
         template<class T>
+        ff::point_t<T> logical_to_physical_size(const ff::point_t<T>& size) const
+        {
+            return (this->rotation & 1) != 0 ? size.swap() : size;
+        }
+
+        template<class T>
+        ff::point_t<T> physical_to_logical_size(const ff::point_t<T>& size) const
+        {
+            return (this->rotation & 1) != 0 ? size.swap() : size;
+        }
+
+        template<class T>
         ff::rect_t<T> logical_to_physical_rect(const ff::rect_t<T>& rect) const
         {
             const ff::point_t<T> size = this->logical_pixel_size.cast<T>();
             switch (this->rotation)
             {
                 default: return rect;
-                case DMDO_90: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
+                case DMDO_90: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
                 case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-                case DMDO_270: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left }; 
+                case DMDO_270: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
             }
         }
 
@@ -52,9 +64,9 @@ namespace ff
             switch (this->rotation)
             {
                 default: return rect;
-                case DMDO_90: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left };
+                case DMDO_90: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right };
                 case DMDO_180: return { size.x - rect.right, size.y - rect.bottom, size.x - rect.left, size.y - rect.top };
-                case DMDO_270: return { size.y - rect.bottom, rect.left, size.y - rect.top, rect.right }; 
+                case DMDO_270: return { rect.top, size.x - rect.right, rect.bottom, size.x - rect.left }; 
             }
         }
 

@@ -8,7 +8,9 @@
 #include "resource_tracker.h"
 #include "queue.h"
 
+#ifdef _WIN64
 #include <pix3.h>
+#endif
 
 ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)
     : type(type)
@@ -43,12 +45,16 @@ void ff::dx12::queue::wait_for_idle()
 
 void ff::dx12::queue::begin_event(ff::dx12::gpu_event type)
 {
+#ifdef _WIN64
     ::PIXBeginEvent(this->command_queue.Get(), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+#endif
 }
 
 void ff::dx12::queue::end_event()
 {
+#ifdef _WIN64
     ::PIXEndEvent(this->command_queue.Get());
+#endif
 }
 
 std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()

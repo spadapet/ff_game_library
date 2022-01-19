@@ -34,6 +34,15 @@ public:
         }
     }
 
+    virtual void add_output_file(std::string_view name, const std::shared_ptr<ff::data_base>& data) override
+    {
+        if (name.size() && data && data->size())
+        {
+            std::scoped_lock lock(this->mutex);
+            this->output_files_.push_back(std::make_pair(std::string(name), data));
+        }
+    }
+
     virtual bool debug() const override
     {
         return this->debug_;
@@ -144,10 +153,22 @@ public:
         return paths;
     }
 
+    ff::load_resources_result::output_files_t output_files() const
+    {
+        ff::load_resources_result::output_files_t output_files_copy;
+        {
+            std::scoped_lock lock(this->mutex);
+            output_files_copy = this->output_files_;
+        }
+
+        return output_files_copy;
+    }
+
 private:
     mutable std::recursive_mutex mutex;
     std::filesystem::path base_path_;
     std::vector<std::string> errors_;
+    ff::load_resources_result::output_files_t output_files_;
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
     std::unordered_set<std::filesystem::path, ff::stable_hash<std::filesystem::path>> paths_;
@@ -695,5 +716,6 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     result.status = true;
     result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE);
     result.dict = std::move(dict);
+    result.output_files = context.output_files();
     return result;
 }

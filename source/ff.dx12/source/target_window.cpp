@@ -272,7 +272,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #if UWP_APP
         (this->use_xaml_composition && FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale))) ||
 #endif
-        FAILED(this->swap_chain->SetRotation(ff::dxgi::get_dxgi_rotation(size.rotation))))
+        FAILED(this->swap_chain->SetRotation(ff::dxgi::get_dxgi_rotation(size.rotation, true))))
     {
         debug_fail_ret_val(false);
     }
@@ -399,7 +399,8 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
 
         case WM_SIZE:
         case WM_DISPLAYCHANGE:
-            if (msg.msg == WM_DISPLAYCHANGE || msg.wp != SIZE_MINIMIZED)
+        case WM_DPICHANGED:
+            if (msg.msg != WM_SIZE || msg.wp != SIZE_MINIMIZED)
             {
                 ff::dxgi_host().defer_resize(this, this->window->size());
             }

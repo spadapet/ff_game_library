@@ -354,9 +354,9 @@ namespace
             return this->commands;
         }
 
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation) override
+        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) override
         {
-            const ff::rect_float physical_view_rect = !ignore_orientation
+            const ff::rect_float physical_view_rect = !ignore_rotation
                 ? target.size().logical_to_physical_rect(view_rect)
                 : view_rect;
 

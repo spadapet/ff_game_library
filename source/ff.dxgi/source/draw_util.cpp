@@ -15,6 +15,88 @@
 #include "transform.h"
 #include "vertex.h"
 
+namespace
+{
+    enum class alpha_type
+    {
+        opaque,
+        transparent,
+        invisible,
+    };
+}
+
+static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_opaque)
+{
+    if (color.w == 0)
+    {
+        return ::alpha_type::invisible;
+    }
+
+    if (color.w == 1 || force_opaque)
+    {
+        return ::alpha_type::opaque;
+    }
+
+    return ::alpha_type::transparent;
+}
+
+static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
+{
+    ::alpha_type type = ::alpha_type::invisible;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        switch (::get_alpha_type(colors[i], force_opaque))
+        {
+            case ::alpha_type::opaque:
+                type = ::alpha_type::opaque;
+                break;
+
+            case ::alpha_type::transparent:
+                return ::alpha_type::transparent;
+        }
+    }
+
+    return type;
+}
+
+static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque)
+{
+    switch (::get_alpha_type(color, force_opaque))
+    {
+        case ::alpha_type::transparent:
+            return ff::flags::has(data.type(), ff::dxgi::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
+
+        case ::alpha_type::opaque:
+            return (ff::flags::has(data.type(), ff::dxgi::sprite_type::transparent) && !force_opaque)
+                ? ::alpha_type::transparent
+                : ::alpha_type::opaque;
+
+        default:
+            return ::alpha_type::invisible;
+    }
+}
+
+static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
+{
+    ::alpha_type type = ::alpha_type::invisible;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        switch (::get_alpha_type(*datas[i], colors[i], force_opaque))
+        {
+            case ::alpha_type::opaque:
+                type = ::alpha_type::opaque;
+                break;
+
+            case ::alpha_type::transparent:
+                return ::alpha_type::transparent;
+        }
+    }
+
+    return type;
+}
+
 const std::array<uint8_t, ff::dxgi::palette_size>& ff::dxgi::draw_util::default_palette_remap()
 {
     static std::array<uint8_t, ff::dxgi::palette_size> value
@@ -166,134 +248,76 @@ size_t ff::dxgi::draw_util::geometry_bucket::render_count() const
     return this->render_count_;
 }
 
-ff::dxgi::draw_util::alpha_type ff::dxgi::draw_util::get_alpha_type(const DirectX::XMFLOAT4& color, bool force_opaque)
+static const DirectX::XMMATRIX& get_rotate_matrix(int dmod, bool ignore_rotate)
 {
-    if (color.w == 0)
-    {
-        return ff::dxgi::draw_util::alpha_type::invisible;
-    }
+    static const DirectX::XMFLOAT4X4A rotate_0(
+        2, 0, 0, 0,
+        0, -2, 0, 0,
+        0, 0, 1, 0,
+        -1, 1, 0, 1);
 
-    if (color.w == 1 || force_opaque)
-    {
-        return ff::dxgi::draw_util::alpha_type::opaque;
-    }
+    static const DirectX::XMFLOAT4X4A rotate_90(
+        0, 2, 0, 0,
+        2, 0, 0, 0,
+        0, 0, 1, 0,
+        -1, -1, 0, 1);
 
-    return ff::dxgi::draw_util::alpha_type::transparent;
+    static const DirectX::XMFLOAT4X4A ignore_rotate_90(
+        2, 0, 0, 0,
+        0, -2, 0, 0,
+        0, 0, 1, 0,
+        -1, 1, 0, 1);
+
+    static const DirectX::XMFLOAT4X4A rotate_180(
+        -2, 0, 0, 0,
+        0, 2, 0, 0,
+        0, 0, 1, 0,
+        1, -1, 0, 1);
+
+    static const DirectX::XMFLOAT4X4A ignore_rotate_180(
+        2, 0, 0, 0,
+        0, -2, 0, 0,
+        0, 0, 1, 0,
+        -1, 1, 0, 1);
+
+    static const DirectX::XMFLOAT4X4A rotate_270(
+        0, -2, 0, 0,
+        -2, 0, 0, 0,
+        0, 0, 1, 0,
+        1, 1, 0, 1);
+
+    static const DirectX::XMFLOAT4X4A ignore_rotate_270(
+        2, 0, 0, 0,
+        0, -2, 0, 0,
+        0, 0, 1, 0,
+        -1, 1, 0, 1);
+
+    static const DirectX::XMMATRIX matrices[4][2] =
+    {
+        { DirectX::XMLoadFloat4x4(&rotate_0), DirectX::XMLoadFloat4x4(&rotate_0) },
+        { DirectX::XMLoadFloat4x4(&rotate_90), DirectX::XMLoadFloat4x4(&ignore_rotate_90) },
+        { DirectX::XMLoadFloat4x4(&rotate_180), DirectX::XMLoadFloat4x4(&ignore_rotate_180) },
+        { DirectX::XMLoadFloat4x4(&rotate_270), DirectX::XMLoadFloat4x4(&ignore_rotate_270) },
+    };
+
+    return matrices[dmod][ignore_rotate ? 1 : 0];
 }
 
-ff::dxgi::draw_util::alpha_type ff::dxgi::draw_util::get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
+static DirectX::XMMATRIX get_view_matrix(const ff::window_size& target_size, const ff::rect_float& world_rect, bool ignore_rotation)
 {
-    ff::dxgi::draw_util::alpha_type type = ff::dxgi::draw_util::alpha_type::invisible;
+    DirectX::XMMATRIX rotate_matrix = ::get_rotate_matrix(target_size.rotation, ignore_rotation);
+    DirectX::XMMATRIX scale_matrix = DirectX::XMMatrixScaling(1 / world_rect.width(), 1 / world_rect.height(), 1);
+    DirectX::XMMATRIX translate_matrix = DirectX::XMMatrixTranslation(-world_rect.left, -world_rect.top, 0);
 
-    for (size_t i = 0; i < count; i++)
-    {
-        switch (ff::dxgi::draw_util::get_alpha_type(colors[i], force_opaque))
-        {
-            case ff::dxgi::draw_util::alpha_type::opaque:
-                type = ff::dxgi::draw_util::alpha_type::opaque;
-                break;
-
-            case ff::dxgi::draw_util::alpha_type::transparent:
-                return ff::dxgi::draw_util::alpha_type::transparent;
-        }
-    }
-
-    return type;
+    return translate_matrix * scale_matrix * rotate_matrix;
 }
 
-ff::dxgi::draw_util::alpha_type ff::dxgi::draw_util::get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque)
+static bool setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix, bool ignore_rotation)
 {
-    switch (ff::dxgi::draw_util::get_alpha_type(color, force_opaque))
+    if (world_rect.area() != 0 && view_rect.area() > 0)
     {
-        case ff::dxgi::draw_util::alpha_type::transparent:
-            return ff::flags::has(data.type(), ff::dxgi::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
-
-        case ff::dxgi::draw_util::alpha_type::opaque:
-            return (ff::flags::has(data.type(), ff::dxgi::sprite_type::transparent) && !force_opaque)
-                ? ff::dxgi::draw_util::alpha_type::transparent
-                : ff::dxgi::draw_util::alpha_type::opaque;
-
-        default:
-            return ff::dxgi::draw_util::alpha_type::invisible;
-    }
-}
-
-ff::dxgi::draw_util::alpha_type ff::dxgi::draw_util::get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
-{
-    ff::dxgi::draw_util::alpha_type type = ff::dxgi::draw_util::alpha_type::invisible;
-
-    for (size_t i = 0; i < count; i++)
-    {
-        switch (ff::dxgi::draw_util::get_alpha_type(*datas[i], colors[i], force_opaque))
-        {
-            case ff::dxgi::draw_util::alpha_type::opaque:
-                type = ff::dxgi::draw_util::alpha_type::opaque;
-                break;
-
-            case ff::dxgi::draw_util::alpha_type::transparent:
-                return ff::dxgi::draw_util::alpha_type::transparent;
-        }
-    }
-
-    return type;
-}
-
-DirectX::XMMATRIX ff::dxgi::draw_util::get_view_matrix(const ff::rect_float& world_rect)
-{
-    return DirectX::XMMatrixOrthographicOffCenterLH(
-        world_rect.left,
-        world_rect.right,
-        world_rect.bottom,
-        world_rect.top,
-        0, ff::dxgi::draw_util::MAX_RENDER_DEPTH);
-}
-
-DirectX::XMMATRIX ff::dxgi::draw_util::get_orientation_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, ff::point_float world_center)
-{
-    DirectX::XMMATRIX orientation_matrix;
-
-    int degrees = target.size().rotation;
-    switch (degrees)
-    {
-        default:
-            orientation_matrix = DirectX::XMMatrixIdentity();
-            break;
-
-        case DMDO_90:
-        case DMDO_270:
-            {
-                float view_height_per_width = view_rect.height() / view_rect.width();
-                float view_width_per_height = view_rect.width() / view_rect.height();
-
-                orientation_matrix =
-                    DirectX::XMMatrixTransformation2D(
-                        DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), 0, // scale center
-                        DirectX::XMVectorSet(view_height_per_width, view_width_per_height, 1, 1), // scale
-                        DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), // rotation center
-                        ff::math::pi<float>() * degrees / 2.0f, // rotation
-                        DirectX::XMVectorZero()); // translation
-            } break;
-
-        case DMDO_180:
-            orientation_matrix =
-                DirectX::XMMatrixAffineTransformation2D(
-                    DirectX::XMVectorSet(1, 1, 1, 1), // scale
-                    DirectX::XMVectorSet(world_center.x, world_center.y, 0, 0), // rotation center
-                    ff::math::pi<float>(), // rotation
-                    DirectX::XMVectorZero()); // translation
-            break;
-    }
-
-    return orientation_matrix;
-}
-
-bool ff::dxgi::draw_util::setup_view_matrix(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect, DirectX::XMFLOAT4X4& view_matrix, bool ignore_orientation)
-{
-    if (world_rect.width() != 0 && world_rect.height() != 0 && view_rect.width() > 0 && view_rect.height() > 0)
-    {
-        DirectX::XMMATRIX unoriented_view_matrix = ff::dxgi::draw_util::get_view_matrix(world_rect);
-        DirectX::XMMATRIX orientation_matrix = !ignore_orientation ? ff::dxgi::draw_util::get_orientation_matrix(target, view_rect, world_rect.center()) : DirectX::XMMatrixIdentity();
-        DirectX::XMStoreFloat4x4(&view_matrix, DirectX::XMMatrixTranspose(orientation_matrix * unoriented_view_matrix));
+        DirectX::XMMATRIX view_matrix2 = ::get_view_matrix(target.size(), world_rect, ignore_rotation);
+        DirectX::XMStoreFloat4x4(&view_matrix, DirectX::XMMatrixTranspose(view_matrix2));
         return true;
     }
 
@@ -301,9 +325,7 @@ bool ff::dxgi::draw_util::setup_view_matrix(ff::dxgi::target_base& target, const
 }
 
 ff::dxgi::draw_util::draw_device_base::draw_device_base()
-    : state(draw_device_base::state_t::invalid)
-    , command_context_(nullptr)
-    , world_matrix_stack_changing_connection(this->world_matrix_stack_.matrix_changing().connect(std::bind(&draw_device_base::matrix_changing, this, std::placeholders::_1)))
+    : world_matrix_stack_changing_connection(this->world_matrix_stack_.matrix_changing().connect(std::bind(&draw_device_base::matrix_changing, this, std::placeholders::_1)))
     , geometry_buckets
 {
     ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::line_geometry, ff::dxgi::draw_util::geometry_bucket_type::lines>(),
@@ -346,11 +368,11 @@ void ff::dxgi::draw_util::draw_device_base::end_draw()
 
 void ff::dxgi::draw_util::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform)
 {
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
-    if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible && sprite.view())
+    ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
+    if (alpha_type != ::alpha_type::invisible && sprite.view())
     {
         bool use_palette = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
-        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent && !this->target_requires_palette_)
+        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent && !this->target_requires_palette_)
             ? (use_palette ? ff::dxgi::draw_util::geometry_bucket_type::palette_sprites : ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha)
             : (use_palette ? ff::dxgi::draw_util::geometry_bucket_type::palette_sprites : ff::dxgi::draw_util::geometry_bucket_type::sprites);
 
@@ -446,10 +468,10 @@ void ff::dxgi::draw_util::draw_device_base::draw_filled_triangles(const ff::poin
         std::memcpy(input.position, points, sizeof(input.position));
         std::memcpy(input.color, colors, sizeof(input.color));
 
-        ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette_);
-        if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
+        ::alpha_type alpha_type = ::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette_);
+        if (alpha_type != ::alpha_type::invisible)
         {
-            ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha : ff::dxgi::draw_util::geometry_bucket_type::triangles;
+            ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha : ff::dxgi::draw_util::geometry_bucket_type::triangles;
             this->add_geometry(&input, bucket_type, input.depth);
         }
     }
@@ -519,10 +541,10 @@ void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_
     input.inside_color = inside_color;
     input.outside_color = outside_color;
 
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette_);
-    if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
+    ::alpha_type alpha_type = ::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette_);
+    if (alpha_type != ::alpha_type::invisible)
     {
-        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::circles_alpha : ff::dxgi::draw_util::geometry_bucket_type::circles;
+        ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::circles_alpha : ff::dxgi::draw_util::geometry_bucket_type::circles;
         this->add_geometry(&input, bucket_type, input.position.z);
     }
 }
@@ -772,10 +794,10 @@ ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(ff
 {
     this->end_draw();
 
-    bool ignore_orientation = ff::flags::has(options, ff::dxgi::draw_options::ignore_orientation);
+    bool ignore_rotation = ff::flags::has(options, ff::dxgi::draw_options::ignore_rotation);
 
-    if (ff::dxgi::draw_util::setup_view_matrix(target, view_rect, world_rect, this->view_matrix, ignore_orientation) &&
-        (this->command_context_ = this->setup(target, depth, view_rect, ignore_orientation)) != nullptr)
+    if (::setup_view_matrix(target, view_rect, world_rect, this->view_matrix, ignore_rotation) &&
+        (this->command_context_ = this->setup(target, depth, view_rect, ignore_rotation)) != nullptr)
     {
         this->init_geometry_constant_buffer_0(target, view_rect, world_rect);
         this->target_requires_palette_ = ff::dxgi::palette_format(target.format());
@@ -914,14 +936,14 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
     }
 }
 
-ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_orientation)
+ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation)
 {
     if (depth && !depth->size(target.size().physical_pixel_size()))
     {
         return nullptr;
     }
 
-    ff::dxgi::command_context_base* context = this->internal_setup(target, depth, view_rect, ignore_orientation);
+    ff::dxgi::command_context_base* context = this->internal_setup(target, depth, view_rect, ignore_rotation);
 
     if (context && depth)
     {
@@ -951,7 +973,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
 
     const DirectX::XMFLOAT2* dxpoints = reinterpret_cast<const DirectX::XMFLOAT2*>(points);
     bool closed = point_count > 2 && points[0] == points[point_count - 1];
-    ff::dxgi::draw_util::alpha_type alpha_type = ff::dxgi::draw_util::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette_);
+    ::alpha_type alpha_type = ::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette_);
 
     for (size_t i = 0; i < point_count - 1; i++)
     {
@@ -970,12 +992,12 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
         {
             input.color[0] = colors[i];
             input.color[1] = colors[i + 1];
-            alpha_type = ff::dxgi::draw_util::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette_);
+            alpha_type = ::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette_);
         }
 
-        if (alpha_type != ff::dxgi::draw_util::alpha_type::invisible)
+        if (alpha_type != ::alpha_type::invisible)
         {
-            ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ff::dxgi::draw_util::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::lines_alpha : ff::dxgi::draw_util::geometry_bucket_type::lines;
+            ff::dxgi::draw_util::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ff::dxgi::draw_util::geometry_bucket_type::lines_alpha : ff::dxgi::draw_util::geometry_bucket_type::lines;
             this->add_geometry(&input, bucket_type, input.depth);
         }
     }
@@ -1358,9 +1380,9 @@ void* ff::dxgi::draw_util::draw_device_base::add_geometry(const void* data, ff::
 
         this->alpha_geometry.push_back(ff::dxgi::draw_util::alpha_geometry_entry
             {
-            &bucket,
-            bucket.count(),
-            depth
+                &bucket,
+                bucket.count(),
+                depth
             });
     }
 
@@ -1375,5 +1397,5 @@ ff::dxgi::draw_util::geometry_bucket& ff::dxgi::draw_util::draw_device_base::get
 void ff::dxgi::draw_util::draw_device_base::internal_flush_begin(ff::dxgi::command_context_base* context)
 {}
 
-void ff::dxgi::draw_util::draw_device_base::internal_flush_end(ff::dxgi::command_context_base * context)
+void ff::dxgi::draw_util::draw_device_base::internal_flush_end(ff::dxgi::command_context_base* context)
 {}
