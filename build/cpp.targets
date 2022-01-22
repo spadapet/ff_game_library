@@ -31,9 +31,10 @@
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 
-  <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(Configuration)' != 'Release' And '$(ConfigurationType)' != 'StaticLibrary' ">
+  <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(ConfigurationType)' != 'StaticLibrary' ">
     <!-- For UWP builds, these files are copied in cpp.props as None.DeploymentContent -->
-    <Copy SourceFiles="$(NoesisDll);$(WinPixDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
+    <Copy Condition="Exists('$(NoesisDll)')" SourceFiles="$(NoesisDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
+    <Copy Condition="Exists('$(WinPixDll)') And '$(Configuration)' != 'Release' " SourceFiles="$(WinPixDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
   </Target>
 
   <ItemDefinitionGroup>

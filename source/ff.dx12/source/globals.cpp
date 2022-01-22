@@ -109,7 +109,9 @@ static void flush_keep_alive()
 
 static bool init_dxgi()
 {
+#if !UWP_APP
     ::DXGIDeclareAdapterRemovalSupport();
+#endif
 
     ::factory = ff::dxgi::create_factory();
     assert_ret_val(::factory, false);
