@@ -5,9 +5,34 @@
 #include "ff.game.res.h"
 
 static const ff::game::init_params* init_params{};
+static std::function<void()> init_app_func;
+static std::weak_ptr<ff::game::app_state_base> app_state;
 
-static void register_components()
+void ff::game::app_state_base::internal_setup_init()
 {
+    ::init_app_func = std::bind(&ff::game::app_state_base::internal_init, this);
+}
+
+static std::shared_ptr<ff::state> create_app_state()
+{
+    ::init_app_func = {};
+
+    auto app_state = ::init_params->create_initial_state();
+    ::app_state = app_state;
+
+    if (::init_app_func)
+    {
+        ::init_app_func();
+        ::init_app_func = {};
+    }
+
+    return app_state;
+}
+
+static void register_noesis_components()
+{
+    ff::global_resources::add(::assets::game::data());
+
     for (auto& func : ::init_params->register_global_resources)
     {
         func();
@@ -19,39 +44,28 @@ static void register_components()
     }
 }
 
-static std::shared_ptr<ff::state> create_app_state()
-{
-    return ::init_params->create_initial_state
-        ? ::init_params->create_initial_state()
-        : nullptr;
-}
-
 static const ff::dxgi::palette_base* get_noesis_palette()
 {
-    return ff::game::app_state_base::get()
-        ? ff::game::app_state_base::get()->palette()
-        : nullptr;
+    auto app_state = ::app_state.lock();
+    return app_state ? app_state->palette() : nullptr;
 }
 
 static double get_time_scale()
 {
-    return ff::game::app_state_base::get()
-        ? ff::game::app_state_base::get()->time_scale()
-        : 1;
+    auto app_state = ::app_state.lock();
+    return app_state ? app_state->time_scale() : 1;
 }
 
 static ff::state::advance_t get_advance_type()
 {
-    return ff::game::app_state_base::get()
-        ? ff::game::app_state_base::get()->advance_type()
-        : ff::state::advance_t::running;
+    auto app_state = ::app_state.lock();
+    return app_state ? app_state->advance_type() : ff::state::advance_t::running;
 }
 
 static bool get_clear_color(DirectX::XMFLOAT4& color)
 {
-    return ff::game::app_state_base::get()
-        ? ff::game::app_state_base::get()->clear_color(color)
-        : false;
+    auto app_state = ::app_state.lock();
+    return app_state ? app_state->clear_color(color) : false;
 }
 
 static ff::init_app_params get_app_params()
@@ -73,9 +87,9 @@ static ff::init_ui_params get_ui_params()
     params.default_font_size = ::init_params->noesis_default_font_size;
     params.noesis_license_name = ::init_params->noesis_license_name;
     params.noesis_license_key = ::init_params->noesis_license_key;
-    params.palette_func = ::get_noesis_palette;
-    params.register_components_func = ::register_components;
     params.srgb = ::init_params->noesis_srgb;
+    params.palette_func = ::get_noesis_palette;
+    params.register_components_func = ::register_noesis_components;
 
     return params;
 }

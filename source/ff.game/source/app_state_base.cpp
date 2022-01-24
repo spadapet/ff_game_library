@@ -2,8 +2,6 @@
 #include "app_state_base.h"
 #include "debug_state.h"
 
-static ff::game::app_state_base* global_app_state;
-
 const size_t ff::game::app_state_base::ID_DEBUG_HIDE_UI = ff::stable_hash_func("ff::game::app_state_base::ID_DEBUG_HIDE_UI"sv);
 const size_t ff::game::app_state_base::ID_DEBUG_SHOW_UI = ff::stable_hash_func("ff::game::app_state_base::ID_DEBUG_SHOW_UI"sv);
 const size_t ff::game::app_state_base::ID_DEBUG_RESTART_GAME = ff::stable_hash_func("ff::game::app_state_base::ID_DEBUG_RESTART_GAME"sv);
@@ -19,26 +17,12 @@ static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
 
 ff::game::app_state_base::app_state_base()
 {
-    assert(!::global_app_state);
-    ::global_app_state = this;
-
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
     this->connections.emplace_front(ff::global_resources::rebuilt_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this)));
 }
 
-ff::game::app_state_base::~app_state_base()
-{
-    assert(::global_app_state == this);
-    ::global_app_state = nullptr;
-}
-
-ff::game::app_state_base* ff::game::app_state_base::get()
-{
-    return ::global_app_state;
-}
-
-void ff::game::app_state_base::init()
+void ff::game::app_state_base::internal_init()
 {
     this->load_settings();
     this->init_resources();

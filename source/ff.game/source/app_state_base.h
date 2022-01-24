@@ -10,15 +10,12 @@ namespace ff::game
     {
     public:
         app_state_base();
-        virtual ~app_state_base() override;
 
-        static app_state_base* get();
         static const size_t ID_DEBUG_HIDE_UI;
         static const size_t ID_DEBUG_SHOW_UI;
         static const size_t ID_DEBUG_RESTART_GAME;
         static const size_t ID_DEBUG_REBUILD_RESOURCES;
 
-        void init();
         const ff::game::system_options& system_options() const;
         void system_options(const ff::game::system_options& options);
         ff::signal_sink<>& reload_resources_sink();
@@ -44,6 +41,9 @@ namespace ff::game
         virtual void load_resources();
 
     private:
+        void internal_setup_init();
+        void internal_init();
+
         void load_settings();
         void init_resources();
         void init_game_state();
