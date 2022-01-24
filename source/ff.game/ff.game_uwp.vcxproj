@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{0eb09503-be90-4bbd-8ab2-3713b1ee46dd}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="source\app_state_base.cpp" />
+    <ClCompile Include="source\debug_state.cpp" />
+    <ClCompile Include="source\init.cpp" />
+    <ClCompile Include="source\system_options.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="source\app_state_base.h" />
+    <ClInclude Include="source\debug_state.h" />
+    <ClInclude Include="source\init.h" />
+    <ClInclude Include="source\system_options.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ff.application\ff.application_uwp.vcxproj">
+      <Project>{513b0ebc-4a6b-455f-b190-7864f3092778}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.game.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

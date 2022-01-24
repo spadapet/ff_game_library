@@ -45,6 +45,11 @@ namespace ff
             return this->data >> this_type::fixed_count;
         }
 
+        operator long() const
+        {
+            return static_cast<long>(static_cast<T>(*this));
+        }
+
         operator size_t() const
         {
             return static_cast<size_t>(static_cast<T>(*this));

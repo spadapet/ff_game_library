@@ -6,6 +6,7 @@
 #include "ff.data.h"
 #include "ff.dx12.h"
 #include "ff.dxgi.h"
+#include "ff.game.h"
 #include "ff.graphics.h"
 #include "ff.input.h"
 #include "ff.resource.h"
