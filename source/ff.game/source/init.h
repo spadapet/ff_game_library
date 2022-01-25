@@ -7,7 +7,7 @@ namespace ff::game
     struct init_params
     {
         std::function<std::shared_ptr<ff::game::app_state_base>()> create_initial_state;
-        std::vector<std::function<void()>> register_global_resources;
+        std::function<void()> register_global_resources;
         std::function<void()> register_noesis_components;
         std::string noesis_license_name;
         std::string noesis_license_key;

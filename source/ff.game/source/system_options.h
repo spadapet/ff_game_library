@@ -6,7 +6,7 @@ namespace ff::game
     {
         system_options();
 
-        static const uint8_t CURRENT_VERSION = 1;
+        static const uint8_t CURRENT_VERSION = 2;
 
         uint8_t version;
         bool full_screen;

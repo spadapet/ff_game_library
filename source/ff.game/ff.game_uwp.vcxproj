@@ -11,14 +11,12 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\app_state_base.cpp" />
-    <ClCompile Include="source\debug_state.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\system_options.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app_state_base.h" />
-    <ClInclude Include="source\debug_state.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\system_options.h" />
   </ItemGroup>

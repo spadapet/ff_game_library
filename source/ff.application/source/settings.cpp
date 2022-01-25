@@ -35,7 +35,8 @@ void ff::internal::app::load_settings()
     std::filesystem::path settings_path = ::settings_path();
     if (std::filesystem::exists(settings_path, ec))
     {
-        if (!ff::dict::load(ff::file_reader(settings_path), ::named_settings))
+        auto data = ff::filesystem::read_binary_file(settings_path);
+        if (!data || !ff::dict::load(ff::data_reader(data), ::named_settings))
         {
             assert(false);
         }

@@ -33,9 +33,9 @@ static void register_noesis_components()
 {
     ff::global_resources::add(::assets::game::data());
 
-    for (auto& func : ::init_params->register_global_resources)
+    if (::init_params->register_global_resources)
     {
-        func();
+        ::init_params->register_global_resources();
     }
 
     if (::init_params->register_noesis_components)

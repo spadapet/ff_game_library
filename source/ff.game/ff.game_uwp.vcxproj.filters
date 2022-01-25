@@ -5,9 +5,6 @@
     <ClCompile Include="source\app_state_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\debug_state.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -18,9 +15,6 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app_state_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\debug_state.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\init.h">
