@@ -178,23 +178,23 @@ void ff::debug_state::advance_input()
     }
 }
 
-void ff::debug_state::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     this->rps_counter++;
 }
 
-void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     switch (type)
     {
         case ff::state::advance_t::stopped:
             {
-                ff::window_size size = target.size();
+                ff::window_size size = targets.target(context).size();
                 ff::point_float rotated_size = size.logical_pixel_size.cast<float>();
                 ff::rect_float target_rect(0, 0, rotated_size.x, rotated_size.y);
                 ff::rect_float scaled_target_rect = target_rect / static_cast<float>(size.dpi_scale);
 
-                ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, nullptr, target_rect, scaled_target_rect);
+                ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(context, targets.target(context), nullptr, target_rect, scaled_target_rect);
                 if (draw)
                 {
                     DirectX::XMFLOAT4 color = ff::dxgi::color_magenta();
@@ -216,11 +216,11 @@ void ff::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::target
             this->update_stats();
         }
 
-        this->render_text(target, depth);
+        this->render_text(context, targets.target(context), targets.depth(context));
 
         if (this->enabled_charts)
         {
-            this->render_charts(target);
+            this->render_charts(context, targets.target(context));
         }
     }
 }
@@ -362,7 +362,7 @@ void ff::debug_state::update_stats()
     }
 }
 
-void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::debug_state::render_text(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
     auto font = this->font.object();
     size_t page_index, sub_page_index;
@@ -375,7 +375,7 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
     ff::window_size size = target.size();
     ff::point_float target_size = size.logical_pixel_size.cast<float>();
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
-    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, &depth, target_rect, target_rect / static_cast<float>(size.dpi_scale));
+    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(context, target, &depth, target_rect, target_rect / static_cast<float>(size.dpi_scale));
     if (draw)
     {
         draw->push_no_overlap();
@@ -420,7 +420,7 @@ void ff::debug_state::render_text(ff::dxgi::target_base& target, ff::dxgi::depth
     }
 }
 
-void ff::debug_state::render_charts(ff::dxgi::target_base& target)
+void ff::debug_state::render_charts(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
 {
     const float view_fps = ff::constants::advances_per_second_f;
     const float view_seconds = ff::debug_state::MAX_QUEUE_SIZE / view_fps;
@@ -431,7 +431,7 @@ void ff::debug_state::render_charts(ff::dxgi::target_base& target)
     ff::rect_float target_rect(ff::point_float(0, 0), target_size);
     ff::rect_float world_rect = ff::rect_float(0, 1, view_seconds, 0);
 
-    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(target, nullptr, target_rect, world_rect);
+    ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(context, target, nullptr, target_rect, world_rect);
     if (draw)
     {
         std::array<ff::point_float, ff::debug_state::MAX_QUEUE_SIZE> advance_points{};

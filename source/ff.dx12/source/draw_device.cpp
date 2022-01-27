@@ -257,9 +257,15 @@ namespace
             return this->internal_valid();
         }
 
-        virtual ff::dxgi::draw_ptr begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options) override
+        virtual ff::dxgi::draw_ptr begin_draw(
+            ff::dxgi::command_context_base& context,
+            ff::dxgi::target_base& target,
+            ff::dxgi::depth_base* depth,
+            const ff::rect_float& view_rect,
+            const ff::rect_float& world_rect,
+            ff::dxgi::draw_options options) override
         {
-            return this->internal_begin_draw(target, depth, view_rect, world_rect, options);
+            return this->internal_begin_draw(context, target, depth, view_rect, world_rect, options);
         }
 
     protected:
@@ -354,8 +360,20 @@ namespace
             return this->commands;
         }
 
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) override
+        virtual ff::dxgi::command_context_base* internal_setup(
+            ff::dxgi::command_context_base& context,
+            ff::dxgi::target_base& target,
+            ff::dxgi::depth_base* depth,
+            const ff::rect_float& view_rect,
+            bool ignore_rotation) override
         {
+            ff::dx12::commands& commands = ff::dx12::commands::get(context);
+            if (depth)
+            {
+                assert_ret_val(depth->physical_size(commands, target.size().physical_pixel_size()), nullptr);
+                depth->clear(commands, 0, 0);
+            }
+
             const ff::rect_float physical_view_rect = !ignore_rotation
                 ? target.size().logical_to_physical_rect(view_rect)
                 : view_rect;
@@ -368,7 +386,7 @@ namespace
             this->geometry_constants_version_1 = 0;
             this->pixel_constants_version_0 = 0;
 
-            this->commands = &ff::dx12::frame_commands();
+            this->commands = &commands;
             this->commands->begin_event(ff::dx12::gpu_event::draw_2d);
             this->commands->targets(&this->setup_target, 1, this->setup_depth);
             this->commands->viewports(&this->setup_viewport, 1);

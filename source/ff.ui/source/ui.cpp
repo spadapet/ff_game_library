@@ -212,7 +212,7 @@ static bool init_noesis()
 
     // Resource providers
 
-    ::render_device = Noesis::MakePtr<ff::internal::ui::render_device>(::ui_params.srgb);
+    ::render_device = Noesis::MakePtr<ff::internal::ui::render_device>();
     ::xaml_provider = Noesis::MakePtr<ff::internal::ui::xaml_provider>();
     ::font_provider = Noesis::MakePtr<ff::internal::ui::font_provider>();
     ::texture_provider = Noesis::MakePtr<ff::internal::ui::texture_provider>();

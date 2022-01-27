@@ -30,7 +30,7 @@ namespace ff::game
         // ff::state
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
         virtual size_t child_state_count() override;
         virtual ff::state* child_state(size_t index) override;
 
@@ -64,8 +64,7 @@ namespace ff::game
             void set(std::shared_ptr<ff::state> top_state, std::shared_ptr<ff::state> under_state = nullptr);
 
             // State
-            virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
-            virtual void render() override;
+            virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
             virtual size_t child_state_count() override;
             virtual ff::state* child_state(size_t index) override;
 

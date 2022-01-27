@@ -15,7 +15,7 @@ namespace ff::test::dx12
             ff::dx12::depth depth;
 
             ff::dx12::frame_started();
-            ff::dxgi::draw_ptr draw = dd->begin_draw(target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
+            ff::dxgi::draw_ptr draw = dd->begin_draw(ff::dxgi_client().frame_context(), target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
             Assert::IsTrue(draw);
 
             draw.reset();
@@ -31,17 +31,17 @@ namespace ff::test::dx12
                 test_texture = std::make_unique<ff::dx12::texture>(std::make_shared<DirectX::ScratchImage>(std::move(*png.read())));
             }
 
-            ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256)));
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+            ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color));
 
             ff::dx12::frame_started();
-            target.begin_render(&clear_color);
+            target.begin_render(ff::dxgi_client().frame_context(), &clear_color);
 
             // Draw
             {
                 ff::dx12::depth depth;
                 std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi_client().create_draw_device();
-                ff::dxgi::draw_ptr draw = draw_device->begin_draw(target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
+                ff::dxgi::draw_ptr draw = draw_device->begin_draw(ff::dxgi_client().frame_context(), target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
 
                 std::array<DirectX::XMFLOAT4, 4> rectangle_colors
                 {
@@ -60,7 +60,7 @@ namespace ff::test::dx12
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target.end_render();
+            target.end_render(ff::dxgi_client().frame_context());
             ff::dx12::frame_complete();
             ff::dx12::wait_for_idle();
 

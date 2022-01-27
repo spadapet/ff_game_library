@@ -68,6 +68,7 @@ namespace ff::dx12
         void pipeline_state(ID3D12PipelineStateX* state);
         void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
         void resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
+        void resource_alias(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
 
         void root_signature(ID3D12RootSignature* signature);
         void root_descriptors(size_t index, ff::dx12::descriptor_range& range, size_t base_index = 0);

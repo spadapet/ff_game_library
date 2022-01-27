@@ -22,8 +22,8 @@ void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xa
             {
                 ff::dxgi_client().frame_started();
                 this->target->wait_for_render_ready();
-                this->target->begin_render(&color);
-                this->target->end_render();
+                this->target->begin_render(ff::dxgi_client().frame_context(), &color);
+                this->target->end_render(ff::dxgi_client().frame_context());
                 ff::dxgi_client().frame_complete();
 
                 color.x += 0.0625f;

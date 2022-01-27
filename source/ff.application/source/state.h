@@ -2,6 +2,7 @@
 
 namespace ff
 {
+    class render_targets;
     class state_wrapper;
 
     class state : public std::enable_shared_from_this<ff::state>
@@ -14,12 +15,11 @@ namespace ff
 
         virtual std::shared_ptr<ff::state> advance_time();
         virtual void advance_input();
-        virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth);
-        virtual void render();
+        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets);
 
         virtual void frame_started(ff::state::advance_t type);
-        virtual void frame_rendering(ff::state::advance_t type);
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth);
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context);
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets);
 
         virtual ff::state::cursor_t cursor();
         virtual std::shared_ptr<ff::state_wrapper> wrap();

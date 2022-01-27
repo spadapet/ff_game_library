@@ -410,25 +410,24 @@ ff::internal::ui::render_device::~render_device()
     ff::dx12::remove_device_child(this);
 }
 
-ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin()
+void ff::internal::ui::render_device::render_begin(ff::dxgi::command_context_base& context)
 {
     assert_msg(!this->commands, "render_device::render_begin called while already rendering");
 
-    this->commands = &ff::dx12::frame_commands();
+    this->commands = &ff::dx12::commands::get(context);
     this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     this->commands->root_signature(this->root_signature.Get());
-
-    return *this->commands;
 }
 
-ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(
+void ff::internal::ui::render_device::render_begin(
+    ff::dxgi::command_context_base& context,
     ff::dxgi::target_base& target,
     ff::dxgi::depth_base& depth,
     const ff::rect_size& view_rect)
 {
-    this->render_begin();
+    this->render_begin(context);
 
-    assert(depth.size() == target.size().physical_pixel_size());
+    assert(depth.physical_size() == target.size().physical_pixel_size());
     depth.clear_stencil(*this->commands, 0);
 
     D3D12_VIEWPORT viewport{};
@@ -442,8 +441,6 @@ ff::dxgi::command_context_base& ff::internal::ui::render_device::render_begin(
     this->target_format = target.format();
     this->commands->targets(&single_target, 1, &depth);
     this->commands->viewports(&viewport, 1);
-
-    return *this->commands;
 }
 
 void ff::internal::ui::render_device::render_end()

@@ -27,8 +27,8 @@ namespace ff::dx12
         D3D12_CPU_DESCRIPTOR_HANDLE view() const;
 
         // depth_base
-        virtual ff::point_size size() const override;
-        virtual bool size(const ff::point_size& size) override;
+        virtual ff::point_size physical_size() const override;
+        virtual bool physical_size(ff::dxgi::command_context_base& context, const ff::point_size& size) override;
         virtual size_t sample_count() const override;
         virtual void clear(ff::dxgi::command_context_base& context, float depth, BYTE stencil) const override;
         virtual void clear_depth(ff::dxgi::command_context_base& context, float depth = 0.0f) const override;

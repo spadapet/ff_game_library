@@ -135,6 +135,21 @@ void ff::dx12::commands::resource_state_sub_index(ff::dx12::resource& resource, 
         static_cast<size_t>(dr.quot), 1, static_cast<size_t>(dr.rem), 1);
 }
 
+void ff::dx12::commands::resource_alias(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after)
+{
+    if (resource_before)
+    {
+        this->resource_state(*resource_before, D3D12_RESOURCE_STATE_COMMON);
+    }
+
+    if (resource_after)
+    {
+        this->resource_state(*resource_after, D3D12_RESOURCE_STATE_COMMON);
+    }
+
+    this->tracker()->alias(resource_before, resource_after);
+}
+
 void ff::dx12::commands::root_signature(ID3D12RootSignature* signature)
 {
     if (this->root_signature_.Get() != signature)

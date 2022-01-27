@@ -19,7 +19,7 @@ namespace ff
 
         void destroy();
         void advance();
-        void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth);
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth);
         ff::signal_sink<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&>& rendering();
         ff::signal_sink<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&>& rendered();
 

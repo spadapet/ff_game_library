@@ -217,7 +217,7 @@ void ff::ui_view::advance()
     this->update_render = this->internal_view_->Update(time);
 }
 
-void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::ui_view::render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
     ff::internal::ui::render_device& render_device = *ff::internal::ui::on_render_view(this);
     const ff::window_size target_size = target.size();
@@ -228,7 +228,7 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
     {
         this->internal_view_->GetRenderer()->UpdateRenderTree();
 
-        render_device.render_begin();
+        render_device.render_begin(context);
         this->internal_view_->GetRenderer()->RenderOffscreen();
         render_device.render_end();
 
@@ -250,10 +250,10 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
 
     ff::dxgi::target_base& render_target = this->cache_target ? *this->cache_target : target;
 
-    if ((this->update_render || !this->cache_render) && depth.size(physical_pixel_size))
+    if ((this->update_render || !this->cache_render) && depth.physical_size(context, physical_pixel_size))
     {
         this->rendering_.notify(this, render_target, depth);
-        ff::dxgi::command_context_base& context = render_device.render_begin(render_target, depth, rotated_pixel_rect);
+        render_device.render_begin(context, render_target, depth, rotated_pixel_rect);
 
         if (this->cache_target)
         {
@@ -268,7 +268,7 @@ void ff::ui_view::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& de
     if (this->cache_texture)
     {
         ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(
-            target, nullptr, rotated_pixel_rect.cast<float>(), rotated_pixel_rect.cast<float>(),
+            context, target, nullptr, rotated_pixel_rect.cast<float>(), rotated_pixel_rect.cast<float>(),
             ff::flags::combine(ff::dxgi::draw_options::pre_multiplied_alpha, ff::dxgi::draw_options::ignore_rotation));
 
         if (draw)

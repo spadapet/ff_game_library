@@ -169,11 +169,11 @@ void ff::game::app_state_base::advance_input()
     ff::state::advance_input();
 }
 
-void ff::game::app_state_base::frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::game::app_state_base::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     this->debug_step_one_frame = false;
 
-    ff::state::frame_rendered(type, target, depth);
+    ff::state::frame_rendered(type, context, targets);
 }
 
 size_t ff::game::app_state_base::child_state_count()
@@ -289,29 +289,16 @@ void ff::game::app_state_base::debug_state::set(std::shared_ptr<ff::state> top_s
     this->under_state = top_state ? under_state : nullptr;
 }
 
-void ff::game::app_state_base::debug_state::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::game::app_state_base::debug_state::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     if (this->visible())
     {
         if (this->under_state)
         {
-            this->under_state->render(target, depth);
+            this->under_state->render(context, targets);
         }
 
-        ff::state::render(target, depth);
-    }
-}
-
-void ff::game::app_state_base::debug_state::render()
-{
-    if (this->visible())
-    {
-        if (this->under_state)
-        {
-            this->under_state->render();
-        }
-
-        ff::state::render();
+        ff::state::render(context, targets);
     }
 }
 

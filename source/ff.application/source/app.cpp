@@ -34,12 +34,12 @@ namespace
             ff::ui::state_advance_input();
         }
 
-        virtual void frame_rendering(ff::state::advance_t type) override
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context) override
         {
             ff::ui::state_rendering();
         }
 
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
         {
             ff::ui::state_rendered();
         }
@@ -58,7 +58,7 @@ static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
 static std::shared_ptr<ff::dxgi::target_window_base> target;
-static std::shared_ptr<ff::dxgi::depth_base> depth;
+static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
@@ -196,15 +196,15 @@ static void frame_update_cursor()
     }
 }
 
-static void frame_render(ff::state::advance_t advance_type)
+static void frame_render(ff::state::advance_t advance_type, ff::dxgi::command_context_base& context)
 {
-    ::game_state.frame_rendering(advance_type);
-    ::game_state.render(*::target, *::depth);
+    ::game_state.frame_rendering(advance_type, context);
+    ::game_state.render(context, *::render_targets);
 
     ::frame_time.render_time = ::timer.current_stored_raw_time();
     ::app_time.render_count++;
 
-    ::game_state.frame_rendered(advance_type, *::target, *::depth);
+    ::game_state.frame_rendered(advance_type, context, *::render_targets);
 }
 
 static void frame_presented()
@@ -247,10 +247,11 @@ static void frame_advance_and_render()
     ::target->wait_for_render_ready();
     ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
-    if (::target->begin_render(clear_color2))
+    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_context();
+    if (::target->begin_render(context, clear_color2))
     {
-        ::frame_render(advance_type);
-        ::target->end_render();
+        ::frame_render(advance_type, context);
+        ::target->end_render(context);
         ::frame_presented();
     }
 
@@ -578,7 +579,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::game_thread_event = ff::win_handle::create_event();
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main());
-    ::depth = ff::dxgi_client().create_depth(::target->size().physical_pixel_size(), 0);
+    ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);
@@ -592,7 +593,7 @@ void ff::internal::app::destroy()
     ff::internal::app::save_settings();
     ff::internal::app::clear_settings();
 
-    ::depth.reset();
+    ::render_targets.reset();
     ::target.reset();
     ::window_message_connection.disconnect();
     ::game_thread_event.close();

@@ -102,17 +102,17 @@ void ff::dx12::target_window::wait_for_render_ready()
     }
 }
 
-bool ff::dx12::target_window::begin_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (*this && ff::dx12::device_valid())
     {
         if (clear_color)
         {
-            this->clear(ff::dx12::frame_commands(), *clear_color);
+            this->clear(context, *clear_color);
         }
         else
         {
-            ff::dx12::frame_commands().discard(*this);
+            ff::dx12::commands::get(context).discard(*this);
         }
 
         return true;
@@ -121,12 +121,13 @@ bool ff::dx12::target_window::begin_render(const DirectX::XMFLOAT4* clear_color)
     return false;
 }
 
-bool ff::dx12::target_window::end_render()
+bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context)
 {
     if (*this && ff::dx12::device_valid())
     {
-        ff::dx12::frame_commands().resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        this->target_fence_values[this->back_buffer_index] = ff::dx12::frame_commands().queue().execute(ff::dx12::frame_commands());
+        ff::dx12::commands& commands = ff::dx12::commands::get(context);
+        commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
+        this->target_fence_values[this->back_buffer_index] = commands.queue().execute(commands);
 
         HRESULT hr = this->swap_chain->Present(1, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
@@ -178,6 +179,11 @@ size_t ff::dx12::target_window::target_mip_start() const
 }
 
 size_t ff::dx12::target_window::target_mip_size() const
+{
+    return 1;
+}
+
+size_t ff::dx12::target_window::target_sample_count() const
 {
     return 1;
 }

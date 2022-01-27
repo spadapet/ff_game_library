@@ -13,7 +13,6 @@ namespace ff
         std::string application_resources_name;
         std::string default_font;
         float default_font_size;
-        bool srgb;
     };
 
     class init_ui

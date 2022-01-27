@@ -52,11 +52,11 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
                 ff::dxgi_client().frame_started();
                 target->wait_for_render_ready();
-                target->begin_render(&bg_color);
+                target->begin_render(ff::dxgi_client().frame_context(), &bg_color);
                 ff::ui::state_rendering();
-                view.render(*target, *depth);
+                view.render(ff::dxgi_client().frame_context(), *target, *depth);
                 ff::ui::state_rendered();
-                target->end_render();
+                target->end_render(ff::dxgi_client().frame_context());
                 ff::dxgi_client().frame_complete();
 
                 thread_dispatch.flush();

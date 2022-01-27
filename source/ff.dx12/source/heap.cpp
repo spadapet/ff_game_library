@@ -105,6 +105,7 @@ bool ff::dx12::heap::reset()
     D3D12_HEAP_PROPERTIES props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     D3D12_RESIDENCY_PRIORITY priority = D3D12_RESIDENCY_PRIORITY_NORMAL;
     D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_NONE;
+    uint64_t alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
     bool starts_resident = true;
 
     if (ff::dx12::supports_create_heap_not_resident())
@@ -140,10 +141,11 @@ bool ff::dx12::heap::reset()
         case ff::dx12::heap::usage_t::gpu_targets:
             flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
             priority = D3D12_RESIDENCY_PRIORITY_HIGH;
+            alignment = D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT;
             break;
     }
 
-    CD3DX12_HEAP_DESC desc(this->size_, props, 0, flags);
+    CD3DX12_HEAP_DESC desc(this->size_, props, alignment, flags);
     if (SUCCEEDED(ff::dx12::device()->CreateHeap(&desc, IID_PPV_ARGS(&this->heap_))))
     {
         ID3D12Pageable* p = this->heap_.Get();

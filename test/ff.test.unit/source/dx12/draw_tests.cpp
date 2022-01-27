@@ -28,19 +28,19 @@ namespace ff::test::graphics
             auto target = ff::dxgi_client().create_target_for_texture(target_texture, 0, 0, 0, 0, 0);
 
             ff::dxgi_client().frame_started();
-            target->begin_render(&clear_color);
+            target->begin_render(ff::dxgi_client().frame_context(), &clear_color);
 
             // Draw
             {
                 auto depth = ff::dxgi_client().create_depth({}, 0);
                 std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi_client().create_draw_device();
-                ff::dxgi::draw_ptr draw = draw_device->begin_draw(*target, depth.get(), ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
+                ff::dxgi::draw_ptr draw = draw_device->begin_draw(ff::dxgi_client().frame_context(), *target, depth.get(), ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
                 draw->draw_sprite(sprite->sprite_data(), ff::dxgi::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));
                 draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::dxgi::color_yellow(), 4);
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
             }
 
-            target->end_render();
+            target->end_render(ff::dxgi_client().frame_context());
             ff::dxgi_client().frame_complete();
             ff::dxgi_client().wait_for_idle();
 

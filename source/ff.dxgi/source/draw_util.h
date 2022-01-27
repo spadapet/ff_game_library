@@ -196,7 +196,7 @@ namespace ff::dxgi::draw_util
         virtual void internal_destroy() = 0;
         virtual void internal_reset() = 0;
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
-        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) = 0;
+        virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) = 0;
         virtual void internal_flush_begin(ff::dxgi::command_context_base* context);
         virtual void internal_flush_end(ff::dxgi::command_context_base* context);
 
@@ -225,7 +225,14 @@ namespace ff::dxgi::draw_util
         bool linear_sampler() const;
         bool target_requires_palette() const;
         bool pre_multiplied_alpha() const;
-        ff::dxgi::draw_ptr internal_begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options);
+
+        ff::dxgi::draw_ptr internal_begin_draw(
+            ff::dxgi::command_context_base& context,
+            ff::dxgi::target_base& target,
+            ff::dxgi::depth_base* depth,
+            const ff::rect_float& view_rect,
+            const ff::rect_float& world_rect,
+            ff::dxgi::draw_options options);
 
     private:
         // device_child_base
@@ -233,7 +240,6 @@ namespace ff::dxgi::draw_util
 
         void destroy();
         void flush(bool end_draw = false);
-        ff::dxgi::command_context_base* setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation);
 
         void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack);
         void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);

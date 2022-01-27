@@ -49,19 +49,11 @@ void ff::state_wrapper::advance_input()
     }
 }
 
-void ff::state_wrapper::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::state_wrapper::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     if (this->state)
     {
-        this->state->render(target, depth);
-    }
-}
-
-void ff::state_wrapper::render()
-{
-    if (this->state)
-    {
-        this->state->render();
+        this->state->render(context, targets);
     }
 }
 
@@ -73,19 +65,19 @@ void ff::state_wrapper::frame_started(ff::state::advance_t type)
     }
 }
 
-void ff::state_wrapper::frame_rendering(ff::state::advance_t type)
+void ff::state_wrapper::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context)
 {
     if (this->state)
     {
-        this->state->frame_rendering(type);
+        this->state->frame_rendering(type, context);
     }
 }
 
-void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     if (this->state)
     {
-        this->state->frame_rendered(type, target, depth);
+        this->state->frame_rendered(type, context, targets);
     }
 }
 

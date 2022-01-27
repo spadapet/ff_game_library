@@ -20,19 +20,11 @@ void ff::state::advance_input()
     }
 }
 
-void ff::state::render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::state::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
-        this->child_state(i)->render(target, depth);
-    }
-}
-
-void ff::state::render()
-{
-    for (size_t i = 0; i < this->child_state_count(); i++)
-    {
-        this->child_state(i)->render();
+        this->child_state(i)->render(context, targets);
     }
 }
 
@@ -44,19 +36,19 @@ void ff::state::frame_started(ff::state::advance_t type)
     }
 }
 
-void ff::state::frame_rendering(ff::state::advance_t type)
+void ff::state::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
-        this->child_state(i)->frame_rendering(type);
+        this->child_state(i)->frame_rendering(type, context);
     }
 }
 
-void ff::state::frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+void ff::state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
-        this->child_state(i)->frame_rendered(type, target, depth);
+        this->child_state(i)->frame_rendered(type, context, targets);
     }
 }
 

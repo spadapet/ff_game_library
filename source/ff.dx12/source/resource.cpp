@@ -88,17 +88,15 @@ ff::dx12::resource::resource(
         this->optimized_clear_value_ = { desc.Format };
     }
 
-    if (allocate_mem_range && !mem_range)
+    D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
+    if (allocate_mem_range && (!mem_range || mem_range->size() < alloc_info.SizeInBytes))
     {
         bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
-        D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
         ff::dx12::mem_allocator& allocator = buffer ? ff::dx12::static_buffer_allocator() : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
         this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(alloc_info.SizeInBytes, alloc_info.Alignment));
     }
 
-    this->reset();
-    assert(*this && (!mem_range || mem_range == this->mem_range_));
-
+    verify(this->reset());
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 

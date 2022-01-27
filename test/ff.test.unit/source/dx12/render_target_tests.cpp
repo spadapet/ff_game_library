@@ -24,16 +24,16 @@ namespace ff::test::graphics
             Assert::IsFalse(target.full_screen());
 
             ff::dx12::frame_started();
-            Assert::IsTrue(target.begin_render(&ff::dxgi::color_magenta()));
-            Assert::IsTrue(target.end_render());
+            Assert::IsTrue(target.begin_render(ff::dxgi_client().frame_context(), &ff::dxgi::color_magenta()));
+            Assert::IsTrue(target.end_render(ff::dxgi_client().frame_context()));
             ff::dx12::frame_complete();
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());
 
             ff::dx12::frame_started();
-            Assert::IsTrue(target.begin_render(&ff::dxgi::color_yellow()));
-            Assert::IsTrue(target.end_render());
+            Assert::IsTrue(target.begin_render(ff::dxgi_client().frame_context(), &ff::dxgi::color_yellow()));
+            Assert::IsTrue(target.end_render(ff::dxgi_client().frame_context()));
             ff::dx12::frame_complete();
         }
     };

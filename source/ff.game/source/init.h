@@ -14,7 +14,6 @@ namespace ff::game
         std::string noesis_application_resources_name;
         std::string noesis_default_font;
         float noesis_default_font_size;
-        bool noesis_srgb;
     };
 
     int run(const ff::game::init_params& params);

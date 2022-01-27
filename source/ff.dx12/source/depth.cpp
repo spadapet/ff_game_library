@@ -8,7 +8,24 @@
 #include "resource.h"
 #include "texture_util.h"
 
-static std::atomic_int depth_counter;
+static CD3DX12_RESOURCE_DESC depth_desc(const ff::point_size& size, size_t sample_count)
+{
+    return CD3DX12_RESOURCE_DESC::Tex2D(
+        ff::dx12::depth::FORMAT,
+        static_cast<UINT64>(std::max<size_t>(size.x, 1)),
+        static_cast<UINT>(std::max<size_t>(size.y, 1)),
+        1, 1, // array, mips
+        static_cast<UINT>(ff::dx12::fix_sample_count(ff::dx12::depth::FORMAT, sample_count)), 0,
+        D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+}
+
+static std::unique_ptr<ff::dx12::resource> depth_resource(const ff::point_size& size, size_t sample_count, std::shared_ptr<ff::dx12::mem_range> mem_range)
+{
+    static std::atomic_int depth_counter;
+
+    return std::make_unique<ff::dx12::resource>(ff::string::concat("Depth buffer ", depth_counter.fetch_add(1)),
+        mem_range, ::depth_desc(size, sample_count), D3D12_CLEAR_VALUE{ ff::dx12::depth::FORMAT });
+}
 
 ff::dx12::depth::depth(size_t sample_count)
     : depth(ff::point_size(1, 1), sample_count)
@@ -16,22 +33,9 @@ ff::dx12::depth::depth(size_t sample_count)
 
 ff::dx12::depth::depth(const ff::point_size& size, size_t sample_count)
     : view_(ff::dx12::cpu_depth_descriptors().alloc_range(1))
+    , resource_(::depth_resource(size, sample_count, {}))
 {
-    D3D12_CLEAR_VALUE clear_value{ ff::dx12::depth::FORMAT };
-
-    this->resource_ = std::make_unique<ff::dx12::resource>(
-        ff::string::concat("Depth buffer ", ::depth_counter.fetch_add(1)),
-        CD3DX12_RESOURCE_DESC::Tex2D(
-            ff::dx12::depth::FORMAT,
-            static_cast<UINT64>(std::max<size_t>(size.x, 1)),
-            static_cast<UINT>(std::max<size_t>(size.y, 1)),
-            1, 1, // array, mips
-            static_cast<UINT>(ff::dx12::fix_sample_count(ff::dx12::depth::FORMAT, sample_count)), 0,
-            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-        clear_value);
-
-    verify(this->reset());
-
+    this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
@@ -61,20 +65,29 @@ ff::dx12::depth::operator bool() const
     return this->resource_ && this->view_;
 }
 
-ff::point_size ff::dx12::depth::size() const
+ff::point_size ff::dx12::depth::physical_size() const
 {
     const D3D12_RESOURCE_DESC& desc = this->resource_->desc();
     return ff::point_size(static_cast<size_t>(desc.Width), desc.Height);
 }
 
-bool ff::dx12::depth::size(const ff::point_size& size)
+bool ff::dx12::depth::physical_size(ff::dxgi::command_context_base& context, const ff::point_size& size)
 {
-    if (this->size() != size)
+    if (*this && this->physical_size() != size)
     {
-        *this = ff::dx12::depth(size, this->sample_count());
+        size_t sample_count = this->sample_count();
+        auto old_resource = std::move(this->resource_);
+        this->resource_ = ::depth_resource(size, sample_count, old_resource->mem_range());
+        this->reset();
+
+        if (this->resource_->mem_range() == old_resource->mem_range())
+        {
+            ff::dx12::commands& commands = ff::dx12::commands::get(context);
+            commands.resource_alias(old_resource.get(), this->resource_.get());
+        }
     }
 
-    return true;
+    return *this;
 }
 
 size_t ff::dx12::depth::sample_count() const

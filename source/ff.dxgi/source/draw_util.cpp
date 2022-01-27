@@ -790,14 +790,20 @@ bool ff::dxgi::draw_util::draw_device_base::pre_multiplied_alpha() const
     return this->force_pre_multiplied_alpha > 0;
 }
 
-ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, const ff::rect_float& world_rect, ff::dxgi::draw_options options)
+ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(
+    ff::dxgi::command_context_base& context,
+    ff::dxgi::target_base& target,
+    ff::dxgi::depth_base* depth,
+    const ff::rect_float& view_rect,
+    const ff::rect_float& world_rect,
+    ff::dxgi::draw_options options)
 {
     this->end_draw();
 
     bool ignore_rotation = ff::flags::has(options, ff::dxgi::draw_options::ignore_rotation);
 
     if (::setup_view_matrix(target, view_rect, world_rect, this->view_matrix, ignore_rotation) &&
-        (this->command_context_ = this->setup(target, depth, view_rect, ignore_rotation)) != nullptr)
+        (this->command_context_ = this->internal_setup(context, target, depth, view_rect, ignore_rotation)) != nullptr)
     {
         this->init_geometry_constant_buffer_0(target, view_rect, world_rect);
         this->target_requires_palette_ = ff::dxgi::palette_format(target.format());
@@ -934,23 +940,6 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
     {
         this->command_context_ = this->internal_flush(this->command_context_, end_draw);
     }
-}
-
-ff::dxgi::command_context_base* ff::dxgi::draw_util::draw_device_base::setup(ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation)
-{
-    if (depth && !depth->size(target.size().physical_pixel_size()))
-    {
-        return nullptr;
-    }
-
-    ff::dxgi::command_context_base* context = this->internal_setup(target, depth, view_rect, ignore_rotation);
-
-    if (context && depth)
-    {
-        depth->clear(*context, 0, 0);
-    }
-
-    return context;
 }
 
 void ff::dxgi::draw_util::draw_device_base::matrix_changing(const ff::dxgi::matrix_stack& matrix_stack)

@@ -5,11 +5,11 @@ namespace ff::internal::ui
     class render_device : public Noesis::RenderDevice, private ff::dxgi::device_child_base
     {
     public:
-        render_device(bool srgb);
+        render_device(bool srgb = false);
         virtual ~render_device() override;
 
-        ff::dxgi::command_context_base& render_begin();
-        ff::dxgi::command_context_base& render_begin(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_size& view_rect);
+        void render_begin(ff::dxgi::command_context_base& context);
+        void render_begin(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_size& view_rect);
         void render_end();
 
         // Noesis::RenderDevice

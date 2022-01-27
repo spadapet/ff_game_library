@@ -53,17 +53,17 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_texture::begin_render(const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (*this)
     {
         if (clear_color)
         {
-            this->clear(ff::dx12::frame_commands(), *clear_color);
+            this->clear(context, *clear_color);
         }
         else
         {
-            ff::dx12::frame_commands().discard(*this);
+            ff::dx12::commands::get(context).discard(*this);
         }
 
         return true;
@@ -72,9 +72,9 @@ bool ff::dx12::target_texture::begin_render(const DirectX::XMFLOAT4* clear_color
     return false;
 }
 
-bool ff::dx12::target_texture::end_render()
+bool ff::dx12::target_texture::end_render(ff::dxgi::command_context_base& context)
 {
-    ff::dx12::frame_commands().resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
+    ff::dx12::commands::get(context).resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
     return true;
 }
 
@@ -101,6 +101,11 @@ size_t ff::dx12::target_texture::target_mip_start() const
 size_t ff::dx12::target_texture::target_mip_size() const
 {
     return 1;
+}
+
+size_t ff::dx12::target_texture::target_sample_count() const
+{
+    return this->texture_->sample_count();
 }
 
 DXGI_FORMAT ff::dx12::target_texture::format() const

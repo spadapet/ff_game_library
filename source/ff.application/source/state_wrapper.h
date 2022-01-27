@@ -22,12 +22,11 @@ namespace ff
 
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
-        virtual void render(ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
-        virtual void render() override;
+        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
         virtual void frame_started(ff::state::advance_t type) override;
-        virtual void frame_rendering(ff::state::advance_t type) override;
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth) override;
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context) override;
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
         virtual ff::state::cursor_t cursor() override;
         virtual std::shared_ptr<ff::state_wrapper> wrap() override;

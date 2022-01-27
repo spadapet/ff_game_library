@@ -13,6 +13,7 @@
 #include "../source/ff.graphics/source/palette_data.h"
 #include "../source/ff.graphics/source/png_image.h"
 #include "../source/ff.graphics/source/random_sprite.h"
+#include "../source/ff.graphics/source/render_targets.h"
 #include "../source/ff.graphics/source/shader.h"
 #include "../source/ff.graphics/source/sprite.h"
 #include "../source/ff.graphics/source/sprite_base.h"

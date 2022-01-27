@@ -12,10 +12,16 @@ namespace ff::test::graphics
             ff::dx12::depth depth(size, sample_count);
 
             Assert::IsTrue(depth);
-            Assert::IsTrue(depth.size() == size);
+            Assert::IsTrue(depth.physical_size() == size);
             Assert::IsTrue(depth.sample_count() == sample_count);
             Assert::IsNotNull(depth.resource());
             Assert::AreNotEqual<size_t>(0, depth.view().ptr);
+
+            ff::dxgi_client().frame_started();
+            depth.physical_size(ff::dxgi_client().frame_context(), ff::point_size(size.y, size.x));
+            ff::dxgi_client().frame_complete();
+
+            Assert::IsTrue(depth.physical_size() == size.swap());
         }
     };
 }

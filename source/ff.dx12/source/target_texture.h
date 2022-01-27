@@ -29,13 +29,14 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool begin_render(const DirectX::XMFLOAT4* clear_color) override;
-        virtual bool end_render() override;
+        virtual bool begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
+        virtual bool end_render(ff::dxgi::command_context_base& context) override;
         virtual ff::dxgi::target_access_base& target_access() override;
         virtual size_t target_array_start() const override;
         virtual size_t target_array_size() const override;
         virtual size_t target_mip_start() const override;
         virtual size_t target_mip_size() const override;
+        virtual size_t target_sample_count() const override;
         virtual DXGI_FORMAT format() const override;
         virtual ff::window_size size() const override;
 
