@@ -214,7 +214,7 @@ bool ff::ui_view::block_input_below() const
 void ff::ui_view::advance()
 {
     double time = this->counter++ * ff::constants::seconds_per_advance;
-    this->update_render = this->internal_view_->Update(time);
+    this->update_render |= this->internal_view_->Update(time);
 }
 
 void ff::ui_view::render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
@@ -224,10 +224,10 @@ void ff::ui_view::render(ff::dxgi::command_context_base& context, ff::dxgi::targ
     const ff::point_size physical_pixel_size = target_size.physical_pixel_size();
     const ff::rect_size rotated_pixel_rect({}, physical_pixel_size);
 
+    this->update_render |= this->internal_view_->GetRenderer()->UpdateRenderTree();
+
     if (this->update_render)
     {
-        this->internal_view_->GetRenderer()->UpdateRenderTree();
-
         render_device.render_begin(context);
         this->internal_view_->GetRenderer()->RenderOffscreen();
         render_device.render_end();
