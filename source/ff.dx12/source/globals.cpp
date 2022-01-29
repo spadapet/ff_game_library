@@ -52,21 +52,49 @@ static std::unique_ptr<ff::dx12::mem_allocator> static_buffer_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> texture_allocator;
 static std::unique_ptr<ff::dx12::mem_allocator> target_allocator;
 
+static std::string adapter_name(IDXGIAdapter* adapter)
+{
+    DXGI_ADAPTER_DESC desc{};
+    if (SUCCEEDED(adapter->GetDesc(&desc)))
+    {
+        return ff::string::to_string(std::wstring_view(&desc.Description[0]));
+    }
+
+    debug_fail_ret_val("");
+}
+
 static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 {
-    for (size_t use_warp = 0; use_warp < 2; use_warp++)
+    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
+    {
+        Microsoft::WRL::ComPtr<IDXGIFactory6> factory6;
+        Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
+        UINT i = 0;
+
+        if (SUCCEEDED(::factory.As(&factory6)))
+        {
+            while (SUCCEEDED(factory6->EnumAdapterByGpuPreference(i++, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))))
+            {
+                ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
+                adapters.push_back(std::move(adapter));
+            }
+        }
+        else while (SUCCEEDED(::factory->EnumAdapters(i++, adapter.GetAddressOf())))
+        {
+            ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
+            adapters.push_back(std::move(adapter));
+        }
+    }
+
+    for (size_t i = 0; i < adapters.size(); i++)
     {
         Microsoft::WRL::ComPtr<ID3D12Device> device;
         Microsoft::WRL::ComPtr<ID3D12DeviceX> device_x;
-        Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
 
-        if (!use_warp || SUCCEEDED(::factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
+        if (SUCCEEDED(::D3D12CreateDevice(adapters[i].Get(), ::feature_level, IID_PPV_ARGS(&device))) && SUCCEEDED(device.As(&device_x)))
         {
-            if (SUCCEEDED(::D3D12CreateDevice(adapter.Get(), ::feature_level, IID_PPV_ARGS(&device))) && SUCCEEDED(device.As(&device_x)))
-            {
-                ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, WARP=", use_warp);
-                return device_x;
-            }
+            ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, adapter index=", i, ", node count=", device->GetNodeCount());
+            return device_x;
         }
     }
 
@@ -177,6 +205,27 @@ static bool init_d3d(bool for_reset)
         LUID luid = ::device->GetAdapterLuid();
         assert_hr_ret_val(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
         ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
+
+        DXGI_ADAPTER_DESC desc{};
+        ::adapter->GetDesc(&desc);
+        switch (desc.VendorId)
+        {
+            case 0x10DE:
+                ff::log::write(ff::log::type::dx12, "Final adapter: NVIDIA (", ::adapter_name(::adapter.Get()), ")");
+                break;
+
+            case 0x1002:
+                ff::log::write(ff::log::type::dx12, "Final adapter: AMD (", ::adapter_name(::adapter.Get()), ")");
+                break;
+
+            case 0x8086:
+                ff::log::write(ff::log::type::dx12, "Final adapter: Intel (", ::adapter_name(::adapter.Get()), ")");
+                break;
+
+            default:
+                ff::log::write(ff::log::type::dx12, "Final adapter: Unknown VendorId (", ::adapter_name(::adapter.Get()), ")");
+                break;
+        }
     }
 
     // Video memory for residency
