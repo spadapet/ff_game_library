@@ -503,16 +503,18 @@ size_t ff::dx12::frame_count()
     return ::frame_count;
 }
 
-void ff::dx12::frame_started()
+ff::dxgi::command_context_base& ff::dx12::frame_started()
 {
     assert(!::frame_commands);
 
     ::flush_keep_alive();
     ::update_video_memory_info();
     ff::dx12::direct_queue().begin_event(ff::dx12::gpu_event::render_frame);
-    ::frame_commands = ff::dx12::direct_queue().new_commands();
 
-    ff::dxgi_host().frame_started();
+    ::frame_commands = ff::dx12::direct_queue().new_commands();
+    ff::dxgi_host().on_frame_started(*::frame_commands);
+
+    return *::frame_commands;
 }
 
 void ff::dx12::frame_complete()
@@ -523,7 +525,7 @@ void ff::dx12::frame_complete()
     ::frame_complete_signal.notify(++::frame_count);
     ff::dx12::direct_queue().end_event();
 
-    ff::dxgi_host().frame_complete();
+    ff::dxgi_host().on_frame_complete();
 
     if (!ff::dx12::device_valid())
     {

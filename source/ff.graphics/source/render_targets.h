@@ -19,7 +19,7 @@ namespace ff
     class render_target
     {
     public:
-        render_target(ff::point_size size);
+        render_target(ff::point_size size, const DirectX::XMFLOAT4* clear_color = nullptr, int palette_clear_color = 0);
         render_target(render_target&& other) noexcept = default;
         render_target(const render_target& other) = default;
 
@@ -32,6 +32,8 @@ namespace ff
 
         ff::point_size size;
         ff::viewport viewport;
+        DirectX::XMFLOAT4 clear_color;
+        DirectX::XMFLOAT4 palette_clear_color;
         std::shared_ptr<ff::texture> textures[COUNT];
         std::shared_ptr<ff::dxgi::target_base> targets[COUNT];
         bool used_targets[COUNT];

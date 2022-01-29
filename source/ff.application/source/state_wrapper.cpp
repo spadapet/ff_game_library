@@ -65,11 +65,11 @@ void ff::state_wrapper::frame_started(ff::state::advance_t type)
     }
 }
 
-void ff::state_wrapper::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context)
+void ff::state_wrapper::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     if (this->state)
     {
-        this->state->frame_rendering(type, context);
+        this->state->frame_rendering(type, context, targets);
     }
 }
 

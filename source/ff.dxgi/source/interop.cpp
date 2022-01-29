@@ -2,14 +2,14 @@
 #include "draw_device_base.h"
 #include "interop.h"
 
-void ff::dxgi::host_functions::frame_started() const
+void ff::dxgi::host_functions::on_frame_started(ff::dxgi::command_context_base& context) const
 {
-    this->frame_started_();
+    this->on_frame_started_(context);
 }
 
-void ff::dxgi::host_functions::frame_complete() const
+void ff::dxgi::host_functions::on_frame_complete() const
 {
-    this->frame_complete_();
+    this->on_frame_complete_();
 }
 
 void ff::dxgi::host_functions::full_screen_target(ff::dxgi::target_window_base* target) const
@@ -62,9 +62,9 @@ void ff::dxgi::client_functions::wait_for_idle() const
     this->wait_for_idle_();
 }
 
-void ff::dxgi::client_functions::frame_started() const
+ff::dxgi::command_context_base& ff::dxgi::client_functions::frame_started() const
 {
-    this->frame_started_();
+    return this->frame_started_();
 }
 
 void ff::dxgi::client_functions::frame_complete() const

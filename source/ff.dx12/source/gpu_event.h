@@ -8,6 +8,8 @@ namespace ff::dx12
         draw_2d,
         draw_batch,
         update_palette,
+        noesis_offscreen,
+        noesis_view,
     };
 
     const char* gpu_event_name(ff::dx12::gpu_event type);

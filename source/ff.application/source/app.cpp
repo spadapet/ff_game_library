@@ -34,7 +34,7 @@ namespace
             ff::ui::state_advance_input();
         }
 
-        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context) override
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
         {
             ff::ui::state_rendering();
         }
@@ -198,7 +198,7 @@ static void frame_update_cursor()
 
 static void frame_render(ff::state::advance_t advance_type, ff::dxgi::command_context_base& context)
 {
-    ::game_state.frame_rendering(advance_type, context);
+    ::game_state.frame_rendering(advance_type, context, *::render_targets);
     ::game_state.render(context, *::render_targets);
 
     ::frame_time.render_time = ::timer.current_stored_raw_time();
@@ -243,11 +243,10 @@ static void frame_advance_and_render()
         ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
         : &ff::dxgi::color_black();
 
-    ff::dxgi_client().frame_started();
+    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     ::target->wait_for_render_ready();
     ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
-    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_context();
     if (::target->begin_render(context, clear_color2))
     {
         ::frame_render(advance_type, context);

@@ -36,11 +36,11 @@ void ff::state::frame_started(ff::state::advance_t type)
     }
 }
 
-void ff::state::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context)
+void ff::state::frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
-        this->child_state(i)->frame_rendering(type, context);
+        this->child_state(i)->frame_rendering(type, context, targets);
     }
 }
 

@@ -120,10 +120,10 @@ static void flush_graphics_commands()
     }
 }
 
-void ff::internal::graphics::frame_started()
+void ff::internal::graphics::on_frame_started(ff::dxgi::command_context_base&)
 {}
 
-void ff::internal::graphics::frame_complete()
+void ff::internal::graphics::on_frame_complete()
 {
     ::flush_graphics_commands();
 }

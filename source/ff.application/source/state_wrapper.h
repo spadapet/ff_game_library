@@ -25,7 +25,7 @@ namespace ff
         virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
         virtual void frame_started(ff::state::advance_t type) override;
-        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context) override;
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
         virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
         virtual ff::state::cursor_t cursor() override;

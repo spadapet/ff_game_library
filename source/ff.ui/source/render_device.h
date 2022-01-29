@@ -8,7 +8,7 @@ namespace ff::internal::ui
         render_device(bool srgb = false);
         virtual ~render_device() override;
 
-        void render_begin(ff::dxgi::command_context_base& context);
+        void render_begin(ff::dxgi::command_context_base& context, bool for_offscreen = true);
         void render_begin(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth, const ff::rect_size& view_rect);
         void render_end();
 

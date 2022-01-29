@@ -38,7 +38,7 @@ namespace ff::dx12
     void keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fence_values&& fence_values);
 
     size_t frame_count();
-    void frame_started();
+    ff::dxgi::command_context_base& frame_started();
     void frame_complete();
     ff::dx12::commands& frame_commands();
     ff::signal_sink<size_t>& frame_complete_sink();

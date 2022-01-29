@@ -75,7 +75,11 @@ ff::dxgi::palette_base* ff::game::app_state_base::palette()
 
 bool ff::game::app_state_base::allow_debug()
 {
-    return DEBUG != 0;
+#if defined(PROFILE) || defined(_DEBUG)
+    return true;
+#else
+    return false;
+#endif
 }
 
 void ff::game::app_state_base::debug_command(size_t command_id)

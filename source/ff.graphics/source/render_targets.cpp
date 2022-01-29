@@ -30,9 +30,11 @@ static std::shared_ptr<ff::dxgi::target_base> get_target_1080()
     return target;
 }
 
-ff::render_target::render_target(ff::point_size size)
+ff::render_target::render_target(ff::point_size size, const DirectX::XMFLOAT4* clear_color, int palette_clear_color)
     : size(size)
     , viewport(size)
+    , clear_color(clear_color ? *clear_color : ff::dxgi::color_none())
+    , palette_clear_color(static_cast<float>(palette_clear_color), 0, 0, 1)
     , used_targets{}
 {}
 
@@ -136,10 +138,13 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
 
         if (!entry.used_targets[index])
         {
+            bool palette = (type == ff::render_target_type::palette);
+            const DirectX::XMFLOAT4& clear_color = palette ? entry.palette_clear_color : entry.clear_color;
+
             if (!entry.textures[index])
             {
-                DXGI_FORMAT format = (type == ff::render_target_type::palette) ? DXGI_FORMAT_R8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM;
-                auto dxgi_texture = ff::dxgi_client().create_render_texture(entry.size, format);
+                DXGI_FORMAT format = palette ? DXGI_FORMAT_R8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM;
+                auto dxgi_texture = ff::dxgi_client().create_render_texture(entry.size, format, 1, 1, 1, &clear_color);
                 entry.textures[index] = std::make_shared<ff::texture>(dxgi_texture);
             }
 
@@ -148,7 +153,7 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
                 entry.targets[index] = ff::dxgi_client().create_target_for_texture(entry.textures[index]->dxgi_texture());
             }
 
-            entry.targets[index]->clear(context, ff::dxgi::color_none());
+            entry.targets[index]->clear(context, clear_color);
             entry.used_targets[index] = true;
         }
 

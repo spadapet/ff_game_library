@@ -226,7 +226,7 @@ void ff::ui_view::render(ff::dxgi::command_context_base& context, ff::dxgi::targ
 
     this->update_render |= this->internal_view_->GetRenderer()->UpdateRenderTree();
 
-    if (this->update_render)
+    if (this->update_render || !this->cache_render)
     {
         render_device.render_begin(context);
         this->internal_view_->GetRenderer()->RenderOffscreen();

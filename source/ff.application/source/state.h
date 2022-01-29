@@ -18,7 +18,7 @@ namespace ff
         virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets);
 
         virtual void frame_started(ff::state::advance_t type);
-        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context);
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets);
         virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets);
 
         virtual ff::state::cursor_t cursor();
