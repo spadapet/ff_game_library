@@ -68,18 +68,27 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
     std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
     {
         Microsoft::WRL::ComPtr<IDXGIFactory6> factory6;
+        ::factory.As(&factory6);
+
         Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
         UINT i = 0;
+        bool found_warp = false;
 
-        if (SUCCEEDED(::factory.As(&factory6)))
+        while ((factory6 && SUCCEEDED(factory6->EnumAdapterByGpuPreference(i++, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)))) ||
+            (!factory6 && SUCCEEDED(::factory->EnumAdapters(i++, adapter.GetAddressOf()))))
         {
-            while (SUCCEEDED(factory6->EnumAdapterByGpuPreference(i++, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))))
+            ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
+
+            DXGI_ADAPTER_DESC desc{};
+            if (SUCCEEDED(adapter->GetDesc(&desc)) && desc.VendorId == 0x1414 && desc.DeviceId == 0x008c)
             {
-                ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
-                adapters.push_back(std::move(adapter));
+                found_warp = true;
             }
+
+            adapters.push_back(std::move(adapter));
         }
-        else while (SUCCEEDED(::factory->EnumAdapters(i++, adapter.GetAddressOf())))
+
+        if (!found_warp && SUCCEEDED(::factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
         {
             ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
             adapters.push_back(std::move(adapter));
@@ -190,6 +199,8 @@ static bool init_d3d(bool for_reset)
             D3D12_MESSAGE_ID hide[] =
             {
                 D3D12_MESSAGE_ID_CREATEPIPELINESTATE_CACHEDBLOBADAPTERMISMATCH,
+                D3D12_MESSAGE_ID_CREATEPIPELINESTATE_CACHEDBLOBDRIVERVERSIONMISMATCH,
+                D3D12_MESSAGE_ID_RESOURCE_BARRIER_MISMATCHING_COMMAND_LIST_TYPE, // Windows 11 DXGI bug
             };
             
             D3D12_INFO_QUEUE_FILTER filter{};
@@ -206,26 +217,7 @@ static bool init_d3d(bool for_reset)
         assert_hr_ret_val(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
         ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
 
-        DXGI_ADAPTER_DESC desc{};
-        ::adapter->GetDesc(&desc);
-        switch (desc.VendorId)
-        {
-            case 0x10DE:
-                ff::log::write(ff::log::type::dx12, "Final adapter: NVIDIA (", ::adapter_name(::adapter.Get()), ")");
-                break;
-
-            case 0x1002:
-                ff::log::write(ff::log::type::dx12, "Final adapter: AMD (", ::adapter_name(::adapter.Get()), ")");
-                break;
-
-            case 0x8086:
-                ff::log::write(ff::log::type::dx12, "Final adapter: Intel (", ::adapter_name(::adapter.Get()), ")");
-                break;
-
-            default:
-                ff::log::write(ff::log::type::dx12, "Final adapter: Unknown VendorId (", ::adapter_name(::adapter.Get()), ")");
-                break;
-        }
+        ff::log::write(ff::log::type::dx12, "Final adapter: ", ::adapter_name(::adapter.Get()));
     }
 
     // Video memory for residency

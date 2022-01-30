@@ -44,6 +44,7 @@ size_t ff::dxgi::get_outputs_hash(IDXGIFactoryX* factory, IDXGIAdapterX* adapter
         DXGI_OUTPUT_DESC desc;
         if (SUCCEEDED(output->GetDesc(&desc)))
         {
+            ff::log::write(ff::log::type::dxgi, "Adapter Output[", i - 1, "] = ", ff::string::to_string(std::wstring_view(&desc.DeviceName[0])));
             outputs.push_back(desc.Monitor);
         }
     }

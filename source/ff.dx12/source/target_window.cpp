@@ -221,7 +221,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         desc.Scaling = DXGI_SCALING_STRETCH;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-        desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT; // sets latency to 1 frame
+        desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
@@ -261,7 +261,9 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #endif
         });
 
-        if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)))
+        if (!new_swap_chain ||
+            FAILED(new_swap_chain.As(&this->swap_chain)) ||
+            FAILED(this->swap_chain->SetMaximumFrameLatency(ff::dx12::target_window::BACK_BUFFER_COUNT)))
         {
             ff::dx12::device_fatal_error("Swap chain creation failed");
             return false;

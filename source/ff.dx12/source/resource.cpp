@@ -62,6 +62,7 @@ ff::dx12::resource::resource(std::string_view name, ID3D12ResourceX* swap_chain_
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
     , tracker_(nullptr)
 {
+    verify(this->reset());
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
@@ -480,7 +481,6 @@ bool ff::dx12::resource::reset()
     if (this->external_resource)
     {
         // this resource shouldn't be recreated (like a swap chain buffer)
-        return true;
     }
     else if (!this->mem_range_)
     {
