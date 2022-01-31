@@ -3,7 +3,7 @@
 
 namespace
 {
-    class test_command_list : public ID3D12GraphicsCommandListX
+    class test_command_list : public ID3D12GraphicsCommandList6
     {
     public:
         std::vector<D3D12_RESOURCE_BARRIER> barriers;

@@ -42,18 +42,13 @@ static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_op
 
 static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
 {
-    ::alpha_type type = ::alpha_type::invisible;
+    ::alpha_type type = ::get_alpha_type(colors[0], force_opaque);
 
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 1; i < count; i++)
     {
-        switch (::get_alpha_type(colors[i], force_opaque))
+        if (type != ::get_alpha_type(colors[i], force_opaque))
         {
-            case ::alpha_type::opaque:
-                type = ::alpha_type::opaque;
-                break;
-
-            case ::alpha_type::transparent:
-                return ::alpha_type::transparent;
+            return ::alpha_type::transparent;
         }
     }
 
@@ -79,18 +74,13 @@ static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const Dire
 
 static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
 {
-    ::alpha_type type = ::alpha_type::invisible;
+    ::alpha_type type = ::get_alpha_type(*datas[0], colors[0], force_opaque);
 
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 1; i < count; i++)
     {
-        switch (::get_alpha_type(*datas[i], colors[i], force_opaque))
+        if (type != ::get_alpha_type(*datas[i], colors[i], force_opaque))
         {
-            case ::alpha_type::opaque:
-                type = ::alpha_type::opaque;
-                break;
-
-            case ::alpha_type::transparent:
-                return ::alpha_type::transparent;
+            return ::alpha_type::transparent;
         }
     }
 
