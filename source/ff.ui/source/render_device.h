@@ -33,7 +33,7 @@ namespace ff::internal::ui
     private:
         struct shader_t
         {
-            std::unordered_map<uint32_t, Microsoft::WRL::ComPtr<ID3D12PipelineStateX>, ff::stable_hash<uint32_t>> pipeline_states;
+            std::unordered_map<uint32_t, Microsoft::WRL::ComPtr<ID3D12PipelineState>, ff::stable_hash<uint32_t>> pipeline_states;
             uint32_t stride;
         };
 
@@ -44,7 +44,7 @@ namespace ff::internal::ui
         void init_samplers();
         void init_root_signature();
         void init_shaders();
-        std::pair<ID3D12PipelineStateX*, size_t> pipeline_state_and_stride(size_t shader_index, uint8_t render_state);
+        std::pair<ID3D12PipelineState*, size_t> pipeline_state_and_stride(size_t shader_index, uint8_t render_state);
 
         Noesis::DeviceCaps caps;
         ff::dx12::commands* commands;

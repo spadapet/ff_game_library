@@ -225,7 +225,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
-        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> command_queue = ff::dx12::get_command_queue(ff::dx12::direct_queue());
+        Microsoft::WRL::ComPtr<ID3D12CommandQueue> command_queue = ff::dx12::get_command_queue(ff::dx12::direct_queue());
 
         ff::thread_dispatch::get_main()->send([this, factory, command_queue, &new_swap_chain, &desc]()
         {
@@ -293,15 +293,13 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         if (!this->target_textures[i])
         {
             Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-            Microsoft::WRL::ComPtr<ID3D12ResourceX> resource_x;
-            if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))) ||
-                FAILED(resource.As(&resource_x)))
+            if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))))
             {
                 ff::dx12::device_fatal_error("Swap chain get buffer failed");
                 return false;
             }
 
-            this->target_textures[i] = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource_x.Get());
+            this->target_textures[i] = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
         }
 
         ff::dx12::create_target_view(this->target_textures[i].get(), this->target_views.cpu_handle(i));

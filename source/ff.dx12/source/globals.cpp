@@ -11,7 +11,7 @@
 #include "resource.h"
 
 // DX12 globals
-static Microsoft::WRL::ComPtr<ID3D12DeviceX> device;
+static Microsoft::WRL::ComPtr<ID3D12Device1> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
 static const ff::dxgi::host_functions* host_functions;
@@ -63,7 +63,7 @@ static std::string adapter_name(IDXGIAdapter* adapter)
     debug_fail_ret_val("");
 }
 
-static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
+static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 {
     std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
     {
@@ -97,13 +97,12 @@ static Microsoft::WRL::ComPtr<ID3D12DeviceX> create_dx12_device()
 
     for (size_t i = 0; i < adapters.size(); i++)
     {
-        Microsoft::WRL::ComPtr<ID3D12Device> device;
-        Microsoft::WRL::ComPtr<ID3D12DeviceX> device_x;
+        Microsoft::WRL::ComPtr<ID3D12Device1> device;
 
-        if (SUCCEEDED(::D3D12CreateDevice(adapters[i].Get(), ::feature_level, IID_PPV_ARGS(&device))) && SUCCEEDED(device.As(&device_x)))
+        if (SUCCEEDED(::D3D12CreateDevice(adapters[i].Get(), ::feature_level, IID_PPV_ARGS(&device))))
         {
             ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, adapter index=", i, ", node count=", device->GetNodeCount());
-            return device_x;
+            return device;
         }
     }
 
@@ -476,11 +475,19 @@ bool ff::dx12::device_valid()
 
 void ff::dx12::device_fatal_error(std::string_view reason)
 {
-    ff::log::write(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
-
-    if (ff::dx12::device_valid())
+    Microsoft::WRL::ComPtr<ID3D12Device5> device5;
+    if (SUCCEEDED(::device.As(&device5)))
     {
-        ::device->RemoveDevice();
+        ff::log::write(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
+
+        if (ff::dx12::device_valid())
+        {
+            device5->RemoveDevice();
+        }
+    }
+    else
+    {
+        ff::log::write_debug_fail(ff::log::type::dx12, "DX12 device does not support removal", reason);
     }
 }
 
@@ -499,7 +506,7 @@ IDXGIAdapterX* ff::dx12::adapter()
     return ::adapter.Get();
 }
 
-ID3D12DeviceX* ff::dx12::device()
+ID3D12Device1* ff::dx12::device()
 {
     return ::device.Get();
 }
@@ -514,13 +521,29 @@ ff::dx12::fence& ff::dx12::residency_fence()
     return *::residency_fence;
 }
 
+#if !UWP_APP
+static bool is_graphics_debugger_present()
+{
+    return ::GetModuleHandle(L"DXCaptureReplay.dll"); // ::GetModuleHandle(L"renderdoc.dll");
+}
+#endif
+
 static bool supports_create_heap_not_resident()
 {
+    Microsoft::WRL::ComPtr<ID3D12Device8> device8;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
+    if (SUCCEEDED(::device.As(&device8)) || SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))
+    {
 #if UWP_APP
-    return true;
+        return true;
+#elif defined(PROFILE) || defined(_DEBUG)
+        return !::is_graphics_debugger_present();
 #else
-    return !::IsDebuggerPresent() || !::GetModuleHandle(L"DXCaptureReplay.dll");
+        return !::IsDebuggerPresent() || !::is_graphics_debugger_present();
 #endif
+    }
+
+    return false;
 }
 
 bool ff::dx12::supports_create_heap_not_resident()

@@ -53,7 +53,7 @@ ff::dx12::resource::resource(std::string_view name, const D3D12_RESOURCE_DESC& d
     : resource(name, desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
-ff::dx12::resource::resource(std::string_view name, ID3D12ResourceX* swap_chain_resource)
+ff::dx12::resource::resource(std::string_view name, ID3D12Resource* swap_chain_resource)
     : name_(name)
     , desc_(swap_chain_resource->GetDesc())
     , optimized_clear_value_{}

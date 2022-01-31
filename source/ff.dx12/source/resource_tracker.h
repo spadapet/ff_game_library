@@ -18,8 +18,8 @@ namespace ff::dx12
         resource_tracker& operator=(resource_tracker&& other) noexcept = default;
         resource_tracker& operator=(const resource_tracker& other) = delete;
 
-        void flush(ID3D12GraphicsCommandListX* list);
-        void close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker);
+        void flush(ID3D12GraphicsCommandList* list);
+        void close(ID3D12GraphicsCommandList* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker);
         void resource_moved(ff::dx12::resource& old_resource, ff::dx12::resource& new_resource);
         void reset();
 

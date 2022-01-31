@@ -155,7 +155,7 @@ namespace
             return false;
         }
 
-        Microsoft::WRL::ComPtr<ID3D12PipelineStateX> create_pipeline_state(state_t index) const
+        Microsoft::WRL::ComPtr<ID3D12PipelineState> create_pipeline_state(state_t index) const
         {
             D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
             desc.pRootSignature = this->root_signature.Get();
@@ -216,7 +216,7 @@ namespace
 
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
         D3D12_INPUT_LAYOUT_DESC input_layout_desc;
-        std::array<Microsoft::WRL::ComPtr<ID3D12PipelineStateX>, static_cast<size_t>(state_t::count)> pipeline_states;
+        std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, static_cast<size_t>(state_t::count)> pipeline_states;
     };
 
     class dx12_draw_device : public ff::dxgi::draw_util::draw_device_base, public ff::dxgi::draw_device_base

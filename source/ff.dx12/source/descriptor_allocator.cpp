@@ -13,7 +13,7 @@ size_t ff::dx12::descriptor_buffer_free_list::range_t::after_end() const
     return this->start + this->count;
 }
 
-ff::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
+ff::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count)
     : descriptor_heap(descriptor_heap)
     , descriptor_start(start)
     , descriptor_count(count)
@@ -29,7 +29,7 @@ ff::dx12::descriptor_buffer_free_list::~descriptor_buffer_free_list()
     assert(this->free_ranges.size() == 1 && this->free_ranges.front().count == this->descriptor_count);
 }
 
-D3D12_DESCRIPTOR_HEAP_DESC ff::dx12::descriptor_buffer_free_list::set(ID3D12DescriptorHeapX* descriptor_heap)
+D3D12_DESCRIPTOR_HEAP_DESC ff::dx12::descriptor_buffer_free_list::set(ID3D12DescriptorHeap* descriptor_heap)
 {
     D3D12_DESCRIPTOR_HEAP_DESC desc{};
 
@@ -133,7 +133,7 @@ size_t ff::dx12::descriptor_buffer_ring::range_t::after_end() const
     return this->start + this->count;
 }
 
-ff::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12DescriptorHeapX* descriptor_heap, size_t start, size_t count)
+ff::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count)
     : descriptor_heap(descriptor_heap)
     , descriptor_start(start)
     , descriptor_count(count)
@@ -147,7 +147,7 @@ ff::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
     assert(this->allocated_range_count.load() == 0);
 }
 
-void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeapX* descriptor_heap)
+void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeap* descriptor_heap)
 {
     this->descriptor_heap = descriptor_heap;
 
@@ -249,7 +249,7 @@ ff::dx12::descriptor_range ff::dx12::cpu_descriptor_allocator::alloc_range(size_
         }
     }
 
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptor_heap;
     size_t bucket_size = ff::math::nearest_power_of_two(std::max(this->bucket_size, count));
     D3D12_DESCRIPTOR_HEAP_DESC desc{ this->type, static_cast<UINT>(bucket_size) };
 
@@ -285,7 +285,7 @@ bool ff::dx12::cpu_descriptor_allocator::reset(void* data)
 
     for (ff::dx12::descriptor_buffer_free_list& bucket : this->buckets)
     {
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeapX> descriptor_heap;
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptor_heap;
         if (SUCCEEDED(ff::dx12::device()->CreateDescriptorHeap(desc++, IID_PPV_ARGS(&descriptor_heap))))
         {
             descriptor_heap->SetName(L"cpu_descriptor_allocator");

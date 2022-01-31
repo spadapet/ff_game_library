@@ -33,13 +33,13 @@ namespace ff::dx12
         static bool complete(ff::dx12::fence_value* values, size_t count);
 
     private:
-        friend ID3D12FenceX* ff::dx12::get_fence(const ff::dx12::fence& obj);
+        friend ID3D12Fence* ff::dx12::get_fence(const ff::dx12::fence& obj);
 
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
 
-        Microsoft::WRL::ComPtr<ID3D12FenceX> fence_;
+        Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
         ff::dx12::queue* queue_;
         std::string name_;
         std::mutex completed_value_mutex;

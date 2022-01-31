@@ -182,7 +182,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
     });
 }
 
-void ff::dx12::queue::new_allocators(Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>& allocator, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>& allocator_before)
+void ff::dx12::queue::new_allocators(Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& allocator, Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& allocator_before)
 {
     assert(!allocator && !allocator_before);
     {

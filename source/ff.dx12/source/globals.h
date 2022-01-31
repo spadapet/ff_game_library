@@ -28,7 +28,7 @@ namespace ff::dx12
     D3D_FEATURE_LEVEL feature_level();
     IDXGIFactoryX* factory();
     IDXGIAdapterX* adapter();
-    ID3D12DeviceX* device();
+    ID3D12Device1* device();
     ff::dx12::object_cache& get_object_cache();
     ff::dxgi::draw_device_base& get_draw_device();
 

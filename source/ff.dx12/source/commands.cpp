@@ -111,7 +111,7 @@ std::unique_ptr<ff::dx12::commands::data_cache_t> ff::dx12::commands::take_data(
     return std::move(this->data_cache);
 }
 
-void ff::dx12::commands::pipeline_state(ID3D12PipelineStateX* state)
+void ff::dx12::commands::pipeline_state(ID3D12PipelineState* state)
 {
     if (this->pipeline_state_.Get() != state)
     {
@@ -498,9 +498,9 @@ void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_
         &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index)), &source_box);
 }
 
-ID3D12GraphicsCommandListX* ff::dx12::commands::list(bool flush_resource_state) const
+ID3D12GraphicsCommandList1* ff::dx12::commands::list(bool flush_resource_state) const
 {
-    ID3D12GraphicsCommandListX* list = this->data_cache->list.Get();
+    ID3D12GraphicsCommandList1* list = this->data_cache->list.Get();
 
     if (flush_resource_state)
     {

@@ -34,10 +34,10 @@ namespace ff::dx12
             data_cache_t& operator=(data_cache_t&& other) noexcept = delete;
             data_cache_t& operator=(const data_cache_t& other) = delete;
 
-            Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list;
-            Microsoft::WRL::ComPtr<ID3D12GraphicsCommandListX> list_before;
-            Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator;
-            Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX> allocator_before;
+            Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList1> list;
+            Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list_before;
+            Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
+            Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator_before;
             std::unordered_set<ff::dx12::residency_data*> residency_set;
             ff::dx12::resource_tracker resource_tracker;
             ff::dx12::fence fence;
@@ -65,7 +65,7 @@ namespace ff::dx12
         void close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);
         std::unique_ptr<ff::dx12::commands::data_cache_t> take_data();
 
-        void pipeline_state(ID3D12PipelineStateX* state);
+        void pipeline_state(ID3D12PipelineState* state);
         void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
         void resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);
         void resource_alias(ff::dx12::resource* resource_before, ff::dx12::resource* resource_after);
@@ -105,7 +105,7 @@ namespace ff::dx12
         void copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
 
     private:
-        ID3D12GraphicsCommandListX* list(bool flush_resource_state = true) const;
+        ID3D12GraphicsCommandList1* list(bool flush_resource_state = true) const;
         ff::dx12::resource_tracker* tracker() const;
         void keep_resident(ff::dx12::residency_access& access);
 
@@ -113,7 +113,7 @@ namespace ff::dx12
         ff::dx12::queue* queue_;
         std::unique_ptr<ff::dx12::commands::data_cache_t> data_cache;
         ff::dx12::fence_values wait_before_execute;
-        Microsoft::WRL::ComPtr<ID3D12PipelineStateX> pipeline_state_;
+        Microsoft::WRL::ComPtr<ID3D12PipelineState> pipeline_state_;
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature_;
     };
 }

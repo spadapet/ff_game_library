@@ -39,8 +39,8 @@ namespace ff::dx12
         virtual ff::dx12::residency_data* residency_data() override;
 
     private:
-        friend ID3D12HeapX* ff::dx12::get_heap(const ff::dx12::heap& obj);
-        friend ID3D12ResourceX* ff::dx12::get_resource(const ff::dx12::heap& obj);
+        friend ID3D12Heap* ff::dx12::get_heap(const ff::dx12::heap& obj);
+        friend ID3D12Resource* ff::dx12::get_resource(const ff::dx12::heap& obj);
 
         // device_child_base
         virtual void before_reset() override;
@@ -49,8 +49,8 @@ namespace ff::dx12
         std::unique_ptr<ff::dx12::residency_data> residency_data_;
         std::string name_;
         ff::signal_connection evicting_connection;
-        Microsoft::WRL::ComPtr<ID3D12HeapX> heap_;
-        Microsoft::WRL::ComPtr<ID3D12ResourceX> cpu_resource;
+        Microsoft::WRL::ComPtr<ID3D12Heap> heap_;
+        Microsoft::WRL::ComPtr<ID3D12Resource> cpu_resource;
         void* cpu_data_;
         uint64_t size_;
         usage_t usage_;

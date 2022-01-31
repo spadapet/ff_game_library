@@ -228,7 +228,7 @@ ID3D12RootSignature* ff::dx12::object_cache::root_signature(const D3D12_VERSIONE
     return nullptr;
 }
 
-ID3D12PipelineStateX* ff::dx12::object_cache::pipeline_state(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc)
+ID3D12PipelineState* ff::dx12::object_cache::pipeline_state(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc)
 {
     size_t hash = this->pipeline_state_hash(desc);
     std::scoped_lock lock(this->mutex);
@@ -248,7 +248,7 @@ ID3D12PipelineStateX* ff::dx12::object_cache::pipeline_state(const D3D12_GRAPHIC
                 cache_desc.CachedPSO.CachedBlobSizeInBytes = cache_data->size();
                 cache_desc.CachedPSO.pCachedBlob = cache_data->data();
 
-                Microsoft::WRL::ComPtr<ID3D12PipelineStateX> cache_state;
+                Microsoft::WRL::ComPtr<ID3D12PipelineState> cache_state;
                 if (SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&cache_desc, IID_PPV_ARGS(&cache_state))))
                 {
                     i = this->pipeline_states.try_emplace(hash, std::move(cache_state)).first;
@@ -256,7 +256,7 @@ ID3D12PipelineStateX* ff::dx12::object_cache::pipeline_state(const D3D12_GRAPHIC
             }
         }
 
-        Microsoft::WRL::ComPtr<ID3D12PipelineStateX> state;
+        Microsoft::WRL::ComPtr<ID3D12PipelineState> state;
         if (i == this->pipeline_states.end() && SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state))))
         {
             Microsoft::WRL::ComPtr<ID3DBlob> cache_blob;

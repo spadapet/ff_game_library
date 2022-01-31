@@ -11,10 +11,10 @@ namespace ff::dx12
     class queue;
     class resource;
 
-    ID3D12CommandQueueX* get_command_queue(const ff::dx12::queue& obj);
-    ID3D12DescriptorHeapX* get_descriptor_heap(const ff::dx12::gpu_descriptor_allocator& obj);
-    ID3D12FenceX* get_fence(const ff::dx12::fence& obj);
-    ID3D12HeapX* get_heap(const ff::dx12::heap& obj);
-    ID3D12ResourceX* get_resource(const ff::dx12::heap& obj);
-    ID3D12ResourceX* get_resource(const ff::dx12::resource& obj);
+    ID3D12CommandQueue* get_command_queue(const ff::dx12::queue& obj);
+    ID3D12DescriptorHeap* get_descriptor_heap(const ff::dx12::gpu_descriptor_allocator& obj);
+    ID3D12Fence* get_fence(const ff::dx12::fence& obj);
+    ID3D12Heap* get_heap(const ff::dx12::heap& obj);
+    ID3D12Resource* get_resource(const ff::dx12::heap& obj);
+    ID3D12Resource* get_resource(const ff::dx12::resource& obj);
 }

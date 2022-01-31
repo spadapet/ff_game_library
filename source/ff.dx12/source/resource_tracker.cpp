@@ -100,7 +100,7 @@ ff::dx12::resource_tracker::resource_t::resource_t(size_t array_size, size_t mip
     assert(array_size * mip_size > 0);
 }
 
-void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandListX* list)
+void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandList* list)
 {
     if (!this->barriers_pending.empty())
     {
@@ -109,7 +109,7 @@ void ff::dx12::resource_tracker::flush(ID3D12GraphicsCommandListX* list)
     }
 }
 
-void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandListX* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker)
+void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandList* prev_list, resource_tracker* prev_tracker, resource_tracker* next_tracker)
 {
     assert(this->barriers_pending.empty()); // have to flush first
 
@@ -242,7 +242,7 @@ void ff::dx12::resource_tracker::state(ff::dx12::resource& resource, D3D12_RESOU
         mip_size = resource.mip_size() - mip_start;
     }
 
-    ID3D12ResourceX* dx12_res = ff::dx12::get_resource(resource);
+    ID3D12Resource* dx12_res = ff::dx12::get_resource(resource);
     bool all = (array_size * mip_size == resource.sub_resource_size());
     auto [iter, first_transition] = this->resources.try_emplace(&resource, resource.array_size(), resource.mip_size());
     ff::dx12::resource_state& iter_state = iter->second.state;

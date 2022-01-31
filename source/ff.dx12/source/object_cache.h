@@ -14,7 +14,7 @@ namespace ff::dx12
         object_cache& operator=(const object_cache& other) = delete;
 
         ID3D12RootSignature* root_signature(const D3D12_VERSIONED_ROOT_SIGNATURE_DESC& desc);
-        ID3D12PipelineStateX* pipeline_state(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
+        ID3D12PipelineState* pipeline_state(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
         size_t root_signature_hash(ID3D12RootSignature* root_signature);
         size_t pipeline_state_hash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
         D3D12_SHADER_BYTECODE shader(const std::string& name);
@@ -28,7 +28,7 @@ namespace ff::dx12
         std::filesystem::path cache_dir;
         std::unordered_map<size_t, Microsoft::WRL::ComPtr<ID3D12RootSignature>, ff::no_hash<size_t>> root_signatures;
         std::unordered_map<ID3D12RootSignature*, size_t> root_signature_to_hash;
-        std::unordered_map<size_t, Microsoft::WRL::ComPtr<ID3D12PipelineStateX>, ff::no_hash<size_t>> pipeline_states;
+        std::unordered_map<size_t, Microsoft::WRL::ComPtr<ID3D12PipelineState>, ff::no_hash<size_t>> pipeline_states;
         std::unordered_map<std::string, std::shared_ptr<ff::data_base>, ff::stable_hash<std::string>> shaders;
     };
 }

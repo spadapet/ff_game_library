@@ -124,19 +124,32 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
     {
         ff::log::write(ff::log::type::dx12_residency, "Making resident:", make_resident_size, " bytes, Allocation count:", make_resident.size());
 
-        if (SUCCEEDED(ff::dx12::device()->EnqueueMakeResident(
-            D3D12_RESIDENCY_FLAG_NONE,
-            static_cast<UINT>(make_resident.size()),
-            make_resident.data(),
-            ff::dx12::get_fence(*resident_fence_value.fence()),
-            resident_fence_value.get())))
+        Microsoft::WRL::ComPtr<ID3D12Device3> device3;
+        if (SUCCEEDED(ff::dx12::device()->QueryInterface(IID_PPV_ARGS(&device3))))
         {
-            wait_values.add(resident_fence_value);
+            if (SUCCEEDED(device3->EnqueueMakeResident(
+                D3D12_RESIDENCY_FLAG_NONE,
+                static_cast<UINT>(make_resident.size()),
+                make_resident.data(),
+                ff::dx12::get_fence(*resident_fence_value.fence()),
+                resident_fence_value.get())))
+            {
+                wait_values.add(resident_fence_value);
+            }
+            else
+            {
+                make_resident_succeeded = false;
+            }
         }
         else
         {
+            make_resident_succeeded = SUCCEEDED(ff::dx12::device()->MakeResident(
+                static_cast<UINT>(make_resident.size()), make_resident.data()));
+        }
+
+        if (!make_resident_succeeded)
+        {
             ff::log::write_debug_fail(ff::log::type::dx12_residency, "Failed to make enough data resident");
-            make_resident_succeeded = false;
         }
     }
 

@@ -29,9 +29,9 @@ namespace ff::dx12
         void execute(ff::dx12::commands** commands, size_t count);
 
     private:
-        friend ID3D12CommandQueueX* ff::dx12::get_command_queue(const ff::dx12::queue& obj);
+        friend ID3D12CommandQueue* ff::dx12::get_command_queue(const ff::dx12::queue& obj);
 
-        void new_allocators(Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>& allocator, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>& allocator_before);
+        void new_allocators(Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& allocator, Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& allocator_before);
         void wait_for_tasks();
 
         // device_child_base
@@ -39,13 +39,13 @@ namespace ff::dx12
         virtual bool reset() override;
 
         D3D12_COMMAND_LIST_TYPE type;
-        Microsoft::WRL::ComPtr<ID3D12CommandQueueX> command_queue;
+        Microsoft::WRL::ComPtr<ID3D12CommandQueue> command_queue;
 
         std::mutex mutex;
         std::string name_;
         ff::dx12::fence idle_fence;
         std::list<std::unique_ptr<ff::dx12::commands::data_cache_t>> caches;
-        std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators;
-        std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocatorX>>> allocators_before;
+        std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocator>>> allocators;
+        std::list<std::pair<ff::dx12::fence_value, Microsoft::WRL::ComPtr<ID3D12CommandAllocator>>> allocators_before;
     };
 }

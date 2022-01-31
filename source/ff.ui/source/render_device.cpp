@@ -833,7 +833,7 @@ void ff::internal::ui::render_device::init_shaders()
     }
 }
 
-std::pair<ID3D12PipelineStateX*, size_t> ff::internal::ui::render_device::pipeline_state_and_stride(size_t shader_index, uint8_t render_state)
+std::pair<ID3D12PipelineState*, size_t> ff::internal::ui::render_device::pipeline_state_and_stride(size_t shader_index, uint8_t render_state)
 {
     uint32_t pipeline_lookup = (static_cast<uint32_t>(render_state) << 24) ^ static_cast<uint32_t>(this->target_format);
     shader_t& shader = this->shaders[shader_index];
