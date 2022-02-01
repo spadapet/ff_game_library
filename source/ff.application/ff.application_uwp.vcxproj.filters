@@ -32,6 +32,15 @@
     <ClCompile Include="source\filesystem.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\game_init.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game_state_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\system_options.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -69,6 +78,15 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\filesystem.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game_init.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\game_state_base.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\system_options.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

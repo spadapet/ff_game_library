@@ -1,11 +1,10 @@
 #pragma once
 
+#include "state.h"
 #include "system_options.h"
 
 namespace ff::game
 {
-    class debug_state;
-
     class app_state_base : public ff::state
     {
     public:
@@ -24,7 +23,7 @@ namespace ff::game
         virtual ff::state::advance_t advance_type();
         virtual ff::dxgi::palette_base* palette();
         virtual bool clear_color(DirectX::XMFLOAT4&);
-        virtual bool allow_debug();
+        virtual bool allow_debug_commands();
         virtual void debug_command(size_t command_id);
 
         // ff::state

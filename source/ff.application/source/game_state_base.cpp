@@ -1,5 +1,11 @@
 #include "pch.h"
-#include "app_state_base.h"
+#include "app.h"
+#include "debug_state.h"
+#include "game_state_base.h"
+#include "settings.h"
+#include "state_wrapper.h"
+
+using namespace std::string_view_literals;
 
 const size_t ff::game::app_state_base::ID_DEBUG_HIDE_UI = ff::stable_hash_func("ff::game::app_state_base::ID_DEBUG_HIDE_UI"sv);
 const size_t ff::game::app_state_base::ID_DEBUG_SHOW_UI = ff::stable_hash_func("ff::game::app_state_base::ID_DEBUG_SHOW_UI"sv);
@@ -73,7 +79,7 @@ ff::dxgi::palette_base* ff::game::app_state_base::palette()
     return nullptr;
 }
 
-bool ff::game::app_state_base::allow_debug()
+bool ff::game::app_state_base::allow_debug_commands()
 {
 #if defined(PROFILE) || defined(_DEBUG)
     return true;
@@ -84,7 +90,7 @@ bool ff::game::app_state_base::allow_debug()
 
 void ff::game::app_state_base::debug_command(size_t command_id)
 {
-    if (this->allow_debug())
+    if (this->allow_debug_commands())
     {
         if (command_id == ff::game::app_state_base::ID_DEBUG_HIDE_UI)
         {
@@ -127,7 +133,7 @@ std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
 
 void ff::game::app_state_base::advance_input()
 {
-    if (this->allow_debug())
+    if (this->allow_debug_commands())
     {
         if (!this->debug_input_events)
         {
@@ -236,7 +242,7 @@ void ff::game::app_state_base::load_settings()
 void ff::game::app_state_base::init_resources()
 {
     this->debug_input_events.reset();
-    this->debug_input_mapping = "ff.game.debug_controls";
+    this->debug_input_mapping = "ff.game.debug_input";
 
     this->load_resources();
 }
@@ -269,7 +275,7 @@ void ff::game::app_state_base::on_custom_debug()
     {
         this->debug_command(ff::game::app_state_base::ID_DEBUG_HIDE_UI);
     }
-    else if (this->allow_debug())
+    else
     {
         this->debug_command(ff::game::app_state_base::ID_DEBUG_SHOW_UI);
     }

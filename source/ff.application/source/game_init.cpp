@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "app_state_base.h"
+#include "app.h"
+#include "game_state_base.h"
+#include "game_init.h"
 #include "init.h"
-
-#include "ff.game.res.h"
 
 static const ff::game::init_params* init_params{};
 static std::function<void()> init_app_func;
@@ -31,8 +31,6 @@ static std::shared_ptr<ff::state> create_app_state()
 
 static void register_noesis_components()
 {
-    ff::global_resources::add(::assets::game::data());
-
     if (::init_params->register_global_resources)
     {
         ::init_params->register_global_resources();
