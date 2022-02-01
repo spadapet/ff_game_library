@@ -74,10 +74,9 @@ namespace ff::dx12
         void root_descriptors(size_t index, ff::dx12::descriptor_range& range, size_t base_index = 0);
         void root_constant(size_t index, uint32_t data, size_t data_index = 0);
         void root_constants(size_t index, const void* data, size_t size, size_t data_index = 0);
-        void root_cbv(size_t index, ff::dx12::buffer& buffer, size_t offset = 0);
-        void root_cbv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data);
-        void root_srv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data, bool ps_access = true, bool non_ps_access = true);
-        void root_uav(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data);
+        void root_cbv(size_t index, ff::dx12::buffer_base& buffer, size_t offset = 0);
+        void root_srv(size_t index, ff::dx12::buffer_base& buffer, size_t offset = 0, bool ps_access = true, bool non_ps_access = true);
+        void root_uav(size_t index, ff::dx12::buffer_base& buffer, size_t offset = 0);
 
         void targets(ff::dxgi::target_base** targets, size_t count, ff::dxgi::depth_base* depth);
         void viewports(const D3D12_VIEWPORT* viewports, size_t count);

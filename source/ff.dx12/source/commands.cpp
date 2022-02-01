@@ -205,55 +205,65 @@ void ff::dx12::commands::root_constants(size_t index, const void* data, size_t s
     }
 }
 
-void ff::dx12::commands::root_cbv(size_t index, ff::dx12::buffer& buffer, size_t offset)
+void ff::dx12::commands::root_cbv(size_t index, ff::dx12::buffer_base& buffer, size_t offset)
 {
     if (buffer)
     {
-        this->root_cbv(index, *buffer.resource(), buffer.gpu_address() + offset);
+        if (buffer.resource())
+        {
+            this->resource_state(*buffer.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        }
+
+        if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+        {
+            this->list()->SetComputeRootConstantBufferView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
+        else
+        {
+            this->list()->SetGraphicsRootConstantBufferView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
     }
 }
 
-void ff::dx12::commands::root_cbv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data)
+void ff::dx12::commands::root_srv(size_t index, ff::dx12::buffer_base& buffer, size_t offset, bool ps_access, bool non_ps_access)
 {
-    this->resource_state(resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    if (buffer)
+    {
+        if (buffer.resource())
+        {
+            this->resource_state(*buffer.resource(), static_cast<D3D12_RESOURCE_STATES>(
+                (ps_access ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : 0),
+                ((non_ps_access || !ps_access) ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : 0)));
+        }
 
-    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
-    {
-        this->list()->SetComputeRootConstantBufferView(static_cast<UINT>(index), data);
-    }
-    else
-    {
-        this->list()->SetGraphicsRootConstantBufferView(static_cast<UINT>(index), data);
+        if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+        {
+            this->list()->SetComputeRootShaderResourceView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
+        else
+        {
+            this->list()->SetGraphicsRootShaderResourceView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
     }
 }
 
-void ff::dx12::commands::root_srv(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data, bool ps_access, bool non_ps_access)
+void ff::dx12::commands::root_uav(size_t index, ff::dx12::buffer_base& buffer, size_t offset)
 {
-    this->resource_state(resource, static_cast<D3D12_RESOURCE_STATES>(
-        (ps_access ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : 0),
-        ((non_ps_access || !ps_access) ? D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE : 0)));
+    if (buffer)
+    {
+        if (buffer.resource())
+        {
+            this->resource_state(*buffer.resource(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        }
 
-    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
-    {
-        this->list()->SetComputeRootShaderResourceView(static_cast<UINT>(index), data);
-    }
-    else
-    {
-        this->list()->SetGraphicsRootShaderResourceView(static_cast<UINT>(index), data);
-    }
-}
-
-void ff::dx12::commands::root_uav(size_t index, ff::dx12::resource& resource, D3D12_GPU_VIRTUAL_ADDRESS data)
-{
-    this->resource_state(resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-    if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
-    {
-        this->list()->SetComputeRootUnorderedAccessView(static_cast<UINT>(index), data);
-    }
-    else
-    {
-        this->list()->SetGraphicsRootUnorderedAccessView(static_cast<UINT>(index), data);
+        if (this->type_ == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+        {
+            this->list()->SetComputeRootUnorderedAccessView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
+        else
+        {
+            this->list()->SetGraphicsRootUnorderedAccessView(static_cast<UINT>(index), buffer.gpu_address() + offset);
+        }
     }
 }
 

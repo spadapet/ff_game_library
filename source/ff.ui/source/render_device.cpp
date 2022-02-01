@@ -631,7 +631,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         {
             ff::dx12::buffer& buffer = this->constant_buffers[i];
             buffer.update(*this->commands, data.values, data.numDwords * sizeof(DWORD));
-            this->commands->root_cbv(i, *buffer.resource(), buffer.gpu_address());
+            this->commands->root_cbv(i, buffer);
         }
     }
 
@@ -651,12 +651,14 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         pb2.palette_row = static_cast<unsigned int>(ff::ui::global_palette() ? ff::ui::global_palette()->current_row() : 0);
 
         this->constant_buffers[4].update(*this->commands, &pb2, sizeof(pb2));
-        this->commands->root_cbv(4, *this->constant_buffers[4].resource(), this->constant_buffers[4].gpu_address());
+        this->commands->root_cbv(4, this->constant_buffers[4]);
     }
 
     D3D12_CPU_DESCRIPTOR_HANDLE empty_view = this->empty_views_cpu.cpu_handle(1);
     D3D12_CPU_DESCRIPTOR_HANDLE empty_palette_view = this->empty_views_cpu.cpu_handle(2);
     D3D12_CPU_DESCRIPTOR_HANDLE empty_sampler = this->samplers_cpu.cpu_handle(0);
+    size_t sampler_count = 0;
+    bool has_texture = false;
 
     std::array<D3D12_CPU_DESCRIPTOR_HANDLE, 7> texture_views
     {
@@ -683,9 +685,11 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
 
         texture_views[palette ? 5 : 0] = t.dx12_texture_view();
         samplers[0] = this->samplers_cpu.cpu_handle(batch.patternSampler.v);
+        sampler_count = std::max<size_t>(sampler_count, 1);
+        has_texture = true;
     }
 
-    auto set_texture = [this, &texture_views, &samplers](size_t index, Noesis::Texture* batchTexture, Noesis::SamplerState batchSampler)
+    auto set_texture = [this, &texture_views, &samplers, &sampler_count, &has_texture](size_t index, Noesis::Texture* batchTexture, Noesis::SamplerState batchSampler)
     {
         if (batchTexture)
         {
@@ -693,6 +697,8 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
             this->commands->resource_state(*t.dx12_resource_updated(*this->commands), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             texture_views[index] = t.dx12_texture_view();
             samplers[index] = this->samplers_cpu.cpu_handle(batchSampler.v);
+            sampler_count = std::max<size_t>(sampler_count, index + 1);
+            has_texture = true;
         }
     };
 
@@ -704,6 +710,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     static const UINT ones[8] = { 1, 1, 1, 1, 1, 1, 1, 1 };
 
     // Copy texture descriptors
+    if (has_texture)
     {
         ff::dx12::descriptor_range texture_views_gpu = ff::dx12::gpu_view_descriptors().alloc_range(texture_views.size(), this->commands->next_fence_value());
         D3D12_CPU_DESCRIPTOR_HANDLE dest = texture_views_gpu.cpu_handle(0);
@@ -713,10 +720,11 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
     }
 
     // Copy sampler descriptors
+    if (sampler_count)
     {
-        ff::dx12::descriptor_range samplers_gpu = ff::dx12::gpu_sampler_descriptors().alloc_range(samplers.size(), this->commands->next_fence_value());
+        ff::dx12::descriptor_range samplers_gpu = ff::dx12::gpu_sampler_descriptors().alloc_range(sampler_count, this->commands->next_fence_value());
         D3D12_CPU_DESCRIPTOR_HANDLE dest = samplers_gpu.cpu_handle(0);
-        UINT dest_size = static_cast<UINT>(samplers.size());
+        UINT dest_size = static_cast<UINT>(sampler_count);
         ff::dx12::device()->CopyDescriptors(1, &dest, &dest_size, dest_size, samplers.data(), ones, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         this->commands->root_descriptors(6, samplers_gpu);
     }
@@ -796,7 +804,7 @@ void ff::internal::ui::render_device::init_root_signature()
     ps_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 7, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
     CD3DX12_DESCRIPTOR_RANGE1 ps_samplers;
-    ps_samplers.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 5, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+    ps_samplers.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 5, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
     std::array<CD3DX12_ROOT_PARAMETER1, 7> params;
     params[0].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
