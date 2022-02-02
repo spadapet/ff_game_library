@@ -10,8 +10,7 @@ namespace ff::dx12
     class target_window : public ff::dxgi::target_window_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {
     public:
-        target_window();
-        target_window(ff::window* window);
+        target_window(ff::window* window, bool allow_full_screen);
         target_window(target_window&& other) noexcept = delete;
         target_window(const target_window& other) = delete;
         virtual ~target_window() override;
@@ -69,6 +68,7 @@ namespace ff::dx12
         size_t back_buffer_index;
 
         bool main_window;
+        bool allow_full_screen_;
         bool was_full_screen_on_close;
 #if UWP_APP
         bool use_xaml_composition;

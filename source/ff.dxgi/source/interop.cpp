@@ -103,9 +103,9 @@ std::shared_ptr<ff::dxgi::depth_base> ff::dxgi::client_functions::create_depth(f
     return this->create_depth_(size, sample_count);
 }
 
-std::shared_ptr<ff::dxgi::target_window_base> ff::dxgi::client_functions::create_target_for_window(ff::window* window) const
+std::shared_ptr<ff::dxgi::target_window_base> ff::dxgi::client_functions::create_target_for_window(ff::window* window, bool allow_full_screen) const
 {
-    return this->create_target_for_window_(window);
+    return this->create_target_for_window_(window, allow_full_screen);
 }
 
 std::shared_ptr<ff::dxgi::target_base> ff::dxgi::client_functions::create_target_for_texture(

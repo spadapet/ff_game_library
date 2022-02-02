@@ -87,6 +87,7 @@ void ff::keyboard_device::handle_window_message(ff::window_message& message)
             this->window = nullptr;
             break;
 
+        case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {
@@ -107,6 +108,7 @@ void ff::keyboard_device::handle_window_message(ff::window_message& message)
             }
             break;
 
+        case WM_SYSKEYUP:
         case WM_KEYUP:
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {

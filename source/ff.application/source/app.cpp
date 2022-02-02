@@ -239,9 +239,7 @@ static void frame_advance_and_render()
     }
 
     DirectX::XMFLOAT4 clear_color;
-    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func
-        ? (::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr)
-        : &ff::dxgi::color_black();
+    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func && ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
 
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     ::target->wait_for_render_ready();

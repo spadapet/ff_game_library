@@ -7,15 +7,12 @@
 #include "texture_util.h"
 #include "queue.h"
 
-ff::dx12::target_window::target_window()
-    : target_window(ff::window::main())
-{}
-
-ff::dx12::target_window::target_window(ff::window* window)
+ff::dx12::target_window::target_window(ff::window* window, bool allow_full_screen)
     : window(window)
     , cached_size{}
     , main_window(ff::window::main() == window)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
+    , allow_full_screen_(main_window && allow_full_screen)
     , was_full_screen_on_close(false)
 #if UWP_APP
     , use_xaml_composition(false)
@@ -30,7 +27,7 @@ ff::dx12::target_window::target_window(ff::window* window)
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
 
-    if (this->main_window)
+    if (this->allow_full_screen_)
     {
         ff::dxgi_host().full_screen_target(this);
     }
@@ -40,7 +37,7 @@ ff::dx12::target_window::~target_window()
 {
     ff::dx12::wait_for_idle();
 
-    if (this->main_window && this->swap_chain)
+    if (this->allow_full_screen_ && this->swap_chain)
     {
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
@@ -317,12 +314,12 @@ ff::signal_sink<ff::window_size>& ff::dx12::target_window::size_changed()
 
 bool ff::dx12::target_window::allow_full_screen() const
 {
-    return this->main_window;
+    return this->allow_full_screen_;
 }
 
 bool ff::dx12::target_window::full_screen()
 {
-    if (this->main_window && *this)
+    if (this->allow_full_screen_ && *this)
     {
 #if UWP_APP
         if (!this->cached_full_screen_uwp)
@@ -344,7 +341,7 @@ bool ff::dx12::target_window::full_screen()
 
 bool ff::dx12::target_window::full_screen(bool value)
 {
-    if (this->main_window && *this && !value != !this->full_screen())
+    if (this->allow_full_screen_ && *this && !value != !this->full_screen())
     {
 #if UWP_APP
         if (value)
@@ -370,7 +367,7 @@ bool ff::dx12::target_window::full_screen(bool value)
 bool ff::dx12::target_window::reset()
 {
     BOOL full_screen = FALSE;
-    if (this->main_window && this->swap_chain)
+    if (this->allow_full_screen_ && this->swap_chain)
     {
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
         this->swap_chain->GetFullscreenState(&full_screen, &output);
@@ -384,7 +381,7 @@ bool ff::dx12::target_window::reset()
         debug_fail_ret_val(false);
     }
 
-    if (this->main_window && this->swap_chain && full_screen)
+    if (this->allow_full_screen_ && this->swap_chain && full_screen)
     {
         this->swap_chain->SetFullscreenState(TRUE, nullptr);
     }
@@ -397,7 +394,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
     switch (msg.msg)
     {
         case WM_ACTIVATE:
-            if (LOWORD(msg.wp) == WA_INACTIVE && this->main_window)
+            if (LOWORD(msg.wp) == WA_INACTIVE && this->allow_full_screen_)
             {
                 ff::dxgi_host().defer_full_screen(false);
             }
@@ -415,7 +412,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_DESTROY:
             this->window_message_connection.disconnect();
 
-            if (this->main_window)
+            if (this->allow_full_screen_)
             {
                 ff::thread_dispatch::get_game()->send([this]()
                     {
@@ -428,7 +425,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSKEYDOWN:
-            if (this->main_window && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
+            if (this->allow_full_screen_ && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
                 ff::dxgi_host().defer_full_screen(!this->full_screen());
                 msg.result = 0;
@@ -454,7 +451,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSCHAR:
-            if (this->main_window && msg.wp == VK_RETURN)
+            if (this->allow_full_screen_ && msg.wp == VK_RETURN)
             {
                 // prevent a 'ding' sound when switching between modes
                 msg.result = 0;
@@ -464,7 +461,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
 
 #if !UWP_APP
         case WM_WINDOWPOSCHANGED:
-            if (this->main_window)
+            if (this->allow_full_screen_)
             {
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))

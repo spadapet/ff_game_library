@@ -11,7 +11,7 @@ test_uwp::test_swap_chain::test_swap_chain()
 
 void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
 {
-    this->target = std::make_unique<ff::dx12::target_window>();
+    this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), true);
 
     ff::thread_pool::get()->add_thread([this]()
         {

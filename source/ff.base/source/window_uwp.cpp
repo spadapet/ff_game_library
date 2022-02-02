@@ -198,21 +198,18 @@ private:
 
     void key_down_or_up(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::KeyEventArgs^ args)
     {
-        if (!args->KeyStatus.IsMenuKeyDown)
-        {
-            this->notify_key_message(args->VirtualKey, args->KeyStatus);
-        }
+        // accelerator_key_down should take care of every key
     }
 
     void accelerator_key_down(Windows::UI::Core::CoreDispatcher^ sender, Windows::UI::Core::AcceleratorKeyEventArgs^ args)
     {
-        if (args->KeyStatus.IsMenuKeyDown)
-        {
-            this->notify_key_message(args->VirtualKey, args->KeyStatus);
-        }
+        this->notify_key_message(args->VirtualKey, args->KeyStatus, args->EventType);
     }
 
-    void notify_key_message(Windows::System::VirtualKey key, Windows::UI::Core::CorePhysicalKeyStatus status)
+    void notify_key_message(
+        Windows::System::VirtualKey key,
+        Windows::UI::Core::CorePhysicalKeyStatus status,
+        Windows::UI::Core::CoreAcceleratorKeyEventType type)
     {
         WPARAM wp = static_cast<WPARAM>(key);
         LPARAM lp = static_cast<LPARAM>(status.RepeatCount);
@@ -221,11 +218,34 @@ private:
         lp |= (status.IsMenuKeyDown ? 1 : 0) << 29;
         lp |= (status.WasKeyDown ? 1 : 0) << 30;
 
-        UINT msg = status.IsMenuKeyDown
-            ? (status.IsKeyReleased ? WM_SYSKEYUP : WM_SYSKEYDOWN)
-            : (status.IsKeyReleased ? WM_KEYUP : WM_KEYDOWN);
+        UINT msg = 0;
+        switch (type)
+        {
+            case Windows::UI::Core::CoreAcceleratorKeyEventType::KeyDown:
+                msg = WM_KEYDOWN;
+                break;
 
-        this->main_window->notify_message(ff::window_message{ msg, wp, lp });
+            case Windows::UI::Core::CoreAcceleratorKeyEventType::KeyUp:
+                msg = WM_KEYUP;
+                break;
+
+            case Windows::UI::Core::CoreAcceleratorKeyEventType::SystemCharacter:
+                msg = WM_SYSCHAR;
+                break;
+
+            case Windows::UI::Core::CoreAcceleratorKeyEventType::SystemKeyDown:
+                msg = WM_SYSKEYDOWN;
+                break;
+
+            case Windows::UI::Core::CoreAcceleratorKeyEventType::SystemKeyUp:
+                msg = WM_SYSKEYUP;
+                break;
+        }
+
+        if (msg)
+        {
+            this->main_window->notify_message(ff::window_message{ msg, wp, lp });
+        }
     }
 
     void pointer_capture_lost(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::PointerEventArgs^ args)

@@ -61,7 +61,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
 
                 thread_dispatch.flush();
             }
-            while (!ff::wait_for_handle(this->stop_thread, 64));
+            while (!ff::wait_for_handle(this->stop_thread, 32));
 
             ff::internal::ui::destroy_game_thread();
             ::SetEvent(this->thread_stopped);

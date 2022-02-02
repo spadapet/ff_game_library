@@ -35,41 +35,41 @@ static int init_refs;
 static std::unique_ptr<::one_time_init> init_data;
 static std::mutex init_mutex;
 
-ff::dxgi::command_context_base& frame_context()
+static ff::dxgi::command_context_base& frame_context()
 {
     return ff::dx12::frame_commands();
 }
 
-ff::dxgi::draw_device_base& global_draw_device()
+static ff::dxgi::draw_device_base& global_draw_device()
 {
     return ff::dx12::get_draw_device();
 }
 
-std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
+static std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
 {
     return std::make_shared<ff::dx12::texture>(size, format, mip_count, array_size, sample_count, optimized_clear_color);
 }
 
-std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& data, ff::dxgi::sprite_type sprite_type)
+static std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& data, ff::dxgi::sprite_type sprite_type)
 {
     return std::make_shared<ff::dx12::texture>(data, sprite_type);
 }
 
-std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count)
+static std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count)
 {
     return size
         ? std::make_shared<ff::dx12::depth>(size, sample_count)
         : std::make_shared<ff::dx12::depth>(sample_count);
 }
 
-std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window)
+static std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, bool allow_full_screen)
 {
-    return window
-        ? std::make_shared<ff::dx12::target_window>(window)
-        : std::make_shared<ff::dx12::target_window>();
+    window = !window ? ff::window::main() : window;
+    allow_full_screen = allow_full_screen && (window == ff::window::main());
+    return std::make_shared<ff::dx12::target_window>(window, allow_full_screen);
 }
 
-std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
+static std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
     const std::shared_ptr<ff::dxgi::texture_base>& texture,
     size_t array_start,
     size_t array_count,
