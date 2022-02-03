@@ -1,10 +1,20 @@
 {
   "res:namespace": "assets::xaml",
 
+  "application_icons.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/application_icons.xaml"
+  },
   "application_resources.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/application_resources.xaml"
+  },
+  "main_ui.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/main_ui.xaml"
   },
 
   "NoesisTheme.Brushes.DarkBlue.xaml":
@@ -12,15 +22,30 @@
     "res:type": "file",
     "file": "file:../xaml/NoesisTheme.Brushes.DarkBlue.xaml"
   },
+  "NoesisTheme.Brushes.LightBlue.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.Brushes.LightBlue.xaml"
+  },
   "NoesisTheme.Colors.Dark.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/NoesisTheme.Colors.Dark.xaml"
   },
+  "NoesisTheme.Colors.Light.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.Colors.Light.xaml"
+  },
   "NoesisTheme.DarkBlue.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/NoesisTheme.DarkBlue.xaml"
+  },
+  "NoesisTheme.LightBlue.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/NoesisTheme.LightBlue.xaml"
   },
   "NoesisTheme.Fonts.xaml":
   {

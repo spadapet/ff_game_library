@@ -6,15 +6,23 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <DesignTimeProjectRoot>$(FFRoot)source\ff.resource.editor\xaml\</DesignTimeProjectRoot>
+    <AdditionalResJsonInputs>$(DesignTimeProjectRoot)**\*.xaml;$(DesignTimeProjectRoot)**\*.ttf;$(DesignTimeProjectRoot)**\*.png</AdditionalResJsonInputs>
+  </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\assets\xaml.res.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\states\main_state.cpp" />
+    <ClCompile Include="source\ui\main_ui.xaml.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\states\main_state.h" />
+    <ClInclude Include="source\ui\main_ui.xaml.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ff.application\ff.application.vcxproj">

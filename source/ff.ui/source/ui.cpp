@@ -72,12 +72,7 @@ static void noesis_error_handler(const char* file, uint32_t line, const char* me
         ::error_handler(file, line, message, fatal);
     }
 
-#ifdef _DEBUG
-    if (::IsDebuggerPresent())
-    {
-        __debugbreak();
-    }
-#endif
+    debug_fail_msg(message);
 }
 
 static void* noesis_alloc(void* user, size_t size)

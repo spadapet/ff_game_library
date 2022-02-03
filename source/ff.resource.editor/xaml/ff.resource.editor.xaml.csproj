@@ -44,6 +44,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <PackageReference Include="ff_wpf_tools">
+      <Version>1.1.0</Version>
+    </PackageReference>
     <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.10" />
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +54,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="main_ui.xaml.cs">
+      <DependentUpon>main_ui.xaml</DependentUpon>
+    </Compile>
+    <Page Include="application_icons.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="designer\main_window.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -68,11 +78,23 @@
       <DependentUpon>main_window.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="main_ui.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="NoesisTheme.Brushes.DarkBlue.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="NoesisTheme.Brushes.LightBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="NoesisTheme.Colors.Dark.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="NoesisTheme.Colors.Light.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -81,6 +103,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="NoesisTheme.Fonts.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="NoesisTheme.LightBlue.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

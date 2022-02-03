@@ -8,9 +8,21 @@
     <ClCompile Include="source\assets\xaml.res.cpp">
       <Filter>source\assets</Filter>
     </ClCompile>
+    <ClCompile Include="source\states\main_state.cpp">
+      <Filter>source\states</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ui\main_ui.xaml.cpp">
+      <Filter>source\ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\states\main_state.h">
+      <Filter>source\states</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ui\main_ui.xaml.h">
+      <Filter>source\ui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
@@ -21,6 +33,12 @@
     </Filter>
     <Filter Include="source\assets">
       <UniqueIdentifier>{83975541-9861-4e51-bc86-97d8d51a93ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\states">
+      <UniqueIdentifier>{42ff5e59-34e8-488a-9a26-f4709c642ae6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\ui">
+      <UniqueIdentifier>{0e1c12e7-0f1c-4dd5-8968-0b00fd8d0b51}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

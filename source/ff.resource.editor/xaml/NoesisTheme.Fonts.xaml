@@ -4,7 +4,7 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <FontFamily x:Key="Font.Family.Default">Segoe UI</FontFamily>
-    <sys:Double x:Key="Font.Size.Header">15</sys:Double>
+    <sys:Double x:Key="Font.Size.Header">14</sys:Double>
     <sys:Double x:Key="Font.Size.Normal">12</sys:Double>
     <sys:Double x:Key="Font.Size.ToolTip">9</sys:Double>
 

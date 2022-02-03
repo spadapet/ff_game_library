@@ -4,7 +4,8 @@
     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="NoesisTheme.DarkBlue.xaml"/>
+        <ResourceDictionary Source="NoesisTheme.LightBlue.xaml"/>
+        <ResourceDictionary Source="application_icons.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <sys:Boolean x:Key="true_boolean">True</sys:Boolean>
