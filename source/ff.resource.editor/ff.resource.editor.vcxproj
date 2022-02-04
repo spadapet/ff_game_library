@@ -40,5 +40,8 @@
       <FileType>Document</FileType>
     </ResJson>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\main.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

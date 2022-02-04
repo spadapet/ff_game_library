@@ -47,8 +47,31 @@ static ff::init_ui_params get_ui_params()
     return params;
 }
 
+static ff::init_main_window_params get_window_params()
+{
+    HICON icon = ::LoadIcon(ff::get_hinstance(), MAKEINTRESOURCE(1));
+    std::string_view class_name = "main_window_class";
+
+    ff::window::create_class(
+        class_name,
+        CS_DBLCLKS,
+        ff::get_hinstance(),
+        ::LoadCursor(nullptr, IDC_ARROW),
+        (HBRUSH)::GetStockObject(NULL_BRUSH),
+        0, // menu
+        icon, // large icon
+        icon); // small icon
+
+    ff::init_main_window_params init_window{};
+    init_window.window_class = class_name;
+
+    return init_window;
+}
+
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
+    ff::init_main_window init_window(::get_window_params());
     ff::init_app init_app(::get_app_params(), ::get_ui_params());
     return ff::handle_messages_until_quit();
 }

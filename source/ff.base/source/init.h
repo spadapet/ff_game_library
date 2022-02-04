@@ -15,6 +15,9 @@ namespace ff
     {
         std::string_view title;
         bool visible;
+#if !UWP_APP
+        std::string_view window_class;
+#endif
     };
 
     class init_main_window

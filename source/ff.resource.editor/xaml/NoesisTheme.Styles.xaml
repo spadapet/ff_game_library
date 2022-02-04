@@ -1565,22 +1565,22 @@
       </Trigger>
       <Trigger Property="Role" Value="TopLevelHeader">
         <Setter Property="FontSize" Value="{DynamicResource Font.Size.Header}"/>
-        <Setter Property="Padding" Value="12,7.5"/>
+        <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Template" Value="{StaticResource Template.MenuItem.TopLevelHeader}"/>
       </Trigger>
       <Trigger Property="Role" Value="TopLevelItem">
         <Setter Property="FontSize" Value="{DynamicResource Font.Size.Header}"/>
-        <Setter Property="Padding" Value="12,7.5"/>
+        <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Template" Value="{StaticResource Template.MenuItem.TopLevelItem}"/>
       </Trigger>
       <Trigger Property="Role" Value="SubmenuHeader">
         <Setter Property="FontSize" Value="{DynamicResource Font.Size.Normal}"/>
-        <Setter Property="Padding" Value="0,7"/>
+        <Setter Property="Padding" Value="0,4"/>
         <Setter Property="Template" Value="{StaticResource Template.MenuItem.SubmenuHeader}"/>
       </Trigger>
       <Trigger Property="Role" Value="SubmenuItem">
         <Setter Property="FontSize" Value="{DynamicResource Font.Size.Normal}"/>
-        <Setter Property="Padding" Value="0,7"/>
+        <Setter Property="Padding" Value="0,4"/>
         <Setter Property="Template" Value="{StaticResource Template.MenuItem.SubmenuItem}"/>
       </Trigger>
     </Style.Triggers>
