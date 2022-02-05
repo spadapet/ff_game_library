@@ -57,6 +57,7 @@
     <Compile Include="main_ui.xaml.cs">
       <DependentUpon>main_ui.xaml</DependentUpon>
     </Compile>
+    <Compile Include="models\main_vm.cs" />
     <Page Include="application_icons.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

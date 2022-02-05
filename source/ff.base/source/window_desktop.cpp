@@ -64,20 +64,23 @@ bool ff::window::operator!() const
     return this->hwnd == nullptr;
 }
 
-bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE instance, HCURSOR cursor, HBRUSH brush, UINT menu, HICON large_icon, HICON small_icon)
+bool ff::window::class_exists(std::string_view name, HINSTANCE instance)
 {
-    std::wstring wname = ff::string::to_wstring(name);
+    WNDCLASSEX existing_class{};
+    existing_class.cbSize = sizeof(existing_class);
+    return ::GetClassInfoEx(instance, ff::string::to_wstring(name).c_str(), &existing_class) != 0;
+}
 
-    // see if the class was already registered
+bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE instance, HCURSOR cursor, HBRUSH brush, UINT menu_id, UINT icon_id)
+{
+    if (ff::window::class_exists(name, instance))
     {
-        WNDCLASSEX existing_class{};
-        existing_class.cbSize = sizeof(existing_class);
-
-        if (::GetClassInfoEx(instance, wname.c_str(), &existing_class))
-        {
-            return true;
-        }
+        return true;
     }
+
+    std::wstring wname = ff::string::to_wstring(name);
+    HICON large_icon = icon_id ? ::LoadIcon(instance, MAKEINTRESOURCE(icon_id)) : nullptr;
+    HICON small_icon = icon_id ? ::LoadIcon(instance, MAKEINTRESOURCE(icon_id)) : nullptr;
 
     WNDCLASSEX new_class =
     {
@@ -88,9 +91,9 @@ bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE inst
         sizeof(ULONG_PTR), // extra window bytes
         instance,
         large_icon,
-        cursor,
-        brush,
-        MAKEINTRESOURCE(menu),
+        cursor ? cursor : ::LoadCursor(nullptr, IDC_ARROW),
+        brush ? brush : reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH)),
+        menu_id ? MAKEINTRESOURCE(menu_id) : nullptr,
         wname.c_str(),
         small_icon
     };
@@ -103,7 +106,7 @@ ff::window ff::window::create(window_type type, std::string_view class_name, std
     std::wstring wclass_name = ff::string::to_wstring(class_name);
     std::wstring wwindow_name = ff::string::to_wstring(window_name);
 
-    window new_window(type);
+    ff::window new_window(type);
     HWND hwnd = ::CreateWindowEx(
         ex_style,
         wclass_name.c_str(),
@@ -116,38 +119,30 @@ ff::window ff::window::create(window_type type, std::string_view class_name, std
     return new_window;
 }
 
-ff::window ff::window::create_blank(window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
+ff::window ff::window::create_blank(ff::window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
 {
     std::string_view class_name = "ff::window::blank";
 
-    if (window::create_class(
-        class_name,
-        CS_DBLCLKS,
-        ff::get_hinstance(),
-        ::LoadCursor(nullptr, IDC_ARROW),
-        (HBRUSH)::GetStockObject(BLACK_BRUSH),
-        0, // menu
-        nullptr, // large icon
-        nullptr)) // small icon
+    if (ff::window::create_class(class_name, CS_DBLCLKS, ff::get_hinstance()))
     {
-        return window::create(type, class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
+        return ff::window::create(type, class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
     }
 
     assert(false);
-    return window(window_type::none);
+    return ff::window(ff::window_type::none);
 }
 
 ff::window ff::window::create_message_window()
 {
     std::string_view class_name = "ff::window::message";
 
-    if (window::create_class(class_name, 0, ff::get_hinstance(), nullptr, nullptr, 0, nullptr, nullptr))
+    if (ff::window::create_class(class_name, 0, ff::get_hinstance()))
     {
-        return window::create(window_type::none, class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance(), nullptr);
+        return ff::window::create(ff::window_type::none, class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance());
     }
 
     assert(false);
-    return window(window_type::none);
+    return ff::window(ff::window_type::none);
 }
 
 HWND ff::window::handle() const

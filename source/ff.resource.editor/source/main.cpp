@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "source/models/main_vm.h"
 #include "source/states/main_state.h"
 #include "source/ui/main_ui.xaml.h"
 
@@ -41,7 +42,7 @@ static ff::init_ui_params get_ui_params()
         ::res::register_xaml();
 
         Noesis::RegisterComponent(Noesis::TypeOf<editor::main_ui>(), nullptr);
-        Noesis::RegisterComponent(Noesis::TypeOf<editor::main_view_model>(), nullptr);
+        Noesis::RegisterComponent(Noesis::TypeOf<editor::main_vm>(), nullptr);
     };
 
     return params;
@@ -49,25 +50,10 @@ static ff::init_ui_params get_ui_params()
 
 static ff::init_main_window_params get_window_params()
 {
-    HICON icon = ::LoadIcon(ff::get_hinstance(), MAKEINTRESOURCE(1));
-    std::string_view class_name = "main_window_class";
-
-    ff::window::create_class(
-        class_name,
-        CS_DBLCLKS,
-        ff::get_hinstance(),
-        ::LoadCursor(nullptr, IDC_ARROW),
-        (HBRUSH)::GetStockObject(NULL_BRUSH),
-        0, // menu
-        icon, // large icon
-        icon); // small icon
-
-    ff::init_main_window_params init_window{};
-    init_window.window_class = class_name;
-
-    return init_window;
+    const std::string_view class_name = "main_window_class";
+    ff::window::create_class(class_name, CS_DBLCLKS, ff::get_hinstance(), ::LoadCursor(nullptr, IDC_ARROW), reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1), 0, 1);
+    return ff::init_main_window_params{ std::string(class_name) };
 }
-
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {

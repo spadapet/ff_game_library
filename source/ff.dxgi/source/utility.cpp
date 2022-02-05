@@ -1,22 +1,26 @@
 #include "pch.h"
 #include "utility.h"
 
-Microsoft::WRL::ComPtr<IDXGIFactoryX> ff::dxgi::create_factory()
+Microsoft::WRL::ComPtr<IDXGIFactory2> ff::dxgi::create_factory()
 {
     const UINT flags = (DEBUG && ::IsDebuggerPresent()) ? DXGI_CREATE_FACTORY_DEBUG : 0;
 
-    Microsoft::WRL::ComPtr<IDXGIFactoryX> factory;
+    Microsoft::WRL::ComPtr<IDXGIFactory2> factory;
     return SUCCEEDED(::CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory))) ? factory : nullptr;
 }
 
-static Microsoft::WRL::ComPtr<IDXGIAdapterX> fix_adapter(IDXGIFactoryX* dxgi, Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter)
+static Microsoft::WRL::ComPtr<IDXGIAdapter> fix_adapter(IDXGIFactory* dxgi, Microsoft::WRL::ComPtr<IDXGIAdapter> adapter)
 {
     DXGI_ADAPTER_DESC desc;
-    Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter2;
-    return SUCCEEDED(adapter->GetDesc(&desc)) && SUCCEEDED(dxgi->EnumAdapterByLuid(desc.AdapterLuid, IID_PPV_ARGS(&adapter2))) ? adapter2 : adapter;
+    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter2;
+    Microsoft::WRL::ComPtr<IDXGIFactory4> factory4;
+
+    return SUCCEEDED(dxgi->QueryInterface(IID_PPV_ARGS(&factory4))) &&
+        SUCCEEDED(adapter->GetDesc(&desc)) &&
+        SUCCEEDED(factory4->EnumAdapterByLuid(desc.AdapterLuid, IID_PPV_ARGS(&adapter2))) ? adapter2 : adapter;
 }
 
-size_t ff::dxgi::get_adapters_hash(IDXGIFactoryX* factory)
+size_t ff::dxgi::get_adapters_hash(IDXGIFactory* factory)
 {
     ff::stack_vector<LUID, 32> luids;
 
@@ -33,10 +37,10 @@ size_t ff::dxgi::get_adapters_hash(IDXGIFactoryX* factory)
     return !luids.empty() ? ff::stable_hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
 }
 
-size_t ff::dxgi::get_outputs_hash(IDXGIFactoryX* factory, IDXGIAdapterX* adapter)
+size_t ff::dxgi::get_outputs_hash(IDXGIFactory* factory, IDXGIAdapter* adapter)
 {
     ff::stack_vector<HMONITOR, 32> outputs;
-    Microsoft::WRL::ComPtr<IDXGIAdapterX> adapter2 = ::fix_adapter(factory, adapter);
+    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter2 = ::fix_adapter(factory, adapter);
 
     Microsoft::WRL::ComPtr<IDXGIOutput> output;
     for (UINT i = 0; SUCCEEDED(adapter2->EnumOutputs(i++, &output)); output.Reset())
@@ -52,14 +56,15 @@ size_t ff::dxgi::get_outputs_hash(IDXGIFactoryX* factory, IDXGIAdapterX* adapter
     return !outputs.empty() ? ff::stable_hash_bytes(outputs.data(), ff::vector_byte_size(outputs)) : 0;
 }
 
-DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapterX* adapter)
+DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapter* adapter)
 {
     DXGI_QUERY_VIDEO_MEMORY_INFO info{};
+    Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter3;
 
-    if (adapter)
+    if (adapter && SUCCEEDED(adapter->QueryInterface(IID_PPV_ARGS(&adapter3))))
     {
         DXGI_QUERY_VIDEO_MEMORY_INFO info1;
-        if (SUCCEEDED(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &info1)))
+        if (SUCCEEDED(adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &info1)))
         {
             info.AvailableForReservation += info1.AvailableForReservation;
             info.Budget += info1.Budget;
@@ -67,7 +72,7 @@ DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapterX* adap
             info.CurrentUsage += info1.CurrentUsage;
         }
 
-        if (SUCCEEDED(adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &info1)))
+        if (SUCCEEDED(adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &info1)))
         {
             info.AvailableForReservation += info1.AvailableForReservation;
             info.Budget += info1.Budget;

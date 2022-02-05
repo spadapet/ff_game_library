@@ -13,11 +13,11 @@ namespace ff
 
     struct init_main_window_params
     {
-        std::string_view title;
-        bool visible;
 #if !UWP_APP
-        std::string_view window_class;
+        std::string window_class;
 #endif
+        std::string title;
+        bool visible;
     };
 
     class init_main_window

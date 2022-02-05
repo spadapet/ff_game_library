@@ -60,7 +60,7 @@ namespace ff::dx12
         ff::signal_connection window_message_connection;
         ff::win_handle frame_latency_handle;
         ff::win_handle target_ready_event;
-        Microsoft::WRL::ComPtr<IDXGISwapChainX> swap_chain;
+        Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
         std::array<std::unique_ptr<ff::dx12::resource>, BACK_BUFFER_COUNT> target_textures;
         std::array<ff::dx12::fence_value, BACK_BUFFER_COUNT> target_fence_values;

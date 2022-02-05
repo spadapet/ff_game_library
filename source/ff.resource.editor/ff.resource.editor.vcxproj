@@ -16,11 +16,13 @@
     </ClCompile>
     <ClCompile Include="source\assets\xaml.res.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\models\main_vm.cpp" />
     <ClCompile Include="source\states\main_state.cpp" />
     <ClCompile Include="source\ui\main_ui.xaml.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\models\main_vm.h" />
     <ClInclude Include="source\states\main_state.h" />
     <ClInclude Include="source\ui\main_ui.xaml.h" />
   </ItemGroup>

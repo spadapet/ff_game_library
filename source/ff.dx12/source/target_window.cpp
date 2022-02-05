@@ -199,8 +199,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         this->before_resize();
 
         DXGI_SWAP_CHAIN_DESC1 desc;
-        this->swap_chain->GetDesc1(&desc);
-        if (FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
+        if (FAILED(this->swap_chain->GetDesc1(&desc)) || FAILED(this->swap_chain->ResizeBuffers(0, buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
             ff::dx12::device_fatal_error("Swap chain resize failed");
             return false;
@@ -215,13 +214,13 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
         desc.SampleDesc.Count = 1;
         desc.BufferCount = ff::dx12::target_window::BACK_BUFFER_COUNT;
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        desc.Scaling = DXGI_SCALING_STRETCH;
+        desc.Scaling = DXGI_SCALING_NONE;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
         desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
-        Microsoft::WRL::ComPtr<IDXGIFactoryX> factory = ff::dx12::factory();
+        Microsoft::WRL::ComPtr<IDXGIFactory2> factory = ff::dx12::factory();
         Microsoft::WRL::ComPtr<ID3D12CommandQueue> command_queue = ff::dx12::get_command_queue(ff::dx12::direct_queue());
 
         ff::thread_dispatch::get_main()->send([this, factory, command_queue, &new_swap_chain, &desc]()
@@ -258,8 +257,7 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #endif
         });
 
-        if (!new_swap_chain ||
-            FAILED(new_swap_chain.As(&this->swap_chain)) ||
+        if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)) ||
             FAILED(this->swap_chain->SetMaximumFrameLatency(ff::dx12::target_window::BACK_BUFFER_COUNT)))
         {
             ff::dx12::device_fatal_error("Swap chain creation failed");
