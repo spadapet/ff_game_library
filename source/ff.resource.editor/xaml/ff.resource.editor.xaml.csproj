@@ -54,17 +54,17 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="main_ui.xaml.cs">
-      <DependentUpon>main_ui.xaml</DependentUpon>
+    <Compile Include="designer\converters.cs" />
+    <Compile Include="main_window.xaml.cs">
+      <DependentUpon>main_window.xaml</DependentUpon>
     </Compile>
     <Compile Include="models\main_vm.cs" />
+    <Compile Include="shell.xaml.cs">
+      <DependentUpon>shell.xaml</DependentUpon>
+    </Compile>
     <Page Include="application_icons.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="designer\main_window.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="application_resources.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -75,11 +75,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="designer\assembly_info.cs" />
-    <Compile Include="designer\main_window.xaml.cs">
-      <DependentUpon>main_window.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Page Include="main_ui.xaml">
+    <Page Include="main_window.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -114,6 +110,10 @@
     <Page Include="NoesisTheme.Styles.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="shell.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

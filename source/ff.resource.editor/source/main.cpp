@@ -1,7 +1,12 @@
 ﻿#include "pch.h"
 #include "source/models/main_vm.h"
+#include "source/models/plugin_vm.h"
+#include "source/models/project_vm.h"
+#include "source/models/source_vm.h"
 #include "source/states/main_state.h"
-#include "source/ui/main_ui.xaml.h"
+#include "source/ui/main_window.xaml.h"
+#include "source/ui/shell.xaml.h"
+#include "source/ui/window_base.h"
 
 namespace res
 {
@@ -41,8 +46,14 @@ static ff::init_ui_params get_ui_params()
     {
         ::res::register_xaml();
 
-        Noesis::RegisterComponent(Noesis::TypeOf<editor::main_ui>(), nullptr);
-        Noesis::RegisterComponent(Noesis::TypeOf<editor::main_vm>(), nullptr);
+        Noesis::RegisterComponent<editor::main_vm>();
+        Noesis::RegisterComponent<editor::plugin_vm>();
+        Noesis::RegisterComponent<editor::project_vm>();
+        Noesis::RegisterComponent<editor::source_vm>();
+
+        Noesis::RegisterComponent<editor::window_base>();
+        Noesis::RegisterComponent<editor::shell>();
+        Noesis::RegisterComponent<editor::main_window>();
     };
 
     return params;

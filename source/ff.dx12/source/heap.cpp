@@ -156,16 +156,13 @@ bool ff::dx12::heap::reset()
 
         if (this->cpu_usage())
         {
-            Microsoft::WRL::ComPtr<ID3D12Resource> cpu_resource;
-
             if (FAILED(ff::dx12::device()->CreatePlacedResource(
                     this->heap_.Get(),
                     0, // start
                     &CD3DX12_RESOURCE_DESC::Buffer(this->size_),
                     (this->usage_ == ff::dx12::heap::usage_t::upload) ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
                     nullptr, // clear value
-                    IID_PPV_ARGS(&cpu_resource))) ||
-                FAILED(cpu_resource.As(&this->cpu_resource)) ||
+                    IID_PPV_ARGS(&this->cpu_resource))) ||
                 FAILED(this->cpu_resource->Map(0, nullptr, &this->cpu_data_)))
             {
                 debug_fail_ret_val(false);

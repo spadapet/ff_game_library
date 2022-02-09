@@ -11,10 +11,15 @@
     "res:type": "file",
     "file": "file:../xaml/application_resources.xaml"
   },
-  "main_ui.xaml":
+  "main_window.xaml":
   {
     "res:type": "file",
-    "file": "file:../xaml/main_ui.xaml"
+    "file": "file:../xaml/main_window.xaml"
+  },
+  "shell.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/shell.xaml"
   },
 
   "NoesisTheme.Brushes.DarkBlue.xaml":

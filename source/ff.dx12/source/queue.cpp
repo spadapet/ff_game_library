@@ -76,18 +76,14 @@ std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
         cache = std::make_unique<ff::dx12::commands::data_cache_t>(this);
         this->new_allocators(cache->allocator, cache->allocator_before);
 
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list;
-        Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> list_before;
         static std::atomic_int list_counter;
         static std::atomic_int list_before_counter;
 
-        if (SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator.Get(), nullptr, IID_PPV_ARGS(&list))) &&
-            SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator_before.Get(), nullptr, IID_PPV_ARGS(&list_before))) &&
-            SUCCEEDED(list.As(&cache->list)) &&
-            SUCCEEDED(list_before.As(&cache->list_before)))
+        if (SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator.Get(), nullptr, IID_PPV_ARGS(&cache->list))) &&
+            SUCCEEDED(ff::dx12::device()->CreateCommandList(0, this->type, cache->allocator_before.Get(), nullptr, IID_PPV_ARGS(&cache->list_before))))
         {
-            list->SetName(ff::string::concatw(this->name_, " commands ", list_counter.fetch_add(1)).c_str());
-            list_before->SetName(ff::string::concatw(this->name_, " commands before ", list_before_counter.fetch_add(1)).c_str());
+            cache->list->SetName(ff::string::concatw(this->name_, " commands ", list_counter.fetch_add(1)).c_str());
+            cache->list_before->SetName(ff::string::concatw(this->name_, " commands before ", list_before_counter.fetch_add(1)).c_str());
         }
         else
         {

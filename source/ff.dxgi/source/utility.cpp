@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "utility.h"
 
-Microsoft::WRL::ComPtr<IDXGIFactory2> ff::dxgi::create_factory()
+Microsoft::WRL::ComPtr<IDXGIFactory4> ff::dxgi::create_factory()
 {
     const UINT flags = (DEBUG && ::IsDebuggerPresent()) ? DXGI_CREATE_FACTORY_DEBUG : 0;
 
-    Microsoft::WRL::ComPtr<IDXGIFactory2> factory;
+    Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
     return SUCCEEDED(::CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory))) ? factory : nullptr;
 }
 

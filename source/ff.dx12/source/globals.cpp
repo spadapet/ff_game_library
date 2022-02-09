@@ -12,8 +12,8 @@
 
 // DX12 globals
 static Microsoft::WRL::ComPtr<ID3D12Device1> device;
-static Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
-static Microsoft::WRL::ComPtr<IDXGIFactory2> factory;
+static Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
+static Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
 static const ff::dxgi::host_functions* host_functions;
 static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
@@ -67,9 +67,6 @@ static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 {
     std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
     {
-        Microsoft::WRL::ComPtr<IDXGIFactory6> factory4;
-        ::factory.As(&factory4);
-
         Microsoft::WRL::ComPtr<IDXGIFactory6> factory6;
         ::factory.As(&factory6);
 
@@ -91,7 +88,7 @@ static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
             adapters.push_back(std::move(adapter));
         }
 
-        if (!found_warp && factory4 &&  SUCCEEDED(factory4->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
+        if (!found_warp && SUCCEEDED(::factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
         {
             ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
             adapters.push_back(std::move(adapter));
@@ -213,24 +210,20 @@ static bool init_d3d(bool for_reset)
     }
 
     // Find the physical adapter for the logical device
-    Microsoft::WRL::ComPtr<IDXGIFactory4> factory4;
-    assert_hr_ret_val(::factory.As(&factory4), false);
     {
         assert(!::adapter);
         LUID luid = ::device->GetAdapterLuid();
-        assert_hr_ret_val(factory4->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
+        assert_hr_ret_val(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
         ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
 
         ff::log::write(ff::log::type::dx12, "Final adapter: ", ::adapter_name(::adapter.Get()));
     }
 
     // Video memory for residency
-    Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter3;
-    assert_hr_ret_val(::adapter.As(&adapter3), false);
     {
         ::update_video_memory_info();
         ::video_memory_change_event = ff::win_handle::create_event();
-        if (FAILED(adapter3->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
+        if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
         {
             ::video_memory_change_event.close();
             ::video_memory_change_event_cookie = 0;
@@ -295,12 +288,7 @@ static void destroy_d3d(bool for_reset)
 
     if (::video_memory_change_event)
     {
-        Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter3;
-        if (SUCCEEDED(::adapter.As(&adapter3)))
-        {
-            adapter3->UnregisterVideoMemoryBudgetChangeNotification(::video_memory_change_event_cookie);
-        }
-
+        ::adapter->UnregisterVideoMemoryBudgetChangeNotification(::video_memory_change_event_cookie);
         ::video_memory_change_event_cookie = 0;
         ::video_memory_info = {};
         ::video_memory_change_event.close();
@@ -508,12 +496,12 @@ D3D_FEATURE_LEVEL ff::dx12::feature_level()
     return ::feature_level;
 }
 
-IDXGIFactory2* ff::dx12::factory()
+IDXGIFactory4* ff::dx12::factory()
 {
     return ::factory.Get();
 }
 
-IDXGIAdapter* ff::dx12::adapter()
+IDXGIAdapter3* ff::dx12::adapter()
 {
     return ::adapter.Get();
 }

@@ -2,7 +2,7 @@
 
 namespace editor
 {
-    class main_ui;
+    class main_window;
 
     class main_state : public ff::state
     {
@@ -18,7 +18,7 @@ namespace editor
         virtual ff::state* child_state(size_t index) override;
 
     private:
-        Noesis::Ptr<editor::main_ui> main_ui;
+        Noesis::Ptr<editor::main_window> main_ui;
         std::shared_ptr<ff::ui_view_state> main_ui_state;
     };
 }

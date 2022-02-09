@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "source/states/main_state.h"
-#include "source/ui/main_ui.xaml.h"
+#include "source/ui/main_window.xaml.h"
 
 editor::main_state::main_state()
-    : main_ui(Noesis::MakePtr<editor::main_ui>())
+    : main_ui(Noesis::MakePtr<editor::main_window>())
     , main_ui_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(this->main_ui, ff::ui_view_options::cache_render)))
 {
     this->main_ui_state->view()->size(ff::app_render_target());

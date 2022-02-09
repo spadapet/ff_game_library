@@ -11,11 +11,26 @@
     <ClCompile Include="source\states\main_state.cpp">
       <Filter>source\states</Filter>
     </ClCompile>
-    <ClCompile Include="source\ui\main_ui.xaml.cpp">
+    <ClCompile Include="source\ui\main_window.xaml.cpp">
       <Filter>source\ui</Filter>
     </ClCompile>
     <ClCompile Include="source\models\main_vm.cpp">
       <Filter>source\models</Filter>
+    </ClCompile>
+    <ClCompile Include="source\models\project_vm.cpp">
+      <Filter>source\models</Filter>
+    </ClCompile>
+    <ClCompile Include="source\models\source_vm.cpp">
+      <Filter>source\models</Filter>
+    </ClCompile>
+    <ClCompile Include="source\models\plugin_vm.cpp">
+      <Filter>source\models</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ui\window_base.cpp">
+      <Filter>source\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ui\shell.xaml.cpp">
+      <Filter>source\ui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -23,11 +38,26 @@
     <ClInclude Include="source\states\main_state.h">
       <Filter>source\states</Filter>
     </ClInclude>
-    <ClInclude Include="source\ui\main_ui.xaml.h">
+    <ClInclude Include="source\ui\main_window.xaml.h">
       <Filter>source\ui</Filter>
     </ClInclude>
     <ClInclude Include="source\models\main_vm.h">
       <Filter>source\models</Filter>
+    </ClInclude>
+    <ClInclude Include="source\models\project_vm.h">
+      <Filter>source\models</Filter>
+    </ClInclude>
+    <ClInclude Include="source\models\source_vm.h">
+      <Filter>source\models</Filter>
+    </ClInclude>
+    <ClInclude Include="source\models\plugin_vm.h">
+      <Filter>source\models</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ui\window_base.h">
+      <Filter>source\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\ui\shell.xaml.h">
+      <Filter>source\ui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

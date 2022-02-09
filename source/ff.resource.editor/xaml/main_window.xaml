@@ -1,0 +1,35 @@
+﻿<Window
+    x:Class="editor.main_window"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:editor="clr-namespace:editor"
+    xmlns:ff="clr-namespace:ff"
+    mc:Ignorable="d"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    d:DataContext="{d:DesignInstance Type=editor:main_vm, IsDesignTimeCreatable=True}"
+    Title="Resource Editor">
+
+    <Window.DataContext>
+        <editor:main_vm />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <DataTemplate x:Key="modal_dialog_template" DataType="{x:Type editor:shell}">
+            <Grid Background="Blue">
+                <ContentPresenter Content="{Binding}" />
+            </Grid>
+        </DataTemplate>
+        <ff:bool_to_object_converter x:Key="foo" TrueValue="{StaticResource modal_dialog_template}" />
+    </Window.Resources>
+
+    <Window.ContentTemplate>
+        <Binding Path="has_modal_dialog" Converter="{StaticResource foo}" />
+    </Window.ContentTemplate>
+
+    <Window.Content>
+        <editor:shell />
+    </Window.Content>
+</Window>

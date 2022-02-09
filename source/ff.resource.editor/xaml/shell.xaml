@@ -1,15 +1,14 @@
 ﻿<UserControl
-    x:Class="editor.main_ui"
+    x:Class="editor.shell"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:editor="clr-namespace:editor"
-    mc:Ignorable="d"
+    mc:Ignorable="d" 
     d:DesignHeight="450"
     d:DesignWidth="800"
-    d:DataContext="{d:DesignInstance Type=editor:main_vm}"
-    DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}">
+    d:DataContext="{d:DesignInstance Type=editor:main_vm}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -17,10 +16,10 @@
         </Grid.RowDefinitions>
         <Menu>
             <MenuItem Header="File">
-                <MenuItem Header="New" Icon="{StaticResource new_file_icon}" />
-                <MenuItem Header="Open..." Icon="{StaticResource open_file_icon}" />
-                <MenuItem Header="Save" Icon="{StaticResource save_icon}" />
-                <MenuItem Header="Save As..." Icon="{StaticResource save_as_icon}" />
+                <MenuItem Header="New" Icon="{StaticResource new_file_icon}" Command="{Binding file_new_command}" />
+                <MenuItem Header="Open..." Icon="{StaticResource open_file_icon}" Command="{Binding file_open_command}" />
+                <MenuItem Header="Save" Icon="{StaticResource save_icon}" Command="{Binding file_save_command}" />
+                <MenuItem Header="Save As..." Icon="{StaticResource save_as_icon}" Command="{Binding file_save_as_command}" />
                 <Separator />
                 <MenuItem Header="Exit" InputGestureText="Alt+F4" Command="{Binding file_exit_command}" />
             </MenuItem>
