@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:editor="clr-namespace:editor"
     xmlns:ff="clr-namespace:ff"
@@ -10,26 +11,50 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     d:DataContext="{d:DesignInstance Type=editor:main_vm, IsDesignTimeCreatable=True}"
-    Title="Resource Editor">
+    Title="Resource Editor"
+    Background="{StaticResource Brush.Window.Background}"
+    Focusable="False">
 
     <Window.DataContext>
         <editor:main_vm />
     </Window.DataContext>
 
     <Window.Resources>
-        <DataTemplate x:Key="modal_dialog_template" DataType="{x:Type editor:shell}">
-            <Grid Background="Blue">
-                <ContentPresenter Content="{Binding}" />
-            </Grid>
-        </DataTemplate>
-        <ff:bool_to_object_converter x:Key="foo" TrueValue="{StaticResource modal_dialog_template}" />
+        <ff:bool_to_visible_converter x:Key="bool_to_visible" />
     </Window.Resources>
 
-    <Window.ContentTemplate>
-        <Binding Path="has_modal_dialog" Converter="{StaticResource foo}" />
-    </Window.ContentTemplate>
+    <Grid>
+        <b:Interaction.Triggers>
+            <b:DataTrigger Binding="{Binding has_modal_dialog}" Value="False">
+                <b:GoToStateAction StateName="normal" />
+            </b:DataTrigger>
+            <b:DataTrigger Binding="{Binding has_modal_dialog}" Value="True">
+                <b:GoToStateAction StateName="has_modal_dialog" />
+            </b:DataTrigger>
+        </b:Interaction.Triggers>
 
-    <Window.Content>
-        <editor:shell />
-    </Window.Content>
+        <editor:shell x:Name="shell" />
+        <Rectangle x:Name="modal_background" Fill="#A0000000" Visibility="Collapsed" />
+        <Popup x:Name="modal_popup" Placement="Center" PopupAnimation="Fade" Child="{Binding modal_dialog}" />
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="common_states">
+                <VisualState x:Name="normal"/>
+                <VisualState x:Name="has_modal_dialog">
+                    <Storyboard>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="modal_background" Storyboard.TargetProperty="(UIElement.Visibility)">
+                            <DiscreteObjectKeyFrame KeyTime="00:00:00" Value="{x:Static Visibility.Visible}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <BooleanAnimationUsingKeyFrames Storyboard.TargetName="modal_popup" Storyboard.TargetProperty="(Popup.IsOpen)">
+                            <DiscreteBooleanKeyFrame KeyTime="00:00:00" Value="True"/>
+                        </BooleanAnimationUsingKeyFrames>
+                        <BooleanAnimationUsingKeyFrames Storyboard.TargetName="shell" Storyboard.TargetProperty="(UIElement.IsEnabled)">
+                            <DiscreteBooleanKeyFrame KeyTime="00:00:00" Value="False"/>
+                        </BooleanAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+
 </Window>

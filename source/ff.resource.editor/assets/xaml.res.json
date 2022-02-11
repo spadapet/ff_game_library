@@ -16,6 +16,11 @@
     "res:type": "file",
     "file": "file:../xaml/main_window.xaml"
   },
+  "save_project_dialog.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/save_project_dialog.xaml"
+  },
   "shell.xaml":
   {
     "res:type": "file",

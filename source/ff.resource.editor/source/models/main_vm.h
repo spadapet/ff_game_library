@@ -15,7 +15,8 @@ namespace editor
         bool can_close_project();
 
         bool has_modal_dialog() const;
-        void modal_dialog(Noesis::FrameworkElement* dialog);
+        void push_modal_dialog(Noesis::FrameworkElement* dialog);
+        void remove_modal_dialog(Noesis::FrameworkElement* dialog);
         Noesis::FrameworkElement* modal_dialog() const;
 
     private:
@@ -32,7 +33,7 @@ namespace editor
         Noesis::Ptr<Noesis::BaseCommand> file_exit_command_;
 
         Noesis::Ptr<editor::project_vm> project_;
-        Noesis::Ptr<Noesis::FrameworkElement> modal_dialog_;
+        std::vector<Noesis::Ptr<Noesis::FrameworkElement>> modal_dialogs;
 
         NS_DECLARE_REFLECTION(editor::main_vm, ff::ui::notify_propety_changed_base);
     };

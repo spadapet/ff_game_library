@@ -10,6 +10,9 @@ namespace editor
     {
     public:
         main_window();
+        virtual ~main_window() override;
+
+        static editor::main_window* get();
 
     protected:
         virtual bool can_close() override;

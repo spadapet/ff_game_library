@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "source/models/main_vm.h"
 #include "source/models/project_vm.h"
+#include "source/ui/main_window.xaml.h"
+#include "source/ui/save_project_dialog.xaml.h"
 
 static editor::main_vm* instance{};
 
@@ -59,34 +61,53 @@ bool editor::main_vm::can_close_project()
     //    return false;
     //}
 
-    return true;
+    this->push_modal_dialog(Noesis::MakePtr<editor::save_project_dialog>());
+
+    return !this->has_modal_dialog();
 }
 
 bool editor::main_vm::has_modal_dialog() const
 {
-    return this->modal_dialog_ != nullptr;
+    return !this->modal_dialogs.empty();
 }
 
-void editor::main_vm::modal_dialog(Noesis::FrameworkElement* dialog)
+void editor::main_vm::push_modal_dialog(Noesis::FrameworkElement* dialog)
 {
-    if (this->modal_dialog_ != dialog)
+    assert(dialog && std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog) == this->modal_dialogs.cend());
+
+    bool old_has = this->has_modal_dialog();
+    this->modal_dialogs.push_back(Noesis::Ptr(dialog));
+
+    if (old_has != this->has_modal_dialog())
     {
-        bool old_has = (this->modal_dialog_ != nullptr);
-        bool new_has = (dialog != nullptr);
+        this->property_changed("has_modal_dialog");
+    }
 
-        this->modal_dialog_ = Noesis::Ptr(dialog);
-        this->property_changed("modal_dialog");
+    this->property_changed("modal_dialog");
+}
 
-        if (old_has != new_has)
+void editor::main_vm::remove_modal_dialog(Noesis::FrameworkElement* dialog)
+{
+    auto i = std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog);
+    assert(i != this->modal_dialogs.cend());
+
+    if (i != this->modal_dialogs.cend())
+    {
+        bool old_has = this->has_modal_dialog();
+        this->modal_dialogs.erase(i);
+
+        if (old_has != this->has_modal_dialog())
         {
             this->property_changed("has_modal_dialog");
         }
+
+        this->property_changed("modal_dialog");
     }
 }
 
 Noesis::FrameworkElement* editor::main_vm::modal_dialog() const
 {
-    return this->modal_dialog_;
+    return this->has_modal_dialog() ? this->modal_dialogs.back() : nullptr;
 }
 
 void editor::main_vm::file_new_command(Noesis::BaseComponent* param)

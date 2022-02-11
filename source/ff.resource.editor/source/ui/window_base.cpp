@@ -23,11 +23,14 @@ void editor::window_base::handle_message(ff::window_message& message)
     switch (message.msg)
     {
         case WM_CLOSE:
-            if (!this->can_close())
+            ff::thread_dispatch::get_game()->send([this, &message]()
             {
-                message.result = 0;
-                message.handled = true;
-            }
+                if (!this->can_close())
+                {
+                    message.result = 0;
+                    message.handled = true;
+                }
+            });
             break;
     }
 }

@@ -47,7 +47,7 @@
     <PackageReference Include="ff_wpf_tools">
       <Version>1.1.0</Version>
     </PackageReference>
-    <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.10" />
+    <PackageReference Include="Noesis.GUI.Extensions" Version="3.0.11" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="designer\app.xaml">
@@ -55,10 +55,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="designer\converters.cs" />
+    <Compile Include="designer\dialog_base.cs" />
     <Compile Include="main_window.xaml.cs">
       <DependentUpon>main_window.xaml</DependentUpon>
     </Compile>
     <Compile Include="models\main_vm.cs" />
+    <Compile Include="save_project_dialog.xaml.cs">
+      <DependentUpon>save_project_dialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="shell.xaml.cs">
       <DependentUpon>shell.xaml</DependentUpon>
     </Compile>
@@ -110,6 +114,10 @@
     <Page Include="NoesisTheme.Styles.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="save_project_dialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="shell.xaml">
       <SubType>Designer</SubType>
