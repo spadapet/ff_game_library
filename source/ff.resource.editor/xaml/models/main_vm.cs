@@ -16,10 +16,10 @@ namespace editor
             Application.Current.MainWindow.Close();
         });
 
-        private FrameworkElement modal_dialog_;
         public bool has_modal_dialog => this.modal_dialog_ != null;
 
-        public FrameworkElement modal_dialog
+        private dialog_content_base modal_dialog_ = new save_project_dialog();
+        public dialog_content_base modal_dialog
         {
             get => this.modal_dialog_;
             set

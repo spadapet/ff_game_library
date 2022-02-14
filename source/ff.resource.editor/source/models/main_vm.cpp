@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "source/models/main_vm.h"
 #include "source/models/project_vm.h"
+#include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
 #include "source/ui/save_project_dialog.xaml.h"
 
@@ -71,7 +72,7 @@ bool editor::main_vm::has_modal_dialog() const
     return !this->modal_dialogs.empty();
 }
 
-void editor::main_vm::push_modal_dialog(Noesis::FrameworkElement* dialog)
+void editor::main_vm::push_modal_dialog(editor::dialog_content_base* dialog)
 {
     assert(dialog && std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog) == this->modal_dialogs.cend());
 
@@ -86,7 +87,7 @@ void editor::main_vm::push_modal_dialog(Noesis::FrameworkElement* dialog)
     this->property_changed("modal_dialog");
 }
 
-void editor::main_vm::remove_modal_dialog(Noesis::FrameworkElement* dialog)
+void editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog)
 {
     auto i = std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog);
     assert(i != this->modal_dialogs.cend());
@@ -105,14 +106,13 @@ void editor::main_vm::remove_modal_dialog(Noesis::FrameworkElement* dialog)
     }
 }
 
-Noesis::FrameworkElement* editor::main_vm::modal_dialog() const
+editor::dialog_content_base* editor::main_vm::modal_dialog() const
 {
     return this->has_modal_dialog() ? this->modal_dialogs.back() : nullptr;
 }
 
 void editor::main_vm::file_new_command(Noesis::BaseComponent* param)
-{
-}
+{}
 
 void editor::main_vm::file_open_command(Noesis::BaseComponent* param)
 {}

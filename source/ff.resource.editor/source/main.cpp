@@ -4,7 +4,9 @@
 #include "source/models/project_vm.h"
 #include "source/models/source_vm.h"
 #include "source/states/main_state.h"
-#include "source/ui/dialog_base.h"
+#include "source/ui/application_resources.xaml.h"
+#include "source/ui/dialog.xaml.h"
+#include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
 #include "source/ui/save_project_dialog.xaml.h"
 #include "source/ui/shell.xaml.h"
@@ -38,27 +40,36 @@ static ff::init_app_params get_app_params()
 static ff::init_ui_params get_ui_params()
 {
     ff::init_ui_params params{};
-    params.application_resources_name = "application_resources.xaml";
     params.default_font = "#Segoe UI";
     params.default_font_size = 12;
     params.noesis_license_name = ::NOESIS_NAME;
     params.noesis_license_key = ::NOESIS_KEY;
 
+    params.create_application_resources_func = [](std::string_view)
+    {
+        return Noesis::MakePtr<editor::application_resources>();
+    };
+
     params.register_components_func = []()
     {
         ::res::register_xaml();
 
+        // Model classes
         Noesis::RegisterComponent<editor::main_vm>();
         Noesis::RegisterComponent<editor::plugin_vm>();
         Noesis::RegisterComponent<editor::project_vm>();
         Noesis::RegisterComponent<editor::source_vm>();
 
-        Noesis::RegisterComponent<editor::dialog_base>();
+        // Base classes
         Noesis::RegisterComponent<editor::window_base>();
+        Noesis::RegisterComponent<editor::dialog_content_base>();
 
+        // UI classes
+        Noesis::RegisterComponent<editor::application_resources>();
+        Noesis::RegisterComponent<editor::dialog>();
+        Noesis::RegisterComponent<editor::main_window>();
         Noesis::RegisterComponent<editor::save_project_dialog>();
         Noesis::RegisterComponent<editor::shell>();
-        Noesis::RegisterComponent<editor::main_window>();
     };
 
     return params;

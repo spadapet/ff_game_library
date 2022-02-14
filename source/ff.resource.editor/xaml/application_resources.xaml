@@ -1,4 +1,5 @@
 <ResourceDictionary
+    x:Class="editor.application_resources"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -27,61 +28,66 @@
     <SolidColorBrush x:Key="Brush.Gray9" Color="{StaticResource Color.Gray9}" />
     <SolidColorBrush x:Key="Brush.White" Color="{StaticResource Color.White}" />
 
-    <sys:Boolean x:Key="true_boolean">True</sys:Boolean>
-    <sys:Boolean x:Key="false_boolean">False</sys:Boolean>
+    <!-- Border and background of a dialog -->
+    <ControlTemplate x:Key="dialog_template" TargetType="editor:dialog">
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="8" Opacity="0.5" Color="Black" />
+            </Border.Effect>
+            <ContentPresenter />
+        </Border>
+    </ControlTemplate>
 
-    <Style x:Key="dialog_style" TargetType="editor:dialog_base">
+    <!-- Title bar and Footer surrounding dialog content -->
+    <DataTemplate x:Key="dialog_content_template" DataType="editor:dialog_content_base">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border CornerRadius="7,7,0,0" Background="{StaticResource Brush.Accent3}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    <Button Grid.Column="1" Background="Transparent" Width="32" Command="{Binding cancel_command}">
+                        <Canvas Width="10" Height="10">
+                            <Line X1="0" Y1="0" X2="10" Y2="10" Stroke="{StaticResource Brush.Black}" StrokeThickness="1.25" />
+                            <Line X1="0" Y1="10" X2="10" Y2="0" Stroke="{StaticResource Brush.Black}" StrokeThickness="1.25" />
+                        </Canvas>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <ContentControl Grid.Row="1" Focusable="False" Content="{Binding Content}" />
+
+            <ContentControl Grid.Row="2" Focusable="False">
+                <ContentControl.Content>
+                    <Binding Path="Footer">
+                        <Binding.TargetNullValue>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8">
+                                <Button Content="OK" IsDefault="True" Margin="8,0,0,0" MinWidth="72" Command="{Binding ok_command}" />
+                                <Button Content="Cancel" IsCancel="True" Margin="8,0,0,0" MinWidth="72" Command="{Binding cancel_command}" />
+                            </StackPanel>
+                        </Binding.TargetNullValue>
+                    </Binding>
+                </ContentControl.Content>
+            </ContentControl>
+        </Grid>
+    </DataTemplate>
+
+    <Style TargetType="editor:dialog">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Background" Value="{StaticResource Brush.Background.Popup}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Black}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Width" Value="320" />
-        <Setter Property="Height" Value="200" />
-        <Setter Property="Title" Value="Message" />
-        <Setter Property="Footer">
-            <Setter.Value>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="8">
-                    <Button Content="OK" IsDefault="True" Margin="8,0,0,0" MinWidth="32" />
-                    <Button Content="Cancel" IsCancel="True" Margin="8,0,0,0" MinWidth="32" />
-                </StackPanel>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="editor:dialog_base">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="8" Opacity="0.5" Color="Black" />
-                        </Border.Effect>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="32" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Border CornerRadius="7,7,0,0" Background="{StaticResource Brush.Accent3}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Title" VerticalAlignment="Center" Margin="8,0,0,0" />
-                                    <Button Name="PART_CloseButton" Grid.Column="1" Background="Transparent">
-                                        <Canvas Width="10" Height="10">
-                                            <Line X1="0" Y1="0" X2="10" Y2="10" Stroke="{StaticResource Brush.Black}" StrokeThickness="1.25" />
-                                            <Line X1="0" Y1="10" X2="10" Y2="0" Stroke="{StaticResource Brush.Black}" StrokeThickness="1.25" />
-                                        </Canvas>
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <ContentControl Grid.Row="1" Content="{TemplateBinding Content}" Focusable="False" />
-                            <ContentControl Grid.Row="2" Content="{TemplateBinding Footer}" Focusable="False" />
-                        </Grid>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="MinWidth" Value="320" />
+        <Setter Property="MinHeight" Value="200" />
+        <Setter Property="Template" Value="{StaticResource dialog_template}" />
+        <Setter Property="ContentTemplate" Value="{StaticResource dialog_content_template}" />
     </Style>
 
 </ResourceDictionary>

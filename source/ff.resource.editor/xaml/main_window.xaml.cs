@@ -10,5 +10,9 @@ namespace editor
         {
             this.InitializeComponent();
         }
+
+        private void on_request_close_dialog(object sender, RoutedEventArgs args)
+        {
+        }
     }
 }

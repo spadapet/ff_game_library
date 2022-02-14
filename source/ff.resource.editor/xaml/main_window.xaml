@@ -13,7 +13,8 @@
     d:DataContext="{d:DesignInstance Type=editor:main_vm, IsDesignTimeCreatable=True}"
     Title="Resource Editor"
     Background="{StaticResource Brush.Window.Background}"
-    Focusable="False">
+    Focusable="False"
+    editor:dialog_content_base.RequestClose="on_request_close_dialog">
 
     <Window.DataContext>
         <editor:main_vm />
@@ -23,7 +24,7 @@
         <ff:bool_to_visible_converter x:Key="bool_to_visible" />
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="root">
         <b:Interaction.Triggers>
             <b:DataTrigger Binding="{Binding has_modal_dialog}" Value="False">
                 <b:GoToStateAction StateName="normal" />
@@ -34,20 +35,18 @@
         </b:Interaction.Triggers>
 
         <editor:shell x:Name="shell" />
-        <Rectangle x:Name="modal_background" Fill="#A0000000" Visibility="Collapsed" />
-        <Popup x:Name="modal_popup" Placement="Center" PopupAnimation="Fade" Child="{Binding modal_dialog}" />
+        <Grid x:Name="modal_root" Background="#A0000000" Visibility="Collapsed">
+            <editor:dialog HorizontalAlignment="Center" VerticalAlignment="Center" Content="{Binding modal_dialog, Mode=OneWay}" />
+        </Grid>
 
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="common_states">
                 <VisualState x:Name="normal"/>
                 <VisualState x:Name="has_modal_dialog">
                     <Storyboard>
-                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="modal_background" Storyboard.TargetProperty="(UIElement.Visibility)">
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="modal_root" Storyboard.TargetProperty="(UIElement.Visibility)">
                             <DiscreteObjectKeyFrame KeyTime="00:00:00" Value="{x:Static Visibility.Visible}"/>
                         </ObjectAnimationUsingKeyFrames>
-                        <BooleanAnimationUsingKeyFrames Storyboard.TargetName="modal_popup" Storyboard.TargetProperty="(Popup.IsOpen)">
-                            <DiscreteBooleanKeyFrame KeyTime="00:00:00" Value="True"/>
-                        </BooleanAnimationUsingKeyFrames>
                         <BooleanAnimationUsingKeyFrames Storyboard.TargetName="shell" Storyboard.TargetProperty="(UIElement.IsEnabled)">
                             <DiscreteBooleanKeyFrame KeyTime="00:00:00" Value="False"/>
                         </BooleanAnimationUsingKeyFrames>

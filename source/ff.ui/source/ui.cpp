@@ -186,10 +186,39 @@ static void register_components()
     }
 }
 
+static void init_default_font()
+{
+    const char* default_fonts = !::ui_params.default_font.empty() ? ::ui_params.default_font.c_str() : "Segoe UI";
+    float default_size = ::ui_params.default_font_size > 0.0f ? ::ui_params.default_font_size : 12.0f;
+    Noesis::GUI::SetFontFallbacks(&default_fonts, 1);
+    Noesis::GUI::SetFontDefaultProperties(default_size, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
+}
+
+static void init_application_resources()
+{
+    if (::ui_params.create_application_resources_func)
+    {
+        ::application_resources = ::ui_params.create_application_resources_func(::ui_params.application_resources_name);
+    }
+    else if (!::ui_params.application_resources_name.empty())
+    {
+        ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
+    }
+
+    if (::application_resources)
+    {
+        if (::ui_params.application_resources_loaded_func)
+        {
+            ::ui_params.application_resources_loaded_func(::application_resources);
+        }
+
+        Noesis::GUI::SetApplicationResources(::application_resources);
+    }
+}
+
 static bool init_noesis()
 {
     // Global handlers
-
     ::assert_handler = Noesis::SetAssertHandler(::noesis_assert_handler);
     ::error_handler = Noesis::SetErrorHandler(::noesis_error_handler);
     ::log_handler = Noesis::SetLogHandler(::noesis_log_handler);
@@ -199,14 +228,12 @@ static bool init_noesis()
     Noesis::GUI::Init();
 
     // Callbacks
-
     Noesis::GUI::SetCursorCallback(nullptr, ::update_cursor_callback);
     Noesis::GUI::SetOpenUrlCallback(nullptr, ::open_url_callback);
     Noesis::GUI::SetPlayAudioCallback(nullptr, ::play_sound_callback);
     Noesis::GUI::SetSoftwareKeyboardCallback(nullptr, ::software_keyboard_callback);
 
     // Resource providers
-
     ::render_device = Noesis::MakePtr<ff::internal::ui::render_device>();
     ::xaml_provider = Noesis::MakePtr<ff::internal::ui::xaml_provider>();
     ::font_provider = Noesis::MakePtr<ff::internal::ui::font_provider>();
@@ -217,27 +244,8 @@ static bool init_noesis()
     Noesis::GUI::SetFontProvider(::font_provider);
 
     ::register_components();
-
-    // Default font
-    {
-        const char* default_fonts = !::ui_params.default_font.empty() ? ::ui_params.default_font.c_str() : "Segoe UI";
-        float default_size = ::ui_params.default_font_size > 0.0f ? ::ui_params.default_font_size : 12.0f;
-        Noesis::GUI::SetFontFallbacks(&default_fonts, 1);
-        Noesis::GUI::SetFontDefaultProperties(default_size, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
-    }
-
-    // Application resources
-    if (!::ui_params.application_resources_name.empty())
-    {
-        ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
-        if (::ui_params.application_resources_loaded_func)
-        {
-            ::ui_params.application_resources_loaded_func(::application_resources);
-        }
-
-        Noesis::GUI::SetApplicationResources(::application_resources);
-    }
-
+    ::init_default_font();
+    ::init_application_resources();
     ::noesis_dump_mem_usage();
 
     return true;

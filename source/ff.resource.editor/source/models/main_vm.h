@@ -2,6 +2,7 @@
 
 namespace editor
 {
+    class dialog_content_base;
     class project_vm;
 
     class main_vm : public ff::ui::notify_propety_changed_base
@@ -15,9 +16,9 @@ namespace editor
         bool can_close_project();
 
         bool has_modal_dialog() const;
-        void push_modal_dialog(Noesis::FrameworkElement* dialog);
-        void remove_modal_dialog(Noesis::FrameworkElement* dialog);
-        Noesis::FrameworkElement* modal_dialog() const;
+        void push_modal_dialog(editor::dialog_content_base* dialog);
+        void remove_modal_dialog(editor::dialog_content_base* dialog);
+        editor::dialog_content_base* modal_dialog() const;
 
     private:
         void file_new_command(Noesis::BaseComponent* param);
@@ -33,7 +34,7 @@ namespace editor
         Noesis::Ptr<Noesis::BaseCommand> file_exit_command_;
 
         Noesis::Ptr<editor::project_vm> project_;
-        std::vector<Noesis::Ptr<Noesis::FrameworkElement>> modal_dialogs;
+        std::vector<Noesis::Ptr<editor::dialog_content_base>> modal_dialogs;
 
         NS_DECLARE_REFLECTION(editor::main_vm, ff::ui::notify_propety_changed_base);
     };

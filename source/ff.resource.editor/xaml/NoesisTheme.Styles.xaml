@@ -173,7 +173,7 @@
     <Setter Property="BorderThickness" Value="{DynamicResource Border.Normal}"/>
     <Setter Property="HorizontalContentAlignment" Value="Center"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
-    <Setter Property="Padding" Value="8,7"/>
+    <Setter Property="Padding" Value="4"/>
     <Setter Property="UseLayoutRounding" Value="True"/>
     <Setter Property="Template" Value="{StaticResource Template.ButtonBase}"/>
     <Setter Property="FocusVisualStyle" Value="{StaticResource Style.Focus.Outer.Uniform}"/>

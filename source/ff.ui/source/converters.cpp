@@ -68,3 +68,35 @@ void ff::ui::bool_to_object_converter::false_value(Noesis::BaseComponent* value)
 {
     this->false_value_.Reset(value);
 }
+
+NS_IMPLEMENT_REFLECTION(ff::ui::object_to_object_converter, "ff.object_to_object_converter")
+{
+    NsProp("NullValue", &object_to_object_converter::null_value, &object_to_object_converter::null_value);
+    NsProp("NonNullValue", &object_to_object_converter::non_null_value, &object_to_object_converter::non_null_value);
+}
+
+bool ff::ui::object_to_object_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
+{
+    result = value ? this->non_null_value_ : this->null_value_;
+    return true;
+}
+
+Noesis::BaseComponent* ff::ui::object_to_object_converter::null_value() const
+{
+    return this->null_value_;
+}
+
+void ff::ui::object_to_object_converter::null_value(Noesis::BaseComponent* value)
+{
+    this->null_value_.Reset(value);
+}
+
+Noesis::BaseComponent* ff::ui::object_to_object_converter::non_null_value() const
+{
+    return this->non_null_value_;
+}
+
+void ff::ui::object_to_object_converter::non_null_value(Noesis::BaseComponent* value)
+{
+    this->non_null_value_.Reset(value);
+}

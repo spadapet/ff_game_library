@@ -14,4 +14,7 @@ namespace ff
             base.FalseValue = Visibility.Collapsed;
         }
     }
+
+    public class object_to_object_converter : ObjectToObjectConverter
+    { }
 }
