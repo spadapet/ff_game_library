@@ -26,12 +26,14 @@ namespace editor
         void file_save_command(Noesis::BaseComponent* param);
         void file_save_as_command(Noesis::BaseComponent* param);
         void file_exit_command(Noesis::BaseComponent* param);
+        void close_dialog_command(Noesis::BaseComponent* param);
 
         Noesis::Ptr<Noesis::BaseCommand> file_new_command_;
         Noesis::Ptr<Noesis::BaseCommand> file_open_command_;
         Noesis::Ptr<Noesis::BaseCommand> file_save_command_;
         Noesis::Ptr<Noesis::BaseCommand> file_save_as_command_;
         Noesis::Ptr<Noesis::BaseCommand> file_exit_command_;
+        Noesis::Ptr<Noesis::BaseCommand> close_dialog_command_;
 
         Noesis::Ptr<editor::project_vm> project_;
         std::vector<Noesis::Ptr<editor::dialog_content_base>> modal_dialogs;

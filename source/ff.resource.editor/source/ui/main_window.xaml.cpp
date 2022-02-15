@@ -52,6 +52,14 @@ bool editor::main_window::can_close()
 
 void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args)
 {
-    // TODO
-    args.handled = true;
+    editor::main_vm* vm = Noesis::DynamicCast<editor::main_vm*>(this->GetDataContext());
+    editor::dialog_content_base* dialog = Noesis::DynamicCast<editor::dialog_content_base*>(args.source);
+
+    if (vm && dialog)
+    {
+        vm->remove_modal_dialog(dialog);
+        args.handled = true;
+    }
+
+    assert(args.handled);
 }

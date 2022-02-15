@@ -1,4 +1,13 @@
 ﻿<UserControl
     x:Class="editor.dialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" />
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:editor="clr-namespace:editor"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance editor:main_vm}">
+    <UserControl.InputBindings>
+        <KeyBinding Key="Esc" Command="{Binding close_dialog_command}" />
+    </UserControl.InputBindings>
+</UserControl>

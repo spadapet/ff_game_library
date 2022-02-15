@@ -20,6 +20,7 @@ namespace editor
     private:
         void ok_command(Noesis::BaseComponent* param);
         void cancel_command(Noesis::BaseComponent* param);
+
         Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> request_close();
 
         Noesis::Ptr<Noesis::BaseCommand> ok_command_;

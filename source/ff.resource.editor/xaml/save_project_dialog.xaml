@@ -4,11 +4,21 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions"
     xmlns:editor="clr-namespace:editor"
     mc:Ignorable="d"
     Title="Save Changes">
+
     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
         <TextBlock HorizontalAlignment="Center">Save Yes or No</TextBlock>
-        <Button HorizontalAlignment="Center">OK</Button>
+        <TextBox x:Name="name_edit" HorizontalAlignment="Center" Width="128">Name</TextBox>
+        <Button HorizontalAlignment="Center" MinWidth="64" Content="Cool">
+            <b:Interaction.Triggers>
+                <b:EventTrigger EventName="Loaded">
+                    <noesis:SetFocusAction />
+                </b:EventTrigger>
+            </b:Interaction.Triggers>
+        </Button>
     </StackPanel>
 </editor:dialog_content_base>
