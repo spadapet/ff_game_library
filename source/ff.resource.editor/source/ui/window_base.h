@@ -8,6 +8,7 @@ namespace editor
         window_base();
 
         static const Noesis::DependencyProperty* title_property;
+        static constexpr UINT WM_USER_FORCE_CLOSE = WM_USER + 1;
 
     protected:
         virtual void handle_message(ff::window_message& message);

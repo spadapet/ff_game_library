@@ -13,11 +13,10 @@ namespace editor
 
         static editor::main_vm* get();
         editor::project_vm* project() const;
-        bool can_close_project();
 
         bool has_modal_dialog() const;
         void push_modal_dialog(editor::dialog_content_base* dialog);
-        void remove_modal_dialog(editor::dialog_content_base* dialog);
+        bool remove_modal_dialog(editor::dialog_content_base* dialog);
         editor::dialog_content_base* modal_dialog() const;
 
     private:

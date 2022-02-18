@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "source/models/main_vm.h"
+#include "source/models/project_vm.h"
 #include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
+#include "source/ui/save_project_dialog.xaml.h"
 
 static editor::main_window* instance{};
 
@@ -47,7 +49,29 @@ bool editor::main_window::ConnectEvent(Noesis::BaseComponent* source, const char
 
 bool editor::main_window::can_close()
 {
-    return editor::main_vm::get()->can_close_project();
+    if (editor::main_vm::get()->has_modal_dialog())
+    {
+        // TODO: Flash modal dialog
+        return false;
+    }
+
+    //if (editor::main_vm::get()->project()->dirty())
+    {
+        // TODO: memory load for dialog (6 ref counts at end, so probably circular reference)
+        Noesis::Ptr<editor::save_project_dialog> dialog = Noesis::MakePtr<editor::save_project_dialog>();
+        this->save_project_dialog_close_connection = dialog->dialog_closed().connect([](int result)
+        {
+            if (result != editor::dialog_content_base::RESULT_CANCEL)
+            {
+                ::PostMessage(*ff::window::main(), editor::window_base::WM_USER_FORCE_CLOSE, 0, 0);
+            }
+        });
+
+        editor::main_vm::get()->push_modal_dialog(dialog);
+        return false;
+    }
+
+    //return true;
 }
 
 void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args)
@@ -55,11 +79,6 @@ void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender,
     editor::main_vm* vm = Noesis::DynamicCast<editor::main_vm*>(this->GetDataContext());
     editor::dialog_content_base* dialog = Noesis::DynamicCast<editor::dialog_content_base*>(args.source);
 
-    if (vm && dialog)
-    {
-        vm->remove_modal_dialog(dialog);
-        args.handled = true;
-    }
-
+    args.handled = vm && dialog && vm->remove_modal_dialog(dialog);
     assert(args.handled);
 }

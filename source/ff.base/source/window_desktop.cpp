@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "assert.h"
 #include "flags.h"
 #include "string.h"
 #include "win_handle.h"

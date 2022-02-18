@@ -11,14 +11,14 @@
     Title="Save Changes">
 
     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+        <b:Interaction.Triggers>
+            <b:EventTrigger EventName="Loaded">
+                <noesis:SetFocusAction TargetName="name_edit" />
+            </b:EventTrigger>
+        </b:Interaction.Triggers>
+        
         <TextBlock HorizontalAlignment="Center">Save Yes or No</TextBlock>
         <TextBox x:Name="name_edit" HorizontalAlignment="Center" Width="128">Name</TextBox>
-        <Button HorizontalAlignment="Center" MinWidth="64" Content="Cool">
-            <b:Interaction.Triggers>
-                <b:EventTrigger EventName="Loaded">
-                    <noesis:SetFocusAction />
-                </b:EventTrigger>
-            </b:Interaction.Triggers>
-        </Button>
+        <Button HorizontalAlignment="Center" MinWidth="64" Content="Cool" />
     </StackPanel>
 </editor:dialog_content_base>

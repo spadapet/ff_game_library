@@ -8,8 +8,6 @@ namespace editor
         dialog();
 
     private:
-        void initialized(Noesis::BaseComponent* sender, const Noesis::EventArgs& args);
-
         NS_DECLARE_REFLECTION(editor::dialog, Noesis::UserControl);
     };
 }

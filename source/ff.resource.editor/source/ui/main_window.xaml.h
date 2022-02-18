@@ -4,8 +4,6 @@
 
 namespace editor
 {
-    class main_vm;
-
     class main_window : public editor::window_base
     {
     public:
@@ -21,6 +19,8 @@ namespace editor
 
     private:
         void on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args);
+
+        ff::signal_connection save_project_dialog_close_connection;
 
         NS_DECLARE_REFLECTION(editor::main_window, editor::window_base);
     };

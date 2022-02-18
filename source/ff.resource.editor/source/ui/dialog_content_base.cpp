@@ -22,35 +22,53 @@ NS_IMPLEMENT_REFLECTION(editor::dialog_content_base, "editor.dialog_content_base
 
     NsProp("ok_command", &editor::dialog_content_base::ok_command_);
     NsProp("cancel_command", &editor::dialog_content_base::cancel_command_);
+    NsProp("close_command", &editor::dialog_content_base::close_command_);
 }
 
 editor::dialog_content_base::dialog_content_base()
     : ok_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::dialog_content_base::ok_command)))
     , cancel_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::dialog_content_base::cancel_command)))
+    , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::dialog_content_base::close_command)))
 {}
+
+editor::dialog_content_base::~dialog_content_base()
+{}
+
+Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> editor::dialog_content_base::request_close()
+{
+    return Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs>(this, editor::dialog_content_base::request_close_event);
+}
+
+ff::signal_sink<int>& editor::dialog_content_base::dialog_closed()
+{
+    return this->dialog_closed_;
+}
 
 void editor::dialog_content_base::on_ok()
 {
-    if (this->apply_changes())
+    if (this->apply_changes(editor::dialog_content_base::RESULT_OK))
     {
-        this->on_close_dialog();
+        this->on_close_dialog(editor::dialog_content_base::RESULT_OK);
     }
 }
 
 void editor::dialog_content_base::on_cancel()
 {
-    this->on_close_dialog();
+    this->on_close_dialog(editor::dialog_content_base::RESULT_CANCEL);
 }
 
-void editor::dialog_content_base::on_close_dialog()
+void editor::dialog_content_base::on_close_dialog(int result)
 {
     Noesis::RoutedEventArgs args{ this, editor::dialog_content_base::request_close_event };
     this->RaiseEvent(args);
 
-    assert_msg(args.handled, "Dialog couldn't be closed");
+    if (args.handled)
+    {
+        this->dialog_closed_.notify(result);
+    }
 }
 
-bool editor::dialog_content_base::apply_changes()
+bool editor::dialog_content_base::apply_changes(int result)
 {
     return true;
 }
@@ -65,7 +83,14 @@ void editor::dialog_content_base::cancel_command(Noesis::BaseComponent* param)
     this->on_cancel();
 }
 
-Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> editor::dialog_content_base::request_close()
+void editor::dialog_content_base::close_command(Noesis::BaseComponent* param)
 {
-    return Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs>(this, editor::dialog_content_base::request_close_event);
+    int result = (param && Noesis::Boxing::CanUnbox<int>(param))
+        ? Noesis::Boxing::Unbox<int>(param)
+        : editor::dialog_content_base::RESULT_CANCEL;
+
+    if (result == editor::dialog_content_base::RESULT_CANCEL || this->apply_changes(result))
+    {
+        this->on_close_dialog(result);
+    }
 }

@@ -2,7 +2,6 @@
     x:Class="editor.application_resources"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:sys="clr-namespace:System;assembly=mscorlib"
     xmlns:editor="clr-namespace:editor">
 
     <ResourceDictionary.MergedDictionaries>
@@ -62,7 +61,7 @@
                 </Grid>
             </Border>
 
-            <ContentControl Grid.Row="1" Focusable="False" Content="{Binding Content}" />
+            <ContentControl Grid.Row="1" Focusable="False" Content="{Binding}" />
 
             <ContentControl Grid.Row="2" Focusable="False">
                 <ContentControl.Content>

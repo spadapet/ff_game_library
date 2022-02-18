@@ -3,7 +3,6 @@
 #include "source/models/project_vm.h"
 #include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
-#include "source/ui/save_project_dialog.xaml.h"
 
 static editor::main_vm* instance{};
 
@@ -57,18 +56,6 @@ editor::project_vm* editor::main_vm::project() const
     return this->project_;
 }
 
-bool editor::main_vm::can_close_project()
-{
-    //if (this->project_->dirty())
-    //{
-    //    return false;
-    //}
-
-    this->push_modal_dialog(Noesis::MakePtr<editor::save_project_dialog>());
-
-    return !this->has_modal_dialog();
-}
-
 bool editor::main_vm::has_modal_dialog() const
 {
     return !this->modal_dialogs.empty();
@@ -89,11 +76,9 @@ void editor::main_vm::push_modal_dialog(editor::dialog_content_base* dialog)
     this->property_changed("modal_dialog");
 }
 
-void editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog)
+bool editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog)
 {
     auto i = std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog);
-    assert(i != this->modal_dialogs.cend());
-
     if (i != this->modal_dialogs.cend())
     {
         bool old_has = this->has_modal_dialog();
@@ -105,7 +90,10 @@ void editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog)
         }
 
         this->property_changed("modal_dialog");
+        return true;
     }
+
+    debug_fail_ret_val(false);
 }
 
 editor::dialog_content_base* editor::main_vm::modal_dialog() const

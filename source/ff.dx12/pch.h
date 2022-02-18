@@ -2,11 +2,6 @@
 
 // C++
 #include <algorithm>
-#include <array>
-#include <atomic>
-#include <cassert>
-#include <memory>
-#include <mutex>
 #include <unordered_set>
 
 // Windows

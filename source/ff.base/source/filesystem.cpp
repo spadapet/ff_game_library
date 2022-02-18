@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "assert.h"
 #include "filesystem.h"
 #include "string.h"
 

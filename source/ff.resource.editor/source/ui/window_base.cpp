@@ -32,6 +32,10 @@ void editor::window_base::handle_message(ff::window_message& message)
                 }
             });
             break;
+
+        case editor::window_base::WM_USER_FORCE_CLOSE:
+            ::DestroyWindow(message.hwnd);
+            break;
     }
 }
 

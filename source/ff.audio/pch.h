@@ -5,8 +5,6 @@
 #include <Mferror.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
-#include <Windows.h>
-#include <wrl.h>
 #include <xaudio2.h>
 
 // FF

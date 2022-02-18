@@ -5,7 +5,6 @@
 #include <dwrite_3.h>
 
 // Vendor
-#include <directxtex/DirectXTex/DirectXTex.h>
 #include <libpng/png.h>
 
 // FF

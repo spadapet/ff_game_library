@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "assert.h"
 #include "thread_dispatch.h"
 #include "win_handle.h"
 

@@ -32,30 +32,15 @@
     "file": "file:../xaml/shell.xaml"
   },
 
-  "NoesisTheme.Brushes.DarkBlue.xaml":
-  {
-    "res:type": "file",
-    "file": "file:../xaml/NoesisTheme.Brushes.DarkBlue.xaml"
-  },
   "NoesisTheme.Brushes.LightBlue.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/NoesisTheme.Brushes.LightBlue.xaml"
   },
-  "NoesisTheme.Colors.Dark.xaml":
-  {
-    "res:type": "file",
-    "file": "file:../xaml/NoesisTheme.Colors.Dark.xaml"
-  },
   "NoesisTheme.Colors.Light.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/NoesisTheme.Colors.Light.xaml"
-  },
-  "NoesisTheme.DarkBlue.xaml":
-  {
-    "res:type": "file",
-    "file": "file:../xaml/NoesisTheme.DarkBlue.xaml"
   },
   "NoesisTheme.LightBlue.xaml":
   {

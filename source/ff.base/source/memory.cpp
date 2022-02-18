@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "assert.h"
 #include "log.h"
 #include "memory.h"
 

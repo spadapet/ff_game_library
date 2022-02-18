@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "assert.h"
 #include "thread_pool.h"
 
 static thread_local ff::thread_pool* task_thread_pool = nullptr;

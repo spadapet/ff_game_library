@@ -1,5 +1,6 @@
 #pragma once
 
+#include "assert.h"
 #include "constants.h"
 #include "fixed.h"
 
