@@ -10,7 +10,3 @@
 	path = vendor/libpng
 	url = https://github.com/glennrp/libpng.git
 	branch = libpng16
-[submodule "vendor/dxheaders"]
-	path = vendor/dxheaders
-	url = https://github.com/microsoft/DirectX-Headers.git
-	branch = main
