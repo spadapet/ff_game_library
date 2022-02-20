@@ -37,6 +37,24 @@ namespace ff::ui
         NS_DECLARE_REFLECTION(bool_to_object_converter, Noesis::BaseValueConverter);
     };
 
+    class object_to_visible_converter : public Noesis::BaseValueConverter
+    {
+    public:
+        virtual bool TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result) override;
+
+    private:
+        NS_DECLARE_REFLECTION(object_to_visible_converter, Noesis::BaseValueConverter);
+    };
+
+    class object_to_collapsed_converter : public Noesis::BaseValueConverter
+    {
+    public:
+        virtual bool TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result) override;
+
+    private:
+        NS_DECLARE_REFLECTION(object_to_collapsed_converter, Noesis::BaseValueConverter);
+    };
+
     class object_to_object_converter : public Noesis::BaseValueConverter
     {
     public:

@@ -16,7 +16,12 @@ namespace editor
             Application.Current.MainWindow.Close();
         });
 
-        public ICommand close_dialog_command => new DelegateCommand(() =>
+        public ICommand ok_dialog_command => new DelegateCommand(() =>
+        {
+            this.modal_dialog = null;
+        });
+
+        public ICommand cancel_dialog_command => new DelegateCommand(() =>
         {
             this.modal_dialog = null;
         });

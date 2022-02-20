@@ -8,6 +8,7 @@
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance editor:main_vm}">
     <UserControl.InputBindings>
-        <KeyBinding Key="Esc" Command="{Binding close_dialog_command}" />
+        <KeyBinding Key="Return" Command="{Binding ok_dialog_command}" />
+        <KeyBinding Key="Esc" Command="{Binding cancel_dialog_command}" />
     </UserControl.InputBindings>
 </UserControl>

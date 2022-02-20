@@ -29,6 +29,7 @@ static Noesis::LogHandler log_handler;
 static std::vector<ff::input_device_event> device_events;
 static ff::signal_connection device_events_connection;
 static std::mutex device_events_mutex;
+static std::unique_ptr<ff::internal::ui::resource_cache> resource_cache;
 
 static std::string_view log_levels[] =
 {
@@ -175,9 +176,12 @@ static void register_components()
     ::NsInitPackageAppMediaElement();
     ::NsRegisterReflectionAppInteractivity();
 
+    Noesis::RegisterComponent<ff::ui::bool_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_collapsed_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_object_converter>();
-    Noesis::RegisterComponent<ff::ui::bool_to_visible_converter>();
+    Noesis::RegisterComponent<ff::ui::object_to_visible_converter>();
+    Noesis::RegisterComponent<ff::ui::object_to_collapsed_converter>();
+    Noesis::RegisterComponent<ff::ui::object_to_object_converter>();
     Noesis::RegisterComponent<ff::ui::set_panel_child_focus_action>();
 
     if (::ui_params.register_components_func)
@@ -234,6 +238,7 @@ static bool init_noesis()
     Noesis::GUI::SetSoftwareKeyboardCallback(nullptr, ::software_keyboard_callback);
 
     // Resource providers
+    ::resource_cache = std::make_unique<ff::internal::ui::resource_cache>();
     ::render_device = Noesis::MakePtr<ff::internal::ui::render_device>();
     ::xaml_provider = Noesis::MakePtr<ff::internal::ui::xaml_provider>();
     ::font_provider = Noesis::MakePtr<ff::internal::ui::font_provider>();
@@ -265,6 +270,7 @@ static void destroy_noesis()
     ::font_provider.Reset();
     ::texture_provider.Reset();
     ::render_device.Reset();
+    ::resource_cache.reset();
 
     Noesis::GUI::Shutdown();
 
@@ -322,8 +328,7 @@ ff::internal::ui::render_device* ff::internal::ui::global_render_device()
 
 ff::internal::ui::resource_cache* ff::internal::ui::global_resource_cache()
 {
-    static ff::internal::ui::resource_cache resource_cache_;
-    return &resource_cache_;
+    return ::resource_cache.get();
 }
 
 ff::internal::ui::texture_provider* ff::internal::ui::global_texture_provider()
@@ -405,7 +410,7 @@ void ff::internal::ui::on_focus_view(ff::ui_view* view, bool focused)
 
 void ff::ui::state_advance_time()
 {
-    ff::internal::ui::global_resource_cache()->advance();
+    ::resource_cache->advance();
 }
 
 void ff::ui::state_advance_input()

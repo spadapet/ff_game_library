@@ -13,7 +13,8 @@ NS_IMPLEMENT_REFLECTION(editor::main_vm, "editor.main_vm")
     NsProp("file_save_command", &editor::main_vm::file_save_command_);
     NsProp("file_save_as_command", &editor::main_vm::file_save_as_command_);
     NsProp("file_exit_command", &editor::main_vm::file_exit_command_);
-    NsProp("close_dialog_command", &editor::main_vm::close_dialog_command_);
+    NsProp("ok_dialog_command", &editor::main_vm::ok_dialog_command_);
+    NsProp("cancel_dialog_command", &editor::main_vm::cancel_dialog_command_);
 
     NsProp("project", &editor::main_vm::project);
     NsProp("has_modal_dialog", &editor::main_vm::has_modal_dialog);
@@ -26,7 +27,8 @@ editor::main_vm::main_vm()
     , file_save_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_save_command)))
     , file_save_as_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_save_as_command)))
     , file_exit_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_exit_command)))
-    , close_dialog_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::close_dialog_command)))
+    , ok_dialog_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::ok_dialog_command)))
+    , cancel_dialog_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::cancel_dialog_command)))
     , project_(Noesis::MakePtr<editor::project_vm>())
 {
     assert(!::instance);
@@ -118,10 +120,18 @@ void editor::main_vm::file_exit_command(Noesis::BaseComponent* param)
     ff::window::main()->close();
 }
 
-void editor::main_vm::close_dialog_command(Noesis::BaseComponent* param)
+void editor::main_vm::ok_dialog_command(Noesis::BaseComponent* param)
 {
     if (this->has_modal_dialog())
     {
-        this->remove_modal_dialog(this->modal_dialog());
+        this->modal_dialog()->on_ok();
+    }
+}
+
+void editor::main_vm::cancel_dialog_command(Noesis::BaseComponent* param)
+{
+    if (this->has_modal_dialog())
+    {
+        this->modal_dialog()->on_cancel();
     }
 }

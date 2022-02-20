@@ -59,6 +59,7 @@ void editor::dialog_content_base::on_cancel()
 
 void editor::dialog_content_base::on_close_dialog(int result)
 {
+    Noesis::Ptr<Noesis::BaseComponent> keep_alive(this);
     Noesis::RoutedEventArgs args{ this, editor::dialog_content_base::request_close_event };
     this->RaiseEvent(args);
 

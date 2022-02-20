@@ -11,6 +11,9 @@ namespace editor
         Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> request_close();
         ff::signal_sink<int>& dialog_closed();
 
+        virtual void on_ok();
+        virtual void on_cancel();
+
         static const Noesis::DependencyProperty* title_property;
         static const Noesis::DependencyProperty* footer_property;
         static const Noesis::RoutedEvent* request_close_event;
@@ -18,8 +21,6 @@ namespace editor
         static const int RESULT_OK = 1;
 
     protected:
-        virtual void on_ok();
-        virtual void on_cancel();
         virtual void on_close_dialog(int result);
         virtual bool apply_changes(int result);
 

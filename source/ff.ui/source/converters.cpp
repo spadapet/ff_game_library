@@ -69,6 +69,24 @@ void ff::ui::bool_to_object_converter::false_value(Noesis::BaseComponent* value)
     this->false_value_.Reset(value);
 }
 
+NS_IMPLEMENT_REFLECTION(ff::ui::object_to_visible_converter, "ff.object_to_visible_converter")
+{}
+
+bool ff::ui::object_to_visible_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
+{
+    result = Noesis::Boxing::Box<Noesis::Visibility>(value ? Noesis::Visibility_Visible : Noesis::Visibility_Collapsed);
+    return true;
+}
+
+NS_IMPLEMENT_REFLECTION(ff::ui::object_to_collapsed_converter, "ff.object_to_collapsed_converter")
+{}
+
+bool ff::ui::object_to_collapsed_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
+{
+    result = Noesis::Boxing::Box<Noesis::Visibility>(value ? Noesis::Visibility_Collapsed : Noesis::Visibility_Visible);
+    return true;
+}
+
 NS_IMPLEMENT_REFLECTION(ff::ui::object_to_object_converter, "ff.object_to_object_converter")
 {
     NsProp("NullValue", &object_to_object_converter::null_value, &object_to_object_converter::null_value);
