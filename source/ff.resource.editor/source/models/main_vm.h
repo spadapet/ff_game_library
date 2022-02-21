@@ -25,8 +25,6 @@ namespace editor
         void file_save_command(Noesis::BaseComponent* param);
         void file_save_as_command(Noesis::BaseComponent* param);
         void file_exit_command(Noesis::BaseComponent* param);
-        void ok_dialog_command(Noesis::BaseComponent* param);
-        void cancel_dialog_command(Noesis::BaseComponent* param);
 
         Noesis::Ptr<Noesis::BaseCommand> file_new_command_;
         Noesis::Ptr<Noesis::BaseCommand> file_open_command_;

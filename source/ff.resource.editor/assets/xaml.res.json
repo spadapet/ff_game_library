@@ -11,11 +11,6 @@
     "res:type": "file",
     "file": "file:../xaml/application_resources.xaml"
   },
-  "dialog.xaml":
-  {
-    "res:type": "file",
-    "file": "file:../xaml/dialog.xaml"
-  },
   "main_window.xaml":
   {
     "res:type": "file",

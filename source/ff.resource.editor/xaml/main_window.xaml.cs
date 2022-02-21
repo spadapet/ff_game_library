@@ -13,6 +13,7 @@ namespace editor
 
         private void on_request_close_dialog(object sender, RoutedEventArgs args)
         {
+            this.view_model.modal_dialog = null;
         }
     }
 }

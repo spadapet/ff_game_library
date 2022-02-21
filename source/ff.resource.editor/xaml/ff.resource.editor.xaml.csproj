@@ -54,12 +54,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="designer\application_resources.xaml.cs" />
     <Compile Include="designer\converters.cs" />
     <Compile Include="designer\dialog_content_base.cs" />
-    <Compile Include="dialog.xaml.cs">
-      <DependentUpon>dialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="main_window.xaml.cs">
       <DependentUpon>main_window.xaml</DependentUpon>
     </Compile>
@@ -83,9 +79,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="designer\assembly_info.cs" />
-    <Page Include="dialog.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="main_window.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

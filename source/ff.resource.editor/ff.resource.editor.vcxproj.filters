@@ -38,12 +38,6 @@
     <ClCompile Include="source\ui\dialog_content_base.cpp">
       <Filter>source\ui</Filter>
     </ClCompile>
-    <ClCompile Include="source\ui\application_resources.xaml.cpp">
-      <Filter>source\ui</Filter>
-    </ClCompile>
-    <ClCompile Include="source\ui\dialog.xaml.cpp">
-      <Filter>source\ui</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -75,12 +69,6 @@
       <Filter>source\ui</Filter>
     </ClInclude>
     <ClInclude Include="source\ui\dialog_content_base.h">
-      <Filter>source\ui</Filter>
-    </ClInclude>
-    <ClInclude Include="source\ui\application_resources.xaml.h">
-      <Filter>source\ui</Filter>
-    </ClInclude>
-    <ClInclude Include="source\ui\dialog.xaml.h">
       <Filter>source\ui</Filter>
     </ClInclude>
   </ItemGroup>

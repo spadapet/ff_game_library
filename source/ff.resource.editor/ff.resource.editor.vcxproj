@@ -21,8 +21,6 @@
     <ClCompile Include="source\models\project_vm.cpp" />
     <ClCompile Include="source\models\source_vm.cpp" />
     <ClCompile Include="source\states\main_state.cpp" />
-    <ClCompile Include="source\ui\application_resources.xaml.cpp" />
-    <ClCompile Include="source\ui\dialog.xaml.cpp" />
     <ClCompile Include="source\ui\dialog_content_base.cpp" />
     <ClCompile Include="source\ui\main_window.xaml.cpp" />
     <ClCompile Include="source\ui\save_project_dialog.xaml.cpp" />
@@ -36,8 +34,6 @@
     <ClInclude Include="source\models\project_vm.h" />
     <ClInclude Include="source\models\source_vm.h" />
     <ClInclude Include="source\states\main_state.h" />
-    <ClInclude Include="source\ui\application_resources.xaml.h" />
-    <ClInclude Include="source\ui\dialog.xaml.h" />
     <ClInclude Include="source\ui\dialog_content_base.h" />
     <ClInclude Include="source\ui\main_window.xaml.h" />
     <ClInclude Include="source\ui\save_project_dialog.xaml.h" />

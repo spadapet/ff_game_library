@@ -6,7 +6,6 @@
     xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:editor="clr-namespace:editor"
-    xmlns:ff="clr-namespace:ff"
     mc:Ignorable="d"
     d:DesignHeight="450"
     d:DesignWidth="800"
@@ -16,10 +15,6 @@
     Background="{StaticResource Brush.Window.Background}"
     Focusable="False"
     editor:dialog_content_base.RequestClose="on_request_close_dialog">
-
-    <Window.Resources>
-        <ff:bool_to_visible_converter x:Key="bool_to_visible" />
-    </Window.Resources>
 
     <Grid x:Name="root">
         <b:Interaction.Triggers>
@@ -32,8 +27,8 @@
         </b:Interaction.Triggers>
 
         <editor:shell x:Name="shell" />
-        <Grid x:Name="modal_root" Background="#A0000000" Visibility="Collapsed">
-            <editor:dialog HorizontalAlignment="Center" VerticalAlignment="Center" Content="{Binding modal_dialog, Mode=OneWay}" />
+        <Grid x:Name="modal_root" Background="#A0000000" Visibility="Collapsed" d:Visibility="Visible">
+            <ContentControl Content="{Binding modal_dialog, Mode=OneWay}" Style="{StaticResource dialog_style}" />
         </Grid>
 
         <VisualStateManager.VisualStateGroups>
