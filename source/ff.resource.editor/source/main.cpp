@@ -6,6 +6,7 @@
 #include "source/states/main_state.h"
 #include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
+#include "source/ui/properties.h"
 #include "source/ui/save_project_dialog.xaml.h"
 #include "source/ui/shell.xaml.h"
 #include "source/ui/window_base.h"
@@ -53,6 +54,9 @@ static ff::init_ui_params get_ui_params()
         Noesis::RegisterComponent<editor::plugin_vm>();
         Noesis::RegisterComponent<editor::project_vm>();
         Noesis::RegisterComponent<editor::source_vm>();
+
+        // Properties
+        Noesis::RegisterComponent<editor::properties>();
 
         // Base classes
         Noesis::RegisterComponent<editor::window_base>();

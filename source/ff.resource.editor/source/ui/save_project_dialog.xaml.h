@@ -9,6 +9,8 @@ namespace editor
     public:
         save_project_dialog();
 
+        virtual bool can_window_close_while_modal() const override;
+
     private:
         NS_DECLARE_REFLECTION(editor::save_project_dialog, editor::dialog_content_base);
     };

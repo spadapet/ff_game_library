@@ -54,6 +54,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="designer\properties.cs" />
     <Compile Include="designer\converters.cs" />
     <Compile Include="designer\dialog_content_base.cs" />
     <Compile Include="main_window.xaml.cs">
@@ -66,7 +67,7 @@
     <Compile Include="shell.xaml.cs">
       <DependentUpon>shell.xaml</DependentUpon>
     </Compile>
-    <Page Include="application_icons.xaml">
+    <Page Include="icon_resources.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

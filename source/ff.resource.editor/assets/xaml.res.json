@@ -1,15 +1,15 @@
 {
   "res:namespace": "assets::xaml",
 
-  "application_icons.xaml":
-  {
-    "res:type": "file",
-    "file": "file:../xaml/application_icons.xaml"
-  },
   "application_resources.xaml":
   {
     "res:type": "file",
     "file": "file:../xaml/application_resources.xaml"
+  },
+  "icon_resources.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/icon_resources.xaml"
   },
   "main_window.xaml":
   {

@@ -8,3 +8,8 @@ editor::save_project_dialog::save_project_dialog()
 {
     Noesis::GUI::LoadComponent(this, "save_project_dialog.xaml");
 }
+
+bool editor::save_project_dialog::can_window_close_while_modal() const
+{
+    return false;
+}

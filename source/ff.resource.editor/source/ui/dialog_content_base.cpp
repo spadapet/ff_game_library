@@ -57,6 +57,11 @@ void editor::dialog_content_base::on_cancel()
     this->on_close_dialog(editor::dialog_content_base::RESULT_CANCEL);
 }
 
+bool editor::dialog_content_base::can_window_close_while_modal() const
+{
+    return true;
+}
+
 void editor::dialog_content_base::on_close_dialog(int result)
 {
     Noesis::Ptr<Noesis::BaseComponent> keep_alive(this);

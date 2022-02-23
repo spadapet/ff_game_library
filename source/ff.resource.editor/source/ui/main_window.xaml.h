@@ -22,6 +22,7 @@ namespace editor
 
     private:
         void on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args);
+        void modal_flash();
 
         ff::signal_connection save_project_dialog_close_connection;
         Noesis::Ptr<editor::main_vm> view_model_;

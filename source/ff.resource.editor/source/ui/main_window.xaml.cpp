@@ -59,13 +59,15 @@ bool editor::main_window::can_close()
 {
     if (this->view_model_->has_modal_dialog())
     {
-        // TODO: Flash modal dialog
-        return false;
+        if (!this->view_model_->modal_dialog()->can_window_close_while_modal())
+        {
+            this->modal_flash();
+            return false;
+        }
     }
 
-    //if (this->view_model_->project()->dirty())
+    if (this->view_model_->project()->dirty())
     {
-        // TODO: memory load for dialog (6 ref counts at end, so probably circular reference)
         Noesis::Ptr<editor::save_project_dialog> dialog = Noesis::MakePtr<editor::save_project_dialog>();
         this->save_project_dialog_close_connection = dialog->dialog_closed().connect([](int result)
         {
@@ -75,11 +77,12 @@ bool editor::main_window::can_close()
             }
         });
 
+        assert(!dialog->can_window_close_while_modal());
         this->view_model_->push_modal_dialog(dialog);
         return false;
     }
 
-    //return true;
+    return true;
 }
 
 void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args)
@@ -88,4 +91,15 @@ void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender,
 
     args.handled = dialog && this->view_model_->remove_modal_dialog(dialog);
     assert(args.handled);
+}
+
+void editor::main_window::modal_flash()
+{
+    Noesis::Storyboard* sb = this->FindResource<Noesis::Storyboard>("modal_flash_storyboard");
+    assert(sb);
+
+    if (sb)
+    {
+        sb->Begin();
+    }
 }

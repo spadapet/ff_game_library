@@ -13,6 +13,7 @@ namespace editor
 
         virtual void on_ok();
         virtual void on_cancel();
+        virtual bool can_window_close_while_modal() const;
 
         static const Noesis::DependencyProperty* title_property;
         static const Noesis::DependencyProperty* footer_property;
