@@ -9,10 +9,9 @@ namespace editor
         virtual ~dialog_content_base() override;
 
         Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> request_close();
+        ff::signal_sink<int, bool&>& apply_changes();
         ff::signal_sink<int>& dialog_closed();
 
-        virtual void on_ok();
-        virtual void on_cancel();
         virtual bool can_window_close_while_modal() const;
 
         static const Noesis::DependencyProperty* title_property;
@@ -20,19 +19,19 @@ namespace editor
         static const Noesis::RoutedEvent* request_close_event;
         static const int RESULT_CANCEL = 0;
         static const int RESULT_OK = 1;
+        static const int RESULT_NO = 2;
 
     protected:
-        virtual void on_close_dialog(int result);
+        virtual bool has_close_command(int result);
+        virtual void request_close_dialog(int result);
         virtual bool apply_changes(int result);
 
     private:
-        void ok_command(Noesis::BaseComponent* param);
-        void cancel_command(Noesis::BaseComponent* param);
         void close_command(Noesis::BaseComponent* param);
+        bool close_command_enabled(Noesis::BaseComponent* param);
 
-        Noesis::Ptr<Noesis::BaseCommand> ok_command_;
-        Noesis::Ptr<Noesis::BaseCommand> cancel_command_;
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
+        ff::signal<int, bool&> apply_changes_;
         ff::signal<int> dialog_closed_;
 
         NS_DECLARE_REFLECTION(editor::dialog_content_base, Noesis::UserControl);

@@ -13,3 +13,8 @@ bool editor::save_project_dialog::can_window_close_while_modal() const
 {
     return false;
 }
+
+bool editor::save_project_dialog::has_close_command(int result)
+{
+    return true;
+}

@@ -10,5 +10,5 @@ editor::project_vm::project_vm()
 
 bool editor::project_vm::dirty() const
 {
-    return false;
+    return true; // false;
 }

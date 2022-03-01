@@ -6,6 +6,11 @@
     "res:type": "file",
     "file": "file:../xaml/application_resources.xaml"
   },
+  "dialog_resources.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/dialog_resources.xaml"
+  },
   "icon_resources.xaml":
   {
     "res:type": "file",

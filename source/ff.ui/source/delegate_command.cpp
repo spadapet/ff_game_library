@@ -8,9 +8,9 @@ ff::ui::delegate_command::delegate_command(execute_func&& execute)
     : execute(std::move(execute))
 {}
 
-ff::ui::delegate_command::delegate_command(can_execute_func&& canExecute, execute_func&& execute)
-    : can_execute(std::move(canExecute))
-    , execute(std::move(execute))
+ff::ui::delegate_command::delegate_command(execute_func&& execute, can_execute_func&& canExecute)
+    : execute(std::move(execute))
+    , can_execute(std::move(canExecute))
 {}
 
 bool ff::ui::delegate_command::CanExecute(Noesis::BaseComponent* param) const

@@ -10,7 +10,7 @@ namespace ff::ui
 
         delegate_command() = default;
         delegate_command(execute_func&& execute);
-        delegate_command(can_execute_func&& canExecute, execute_func&& execute);
+        delegate_command(execute_func&& execute, can_execute_func&& canExecute);
 
         bool CanExecute(Noesis::BaseComponent* param) const override;
         void Execute(Noesis::BaseComponent* param) const override;
