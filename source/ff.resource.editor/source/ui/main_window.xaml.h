@@ -5,6 +5,7 @@
 namespace editor
 {
     class main_vm;
+    struct dialog_request_close_event_args;
 
     class main_window : public editor::window_base
     {
@@ -21,7 +22,7 @@ namespace editor
         virtual bool can_close() override;
 
     private:
-        void on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args);
+        void on_request_close_dialog(Noesis::BaseComponent* sender, const editor::dialog_request_close_event_args& args);
         void modal_flash();
 
         ff::signal_connection save_project_dialog_close_connection;

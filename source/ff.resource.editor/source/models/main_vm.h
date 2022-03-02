@@ -16,7 +16,7 @@ namespace editor
 
         bool has_modal_dialog() const;
         void push_modal_dialog(editor::dialog_content_base* dialog);
-        bool remove_modal_dialog(editor::dialog_content_base* dialog);
+        bool remove_modal_dialog(editor::dialog_content_base* dialog, int result);
         editor::dialog_content_base* modal_dialog() const;
 
     private:

@@ -9,7 +9,7 @@ namespace editor
     public:
         save_project_dialog();
 
-        virtual bool can_window_close_while_modal() const override;
+        virtual bool on_window_close(ff::window* window) override;
 
     protected:
         virtual bool has_close_command(int result);

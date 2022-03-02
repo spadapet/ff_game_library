@@ -2,17 +2,33 @@
 
 namespace editor
 {
+    struct dialog_request_close_event_args : public Noesis::RoutedEventArgs
+    {
+        int result;
+
+        dialog_request_close_event_args(int result, Noesis::BaseComponent* source, const Noesis::RoutedEvent* event)
+            : Noesis::RoutedEventArgs(source, event)
+            , result(result)
+        {}
+    };
+
     class dialog_content_base : public Noesis::UserControl
     {
     public:
         dialog_content_base();
         virtual ~dialog_content_base() override;
 
-        Noesis::UIElement::RoutedEvent_<Noesis::RoutedEventArgs> request_close();
+        Noesis::UIElement::RoutedEvent_<editor::dialog_request_close_event_args> request_close();
+
+        ff::signal_sink<editor::dialog_content_base*, editor::dialog_content_base*>& hidden_by();
+        ff::signal_sink<editor::dialog_content_base*, editor::dialog_content_base*, int>& revealed_by();
         ff::signal_sink<int, bool&>& apply_changes();
         ff::signal_sink<int>& dialog_closed();
+        void add_connection(ff::signal_connection&& connection);
 
-        virtual bool can_window_close_while_modal() const;
+        virtual void on_hidden_by(editor::dialog_content_base* dialog);
+        virtual void on_revealed_by(editor::dialog_content_base* dialog, int result);
+        virtual bool on_window_close(ff::window* window);
 
         static const Noesis::DependencyProperty* title_property;
         static const Noesis::DependencyProperty* footer_property;
@@ -33,6 +49,9 @@ namespace editor
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
         ff::signal<int, bool&> apply_changes_;
         ff::signal<int> dialog_closed_;
+        ff::signal<editor::dialog_content_base*, editor::dialog_content_base*> hidden_by_;
+        ff::signal<editor::dialog_content_base*, editor::dialog_content_base*, int> revealed_by_;
+        std::list<ff::signal_connection> connections;
 
         NS_DECLARE_REFLECTION(editor::dialog_content_base, Noesis::UserControl);
     };

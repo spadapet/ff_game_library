@@ -48,7 +48,9 @@ bool editor::main_window::ConnectEvent(Noesis::BaseComponent* source, const char
 {
     if (source == this && "RequestClose"sv == event && "on_request_close_dialog"sv == handler)
     {
-        this->AddHandler(editor::dialog_content_base::request_close_event, Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog));
+        using request_close_dialog_handler = typename Noesis::Delegate<void(BaseComponent*, const editor::dialog_request_close_event_args&)>;
+        Noesis::UIElement::RoutedEvent_<request_close_dialog_handler>(this, editor::dialog_content_base::request_close_event) += Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog);
+        //this->AddHandler(editor::dialog_content_base::request_close_event, Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog));
         return true;
     }
 
@@ -59,7 +61,7 @@ bool editor::main_window::can_close()
 {
     if (this->view_model_->has_modal_dialog())
     {
-        if (!this->view_model_->modal_dialog()->can_window_close_while_modal())
+        if (!this->view_model_->modal_dialog()->on_window_close(ff::window::main()))
         {
             this->modal_flash();
             return false;
@@ -77,7 +79,6 @@ bool editor::main_window::can_close()
             }
         });
 
-        assert(!dialog->can_window_close_while_modal());
         this->view_model_->push_modal_dialog(dialog);
         return false;
     }
@@ -85,11 +86,11 @@ bool editor::main_window::can_close()
     return true;
 }
 
-void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args)
+void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const editor::dialog_request_close_event_args& args)
 {
     editor::dialog_content_base* dialog = Noesis::DynamicCast<editor::dialog_content_base*>(args.source);
 
-    args.handled = dialog && this->view_model_->remove_modal_dialog(dialog);
+    args.handled = dialog && this->view_model_->remove_modal_dialog(dialog, args.result);
     assert(args.handled);
 }
 
