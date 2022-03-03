@@ -1,15 +1,25 @@
 #include "pch.h"
+#include "source/models/main_vm.h"
+#include "source/models/project_vm.h"
 #include "source/ui/save_project_dialog.xaml.h"
 
 NS_IMPLEMENT_REFLECTION(editor::save_project_dialog, "editor.save_project_dialog")
-{}
+{
+    NsProp("project", &editor::save_project_dialog::project);
+}
 
 editor::save_project_dialog::save_project_dialog()
+    : project_(editor::main_vm::get()->project())
 {
     Noesis::GUI::LoadComponent(this, "save_project_dialog.xaml");
 }
 
-bool editor::save_project_dialog::on_window_close(ff::window* window)
+editor::project_vm* editor::save_project_dialog::project() const
+{
+    return this->project_;
+}
+
+bool editor::save_project_dialog::can_window_close()
 {
     return false;
 }

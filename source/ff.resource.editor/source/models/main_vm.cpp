@@ -63,24 +63,9 @@ void editor::main_vm::push_modal_dialog(editor::dialog_content_base* dialog)
 {
     assert(dialog && std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog) == this->modal_dialogs.cend());
 
-    Noesis::Ptr<editor::dialog_content_base> dialog_under;
-    if (!this->modal_dialogs.empty())
-    {
-        dialog_under = this->modal_dialogs.back();
-    }
-
     this->modal_dialogs.push_back(Noesis::Ptr(dialog));
-    if (this->modal_dialogs.size() == 1)
-    {
-        this->property_changed("has_modal_dialog");
-    }
-
+    this->property_changed("has_modal_dialog");
     this->property_changed("modal_dialog");
-
-    if (dialog_under)
-    {
-        dialog_under->on_hidden_by(dialog);
-    }
 }
 
 bool editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog, int result)
@@ -88,26 +73,9 @@ bool editor::main_vm::remove_modal_dialog(editor::dialog_content_base* dialog, i
     auto i = std::find(this->modal_dialogs.cbegin(), this->modal_dialogs.cend(), dialog);
     if (i != this->modal_dialogs.cend())
     {
-        Noesis::Ptr<editor::dialog_content_base> keep_alive = *i;
-        Noesis::Ptr<editor::dialog_content_base> dialog_under;
-        if (i != this->modal_dialogs.begin())
-        {
-            dialog_under = *std::prev(i);
-        }
-
         this->modal_dialogs.erase(i);
-        if (this->modal_dialogs.empty())
-        {
-            this->property_changed("has_modal_dialog");
-        }
-
+        this->property_changed("has_modal_dialog");
         this->property_changed("modal_dialog");
-
-        if (dialog_under)
-        {
-            dialog_under->on_revealed_by(dialog, result);
-        }
-
         return true;
     }
 

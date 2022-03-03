@@ -60,6 +60,7 @@
     <Compile Include="main_window.xaml.cs">
       <DependentUpon>main_window.xaml</DependentUpon>
     </Compile>
+    <Compile Include="models\project_vm.cs" />
     <Compile Include="models\main_vm.cs" />
     <Compile Include="save_project_dialog.xaml.cs">
       <DependentUpon>save_project_dialog.xaml</DependentUpon>

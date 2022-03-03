@@ -48,9 +48,9 @@ bool editor::main_window::ConnectEvent(Noesis::BaseComponent* source, const char
 {
     if (source == this && "RequestClose"sv == event && "on_request_close_dialog"sv == handler)
     {
-        using request_close_dialog_handler = typename Noesis::Delegate<void(BaseComponent*, const editor::dialog_request_close_event_args&)>;
-        Noesis::UIElement::RoutedEvent_<request_close_dialog_handler>(this, editor::dialog_content_base::request_close_event) += Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog);
-        //this->AddHandler(editor::dialog_content_base::request_close_event, Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog));
+        Noesis::UIElement::RoutedEvent_<editor::dialog_content_base::request_close_handler> request_close(
+            this, editor::dialog_content_base::request_close_event);
+        request_close += Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog);
         return true;
     }
 
@@ -61,7 +61,7 @@ bool editor::main_window::can_close()
 {
     if (this->view_model_->has_modal_dialog())
     {
-        if (!this->view_model_->modal_dialog()->on_window_close(ff::window::main()))
+        if (!this->view_model_->modal_dialog()->can_window_close())
         {
             this->modal_flash();
             return false;
@@ -71,13 +71,13 @@ bool editor::main_window::can_close()
     if (this->view_model_->project()->dirty())
     {
         Noesis::Ptr<editor::save_project_dialog> dialog = Noesis::MakePtr<editor::save_project_dialog>();
-        this->save_project_dialog_close_connection = dialog->dialog_closed().connect([](int result)
-        {
-            if (result != editor::dialog_content_base::RESULT_CANCEL)
+        dialog->add_connection(dialog->dialog_closed().connect([](int result)
             {
-                ::PostMessage(*ff::window::main(), editor::window_base::WM_USER_FORCE_CLOSE, 0, 0);
-            }
-        });
+                if (result != editor::dialog_content_base::RESULT_CANCEL)
+                {
+                    ::PostMessage(*ff::window::main(), editor::window_base::WM_USER_FORCE_CLOSE, 0, 0);
+                }
+            }));
 
         this->view_model_->push_modal_dialog(dialog);
         return false;
@@ -89,9 +89,7 @@ bool editor::main_window::can_close()
 void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const editor::dialog_request_close_event_args& args)
 {
     editor::dialog_content_base* dialog = Noesis::DynamicCast<editor::dialog_content_base*>(args.source);
-
     args.handled = dialog && this->view_model_->remove_modal_dialog(dialog, args.result);
-    assert(args.handled);
 }
 
 void editor::main_window::modal_flash()

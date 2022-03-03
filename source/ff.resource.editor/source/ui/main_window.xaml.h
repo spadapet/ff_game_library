@@ -25,7 +25,6 @@ namespace editor
         void on_request_close_dialog(Noesis::BaseComponent* sender, const editor::dialog_request_close_event_args& args);
         void modal_flash();
 
-        ff::signal_connection save_project_dialog_close_connection;
         Noesis::Ptr<editor::main_vm> view_model_;
 
         NS_DECLARE_REFLECTION(editor::main_window, editor::window_base);

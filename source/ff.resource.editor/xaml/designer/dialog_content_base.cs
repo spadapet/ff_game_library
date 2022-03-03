@@ -23,6 +23,10 @@ namespace editor
 
         public static readonly RoutedEvent RequestCloseEvent = EventManager.RegisterRoutedEvent("RequestClose", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(dialog_content_base));
 
+        public ICommand loaded_command => new DelegateCommand(() =>
+        {
+        });
+
         public ICommand close_command => new DelegateCommand(() =>
         {
             this.OnRequestClose();
