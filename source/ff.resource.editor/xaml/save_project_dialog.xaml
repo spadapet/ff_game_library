@@ -6,8 +6,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:editor="clr-namespace:editor"
     mc:Ignorable="d"
-    d:DesignWidth="320"
-    d:DesignHeight="200"
+    Width="400"
+    Height="200"
     d:Background="White"
     d:DataContext="{d:DesignInstance editor:project_vm, IsDesignTimeCreatable=True}"
     DataContext="{Binding project, RelativeSource={RelativeSource Mode=Self}}"
@@ -16,7 +16,7 @@
     <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="32" />
-            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="320" />
         </Grid.ColumnDefinitions>
         <Viewbox Width="32" Height="32" Stretch="Fill" VerticalAlignment="Top">
             <ContentPresenter Content="{StaticResource status_warning}" />

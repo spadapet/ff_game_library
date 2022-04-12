@@ -19,6 +19,7 @@ namespace editor
     protected:
         // dialog_content_base
         virtual bool has_close_command(int result) override;
+        virtual bool apply_changes(int result) override;
 
     private:
         Noesis::Ptr<editor::project_vm> project_;

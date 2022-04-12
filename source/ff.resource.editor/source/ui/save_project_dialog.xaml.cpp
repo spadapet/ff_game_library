@@ -28,3 +28,26 @@ bool editor::save_project_dialog::has_close_command(int result)
 {
     return true;
 }
+
+bool editor::save_project_dialog::apply_changes(int result)
+{
+    if (result == editor::dialog_content_base::RESULT_OK)
+    {
+        wchar_t buffer[1024]{};
+
+        ::OPENFILENAME ofn{};
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = *ff::window::main();
+        ofn.hInstance = ff::get_hinstance();
+        ofn.lpstrFilter = L"*.proj.json";
+        ofn.lpstrFile = buffer;
+        ofn.nMaxFile = 1024;
+        ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+
+        if (::GetSaveFileName(&ofn))
+        {
+        }
+    }
+
+    return true;
+}
