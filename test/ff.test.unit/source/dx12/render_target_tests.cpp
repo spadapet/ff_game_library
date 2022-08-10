@@ -16,7 +16,7 @@ namespace ff::test::graphics
 
         TEST_METHOD(target_window)
         {
-            ff::dx12::target_window target(ff::window::main(), false);
+            ff::dx12::target_window target(ff::window::main(), true);
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());
