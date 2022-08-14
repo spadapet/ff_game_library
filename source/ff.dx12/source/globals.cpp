@@ -66,29 +66,10 @@ static std::string adapter_name(IDXGIAdapter* adapter)
 static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 {
     std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
+    for (UINT i = 0; adapters.size() == i; i++)
     {
-        Microsoft::WRL::ComPtr<IDXGIFactory6> factory6;
-        ::factory.As(&factory6);
-
         Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
-        UINT i = 0;
-        bool found_warp = false;
-
-        while ((factory6 && SUCCEEDED(factory6->EnumAdapterByGpuPreference(i++, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter)))) ||
-            (!factory6 && SUCCEEDED(::factory->EnumAdapters(i++, adapter.GetAddressOf()))))
-        {
-            ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
-
-            DXGI_ADAPTER_DESC desc{};
-            if (SUCCEEDED(adapter->GetDesc(&desc)) && desc.VendorId == 0x1414 && desc.DeviceId == 0x008c)
-            {
-                found_warp = true;
-            }
-
-            adapters.push_back(std::move(adapter));
-        }
-
-        if (!found_warp && SUCCEEDED(::factory->EnumWarpAdapter(IID_PPV_ARGS(&adapter))))
+        if (SUCCEEDED(::factory->EnumAdapters(i, adapter.GetAddressOf())))
         {
             ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
             adapters.push_back(std::move(adapter));
