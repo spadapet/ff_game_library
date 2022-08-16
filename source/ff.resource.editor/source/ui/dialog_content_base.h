@@ -23,6 +23,8 @@ namespace editor
         ff::signal_sink<int, bool&>& apply_changes();
         ff::signal_sink<int>& dialog_closed();
         void add_connection(ff::signal_connection&& connection);
+        void dialog_opened();
+        void dialog_closed(int result);
         virtual bool can_window_close();
 
         static const Noesis::DependencyProperty* title_property;

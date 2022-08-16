@@ -48,8 +48,7 @@ bool editor::main_window::ConnectEvent(Noesis::BaseComponent* source, const char
 {
     if (source == this && "RequestClose"sv == event && "on_request_close_dialog"sv == handler)
     {
-        Noesis::UIElement::RoutedEvent_<editor::dialog_content_base::request_close_handler> request_close(
-            this, editor::dialog_content_base::request_close_event);
+        Noesis::UIElement::RoutedEvent_<editor::dialog_content_base::request_close_handler> request_close(this, editor::dialog_content_base::request_close_event);
         request_close += Noesis::MakeDelegate(this, &editor::main_window::on_request_close_dialog);
         return true;
     }
@@ -88,7 +87,7 @@ bool editor::main_window::can_close()
 
 void editor::main_window::on_request_close_dialog(Noesis::BaseComponent* sender, const editor::dialog_request_close_event_args& args)
 {
-    editor::dialog_content_base* dialog = Noesis::DynamicCast<editor::dialog_content_base*>(args.source);
+    Noesis::Ptr<editor::dialog_content_base> dialog(Noesis::DynamicCast<editor::dialog_content_base*>(args.source));
     args.handled = dialog && this->view_model_->remove_modal_dialog(dialog, args.result);
 }
 

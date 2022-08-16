@@ -54,6 +54,15 @@ void editor::dialog_content_base::add_connection(ff::signal_connection&& connect
     this->connections.push_back(std::move(connection));
 }
 
+void editor::dialog_content_base::dialog_opened()
+{}
+
+void editor::dialog_content_base::dialog_closed(int result)
+{
+    this->dialog_closed_.notify(result);
+    this->connections.clear();
+}
+
 bool editor::dialog_content_base::can_window_close()
 {
     return true;
@@ -114,8 +123,5 @@ void editor::dialog_content_base::request_close_dialog(int result)
     Noesis::Ptr<Noesis::BaseComponent> keep_alive(this);
     editor::dialog_request_close_event_args args(result, this, editor::dialog_content_base::request_close_event);
     this->RaiseEvent(args);
-
     assert_ret(args.handled);
-    this->dialog_closed_.notify(result);
-    this->connections.clear();
 }

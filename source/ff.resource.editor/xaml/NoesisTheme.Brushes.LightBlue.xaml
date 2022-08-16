@@ -64,6 +64,7 @@
 
     <SolidColorBrush x:Key="Brush.Item.Over" Color="{StaticResource Color.Gray6}" />
     <SolidColorBrush x:Key="Brush.Item.Selected" Color="{StaticResource Color.Accent3}" />
+    <SolidColorBrush x:Key="Brush.Item.Selected.125" Color="{StaticResource Color.Accent3}" Opacity="0.125" />
     <SolidColorBrush x:Key="Brush.Item.SelectedOver" Color="{StaticResource Color.Accent2}" />
 
     <SolidColorBrush x:Key="Brush.ComboBox.Normal" Color="{StaticResource Color.Gray9}" />

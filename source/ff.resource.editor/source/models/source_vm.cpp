@@ -3,33 +3,31 @@
 
 NS_IMPLEMENT_REFLECTION(editor::source_vm, "editor.source_vm")
 {
+    NsProp("file_name", &editor::source_vm::file_name);
+    NsProp("full_path", &editor::source_vm::full_path);
 }
 
 editor::source_vm::source_vm()
 {}
 
+editor::source_vm::source_vm(const std::filesystem::path& path)
+    : path_(ff::filesystem::to_string(path))
+    , name_(ff::filesystem::to_string(path.filename()))
+{}
+
 const char* editor::source_vm::full_path() const
 {
-    return this->full_path_.c_str();
-}
-
-void editor::source_vm::full_path(const char* value)
-{
-    if (this->full_path_ != value)
-    {
-        this->full_path_ = value;
-        this->property_changed("full_path");
-        this->property_changed("file_name");
-    }
+    return this->path_.c_str();
 }
 
 const char* editor::source_vm::file_name() const
 {
-    size_t slash = this->full_path_.find_last_of('\\');
-    if (slash != std::string::npos)
-    {
-        return &this->full_path_[slash + 1];
-    }
+    return this->name_.c_str();
+}
 
-    return full_path();
+ff::dict editor::source_vm::save() const
+{
+    ff::dict dict;
+    dict.set<std::string>("path", this->path_);
+    return dict;
 }

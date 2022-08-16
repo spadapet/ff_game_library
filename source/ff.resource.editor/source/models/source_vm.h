@@ -6,13 +6,17 @@ namespace editor
     {
     public:
         source_vm();
+        source_vm(const std::filesystem::path& path);
 
         const char* full_path() const;
-        void full_path(const char* value);
         const char* file_name() const;
 
+        ff::dict save() const;
+
     private:
-        std::string full_path_;
+        std::string path_;
+        std::string name_;
+
         NS_DECLARE_REFLECTION(editor::source_vm, ff::ui::notify_propety_changed_base);
     };
 }
