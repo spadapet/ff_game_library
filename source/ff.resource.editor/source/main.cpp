@@ -19,9 +19,17 @@ namespace res
 static const std::string_view NOESIS_NAME = "b20413ca-9556-41c8-b9f4-dd55a0df9a1b";
 static const std::string_view NOESIS_KEY = "gwGIxthLiMbra7qJErYvrJU/hcMlZRv1L9HPdeYK9YW3vk+I";
 
+extern "C"
+{
+    __declspec(dllexport) DWORD NvOptimusEnablement = 1;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 static ff::init_app_params get_app_params()
 {
     ff::init_app_params params{};
+    params.allow_full_screen = false;
+
     params.create_initial_state_func = []()
     {
         return std::make_shared<editor::main_state>();
