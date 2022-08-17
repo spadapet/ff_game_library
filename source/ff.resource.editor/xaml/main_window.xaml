@@ -2,6 +2,7 @@
     x:Class="editor.main_window"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ff="clr-namespace:ff"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -11,7 +12,6 @@
     d:DesignWidth="800"
     d:DataContext="{d:DesignInstance Type=editor:main_vm, IsDesignTimeCreatable=True}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
-    Title="Resource Editor"
     Background="{StaticResource Brush.Window.Background}"
     Focusable="False"
     SnapsToDevicePixels="True"
@@ -35,7 +35,16 @@
                 <DiscreteBooleanKeyFrame KeyTime="00:00:01.3" Value="False"/>
             </BooleanAnimationUsingKeyFrames>
         </Storyboard>
+
+        <ff:bool_to_object_converter x:Key="bool_to_dirty_star" TrueValue="*" FalseValue="" />
     </Window.Resources>
+
+    <Window.Title>
+        <MultiBinding StringFormat="{}{0}{1} - Resource Editor">
+            <Binding Path="project.dirty" Converter="{StaticResource bool_to_dirty_star}" />
+            <Binding Path="project.file_name" />
+        </MultiBinding>
+    </Window.Title>
 
     <Grid x:Name="root">
         <b:Interaction.Triggers>

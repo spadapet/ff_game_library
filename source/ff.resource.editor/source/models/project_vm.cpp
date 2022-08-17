@@ -29,7 +29,7 @@ const char* editor::project_vm::full_path() const
 {
     if (this->path_.empty())
     {
-        return "<unsaved>";
+        return "Unsaved";
     }
 
     return this->full_path_raw();
@@ -44,7 +44,7 @@ const char* editor::project_vm::file_name() const
 {
     if (this->name_.empty())
     {
-        return "<unsaved>";
+        return "Untitled";
     }
 
     return this->file_name_raw();

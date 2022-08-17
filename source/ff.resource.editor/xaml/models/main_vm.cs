@@ -6,6 +6,8 @@ namespace editor
 {
     public class main_vm : PropertyNotifier
     {
+        public project_vm project { get; } = new project_vm();
+
         public ICommand file_new_command => new DelegateCommand(() => { });
         public ICommand file_open_command => new DelegateCommand(() => { });
         public ICommand file_save_command => new DelegateCommand(() => { });

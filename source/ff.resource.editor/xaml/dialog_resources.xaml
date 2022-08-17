@@ -148,8 +148,8 @@
         <Setter Property="Background" Value="{DynamicResource Brush.Background.Popup}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Brush.Black}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Template" Value="{StaticResource dialog_template}" />
-        <Setter Property="ContentTemplate" Value="{StaticResource dialog_content_template}" />
+        <Setter Property="Template" Value="{DynamicResource dialog_template}" />
+        <Setter Property="ContentTemplate" Value="{DynamicResource dialog_content_template}" />
     </Style>
 
 </ResourceDictionary>
