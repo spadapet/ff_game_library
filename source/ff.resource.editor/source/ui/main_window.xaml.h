@@ -1,10 +1,10 @@
 #pragma once
 
+#include "source/models/main_vm.h"
 #include "source/ui/window_base.h"
 
 namespace editor
 {
-    class main_vm;
     struct dialog_request_close_event_args;
 
     class main_window : public ff::ui::notify_propety_changed_t<editor::window_base>
@@ -17,6 +17,18 @@ namespace editor
         editor::main_vm* view_model() const;
 
         virtual bool ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler) override;
+
+        template<class T>
+        static void show_dialog(std::function<void(int result)>&& dialog_closed_func = {})
+        {
+            Noesis::Ptr<T> dialog = Noesis::MakePtr<T>();
+            if (dialog_closed_func)
+            {
+                dialog->add_connection(dialog->dialog_closed().connect(std::move(dialog_closed_func)));
+            }
+
+            editor::main_window::get()->view_model()->push_modal_dialog(dialog);
+        }
 
     protected:
         virtual bool can_close() override;

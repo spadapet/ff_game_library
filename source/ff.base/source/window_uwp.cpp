@@ -145,55 +145,75 @@ private:
 
         ff::thread_dispatch::get_main()->post([deferral, main_window = this->main_window]()
         {
-            main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMSUSPEND });
+            ff::window_message msg{ WM_POWERBROADCAST, PBT_APMSUSPEND };
+            main_window->notify_message(msg);
             deferral->Complete();
         });
     }
 
     void app_resuming(Platform::Object^ sender, Platform::Object^ arg)
     {
-        this->main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC });
-        this->main_window->notify_message(ff::window_message{ WM_POWERBROADCAST, PBT_APMRESUMESUSPEND });
+        ff::window_message msg1{ WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC };
+        ff::window_message msg2{ WM_POWERBROADCAST, PBT_APMRESUMESUSPEND };
+
+        this->main_window->notify_message(msg1);
+        this->main_window->notify_message(msg2);
     }
 
     void active_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowActivatedEventArgs^ args)
     {
         WPARAM active = args->WindowActivationState != Windows::UI::Core::CoreWindowActivationState::Deactivated;
         UINT focus_message = active ? WM_SETFOCUS : WM_KILLFOCUS;
-        this->main_window->notify_message(ff::window_message{ WM_ACTIVATEAPP, active });
-        this->main_window->notify_message(ff::window_message{ WM_ACTIVATE, active });
-        this->main_window->notify_message(ff::window_message{ focus_message });
+
+        ff::window_message msg1{ WM_ACTIVATEAPP, active };
+        ff::window_message msg2{ WM_ACTIVATE, active };
+        ff::window_message msg3{ focus_message };
+
+        this->main_window->notify_message(msg1);
+        this->main_window->notify_message(msg2);
+        this->main_window->notify_message(msg3);
     }
 
     void visiblity_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::VisibilityChangedEventArgs^ args)
     {
         WPARAM size_wp = args->Visible ? SIZE_RESTORED : SIZE_MINIMIZED;
-        this->main_window->notify_message(ff::window_message{ WM_SHOWWINDOW, args->Visible });
-        this->main_window->notify_message(ff::window_message{ WM_SIZE, size_wp });
+        ff::window_message msg1{ WM_SHOWWINDOW, args->Visible };
+        ff::window_message msg2{ WM_SIZE, size_wp };
+
+        this->main_window->notify_message(msg1);
+        this->main_window->notify_message(msg2);
     }
 
     void size_changed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::WindowSizeChangedEventArgs^ args)
     {
-        this->main_window->notify_message(ff::window_message{ WM_SIZE, SIZE_RESTORED });
+        ff::window_message msg{ WM_SIZE, SIZE_RESTORED };
+        this->main_window->notify_message(msg);
     }
 
     void closed(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CoreWindowEventArgs^ args)
     {
-        this->main_window->notify_message(ff::window_message{ WM_CLOSE });
-        this->main_window->notify_message(ff::window_message{ WM_DESTROY });
+        ff::window_message msg1{ WM_CLOSE };
+        ff::window_message msg2{ WM_DESTROY };
+
+        this->main_window->notify_message(msg1);
+        this->main_window->notify_message(msg2);
     }
 
     void character_received(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CharacterReceivedEventArgs^ args)
     {
         if (args->KeyCode < 0x10000)
         {
-            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>(args->KeyCode) });
+            ff::window_message msg{ WM_CHAR, static_cast<WPARAM>(args->KeyCode) };
+            this->main_window->notify_message(msg);
         }
         else
         {
             unsigned int utf32 = args->KeyCode - 0x10000;
-            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>((utf32 / 0x400) + 0xd800) });
-            this->main_window->notify_message(ff::window_message{ WM_CHAR, static_cast<WPARAM>((utf32 % 0x400) + 0xdc00) });
+            ff::window_message msg1{ WM_CHAR, static_cast<WPARAM>((utf32 / 0x400) + 0xd800) };
+            ff::window_message msg2{ WM_CHAR, static_cast<WPARAM>((utf32 % 0x400) + 0xdc00) };
+
+            this->main_window->notify_message(msg1);
+            this->main_window->notify_message(msg2);
         }
     }
 
@@ -245,7 +265,8 @@ private:
 
         if (msg)
         {
-            this->main_window->notify_message(ff::window_message{ msg, wp, lp });
+            ff::window_message msg2{ msg, wp, lp };
+            this->main_window->notify_message(msg2);
         }
     }
 
@@ -287,17 +308,20 @@ private:
     void dpi_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
         int dpi = static_cast<int>(display_info->LogicalDpi);
-        this->main_window->notify_message(ff::window_message{ WM_DPICHANGED, MAKEWPARAM(dpi, dpi) });
+        ff::window_message msg{ WM_DPICHANGED, MAKEWPARAM(dpi, dpi) };
+        this->main_window->notify_message(msg);
     }
 
     void display_invalidated(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
-        this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
+        ff::window_message msg{ WM_DISPLAYCHANGE };
+        this->main_window->notify_message(msg);
     }
 
     void orientation_changed(Windows::Graphics::Display::DisplayInformation^ display_info, Platform::Object^ sender)
     {
-        this->main_window->notify_message(ff::window_message{ WM_DISPLAYCHANGE });
+        ff::window_message msg{ WM_DISPLAYCHANGE };
+        this->main_window->notify_message(msg);
     }
 
     void gamepad_added(Platform::Object^ sender, Windows::Gaming::Input::Gamepad^ gamepad)

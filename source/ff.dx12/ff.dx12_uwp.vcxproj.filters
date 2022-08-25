@@ -215,6 +215,6 @@
     <None Include="assets\shaders.hlsl">
       <Filter>assets</Filter>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.ff.dx12_uwp.config" />
   </ItemGroup>
 </Project>

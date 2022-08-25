@@ -17,10 +17,10 @@
         </Grid.RowDefinitions>
         <Menu>
             <MenuItem Header="File">
-                <MenuItem Header="New" Icon="{StaticResource new_file_icon}" Command="{Binding file_new_command}" />
-                <MenuItem Header="Open..." Icon="{StaticResource open_file_icon}" Command="{Binding file_open_command}" />
-                <MenuItem Header="Save" Icon="{StaticResource save_icon}" Command="{Binding file_save_command}" />
-                <MenuItem Header="Save As..." Icon="{StaticResource save_as_icon}" Command="{Binding file_save_as_command}" />
+                <MenuItem Header="New" InputGestureText="Ctrl+N" Icon="{StaticResource new_file_icon}" Command="{Binding file_new_command}" />
+                <MenuItem Header="Open..." InputGestureText="Ctrl+O" Icon="{StaticResource open_file_icon}" Command="{Binding file_open_command}" />
+                <MenuItem Header="Save" InputGestureText="Ctrl+S" Icon="{StaticResource save_icon}" Command="{Binding file_save_command}" />
+                <MenuItem Header="Save As..." InputGestureText="Ctrl+Shift+S" Icon="{StaticResource save_as_icon}" Command="{Binding file_save_as_command}" />
                 <Separator />
                 <MenuItem Header="Exit" InputGestureText="Alt+F4" Command="{Binding file_exit_command}" />
             </MenuItem>

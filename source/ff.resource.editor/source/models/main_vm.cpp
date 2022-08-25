@@ -109,7 +109,12 @@ editor::dialog_content_base* editor::main_vm::modal_dialog() const
 }
 
 void editor::main_vm::file_new_command(Noesis::BaseComponent* param)
-{}
+{
+    if (this->project()->dirty())
+    {
+        // ...ask to save
+    }
+}
 
 void editor::main_vm::file_open_command(Noesis::BaseComponent* param)
 {}

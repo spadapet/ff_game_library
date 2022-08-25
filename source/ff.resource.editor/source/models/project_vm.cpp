@@ -55,6 +55,38 @@ const char* editor::project_vm::file_name_raw() const
     return this->name_.c_str();
 }
 
+bool editor::project_vm::save(bool save_as)
+{
+    std::error_code ec;
+    std::wstring path = ff::string::to_wstring(std::string_view(this->full_path_raw()));
+
+    if (!save_as && !path.empty() && std::filesystem::exists(path, ec) && this->save(path))
+    {
+        return true;
+    }
+
+    wchar_t buffer[1024]{};
+    ::wcscpy_s(buffer, path.c_str());
+
+    ::OPENFILENAME ofn{};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = *ff::window::main();
+    ofn.hInstance = ff::get_hinstance();
+    ofn.lpstrDefExt = L"proj.json";
+    ofn.lpstrFilter = L"Project Files (*.proj.json)\0*.proj.json\0";
+    ofn.lpstrFile = buffer;
+    ofn.nMaxFile = 1024;
+    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST;
+
+    if (::GetSaveFileName(&ofn))
+    {
+        path = ofn.lpstrFile;
+        return this->save(path);
+    }
+
+    return false;
+}
+
 bool editor::project_vm::save(const std::filesystem::path& path)
 {
     std::vector<ff::value_ptr> sources;

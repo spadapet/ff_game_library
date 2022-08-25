@@ -69,16 +69,15 @@ bool editor::main_window::can_close()
 
     if (this->view_model_->project()->dirty())
     {
-        Noesis::Ptr<editor::save_project_dialog> dialog = Noesis::MakePtr<editor::save_project_dialog>();
-        dialog->add_connection(dialog->dialog_closed().connect([](int result)
+        editor::main_window::show_dialog<editor::save_project_dialog>(
+            [](int result)
             {
                 if (result != editor::dialog_content_base::RESULT_CANCEL)
                 {
                     ::PostMessage(*ff::window::main(), editor::window_base::WM_USER_FORCE_CLOSE, 0, 0);
                 }
-            }));
+            });
 
-        this->view_model_->push_modal_dialog(dialog);
         return false;
     }
 

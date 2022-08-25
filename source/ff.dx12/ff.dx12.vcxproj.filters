@@ -207,7 +207,7 @@
     <None Include="assets\shaders.hlsl">
       <Filter>assets</Filter>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.ff.dx12.config" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\ff.dx12.res.json">

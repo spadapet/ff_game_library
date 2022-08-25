@@ -17,22 +17,10 @@
     SnapsToDevicePixels="True"
     editor:dialog_content_base.RequestClose="on_request_close_dialog">
     <Window.Resources>
-        <Storyboard x:Key="modal_flash_storyboard">
+        <Storyboard x:Key="modal_flash_storyboard" RepeatBehavior="7x" Duration="00:00:00.2">
             <BooleanAnimationUsingKeyFrames Storyboard.TargetName="root" Storyboard.TargetProperty="(editor:properties.ModalFlash)">
                 <DiscreteBooleanKeyFrame KeyTime="00:00:00.0" Value="True"/>
                 <DiscreteBooleanKeyFrame KeyTime="00:00:00.1" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.2" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.3" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.4" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.5" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.6" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.7" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.8" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:00.9" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:01.0" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:01.1" Value="False"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:01.2" Value="True"/>
-                <DiscreteBooleanKeyFrame KeyTime="00:00:01.3" Value="False"/>
             </BooleanAnimationUsingKeyFrames>
         </Storyboard>
 
