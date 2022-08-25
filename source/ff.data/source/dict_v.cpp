@@ -41,7 +41,8 @@ ff::value_ptr ff::type::dict_type::try_convert_to(const value* val, std::type_in
         bool save_compressed = static_cast<const dict_v*>(val)->save_compressed();
         auto buffer = std::make_shared<std::vector<uint8_t>>();
 
-        if (dict.save(ff::data_writer(buffer)))
+        ff::data_writer writer(buffer);
+        if (dict.save(writer))
         {
             auto data = std::make_shared<ff::data_vector>(buffer);
             ff::saved_data_type data_type = save_compressed ? ff::flags::combine(ff::saved_data_type::dict, ff::saved_data_type::zlib_compressed) : ff::saved_data_type::dict;

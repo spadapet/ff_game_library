@@ -228,21 +228,22 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #if UWP_APP
             if (this->window)
             {
-                Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel = this->window->swap_chain_panel();
+                winrt::Windows::UI::Xaml::Controls::SwapChainPanel swap_chain_panel = this->window->swap_chain_panel();
                 this->use_xaml_composition = (swap_chain_panel != nullptr);
 
                 if (this->use_xaml_composition)
                 {
-                    Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
+                    desc.Scaling = DXGI_SCALING_STRETCH;
 
-                    if (FAILED(reinterpret_cast<IUnknown*>(swap_chain_panel)->QueryInterface(IID_PPV_ARGS(&native_panel))) ||
+                    Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
+                    if (FAILED(swap_chain_panel.as(IID_PPV_ARGS(&native_panel))) ||
                         FAILED(factory->CreateSwapChainForComposition(command_queue.Get(), &desc, nullptr, &new_swap_chain)) ||
                         FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
                     {
                         debug_fail();
                     }
                 }
-                else if (FAILED(factory->CreateSwapChainForCoreWindow(command_queue.Get(), reinterpret_cast<IUnknown*>(this->window->handle()), &desc, nullptr, &new_swap_chain)))
+                else if (FAILED(factory->CreateSwapChainForCoreWindow(command_queue.Get(), this->window->handle().as<IUnknown>().get(), &desc, nullptr, &new_swap_chain)))
                 {
                     debug_fail();
                 }
@@ -322,7 +323,7 @@ bool ff::dx12::target_window::full_screen()
 #if UWP_APP
         if (!this->cached_full_screen_uwp)
         {
-            this->full_screen_uwp = this->window->application_view()->IsFullScreenMode;
+            this->full_screen_uwp = this->window->application_view().IsFullScreenMode();
             this->cached_full_screen_uwp = true;
         }
 
@@ -344,11 +345,11 @@ bool ff::dx12::target_window::full_screen(bool value)
 #if UWP_APP
         if (value)
         {
-            return this->window->application_view()->TryEnterFullScreenMode();
+            return this->window->application_view().TryEnterFullScreenMode();
         }
         else
         {
-            this->window->application_view()->ExitFullScreenMode();
+            this->window->application_view().ExitFullScreenMode();
             return true;
         }
 #else

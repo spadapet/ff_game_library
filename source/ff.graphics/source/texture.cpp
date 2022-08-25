@@ -253,7 +253,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
         palette_data->data(), palette_data->size(), DirectX::DDS_FLAGS_NONE, nullptr, palette_scratch)))
     {
         assert(false);
-        return false;
+        return {};
     }
 
     DirectX::ScratchImage data_scratch;
@@ -261,7 +261,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
         data->data(), data->size(), DirectX::DDS_FLAGS_NONE, nullptr, data_scratch)))
     {
         assert(false);
-        return false;
+        return {};
     }
 
     auto dxgi_texture = ff::dxgi_client().create_static_texture(data_scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(data_scratch)) : nullptr, sprite_type);

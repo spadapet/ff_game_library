@@ -56,7 +56,9 @@ ff::value_ptr ff::type::data_type::try_convert_to(const value* val, std::type_in
             auto buffer_compressed = std::make_shared<std::vector<uint8_t>>();
             buffer_compressed->reserve(data->size());
 
-            if (ff::compression::compress(ff::data_reader(data), data->size(), ff::data_writer(buffer_compressed)))
+            ff::data_reader reader(data);
+            ff::data_writer writer(buffer_compressed);
+            if (ff::compression::compress(reader, data->size(), writer))
             {
                 auto saved_data = std::make_shared<ff::saved_data_static>(std::make_shared<ff::data_vector>(buffer_compressed), data->size(), saved_data_type);
                 return ff::value::create<ff::saved_data_base>(saved_data);
@@ -77,7 +79,8 @@ ff::value_ptr ff::type::data_type::try_convert_to(const value* val, std::type_in
         if (data && ff::flags::has(saved_data_type, ff::saved_data_type::dict))
         {
             ff::dict dict;
-            if (ff::dict::load(ff::data_reader(data), dict))
+            ff::data_reader reader(data);
+            if (ff::dict::load(reader, dict))
             {
                 return ff::value::create<ff::dict>(std::move(dict));
             }

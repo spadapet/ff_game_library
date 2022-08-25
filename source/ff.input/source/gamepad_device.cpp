@@ -114,24 +114,24 @@ bool ff::gamepad_device::poll(reading_t& reading)
 #if UWP_APP
     if (this->gamepad_)
     {
-        Windows::Gaming::Input::GamepadReading gr = this->gamepad_->GetCurrentReading();
+        winrt::Windows::Gaming::Input::GamepadReading gr = this->gamepad_.GetCurrentReading();
 
-        reading.values[::vk_to_index(VK_GAMEPAD_A)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::A) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_B)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::B) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_X)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::X) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_Y)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::Y) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_SHOULDER)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::RightShoulder) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_SHOULDER)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::LeftShoulder) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_A)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::A) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_B)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::B) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_X)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::X) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_Y)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::Y) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_SHOULDER)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::RightShoulder) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_SHOULDER)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::LeftShoulder) ? 1.0f : 0.0f;
         reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_TRIGGER)] = static_cast<float>(gr.RightTrigger);
         reading.values[::vk_to_index(VK_GAMEPAD_LEFT_TRIGGER)] = static_cast<float>(gr.LeftTrigger);
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_UP)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadUp) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_DOWN)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadDown) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_LEFT)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadLeft) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_RIGHT)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::DPadRight) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_MENU)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::Menu) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_VIEW)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::View) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::LeftThumbstick) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, Windows::Gaming::Input::GamepadButtons::RightThumbstick) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_UP)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadUp) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_DOWN)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadDown) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_LEFT)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadLeft) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_RIGHT)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadRight) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_MENU)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::Menu) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_VIEW)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::View) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::LeftThumbstick) ? 1.0f : 0.0f;
+        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::RightThumbstick) ? 1.0f : 0.0f;
         reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_UP)] = (gr.LeftThumbstickY > 0.0) ? static_cast<float>(gr.LeftThumbstickY) : 0.0f;
         reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_DOWN)] = (gr.LeftThumbstickY < 0.0) ? -static_cast<float>(gr.LeftThumbstickY) : 0.0f;
         reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_RIGHT)] = (gr.LeftThumbstickX > 0.0) ? static_cast<float>(gr.LeftThumbstickX) : 0.0f;

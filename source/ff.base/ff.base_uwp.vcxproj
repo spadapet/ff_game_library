@@ -65,5 +65,8 @@
   <ItemGroup>
     <Natvis Include="base.natvis" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.ff.base_uwp.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

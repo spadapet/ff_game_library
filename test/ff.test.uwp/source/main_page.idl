@@ -1,0 +1,8 @@
+namespace test_uwp
+{
+    [default_interface]
+    runtimeclass main_page : Windows.UI.Xaml.Controls.Page
+    {
+        main_page();
+    }
+}

@@ -3,6 +3,7 @@
 #include "device_child_base.h"
 #include "draw_base.h"
 #include "draw_ptr.h"
+#include "operators.h"
 #include "matrix_stack.h"
 #include "palette_base.h"
 

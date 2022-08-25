@@ -36,7 +36,8 @@ void ff::internal::app::load_settings()
     if (std::filesystem::exists(settings_path, ec))
     {
         auto data = ff::filesystem::read_binary_file(settings_path);
-        if (!data || !ff::dict::load(ff::data_reader(data), ::named_settings))
+        ff::data_reader reader(data);
+        if (!data || !ff::dict::load(reader, ::named_settings))
         {
             assert(false);
         }
@@ -59,7 +60,8 @@ bool ff::internal::app::save_settings()
         std::filesystem::path settings_path = ::settings_path();
         ff::log::write(ff::log::type::application, "Save settings: ", ff::filesystem::to_string(settings_path), "\r\n", ::named_settings);
 
-        if (!::named_settings.save(ff::file_writer(settings_path)))
+        ff::file_writer writer(settings_path);
+        if (!::named_settings.save(writer))
         {
             assert(false);
             return false;

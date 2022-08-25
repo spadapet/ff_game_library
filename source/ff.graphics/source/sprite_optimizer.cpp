@@ -459,7 +459,8 @@ static bool copy_optimized_sprites(
         }
 
         ::original_texture_info& original_info = iter->second;
-        sprite.dest_sprite_type = ff::dxgi::get_sprite_type(*original_info.rgb_scratch, &sprite.source_rect.cast<size_t>());
+        ff::rect_size source_size = sprite.source_rect.cast<size_t>();
+        sprite.dest_sprite_type = ff::dxgi::get_sprite_type(*original_info.rgb_scratch, &source_size);
 
         bool status = SUCCEEDED(DirectX::CopyRectangle(
             *original_info.rgb_scratch->GetImages(),

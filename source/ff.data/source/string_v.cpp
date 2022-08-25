@@ -40,17 +40,17 @@ ff::value* ff::type::string_v::get_static_value(const std::string& value)
     }
     else if (value == "true")
     {
-        static string_v true_value = "true";
+        static string_v true_value("true");
         return &true_value;
     }
     else if (value == "false")
     {
-        static string_v false_value = "false";
+        static string_v false_value("false");
         return &false_value;
     }
     else if (value == "null")
     {
-        static string_v null_value = "null";
+        static string_v null_value("null");
         return &null_value;
     }
     

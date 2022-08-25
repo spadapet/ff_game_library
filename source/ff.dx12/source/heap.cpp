@@ -156,10 +156,11 @@ bool ff::dx12::heap::reset()
 
         if (this->cpu_usage())
         {
+            CD3DX12_RESOURCE_DESC buffer_desc = CD3DX12_RESOURCE_DESC::Buffer(this->size_);
             if (FAILED(ff::dx12::device()->CreatePlacedResource(
                     this->heap_.Get(),
                     0, // start
-                    &CD3DX12_RESOURCE_DESC::Buffer(this->size_),
+                    &buffer_desc,
                     (this->usage_ == ff::dx12::heap::usage_t::upload) ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
                     nullptr, // clear value
                     IID_PPV_ARGS(&this->cpu_resource))) ||

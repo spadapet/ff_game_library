@@ -127,7 +127,7 @@ void ff::pointer_device::kill_pending()
         }
 
 #if UWP_APP
-        std::vector<Windows::UI::Input::PointerPoint^> points;
+        std::vector<winrt::Windows::UI::Input::PointerPoint> points;
         points.reserve(this->pending_touches.size());
 
         for (internal_touch_info& info : this->pending_touches)
@@ -135,10 +135,10 @@ void ff::pointer_device::kill_pending()
             points.push_back(info.point);
         }
 
-        for (Windows::UI::Input::PointerPoint^ point : points)
+        for (const winrt::Windows::UI::Input::PointerPoint& point : points)
         {
             ff::input_device_event device_event = this->touch_released(point);
-            if (point->PointerDevice->PointerDeviceType != Windows::Devices::Input::PointerDeviceType::Mouse)
+            if (point.PointerDevice().PointerDeviceType() != winrt::Windows::Devices::Input::PointerDeviceType::Mouse)
             {
                 device_events.push_back(device_event);
             }
@@ -176,4 +176,7 @@ ff::signal_sink<const ff::input_device_event&>& ff::pointer_device::event_sink()
 
 ff::pointer_device::internal_touch_info::internal_touch_info()
     : info{}
+#if UWP_APP
+    , point(nullptr)
+#endif
 {}

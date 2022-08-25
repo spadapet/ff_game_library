@@ -447,8 +447,8 @@ void ff::dx12::commands::update_texture(ff::dx12::resource& dest, size_t dest_su
     source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     source_location.PlacedFootprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{ source.start(), source_layout };
 
-    this->list()->CopyTextureRegion(
-        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(dest), static_cast<UINT>(dest_sub_index)),
+    CD3DX12_TEXTURE_COPY_LOCATION copy_location(ff::dx12::get_resource(dest), static_cast<UINT>(dest_sub_index));
+    this->list()->CopyTextureRegion(&copy_location,
         static_cast<UINT>(dest_pos.x), static_cast<UINT>(dest_pos.y), 0, // Z
         &source_location, nullptr); // source box
 }
@@ -475,9 +475,8 @@ void ff::dx12::commands::readback_texture(ff::dx12::mem_range& dest, const D3D12
     dest_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     dest_location.PlacedFootprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{ dest.start(), dest_layout };
 
-    this->list()->CopyTextureRegion(
-        &dest_location, 0, 0, 0, // X, Y, Z
-        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index)), &source_box);
+    CD3DX12_TEXTURE_COPY_LOCATION copy_location(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index));
+    this->list()->CopyTextureRegion(&dest_location, 0, 0, 0, &copy_location, &source_box);
 }
 
 void ff::dx12::commands::copy_resource(ff::dx12::resource& dest_resource, ff::dx12::resource& source_resource)
@@ -502,10 +501,11 @@ void ff::dx12::commands::copy_texture(ff::dx12::resource& dest, size_t dest_sub_
         1,
     };
 
-    this->list()->CopyTextureRegion(
-        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(dest), static_cast<UINT>(dest_sub_index)),
+    CD3DX12_TEXTURE_COPY_LOCATION dest_location(ff::dx12::get_resource(dest), static_cast<UINT>(dest_sub_index));
+    CD3DX12_TEXTURE_COPY_LOCATION source_location(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index));
+    this->list()->CopyTextureRegion(&dest_location,
         static_cast<UINT>(dest_pos.x), static_cast<UINT>(dest_pos.y), 0, // Z
-        &CD3DX12_TEXTURE_COPY_LOCATION(ff::dx12::get_resource(source), static_cast<UINT>(source_sub_index)), &source_box);
+        &source_location, &source_box);
 }
 
 ID3D12GraphicsCommandList1* ff::dx12::commands::list(bool flush_resource_state) const

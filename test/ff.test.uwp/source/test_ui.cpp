@@ -1,23 +1,23 @@
 ﻿#include "pch.h"
-#include "test_ui.xaml.h"
+#include "test_ui.h"
 #include "utility.h"
 
-test_uwp::test_ui::test_ui()
+#include <test_ui.g.cpp>
+
+winrt::test_uwp::implementation::test_ui::test_ui()
     : init_main_window(ff::init_main_window_params{})
     , stop_thread(ff::win_handle::create_event())
     , thread_stopped(ff::win_handle::create_event())
-{
-    this->InitializeComponent();
-}
+{}
 
-void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     ff::thread_pool::get()->add_thread([this]()
         {
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
-            ff::init_ui init_ui(test_uwp::get_init_ui_params());
+            ff::init_ui init_ui(::test_uwp::get_init_ui_params());
             ff::internal::ui::init_game_thread();
             auto target = ff::dxgi_client().create_target_for_window({});
             auto depth = ff::dxgi_client().create_depth({}, {});
@@ -68,7 +68,7 @@ void test_uwp::test_ui::loaded(Platform::Object^ sender, Windows::UI::Xaml::Rout
         });
 }
 
-void test_uwp::test_ui::unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_ui::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     ::SetEvent(this->stop_thread);
     ff::wait_for_handle(this->thread_stopped);

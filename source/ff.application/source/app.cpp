@@ -178,11 +178,11 @@ static void frame_update_cursor()
         ff::thread_dispatch::get_main()->post([]()
             {
 #if UWP_APP
-                Windows::UI::Core::CoreCursorType core_cursor_type = (::window_cursor.load() == IDC_HAND)
-                    ? Windows::UI::Core::CoreCursorType::Hand
-                    : Windows::UI::Core::CoreCursorType::Arrow;
+                winrt::Windows::UI::Core::CoreCursorType core_cursor_type = (::window_cursor.load() == IDC_HAND)
+                    ? winrt::Windows::UI::Core::CoreCursorType::Hand
+                    : winrt::Windows::UI::Core::CoreCursorType::Arrow;
 
-                ff::window::main()->handle()->PointerCursor = ref new Windows::UI::Core::CoreCursor(core_cursor_type, 0);
+                ff::window::main()->handle().PointerCursor(winrt::Windows::UI::Core::CoreCursor(core_cursor_type, 0));
 #else
                 POINT pos;
                 if (::GetCursorPos(&pos) &&
@@ -485,7 +485,7 @@ static void init_app_name()
     if (::app_product_name.empty())
     {
 #if UWP_APP
-        ::app_product_name = ff::string::to_string(Windows::ApplicationModel::AppInfo::Current->DisplayInfo->DisplayName);
+        ::app_product_name = ff::string::to_string(winrt::Windows::ApplicationModel::AppInfo::Current().DisplayInfo().DisplayName());
 #else
         std::array<wchar_t, 2048> wpath;
         DWORD size = static_cast<DWORD>(wpath.size());

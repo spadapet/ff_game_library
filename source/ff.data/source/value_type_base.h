@@ -1,6 +1,7 @@
 #pragma once
 
 #include "persist.h"
+#include "value.h"
 #include "value_traits.h"
 #include "value_type.h"
 
@@ -42,7 +43,10 @@ namespace ff::internal
     class value_type_simple : public value_type_base<T>
     {
     public:
-        using value_type_base::value_type_base;
+        using value_type_base<T>::value_type_base;
+        using raw_type = typename ff::internal::value_type_base<T>::raw_type;
+        using get_type = typename ff::internal::value_type_base<T>::get_type;
+        using value_derived_type = typename ff::internal::value_type_base<T>::value_derived_type;
 
         virtual ff::value_ptr load(reader_base& reader) const override
         {
@@ -61,7 +65,9 @@ namespace ff::internal
     class value_type_pod_vector : public value_type_base<T>
     {
     public:
-        using value_type_base::value_type_base;
+        using value_type_base<T>::value_type_base;
+        using raw_type = typename ff::internal::value_type_base<T>::raw_type;
+        using get_type = typename ff::internal::value_type_base<T>::get_type;
 
         virtual value_ptr try_convert_from(const value* other) const override
         {
@@ -72,13 +78,13 @@ namespace ff::internal
 
                 for (size_t i = 0; i < other->index_child_count(); i++)
                 {
-                    value_ptr val = other->index_child(i)->try_convert<raw_type::value_type>();
+                    value_ptr val = other->index_child(i)->try_convert<typename raw_type::value_type>();
                     if (!val)
                     {
-                        return false;
+                        return {};
                     }
 
-                    vec.push_back(val->get<raw_type::value_type>());
+                    vec.push_back(val->get<typename raw_type::value_type>());
                 }
 
                 return ff::value::create<T>(std::move(vec));
@@ -147,7 +153,9 @@ namespace ff::internal
     class value_type_object_vector : public value_type_pod_vector<T>
     {
     public:
-        using value_type_pod_vector::value_type_pod_vector;
+        using value_type_pod_vector<T>::value_type_pod_vector;
+        using raw_type = typename ff::internal::value_type_base<T>::raw_type;
+        using get_type = typename ff::internal::value_type_base<T>::get_type;
 
         virtual ff::value_ptr load(reader_base& reader) const override
         {
@@ -161,7 +169,7 @@ namespace ff::internal
 
                     for (size_t i = 0; i < size; i++)
                     {
-                        raw_type::value_type child;
+                        typename raw_type::value_type child;
                         if (!ff::load(reader, child))
                         {
                             assert(false);
@@ -185,7 +193,7 @@ namespace ff::internal
             size_t size = src.size();
             if (ff::save(writer, size))
             {
-                for (const raw_type::value_type& child : src)
+                for (const typename raw_type::value_type& child : src)
                 {
                     if (!ff::save(writer, child))
                     {

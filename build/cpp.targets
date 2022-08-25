@@ -42,12 +42,13 @@
     <ClCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;$(WinPixIncDir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition=" '$(AppType)' == 'Desktop' Or '%(CompileAsWinRT)' != 'true' ">$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <CompileAsWinRT>false</CompileAsWinRT>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -86,23 +87,12 @@
     </Lib>
     <!-- Typelib options -->
     <Midl>
-      <DefaultCharType>Signed</DefaultCharType>
-      <GenerateClientFiles>None</GenerateClientFiles>
-      <GenerateServerFiles>None</GenerateServerFiles>
-      <GenerateTypeLibrary>true</GenerateTypeLibrary>
-      <OutputDirectory>$(GeneratedFilesDir)</OutputDirectory>
+      <!--<OutputDirectory>$(GeneratedFilesDir)</OutputDirectory>
       <TargetEnvironment>Win32</TargetEnvironment>
       <TargetEnvironment Condition=" '$(Platform)' == 'x64' ">X64</TargetEnvironment>
-      <TypeLibraryName>$(GeneratedFilesDir)\%(FileName).tlb</TypeLibraryName>
+      <TypeLibraryName>$(GeneratedFilesDir)%(FileName).tlb</TypeLibraryName>-->
       <WarnAsError>true</WarnAsError>
       <WarningLevel>3</WarningLevel>
-    </Midl>
-    <Midl Condition=" '$(AppType)' == 'UWP' ">
-      <PrependWithABINamepsace></PrependWithABINamepsace>
-      <PreprocessorDefinitions></PreprocessorDefinitions>
-      <EnableWindowsRuntime>false</EnableWindowsRuntime>
-      <AdditionalMetadataDirectories></AdditionalMetadataDirectories>
-      <MetadataFileName></MetadataFileName>
     </Midl>
     <!-- Resources -->
     <ResourceCompile>
@@ -125,5 +115,7 @@
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
+
+  <Import Project="$(CppWinRTRoot)Microsoft.Windows.CppWinRT.targets" Condition="Exists('$(CppWinRTRoot)Microsoft.Windows.CppWinRT.targets')" />
 
 </Project>

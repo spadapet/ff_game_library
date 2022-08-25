@@ -158,4 +158,7 @@
       <UniqueIdentifier>{c99231be-6fed-402d-ac79-6763f69023ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.ff.base_uwp.config" />
+  </ItemGroup>
 </Project>

@@ -1,32 +1,32 @@
 ﻿#include "pch.h"
-#include "test_input_devices.xaml.h"
+#include "test_input_devices.h"
 
-test_uwp::test_input_devices::test_input_devices()
+#include <test_input_devices.g.cpp>
+
+winrt::test_uwp::implementation::test_input_devices::test_input_devices()
     : init_main_window(ff::init_main_window_params{ "", true })
-{
-    this->InitializeComponent();
-}
+{}
 
-void test_uwp::test_input_devices::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_input_devices::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     this->input_connection = ff::input::combined_devices().event_sink().connect([this](const ff::input_device_event& event)
         {
             assert(event.type != ff::input_device_event_type::none);
 
-            this->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal,
-                ref new Windows::UI::Core::DispatchedHandler([this, event]()
-                {
-                    this->handle_input_event(event);
-                }));
+            this->Dispatcher().RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
+                winrt::Windows::UI::Core::DispatchedHandler([this, event]()
+                    {
+                        this->handle_input_event(event);
+                    }));
         });
 }
 
-void test_uwp::test_input_devices::unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_input_devices::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     this->input_connection.disconnect();
 }
 
-void test_uwp::test_input_devices::handle_input_event(const ff::input_device_event& event)
+void winrt::test_uwp::implementation::test_input_devices::handle_input_event(const ff::input_device_event& event)
 {
     bool ignore = (event.type == ff::input_device_event_type::mouse_move ||
         event.type == ff::input_device_event_type::touch_move) &&
@@ -51,14 +51,14 @@ void test_uwp::test_input_devices::handle_input_event(const ff::input_device_eve
 
         std::ostringstream str;
         str << name << ": id=" << event.id << ", pos=(" << event.pos.x << "," << event.pos.y << "), count=" << event.count << std::endl;
-        auto paragraph = ref new Windows::UI::Xaml::Documents::Paragraph();
-        auto run = ref new Windows::UI::Xaml::Documents::Run();
-        run->Text = ff::string::to_pstring(str.str());
-        paragraph->Inlines->Append(run);
-        this->output_box->Blocks->Append(paragraph);
+        auto paragraph = winrt::Windows::UI::Xaml::Documents::Paragraph();
+        auto run = winrt::Windows::UI::Xaml::Documents::Run();
+        run.Text(winrt::to_hstring(str.str()));
+        paragraph.Inlines().Append(run);
+        this->output_box().Blocks().Append(paragraph);
 
-        this->scroller->UpdateLayout();
-        this->scroller->ChangeView(0.0, this->scroller->ScrollableHeight, 1.0f, true);
+        this->scroller().UpdateLayout();
+        this->scroller().ChangeView(0.0, this->scroller().ScrollableHeight(), 1.0f, true);
     }
 
     this->last_event = event;

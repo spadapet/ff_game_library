@@ -4,6 +4,13 @@
 #include "rect.h"
 #include "signal.h"
 
+#if UWP_APP
+namespace ff::internal
+{
+    class main_window_events;
+}
+#endif
+
 namespace ff
 {
     struct window_message
@@ -102,19 +109,19 @@ namespace ff
         bool operator!() const;
 
 #if UWP_APP
-        using handle_type = typename Windows::UI::Core::CoreWindow^;
+        using handle_type = typename winrt::Windows::UI::Core::CoreWindow;
 
         bool allow_swap_chain_panel();
         void allow_swap_chain_panel(bool value);
-        Windows::UI::Xaml::Controls::SwapChainPanel^ swap_chain_panel() const;
-        Windows::Graphics::Display::DisplayInformation^ display_info() const;
-        Windows::UI::ViewManagement::ApplicationView^ application_view() const;
+        winrt::Windows::UI::Xaml::Controls::SwapChainPanel swap_chain_panel() const;
+        const winrt::Windows::Graphics::Display::DisplayInformation& display_info() const;
+        const winrt::Windows::UI::ViewManagement::ApplicationView& application_view() const;
 
-        ff::signal_sink<bool, Windows::Gaming::Input::Gamepad^>& gamepad_message_sink();
-        void notify_gamepad_message(bool added, Windows::Gaming::Input::Gamepad^ gamepad);
+        ff::signal_sink<bool, const winrt::Windows::Gaming::Input::Gamepad&>& gamepad_message_sink();
+        void notify_gamepad_message(bool added, const winrt::Windows::Gaming::Input::Gamepad& gamepad);
 
-        ff::signal_sink<unsigned int, Windows::UI::Core::PointerEventArgs^>& pointer_message_sink();
-        void notify_pointer_message(unsigned int msg, Windows::UI::Core::PointerEventArgs^ args);
+        ff::signal_sink<unsigned int, const winrt::Windows::UI::Core::PointerEventArgs&>& pointer_message_sink();
+        void notify_pointer_message(unsigned int msg, const winrt::Windows::UI::Core::PointerEventArgs& args);
 
 #else
         using handle_type = HWND;
@@ -143,12 +150,12 @@ namespace ff
 
     private:
 #if UWP_APP
-        Platform::Agile<Windows::UI::Core::CoreWindow> core_window;
-        Windows::Graphics::Display::DisplayInformation^ display_info_;
-        Windows::UI::ViewManagement::ApplicationView^ application_view_;
-        Platform::Object^ window_events;
-        ff::signal<bool, Windows::Gaming::Input::Gamepad^> gamepad_message_signal;
-        ff::signal<unsigned int, Windows::UI::Core::PointerEventArgs^> pointer_message_signal;
+        winrt::agile_ref<winrt::Windows::UI::Core::CoreWindow> core_window;
+        winrt::Windows::Graphics::Display::DisplayInformation display_info_;
+        winrt::Windows::UI::ViewManagement::ApplicationView application_view_;
+        std::unique_ptr<ff::internal::main_window_events> window_events;
+        ff::signal<bool, const winrt::Windows::Gaming::Input::Gamepad&> gamepad_message_signal;
+        ff::signal<unsigned int, const winrt::Windows::UI::Core::PointerEventArgs&> pointer_message_signal;
         double dpi_scale_;
         bool allow_swap_chain_panel_;
         bool active_;

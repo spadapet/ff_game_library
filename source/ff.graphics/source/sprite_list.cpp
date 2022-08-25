@@ -122,13 +122,13 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
     if (mip_count > 1 && !ff::dxgi::color_format(format))
     {
         context.add_error("MipMaps are only supported for color textures");
-        return false;
+        return {};
     }
 
     if (optimize && !ff::dxgi::color_format(format) && !ff::dxgi::palette_format(format))
     {
         context.add_error("Can only optimize full color or palette textures");
-        return false;
+        return {};
     }
 
     ff::dict sprites_dict = dict.get<ff::dict>("sprites");
@@ -246,7 +246,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         if (!sprites_data)
         {
             assert(false);
-            return false;
+            return {};
         }
 
         ff::data_reader reader(sprites_data);

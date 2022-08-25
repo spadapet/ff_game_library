@@ -12,17 +12,19 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     , pending_event(ff::win_handle::create_event())
     , thread_id(::GetCurrentThreadId())
     , destroyed(false)
-#if !UWP_APP
+#if UWP_APP
+    , dispatcher(nullptr)
+#else
     , message_window(ff::window::create_message_window())
     , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1)))
 #endif
 {
 #if UWP_APP
-    Windows::UI::Core::CoreWindow^ window = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    winrt::Windows::UI::Core::CoreWindow window = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
     if (window)
     {
-        this->dispatcher = window->Dispatcher;
-        this->handler = ref new Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
+        this->dispatcher = window.Dispatcher();
+        this->handler = winrt::Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
     }
 #endif
 
@@ -300,7 +302,7 @@ void ff::thread_dispatch::post_flush()
 #if UWP_APP
     if (this->dispatcher)
     {
-        this->dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
+        this->dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
     }
 #else
     ::PostMessage(this->message_window, WM_USER, 0, 0);

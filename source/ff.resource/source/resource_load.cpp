@@ -43,7 +43,8 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
 
     // Read the whole file into memory so that the cache file isn't locked
     auto data = ff::filesystem::read_binary_file(path);
-    if (!data || !ff::dict::load(ff::data_reader(data), dict))
+    ff::data_reader reader(data);
+    if (!data || !ff::dict::load(reader, dict))
     {
         return false;
     }

@@ -57,13 +57,13 @@ ff::state::cursor_t ff::state::cursor()
     for (size_t i = 0; i < this->child_state_count(); i++)
     {
         ff::state::cursor_t cursor = this->child_state(i)->cursor();
-        if (cursor != ff::state::cursor_t::default)
+        if (cursor != ff::state::cursor_t::default_)
         {
             return cursor;
         }
     }
 
-    return ff::state::cursor_t::default;
+    return ff::state::cursor_t::default_;
 }
 
 std::shared_ptr<ff::state_wrapper> ff::state::wrap()

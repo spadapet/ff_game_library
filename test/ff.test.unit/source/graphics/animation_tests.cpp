@@ -85,7 +85,8 @@ namespace ff::test::graphics
             Assert::AreEqual(0.0f, player.animation_frame());
 
             std::vector<ff::animation_event> events;
-            player.advance_animation(&ff::push_back_collection(events));
+            ff::push_back_collection push_back_events(events);
+            player.advance_animation(&push_back_events);
 
             Assert::AreNotEqual(0.0f, player.animation_frame());
             Assert::AreEqual<size_t>(1, events.size());

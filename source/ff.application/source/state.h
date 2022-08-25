@@ -8,7 +8,7 @@ namespace ff
     class state : public std::enable_shared_from_this<ff::state>
     {
     public:
-        enum class cursor_t { default, hand };
+        enum class cursor_t { default_, hand };
         enum class advance_t { running, single_step, stopped };
 
         virtual ~state() = default;

@@ -30,23 +30,33 @@ std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::end
     // Create test files
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_TEXTURE));
-        ff::stream_copy(ff::file_writer(temp_path / "test_texture.png"), ff::data_reader(data), data->size());
+        ff::data_reader reader(data);
+        ff::file_writer writer(temp_path / "test_texture.png");
+        ff::stream_copy(writer, reader, data->size());
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_EFFECT));
-        ff::stream_copy(ff::file_writer(temp_path / "test_effect.wav"), ff::data_reader(data), data->size());
+        ff::data_reader reader(data);
+        ff::file_writer writer(temp_path / "test_effect.wav");
+        ff::stream_copy(writer, reader, data->size());
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_MUSIC));
-        ff::stream_copy(ff::file_writer(temp_path / "test_music.mp3"), ff::data_reader(data), data->size());
+        ff::data_reader reader(data);
+        ff::file_writer writer(temp_path / "test_music.mp3");
+        ff::stream_copy(writer, reader, data->size());
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_SHADER));
-        ff::stream_copy(ff::file_writer(temp_path / "test_shader.hlsl"), ff::data_reader(data), data->size());
+        ff::data_reader reader(data);
+        ff::file_writer writer(temp_path / "test_shader.hlsl");
+        ff::stream_copy(writer, reader, data->size());
     }
     {
         auto data = std::make_shared<ff::data_static>(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_TEST_FONT));
-        ff::stream_copy(ff::file_writer(temp_path / "test_font.ttf"), ff::data_reader(data), data->size());
+        ff::data_reader reader(data);
+        ff::file_writer writer(temp_path / "test_font.ttf");
+        ff::stream_copy(writer, reader, data->size());
     }
 
     std::string json_string(json_source);

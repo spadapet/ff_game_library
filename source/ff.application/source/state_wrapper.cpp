@@ -83,7 +83,7 @@ void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dxgi::comm
 
 ff::state::cursor_t ff::state_wrapper::cursor()
 {
-    return this->state ? this->state->cursor() : ff::state::cursor_t::default;
+    return this->state ? this->state->cursor() : ff::state::cursor_t::default_;
 }
 
 std::shared_ptr<ff::state_wrapper> ff::state_wrapper::wrap()

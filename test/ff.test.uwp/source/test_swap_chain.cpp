@@ -1,15 +1,15 @@
 ﻿#include "pch.h"
-#include "test_swap_chain.xaml.h"
+#include "test_swap_chain.h"
 
-test_uwp::test_swap_chain::test_swap_chain()
+#include <test_swap_chain.g.cpp>
+
+winrt::test_uwp::implementation::test_swap_chain::test_swap_chain()
     : init_main_window(ff::init_main_window_params{})
     , stop_thread(ff::win_handle::create_event())
     , thread_stopped(ff::win_handle::create_event())
-{
-    this->InitializeComponent();
-}
+{}
 
-void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_swap_chain::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), true);
 
@@ -52,7 +52,7 @@ void test_uwp::test_swap_chain::loaded(Platform::Object^ sender, Windows::UI::Xa
         });
 }
 
-void test_uwp::test_swap_chain::unloaded(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ args)
+void winrt::test_uwp::implementation::test_swap_chain::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     ::SetEvent(this->stop_thread);
     ff::wait_for_handle(this->thread_stopped);

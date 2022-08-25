@@ -74,7 +74,8 @@ bool ff::resource_file::resource_save_to_file(const std::filesystem::path& direc
 
     std::filesystem::path path = directory_path / ff::filesystem::to_path(temp_name);
     size_t size = this->saved_data_->loaded_size();
-    size_t copied_size = ff::stream_copy(ff::file_writer(path), *this->saved_data_->loaded_reader(), size);
+    ff::file_writer writer(path);
+    size_t copied_size = ff::stream_copy(writer, *this->saved_data_->loaded_reader(), size);
     return copied_size == size;
 }
 

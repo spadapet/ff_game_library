@@ -18,16 +18,10 @@ namespace ff
     bool save_padding(writer_base& writer, size_t size_written);
 
     template<class T>
-    bool load(reader_base& reader, T& data)
-    {
-        return ff::persist<T>::load(reader, data);
-    }
+    bool load(reader_base& reader, T& data);
 
     template<class T>
-    bool save(writer_base& writer, const T& data)
-    {
-        return ff::persist<T>::save(writer, data);
-    }
+    bool save(writer_base& writer, const T& data);
 
     template<class T, class Enabled = void>
     struct persist;
@@ -99,4 +93,16 @@ namespace ff
             return ff::save(writer, length) && ff::save_bytes(writer, data.data(), length * sizeof(Elem));
         }
     };
+
+    template<class T>
+    bool load(reader_base& reader, T& data)
+    {
+        return ff::persist<T>::load(reader, data);
+    }
+
+    template<class T>
+    bool save(writer_base& writer, const T& data)
+    {
+        return ff::persist<T>::save(writer, data);
+    }
 }

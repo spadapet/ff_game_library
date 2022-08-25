@@ -96,49 +96,46 @@ static ff::init_ui_params get_ui_params()
 
 namespace game
 {
-    ref class app : Windows::ApplicationModel::Core::IFrameworkViewSource, Windows::ApplicationModel::Core::IFrameworkView
+    class app : public winrt::implements<app, winrt::Windows::ApplicationModel::Core::IFrameworkViewSource, winrt::Windows::ApplicationModel::Core::IFrameworkView>
     {
     public:
-        virtual Windows::ApplicationModel::Core::IFrameworkView^ CreateView()
+        winrt::Windows::ApplicationModel::Core::IFrameworkView CreateView()
         {
-            return this;
+            return *this;
         }
 
-        virtual void Initialize(Windows::ApplicationModel::Core::CoreApplicationView^ view)
+        void Initialize(const winrt::Windows::ApplicationModel::Core::CoreApplicationView& view)
         {
-            view->Activated += ref new Windows::Foundation::TypedEventHandler<
-                Windows::ApplicationModel::Core::CoreApplicationView^,
-                Windows::ApplicationModel::Activation::IActivatedEventArgs^>(
-                this, &app::activated);
+            view.Activated({ this, &app::activated });
         }
 
-        virtual void Load(Platform::String^ entry_point)
+        void Load(const winrt::hstring& entry_point)
         {}
 
-        virtual void Run()
+        void Run()
         {
             ff::handle_messages_until_quit();
         }
 
-        virtual void SetWindow(Windows::UI::Core::CoreWindow^ window)
+        void SetWindow(const winrt::Windows::UI::Core::CoreWindow& window)
         {}
 
-        virtual void Uninitialize()
+        void Uninitialize()
         {}
 
     private:
-        void activated(Windows::ApplicationModel::Core::CoreApplicationView^ view, Windows::ApplicationModel::Activation::IActivatedEventArgs^ args)
+        void activated(const winrt::Windows::ApplicationModel::Core::CoreApplicationView& view, const winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs& args)
         {
             if (!this->init_app)
             {
-                auto app_view = Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
-                app_view->SetPreferredMinSize(Windows::Foundation::Size(480, 270));
+                auto app_view = winrt::Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
+                app_view.SetPreferredMinSize(winrt::Windows::Foundation::Size(480, 270));
 
                 this->init_app = std::make_unique<ff::init_app>(::get_app_params(), ::get_ui_params());
                 assert(*this->init_app);
             }
 
-            Windows::UI::Core::CoreWindow::GetForCurrentThread()->Activate();
+            winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Activate();
         }
 
         std::unique_ptr<ff::init_app> init_app;
@@ -148,7 +145,7 @@ namespace game
 int ff::game::run(const ff::game::init_params& params)
 {
     ::init_params = &params;
-    Windows::ApplicationModel::Core::CoreApplication::Run(ref new ::game::app());
+    winrt::Windows::ApplicationModel::Core::CoreApplication::Run(winrt::make<::game::app>());
     return 0;
 }
 

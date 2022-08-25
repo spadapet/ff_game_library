@@ -592,7 +592,8 @@ namespace
                 this->target_requires_palette()))
             {
                 ff::dx12::buffer_base* single_buffer = &this->geometry_buffer_;
-                this->commands->vertex_buffers(&single_buffer, &this->geometry_buffer_.vertex_view(bucket.item_size()), 0, 1);
+                D3D12_VERTEX_BUFFER_VIEW vertex_view = this->geometry_buffer_.vertex_view(bucket.item_size());
+                this->commands->vertex_buffers(&single_buffer, &vertex_view, 0, 1);
                 return true;
             }
 

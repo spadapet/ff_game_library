@@ -43,7 +43,7 @@ namespace ff
         virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override;
         virtual void notify_main_window_message(ff::window_message& message) override;
 #if UWP_APP
-        void notify_main_window_pointer_message(unsigned int msg, Windows::UI::Core::PointerEventArgs^ args);
+        void notify_main_window_pointer_message(unsigned int msg, const winrt::Windows::UI::Core::PointerEventArgs& args);
 #endif
 
     private:
@@ -66,20 +66,20 @@ namespace ff
             internal_touch_info();
 
 #if UWP_APP
-            Windows::UI::Input::PointerPoint^ point;
+            winrt::Windows::UI::Input::PointerPoint point;
 #endif
             ff::pointer_touch_info info;
         };
 
 #if UWP_APP
-        ff::input_device_event mouse_moved(Windows::UI::Input::PointerPoint^ point);
-        ff::input_device_event mouse_pressed(Windows::UI::Input::PointerPoint^ point);
-        ff::input_device_event touch_moved(Windows::UI::Input::PointerPoint^ point);
-        ff::input_device_event touch_pressed(Windows::UI::Input::PointerPoint^ point);
-        ff::input_device_event touch_released(Windows::UI::Input::PointerPoint^ point);
+        ff::input_device_event mouse_moved(const winrt::Windows::UI::Input::PointerPoint& point);
+        ff::input_device_event mouse_pressed(const winrt::Windows::UI::Input::PointerPoint& point);
+        ff::input_device_event touch_moved(const winrt::Windows::UI::Input::PointerPoint& point);
+        ff::input_device_event touch_pressed(const winrt::Windows::UI::Input::PointerPoint& point);
+        ff::input_device_event touch_released(const winrt::Windows::UI::Input::PointerPoint& point);
 
-        std::vector<internal_touch_info>::iterator find_touch_info(Windows::UI::Input::PointerPoint^ point, bool allow_create);
-        void update_touch_info(internal_touch_info& info, Windows::UI::Input::PointerPoint^ point);
+        std::vector<internal_touch_info>::iterator find_touch_info(const winrt::Windows::UI::Input::PointerPoint& point, bool allow_create);
+        void update_touch_info(internal_touch_info& info, const winrt::Windows::UI::Input::PointerPoint& point);
 #else
         void handle_window_message(ff::window_message& message);
         void mouse_message(const ff::window_message& message);

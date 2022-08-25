@@ -8,3 +8,8 @@
 // FF
 #include <ff.input.h>
 #include <ff.graphics.h>
+
+// WinRT
+#if UWP_APP
+#include <winrt/Windows.System.h>
+#endif

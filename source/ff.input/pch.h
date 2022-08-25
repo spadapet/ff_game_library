@@ -7,6 +7,9 @@
 #include <windowsx.h>
 #include <Xinput.h>
 
+// WinRT
 #if UWP_APP
-#include <collection.h>
+#include <winrt/Windows.Devices.Input.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.UI.Input.h>
 #endif

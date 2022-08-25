@@ -72,7 +72,7 @@ namespace ff::type
         using rect_type = typename T::rect_type;
         using data_type = typename T::data_type;
 
-        using value_type_simple::value_type_simple;
+        using ff::internal::value_type_simple<T>::value_type_simple;
 
         virtual value_ptr try_convert_to(const value* val, std::type_index type) const override
         {

@@ -35,11 +35,13 @@ namespace ff::test::resource
             Assert::IsTrue(result.status);
             Assert::IsTrue(result.errors.empty());
 
-            result.status = result.dict.save(ff::file_writer(pack_path));
+            ff::file_writer writer(pack_path);
+            result.status = result.dict.save(writer);
             Assert::IsTrue(result.status);
 
             ff::dict loaded_dict;
-            result.status = ff::dict::load(ff::file_reader(pack_path), loaded_dict);
+            ff::file_reader reader(pack_path);
+            result.status = ff::dict::load(reader, loaded_dict);
             Assert::IsTrue(result.status);
             Assert::AreEqual<size_t>(4, loaded_dict.size());
             Assert::IsTrue(loaded_dict.get("test_file1") != nullptr);

@@ -49,8 +49,8 @@ namespace ff
         DWORD thread_id;
         bool destroyed;
 #if UWP_APP
-        Windows::UI::Core::CoreDispatcher^ dispatcher;
-        Windows::UI::Core::DispatchedHandler^ handler;
+        winrt::Windows::UI::Core::CoreDispatcher dispatcher;
+        winrt::Windows::UI::Core::DispatchedHandler handler;
 #else
         void handle_message(ff::window_message& msg);
 

@@ -33,7 +33,7 @@ namespace ff
             interpolate_spline = 0x20,
             interpolate_bits = 0xF0,
 
-            default = bounds_none | interpolate_linear,
+            default_ = bounds_none | interpolate_linear,
         };
 
         static method_t load_method(const ff::dict& dict, bool from_source);
@@ -66,7 +66,7 @@ namespace ff
     class create_animation_keys
     {
     public:
-        create_animation_keys(std::string_view name, float start, float length, animation_keys::method_t method = animation_keys::method_t::default, ff::value_ptr default_value = nullptr);
+        create_animation_keys(std::string_view name, float start, float length, animation_keys::method_t method = animation_keys::method_t::default_, ff::value_ptr default_value = nullptr);
         create_animation_keys(const create_animation_keys& other) = default;
         create_animation_keys(create_animation_keys&& other) noexcept = default;
 

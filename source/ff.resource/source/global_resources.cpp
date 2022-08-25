@@ -14,7 +14,8 @@ static std::shared_ptr<ff::resource_objects> create_global_resources(const std::
     for (auto& data : datas)
     {
         ff::dict dict;
-        if (!ff::dict::load(ff::data_reader(data), dict))
+        ff::data_reader reader(data);
+        if (!ff::dict::load(reader, dict))
         {
             assert(false);
             continue;
@@ -50,7 +51,8 @@ void ff::global_resources::add(std::shared_ptr<ff::data_base> data)
     if (::global_resources)
     {
         ff::dict dict;
-        if (ff::dict::load(ff::data_reader(data), dict))
+        ff::data_reader reader(data);
+        if (ff::dict::load(reader, dict))
         {
             ::global_resources->add_resources(dict);
         }

@@ -492,8 +492,9 @@ bool ff::dx12::resource::reset()
             starts_resident = false;
         }
 
+        CD3DX12_HEAP_PROPERTIES heap_properties(D3D12_HEAP_TYPE_DEFAULT);
         if (FAILED(ff::dx12::device()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+            &heap_properties,
             heap_flags,
             &this->desc_,
             this->global_state_.get(0).first,

@@ -12,7 +12,6 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <CompileAsWinRT>false</CompileAsWinRT>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PreprocessorDefinitions>NS_APP_INTERACTIVITY_API=;NS_APP_MEDIAELEMENT_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(InteractivityRoot)Include</AdditionalIncludeDirectories>

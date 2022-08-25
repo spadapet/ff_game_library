@@ -9,22 +9,22 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="app.xaml.h">
+    <ClInclude Include="app.h">
       <DependentUpon>app.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\main_page.xaml.h">
+    <ClInclude Include="source\main_page.h">
       <DependentUpon>source\main_page.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\test_app.xaml.h">
+    <ClInclude Include="source\test_app.h">
       <DependentUpon>source\test_app.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\test_input_devices.xaml.h">
+    <ClInclude Include="source\test_input_devices.h">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\test_swap_chain.xaml.h">
+    <ClInclude Include="source\test_swap_chain.h">
       <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\test_ui.xaml.h">
+    <ClInclude Include="source\test_ui.h">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="source\utility.h" />
@@ -36,11 +36,20 @@
     <Page Include="source\main_page.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="source\test_app.xaml" />
+    <Page Include="source\test_app.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="source\test_input_devices.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="source\test_swap_chain.xaml" />
+    <Page Include="source\test_swap_chain.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="source\test_ui.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="ui_assets\application_resources.xaml">
       <FileType>Document</FileType>
     </None>
@@ -62,7 +71,6 @@
     <None Include="ui_assets\theme\NoesisTheme.Styles.xaml">
       <FileType>Document</FileType>
     </None>
-    <Page Include="source\test_ui.xaml" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -70,28 +78,55 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="app.xaml.cpp">
+    <ClCompile Include="app.cpp">
       <DependentUpon>app.xaml</DependentUpon>
-    </ClCompile>
-    <ClCompile Include="source\main_page.xaml.cpp">
-      <DependentUpon>source\main_page.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\test_app.xaml.cpp">
+    <ClCompile Include="source\main_page.cpp">
+      <DependentUpon>source\main_page.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="source\test_app.cpp">
       <DependentUpon>source\test_app.xaml</DependentUpon>
     </ClCompile>
-    <ClCompile Include="source\test_input_devices.xaml.cpp">
+    <ClCompile Include="source\test_input_devices.cpp">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClCompile>
-    <ClCompile Include="source\test_swap_chain.xaml.cpp">
+    <ClCompile Include="source\test_swap_chain.cpp">
       <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
     </ClCompile>
-    <ClCompile Include="source\test_ui.xaml.cpp">
+    <ClCompile Include="source\test_ui.cpp">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="source\utility.cpp" />
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="app.idl">
+      <DependentUpon>app.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="source\main_page.idl">
+      <DependentUpon>source\main_page.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="source\test_app.idl">
+      <DependentUpon>source\test_app.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="source\test_input_devices.idl">
+      <DependentUpon>source\test_input_devices.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="source\test_swap_chain.idl">
+      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="source\test_ui.idl">
+      <DependentUpon>source\test_ui.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\source\ff.application\ff.application_uwp.vcxproj">
@@ -150,4 +185,9 @@
     </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(GeneratedFilesDir)source;</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
 </Project>

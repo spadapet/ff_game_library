@@ -5,12 +5,16 @@
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <NoesisVersion>3.1.5</NoesisVersion>
-    <WinPixVersion>1.0.210818001</WinPixVersion>
+    <WinPixVersion>1.0.220810001</WinPixVersion>
+    <CppWinRTVersion>2.0.220608.4</CppWinRTVersion>
 
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>
     <PackagesRoot Condition=" '$(PackagesRoot)' == '' ">$(DevRoot)packages\</PackagesRoot>
+    <CppWinRTPackageDir>$(PackagesRoot)Microsoft.Windows.CppWinRT.$(CppWinRTVersion)\</CppWinRTPackageDir>
+    <CppWinRTRoot>$(CppWinRTPackageDir)\build\native\</CppWinRTRoot>
+    <CppWinRTPath>$(CppWinRTPackageDir)bin\</CppWinRTPath>
 
     <!-- Project config -->
     <AppType Condition=" '$(AppType)' == '' And $(MSBuildProjectName.EndsWith('_uwp')) ">UWP</AppType>
@@ -23,6 +27,8 @@
     <APlatform>$(XPlatform)</APlatform>
     <APlatform Condition=" '$(Platform)' == 'x64' ">amd64</APlatform>
   </PropertyGroup>
+
+  <Import Project="$(CppWinRTRoot)Microsoft.Windows.CppWinRT.props" Condition="Exists('$(CppWinRTRoot)Microsoft.Windows.CppWinRT.props')" />
 
   <PropertyGroup>
     <!-- Project properties -->
@@ -83,10 +89,15 @@
         <ApplicationType Condition=" '$(ApplicationType)' == '' ">Windows Store</ApplicationType>
         <ApplicationTypeRevision Condition=" '$(ApplicationTypeRevision)' == '' ">10.0</ApplicationTypeRevision>
         <AppxPackageSigningEnabled Condition=" '$(AppxPackageSigningEnabled)' == '' ">false</AppxPackageSigningEnabled>
+        <CppWinRTOptimized>true</CppWinRTOptimized>
+        <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
+        <CppWinRTGenerateWindowsMetadata Condition=" '$(CppWinRTGenerateWindowsMetadata)' == '' And '$(ConfigurationType)' == 'Application' ">true</CppWinRTGenerateWindowsMetadata>
+        <CppWinRTGenerateWindowsMetadata Condition=" '$(CppWinRTGenerateWindowsMetadata)' == '' ">false</CppWinRTGenerateWindowsMetadata>
         <EnableDotNetNativeCompatibleProfile Condition=" '$(EnableDotNetNativeCompatibleProfile)' == '' And '$(ConfigurationType)' == 'Application' ">true</EnableDotNetNativeCompatibleProfile>
         <GenerateManifest Condition=" '$(GenerateManifest)' == '' And '$(ConfigurationType)' != 'Application' ">false</GenerateManifest>
         <GenerateWindowsMetadata Condition=" '$(GenerateWindowsMetadata)' == '' And '$(ConfigurationType)' == 'Application' ">true</GenerateWindowsMetadata>
         <GenerateWindowsMetadata Condition=" '$(GenerateWindowsMetadata)' == '' ">false</GenerateWindowsMetadata>
+        <MinimalCoreWin>true</MinimalCoreWin>
         <WindowsTargetPlatformMinVersion Condition=" '$(WindowsTargetPlatformMinVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformMinVersion>
         <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
       </PropertyGroup>

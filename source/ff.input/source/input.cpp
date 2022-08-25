@@ -105,7 +105,7 @@ static std::vector<ff::signal_connection> main_window_connections;
 static const size_t MIN_GAMEPADS = 4;
 
 #if UWP_APP
-void gamepad_added(Windows::Gaming::Input::Gamepad^ gamepad)
+static void gamepad_added(const winrt::Windows::Gaming::Input::Gamepad& gamepad)
 {
     for (const std::unique_ptr<ff::gamepad_device>& device : ::gamepads)
     {
@@ -120,7 +120,7 @@ void gamepad_added(Windows::Gaming::Input::Gamepad^ gamepad)
     ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(gamepad));
 }
 
-void gamepad_removed(Windows::Gaming::Input::Gamepad^ gamepad)
+static void gamepad_removed(const winrt::Windows::Gaming::Input::Gamepad& gamepad)
 {
     for (const std::unique_ptr<ff::gamepad_device>& device : ::gamepads)
     {
@@ -144,7 +144,7 @@ bool ff::internal::input::init()
 #if UWP_APP
     ::main_window_connections.emplace_back(ff::window::main()->pointer_message_sink().connect(std::bind(&ff::pointer_device::notify_main_window_pointer_message, ::pointer.get(), std::placeholders::_1, std::placeholders::_2)));
 
-    ::main_window_connections.emplace_back(ff::window::main()->gamepad_message_sink().connect([](bool added, Windows::Gaming::Input::Gamepad^ gamepad)
+    ::main_window_connections.emplace_back(ff::window::main()->gamepad_message_sink().connect([](bool added, const winrt::Windows::Gaming::Input::Gamepad& gamepad)
         {
             if (added)
             {
@@ -161,7 +161,7 @@ bool ff::internal::input::init()
         ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(nullptr));
     }
 
-    for (Windows::Gaming::Input::Gamepad^ gamepad : Windows::Gaming::Input::Gamepad::Gamepads)
+    for (const winrt::Windows::Gaming::Input::Gamepad& gamepad : winrt::Windows::Gaming::Input::Gamepad::Gamepads())
     {
         ::gamepad_added(gamepad);
     }

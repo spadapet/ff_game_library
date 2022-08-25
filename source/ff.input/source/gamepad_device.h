@@ -21,7 +21,7 @@ namespace ff
     {
     public:
 #if UWP_APP
-        using gamepad_type = typename Windows::Gaming::Input::Gamepad^;
+        using gamepad_type = typename winrt::Windows::Gaming::Input::Gamepad;
 #else
         using gamepad_type = typename size_t;
 #endif

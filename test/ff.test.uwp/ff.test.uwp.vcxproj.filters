@@ -100,10 +100,15 @@
     <None Include="ui_assets\theme\PT Root UI_Bold.otf">
       <Filter>ui_assets\theme</Filter>
     </None>
+    <None Include="$(NoesisDll)" />
+    <None Include="$(WinPixDll)" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="ui_assets\assets.xaml.res.json">
       <Filter>ui_assets</Filter>
     </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="source\app.idl" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "resource.h"
+#include "resource_object_base.h"
 #include "resource_object_provider.h"
 
 namespace ff
