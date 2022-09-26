@@ -145,6 +145,7 @@ namespace game
 int ff::game::run(const ff::game::init_params& params)
 {
     ::init_params = &params;
+    winrt::init_apartment();
     winrt::Windows::ApplicationModel::Core::CoreApplication::Run(winrt::make<::game::app>());
     return 0;
 }

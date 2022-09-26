@@ -106,7 +106,7 @@
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>
       <GenerateDebugInformation Condition=" '$(Configuration)' != 'Debug' ">true</GenerateDebugInformation>
-      <GenerateWindowsMetadata>$(GenerateWindowsMetadata)</GenerateWindowsMetadata>
+      <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <LargeAddressAware>true</LargeAddressAware>
       <LinkTimeCodeGeneration Condition=" '$(Configuration)' != 'Debug' ">UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <OptimizeReferences Condition=" '$(Configuration)' != 'Debug' ">true</OptimizeReferences>
