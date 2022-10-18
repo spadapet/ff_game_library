@@ -104,6 +104,21 @@ ff::thread_dispatch* ff::thread_dispatch::get_game()
     return ff::thread_dispatch::get(ff::thread_dispatch_type::game);
 }
 
+ff::thread_dispatch_type ff::thread_dispatch::get_type()
+{
+    if (ff::thread_dispatch::get_main()->current_thread())
+    {
+        return ff::thread_dispatch_type::main;
+    }
+
+    if (ff::thread_dispatch::get_game()->current_thread())
+    {
+        return ff::thread_dispatch_type::game;
+    }
+
+    return ff::thread_dispatch_type::task;
+}
+
 void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current_thread)
 {
     if (!this || (run_if_current_thread && this->current_thread()))

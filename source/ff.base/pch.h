@@ -3,6 +3,7 @@
 // C++
 #include <array>
 #include <atomic>
+#include <coroutine>
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>

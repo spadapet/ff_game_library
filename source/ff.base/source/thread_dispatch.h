@@ -28,6 +28,7 @@ namespace ff
         static thread_dispatch* get(thread_dispatch_type type = thread_dispatch_type::none);
         static thread_dispatch* get_main();
         static thread_dispatch* get_game();
+        static ff::thread_dispatch_type get_type();
 
         void post(std::function<void()>&& func, bool run_if_current_thread = false);
         void send(std::function<void()>&& func);
