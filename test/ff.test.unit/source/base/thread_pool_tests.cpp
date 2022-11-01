@@ -33,5 +33,31 @@ namespace ff::test::base
             Assert::AreEqual(10, i1);
             Assert::AreEqual(20, i2);
         }
+
+        TEST_METHOD(timers)
+        {
+            ff::thread_pool tp;
+            ff::win_handle events[3] =
+            {
+                ff::win_handle::create_event(),
+                ff::win_handle::create_event(),
+                ff::win_handle::create_event(),
+            };
+
+            int i[3] = {};
+
+            tp.add_task([&events, &i]()
+                {
+                    ::Sleep(500);
+                    i[0] = 10;
+                    ::SetEvent(events[0]);
+                }, 1000);
+
+            std::array<HANDLE, 1> handles{ events[0] };
+            bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 4000);
+
+            Assert::IsTrue(success);
+            Assert::AreEqual(10, i[0]);
+        }
     };
 }

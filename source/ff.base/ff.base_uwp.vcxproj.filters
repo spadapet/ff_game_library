@@ -68,6 +68,9 @@
     <ClCompile Include="source\co_task.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\cancel_source.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -156,6 +159,9 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\co_task.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\cancel_source.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

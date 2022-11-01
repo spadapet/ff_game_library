@@ -1018,7 +1018,7 @@ void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_1()
     if (!this->geometry_constants_hash_1 || this->geometry_constants_hash_1 != hash1)
     {
         this->geometry_constants_hash_1 = hash1;
-#if _DEBUG
+#if DEBUG
         size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * ff::dxgi::draw_util::MAX_TRANSFORM_MATRIXES;
 #else
         size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;

@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <exception>
 #include <filesystem>
 #include <forward_list>
 #include <functional>
@@ -20,6 +21,8 @@
 #include <string_view>
 #include <type_traits>
 #include <typeindex>
+#include <unordered_map>
+#include <unordered_set>
 
 // Windows
 #include <Windows.h>

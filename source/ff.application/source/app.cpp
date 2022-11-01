@@ -104,12 +104,10 @@ static void frame_reset_timer()
 static bool frame_advance_timer(ff::state::advance_t advance_type)
 {
     size_t max_advances = ff::frame_time_t::max_advance_count;
-#if _DEBUG
-    if (::IsDebuggerPresent())
+    if (DEBUG && ::IsDebuggerPresent())
     {
         max_advances = 1;
     }
-#endif
 
     switch (advance_type)
     {

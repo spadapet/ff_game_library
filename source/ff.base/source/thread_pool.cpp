@@ -5,6 +5,13 @@
 static thread_local ff::thread_pool* task_thread_pool = nullptr;
 static ff::thread_pool* main_thread_pool = nullptr;
 
+static void set_thread_name(const wchar_t* name)
+{
+#if DEBUG
+    ::SetThreadDescription(::GetCurrentThread(), name);
+#endif
+}
+
 ff::thread_pool::thread_pool(thread_pool_type type)
     : no_tasks_event(ff::win_handle::create_event(true))
     , task_count(0)
@@ -58,8 +65,30 @@ namespace
 {
     struct thread_data_t
     {
+        ~thread_data_t()
+        {
+            ::SetEvent(this->done_event);
+        }
+
         ff::thread_pool::func_type func;
         ff::win_handle done_event;
+    };
+
+    struct task_data_t
+    {
+        ~task_data_t()
+        {
+            this->func = {};
+
+            if (this->thread_pool && this->done_func)
+            {
+                (this->thread_pool->*this->done_func)();
+            }
+        }
+
+        ff::thread_pool::func_type func;
+        ff::thread_pool* thread_pool;
+        void (ff::thread_pool::*done_func)();
     };
 }
 
@@ -67,78 +96,116 @@ ff::win_handle ff::thread_pool::add_thread(func_type&& func)
 {
     ff::win_handle done_event = ff::win_handle::create_event();
     ::thread_data_t* thread_data = new ::thread_data_t{ std::move(func), done_event.duplicate() };
-
-    if (!::TrySubmitThreadpoolCallback(&thread_pool::thread_callback, thread_data, nullptr))
-    {
-        assert(false);
-        done_event.close();
-        delete thread_data;
-    }
-
+    verify(::TrySubmitThreadpoolCallback(&thread_pool::thread_callback, thread_data, nullptr));
     return done_event;
 }
 
-void ff::thread_pool::add_task(func_type&& func)
+void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
 {
-    auto pair = new std::pair<func_type, thread_pool*>(std::move(func), this);
+    auto data = new ::task_data_t{ std::move(func), this, &ff::thread_pool::task_done };
     bool run_now = true;
 
     if (this)
     {
-        std::scoped_lock lock(this->mutex);
-        this->task_count++;
-
-        if (!this->destroyed && ::TrySubmitThreadpoolCallback(&thread_pool::task_callback, pair, nullptr))
+        // Check if the task should really be queued
         {
-            run_now = false;
-            ::ResetEvent(this->no_tasks_event);
+            std::scoped_lock lock(this->mutex);
+            if (!this->destroyed)
+            {
+                run_now = false;
+
+                if (++this->task_count == 1)
+                {
+                    ::ResetEvent(this->no_tasks_event);
+                }
+            }
+        }
+
+        if (!delay_ms)
+        {
+            verify(::TrySubmitThreadpoolCallback(&thread_pool::task_callback, data, nullptr));
+        }
+        else
+        {
+            PTP_TIMER timer = ::CreateThreadpoolTimer(&thread_pool::timer_callback, data, nullptr);
+            assert(timer);
+            {
+                std::scoped_lock lock(this->timer_mutex);
+                this->timers.insert(timer);
+
+                ULARGE_INTEGER delay_li;
+                delay_li.QuadPart = delay_ms * -10000; // ms to hundreds of ns
+                FILETIME delay_ft{ delay_li.LowPart, delay_li.HighPart };
+                ::SetThreadpoolTimer(timer, &delay_ft, 0, 0);
+            }
         }
     }
 
     if (run_now)
     {
-        this->run_task(pair->first);
-        delete pair;
+        data->func();
+        delete data;
     }
 }
 
 void ff::thread_pool::flush()
 {
+    // Finish timer tasks immediately
+    {
+        FILETIME zero{};
+        std::scoped_lock lock(this->timer_mutex);
+
+        for (PTP_TIMER timer : this->timers)
+        {
+            ::SetThreadpoolTimer(timer, &zero, 0, 0);
+        }
+    }
+
     ff::wait_for_handle(this->no_tasks_event);
 }
 
 void ff::thread_pool::thread_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
-    BOOL created_new_thead = ::CallbackMayRunLong(instance);
-    assert(created_new_thead);
-
+    verify(::CallbackMayRunLong(instance));
     ::DisassociateCurrentThreadFromCallback(instance);
-#if _DEBUG
-    ::SetThreadDescription(::GetCurrentThread(), L"ff::thread_pool::thread");
-#endif
+    ::set_thread_name(L"ff::thread_pool::thread");
 
     ::thread_data_t* thread_data = reinterpret_cast<::thread_data_t*>(context);
     thread_data->func();
-    ::SetEvent(thread_data->done_event);
     delete thread_data;
+}
+
+static ::task_data_t* task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
+{
+    ::set_thread_name(L"ff::thread_pool::task");
+
+    auto data = reinterpret_cast<::task_data_t*>(context);
+    data->func();
+
+    ::DisassociateCurrentThreadFromCallback(instance);
+
+    return data;
 }
 
 void ff::thread_pool::task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
-#if _DEBUG
-    ::SetThreadDescription(::GetCurrentThread(), L"ff::thread_pool::task");
-#endif
-    auto pair = reinterpret_cast<std::pair<func_type, thread_pool*>*>(context);
-    pair->second->run_task(pair->first);
-    delete pair;
-
-    ::DisassociateCurrentThreadFromCallback(instance);
+    delete ::task_callback(instance, context);
 }
 
-void ff::thread_pool::run_task(const func_type& func)
+void ff::thread_pool::timer_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_TIMER timer)
 {
-    func();
+    ::task_data_t* data = ::task_callback(instance, context);
+    {
+        std::scoped_lock lock(data->thread_pool->timer_mutex);
+        verify(data->thread_pool->timers.erase(timer) == 1);
+        ::CloseThreadpoolTimer(timer);
+    }
 
+    delete data;
+}
+
+void ff::thread_pool::task_done()
+{
     if (this)
     {
         std::scoped_lock lock(this->mutex);

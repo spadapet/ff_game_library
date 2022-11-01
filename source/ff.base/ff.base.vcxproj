@@ -11,6 +11,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\assert.cpp" />
+    <ClCompile Include="source\cancel_source.cpp" />
     <ClCompile Include="source\co_task.cpp" />
     <ClCompile Include="source\end_scope_action.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
@@ -35,6 +36,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\assert.h" />
+    <ClInclude Include="source\cancel_source.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\co_task.h" />
     <ClInclude Include="source\end_scope_action.h" />
