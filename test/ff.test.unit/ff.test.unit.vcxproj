@@ -13,6 +13,7 @@
     </ClCompile>
     <ClCompile Include="source\audio\effect_tests.cpp" />
     <ClCompile Include="source\audio\music_tests.cpp" />
+    <ClCompile Include="source\base\cancel_source_tests.cpp" />
     <ClCompile Include="source\base\filesystem_tests.cpp" />
     <ClCompile Include="source\base\fixed_tests.cpp" />
     <ClCompile Include="source\base\frame_allocator_tests.cpp" />

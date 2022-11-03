@@ -107,7 +107,7 @@ void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
 
     if (this)
     {
-        // Check if the task should really be queued
+        if (!this->destroyed)
         {
             std::scoped_lock lock(this->mutex);
             if (!this->destroyed)

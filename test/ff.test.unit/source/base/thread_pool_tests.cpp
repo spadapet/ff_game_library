@@ -53,8 +53,22 @@ namespace ff::test::base
                     ::SetEvent(events[0]);
                 }, 1000);
 
-            std::array<HANDLE, 1> handles{ events[0] };
-            bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 4000);
+            tp.add_task([&events, &i]()
+                {
+                    ::Sleep(750);
+                    i[1] = 20;
+                    ::SetEvent(events[1]);
+                }, 1500);
+
+            tp.add_task([&events, &i]()
+                {
+                    ::Sleep(1000);
+                    i[1] = 30;
+                    ::SetEvent(events[2]);
+                }, 2000);
+
+            std::array<HANDLE, 3> handles{ events[0], events[1], events[2] };
+            bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 6000);
 
             Assert::IsTrue(success);
             Assert::AreEqual(10, i[0]);

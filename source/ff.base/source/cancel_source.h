@@ -32,9 +32,10 @@ namespace ff
         cancel_token& operator=(cancel_token&& other) noexcept = default;
         cancel_token& operator=(const cancel_token& other) = default;
 
+        bool valid() const;
         bool canceled() const;
         void throw_if_canceled() const;
-        void add_listener(std::function<void()>&& func) const;
+        void notify(std::function<void()>&& func) const;
         HANDLE wait_handle() const;
 
     private:

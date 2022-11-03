@@ -10,6 +10,11 @@ ff::cancel_token::cancel_token(const std::shared_ptr<ff::internal::cancel_data>&
     : data(data)
 {}
 
+bool ff::cancel_token::valid() const
+{
+    return this->data != nullptr;
+}
+
 bool ff::cancel_token::canceled() const
 {
     return this->data && this->data->canceled;
@@ -23,7 +28,7 @@ void ff::cancel_token::throw_if_canceled() const
     }
 }
 
-void ff::cancel_token::add_listener(std::function<void()>&& func) const
+void ff::cancel_token::notify(std::function<void()>&& func) const
 {
     if (this->data)
     {

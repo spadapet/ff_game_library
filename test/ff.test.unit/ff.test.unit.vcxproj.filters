@@ -152,6 +152,9 @@
     <ClCompile Include="source\dx12\render_target_tests.cpp">
       <Filter>source\dx12</Filter>
     </ClCompile>
+    <ClCompile Include="source\base\cancel_source_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
