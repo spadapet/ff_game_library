@@ -1,6 +1,7 @@
 #pragma once
 
 #include "assert.h"
+#include "constants.h"
 #include "thread_dispatch.h"
 
 namespace ff::internal
@@ -8,10 +9,10 @@ namespace ff::internal
     class co_thread_awaiter
     {
     public:
-        co_thread_awaiter(ff::thread_dispatch_type thread_type);
+        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
 
-        static bool ready(ff::thread_dispatch_type thread_type);
-        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type);
+        static bool ready(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
+        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
 
         bool await_ready() const;
         void await_suspend(std::coroutine_handle<> coroutine) const;
@@ -19,6 +20,7 @@ namespace ff::internal
 
     private:
         ff::thread_dispatch_type thread_type;
+        size_t delay_ms;
     };
 
     /// <summary>
@@ -412,4 +414,6 @@ namespace ff
     ff::internal::co_thread_awaiter resume_on_main();
     ff::internal::co_thread_awaiter resume_on_game();
     ff::internal::co_thread_awaiter resume_on_task();
+    ff::internal::co_thread_awaiter delay_task(size_t delay_ms);
+    ff::internal::co_thread_awaiter yield_task();
 }
