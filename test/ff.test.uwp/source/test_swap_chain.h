@@ -17,7 +17,7 @@ namespace winrt::test_uwp::implementation
         std::unique_ptr<ff::dxgi::target_window_base> target;
 
         ff::win_handle stop_thread;
-        ff::win_handle thread_stopped;
+        ff::win_handle thread_handle;
     };
 }
 

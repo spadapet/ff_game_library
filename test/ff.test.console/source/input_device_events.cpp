@@ -7,7 +7,6 @@ void run_input_device_events()
 
     std::mutex mutex;
     ff::win_handle done_event = ff::win_handle::create_event();
-    ff::win_handle thread_event = ff::win_handle::create_event();
     ff::input_device_event last_event{};
 
     auto connection = ff::input::combined_devices().event_sink().connect([&mutex, &last_event](const ff::input_device_event& event)
@@ -42,7 +41,7 @@ void run_input_device_events()
             last_event = event;
         });
 
-    ff::thread_pool::get()->add_thread([&done_event, &thread_event]()
+    ff::win_handle thread_handle = ff::thread_pool::get()->add_thread([&done_event]()
         {
             ff::thread_dispatch dispatch(ff::thread_dispatch_type::game);
 
@@ -51,11 +50,9 @@ void run_input_device_events()
                 ff::input::combined_devices().advance();
                 dispatch.flush();
             }
-
-            ::SetEvent(thread_event);
         });
 
     ff::handle_messages_until_quit();
     ::SetEvent(done_event);
-    ff::wait_for_event_and_reset(thread_event);
+    ff::wait_for_handle(thread_handle);
 }

@@ -6,14 +6,13 @@
 winrt::test_uwp::implementation::test_swap_chain::test_swap_chain()
     : init_main_window(ff::init_main_window_params{})
     , stop_thread(ff::win_handle::create_event())
-    , thread_stopped(ff::win_handle::create_event())
 {}
 
 void winrt::test_uwp::implementation::test_swap_chain::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
     this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), true);
 
-    ff::thread_pool::get()->add_thread([this]()
+    this->thread_handle = ff::thread_pool::get()->add_thread([this]()
         {
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
 
@@ -47,15 +46,16 @@ void winrt::test_uwp::implementation::test_swap_chain::loaded(const winrt::Windo
                 thread_dispatch.flush();
             }
             while (!ff::wait_for_handle(this->stop_thread, 100));
-
-            ::SetEvent(this->thread_stopped);
         });
 }
 
 void winrt::test_uwp::implementation::test_swap_chain::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    ::SetEvent(this->stop_thread);
-    ff::wait_for_handle(this->thread_stopped);
+    if (this->thread_handle)
+    {
+        ::SetEvent(this->stop_thread);
+        ff::wait_for_handle(this->thread_handle);
+    }
 
     this->target.reset();
 }

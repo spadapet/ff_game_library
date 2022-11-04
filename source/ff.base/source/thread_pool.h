@@ -26,19 +26,18 @@ namespace ff
 
         static thread_pool* get();
 
-        ff::win_handle add_thread(func_type&& func);
+        ff::win_handle add_thread(func_type&& func, std::string_view name = {});
         void add_task(func_type&& func, size_t delay_ms = 0);
         void flush();
 
     private:
-        static void CALLBACK thread_callback(PTP_CALLBACK_INSTANCE instance, void* context);
         static void CALLBACK task_callback(PTP_CALLBACK_INSTANCE instance, void* context);
         static void CALLBACK timer_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_TIMER timer);
         void task_done();
 
         std::mutex mutex;
         std::mutex timer_mutex;
-        std::unordered_set<PTP_TIMER> timers;
+        std::unordered_map<PTP_TIMER, void*> timers;
         ff::win_handle no_tasks_event;
         size_t task_count;
         bool destroyed;

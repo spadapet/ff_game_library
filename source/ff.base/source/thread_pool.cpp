@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "assert.h"
+#include "string.h"
 #include "thread_pool.h"
 
 static thread_local ff::thread_pool* task_thread_pool = nullptr;
@@ -65,13 +66,9 @@ namespace
 {
     struct thread_data_t
     {
-        ~thread_data_t()
-        {
-            ::SetEvent(this->done_event);
-        }
-
         ff::thread_pool::func_type func;
-        ff::win_handle done_event;
+        std::wstring name;
+        ff::win_handle handle;
     };
 
     struct task_data_t
@@ -92,12 +89,26 @@ namespace
     };
 }
 
-ff::win_handle ff::thread_pool::add_thread(func_type&& func)
+static uint32_t CALLBACK thread_callback(void* context)
 {
-    ff::win_handle done_event = ff::win_handle::create_event();
-    ::thread_data_t* thread_data = new ::thread_data_t{ std::move(func), done_event.duplicate() };
-    verify(::TrySubmitThreadpoolCallback(&thread_pool::thread_callback, thread_data, nullptr));
-    return done_event;
+    std::unique_ptr<::thread_data_t> data(reinterpret_cast<::thread_data_t*>(context));
+    ::set_thread_name(data->name.c_str());
+    data->func();
+    return 0;
+}
+
+ff::win_handle ff::thread_pool::add_thread(func_type&& func, std::string_view name)
+{
+    std::wstring wname = DEBUG
+        ? (ff::string::to_wstring(name.empty() ? std::string_view("ff::thread_pool::thread") : name))
+        : std::wstring();
+
+    ::thread_data_t* data = new ::thread_data_t{ std::move(func), wname };
+    ff::win_handle handle(reinterpret_cast<HANDLE>(::_beginthreadex(nullptr, 0, ::thread_callback, data, CREATE_SUSPENDED, nullptr)));
+    data->handle = handle.duplicate();
+    ::ResumeThread(handle);
+
+    return handle;
 }
 
 void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
@@ -131,7 +142,7 @@ void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
             assert(timer);
             {
                 std::scoped_lock lock(this->timer_mutex);
-                this->timers.insert(timer);
+                this->timers.try_emplace(timer, data);
 
                 ULARGE_INTEGER delay_li;
                 delay_li.QuadPart = delay_ms * -10000; // ms to hundreds of ns
@@ -150,57 +161,59 @@ void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
 
 void ff::thread_pool::flush()
 {
-    // Finish timer tasks immediately
+    // Stop timer callbacks from doing any work
+    std::unordered_map<PTP_TIMER, void*> timers;
     {
-        FILETIME zero{};
         std::scoped_lock lock(this->timer_mutex);
+        std::swap(timers, this->timers);
+    }
 
-        for (PTP_TIMER timer : this->timers)
-        {
-            ::SetThreadpoolTimer(timer, &zero, 0, 0);
-        }
+    // Cancel all timers and wait for their callbacks to bail out (they won't be running real work)
+    for (auto [timer, _] : timers)
+    {
+        ::SetThreadpoolTimer(timer, nullptr, 0, 0);
+        ::WaitForThreadpoolTimerCallbacks(timer, TRUE);
+        ::CloseThreadpoolTimer(timer);
+    }
+
+    // Run all timers now
+    for (auto [_, context] : timers)
+    {
+        auto data = reinterpret_cast<::task_data_t*>(context);
+        data->func();
+        delete data;
     }
 
     ff::wait_for_handle(this->no_tasks_event);
 }
 
-void ff::thread_pool::thread_callback(PTP_CALLBACK_INSTANCE instance, void* context)
-{
-    verify(::CallbackMayRunLong(instance));
-    ::DisassociateCurrentThreadFromCallback(instance);
-    ::set_thread_name(L"ff::thread_pool::thread");
-
-    ::thread_data_t* thread_data = reinterpret_cast<::thread_data_t*>(context);
-    thread_data->func();
-    delete thread_data;
-}
-
-static ::task_data_t* task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
-{
-    ::set_thread_name(L"ff::thread_pool::task");
-
-    auto data = reinterpret_cast<::task_data_t*>(context);
-    data->func();
-
-    ::DisassociateCurrentThreadFromCallback(instance);
-
-    return data;
-}
-
 void ff::thread_pool::task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
-    delete ::task_callback(instance, context);
+    ::set_thread_name(L"ff::thread_pool::task");
+    auto data = reinterpret_cast<::task_data_t*>(context);
+    data->func();
+    delete data;
 }
 
 void ff::thread_pool::timer_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_TIMER timer)
 {
-    ::task_data_t* data = ::task_callback(instance, context);
+    ::set_thread_name(L"ff::thread_pool::task");
+
+    auto data = reinterpret_cast<::task_data_t*>(context);
     {
         std::scoped_lock lock(data->thread_pool->timer_mutex);
-        verify(data->thread_pool->timers.erase(timer) == 1);
-        ::CloseThreadpoolTimer(timer);
+        if (data->thread_pool->timers.erase(timer))
+        {
+            ::CloseThreadpoolTimer(timer);
+        }
+        else
+        {
+            // flush() will delete the data
+            return;
+        }
     }
 
+    data->func();
     delete data;
 }
 

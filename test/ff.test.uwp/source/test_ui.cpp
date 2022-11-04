@@ -7,12 +7,11 @@
 winrt::test_uwp::implementation::test_ui::test_ui()
     : init_main_window(ff::init_main_window_params{})
     , stop_thread(ff::win_handle::create_event())
-    , thread_stopped(ff::win_handle::create_event())
 {}
 
 void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    ff::thread_pool::get()->add_thread([this]()
+    this->thread_handle = ff::thread_pool::get()->add_thread([this]()
         {
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
@@ -64,12 +63,14 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
             while (!ff::wait_for_handle(this->stop_thread, 32));
 
             ff::internal::ui::destroy_game_thread();
-            ::SetEvent(this->thread_stopped);
         });
 }
 
 void winrt::test_uwp::implementation::test_ui::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    ::SetEvent(this->stop_thread);
-    ff::wait_for_handle(this->thread_stopped);
+    if (this->thread_handle)
+    {
+        ::SetEvent(this->stop_thread);
+        ff::wait_for_handle(this->thread_handle);
+    }
 }
