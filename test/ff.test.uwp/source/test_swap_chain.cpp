@@ -12,7 +12,7 @@ void winrt::test_uwp::implementation::test_swap_chain::loaded(const winrt::Windo
 {
     this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), true);
 
-    this->thread_handle = ff::thread_pool::get()->add_thread([this]()
+    this->thread_handle = ff::create_thread([this]()
         {
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
 

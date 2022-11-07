@@ -23,6 +23,7 @@
     <ClCompile Include="source\signal.cpp" />
     <ClCompile Include="source\stable_hash.cpp" />
     <ClCompile Include="source\string.cpp" />
+    <ClCompile Include="source\thread.cpp" />
     <ClCompile Include="source\thread_dispatch.cpp" />
     <ClCompile Include="source\thread_pool.cpp" />
     <ClCompile Include="source\timer.cpp" />
@@ -57,6 +58,7 @@
     <ClInclude Include="source\stable_hash.h" />
     <ClInclude Include="source\stack_vector.h" />
     <ClInclude Include="source\string.h" />
+    <ClInclude Include="source\thread.h" />
     <ClInclude Include="source\thread_dispatch.h" />
     <ClInclude Include="source\thread_pool.h" />
     <ClInclude Include="source\timer.h" />

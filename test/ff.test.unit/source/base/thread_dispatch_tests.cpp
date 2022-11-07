@@ -7,7 +7,7 @@ namespace ff::test::base
     public:
         TEST_METHOD(simple)
         {
-            ff::win_handle thread_handle = ff::thread_pool::get()->add_thread([]()
+            ff::win_handle thread_handle = ff::create_thread([]()
                 {
                     ff::thread_dispatch td(ff::thread_dispatch_type::task);
                     Assert::IsTrue(td.current_thread());

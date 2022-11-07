@@ -11,7 +11,7 @@ namespace ff::test::base
             ff::win_handle task_done_event = ff::win_handle::create_event();
             int i1 = 0, i2 = 0;
 
-            ff::win_handle thread_handle = tp.add_thread([&i1]()
+            ff::win_handle thread_handle = ff::create_thread([&i1]()
                 {
                     ::Sleep(500);
                     i1 = 10;

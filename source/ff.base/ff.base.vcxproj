@@ -23,6 +23,7 @@
     <ClCompile Include="source\memory.cpp" />
     <ClCompile Include="source\signal.cpp" />
     <ClCompile Include="source\string.cpp" />
+    <ClCompile Include="source\thread.cpp" />
     <ClCompile Include="source\thread_dispatch.cpp" />
     <ClCompile Include="source\thread_pool.cpp" />
     <ClCompile Include="source\timer.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\rect.h" />
     <ClInclude Include="source\string.h" />
+    <ClInclude Include="source\thread.h" />
     <ClInclude Include="source\thread_dispatch.h" />
     <ClInclude Include="source\thread_pool.h" />
     <ClInclude Include="source\timer.h" />

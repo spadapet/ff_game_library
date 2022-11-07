@@ -1,17 +1,11 @@
 #include "pch.h"
 #include "assert.h"
 #include "string.h"
+#include "thread.h"
 #include "thread_pool.h"
 
 static thread_local ff::thread_pool* task_thread_pool = nullptr;
 static ff::thread_pool* main_thread_pool = nullptr;
-
-static void set_thread_name(const wchar_t* name)
-{
-#if DEBUG
-    ::SetThreadDescription(::GetCurrentThread(), name);
-#endif
-}
 
 ff::thread_pool::thread_pool(thread_pool_type type)
     : no_tasks_event(ff::win_handle::create_event(true))
@@ -64,13 +58,6 @@ ff::thread_pool* ff::thread_pool::get()
 
 namespace
 {
-    struct thread_data_t
-    {
-        ff::thread_pool::func_type func;
-        std::wstring name;
-        ff::win_handle handle;
-    };
-
     struct task_data_t
     {
         ~task_data_t()
@@ -89,28 +76,6 @@ namespace
     };
 }
 
-static uint32_t CALLBACK thread_callback(void* context)
-{
-    std::unique_ptr<::thread_data_t> data(reinterpret_cast<::thread_data_t*>(context));
-    ::set_thread_name(data->name.c_str());
-    data->func();
-    return 0;
-}
-
-ff::win_handle ff::thread_pool::add_thread(func_type&& func, std::string_view name)
-{
-    std::wstring wname = DEBUG
-        ? (ff::string::to_wstring(name.empty() ? std::string_view("ff::thread_pool::thread") : name))
-        : std::wstring();
-
-    ::thread_data_t* data = new ::thread_data_t{ std::move(func), wname };
-    ff::win_handle handle(reinterpret_cast<HANDLE>(::_beginthreadex(nullptr, 0, ::thread_callback, data, CREATE_SUSPENDED, nullptr)));
-    data->handle = handle.duplicate();
-    ::ResumeThread(handle);
-
-    return handle;
-}
-
 void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
 {
     auto data = new ::task_data_t{ std::move(func), this, &ff::thread_pool::task_done };
@@ -118,21 +83,22 @@ void ff::thread_pool::add_task(func_type&& func, size_t delay_ms)
 
     if (this)
     {
-        if (!this->destroyed)
+        // Update task count
         {
             std::scoped_lock lock(this->mutex);
-            if (!this->destroyed)
-            {
-                run_now = false;
+            run_now = this->destroyed;
 
-                if (++this->task_count == 1)
-                {
-                    ::ResetEvent(this->no_tasks_event);
-                }
+            if (++this->task_count == 1)
+            {
+                ::ResetEvent(this->no_tasks_event);
             }
         }
 
-        if (!delay_ms)
+        if (run_now)
+        {
+            // runs below
+        }
+        else if (!delay_ms)
         {
             verify(::TrySubmitThreadpoolCallback(&thread_pool::task_callback, data, nullptr));
         }
@@ -177,7 +143,7 @@ void ff::thread_pool::flush()
     }
 
     // Run all timers now
-    for (auto [_, context] : timers)
+    for (auto [timer, context] : timers)
     {
         auto data = reinterpret_cast<::task_data_t*>(context);
         data->func();
@@ -189,7 +155,7 @@ void ff::thread_pool::flush()
 
 void ff::thread_pool::task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
-    ::set_thread_name(L"ff::thread_pool::task");
+    ff::set_thread_name("ff::thread_pool::task");
     auto data = reinterpret_cast<::task_data_t*>(context);
     data->func();
     delete data;
@@ -197,11 +163,12 @@ void ff::thread_pool::task_callback(PTP_CALLBACK_INSTANCE instance, void* contex
 
 void ff::thread_pool::timer_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_TIMER timer)
 {
-    ::set_thread_name(L"ff::thread_pool::task");
+    ff::set_thread_name("ff::thread_pool::task");
 
     auto data = reinterpret_cast<::task_data_t*>(context);
     {
         std::scoped_lock lock(data->thread_pool->timer_mutex);
+
         if (data->thread_pool->timers.erase(timer))
         {
             ::CloseThreadpoolTimer(timer);
@@ -222,6 +189,7 @@ void ff::thread_pool::task_done()
     if (this)
     {
         std::scoped_lock lock(this->mutex);
+        assert(this->task_count > 0);
         if (!--this->task_count)
         {
             ::SetEvent(this->no_tasks_event);

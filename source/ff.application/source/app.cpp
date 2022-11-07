@@ -356,7 +356,7 @@ static void start_game_thread()
     {
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
-        ff::thread_pool::get()->add_thread(::game_thread, "ff::game_loop");
+        ff::create_thread(::game_thread, "ff::game_loop");
         ff::wait_for_event_and_reset(::game_thread_event);
     }
 }
@@ -559,7 +559,7 @@ static void init_window()
 
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
-    ::SetThreadDescription(::GetCurrentThread(), L"ff::user_interface");
+    ff::set_thread_name("ff::user_interface");
 #if UWP_APP
     ff::window::main()->allow_swap_chain_panel(params.use_swap_chain_panel);
 #endif

@@ -11,7 +11,7 @@ winrt::test_uwp::implementation::test_ui::test_ui()
 
 void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    this->thread_handle = ff::thread_pool::get()->add_thread([this]()
+    this->thread_handle = ff::create_thread([this]()
         {
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 

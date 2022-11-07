@@ -41,7 +41,7 @@ void run_input_device_events()
             last_event = event;
         });
 
-    ff::win_handle thread_handle = ff::thread_pool::get()->add_thread([&done_event]()
+    ff::win_handle thread_handle = ff::create_thread([&done_event]()
         {
             ff::thread_dispatch dispatch(ff::thread_dispatch_type::game);
 
