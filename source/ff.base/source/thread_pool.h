@@ -1,6 +1,6 @@
 #pragma once
 
-#include "win_handle.h"
+#include "cancel_source.h"
 
 namespace ff
 {
@@ -26,19 +26,28 @@ namespace ff
 
         static thread_pool* get();
 
-        void add_task(func_type&& func, size_t delay_ms = 0);
+        void add_task(func_type&& func);
+        void add_timer(func_type&& func, size_t delay_ms, ff::cancel_token cancel = {});
         void flush();
 
     private:
         static void CALLBACK task_callback(PTP_CALLBACK_INSTANCE instance, void* context);
-        static void CALLBACK timer_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_TIMER timer);
-        void task_done();
+        static void CALLBACK wait_callback(PTP_CALLBACK_INSTANCE instance, void* context, PTP_WAIT wait, TP_WAIT_RESULT result);
+
+        struct task_data_t
+        {
+            ~task_data_t();
+
+            ff::thread_pool::func_type func;
+            ff::thread_pool* thread_pool;
+            ff::cancel_token cancel;
+        };
+
+        std::unique_ptr<task_data_t> create_data(func_type&& func, ff::cancel_token cancel);
 
         std::mutex mutex;
-        std::mutex timer_mutex;
-        std::unordered_map<PTP_TIMER, void*> timers;
         ff::win_handle no_tasks_event;
-        size_t task_count;
-        bool destroyed;
+        size_t task_count{};
+        bool destroyed{};
     };
 }

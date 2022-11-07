@@ -6,9 +6,31 @@ char const* ff::cancel_exception::what() const
     return "Task canceled";
 }
 
+ff::cancel_connection::cancel_connection(const std::shared_ptr<ff::internal::cancel_data>& data, size_t index)
+    : data(data)
+    , index(index)
+{}
+
+ff::cancel_connection::~cancel_connection()
+{
+    if (this->data && !this->data->canceled)
+    {
+        std::scoped_lock lock(this->data->mutex);
+        if (!this->data->canceled)
+        {
+            this->data->connections[this->index] = {};
+        }
+    }
+}
+
 ff::cancel_token::cancel_token(const std::shared_ptr<ff::internal::cancel_data>& data)
     : data(data)
 {}
+
+ff::cancel_token::operator bool() const
+{
+    return this->valid();
+}
 
 bool ff::cancel_token::valid() const
 {
@@ -28,32 +50,36 @@ void ff::cancel_token::throw_if_canceled() const
     }
 }
 
-void ff::cancel_token::notify(std::function<void()>&& func) const
+ff::cancel_connection ff::cancel_token::connect(std::function<void()>&& func) const
 {
     if (this->data)
     {
-        bool run_now = this->data->canceled;
-        if (!run_now)
+        if (!this->data->canceled)
         {
             std::scoped_lock lock(this->data->mutex);
-            if (this->data->canceled)
+            if (!this->data->canceled)
             {
-                run_now = true;
-            }
-            else
-            {
-                this->data->listeners.push_back(std::move(func));
+                for (size_t i = 0; i < this->data->connections.size(); i++)
+                {
+                    if (!this->data->connections[i])
+                    {
+                        this->data->connections[i] = std::move(func);
+                        return ff::cancel_connection(this->data, i);
+                    }
+                }
+
+                this->data->connections.push_back(std::move(func));
+                return ff::cancel_connection(this->data, this->data->connections.size() - 1);
             }
         }
 
-        if (run_now)
-        {
-            func();
-        }
+        func();
     }
+
+    return {};
 }
 
-HANDLE ff::cancel_token::wait_handle() const
+const ff::win_handle& ff::cancel_token::wait_handle() const
 {
     static ff::win_handle always_set_handle = ff::win_handle::create_event(true);
     static ff::win_handle never_set_handle = ff::win_handle::create_event();
@@ -89,7 +115,7 @@ ff::cancel_source::cancel_source()
 
 void ff::cancel_source::cancel() const
 {
-    std::vector<std::function<void()>> listeners;
+    std::vector<std::function<void()>> connections;
 
     if (!this->data->canceled)
     {
@@ -97,7 +123,7 @@ void ff::cancel_source::cancel() const
         if (!this->data->canceled)
         {
             this->data->canceled = true;
-            std::swap(listeners, this->data->listeners);
+            std::swap(connections, this->data->connections);
 
             if (this->data->handle)
             {
@@ -106,9 +132,12 @@ void ff::cancel_source::cancel() const
         }
     }
 
-    for (auto& listener : listeners)
+    for (auto& func : connections)
     {
-        listener();
+        if (func)
+        {
+            func();
+        }
     }
 }
 

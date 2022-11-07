@@ -2,8 +2,9 @@
 #include "co_task.h"
 #include "thread_pool.h"
 
-ff::internal::co_thread_awaiter::co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms)
+ff::internal::co_thread_awaiter::co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms, ff::cancel_token cancel)
     : thread_type(thread_type)
+    , cancel(cancel)
     , delay_ms(delay_ms)
 {}
 
@@ -25,7 +26,7 @@ bool ff::internal::co_thread_awaiter::ready(ff::thread_dispatch_type thread_type
     return (!main_td || !main_td->current_thread()) && (!game_td || !game_td->current_thread());
 }
 
-void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms)
+void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms, ff::cancel_token cancel)
 {
     if (ff::internal::co_thread_awaiter::ready(thread_type, delay_ms))
     {
@@ -46,17 +47,17 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
             }
             else
             {
-                ff::thread_pool::get()->add_task([td, func = std::move(func)]() mutable
+                ff::thread_pool::get()->add_timer([td, func = std::move(func)]() mutable
                     {
                         td->post(std::move(func));
-                    }, delay_ms);
+                    }, delay_ms, cancel);
             }
 
             return;
         }
     }
 
-    ff::thread_pool::get()->add_task(std::move(func), delay_ms);
+    ff::thread_pool::get()->add_timer(std::move(func), delay_ms);
 }
 
 bool ff::internal::co_thread_awaiter::await_ready() const
@@ -70,11 +71,13 @@ void ff::internal::co_thread_awaiter::await_suspend(std::coroutine_handle<> coro
         [coroutine]()
         {
             coroutine.resume();
-        }, this->thread_type, this->delay_ms);
+        }, this->thread_type, this->delay_ms, this->cancel);
 }
 
 void ff::internal::co_thread_awaiter::await_resume() const
-{}
+{
+    this->cancel.throw_if_canceled();
+}
 
 ff::internal::co_data_base::~co_data_base()
 {
@@ -198,9 +201,9 @@ ff::internal::co_thread_awaiter ff::resume_on_task()
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::task };
 }
 
-ff::internal::co_thread_awaiter ff::delay_task(size_t delay_ms)
+ff::internal::co_thread_awaiter ff::delay_task(size_t delay_ms, ff::cancel_token cancel)
 {
-    return ff::internal::co_thread_awaiter(ff::thread_dispatch::get_type(), delay_ms);
+    return ff::internal::co_thread_awaiter(ff::thread_dispatch::get_type(), delay_ms, cancel);
 }
 
 ff::internal::co_thread_awaiter ff::yield_task()

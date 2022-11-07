@@ -10,7 +10,7 @@ namespace ff::test::base
             ff::cancel_token token;
             Assert::IsFalse(token.valid());
             Assert::IsFalse(token.canceled());
-            Assert::IsNotNull(token.wait_handle());
+            Assert::IsTrue(token.wait_handle());
             Assert::IsFalse(ff::is_event_set(token.wait_handle()));
         }
 
@@ -20,7 +20,7 @@ namespace ff::test::base
             ff::cancel_token token = source.token();
             Assert::IsTrue(token.valid());
             Assert::IsFalse(token.canceled());
-            Assert::IsNotNull(token.wait_handle());
+            Assert::IsTrue(token.wait_handle());
             Assert::IsFalse(ff::is_event_set(token.wait_handle()));
 
             source.cancel();
@@ -32,12 +32,27 @@ namespace ff::test::base
         TEST_METHOD(cancel_other_thread)
         {
             ff::cancel_source source;
-            int i = 0;
+            ff::win_handle cancel_event[3] = { ff::win_handle::create_event(), ff::win_handle::create_event(), ff::win_handle::create_event() };
+            int i[3] = {};
 
-            source.token().notify([&i]()
+            source.token().connect([&i, &cancel_event]()
                 {
-                    i = 10;
+                    i[0] = 10;
+                    ::SetEvent(cancel_event[0]);
                 });
+
+            ff::cancel_connection connection0 = source.token().connect([&i, &cancel_event]()
+                {
+                    i[1] = 20;
+                    ::SetEvent(cancel_event[1]);
+                });
+            {
+                ff::cancel_connection connection1 = source.token().connect([&i, &cancel_event]()
+                    {
+                        i[2] = 30;
+                        ::SetEvent(cancel_event[2]);
+                    });
+            }
 
             ff::thread_pool::get()->add_task([source]()
                 {
@@ -45,9 +60,17 @@ namespace ff::test::base
                     source.cancel();
                 });
 
-            bool success = ff::wait_for_handle(source.token().wait_handle(), 2000);
-            Assert::IsTrue(success);
-            Assert::AreEqual(10, i);
+            std::array<HANDLE, 2> handles1{ source.token().wait_handle(), cancel_event[1]};
+            bool success1 = ff::wait_for_all_handles(handles1.data(), handles1.size(), 2000);
+            Assert::IsTrue(success1);
+
+            std::array<HANDLE, 2> handles2{ cancel_event[0], cancel_event[2] };
+            bool success2 = ff::wait_for_all_handles(handles2.data(), handles2.size(), 1000);
+            Assert::IsFalse(success2);
+
+            Assert::AreEqual(0, i[0]);
+            Assert::AreEqual(20, i[1]);
+            Assert::AreEqual(0, i[2]);
         }
     };
 }

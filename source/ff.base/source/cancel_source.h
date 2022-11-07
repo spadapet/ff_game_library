@@ -1,5 +1,6 @@
 #pragma once
 
+#include "signal.h"
 #include "win_handle.h"
 
 namespace ff::internal
@@ -7,7 +8,7 @@ namespace ff::internal
     struct cancel_data
     {
         std::mutex mutex;
-        std::vector<std::function<void()>> listeners;
+        std::vector<std::function<void()>> connections;
         ff::win_handle handle;
         std::atomic_bool canceled;
     };
@@ -21,6 +22,23 @@ namespace ff
         virtual char const* what() const override;
     };
 
+    class cancel_connection
+    {
+    public:
+        cancel_connection() = default;
+        cancel_connection(cancel_connection&& other) noexcept = default;
+        cancel_connection(const cancel_connection& other) = delete;
+        cancel_connection(const std::shared_ptr<ff::internal::cancel_data>& data, size_t index);
+        ~cancel_connection();
+
+        cancel_connection& operator=(cancel_connection&& other) noexcept = default;
+        cancel_connection& operator=(const cancel_connection& other) = delete;
+
+    private:
+        std::shared_ptr<ff::internal::cancel_data> data;
+        size_t index{};
+    };
+
     class cancel_token
     {
     public:
@@ -31,12 +49,14 @@ namespace ff
 
         cancel_token& operator=(cancel_token&& other) noexcept = default;
         cancel_token& operator=(const cancel_token& other) = default;
+        bool operator==(const cancel_token& other) const = default;
+        operator bool() const;
 
         bool valid() const;
         bool canceled() const;
         void throw_if_canceled() const;
-        void notify(std::function<void()>&& func) const;
-        HANDLE wait_handle() const;
+        ff::cancel_connection connect(std::function<void()>&& func) const;
+        const ff::win_handle& wait_handle() const;
 
     private:
         std::shared_ptr<ff::internal::cancel_data> data;

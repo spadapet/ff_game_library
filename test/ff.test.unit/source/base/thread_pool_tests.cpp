@@ -44,21 +44,21 @@ namespace ff::test::base
 
             int i[3] = {};
 
-            tp.add_task([&events, &i]()
+            tp.add_timer([&events, &i]()
                 {
                     ::Sleep(500);
                     i[0] = 10;
                     ::SetEvent(events[0]);
                 }, 1000);
 
-            tp.add_task([&events, &i]()
+            tp.add_timer([&events, &i]()
                 {
                     ::Sleep(750);
                     i[1] = 20;
                     ::SetEvent(events[1]);
                 }, 1500);
 
-            tp.add_task([&events, &i]()
+            tp.add_timer([&events, &i]()
                 {
                     ::Sleep(1000);
                     i[1] = 30;
@@ -84,13 +84,13 @@ namespace ff::test::base
                         ::Sleep(2000);
                         a = 2;
 
-                        tp.add_task([&c]()
+                        tp.add_timer([&c]()
                             {
                                 c = 1;
                             }, 10000);
                     });
 
-                tp.add_task([&b]()
+                tp.add_timer([&b]()
                     {
                         b = 1;
                         ::Sleep(1000);
