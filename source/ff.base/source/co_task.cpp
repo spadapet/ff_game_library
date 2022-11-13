@@ -57,7 +57,7 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
         }
     }
 
-    ff::thread_pool::get()->add_timer(std::move(func), delay_ms);
+    ff::thread_pool::get()->add_timer(std::move(func), delay_ms, cancel);
 }
 
 bool ff::internal::co_thread_awaiter::await_ready() const
@@ -201,12 +201,12 @@ ff::internal::co_thread_awaiter ff::resume_on_task()
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::task };
 }
 
-ff::internal::co_thread_awaiter ff::delay_task(size_t delay_ms, ff::cancel_token cancel)
+ff::internal::co_thread_awaiter ff::delay_task(size_t delay_ms, ff::cancel_token cancel, ff::thread_dispatch_type type)
 {
-    return ff::internal::co_thread_awaiter(ff::thread_dispatch::get_type(), delay_ms, cancel);
+    return ff::internal::co_thread_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, delay_ms, cancel);
 }
 
-ff::internal::co_thread_awaiter ff::yield_task()
+ff::internal::co_thread_awaiter ff::yield_task(ff::thread_dispatch_type type)
 {
-    return ff::internal::co_thread_awaiter(ff::thread_dispatch::get_type(), 0);
+    return ff::delay_task(0, {}, type);
 }

@@ -416,6 +416,6 @@ namespace ff
     ff::internal::co_thread_awaiter resume_on_main();
     ff::internal::co_thread_awaiter resume_on_game();
     ff::internal::co_thread_awaiter resume_on_task();
-    ff::internal::co_thread_awaiter delay_task(size_t delay_ms, ff::cancel_token cancel = {});
-    ff::internal::co_thread_awaiter yield_task();
+    ff::internal::co_thread_awaiter delay_task(size_t delay_ms, ff::cancel_token cancel = {}, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+    ff::internal::co_thread_awaiter yield_task(ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
 }
