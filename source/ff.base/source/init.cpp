@@ -11,7 +11,6 @@ namespace
     {
         one_time_init_base()
             : thread_dispatch(ff::thread_dispatch_type::main)
-            , thread_pool(ff::thread_pool_type::main)
         {
 #if !UWP_APP
             if (!::IsMouseInPointerEnabled())
@@ -23,10 +22,14 @@ namespace
 #ifdef TRACK_MEMORY_ALLOCATIONS
             ff::memory::start_tracking_allocations();
 #endif
+
+            ff::internal::thread_pool::init();
         }
 
         ~one_time_init_base()
         {
+            ff::internal::thread_pool::destroy();
+
 #ifdef TRACK_MEMORY_ALLOCATIONS
             ff::memory::stop_tracking_allocations();
 #endif
@@ -34,7 +37,6 @@ namespace
 
     private:
         ff::thread_dispatch thread_dispatch;
-        ff::thread_pool thread_pool;
     };
 
     struct one_time_init_main_window
@@ -50,7 +52,7 @@ namespace
         ~one_time_init_main_window()
         {
             // in case any background work depends on the main window
-            ff::thread_pool::get()->flush();
+            ff::thread_pool::flush();
             ff::thread_dispatch::get_main()->flush();
         }
 

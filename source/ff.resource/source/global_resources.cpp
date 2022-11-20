@@ -91,7 +91,7 @@ void ff::global_resources::rebuild_async()
         datas = ::global_resource_datas;
     }
 
-    ff::thread_pool::get()->add_task([datas]()
+    ff::thread_pool::add_task([datas]()
         {
             std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
 

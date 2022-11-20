@@ -129,7 +129,7 @@ bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, 
 
         ::ResetEvent(this->async_event);
 
-        ff::thread_pool::get()->add_task([this]()
+        ff::thread_pool::add_task([this]()
         {
             bool status = this->async_init();
             assert(status);

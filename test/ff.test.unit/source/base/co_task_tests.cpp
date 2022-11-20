@@ -10,7 +10,7 @@ namespace ff::test::base
             ff::cancel_source cancel_source;
             ff::co_task<> task = ff::test::base::co_task_tests::delay_for(10000, cancel_source.token());
 
-            ff::thread_pool::get()->add_task([cancel_source]()
+            ff::thread_pool::add_task([cancel_source]()
                 {
                     ::Sleep(500);
                     cancel_source.cancel();

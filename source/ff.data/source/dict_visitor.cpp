@@ -156,7 +156,7 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
         values[i] = dict.get(names[i]);
         value_events[i] = ff::win_handle::create_event();
 
-        ff::thread_pool::get()->add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
+        ff::thread_pool::add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
             {
                 this->async_thread_started(main_thread_id);
                 this->push_path(names[i]);

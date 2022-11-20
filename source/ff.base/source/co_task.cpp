@@ -47,7 +47,7 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
             }
             else
             {
-                ff::thread_pool::get()->add_timer([td, func = std::move(func)]() mutable
+                ff::thread_pool::add_timer([td, func = std::move(func)]() mutable
                     {
                         td->post(std::move(func));
                     }, delay_ms, cancel);
@@ -57,7 +57,7 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
         }
     }
 
-    ff::thread_pool::get()->add_timer(std::move(func), delay_ms, cancel);
+    ff::thread_pool::add_timer(std::move(func), delay_ms, cancel);
 }
 
 bool ff::internal::co_thread_awaiter::await_ready() const

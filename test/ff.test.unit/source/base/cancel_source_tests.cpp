@@ -54,7 +54,7 @@ namespace ff::test::base
                     });
             }
 
-            ff::thread_pool::get()->add_task([source]()
+            ff::thread_pool::add_task([source]()
                 {
                     ::Sleep(1000);
                     source.cancel();

@@ -74,6 +74,11 @@ void ff::win_handle::close()
     win_handle::close(this->handle);
 }
 
+bool ff::win_handle::wait(size_t timeout_ms)
+{
+    return ff::wait_for_handle(this->handle, timeout_ms);
+}
+
 #if !UWP_APP
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;

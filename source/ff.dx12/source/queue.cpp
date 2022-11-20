@@ -165,7 +165,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
     this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
     fence_values.signal(this);
 
-    ff::thread_pool::get()->add_task([this, caches_to_reset = std::move(caches_to_reset)]()
+    ff::thread_pool::add_task([this, caches_to_reset = std::move(caches_to_reset)]()
     {
         for (auto* cache_to_reset : caches_to_reset)
         {

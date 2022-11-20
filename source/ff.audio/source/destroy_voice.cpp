@@ -44,7 +44,7 @@ void ff::internal::destroy_voice_async(IXAudio2SourceVoice* source)
     static ff::pool_allocator<destroy_voice_work> pool;
 
     destroy_voice_work* work = pool.new_obj(source);
-    ff::thread_pool::get()->add_task([work]()
+    ff::thread_pool::add_task([work]()
         {
             pool.delete_obj(work);
         });

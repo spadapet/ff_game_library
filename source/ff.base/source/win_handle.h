@@ -24,6 +24,7 @@ namespace ff
 
         win_handle duplicate() const;
         void close();
+        bool wait(size_t timeout_ms = INFINITE);
 
     private:
         HANDLE handle;
