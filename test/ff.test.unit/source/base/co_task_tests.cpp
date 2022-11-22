@@ -28,6 +28,12 @@ namespace ff::test::base
             task.wait(10000);
         }
 
+        TEST_METHOD(await_win_handle)
+        {
+            ff::co_task<> task = ff::test::base::co_task_tests::test_await_win_handle();
+            task.wait(10000);
+        }
+
     private:
         ff::co_task<> delay_for(size_t delay_ms, ff::cancel_token cancel)
         {
@@ -43,6 +49,19 @@ namespace ff::test::base
             co_await ff::yield_task(ff::thread_dispatch_type::task);
             co_await ff::delay_task(500);
             Assert::IsTrue(ff::thread_dispatch_type::task == ff::thread_dispatch::get_type());
+        }
+
+        ff::co_task<> test_await_win_handle()
+        {
+            ff::win_handle event0 = ff::win_handle::create_event();
+
+            ff::thread_pool::add_timer([&event0]()
+                {
+                    ::SetEvent(event0);
+                }, 1000);
+
+            co_await event0;
+            Assert::IsTrue(ff::is_event_set(event0));
         }
     };
 }

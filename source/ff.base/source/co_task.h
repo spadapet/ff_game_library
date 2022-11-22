@@ -7,24 +7,6 @@
 
 namespace ff::internal
 {
-    class co_thread_awaiter
-    {
-    public:
-        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, ff::cancel_token cancel = {});
-
-        static bool ready(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
-        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, ff::cancel_token cancel = {});
-
-        bool await_ready() const;
-        void await_suspend(std::coroutine_handle<> coroutine) const;
-        void await_resume() const;
-
-    private:
-        ff::thread_dispatch_type thread_type;
-        ff::cancel_token cancel;
-        size_t delay_ms;
-    };
-
     /// <summary>
     /// Coroutine data shared between the promise and task
     /// </summary>
@@ -418,4 +400,5 @@ namespace ff
     ff::internal::co_thread_awaiter resume_on_task();
     ff::internal::co_thread_awaiter delay_task(size_t delay_ms, ff::cancel_token cancel = {}, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
     ff::internal::co_thread_awaiter yield_task(ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+    ff::internal::co_handle_awaiter wait_task(HANDLE handle, size_t timeout_ms = ff::constants::invalid_size, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
 }

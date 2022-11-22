@@ -12,8 +12,10 @@
     </ClCompile>
     <ClCompile Include="source\assert.cpp" />
     <ClCompile Include="source\cancel_source.cpp" />
+    <ClCompile Include="source\co_awaiters.cpp" />
     <ClCompile Include="source\co_task.cpp" />
     <ClCompile Include="source\end_scope_action.cpp" />
+    <ClCompile Include="source\exceptions.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\frame_allocator.cpp" />
     <ClCompile Include="source\stable_hash.cpp" />
@@ -39,8 +41,10 @@
     <ClInclude Include="source\assert.h" />
     <ClInclude Include="source\cancel_source.h" />
     <ClInclude Include="source\constants.h" />
+    <ClInclude Include="source\co_awaiters.h" />
     <ClInclude Include="source\co_task.h" />
     <ClInclude Include="source\end_scope_action.h" />
+    <ClInclude Include="source\exceptions.h" />
     <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\frame_allocator.h" />
     <ClInclude Include="source\init.h" />

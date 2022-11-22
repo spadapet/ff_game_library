@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "assert.h"
+#include "co_task.h"
 #include "thread_dispatch.h"
 #include "win_handle.h"
 
@@ -47,6 +48,11 @@ ff::win_handle& ff::win_handle::operator=(win_handle&& other) noexcept
     this->close();
     std::swap(this->handle, other.handle);
     return *this;
+}
+
+ff::internal::co_handle_awaiter ff::win_handle::operator co_await()
+{
+    return ff::wait_task(this->handle);
 }
 
 bool ff::win_handle::operator!() const

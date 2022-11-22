@@ -74,6 +74,12 @@
     <ClCompile Include="source\thread.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\exceptions.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\co_awaiters.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -168,6 +174,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\thread.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\exceptions.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\co_awaiters.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

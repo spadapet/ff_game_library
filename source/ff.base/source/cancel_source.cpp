@@ -1,10 +1,7 @@
 #include "pch.h"
 #include "cancel_source.h"
-
-char const* ff::cancel_exception::what() const
-{
-    return "Task canceled";
-}
+#include "exceptions.h"
+#include "win_handle.h"
 
 ff::cancel_connection::cancel_connection(const std::shared_ptr<ff::internal::cancel_data>& data, size_t index)
     : data(data)
@@ -100,10 +97,10 @@ const ff::win_handle& ff::cancel_token::wait_handle() const
 
         if (!this->data->handle)
         {
-            this->data->handle = ff::win_handle::create_event();
+            this->data->handle = std::make_unique<ff::win_handle>(ff::win_handle::create_event());
         }
 
-        return this->data->handle;
+        return *this->data->handle;
     }
 
     return never_set_handle;
@@ -127,7 +124,7 @@ void ff::cancel_source::cancel() const
 
             if (this->data->handle)
             {
-                ::SetEvent(this->data->handle);
+                ::SetEvent(*this->data->handle);
             }
         }
     }

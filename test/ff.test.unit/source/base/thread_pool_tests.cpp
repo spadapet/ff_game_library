@@ -125,5 +125,38 @@ namespace ff::test::base
             Assert::AreEqual(2, b);
             Assert::AreEqual(1, c);
         }
+
+        TEST_METHOD(wait_handle)
+        {
+            ff::win_handle wait_for = ff::win_handle::create_event();
+            ff::win_handle wait_done = ff::win_handle::create_event();
+
+            ff::thread_pool::add_wait([&wait_for, &wait_done]()
+                {
+                    Assert::IsTrue(ff::is_event_set(wait_for));
+                    ::SetEvent(wait_done);
+                }, wait_for, 2000);
+
+            ::Sleep(500);
+            ::SetEvent(wait_for);
+
+            bool success = wait_done.wait(2000);
+            Assert::IsTrue(success);
+        }
+
+        TEST_METHOD(wait_handle_timeout)
+        {
+            ff::win_handle wait_for = ff::win_handle::create_event();
+            ff::win_handle wait_done = ff::win_handle::create_event();
+
+            ff::thread_pool::add_wait([&wait_for, &wait_done]()
+                {
+                    Assert::IsFalse(ff::is_event_set(wait_for));
+                    ::SetEvent(wait_done);
+                }, wait_for, 1000);
+
+            bool success = wait_done.wait(2000);
+            Assert::IsTrue(success);
+        }
     };
 }

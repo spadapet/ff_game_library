@@ -1,7 +1,9 @@
 #pragma once
 
-#include "signal.h"
-#include "win_handle.h"
+namespace ff
+{
+    class win_handle;
+}
 
 namespace ff::internal
 {
@@ -9,19 +11,13 @@ namespace ff::internal
     {
         std::mutex mutex;
         std::vector<std::function<void()>> connections;
-        ff::win_handle handle;
+        std::unique_ptr<ff::win_handle> handle;
         std::atomic_bool canceled;
     };
 }
 
 namespace ff
 {
-    class cancel_exception : public std::exception
-    {
-    public:
-        virtual char const* what() const override;
-    };
-
     class cancel_connection
     {
     public:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "co_awaiters.h"
+
 namespace ff
 {
     class win_handle
@@ -18,6 +20,7 @@ namespace ff
         win_handle& operator=(win_handle&& other) noexcept;
         win_handle& operator=(const win_handle& other) = delete;
 
+        ff::internal::co_handle_awaiter operator co_await();
         bool operator!() const;
         operator bool() const;
         operator HANDLE() const;

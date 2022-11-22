@@ -36,6 +36,20 @@ static std::tuple<size_t, bool> create_data(std::function<void()>&& func, ff::ca
     return {};
 }
 
+static std::tuple<FILETIME, bool> delay_to_filetime(size_t delay_ms)
+{
+    if (delay_ms < INFINITE)
+    {
+        ULARGE_INTEGER delay_li;
+        delay_li.QuadPart = delay_ms * -10000; // ms to hundreds of ns
+        return std::make_tuple(FILETIME{ delay_li.LowPart, delay_li.HighPart }, true);
+    }
+    else
+    {
+        return std::make_tuple(FILETIME{}, false);
+    }
+}
+
 static void task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
 {
     ff::set_thread_name("ff::thread_pool::task");
@@ -135,15 +149,19 @@ void ff::thread_pool::add_timer(std::function<void()>&& func, size_t delay_ms, f
     auto [context, added] = ::create_data(std::move(func), cancel);
     if (added)
     {
-        ULARGE_INTEGER delay_li;
-        delay_li.QuadPart = !cancel.canceled() ? delay_ms * -10000 : 0; // ms to hundreds of ns
-        FILETIME delay_ft{ delay_li.LowPart, delay_li.HighPart };
-
+        auto [delay_ft, delay_valid] = ::delay_to_filetime(delay_ms);
         PTP_WAIT wait = ::CreateThreadpoolWait(&::wait_callback, reinterpret_cast<void*>(context), &::pool_env);
-        ::SetThreadpoolWait(wait, cancel.wait_handle(), &delay_ft);
+        ::SetThreadpoolWait(wait, cancel.wait_handle(), delay_valid ? &delay_ft : nullptr);
     }
 }
 
-void ff::thread_pool::add_wait(std::function<void()>&& func, HANDLE handle, size_t timeout_ms, ff::cancel_token cancel)
+void ff::thread_pool::add_wait(std::function<void()>&& func, HANDLE handle, size_t timeout_ms)
 {
+    auto [context, added] = ::create_data(std::move(func), {});
+    if (added)
+    {
+        auto [delay_ft, delay_valid] = ::delay_to_filetime(timeout_ms);
+        PTP_WAIT wait = ::CreateThreadpoolWait(&::wait_callback, reinterpret_cast<void*>(context), &::pool_env);
+        ::SetThreadpoolWait(wait, handle, delay_valid ? &delay_ft : nullptr);
+    }
 }
