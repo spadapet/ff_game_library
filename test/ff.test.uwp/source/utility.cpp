@@ -13,7 +13,7 @@ ff::init_ui_params test_uwp::get_init_ui_params()
     ff::init_ui_params params{};
     params.application_resources_name = "application_resources.xaml";
     params.noesis_license_name = "f5025c38-29c4-476b-b18f-243889e0f620";
-    params.noesis_license_key = "FBS8RElevETxFBswTIm+iiKNY7Rcqn0aJkp+7JAxA6x5pMxe";
+    params.noesis_license_key = "W6pp7c/hae3wI3lh5mJbethhVN8j7OypHGdrxfGtracq/uFo";
     params.register_components_func = []()
     {
         ff::global_resources::add(::assets::xaml::data());

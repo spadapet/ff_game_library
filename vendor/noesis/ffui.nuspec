@@ -5,7 +5,7 @@
     <description>ffui</description>
     <authors>ffui</authors>
     <owners>ffui</owners>
-    <version>3.1.5</version>
+    <version>3.1.6</version>
     <license type="file">content\LICENSE.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <copyright>Copyright 2022</copyright>
