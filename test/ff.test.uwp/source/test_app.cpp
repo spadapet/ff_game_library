@@ -13,6 +13,13 @@ void winrt::test_uwp::implementation::test_app::loaded(const winrt::Windows::Fou
 {
     ff::init_app_params app_params = ::test_uwp::get_init_app_params();
     app_params.use_swap_chain_panel = true;
+
+    app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
+    {
+        color = ff::dxgi::color_blue();
+        return true;
+    };
+
     app_params.get_time_scale_func = []()
     {
         return ::time_scale;
