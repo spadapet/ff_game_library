@@ -89,7 +89,7 @@ ff::internal::co_handle_awaiter::co_handle_awaiter(ff::thread_dispatch_type thre
 
 bool ff::internal::co_handle_awaiter::await_ready() const
 {
-    return ff::internal::co_thread_awaiter::ready(this->thread_type) && ff::is_event_set(*this->handle);
+    return ff::internal::co_thread_awaiter::ready(this->thread_type) && this->handle->is_set();
 }
 
 void ff::internal::co_handle_awaiter::await_suspend(std::coroutine_handle<> coroutine) const
@@ -125,7 +125,7 @@ void ff::internal::co_handle_awaiter::await_suspend(std::coroutine_handle<> coro
 
 void ff::internal::co_handle_awaiter::await_resume() const
 {
-    if (!ff::is_event_set(*this->handle))
+    if (!this->handle->is_set())
     {
         throw ff::timeout_exception();
     }

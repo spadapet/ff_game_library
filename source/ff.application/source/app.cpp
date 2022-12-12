@@ -318,6 +318,7 @@ static void pause_game_state()
 
 static void game_thread()
 {
+    ff::set_thread_name("ff::game_loop");
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
     ::SetEvent(::game_thread_event);
     ::init_game_thread();
@@ -356,7 +357,7 @@ static void start_game_thread()
     {
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
-        ff::create_thread(::game_thread, "ff::game_loop");
+        std::jthread(::game_thread).detach();
         ff::wait_for_event_and_reset(::game_thread_event);
     }
 }

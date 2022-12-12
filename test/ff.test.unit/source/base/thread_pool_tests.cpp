@@ -10,7 +10,7 @@ namespace ff::test::base
             ff::win_handle task_done_event = ff::win_handle::create_event();
             int i1 = 0, i2 = 0;
 
-            ff::win_handle thread_handle = ff::create_thread([&i1]()
+            std::jthread thread([&i1]()
                 {
                     ::Sleep(500);
                     i1 = 10;
@@ -23,7 +23,7 @@ namespace ff::test::base
                     ::SetEvent(task_done_event);
                 });
 
-            std::array<HANDLE, 2> handles{ thread_handle, task_done_event };
+            std::array<HANDLE, 2> handles{ thread.native_handle(), task_done_event };
             bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 4000);
 
             Assert::IsTrue(success);
@@ -133,7 +133,7 @@ namespace ff::test::base
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
                 {
-                    Assert::IsTrue(ff::is_event_set(wait_for));
+                    Assert::IsTrue(wait_for.is_set());
                     ::SetEvent(wait_done);
                 }, wait_for, 2000);
 
@@ -151,7 +151,7 @@ namespace ff::test::base
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
                 {
-                    Assert::IsFalse(ff::is_event_set(wait_for));
+                    Assert::IsFalse(wait_for.is_set());
                     ::SetEvent(wait_done);
                 }, wait_for, 1000);
 

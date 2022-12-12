@@ -11,7 +11,7 @@ namespace ff::test::base
             Assert::IsFalse(token.valid());
             Assert::IsFalse(token.canceled());
             Assert::IsTrue(token.wait_handle());
-            Assert::IsFalse(ff::is_event_set(token.wait_handle()));
+            Assert::IsFalse(token.wait_handle().is_set());
         }
 
         TEST_METHOD(valid_token)
@@ -21,11 +21,11 @@ namespace ff::test::base
             Assert::IsTrue(token.valid());
             Assert::IsFalse(token.canceled());
             Assert::IsTrue(token.wait_handle());
-            Assert::IsFalse(ff::is_event_set(token.wait_handle()));
+            Assert::IsFalse(token.wait_handle().is_set());
 
             source.cancel();
             Assert::IsTrue(token.canceled());
-            Assert::IsTrue(ff::is_event_set(token.wait_handle()));
+            Assert::IsTrue(token.wait_handle().is_set());
             Assert::ExpectException<ff::cancel_exception>([&token]() { token.throw_if_canceled(); });
         }
 

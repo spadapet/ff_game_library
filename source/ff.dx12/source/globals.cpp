@@ -93,7 +93,7 @@ static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 
 static void update_video_memory_info()
 {
-    if (!::video_memory_change_event || ff::is_event_set(::video_memory_change_event))
+    if (!::video_memory_change_event || ::video_memory_change_event.is_set())
     {
         ::video_memory_info = ff::dxgi::get_video_memory_info(ff::dx12::adapter());
 

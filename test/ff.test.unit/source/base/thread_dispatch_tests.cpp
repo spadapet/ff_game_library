@@ -7,7 +7,7 @@ namespace ff::test::base
     public:
         TEST_METHOD(simple)
         {
-            ff::win_handle thread_handle = ff::create_thread([]()
+            std::jthread([]()
                 {
                     ff::thread_dispatch td(ff::thread_dispatch_type::task);
                     Assert::IsTrue(td.current_thread());
@@ -38,8 +38,6 @@ namespace ff::test::base
                     Assert::AreEqual(10, i1);
                     Assert::AreEqual(20, i2);
                 });
-
-            ff::wait_for_handle(thread_handle);
         }
     };
 }

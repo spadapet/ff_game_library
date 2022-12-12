@@ -3,6 +3,7 @@
 #include "string.h"
 #include "thread.h"
 #include "thread_pool.h"
+#include "win_handle.h"
 
 namespace
 {
@@ -88,7 +89,7 @@ static void flush(bool destroying)
         ::pool_valid = false;
     }
 
-    ff::create_thread([&data_map]()
+    std::jthread([&data_map]()
         {
             for (auto i = data_map.begin(); i != data_map.end(); i++)
             {
@@ -97,7 +98,7 @@ static void flush(bool destroying)
             }
 
             ::CloseThreadpoolCleanupGroupMembers(::pool_cleanup, FALSE, nullptr);
-        }).wait();
+        });
 
     if (!destroying)
     {

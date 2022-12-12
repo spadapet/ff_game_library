@@ -64,7 +64,7 @@ std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
     {
         std::scoped_lock lock(this->mutex);
 
-        if (!this->caches.empty() && ff::is_event_set(this->caches.front()->lists_reset_event))
+        if (!this->caches.empty() && this->caches.front()->lists_reset_event.is_set())
         {
             cache = std::move(this->caches.front());
             this->caches.pop_front();
@@ -229,7 +229,7 @@ void ff::dx12::queue::wait_for_tasks()
 
         for (const auto& i : this->caches)
         {
-            if (!ff::is_event_set(i->lists_reset_event))
+            if (!i->lists_reset_event.is_set())
             {
                 handles.push_back(i->lists_reset_event);
             }

@@ -28,6 +28,7 @@ namespace ff
         win_handle duplicate() const;
         void close();
         bool wait(size_t timeout_ms = INFINITE);
+        bool is_set() const;
 
     private:
         HANDLE handle;
@@ -36,9 +37,7 @@ namespace ff
 #if !UWP_APP
     HINSTANCE get_hinstance();
 #endif
-    bool is_event_set(HANDLE handle);
     bool wait_for_event_and_reset(HANDLE handle, size_t timeout_ms = INFINITE);
-
     bool wait_for_handle(HANDLE handle, size_t timeout_ms = INFINITE);
     bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE);
     bool wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms = INFINITE);

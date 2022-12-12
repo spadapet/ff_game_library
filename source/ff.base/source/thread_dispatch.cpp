@@ -142,7 +142,7 @@ void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current
     {
         ::ResetEvent(this->flushed_event);
 
-        if (!ff::is_event_set(this->pending_event))
+        if (!this->pending_event.is_set())
         {
             ::SetEvent(this->pending_event);
             this->post_flush();

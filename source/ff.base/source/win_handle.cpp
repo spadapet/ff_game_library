@@ -85,6 +85,11 @@ bool ff::win_handle::wait(size_t timeout_ms)
     return ff::wait_for_handle(this->handle, timeout_ms);
 }
 
+bool ff::win_handle::is_set() const
+{
+    return this->handle && ::WaitForSingleObjectEx(this->handle, 0, FALSE) == WAIT_OBJECT_0;
+}
+
 #if !UWP_APP
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -102,12 +107,6 @@ ff::win_handle ff::win_handle::create_event(bool initial_set, bool manual_reset)
         (initial_set ? CREATE_EVENT_INITIAL_SET : 0) | (manual_reset ? CREATE_EVENT_MANUAL_RESET : 0),
         EVENT_ALL_ACCESS);
     return ff::win_handle(handle);
-}
-
-bool ff::is_event_set(HANDLE handle)
-{
-    assert(handle);
-    return ::WaitForSingleObjectEx(handle, 0, FALSE) == WAIT_OBJECT_0;
 }
 
 bool ff::wait_for_event_and_reset(HANDLE handle, size_t timeout_ms)

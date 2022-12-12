@@ -61,7 +61,7 @@ namespace ff::test::base
                 }, 1000);
 
             co_await event0;
-            Assert::IsTrue(ff::is_event_set(event0));
+            Assert::IsTrue(event0.is_set());
         }
     };
 }

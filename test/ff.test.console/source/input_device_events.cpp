@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 
+using namespace std::literals::chrono_literals;
+
 void run_input_device_events()
 {
     ff::init_main_window init_main_window(ff::init_main_window_params{ {}, "Test window", true });
@@ -41,18 +43,18 @@ void run_input_device_events()
             last_event = event;
         });
 
-    ff::win_handle thread_handle = ff::create_thread([&done_event]()
+    std::jthread thread([&done_event](std::stop_token stop_token)
         {
             ff::thread_dispatch dispatch(ff::thread_dispatch_type::game);
 
-            while (!ff::wait_for_event_and_reset(done_event, 20))
+            while (!stop_token.stop_requested())
             {
                 ff::input::combined_devices().advance();
+                std::this_thread::sleep_for(20ms);
                 dispatch.flush();
             }
         });
 
     ff::handle_messages_until_quit();
-    ::SetEvent(done_event);
-    ff::wait_for_handle(thread_handle);
+    thread.get_stop_source().request_stop();
 }
