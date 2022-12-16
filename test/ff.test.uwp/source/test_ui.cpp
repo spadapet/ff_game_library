@@ -4,14 +4,15 @@
 
 #include <test_ui.g.cpp>
 
+using namespace std::literals::chrono_literals;
+
 winrt::test_uwp::implementation::test_ui::test_ui()
     : init_main_window(ff::init_main_window_params{})
-    , stop_thread(ff::win_handle::create_event())
 {}
 
 void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    this->thread_handle = ff::create_thread([this]()
+    this->thread_handle = std::jthread([this](std::stop_token stop)
         {
             const DirectX::XMFLOAT4 bg_color(0x12 / static_cast<float>(0xFF), 0x23 / static_cast<float>(0xFF), 0x34 / static_cast<float>(0xFF), 1.0f);
 
@@ -43,8 +44,9 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
                 }
             }
 
-            do
+            while (!stop.stop_requested())
             {
+                std::this_thread::sleep_for(32ms);
                 ff::ui::state_advance_time();
                 ff::ui::state_advance_input();
                 view.advance();
@@ -60,7 +62,6 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
 
                 thread_dispatch.flush();
             }
-            while (!ff::wait_for_handle(this->stop_thread, 32));
 
             ff::internal::ui::destroy_game_thread();
         });
@@ -68,9 +69,9 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
 
 void winrt::test_uwp::implementation::test_ui::unloaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    if (this->thread_handle)
+    if (this->thread_handle.joinable())
     {
-        ::SetEvent(this->stop_thread);
-        ff::wait_for_handle(this->thread_handle);
+        this->thread_handle.get_stop_source().request_stop();
+        ff::wait_for_handle(this->thread_handle.native_handle());
     }
 }

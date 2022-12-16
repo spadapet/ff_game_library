@@ -1,7 +1,6 @@
 #pragma once
 
 #include "assert.h"
-#include "cancel_source.h"
 #include "constants.h"
 #include "thread_dispatch.h"
 
@@ -344,14 +343,14 @@ namespace ff
             return task;
         }
 
-        void set_result(const T& value)
+        void set_result(const T& value) const
         {
             assert(this->valid() && !this->done());
             this->data_->set_result(value);
             this->data_->publish_result();
         }
 
-        void set_result(T&& value)
+        void set_result(T&& value) const
         {
             assert(this->valid() && !this->done());
             this->data_->set_result(std::move(value));
@@ -387,18 +386,23 @@ namespace ff
             return task;
         }
 
-        void set_result()
+        void set_result() const
         {
             assert(this->valid() && !this->done());
             this->data_->set_result();
             this->data_->publish_result();
         }
     };
+}
 
+namespace ff::task
+{
     ff::internal::co_thread_awaiter resume_on_main();
     ff::internal::co_thread_awaiter resume_on_game();
     ff::internal::co_thread_awaiter resume_on_task();
-    ff::internal::co_thread_awaiter delay_task(size_t delay_ms, ff::cancel_token cancel = {}, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
-    ff::internal::co_thread_awaiter yield_task(ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
-    ff::internal::co_handle_awaiter wait_task(HANDLE handle, size_t timeout_ms = ff::constants::invalid_size, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+    ff::internal::co_thread_awaiter delay(size_t delay_ms, std::stop_token stop = {}, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+    ff::internal::co_thread_awaiter yield(ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+    ff::internal::co_handle_awaiter wait_handle(HANDLE handle, size_t timeout_ms = ff::constants::invalid_size, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
+
+    ff::co_task_source<void> run(std::function<void()>&& func);
 }

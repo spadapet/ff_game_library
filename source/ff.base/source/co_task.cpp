@@ -109,32 +109,45 @@ void ff::internal::co_data_base::set_current_exception()
     this->exception = std::current_exception();
 }
 
-ff::internal::co_thread_awaiter ff::resume_on_main()
+ff::internal::co_thread_awaiter ff::task::resume_on_main()
 {
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::main };
 }
 
-ff::internal::co_thread_awaiter ff::resume_on_game()
+ff::internal::co_thread_awaiter ff::task::resume_on_game()
 {
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::game };
 }
 
-ff::internal::co_thread_awaiter ff::resume_on_task()
+ff::internal::co_thread_awaiter ff::task::resume_on_task()
 {
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::task };
 }
 
-ff::internal::co_thread_awaiter ff::delay_task(size_t delay_ms, ff::cancel_token cancel, ff::thread_dispatch_type type)
+ff::internal::co_thread_awaiter ff::task::delay(size_t delay_ms, std::stop_token stop, ff::thread_dispatch_type type)
 {
-    return ff::internal::co_thread_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, delay_ms, cancel);
+    return ff::internal::co_thread_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, delay_ms, stop);
 }
 
-ff::internal::co_thread_awaiter ff::yield_task(ff::thread_dispatch_type type)
+ff::internal::co_thread_awaiter ff::task::yield(ff::thread_dispatch_type type)
 {
-    return ff::delay_task(0, {}, type);
+    return ff::task::delay(0, {}, type);
 }
 
-ff::internal::co_handle_awaiter ff::wait_task(HANDLE handle, size_t timeout_ms, ff::thread_dispatch_type type)
+ff::internal::co_handle_awaiter ff::task::wait_handle(HANDLE handle, size_t timeout_ms, ff::thread_dispatch_type type)
 {
     return ff::internal::co_handle_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, handle, timeout_ms);
+}
+
+ff::co_task_source<void> ff::task::run(std::function<void()>&& func)
+{
+    auto task_source = ff::co_task_source<void>::create();
+
+    ff::thread_pool::add_task([func = std::move(func), task_source]()
+    {
+        func();
+        task_source.set_result();
+    });
+
+    return task_source;
 }

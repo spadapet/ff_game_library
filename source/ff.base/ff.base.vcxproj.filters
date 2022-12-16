@@ -68,12 +68,6 @@
     <ClCompile Include="source\co_task.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\cancel_source.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\thread.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\exceptions.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -168,12 +162,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\co_task.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\cancel_source.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\thread.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\exceptions.h">

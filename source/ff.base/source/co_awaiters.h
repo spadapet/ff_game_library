@@ -1,6 +1,5 @@
 #pragma once
 
-#include "cancel_source.h"
 #include "constants.h"
 
 namespace ff
@@ -14,10 +13,10 @@ namespace ff::internal
     class co_thread_awaiter
     {
     public:
-        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, ff::cancel_token cancel = {});
+        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, std::stop_token stop = {});
 
         static bool ready(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
-        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, ff::cancel_token cancel = {});
+        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, std::stop_token stop = {});
 
         bool await_ready() const;
         void await_suspend(std::coroutine_handle<> coroutine) const;
@@ -25,7 +24,7 @@ namespace ff::internal
 
     private:
         ff::thread_dispatch_type thread_type;
-        ff::cancel_token cancel;
+        std::stop_token stop;
         size_t delay_ms;
     };
 

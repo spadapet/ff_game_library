@@ -13,4 +13,6 @@ namespace ff
     public:
         virtual char const* what() const override;
     };
+
+    void throw_if_stopped(const std::stop_token& stop);
 }

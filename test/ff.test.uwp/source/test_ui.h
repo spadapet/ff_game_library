@@ -13,8 +13,7 @@ namespace winrt::test_uwp::implementation
 
     private:
         ff::init_main_window init_main_window;
-        ff::win_handle stop_thread;
-        ff::win_handle thread_handle;
+        std::jthread thread_handle;
     };
 }
 

@@ -7,13 +7,13 @@ namespace ff::test::base
     public:
         TEST_METHOD(cancel_yield_task)
         {
-            ff::cancel_source cancel_source;
-            ff::co_task<> task = ff::test::base::co_task_tests::delay_for(10000, cancel_source.token());
+            std::stop_source stop_source;
+            ff::co_task<> task = ff::test::base::co_task_tests::delay_for(10000, stop_source.get_token());
 
-            ff::thread_pool::add_task([cancel_source]()
+            ff::thread_pool::add_task([&stop_source]()
                 {
                     ::Sleep(500);
-                    cancel_source.cancel();
+                    stop_source.request_stop();
                 });
 
             Assert::ExpectException<ff::cancel_exception>([task]()
@@ -34,20 +34,48 @@ namespace ff::test::base
             task.wait(10000);
         }
 
-    private:
-        ff::co_task<> delay_for(size_t delay_ms, ff::cancel_token cancel)
+        TEST_METHOD(await_task)
         {
-            co_await ff::delay_task(delay_ms, cancel, ff::thread_dispatch_type::task);
+            int i = 0;
+
+            ff::co_task<> task = ff::test::base::co_task_tests::test_await_task([&i]()
+                {
+                    std::this_thread::sleep_for(2s);
+                    i = 10;
+                });
+
+            task.wait(10000);
+            Assert::AreEqual(10, i);
+        }
+
+        TEST_METHOD(await_task_timeout)
+        {
+            int i = 0;
+
+            ff::co_task<> task = ff::test::base::co_task_tests::test_await_task([&i]()
+                {
+                    std::this_thread::sleep_for(5s);
+                    i = 10;
+                });
+
+            bool waited = task.wait(1000);
+            Assert::IsFalse(waited);
+        }
+
+    private:
+        ff::co_task<> delay_for(size_t delay_ms, std::stop_token stop)
+        {
+            co_await ff::task::delay(delay_ms, stop, ff::thread_dispatch_type::task);
         }
 
         ff::co_task<> test_yield_to_threads()
         {
-            co_await ff::yield_task(ff::thread_dispatch_type::main);
-            co_await ff::delay_task(500);
+            co_await ff::task::yield(ff::thread_dispatch_type::main);
+            co_await ff::task::delay(500);
             Assert::IsTrue(ff::thread_dispatch_type::main == ff::thread_dispatch::get_type());
 
-            co_await ff::yield_task(ff::thread_dispatch_type::task);
-            co_await ff::delay_task(500);
+            co_await ff::task::yield(ff::thread_dispatch_type::task);
+            co_await ff::task::delay(500);
             Assert::IsTrue(ff::thread_dispatch_type::task == ff::thread_dispatch::get_type());
         }
 
@@ -62,6 +90,11 @@ namespace ff::test::base
 
             co_await event0;
             Assert::IsTrue(event0.is_set());
+        }
+
+        ff::co_task<> test_await_task(std::function<void()>&& func)
+        {
+            co_await ff::task::run(std::move(func));
         }
     };
 }

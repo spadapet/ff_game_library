@@ -17,6 +17,7 @@
 #include <mutex>
 #include <random>
 #include <sstream>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <thread>

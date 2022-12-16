@@ -10,6 +10,8 @@ namespace ff
         static void close(HANDLE& handle);
         static win_handle duplicate(HANDLE handle);
         static ff::win_handle create_event(bool initial_set = false, bool manual_reset = true);
+        static const ff::win_handle& never_complete_event();
+        static const ff::win_handle& always_complete_event();
 
         explicit win_handle(HANDLE handle);
         win_handle(win_handle&& other) noexcept;

@@ -11,7 +11,6 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\assert.cpp" />
-    <ClCompile Include="source\cancel_source.cpp" />
     <ClCompile Include="source\co_awaiters.cpp" />
     <ClCompile Include="source\co_task.cpp" />
     <ClCompile Include="source\end_scope_action.cpp" />
@@ -25,7 +24,6 @@
     <ClCompile Include="source\memory.cpp" />
     <ClCompile Include="source\signal.cpp" />
     <ClCompile Include="source\string.cpp" />
-    <ClCompile Include="source\thread.cpp" />
     <ClCompile Include="source\thread_dispatch.cpp" />
     <ClCompile Include="source\thread_pool.cpp" />
     <ClCompile Include="source\timer.cpp" />
@@ -39,7 +37,6 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\assert.h" />
-    <ClInclude Include="source\cancel_source.h" />
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\co_awaiters.h" />
     <ClInclude Include="source\co_task.h" />
@@ -61,7 +58,6 @@
     <ClInclude Include="source\pool_allocator.h" />
     <ClInclude Include="source\rect.h" />
     <ClInclude Include="source\string.h" />
-    <ClInclude Include="source\thread.h" />
     <ClInclude Include="source\thread_dispatch.h" />
     <ClInclude Include="source\thread_pool.h" />
     <ClInclude Include="source\timer.h" />

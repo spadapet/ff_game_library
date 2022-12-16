@@ -73,17 +73,17 @@ namespace ff::test::base
         TEST_METHOD(timer_cancel)
         {
             ff::win_handle done_event = ff::win_handle::create_event();
-            ff::cancel_source cancel_source;
+            std::stop_source stop_source;
             int i = 0;
 
-            ff::thread_pool::add_timer([&done_event, &i, cancel = cancel_source.token()]()
+            ff::thread_pool::add_timer([&done_event, &i, stop = stop_source.get_token()]()
                 {
-                    i = cancel.canceled() ? 20 : 10;
+                    i = stop.stop_requested() ? 20 : 10;
                     ::SetEvent(done_event);
-                }, 10000, cancel_source.token());
+                }, 10000, stop_source.get_token());
 
             ::Sleep(1000);
-            cancel_source.cancel();
+            stop_source.request_stop();
             bool success = ff::wait_for_handle(done_event, 2000);
 
             Assert::IsTrue(success);

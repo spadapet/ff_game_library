@@ -4,9 +4,9 @@
 #include "thread_dispatch.h"
 #include "thread_pool.h"
 
-ff::internal::co_thread_awaiter::co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms, ff::cancel_token cancel)
+ff::internal::co_thread_awaiter::co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms, std::stop_token stop)
     : thread_type(thread_type)
-    , cancel(cancel)
+    , stop(stop)
     , delay_ms(delay_ms)
 {}
 
@@ -28,7 +28,7 @@ bool ff::internal::co_thread_awaiter::ready(ff::thread_dispatch_type thread_type
     return (!main_td || !main_td->current_thread()) && (!game_td || !game_td->current_thread());
 }
 
-void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms, ff::cancel_token cancel)
+void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms, std::stop_token stop)
 {
     if (ff::internal::co_thread_awaiter::ready(thread_type, delay_ms))
     {
@@ -52,14 +52,14 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
                 ff::thread_pool::add_timer([td, func = std::move(func)]() mutable
                     {
                         td->post(std::move(func));
-                    }, delay_ms, cancel);
+                    }, delay_ms, stop);
             }
 
             return;
         }
     }
 
-    ff::thread_pool::add_timer(std::move(func), delay_ms, cancel);
+    ff::thread_pool::add_timer(std::move(func), delay_ms, stop);
 }
 
 bool ff::internal::co_thread_awaiter::await_ready() const
@@ -73,12 +73,12 @@ void ff::internal::co_thread_awaiter::await_suspend(std::coroutine_handle<> coro
         [coroutine]()
         {
             coroutine.resume();
-        }, this->thread_type, this->delay_ms, this->cancel);
+        }, this->thread_type, this->delay_ms, this->stop);
 }
 
 void ff::internal::co_thread_awaiter::await_resume() const
 {
-    this->cancel.throw_if_canceled();
+    ff::throw_if_stopped(this->stop);
 }
 
 ff::internal::co_handle_awaiter::co_handle_awaiter(ff::thread_dispatch_type thread_type, HANDLE handle, size_t timeout_ms)

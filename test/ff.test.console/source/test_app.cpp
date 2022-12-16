@@ -79,7 +79,7 @@ namespace
     private:
         ff::co_task<bool> show_wait_dialog_async()
         {
-            co_await ff::resume_on_main();
+            co_await ff::task::resume_on_main();
             Sleep(500);
             int result = co_await this->show_wait_dialog_async2();
             co_return result == IDOK;
@@ -93,7 +93,7 @@ namespace
 
         ff::co_task<int> show_wait_dialog_async2()
         {
-            co_await ff::resume_on_main();
+            co_await ff::task::resume_on_main();
             co_return ::show_wait_dialog();
         }
 

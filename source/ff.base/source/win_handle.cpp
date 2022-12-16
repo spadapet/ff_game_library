@@ -52,7 +52,7 @@ ff::win_handle& ff::win_handle::operator=(win_handle&& other) noexcept
 
 ff::internal::co_handle_awaiter ff::win_handle::operator co_await()
 {
-    return ff::wait_task(this->handle);
+    return ff::task::wait_handle(this->handle);
 }
 
 bool ff::win_handle::operator!() const
@@ -107,6 +107,18 @@ ff::win_handle ff::win_handle::create_event(bool initial_set, bool manual_reset)
         (initial_set ? CREATE_EVENT_INITIAL_SET : 0) | (manual_reset ? CREATE_EVENT_MANUAL_RESET : 0),
         EVENT_ALL_ACCESS);
     return ff::win_handle(handle);
+}
+
+const ff::win_handle& ff::win_handle::never_complete_event()
+{
+    static ff::win_handle handle = ff::win_handle::create_event();
+    return handle;
+}
+
+const ff::win_handle& ff::win_handle::always_complete_event()
+{
+    static ff::win_handle handle = ff::win_handle::create_event(true);
+    return handle;
 }
 
 bool ff::wait_for_event_and_reset(HANDLE handle, size_t timeout_ms)

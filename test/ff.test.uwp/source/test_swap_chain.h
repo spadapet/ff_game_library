@@ -15,9 +15,7 @@ namespace winrt::test_uwp::implementation
         ff::init_main_window init_main_window;
         ff::init_graphics init_graphics;
         std::unique_ptr<ff::dxgi::target_window_base> target;
-
-        ff::win_handle stop_thread;
-        ff::win_handle thread_handle;
+        std::jthread thread_handle;
     };
 }
 
