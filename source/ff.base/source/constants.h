@@ -22,7 +22,4 @@ namespace ff::constants
     /// </summary>
     constexpr double seconds_per_advance = 1.0 / 60.0;
     constexpr float seconds_per_advance_f = 1.0f / 60.0f;
-
-    constexpr double pi = 3.1415926535897932384626433832795; ///< PI
-    constexpr double pi2 = 6.283185307179586476925286766559; ///< 2 * PI
 }

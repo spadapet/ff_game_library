@@ -10,33 +10,13 @@
 namespace ff::math
 {
     /// <summary>
-    /// PI cast to a specific type
-    /// </summary>
-    /// <typeparam name="T">Type to return</typeparam>
-    template<class T>
-    constexpr T pi()
-    {
-        return static_cast<T>(ff::constants::pi);
-    }
-
-    /// <summary>
-    /// 2 * PI cast to a specific type
-    /// </summary>
-    /// <typeparam name="T">Type to return</typeparam>
-    template<class T>
-    constexpr T pi2()
-    {
-        return static_cast<T>(ff::constants::pi2);
-    }
-
-    /// <summary>
     /// Convert radians to degrees
     /// </summary>
     /// <typeparam name="T">Type to return</typeparam>
     template<class T>
     constexpr T radians_to_degrees(T angle)
     {
-        return angle * static_cast<T>(180.0) / ff::math::pi<T>();
+        return angle * static_cast<T>(180.0) / std::numbers::pi_v<T>;
     }
 
     /// <summary>
@@ -46,7 +26,7 @@ namespace ff::math
     template<class T>
     constexpr T degrees_to_radians(T angle)
     {
-        return angle * ff::math::pi<T>() / static_cast<T>(180.0);
+        return angle * std::numbers::pi_v<T> / static_cast<T>(180.0);
     }
 
     /// <summary>

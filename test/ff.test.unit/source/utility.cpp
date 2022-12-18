@@ -17,11 +17,11 @@ void ff::test::remove_temp_path()
     }
 }
 
-std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::end_scope_action> ff::test::create_resources(std::string_view json_source)
+std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::scope_exit> ff::test::create_resources(std::string_view json_source)
 {
     std::filesystem::path temp_path = ::get_temp_path() / std::to_string(ff::stable_hash_func(json_source));
     ff::log::write(ff::log::type::debug, std::string("Temp path: " + ff::string::to_string(temp_path.native())));
-    ff::end_scope_action cleanup([temp_path]()
+    ff::scope_exit cleanup([temp_path]()
         {
             std::error_code ec;
             std::filesystem::remove_all(temp_path, ec);

@@ -258,7 +258,7 @@ protected:
             values_pushed = true;
         }
 
-        ff::end_scope_action pop_values([values_pushed, this]()
+        ff::scope_exit pop_values([values_pushed, this]()
             {
                 if (values_pushed)
                 {

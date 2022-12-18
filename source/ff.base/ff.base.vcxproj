@@ -13,7 +13,7 @@
     <ClCompile Include="source\assert.cpp" />
     <ClCompile Include="source\co_awaiters.cpp" />
     <ClCompile Include="source\co_task.cpp" />
-    <ClCompile Include="source\end_scope_action.cpp" />
+    <ClCompile Include="source\scope_exit.cpp" />
     <ClCompile Include="source\exceptions.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\frame_allocator.cpp" />
@@ -40,7 +40,7 @@
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\co_awaiters.h" />
     <ClInclude Include="source\co_task.h" />
-    <ClInclude Include="source\end_scope_action.h" />
+    <ClInclude Include="source\scope_exit.h" />
     <ClInclude Include="source\exceptions.h" />
     <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\frame_allocator.h" />
@@ -61,7 +61,6 @@
     <ClInclude Include="source\thread_dispatch.h" />
     <ClInclude Include="source\thread_pool.h" />
     <ClInclude Include="source\timer.h" />
-    <ClInclude Include="source\type_helper.h" />
     <ClInclude Include="source\uuid.h" />
     <ClInclude Include="source\stack_vector.h" />
     <ClInclude Include="source\win_handle.h" />

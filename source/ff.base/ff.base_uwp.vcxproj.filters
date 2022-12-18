@@ -53,9 +53,6 @@
     <ClCompile Include="source\stable_hash.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\end_scope_action.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\filesystem.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -68,16 +65,13 @@
     <ClCompile Include="source\co_task.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\cancel_source.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\thread.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\exceptions.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\co_awaiters.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scope_exit.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -90,9 +84,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\pool_allocator.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type_helper.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\fixed.h">
@@ -155,9 +146,6 @@
     <ClInclude Include="source\stack_vector.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\end_scope_action.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -170,16 +158,13 @@
     <ClInclude Include="source\co_task.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\cancel_source.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\thread.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\exceptions.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\co_awaiters.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\scope_exit.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

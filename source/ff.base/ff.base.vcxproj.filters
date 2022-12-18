@@ -50,7 +50,7 @@
     <ClCompile Include="source\math.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\end_scope_action.cpp">
+    <ClCompile Include="source\scope_exit.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\window.cpp">
@@ -87,9 +87,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\stack_vector.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\type_helper.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\stable_hash.h">
@@ -146,7 +143,7 @@
     <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\end_scope_action.h">
+    <ClInclude Include="source\scope_exit.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\push_back.h">

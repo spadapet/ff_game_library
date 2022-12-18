@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <numbers>
 #include <random>
 #include <sstream>
 #include <stop_token>
