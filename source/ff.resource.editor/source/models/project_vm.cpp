@@ -55,15 +55,17 @@ const char* editor::project_vm::file_name_raw() const
     return this->name_.c_str();
 }
 
-bool editor::project_vm::save(bool save_as)
+ff::co_task<bool> editor::project_vm::save_async(bool save_as)
 {
     std::error_code ec;
     std::wstring path = ff::string::to_wstring(std::string_view(this->full_path_raw()));
 
-    if (!save_as && !path.empty() && std::filesystem::exists(path, ec) && this->save(path))
+    if (!save_as && !path.empty() && std::filesystem::exists(path, ec) && co_await this->save_async(path))
     {
-        return true;
+        co_return true;
     }
+
+    co_await ff::task::resume_on_main();
 
     wchar_t buffer[1024]{};
     ::wcscpy_s(buffer, path.c_str());
@@ -81,13 +83,14 @@ bool editor::project_vm::save(bool save_as)
     if (::GetSaveFileName(&ofn))
     {
         path = ofn.lpstrFile;
-        return this->save(path);
+        co_await ff::task::resume_on_game();
+        co_return this->save_async(path);
     }
 
-    return false;
+    co_return false;
 }
 
-bool editor::project_vm::save(const std::filesystem::path& path)
+ff::co_task<bool> editor::project_vm::save_async(const std::filesystem::path& path)
 {
     std::vector<ff::value_ptr> sources;
 
@@ -113,8 +116,8 @@ bool editor::project_vm::save(const std::filesystem::path& path)
         this->property_changed("file_name");
         this->property_changed("dirty");
 
-        return true;
+        co_return true;
     }
 
-    debug_fail_ret_val(false);
+    co_return false;
 }

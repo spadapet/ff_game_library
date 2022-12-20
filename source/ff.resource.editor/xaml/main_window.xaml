@@ -46,7 +46,7 @@
 
         <editor:shell x:Name="shell" />
         <Grid x:Name="modal_root" Background="#A0000000" Visibility="Collapsed" d:Visibility="Visible">
-            <ContentControl Content="{Binding modal_dialog, Mode=OneWay}" Style="{StaticResource dialog_style}" />
+            <ContentControl Content="{Binding modal_dialog, Mode=OneWay}" Style="{StaticResource dialog_style}" Visibility="{Binding IsEnabled, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=editor:main_window}, Converter={StaticResource bool_to_visible_converter}}" />
         </Grid>
 
         <VisualStateManager.VisualStateGroups>

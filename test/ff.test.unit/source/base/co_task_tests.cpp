@@ -62,6 +62,26 @@ namespace ff::test::base
             Assert::IsFalse(waited);
         }
 
+        TEST_METHOD(continue_with)
+        {
+            int i = 0;
+            ff::win_handle handle = ff::win_handle::create_event();
+            ff::co_task<int> task = ff::test::base::co_task_tests::test_return_int(10);
+
+            task.continue_with<int>([&i](ff::co_task<int> task2)
+            {
+                return task2.result();
+            }).continue_with<void>([&i, &handle](ff::co_task<int> task2)
+            {
+                i = task2.result();
+                ::SetEvent(handle);
+            });
+
+            bool waited = ff::wait_for_handle(handle, 2000);
+            Assert::IsTrue(waited);
+            Assert::AreEqual(10, i);
+        }
+
     private:
         ff::co_task<> delay_for(size_t delay_ms, std::stop_token stop)
         {
@@ -95,6 +115,12 @@ namespace ff::test::base
         ff::co_task<> test_await_task(std::function<void()>&& func)
         {
             co_await ff::task::run(std::move(func));
+        }
+
+        ff::co_task<int> test_return_int(int result)
+        {
+            co_await ff::task::delay(100);
+            co_return result;
         }
     };
 }

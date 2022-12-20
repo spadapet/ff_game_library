@@ -69,9 +69,9 @@ bool editor::main_window::can_close()
 
     if (this->view_model_->project()->dirty())
     {
-        editor::main_window::show_dialog<editor::save_project_dialog>(
-            [](int result)
+        editor::main_window::show_dialog<editor::save_project_dialog>().continue_with<void>([](auto result_task)
             {
+                int result = std::get<int>(result_task.result());
                 if (result != editor::dialog_content_base::RESULT_CANCEL)
                 {
                     ::PostMessage(*ff::window::main(), editor::window_base::WM_USER_FORCE_CLOSE, 0, 0);

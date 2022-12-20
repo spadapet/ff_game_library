@@ -19,15 +19,12 @@ namespace editor
         virtual bool ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler) override;
 
         template<class T>
-        static void show_dialog(std::function<void(int result)>&& dialog_closed_func = {})
+        static ff::co_task<std::tuple<Noesis::Ptr<T>, int>> show_dialog()
         {
             Noesis::Ptr<T> dialog = Noesis::MakePtr<T>();
-            if (dialog_closed_func)
-            {
-                dialog->add_connection(dialog->dialog_closed().connect(std::move(dialog_closed_func)));
-            }
-
             editor::main_window::get()->view_model()->push_modal_dialog(dialog);
+            int result = co_await dialog->awaitable();
+            co_return std::make_tuple(dialog, result);
         }
 
     protected:

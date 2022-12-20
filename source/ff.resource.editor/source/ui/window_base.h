@@ -6,6 +6,7 @@ namespace editor
     {
     public:
         window_base();
+        virtual ~window_base() override;
 
         static const Noesis::DependencyProperty* title_property;
         static constexpr UINT WM_USER_FORCE_CLOSE = WM_USER + 1;
@@ -15,6 +16,8 @@ namespace editor
         virtual bool can_close();
 
     private:
+        void on_loaded(Noesis::BaseComponent*, const Noesis::RoutedEventArgs&);
+
         ff::signal_connection message_connection;
 
         NS_DECLARE_REFLECTION(editor::window_base, Noesis::ContentControl);

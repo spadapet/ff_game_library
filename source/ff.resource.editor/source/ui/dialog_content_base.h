@@ -20,9 +20,7 @@ namespace editor
 
         Noesis::UIElement::RoutedEvent_<editor::dialog_request_close_event_args> request_close();
 
-        ff::signal_sink<int, bool&>& apply_changes();
-        ff::signal_sink<int>& dialog_closed();
-        void add_connection(ff::signal_connection&& connection);
+        ff::co_task_source<int> awaitable() const;
         void dialog_opened();
         void dialog_closed(int result);
         virtual bool can_window_close();
@@ -39,19 +37,16 @@ namespace editor
 
     protected:
         virtual bool has_close_command(int result);
-        virtual bool apply_changes(int result);
+        virtual ff::co_task<bool> apply_changes_async(int result);
 
     private:
         void loaded_command(Noesis::BaseComponent* param);
         void close_command(Noesis::BaseComponent* param);
         bool close_command_enabled(Noesis::BaseComponent* param);
-        void request_close_dialog(int result);
 
         Noesis::Ptr<Noesis::BaseCommand> loaded_command_;
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
-        ff::signal<int, bool&> apply_changes_;
-        ff::signal<int> dialog_closed_;
-        std::list<ff::signal_connection> connections;
+        ff::co_task_source<int> task;
 
         NS_DECLARE_REFLECTION(editor::dialog_content_base, Noesis::UserControl);
     };

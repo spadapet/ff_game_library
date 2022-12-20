@@ -60,7 +60,7 @@ bool ff::internal::co_data_base::wait(size_t timeout_ms)
     return true;
 }
 
-void ff::internal::co_data_base::handle_result(listener_func&& listener)
+void ff::internal::co_data_base::continue_with(listener_func&& listener)
 {
     listener_func run_listener_now;
     {
@@ -82,7 +82,7 @@ void ff::internal::co_data_base::handle_result(listener_func&& listener)
     }
 }
 
-void ff::internal::co_data_base::publish_result()
+void ff::internal::co_data_base::run_continuations()
 {
     listeners_type listeners;
     {

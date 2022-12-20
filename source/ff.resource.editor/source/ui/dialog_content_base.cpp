@@ -29,29 +29,25 @@ editor::dialog_content_base::dialog_content_base()
     , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(
         Noesis::MakeDelegate(this, &editor::dialog_content_base::close_command),
         Noesis::MakeDelegate(this, &editor::dialog_content_base::close_command_enabled)))
+    , task(ff::co_task_source<int>::create())
 {}
 
 editor::dialog_content_base::~dialog_content_base()
-{}
+{
+    if (!this->task.done())
+    {
+        this->task.set_result(editor::dialog_content_base::RESULT_CANCEL);
+    }
+}
 
 Noesis::UIElement::RoutedEvent_<editor::dialog_request_close_event_args> editor::dialog_content_base::request_close()
 {
     return Noesis::UIElement::RoutedEvent_<editor::dialog_request_close_event_args>(this, editor::dialog_content_base::request_close_event);
 }
 
-ff::signal_sink<int, bool&>& editor::dialog_content_base::apply_changes()
+ff::co_task_source<int> editor::dialog_content_base::awaitable() const
 {
-    return this->apply_changes_;
-}
-
-ff::signal_sink<int>& editor::dialog_content_base::dialog_closed()
-{
-    return this->dialog_closed_;
-}
-
-void editor::dialog_content_base::add_connection(ff::signal_connection&& connection)
-{
-    this->connections.push_back(std::move(connection));
+    return this->task;
 }
 
 void editor::dialog_content_base::dialog_opened()
@@ -59,8 +55,7 @@ void editor::dialog_content_base::dialog_opened()
 
 void editor::dialog_content_base::dialog_closed(int result)
 {
-    this->dialog_closed_.notify(result);
-    this->connections.clear();
+    this->task.set_result(result);
 }
 
 bool editor::dialog_content_base::can_window_close()
@@ -73,9 +68,9 @@ bool editor::dialog_content_base::has_close_command(int result)
     return result != editor::dialog_content_base::RESULT_NO;
 }
 
-bool editor::dialog_content_base::apply_changes(int result)
+ff::co_task<bool> editor::dialog_content_base::apply_changes_async(int result)
 {
-    return true;
+    co_return true;
 }
 
 static int get_result(Noesis::BaseComponent* param)
@@ -97,31 +92,33 @@ void editor::dialog_content_base::loaded_command(Noesis::BaseComponent* param)
 
 void editor::dialog_content_base::close_command(Noesis::BaseComponent* param)
 {
-    const int result = ::get_result(param);
-    if (!result || this->apply_changes(result))
+    Noesis::Ptr<editor::dialog_content_base> this_ptr(this);
+    int result = ::get_result(param);
+
+    auto allow_close_func = [this_ptr, result]() -> ff::co_task<bool>
     {
-        bool can_close = true;
-        if (result)
+        bool allow_close = (result == editor::dialog_content_base::RESULT_CANCEL);
+
+        if (!allow_close)
         {
-            this->apply_changes_.notify(result, can_close);
+            allow_close = co_await this_ptr->apply_changes_async(result);
         }
 
-        if (can_close)
+        co_return allow_close;
+    };
+
+    allow_close_func().continue_with<void>([this_ptr, result](ff::co_task<bool> allow_close_task)
+    {
+        if (allow_close_task.result())
         {
-            this->request_close_dialog(result);
+            editor::dialog_request_close_event_args args(result, this_ptr, editor::dialog_content_base::request_close_event);
+            this_ptr->RaiseEvent(args);
+            assert(args.handled);
         }
-    }
+    });
 }
 
 bool editor::dialog_content_base::close_command_enabled(Noesis::BaseComponent* param)
 {
     return this->has_close_command(::get_result(param));
-}
-
-void editor::dialog_content_base::request_close_dialog(int result)
-{
-    Noesis::Ptr<Noesis::BaseComponent> keep_alive(this);
-    editor::dialog_request_close_event_args args(result, this, editor::dialog_content_base::request_close_event);
-    this->RaiseEvent(args);
-    assert_ret(args.handled);
 }

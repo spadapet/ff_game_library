@@ -19,8 +19,8 @@ namespace ff::internal
 
         bool done() const;
         bool wait(size_t timeout_ms = INFINITE);
-        void handle_result(listener_func&& listener);
-        void publish_result();
+        void continue_with(listener_func&& listener);
+        void run_continuations();
 
     protected:
         void set_current_exception();
@@ -103,7 +103,7 @@ namespace ff::internal
 
         void await_suspend(std::coroutine_handle<> coroutine) const
         {
-            this->data->handle_result(
+            this->data->continue_with(
                 [coroutine, thread_type = this->thread_type, data = this->data](bool resume)
                 {
                     if (resume)
@@ -183,7 +183,7 @@ namespace ff::internal
 
         std::suspend_never final_suspend() noexcept
         {
-            this->data_->publish_result();
+            this->data_->run_continuations();
             return {};
         }
 
@@ -225,7 +225,7 @@ namespace ff::internal
 
         std::suspend_never final_suspend() noexcept
         {
-            this->data_->publish_result();
+            this->data_->run_continuations();
             return {};
         }
 
@@ -299,6 +299,15 @@ namespace ff
             return this->valid() && this->data_->wait(timeout_ms);
         }
 
+        template<class ReturnT = void>
+        ff::co_task<ReturnT> continue_with(std::function<ReturnT(this_type)>&& func) const
+        {
+            std::function<ReturnT(this_type)> local_func = std::move(func);
+            this_type local_task(this->data_);
+            co_await local_task;
+            co_return local_func(local_task);
+        }
+
         auto result() const
         {
             assert(this->done());
@@ -347,14 +356,14 @@ namespace ff
         {
             assert(this->valid() && !this->done());
             this->data_->set_result(value);
-            this->data_->publish_result();
+            this->data_->run_continuations();
         }
 
         void set_result(T&& value) const
         {
             assert(this->valid() && !this->done());
             this->data_->set_result(std::move(value));
-            this->data_->publish_result();
+            this->data_->run_continuations();
         }
     };
 
@@ -390,7 +399,7 @@ namespace ff
         {
             assert(this->valid() && !this->done());
             this->data_->set_result();
-            this->data_->publish_result();
+            this->data_->run_continuations();
         }
     };
 }

@@ -17,8 +17,8 @@ namespace editor
         const char* file_name() const;
         const char* file_name_raw() const;
 
-        bool save(bool save_as = false);
-        bool save(const std::filesystem::path& path);
+        ff::co_task<bool> save_async(bool save_as = false);
+        ff::co_task<bool> save_async(const std::filesystem::path& path);
 
         Noesis::Ptr<editor::source_vm> add_source(const std::filesystem::path& source_path);
         void remove_source(editor::source_vm* source);
