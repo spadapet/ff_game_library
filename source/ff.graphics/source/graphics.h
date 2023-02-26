@@ -7,7 +7,7 @@ namespace ff
 
 namespace ff::graphics
 {
-    IDWriteFactoryX* write_factory();
+    IDWriteFactory7* write_factory();
     IDWriteInMemoryFontFileLoader* write_font_loader();
 }
 

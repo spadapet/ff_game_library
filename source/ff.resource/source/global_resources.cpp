@@ -83,7 +83,7 @@ void ff::global_resources::reset()
     ::global_resources.reset();
 }
 
-void ff::global_resources::rebuild_async()
+ff::co_task<> ff::global_resources::rebuild_async()
 {
     std::vector<std::shared_ptr<ff::data_base>> datas;
     {
@@ -91,21 +91,21 @@ void ff::global_resources::rebuild_async()
         datas = ::global_resource_datas;
     }
 
-    ff::thread_pool::add_task([datas]()
-        {
-            std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
+    co_await ff::task::run([datas]()
+    {
+        std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
 
-            ff::thread_dispatch::get_game()->post([global_resources]()
+        ff::thread_dispatch::get_game()->post([global_resources]()
+            {
+                if (global_resources)
                 {
-                    if (global_resources)
-                    {
-                        std::scoped_lock lock(::global_resources_mutex);
-                        ::global_resources = global_resources;
-                    }
+                    std::scoped_lock lock(::global_resources_mutex);
+                    ::global_resources = global_resources;
+                }
 
-                    ::rebuilt_global_signal.notify();
-                });
-        });
+                ::rebuilt_global_signal.notify();
+            });
+    });
 }
 
 ff::signal_sink<>& ff::global_resources::rebuilt_sink()

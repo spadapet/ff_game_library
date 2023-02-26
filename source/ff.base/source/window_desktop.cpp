@@ -180,6 +180,10 @@ void ff::window::notify_message(ff::window_message& message)
             this->state = ff::flags::set(this->state, state_t::active, message.wp != 0);
             break;
 
+        case WM_ENABLE:
+            this->state = ff::flags::set(this->state, state_t::enabled, message.wp != 0);
+            break;
+
         case WM_SETFOCUS:
         case WM_KILLFOCUS:
             this->state = ff::flags::set(this->state, state_t::focused, message.msg == WM_SETFOCUS);
@@ -249,6 +253,11 @@ bool ff::window::visible()
     return this->hwnd && ff::flags::has(this->state, state_t::visible) && !ff::flags::has(this->state, state_t::iconic);
 }
 
+bool ff::window::enabled()
+{
+    return this->hwnd && ff::flags::has(this->state, state_t::enabled);
+}
+
 bool ff::window::focused()
 {
     return this->hwnd && ff::flags::has(this->state, state_t::focused);
@@ -273,7 +282,7 @@ void ff::window::reset(HWND hwnd)
     }
 
     this->hwnd = hwnd;
-    this->state = state_t::none;
+    this->state = ::IsWindowEnabled(this->hwnd) ? state_t::enabled : state_t::none;
 
     if (this->hwnd)
     {

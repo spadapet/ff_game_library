@@ -11,17 +11,17 @@ namespace ff::test::base
             int i1 = 0, i2 = 0;
 
             std::jthread thread([&i1]()
-                {
-                    ::Sleep(500);
-                    i1 = 10;
-                });
+            {
+                ::Sleep(500);
+                i1 = 10;
+            });
 
             ff::thread_pool::add_task([&task_done_event, &i2]()
-                {
-                    ::Sleep(1000);
-                    i2 = 20;
-                    ::SetEvent(task_done_event);
-                });
+            {
+                ::Sleep(1000);
+                i2 = 20;
+                ::SetEvent(task_done_event);
+            });
 
             std::array<HANDLE, 2> handles{ thread.native_handle(), task_done_event };
             bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 4000);
@@ -43,25 +43,25 @@ namespace ff::test::base
             int i[3] = {};
 
             ff::thread_pool::add_timer([&events, &i]()
-                {
-                    ::Sleep(500);
-                    i[0] = 10;
-                    ::SetEvent(events[0]);
-                }, 1000);
+            {
+                ::Sleep(500);
+                i[0] = 10;
+                ::SetEvent(events[0]);
+            }, 1000);
 
             ff::thread_pool::add_timer([&events, &i]()
-                {
-                    ::Sleep(750);
-                    i[1] = 20;
-                    ::SetEvent(events[1]);
-                }, 1500);
+            {
+                ::Sleep(750);
+                i[1] = 20;
+                ::SetEvent(events[1]);
+            }, 1500);
 
             ff::thread_pool::add_timer([&events, &i]()
-                {
-                    ::Sleep(1000);
-                    i[1] = 30;
-                    ::SetEvent(events[2]);
-                }, 2000);
+            {
+                ::Sleep(1000);
+                i[1] = 30;
+                ::SetEvent(events[2]);
+            }, 2000);
 
             std::array<HANDLE, 3> handles{ events[0], events[1], events[2] };
             bool success = ff::wait_for_all_handles(handles.data(), handles.size(), 6000);
@@ -77,10 +77,10 @@ namespace ff::test::base
             int i = 0;
 
             ff::thread_pool::add_timer([&done_event, &i, stop = stop_source.get_token()]()
-                {
-                    i = stop.stop_requested() ? 20 : 10;
-                    ::SetEvent(done_event);
-                }, 10000, stop_source.get_token());
+            {
+                i = stop.stop_requested() ? 20 : 10;
+                ::SetEvent(done_event);
+            }, 10000, stop_source.get_token());
 
             ::Sleep(1000);
             stop_source.request_stop();
@@ -95,23 +95,23 @@ namespace ff::test::base
             int a = 0, b = 0, c = 0;
 
             ff::thread_pool::add_task([&a, &c]()
-                {
-                    a = 1;
-                    ::Sleep(2000);
-                    a = 2;
+            {
+                a = 1;
+                ::Sleep(2000);
+                a = 2;
 
-                    ff::thread_pool::add_timer([&c]()
-                        {
-                            c = 1;
-                        }, 10000);
-                });
+                ff::thread_pool::add_timer([&c]()
+                    {
+                        c = 1;
+                    }, 10000);
+            });
 
             ff::thread_pool::add_timer([&b]()
-                {
-                    b = 1;
-                    ::Sleep(1000);
-                    b = 2;
-                }, 10000);
+            {
+                b = 1;
+                ::Sleep(1000);
+                b = 2;
+            }, 10000);
 
             do
             {
@@ -132,10 +132,10 @@ namespace ff::test::base
             ff::win_handle wait_done = ff::win_handle::create_event();
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
-                {
-                    Assert::IsTrue(wait_for.is_set());
-                    ::SetEvent(wait_done);
-                }, wait_for, 2000);
+            {
+                Assert::IsTrue(wait_for.is_set());
+                ::SetEvent(wait_done);
+            }, wait_for, 2000);
 
             ::Sleep(500);
             ::SetEvent(wait_for);
@@ -150,10 +150,10 @@ namespace ff::test::base
             ff::win_handle wait_done = ff::win_handle::create_event();
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
-                {
-                    Assert::IsFalse(wait_for.is_set());
-                    ::SetEvent(wait_done);
-                }, wait_for, 1000);
+            {
+                Assert::IsFalse(wait_for.is_set());
+                ::SetEvent(wait_done);
+            }, wait_for, 1000);
 
             bool success = wait_done.wait(2000);
             Assert::IsTrue(success);

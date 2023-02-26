@@ -9,14 +9,14 @@ namespace ff
     public:
         static void close(HANDLE& handle);
         static win_handle duplicate(HANDLE handle);
-        static ff::win_handle create_event(bool initial_set = false, bool manual_reset = true);
+        static ff::win_handle create_event(bool initial_set = false);
         static const ff::win_handle& never_complete_event();
         static const ff::win_handle& always_complete_event();
 
         explicit win_handle(HANDLE handle);
         win_handle(win_handle&& other) noexcept;
         win_handle(const win_handle& other) = delete;
-        win_handle();
+        win_handle() = default;
         ~win_handle();
 
         win_handle& operator=(win_handle&& other) noexcept;
@@ -33,7 +33,16 @@ namespace ff
         bool is_set() const;
 
     private:
-        HANDLE handle;
+        enum class handle_type
+        {
+            unknown,
+            event,
+        };
+
+        explicit win_handle(HANDLE handle, handle_type type);
+
+        HANDLE handle{};
+        handle_type type{};
     };
 
 #if !UWP_APP

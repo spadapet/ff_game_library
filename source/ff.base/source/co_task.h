@@ -11,15 +11,15 @@ namespace ff::internal
     /// </summary>
     class co_data_base
     {
-        using listener_func = typename std::function<void(bool)>;
-        using listeners_type = typename std::list<listener_func>;
+        using continuation_func = typename std::function<void(bool)>;
+        using continuation_type = typename std::forward_list<continuation_func>;
 
     public:
         virtual ~co_data_base();
 
         bool done() const;
         bool wait(size_t timeout_ms = INFINITE);
-        void continue_with(listener_func&& listener);
+        void continue_with(continuation_func&& continuation);
         void run_continuations();
 
     protected:
@@ -28,7 +28,7 @@ namespace ff::internal
     private:
         mutable std::mutex mutex;
         ff::win_handle done_event;
-        listeners_type listeners;
+        continuation_type continuations;
         std::exception_ptr exception{ nullptr };
         bool done_{ false };
     };

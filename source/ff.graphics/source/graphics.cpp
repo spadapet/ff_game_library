@@ -20,7 +20,7 @@ namespace
     };
 }
 
-static Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
+static Microsoft::WRL::ComPtr<IDWriteFactory7> write_factory;
 static Microsoft::WRL::ComPtr<IDWriteInMemoryFontFileLoader> write_font_loader;
 static const ff::dxgi::client_functions* client_functions;
 
@@ -29,10 +29,10 @@ static ff::dxgi::target_window_base* defer_full_screen_target;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
 
-static Microsoft::WRL::ComPtr<IDWriteFactoryX> create_write_factory()
+static Microsoft::WRL::ComPtr<IDWriteFactory7> create_write_factory()
 {
-    Microsoft::WRL::ComPtr<IDWriteFactoryX> write_factory;
-    return (SUCCEEDED(::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactoryX), reinterpret_cast<IUnknown**>(write_factory.GetAddressOf()))))
+    Microsoft::WRL::ComPtr<IDWriteFactory7> write_factory;
+    return (SUCCEEDED(::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory7), reinterpret_cast<IUnknown**>(write_factory.GetAddressOf()))))
         ? write_factory : nullptr;
 }
 
@@ -70,7 +70,7 @@ const ff::dxgi::client_functions& ff::dxgi_client()
     return *::client_functions;
 }
 
-IDWriteFactoryX* ff::graphics::write_factory()
+IDWriteFactory7* ff::graphics::write_factory()
 {
     return ::write_factory.Get();
 }

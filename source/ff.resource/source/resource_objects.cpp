@@ -82,11 +82,11 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
             ff::log::write(ff::log::type::resource_load, name);
 
             ff::thread_pool::add_task([this, loading_info]()
-                {
-                    ff::value_ptr new_value = this->create_resource_objects(loading_info, loading_info->owner->dict_value);
-                    this->update_resource_object_info(loading_info, std::make_shared<ff::resource>(loading_info->name, new_value));
-                    // no code here since the destructor may be running
-                });
+            {
+                ff::value_ptr new_value = this->create_resource_objects(loading_info, loading_info->owner->dict_value);
+                this->update_resource_object_info(loading_info, std::make_shared<ff::resource>(loading_info->name, new_value));
+                // no code here since the destructor may be running
+            });
         }
     }
 

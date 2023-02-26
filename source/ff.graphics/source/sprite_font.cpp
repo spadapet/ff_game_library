@@ -113,7 +113,7 @@ ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_f
 
 float ff::sprite_font::line_spacing() const
 {
-    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
+    IDWriteFontFace5* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     assert(font_face);
 
     if (font_face)
@@ -134,7 +134,7 @@ bool ff::sprite_font::resource_load_complete(bool from_source)
 
 bool ff::sprite_font::init_sprites()
 {
-    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
+    IDWriteFontFace5* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (this->size <= 0.0f || this->size > 200.0f || !font_face)
     {
         return false;
@@ -376,7 +376,7 @@ bool ff::sprite_font::init_sprites()
 
 ff::point_float ff::sprite_font::internal_draw_text(ff::dxgi::draw_base* draw, const ff::sprite_list* sprites, std::wstring_view text, const ff::dxgi::transform& transform, ff::sprite_font_options options) const
 {
-    IDWriteFontFaceX* font_face = this->font_file ? this->font_file->font_face() : nullptr;
+    IDWriteFontFace5* font_face = this->font_file ? this->font_file->font_face() : nullptr;
     if (!font_face || text.empty() || transform.scale.x * transform.scale.y == 0.0f)
     {
         return {};

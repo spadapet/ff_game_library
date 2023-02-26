@@ -16,13 +16,13 @@ namespace ff
         bool bold() const;
         bool italic() const;
         size_t index() const;
-        IDWriteFontFaceX* font_face();
+        IDWriteFontFace5* font_face();
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
-        Microsoft::WRL::ComPtr<IDWriteFontFaceX> font_face_;
+        Microsoft::WRL::ComPtr<IDWriteFontFace5> font_face_;
         size_t index_;
         bool bold_;
         bool italic_;

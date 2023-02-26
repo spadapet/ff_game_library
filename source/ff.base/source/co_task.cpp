@@ -4,18 +4,19 @@
 
 ff::internal::co_data_base::~co_data_base()
 {
-    listeners_type listeners;
+    continuation_type continuations;
     {
         std::scoped_lock lock(this->mutex);
-        std::swap(listeners, this->listeners);
+        std::swap(continuations, this->continuations);
     }
 
-    for (const auto& listener : listeners)
+    continuations.reverse();
+    for (const auto& continuation : continuations)
     {
-        listener(false);
+        continuation(false);
     }
 
-    assert(this->listeners.empty());
+    assert(this->continuations.empty());
 }
 
 bool ff::internal::co_data_base::done() const
@@ -60,35 +61,35 @@ bool ff::internal::co_data_base::wait(size_t timeout_ms)
     return true;
 }
 
-void ff::internal::co_data_base::continue_with(listener_func&& listener)
+void ff::internal::co_data_base::continue_with(continuation_func&& continuation)
 {
-    listener_func run_listener_now;
+    continuation_func run_continuation_now;
     {
         std::scoped_lock lock(this->mutex);
         if (this->done_)
         {
-            std::swap(run_listener_now, listener);
+            std::swap(run_continuation_now, continuation);
         }
         else
         {
-            this->listeners.push_back(std::move(listener));
+            this->continuations.push_front(std::move(continuation));
         }
     }
 
-    if (run_listener_now)
+    if (run_continuation_now)
     {
-        assert(this->listeners.empty());
-        run_listener_now(true);
+        assert(this->continuations.empty());
+        run_continuation_now(true);
     }
 }
 
 void ff::internal::co_data_base::run_continuations()
 {
-    listeners_type listeners;
+    continuation_type continuations;
     {
         std::scoped_lock lock(this->mutex);
         assert(!this->done_);
-        std::swap(listeners, this->listeners);
+        std::swap(continuations, this->continuations);
         this->done_ = true;
 
         if (this->done_event)
@@ -97,9 +98,10 @@ void ff::internal::co_data_base::run_continuations()
         }
     }
 
-    for (const auto& listener : listeners)
+    continuations.reverse();
+    for (const auto& continuation : continuations)
     {
-        listener(true);
+        continuation(true);
     }
 }
 

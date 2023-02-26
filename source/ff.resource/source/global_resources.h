@@ -13,6 +13,6 @@ namespace ff::global_resources
     std::shared_ptr<ff::resource> get(std::string_view name);
 
     void reset();
-    void rebuild_async();
+    ff::co_task<> rebuild_async();
     ff::signal_sink<>& rebuilt_sink();
 }

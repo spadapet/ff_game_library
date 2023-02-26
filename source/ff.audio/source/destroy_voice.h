@@ -2,5 +2,5 @@
 
 namespace ff::internal
 {
-    void destroy_voice_async(IXAudio2SourceVoice* source);
+    ff::co_task<> destroy_voice_async(IXAudio2SourceVoice* source);
 }

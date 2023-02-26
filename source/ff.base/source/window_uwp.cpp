@@ -510,6 +510,11 @@ bool ff::window::visible()
     return this->visible_;
 }
 
+bool ff::window::enabled()
+{
+    return true;
+}
+
 bool ff::window::focused()
 {
     return this->active();

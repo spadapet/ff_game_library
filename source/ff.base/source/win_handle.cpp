@@ -4,6 +4,10 @@
 #include "thread_dispatch.h"
 #include "win_handle.h"
 
+static std::vector<HANDLE> event_pool;
+static std::unordered_map<HANDLE, std::shared_ptr<int>> dupe_event_count;
+static std::mutex event_mutex;
+
 void ff::win_handle::close(HANDLE& handle)
 {
     if (handle && handle != INVALID_HANDLE_VALUE)
@@ -16,27 +20,45 @@ void ff::win_handle::close(HANDLE& handle)
 ff::win_handle ff::win_handle::duplicate(HANDLE handle)
 {
     HANDLE new_handle = nullptr;
+    handle_type new_type = handle_type::unknown;
+
     if (handle && !::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(), &new_handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
     {
         assert(false);
     }
 
-    return win_handle(new_handle);
+    if (new_handle)
+    {
+        std::scoped_lock lock(::event_mutex);
+        auto i = ::dupe_event_count.find(handle);
+        if (i != ::dupe_event_count.end())
+        {
+            ++(*i->second);
+            ::dupe_event_count.try_emplace(new_handle, i->second);
+            new_type = handle_type::event;
+        }
+    }
+
+    return win_handle(new_handle, new_type);
 }
 
 ff::win_handle::win_handle(HANDLE handle)
     : handle(handle != INVALID_HANDLE_VALUE ? handle : nullptr)
+    , type(handle_type::unknown)
+{}
+
+ff::win_handle::win_handle(HANDLE handle, handle_type type)
+    : handle(handle != INVALID_HANDLE_VALUE ? handle : nullptr)
+    , type(type)
 {}
 
 ff::win_handle::win_handle(win_handle&& other) noexcept
     : handle(other.handle)
+    , type(other.type)
 {
     other.handle = nullptr;
+    other.type = handle_type::unknown;
 }
-
-ff::win_handle::win_handle()
-    : handle(nullptr)
-{}
 
 ff::win_handle::~win_handle()
 {
@@ -47,6 +69,7 @@ ff::win_handle& ff::win_handle::operator=(win_handle&& other) noexcept
 {
     this->close();
     std::swap(this->handle, other.handle);
+    std::swap(this->type, other.type);
     return *this;
 }
 
@@ -77,7 +100,38 @@ ff::win_handle ff::win_handle::duplicate() const
 
 void ff::win_handle::close()
 {
-    win_handle::close(this->handle);
+    if (this->handle && this->type == handle_type::event)
+    {
+        HANDLE handle = this->handle;
+        this->handle = nullptr;
+        this->type = handle_type::unknown;
+
+        // Event pool
+        {
+            std::scoped_lock lock(::event_mutex);
+            auto i = ::dupe_event_count.find(handle);
+            if (!--(*i->second))
+            {
+                ::event_pool.push_back(handle);
+                handle = nullptr;
+            }
+            else
+            {
+                ::dupe_event_count.erase(i);
+            }
+        }
+
+        if (handle)
+        {
+            win_handle::close(handle);
+            handle = nullptr;
+        }
+    }
+    else
+    {
+        win_handle::close(this->handle);
+        this->type = handle_type::unknown;
+    }
 }
 
 bool ff::win_handle::wait(size_t timeout_ms)
@@ -101,12 +155,42 @@ HINSTANCE ff::get_hinstance()
 
 #endif
 
-ff::win_handle ff::win_handle::create_event(bool initial_set, bool manual_reset)
+ff::win_handle ff::win_handle::create_event(bool initial_set)
 {
-    HANDLE handle = ::CreateEventEx(nullptr, nullptr,
-        (initial_set ? CREATE_EVENT_INITIAL_SET : 0) | (manual_reset ? CREATE_EVENT_MANUAL_RESET : 0),
-        EVENT_ALL_ACCESS);
-    return ff::win_handle(handle);
+    HANDLE handle{};
+
+    if (::event_pool.size())
+    {
+        std::scoped_lock lock(::event_mutex);
+        if (::event_pool.size())
+        {
+            handle = ::event_pool.back();
+            ::event_pool.pop_back();
+
+            auto i = ::dupe_event_count.find(handle);
+            ++(*i->second);
+        }
+    }
+
+    if (handle)
+    {
+        if (initial_set)
+        {
+            ::SetEvent(handle);
+        }
+        else
+        {
+            ::ResetEvent(handle);
+        }
+    }
+    else
+    {
+        handle = ::CreateEventEx(nullptr, nullptr,
+            (initial_set ? CREATE_EVENT_INITIAL_SET : 0) | CREATE_EVENT_MANUAL_RESET,
+            EVENT_ALL_ACCESS);
+    }
+
+    return ff::win_handle(handle, handle_type::event);
 }
 
 const ff::win_handle& ff::win_handle::never_complete_event()

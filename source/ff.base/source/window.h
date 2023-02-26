@@ -30,7 +30,7 @@ namespace ff
         bool operator==(const ff::window_size& other) const;
         bool operator!=(const ff::window_size& other) const;
 
-        ff::point_size physical_pixel_size() const; // as vivible on screen
+        ff::point_size physical_pixel_size() const; // as visible on screen
         int rotated_degrees(bool ccw = false) const;
 
         template<class T>
@@ -145,6 +145,7 @@ namespace ff
         double dpi_scale();
         bool active();
         bool visible();
+        bool enabled();
         bool focused();
         bool close();
 
@@ -174,6 +175,7 @@ namespace ff
             focused = 0x02,
             iconic = 0x04,
             visible = 0x08,
+            enabled = 0x10,
         };
 
         HWND hwnd;

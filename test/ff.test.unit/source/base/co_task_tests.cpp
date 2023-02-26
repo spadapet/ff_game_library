@@ -11,15 +11,15 @@ namespace ff::test::base
             ff::co_task<> task = ff::test::base::co_task_tests::delay_for(10000, stop_source.get_token());
 
             ff::thread_pool::add_task([&stop_source]()
-                {
-                    ::Sleep(500);
-                    stop_source.request_stop();
-                });
+            {
+                ::Sleep(500);
+                stop_source.request_stop();
+            });
 
             Assert::ExpectException<ff::cancel_exception>([task]()
-                {
-                    task.wait(2000);
-                });
+            {
+                task.wait(2000);
+            });
         }
 
         TEST_METHOD(yield_to_threads)
@@ -39,10 +39,10 @@ namespace ff::test::base
             int i = 0;
 
             ff::co_task<> task = ff::test::base::co_task_tests::test_await_task([&i]()
-                {
-                    std::this_thread::sleep_for(2s);
-                    i = 10;
-                });
+            {
+                std::this_thread::sleep_for(2s);
+                i = 10;
+            });
 
             task.wait(10000);
             Assert::AreEqual(10, i);
@@ -53,10 +53,10 @@ namespace ff::test::base
             int i = 0;
 
             ff::co_task<> task = ff::test::base::co_task_tests::test_await_task([&i]()
-                {
-                    std::this_thread::sleep_for(5s);
-                    i = 10;
-                });
+            {
+                std::this_thread::sleep_for(5s);
+                i = 10;
+            });
 
             bool waited = task.wait(1000);
             Assert::IsFalse(waited);
@@ -104,9 +104,9 @@ namespace ff::test::base
             ff::win_handle event0 = ff::win_handle::create_event();
 
             ff::thread_pool::add_timer([&event0]()
-                {
-                    ::SetEvent(event0);
-                }, 1000);
+            {
+                ::SetEvent(event0);
+            }, 1000);
 
             co_await event0;
             Assert::IsTrue(event0.is_set());

@@ -143,6 +143,11 @@ size_t ff::file_read::read(void* data, size_t size)
     return 0;
 }
 
+ff::co_task<size_t> ff::file_read::read_async(void* data, size_t size)
+{
+    return {};
+}
+
 ff::file_write::file_write(const std::filesystem::path& path, bool append)
     : file_base(path)
 {

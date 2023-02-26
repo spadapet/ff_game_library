@@ -43,6 +43,7 @@ namespace ff
         file_read& operator=(const file_read& other);
 
         size_t read(void* data, size_t size);
+        ff::co_task<size_t> read_async(void* data, size_t size);
     };
 
     class file_write : public file_base

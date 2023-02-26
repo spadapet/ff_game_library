@@ -48,7 +48,7 @@ size_t ff::font_file::index() const
     return this->index_;
 }
 
-IDWriteFontFaceX* ff::font_file::font_face()
+IDWriteFontFace5* ff::font_file::font_face()
 {
     return this->font_face_.Get();
 }
