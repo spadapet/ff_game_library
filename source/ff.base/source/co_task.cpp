@@ -44,7 +44,7 @@ bool ff::internal::co_data_base::wait(size_t timeout_ms)
                 this->done_event = ff::win_handle::create_event();
             }
 
-            done_event_copy = this->done_event.duplicate();
+            done_event_copy = this->done_event;
         }
     }
 

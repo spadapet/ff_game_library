@@ -92,7 +92,7 @@ ff::file_base& ff::file_base::operator=(const file_base& other)
     if (this != &other)
     {
         this->path_ = other.path_;
-        this->handle_ = other.handle_.duplicate();
+        this->handle_ = other.handle_;
     }
 
     return *this;

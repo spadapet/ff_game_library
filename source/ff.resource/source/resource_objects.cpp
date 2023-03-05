@@ -123,7 +123,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
                 auto loading_info = i->second.weak_loading_info.lock();
                 if (loading_info)
                 {
-                    load_event = loading_info->event.duplicate();
+                    load_event = loading_info->event;
                 }
             }
         }

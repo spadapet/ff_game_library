@@ -522,7 +522,7 @@ private:
                     this->add_error("Can't finish loading a resource that depends on itself");
                 }
 
-                ff::win_handle wait_handle = info.event_handle.duplicate();
+                ff::win_handle wait_handle = info.event_handle;
                 lock.unlock();
 
                 ff::wait_for_handle(wait_handle);

@@ -15,34 +15,24 @@ namespace ff
 
         explicit win_handle(HANDLE handle);
         win_handle(win_handle&& other) noexcept;
-        win_handle(const win_handle& other) = delete;
+        win_handle(const win_handle& other);
         win_handle() = default;
         ~win_handle();
 
         win_handle& operator=(win_handle&& other) noexcept;
-        win_handle& operator=(const win_handle& other) = delete;
+        win_handle& operator=(const win_handle& other);
 
         ff::internal::co_handle_awaiter operator co_await();
         bool operator!() const;
         operator bool() const;
         operator HANDLE() const;
 
-        win_handle duplicate() const;
         void close();
         bool wait(size_t timeout_ms = INFINITE);
         bool is_set() const;
 
     private:
-        enum class handle_type
-        {
-            unknown,
-            event,
-        };
-
-        explicit win_handle(HANDLE handle, handle_type type);
-
         HANDLE handle{};
-        handle_type type{};
     };
 
 #if !UWP_APP
