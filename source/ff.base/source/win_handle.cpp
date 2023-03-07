@@ -7,34 +7,36 @@
 static std::vector<HANDLE> event_pool;
 static std::mutex event_mutex;
 
+static constexpr bool is_valid_handle(HANDLE handle)
+{
+    return handle && handle != INVALID_HANDLE_VALUE;
+}
+
 void ff::win_handle::close(HANDLE& handle)
 {
-    if (handle)
-    {
-        HANDLE local_handle = handle;
-        handle = nullptr;
+    HANDLE local_handle = handle;
+    handle = nullptr;
 
-        if (local_handle != INVALID_HANDLE_VALUE)
-        {
-            ::CloseHandle(local_handle);
-        }
+    if (::is_valid_handle(local_handle))
+    {
+        ::CloseHandle(local_handle);
     }
 }
 
-ff::win_handle ff::win_handle::duplicate(HANDLE handle)
+HANDLE ff::win_handle::duplicate(HANDLE handle)
 {
     HANDLE new_handle = nullptr;
 
-    if (handle && !::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(), &new_handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
+    if (::is_valid_handle(handle) && !::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(), &new_handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
     {
-        debug_fail_ret_val(win_handle{});
+        debug_fail_ret_val(nullptr);
     }
 
-    return win_handle(new_handle);
+    return new_handle;
 }
 
 ff::win_handle::win_handle(HANDLE handle)
-    : handle(handle != INVALID_HANDLE_VALUE ? handle : nullptr)
+    : handle(::is_valid_handle(handle) ? handle : nullptr)
 {}
 
 ff::win_handle::win_handle(win_handle&& other) noexcept
@@ -101,14 +103,14 @@ void ff::win_handle::close()
     win_handle::close(this->handle);
 }
 
-bool ff::win_handle::wait(size_t timeout_ms)
+bool ff::win_handle::wait(size_t timeout_ms) const
 {
-    return ff::wait_for_handle(this->handle, timeout_ms);
+    return this->handle && ff::wait_for_handle(this->handle, timeout_ms);
 }
 
 bool ff::win_handle::is_set() const
 {
-    return this->handle && ::WaitForSingleObjectEx(this->handle, 0, FALSE) == WAIT_OBJECT_0;
+    return this->wait(0);
 }
 
 #if !UWP_APP
@@ -141,23 +143,26 @@ const ff::win_handle& ff::win_handle::always_complete_event()
     return handle;
 }
 
-bool ff::wait_for_event_and_reset(HANDLE handle, size_t timeout_ms)
+bool ff::wait_for_event_and_reset(HANDLE handle, size_t timeout_ms, bool allow_dispatch)
 {
-    return ff::wait_for_handle(handle, timeout_ms) && ::ResetEvent(handle);
+    return ff::wait_for_handle(handle, timeout_ms, allow_dispatch) && ::ResetEvent(handle);
 }
 
-bool ff::wait_for_handle(HANDLE handle, size_t timeout_ms)
+bool ff::wait_for_handle(HANDLE handle, size_t timeout_ms, bool allow_dispatch)
 {
     size_t completed_index;
-    return ff::wait_for_any_handle(&handle, 1, completed_index, timeout_ms) && completed_index == 0;
+    return ff::wait_for_any_handle(&handle, 1, completed_index, timeout_ms, allow_dispatch) && completed_index == 0;
 }
 
-bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
+bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms, bool allow_dispatch)
 {
-    ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
-    if (dispatch)
+    if (timeout_ms && allow_dispatch)
     {
-        return dispatch->wait_for_any_handle(handles, count, completed_index, timeout_ms);
+        ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
+        if (dispatch && dispatch == ff::thread_dispatch::get_main())
+        {
+            return dispatch->wait_for_any_handle(handles, count, completed_index, timeout_ms);
+        }
     }
 
     while (true)
@@ -190,12 +195,15 @@ bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& comple
     }
 }
 
-bool ff::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms)
+bool ff::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms, bool allow_dispatch)
 {
-    ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
-    if (dispatch)
+    if (timeout_ms && allow_dispatch)
     {
-        return dispatch->wait_for_all_handles(handles, count, timeout_ms);
+        ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
+        if (dispatch && dispatch == ff::thread_dispatch::get_main())
+        {
+            return dispatch->wait_for_all_handles(handles, count, timeout_ms);
+        }
     }
 
     while (true)

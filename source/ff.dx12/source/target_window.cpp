@@ -94,7 +94,7 @@ void ff::dx12::target_window::wait_for_render_ready()
 
         if (!handles.empty())
         {
-            ::WaitForMultipleObjects(static_cast<DWORD>(handles.size()), handles.data(), TRUE, INFINITE);
+            ff::wait_for_all_handles(handles.data(), handles.size(), INFINITE, false);
         }
     }
 }
