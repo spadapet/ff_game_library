@@ -155,6 +155,9 @@
     <ClCompile Include="source\base\co_task_tests.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
+    <ClCompile Include="source\base\stash_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

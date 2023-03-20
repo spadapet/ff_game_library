@@ -1,6 +1,7 @@
 #pragma once
 
 #include "co_awaiters.h"
+#include "intrusive_ptr.h"
 
 namespace ff
 {
@@ -28,11 +29,50 @@ namespace ff
         operator HANDLE() const;
 
         void close();
-        bool wait(size_t timeout_ms = INFINITE) const;
+        bool wait(size_t timeout_ms = INFINITE, bool allow_dispatch = true) const;
         bool is_set() const;
 
     private:
         HANDLE handle{};
+    };
+}
+
+namespace ff::internal
+{
+    struct win_event_data : public ::SLIST_ENTRY
+    {
+        void add_ref();
+        void release_ref();
+
+        ff::win_handle handle;
+        std::atomic_int refs;
+    };
+}
+
+namespace ff
+{
+    class win_event
+    {
+    public:
+        win_event();
+        win_event(win_event&& other) noexcept;
+        win_event(const win_event& other);
+        ~win_event();
+
+        win_event& operator=(win_event&& other) noexcept;
+        win_event& operator=(const win_event& other);
+
+        ff::internal::co_handle_awaiter operator co_await();
+        operator HANDLE() const;
+
+        void set() const;
+        void reset() const;
+        bool is_set() const;
+        bool wait(size_t timeout_ms = INFINITE, bool allow_dispatch = true) const;
+        bool wait_and_reset(size_t timeout_ms = INFINITE, bool allow_dispatch = true) const;
+
+    private:
+        ff::intrusive_ptr<ff::internal::win_event_data> data;
     };
 
 #if !UWP_APP

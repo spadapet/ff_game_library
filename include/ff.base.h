@@ -23,6 +23,7 @@
 #include "../source/ff.base/source/signal.h"
 #include "../source/ff.base/source/stack_vector.h"
 #include "../source/ff.base/source/stable_hash.h"
+#include "../source/ff.base/source/stash.h"
 #include "../source/ff.base/source/string.h"
 #include "../source/ff.base/source/thread_dispatch.h"
 #include "../source/ff.base/source/thread_pool.h"

@@ -21,6 +21,7 @@
     <ClCompile Include="source\base\pool_allocator_tests.cpp" />
     <ClCompile Include="source\base\rect_tests.cpp" />
     <ClCompile Include="source\base\signal_tests.cpp" />
+    <ClCompile Include="source\base\stash_tests.cpp" />
     <ClCompile Include="source\base\string_tests.cpp" />
     <ClCompile Include="source\base\thread_dispatch_tests.cpp" />
     <ClCompile Include="source\base\thread_pool_tests.cpp" />

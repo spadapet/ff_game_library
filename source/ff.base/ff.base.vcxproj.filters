@@ -167,6 +167,9 @@
     <ClInclude Include="source\co_awaiters.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\stash.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

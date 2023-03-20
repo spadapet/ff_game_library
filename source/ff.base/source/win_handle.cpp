@@ -1,15 +1,29 @@
 #include "pch.h"
 #include "assert.h"
 #include "co_task.h"
+#include "stash.h"
+#include "frame_allocator.h"
 #include "thread_dispatch.h"
 #include "win_handle.h"
 
-static std::vector<HANDLE> event_pool;
-static std::mutex event_mutex;
+// static ff::internal::stash<ff::internal::win_event_data> event_stash;
 
 static constexpr bool is_valid_handle(HANDLE handle)
 {
     return handle && handle != INVALID_HANDLE_VALUE;
+}
+
+void ff::internal::win_event_data::add_ref()
+{
+    this->refs.fetch_add(1);
+}
+
+void ff::internal::win_event_data::release_ref()
+{
+    if (this->refs.fetch_sub(1) == 1)
+    {
+        // ::event_stash.stash_obj(this);
+    }
 }
 
 void ff::win_handle::close(HANDLE& handle)
@@ -103,9 +117,9 @@ void ff::win_handle::close()
     win_handle::close(this->handle);
 }
 
-bool ff::win_handle::wait(size_t timeout_ms) const
+bool ff::win_handle::wait(size_t timeout_ms, bool allow_dispatch) const
 {
-    return this->handle && ff::wait_for_handle(this->handle, timeout_ms);
+    return this->handle && ff::wait_for_handle(this->handle, timeout_ms, allow_dispatch);
 }
 
 bool ff::win_handle::is_set() const
@@ -159,7 +173,7 @@ bool ff::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& comple
     if (timeout_ms && allow_dispatch)
     {
         ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
-        if (dispatch && dispatch == ff::thread_dispatch::get_main())
+        if (dispatch && dispatch->allow_dispatch_during_wait())
         {
             return dispatch->wait_for_any_handle(handles, count, completed_index, timeout_ms);
         }
@@ -200,7 +214,7 @@ bool ff::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeou
     if (timeout_ms && allow_dispatch)
     {
         ff::thread_dispatch* dispatch = ff::thread_dispatch::get();
-        if (dispatch && dispatch == ff::thread_dispatch::get_main())
+        if (dispatch && dispatch->allow_dispatch_during_wait())
         {
             return dispatch->wait_for_all_handles(handles, count, timeout_ms);
         }

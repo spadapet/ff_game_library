@@ -36,6 +36,7 @@ namespace ff
         bool current_thread() const;
         bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE);
         bool wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms = INFINITE);
+        bool allow_dispatch_during_wait() const;
 
         static constexpr size_t maximum_wait_objects = MAXIMUM_WAIT_OBJECTS - 2;
 

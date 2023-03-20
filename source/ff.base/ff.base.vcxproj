@@ -40,6 +40,7 @@
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\co_awaiters.h" />
     <ClInclude Include="source\co_task.h" />
+    <ClInclude Include="source\stash.h" />
     <ClInclude Include="source\scope_exit.h" />
     <ClInclude Include="source\exceptions.h" />
     <ClInclude Include="source\filesystem.h" />

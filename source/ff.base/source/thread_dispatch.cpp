@@ -183,6 +183,7 @@ bool ff::thread_dispatch::current_thread() const
 
 bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
 {
+    assert(this->allow_dispatch_during_wait());
     assert(count <= ff::thread_dispatch::maximum_wait_objects);
     std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
     handles_vector.push_back(this->pending_event);
@@ -268,6 +269,11 @@ bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t cou
     }
 
     return true;
+}
+
+bool ff::thread_dispatch::allow_dispatch_during_wait() const
+{
+    return this != ::game_thread_dispatch;
 }
 
 void ff::thread_dispatch::flush(bool force)
