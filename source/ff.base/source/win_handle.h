@@ -39,8 +39,14 @@ namespace ff
 
 namespace ff::internal
 {
-    struct win_event_data : public ::SLIST_ENTRY
+    struct win_event_data
     {
+        win_event_data();
+        win_event_data(win_event_data&& other) noexcept = delete;
+        win_event_data(const win_event_data& other) noexcept = delete;
+        win_event_data& operator=(win_event_data&& other) noexcept = delete;
+        win_event_data& operator=(const win_event_data& other) noexcept = delete;
+
         void add_ref();
         void release_ref();
 
@@ -55,14 +61,14 @@ namespace ff
     {
     public:
         win_event();
-        win_event(win_event&& other) noexcept;
-        win_event(const win_event& other);
-        ~win_event();
+        win_event(win_event&& other) noexcept = default;
+        win_event(const win_event& other) = default;
 
-        win_event& operator=(win_event&& other) noexcept;
-        win_event& operator=(const win_event& other);
+        win_event& operator=(win_event&& other) noexcept = default;
+        win_event& operator=(const win_event& other) = default;
 
-        ff::internal::co_handle_awaiter operator co_await();
+        ff::internal::co_event_awaiter operator co_await();
+        operator const ff::win_handle& () const;
         operator HANDLE() const;
 
         void set() const;

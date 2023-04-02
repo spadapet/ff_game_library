@@ -141,6 +141,11 @@ ff::internal::co_handle_awaiter ff::task::wait_handle(HANDLE handle, size_t time
     return ff::internal::co_handle_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, handle, timeout_ms);
 }
 
+ff::internal::co_event_awaiter ff::task::wait_handle(const ff::win_event& handle, size_t timeout_ms, ff::thread_dispatch_type type)
+{
+    return ff::internal::co_event_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, handle, timeout_ms);
+}
+
 ff::co_task_source<void> ff::task::run(std::function<void()>&& func)
 {
     auto task_source = ff::co_task_source<void>::create();

@@ -34,6 +34,12 @@ namespace ff::test::base
             task.wait(10000);
         }
 
+        TEST_METHOD(await_win_event)
+        {
+            ff::co_task<> task = ff::test::base::co_task_tests::test_await_win_event();
+            task.wait(10000);
+        }
+
         TEST_METHOD(await_task)
         {
             int i = 0;
@@ -110,6 +116,28 @@ namespace ff::test::base
 
             co_await event0;
             Assert::IsTrue(event0.is_set());
+        }
+
+        ff::co_task<> test_await_win_event()
+        {
+            ff::win_event event0;
+            ff::win_event event1;
+
+            ff::thread_pool::add_timer([&event0]()
+            {
+                event0.set();
+            }, 500);
+
+            ff::thread_pool::add_timer([&event1]()
+            {
+                event1.set();
+            }, 1500);
+
+            co_await event0;
+            Assert::IsTrue(event0.is_set());
+
+            co_await event1;
+            Assert::IsTrue(event1.is_set());
         }
 
         ff::co_task<> test_await_task(std::function<void()>&& func)

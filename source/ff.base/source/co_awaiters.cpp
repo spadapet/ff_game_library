@@ -81,18 +81,17 @@ void ff::internal::co_thread_awaiter::await_resume() const
     ff::throw_if_stopped(this->stop);
 }
 
-ff::internal::co_handle_awaiter::co_handle_awaiter(ff::thread_dispatch_type thread_type, HANDLE handle, size_t timeout_ms)
+ff::internal::co_handle_awaiter_base::co_handle_awaiter_base(ff::thread_dispatch_type thread_type, size_t timeout_ms)
     : thread_type(thread_type)
-    , handle(std::make_unique<ff::win_handle>(ff::win_handle::duplicate(handle)))
     , timeout_ms(timeout_ms)
 {}
 
-bool ff::internal::co_handle_awaiter::await_ready() const
+bool ff::internal::co_handle_awaiter_base::await_ready() const
 {
-    return ff::internal::co_thread_awaiter::ready(this->thread_type) && this->handle->is_set();
+    return ff::internal::co_thread_awaiter::ready(this->thread_type) && this->handle().is_set();
 }
 
-void ff::internal::co_handle_awaiter::await_suspend(std::coroutine_handle<> coroutine) const
+void ff::internal::co_handle_awaiter_base::await_suspend(std::coroutine_handle<> coroutine) const
 {
     auto func = [coroutine]()
     {
@@ -113,20 +112,40 @@ void ff::internal::co_handle_awaiter::await_suspend(std::coroutine_handle<> coro
                 ff::thread_pool::add_wait([td, func = std::move(func)]() mutable
                     {
                         td->post(std::move(func));
-                    }, *this->handle, this->timeout_ms);
+                    }, this->handle(), this->timeout_ms);
             }
 
             return;
         }
     }
 
-    ff::thread_pool::add_wait(std::move(func), *this->handle, this->timeout_ms);
+    ff::thread_pool::add_wait(std::move(func), this->handle(), this->timeout_ms);
 }
 
-void ff::internal::co_handle_awaiter::await_resume() const
+void ff::internal::co_handle_awaiter_base::await_resume() const
 {
-    if (!this->handle->is_set())
+    if (!this->handle().is_set())
     {
         throw ff::timeout_exception();
     }
+}
+
+ff::internal::co_handle_awaiter::co_handle_awaiter(ff::thread_dispatch_type thread_type, HANDLE handle, size_t timeout_ms)
+    : ff::internal::co_handle_awaiter_base(thread_type, timeout_ms)
+    , handle_(std::make_unique<ff::win_handle>(ff::win_handle::duplicate(handle)))
+{}
+
+const ff::win_handle& ff::internal::co_handle_awaiter::handle() const
+{
+    return *this->handle_;
+}
+
+ff::internal::co_event_awaiter::co_event_awaiter(ff::thread_dispatch_type thread_type, const ff::win_event& handle, size_t timeout_ms)
+    : ff::internal::co_handle_awaiter_base(thread_type, timeout_ms)
+    , handle_(std::make_unique<ff::win_event>(handle))
+{}
+
+const ff::win_handle& ff::internal::co_event_awaiter::handle() const
+{
+    return *this->handle_;
 }

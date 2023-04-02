@@ -2,16 +2,25 @@
 #include "assert.h"
 #include "co_task.h"
 #include "stash.h"
-#include "frame_allocator.h"
 #include "thread_dispatch.h"
 #include "win_handle.h"
 
-// static ff::internal::stash<ff::internal::win_event_data> event_stash;
+static ff::stash<ff::internal::win_event_data> event_stash;
 
 static constexpr bool is_valid_handle(HANDLE handle)
 {
     return handle && handle != INVALID_HANDLE_VALUE;
 }
+
+ff::intrusive_ptr<ff::internal::win_event_data> create_win_event_data()
+{
+    return ::event_stash.get_obj();
+}
+
+ff::internal::win_event_data::win_event_data()
+    : handle(ff::win_handle::create_event())
+    , refs(0)
+{}
 
 void ff::internal::win_event_data::add_ref()
 {
@@ -22,7 +31,7 @@ void ff::internal::win_event_data::release_ref()
 {
     if (this->refs.fetch_sub(1) == 1)
     {
-        // ::event_stash.stash_obj(this);
+        ::event_stash.stash_obj(this);
     }
 }
 
@@ -125,6 +134,56 @@ bool ff::win_handle::wait(size_t timeout_ms, bool allow_dispatch) const
 bool ff::win_handle::is_set() const
 {
     return this->wait(0);
+}
+
+ff::win_event::win_event()
+    : data(::event_stash.get_obj())
+{}
+
+ff::internal::co_event_awaiter ff::win_event::operator co_await()
+{
+    return ff::task::wait_handle(*this);
+}
+
+ff::win_event::operator const ff::win_handle& () const
+{
+    return this->data->handle;
+}
+
+ff::win_event::operator HANDLE() const
+{
+    return this->data->handle;
+}
+
+void ff::win_event::set() const
+{
+    ::SetEvent(*this);
+}
+
+void ff::win_event::reset() const
+{
+    ::ResetEvent(*this);
+}
+
+bool ff::win_event::is_set() const
+{
+    return this->data->handle.is_set();
+}
+
+bool ff::win_event::wait(size_t timeout_ms, bool allow_dispatch) const
+{
+    return ff::wait_for_handle(*this, timeout_ms, allow_dispatch);
+}
+
+bool ff::win_event::wait_and_reset(size_t timeout_ms, bool allow_dispatch) const
+{
+    if (this->wait(timeout_ms, allow_dispatch))
+    {
+        this->reset();
+        return true;
+    }
+
+    return false;
 }
 
 #if !UWP_APP
