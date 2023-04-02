@@ -93,7 +93,6 @@ ff::internal::music_playing::music_playing(ff::music* owner)
     , duration_(0)
     , desired_position(0)
     , source(nullptr)
-    , async_event(ff::win_handle::create_event(true))
     , media_callback(new source_reader_callback(this))
     , speed(1)
     , volume_(1)
@@ -103,6 +102,7 @@ ff::internal::music_playing::music_playing(ff::music* owner)
     , loop(false)
     , start_playing(false)
 {
+    this->async_event.set();
     ff::internal::audio::add_playing(this);
 }
 
@@ -127,7 +127,7 @@ bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, 
         this->speed = speed;
         this->loop = loop;
 
-        ::ResetEvent(this->async_event);
+        this->async_event.reset();
 
         ff::thread_pool::add_task([this]()
         {
@@ -135,7 +135,7 @@ bool ff::internal::music_playing::init(std::shared_ptr<ff::resource_file> file, 
             assert(status);
             this->read_sample();
 
-            ::SetEvent(this->async_event);
+            this->async_event.set();
         });
 
         return true;
@@ -152,7 +152,7 @@ void ff::internal::music_playing::clear_owner()
 
 void ff::internal::music_playing::reset()
 {
-    ff::wait_for_handle(this->async_event);
+    this->async_event.wait();
 
     std::scoped_lock lock(this->mutex);
 

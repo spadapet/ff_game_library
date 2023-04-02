@@ -27,7 +27,7 @@ namespace ff::internal
 
     private:
         mutable std::mutex mutex;
-        ff::win_handle done_event;
+        ff::win_event done_event;
         continuation_type continuations;
         std::exception_ptr exception{ nullptr };
         bool done_{ false };

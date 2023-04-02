@@ -148,13 +148,13 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
     bool root = this->is_root();
     std::vector<std::string_view> names = dict.child_names();
     std::vector<ff::value_ptr> values(names.size());
-    std::vector<ff::win_handle> value_events(names.size());
+    std::vector<ff::win_event> value_events(names.size());
     DWORD main_thread_id = ::GetCurrentThreadId();
 
     for (size_t i = 0; i < names.size(); i++)
     {
         values[i] = dict.get(names[i]);
-        value_events[i] = ff::win_handle::create_event();
+        value_events[i] = ff::win_event();
 
         ff::thread_pool::add_task([this, root, main_thread_id, i, &names, &values, &value_events]()
             {
@@ -168,7 +168,7 @@ ff::value_ptr ff::dict_visitor_base::transform_dict_async(const ff::dict& dict)
                 this->pop_path();
                 this->async_thread_done();
 
-                ::SetEvent(value_events[i]);
+                value_events[i].set();
             });
     }
 

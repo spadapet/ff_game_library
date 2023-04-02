@@ -19,7 +19,6 @@ ff::dx12::target_window::target_window(ff::window* window, bool allow_full_scree
     , cached_full_screen_uwp(false)
     , full_screen_uwp(false)
 #endif
-    , target_ready_event(ff::win_handle::create_event())
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(ff::dx12::target_window::BACK_BUFFER_COUNT))
     , back_buffer_index(0)
 {

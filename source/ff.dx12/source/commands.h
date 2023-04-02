@@ -41,7 +41,7 @@ namespace ff::dx12
             std::unordered_set<ff::dx12::residency_data*> residency_set;
             ff::dx12::resource_tracker resource_tracker;
             ff::dx12::fence fence;
-            ff::win_handle lists_reset_event;
+            ff::win_event lists_reset_event;
         };
 
         commands(ff::dx12::queue& queue, std::unique_ptr<ff::dx12::commands::data_cache_t>&& data_cache);

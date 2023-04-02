@@ -31,6 +31,7 @@ void ff::internal::win_event_data::release_ref()
 {
     if (this->refs.fetch_sub(1) == 1)
     {
+        ::ResetEvent(this->handle);
         ::event_stash.stash_obj(this);
     }
 }

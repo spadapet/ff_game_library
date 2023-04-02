@@ -71,7 +71,7 @@ namespace ff::test::base
         TEST_METHOD(continue_with)
         {
             int i = 0;
-            ff::win_handle handle = ff::win_handle::create_event();
+            ff::win_event handle;
             ff::co_task<int> task = ff::test::base::co_task_tests::test_return_int(10);
 
             task.continue_with<int>([&i](ff::co_task<int> task2)
@@ -80,10 +80,10 @@ namespace ff::test::base
             }).continue_with<void>([&i, &handle](ff::co_task<int> task2)
             {
                 i = task2.result();
-                ::SetEvent(handle);
+                handle.set();
             });
 
-            bool waited = ff::wait_for_handle(handle, 2000);
+            bool waited = handle.wait(2000);
             Assert::IsTrue(waited);
             Assert::AreEqual(10, i);
         }
@@ -107,6 +107,7 @@ namespace ff::test::base
 
         ff::co_task<> test_await_win_handle()
         {
+            // Don't change this to win_event, it's supposed to test win_handle.co_await
             ff::win_handle event0 = ff::win_handle::create_event();
 
             ff::thread_pool::add_timer([&event0]()

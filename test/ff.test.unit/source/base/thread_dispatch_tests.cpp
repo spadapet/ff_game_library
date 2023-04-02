@@ -13,22 +13,22 @@ namespace ff::test::base
                     Assert::IsTrue(td.current_thread());
                     Assert::IsTrue(ff::thread_dispatch::get() == &td);
 
-                    ff::win_handle done_event1 = ff::win_handle::create_event();
-                    ff::win_handle done_event2 = ff::win_handle::create_event();
+                    ff::win_event done_event1;
+                    ff::win_event done_event2;
                     int i1 = 0, i2 = 0;
 
                     td.post([&done_event1, &i1]()
                         {
                             ::Sleep(500);
                             i1 = 10;
-                            ::SetEvent(done_event1);
+                            done_event1.set();
                         });
 
                     td.post([&done_event2, &i2]()
                         {
                             ::Sleep(1000);
                             i2 = 20;
-                            ::SetEvent(done_event2);
+                            done_event2.set();
                         });
 
                     std::array<HANDLE, 2> handles{ done_event1, done_event2 };

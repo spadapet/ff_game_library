@@ -522,10 +522,10 @@ private:
                     this->add_error("Can't finish loading a resource that depends on itself");
                 }
 
-                ff::win_handle wait_handle = info.event_handle;
+                ff::win_event wait_handle = info.event_handle;
                 lock.unlock();
 
-                ff::wait_for_handle(wait_handle);
+                wait_handle.wait();
                 return true;
             }
             else
@@ -564,10 +564,10 @@ private:
             std::scoped_lock lock(this->mutex);
 
             auto iter = this->obj_to_currently_finishing.find(obj);
-            ff::win_handle event_handle = std::move(iter->second.event_handle);
+            ff::win_event event_handle = iter->second.event_handle;
             this->obj_to_currently_finishing.erase(iter);
 
-            ::SetEvent(event_handle);
+            event_handle.set();
 
             this->obj_to_finished.insert(obj);
         }
@@ -579,11 +579,10 @@ private:
     {
         finishing_info()
             : thread_id(::GetCurrentThreadId())
-            , event_handle(ff::win_handle::create_event())
         {}
 
         DWORD thread_id;
-        ff::win_handle event_handle;
+        ff::win_event event_handle;
     };
 
     std::recursive_mutex mutex;

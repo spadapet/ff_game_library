@@ -7,7 +7,7 @@ namespace ff::test::base
     public:
         TEST_METHOD(simple)
         {
-            ff::win_handle task_done_event = ff::win_handle::create_event();
+            ff::win_event task_done_event;
             int i1 = 0, i2 = 0;
 
             std::jthread thread([&i1]()
@@ -20,7 +20,7 @@ namespace ff::test::base
             {
                 ::Sleep(1000);
                 i2 = 20;
-                ::SetEvent(task_done_event);
+                task_done_event.set();
             });
 
             std::array<HANDLE, 2> handles{ thread.native_handle(), task_done_event };
@@ -33,34 +33,28 @@ namespace ff::test::base
 
         TEST_METHOD(timers)
         {
-            ff::win_handle events[3] =
-            {
-                ff::win_handle::create_event(),
-                ff::win_handle::create_event(),
-                ff::win_handle::create_event(),
-            };
-
+            ff::win_event events[3];
             int i[3] = {};
 
             ff::thread_pool::add_timer([&events, &i]()
             {
                 ::Sleep(500);
                 i[0] = 10;
-                ::SetEvent(events[0]);
+                events[0].set();
             }, 1000);
 
             ff::thread_pool::add_timer([&events, &i]()
             {
                 ::Sleep(750);
                 i[1] = 20;
-                ::SetEvent(events[1]);
+                events[1].set();
             }, 1500);
 
             ff::thread_pool::add_timer([&events, &i]()
             {
                 ::Sleep(1000);
                 i[1] = 30;
-                ::SetEvent(events[2]);
+                events[2].set();
             }, 2000);
 
             std::array<HANDLE, 3> handles{ events[0], events[1], events[2] };
@@ -72,14 +66,14 @@ namespace ff::test::base
 
         TEST_METHOD(timer_cancel)
         {
-            ff::win_handle done_event = ff::win_handle::create_event();
+            ff::win_event done_event;
             std::stop_source stop_source;
             int i = 0;
 
             ff::thread_pool::add_timer([&done_event, &i, stop = stop_source.get_token()]()
             {
                 i = stop.stop_requested() ? 20 : 10;
-                ::SetEvent(done_event);
+                done_event.set();
             }, 10000, stop_source.get_token());
 
             ::Sleep(1000);
@@ -128,17 +122,17 @@ namespace ff::test::base
 
         TEST_METHOD(wait_handle)
         {
-            ff::win_handle wait_for = ff::win_handle::create_event();
-            ff::win_handle wait_done = ff::win_handle::create_event();
+            ff::win_event wait_for;
+            ff::win_event wait_done;
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
             {
                 Assert::IsTrue(wait_for.is_set());
-                ::SetEvent(wait_done);
+                wait_done.set();
             }, wait_for, 2000);
 
             ::Sleep(500);
-            ::SetEvent(wait_for);
+            wait_for.set();
 
             bool success = wait_done.wait(2000);
             Assert::IsTrue(success);
@@ -146,13 +140,13 @@ namespace ff::test::base
 
         TEST_METHOD(wait_handle_timeout)
         {
-            ff::win_handle wait_for = ff::win_handle::create_event();
-            ff::win_handle wait_done = ff::win_handle::create_event();
+            ff::win_event wait_for;
+            ff::win_event wait_done;
 
             ff::thread_pool::add_wait([&wait_for, &wait_done]()
             {
                 Assert::IsFalse(wait_for.is_set());
-                ::SetEvent(wait_done);
+                wait_done.set();
             }, wait_for, 1000);
 
             bool success = wait_done.wait(2000);

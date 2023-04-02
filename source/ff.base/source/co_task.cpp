@@ -33,22 +33,7 @@ bool ff::internal::co_data_base::done() const
 
 bool ff::internal::co_data_base::wait(size_t timeout_ms)
 {
-    ff::win_handle done_event_copy;
-    if (!this->done_)
-    {
-        std::scoped_lock lock(this->mutex);
-        if (!this->done_)
-        {
-            if (!this->done_event)
-            {
-                this->done_event = ff::win_handle::create_event();
-            }
-
-            done_event_copy = this->done_event;
-        }
-    }
-
-    if (done_event_copy && !ff::wait_for_handle(done_event_copy, timeout_ms))
+    if (!this->done_ && !this->done_event.wait(timeout_ms))
     {
         return false;
     }
@@ -91,11 +76,7 @@ void ff::internal::co_data_base::run_continuations()
         assert(!this->done_);
         std::swap(continuations, this->continuations);
         this->done_ = true;
-
-        if (this->done_event)
-        {
-            ::SetEvent(this->done_event);
-        }
+        this->done_event.set();
     }
 
     continuations.reverse();

@@ -24,8 +24,9 @@ static std::atomic_int data_counter;
 
 ff::dx12::commands::data_cache_t::data_cache_t(ff::dx12::queue* queue)
     : fence(queue->name() + " fence", queue)
-    , lists_reset_event(ff::win_handle::create_event(true))
-{}
+{
+    this->lists_reset_event.set();
+}
 
 ff::dx12::commands::commands(ff::dx12::queue& queue, std::unique_ptr<ff::dx12::commands::data_cache_t>&& data_cache)
     : type_(data_cache->list->GetType())
@@ -98,7 +99,7 @@ void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, 
     this->tracker()->close(this->data_cache->list_before.Get(), prev_tracker, next_tracker);
     this->data_cache->list_before->Close();
 
-    ::ResetEvent(this->data_cache->lists_reset_event);
+    this->data_cache->lists_reset_event.reset();
 }
 
 std::unique_ptr<ff::dx12::commands::data_cache_t> ff::dx12::commands::take_data()

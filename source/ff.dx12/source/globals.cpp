@@ -31,7 +31,7 @@ static ff::signal<size_t> frame_complete_signal;
 static size_t frame_count;
 
 // GPU memory residency
-static ff::win_handle video_memory_change_event;
+static std::unique_ptr<ff::win_event> video_memory_change_event;
 static DWORD video_memory_change_event_cookie{};
 static DXGI_QUERY_VIDEO_MEMORY_INFO video_memory_info{};
 static std::unique_ptr<ff::dx12::fence> residency_fence;
@@ -93,13 +93,13 @@ static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 
 static void update_video_memory_info()
 {
-    if (!::video_memory_change_event || ::video_memory_change_event.is_set())
+    if (!::video_memory_change_event || ::video_memory_change_event->is_set())
     {
         ::video_memory_info = ff::dxgi::get_video_memory_info(ff::dx12::adapter());
 
         if (::video_memory_change_event)
         {
-            ::ResetEvent(::video_memory_change_event);
+            ::video_memory_change_event->reset();
         }
 
         ff::log::write(ff::log::type::dx12_residency, "Video memory budget:", ::video_memory_info.Budget, " bytes, Usage:", ::video_memory_info.CurrentUsage, " bytes");
@@ -203,10 +203,10 @@ static bool init_d3d(bool for_reset)
     // Video memory for residency
     {
         ::update_video_memory_info();
-        ::video_memory_change_event = ff::win_handle::create_event();
-        if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(::video_memory_change_event, &::video_memory_change_event_cookie)))
+        ::video_memory_change_event = std::make_unique<ff::win_event>();
+        if (FAILED(::adapter->RegisterVideoMemoryBudgetChangeNotificationEvent(*::video_memory_change_event, &::video_memory_change_event_cookie)))
         {
-            ::video_memory_change_event.close();
+            ::video_memory_change_event.reset();
             ::video_memory_change_event_cookie = 0;
         }
     }
@@ -272,7 +272,7 @@ static void destroy_d3d(bool for_reset)
         ::adapter->UnregisterVideoMemoryBudgetChangeNotification(::video_memory_change_event_cookie);
         ::video_memory_change_event_cookie = 0;
         ::video_memory_info = {};
-        ::video_memory_change_event.close();
+        ::video_memory_change_event.reset();
     }
 
     ::outputs_hash = 0;

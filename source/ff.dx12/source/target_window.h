@@ -59,7 +59,7 @@ namespace ff::dx12
         ff::signal<ff::window_size> size_changed_;
         ff::signal_connection window_message_connection;
         ff::win_handle frame_latency_handle;
-        ff::win_handle target_ready_event;
+        ff::win_event target_ready_event;
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
         std::array<std::unique_ptr<ff::dx12::resource>, BACK_BUFFER_COUNT> target_textures;

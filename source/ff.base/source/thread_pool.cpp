@@ -19,16 +19,16 @@ namespace
 
     struct task_data_stop_t : public task_data_t
     {
-        task_data_stop_t(std::function<void()>&& func, ff::win_handle&& stop_handle, std::stop_token stop, std::function<void()>&& stop_func)
+        task_data_stop_t(std::function<void()>&& func, ff::win_event&& stop_event, std::stop_token stop, std::function<void()>&& stop_func)
             : task_data_t(std::move(func))
-            , stop_handle(std::move(stop_handle))
+            , stop_event(std::move(stop_event))
             , stop(stop)
             , stop_callback(stop, std::move(stop_func))
         {}
 
         virtual ~task_data_stop_t() override = default;
 
-        ff::win_handle stop_handle;
+        ff::win_event stop_event;
         std::stop_token stop;
         std::stop_callback<std::function<void()>> stop_callback;
     };
@@ -99,10 +99,10 @@ static std::tuple<size_t, HANDLE, bool> create_data(std::function<void()>&& func
 
         if (stop.stop_possible())
         {
-            ff::win_handle stop_handle = ff::win_handle::create_event();
-            return_handle = stop_handle;
+            ff::win_event stop_event;
+            return_handle = stop_event;
 
-            data = std::make_unique<::task_data_stop_t>(std::move(func), std::move(stop_handle), stop, [return_handle]()
+            data = std::make_unique<::task_data_stop_t>(std::move(func), std::move(stop_event), stop, [return_handle]()
             {
                 ::SetEvent(return_handle);
             });

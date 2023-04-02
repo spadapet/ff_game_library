@@ -19,9 +19,9 @@ static std::shared_ptr<ff::resource> create_null_resource(std::string_view name,
 }
 
 ff::resource_objects::resource_objects(const ff::dict& dict)
-    : done_loading_event(ff::win_handle::create_event(true))
-    , loading_count(0)
+    : loading_count(0)
 {
+    this->done_loading_event.set();
     this->add_resources(dict);
 }
 
@@ -64,13 +64,12 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
         {
             if (this->loading_count.fetch_add(1) == 0)
             {
-                ::ResetEvent(this->done_loading_event);
+                this->done_loading_event.reset();
             }
 
             value = ::create_null_resource(name, this);
 
             auto loading_info = std::make_shared<resource_object_loading_info>();
-            loading_info->event = ff::win_handle::create_event();
             loading_info->original_value = value;
             loading_info->blocked_count = 1;
             loading_info->name = name;
@@ -113,7 +112,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
     if (owner == this)
     {
         int64_t start_time = ff::timer::current_raw_time();
-        ff::win_handle load_event;
+        std::unique_ptr<ff::win_event> load_event;
         {
             std::scoped_lock lock(this->resource_object_info_mutex);
 
@@ -123,14 +122,14 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
                 auto loading_info = i->second.weak_loading_info.lock();
                 if (loading_info)
                 {
-                    load_event = loading_info->event;
+                    load_event = std::make_unique<ff::win_event>(loading_info->event);
                 }
             }
         }
 
         if (load_event)
         {
-            ff::wait_for_handle(load_event);
+            load_event->wait();
 
             const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
             ff::log::write(ff::log::type::resource, "Waited: ", value->name(), " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
@@ -143,7 +142,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::flush_resource(const std::sh
 
 void ff::resource_objects::flush_all_resources()
 {
-    ff::wait_for_handle(this->done_loading_event);
+    this->done_loading_event.wait();
     assert(!this->loading_count.load());
 }
 
@@ -217,8 +216,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
 
         loading_info->owner->weak_value = new_value;
         loading_info->owner->weak_loading_info.reset();
-
-        ::SetEvent(loading_info->event);
+        loading_info->event.set();
 
         for (auto parent_loading_info : loading_info->parent_loading_infos)
         {
@@ -239,7 +237,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
 
         if (old_loading_count == 1)
         {
-            ::SetEvent(this->done_loading_event);
+            this->done_loading_event.set();
         }
     }
 }

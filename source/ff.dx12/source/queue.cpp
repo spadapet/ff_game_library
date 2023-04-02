@@ -173,7 +173,7 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
             HRESULT hr1 = cache_to_reset->list->Reset(cache_to_reset->allocator.Get(), nullptr);
             HRESULT hr2 = cache_to_reset->list_before->Reset(cache_to_reset->allocator_before.Get(), nullptr);
             assert(SUCCEEDED(hr1) && SUCCEEDED(hr2));
-            ::SetEvent(cache_to_reset->lists_reset_event);
+            cache_to_reset->lists_reset_event.set();
         }
     });
 }

@@ -8,9 +8,7 @@ static ff::thread_dispatch* main_thread_dispatch = nullptr;
 static ff::thread_dispatch* game_thread_dispatch = nullptr;
 
 ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
-    : flushed_event(ff::win_handle::create_event(true))
-    , pending_event(ff::win_handle::create_event())
-    , thread_id(::GetCurrentThreadId())
+    : thread_id(::GetCurrentThreadId())
     , destroyed(false)
 #if UWP_APP
     , dispatcher(nullptr)
@@ -19,6 +17,8 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1)))
 #endif
 {
+    this->flushed_event.set();
+
 #if UWP_APP
     winrt::Windows::UI::Core::CoreWindow window = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
     if (window)
@@ -140,11 +140,11 @@ void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current
 
     if (was_empty)
     {
-        ::ResetEvent(this->flushed_event);
+        this->flushed_event.reset();
 
         if (!this->pending_event.is_set())
         {
-            ::SetEvent(this->pending_event);
+            this->pending_event.set();
             this->post_flush();
         }
     }
@@ -158,16 +158,16 @@ void ff::thread_dispatch::send(std::function<void()>&& func)
     }
     else
     {
-        ff::win_handle event = ff::win_handle::create_event();
+        ff::win_event event;
         std::function<void()> func_2 = std::move(func);
 
         this->post([&event, &func_2]()
         {
             func_2();
-            ::SetEvent(event);
+            event.set();
         });
 
-        ff::wait_for_handle(event);
+        event.wait();
     }
 }
 
@@ -181,9 +181,9 @@ bool ff::thread_dispatch::current_thread() const
     return this && this->thread_id == ::GetCurrentThreadId();
 }
 
-bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms)
+bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms, bool force_allow_dispatch)
 {
-    assert(this->allow_dispatch_during_wait());
+    assert(force_allow_dispatch || this->allow_dispatch_during_wait());
     assert(count <= ff::thread_dispatch::maximum_wait_objects);
     std::vector<HANDLE> handles_vector(std::initializer_list(handles, handles + count));
     handles_vector.push_back(this->pending_event);
@@ -252,14 +252,14 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
     return false;
 }
 
-bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms)
+bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t count, size_t timeout_ms, bool force_allow_dispatch)
 {
     std::vector<HANDLE> handle_vector(std::initializer_list(handles, handles + count));
 
     while (!handle_vector.empty())
     {
         size_t completed;
-        if (!this->wait_for_any_handle(handle_vector.data(), std::min(handle_vector.size(), ff::thread_dispatch::maximum_wait_objects), completed, timeout_ms))
+        if (!this->wait_for_any_handle(handle_vector.data(), std::min(handle_vector.size(), ff::thread_dispatch::maximum_wait_objects), completed, timeout_ms, force_allow_dispatch))
         {
             return false;
         }
@@ -269,6 +269,12 @@ bool ff::thread_dispatch::wait_for_all_handles(const HANDLE* handles, size_t cou
     }
 
     return true;
+}
+
+bool ff::thread_dispatch::wait_for_dispatch(size_t timeout_ms)
+{
+    size_t completed_index = 0;
+    return this->wait_for_any_handle(nullptr, 0, completed_index, INFINITE, true);
 }
 
 bool ff::thread_dispatch::allow_dispatch_during_wait() const
@@ -307,14 +313,14 @@ void ff::thread_dispatch::flush(bool force)
 
             if (funcs.empty())
             {
-                ::SetEvent(this->flushed_event);
-                ::ResetEvent(this->pending_event);
+                this->flushed_event.set();
+                this->pending_event.reset();
             }
         }
     }
     else
     {
-        ff::wait_for_handle(this->flushed_event);
+        this->flushed_event.wait();
     }
 }
 

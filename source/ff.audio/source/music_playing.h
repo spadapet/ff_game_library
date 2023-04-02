@@ -99,7 +99,7 @@ namespace ff::internal
         LONGLONG desired_position;
         IXAudio2SourceVoice* source;
         ff::timer fade_timer;
-        ff::win_handle async_event; // set when there is no async action running
+        ff::win_event async_event; // set when there is no async action running
         std::list<buffer_info> buffer_infos;
         std::shared_ptr<ff::resource_file> file;
         Microsoft::WRL::ComPtr<IMFSourceReader> media_reader;

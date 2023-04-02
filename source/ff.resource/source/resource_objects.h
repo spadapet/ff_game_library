@@ -47,7 +47,7 @@ namespace ff
 
         struct resource_object_loading_info
         {
-            ff::win_handle event;
+            ff::win_event event;
             std::recursive_mutex mutex;
             std::shared_ptr<ff::resource> original_value;
             std::shared_ptr<ff::resource> final_value;
@@ -74,7 +74,7 @@ namespace ff
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
         std::vector<std::shared_ptr<ff::resource_object_provider>> object_providers;
         std::vector<std::shared_ptr<ff::resource_value_provider>> value_providers;
-        ff::win_handle done_loading_event;
+        ff::win_event done_loading_event;
         std::atomic<int> loading_count;
     };
 }
