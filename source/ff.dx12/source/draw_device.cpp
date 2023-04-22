@@ -390,6 +390,7 @@ namespace
             this->commands->begin_event(ff::dx12::gpu_event::draw_2d);
             this->commands->targets(&this->setup_target, 1, this->setup_depth);
             this->commands->viewports(&this->setup_viewport, 1);
+            this->commands->scissors(nullptr, 1);
             this->commands->root_signature(this->root_signature.Get());
             this->commands->root_descriptors(3, this->samplers_gpu);
 

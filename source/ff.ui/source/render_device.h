@@ -46,7 +46,7 @@ namespace ff::internal::ui
         void init_samplers();
         void init_root_signature();
         void init_shaders();
-        std::pair<ID3D12PipelineState*, size_t> pipeline_state_and_stride(size_t shader_index, uint8_t render_state);
+        std::pair<ID3D12PipelineState*, size_t> pipeline_state_and_stride(size_t shader_index, uint8_t render_state, bool stereo);
 
         Noesis::DeviceCaps caps;
         ff::dx12::commands* commands;

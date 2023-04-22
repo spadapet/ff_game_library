@@ -4,8 +4,6 @@
 #include "texture.h"
 #include "ui.h"
 
-#define STEREO_RENDERING 0
-
 static void set_filter(Noesis::MinMagFilter::Enum minmag, Noesis::MipFilter::Enum mip, D3D12_SAMPLER_DESC& desc)
 {
     switch (minmag)
@@ -416,6 +414,56 @@ static const std::string_view vertex_shaders_srgb[] =
     "Noesis.PosColorTex0RectImagePos_SRGB_VS",
 };
 
+static const std::string_view vertex_shaders_stereo[] =
+{
+    "Noesis.Pos_Stereo_VS",
+    "Noesis.PosColor_Stereo_VS",
+    "Noesis.PosTex0_Stereo_VS",
+    "Noesis.PosTex0Rect_Stereo_VS",
+    "Noesis.PosTex0RectTile_Stereo_VS",
+    "Noesis.PosColorCoverage_Stereo_VS",
+    "Noesis.PosTex0Coverage_Stereo_VS",
+    "Noesis.PosTex0CoverageRect_Stereo_VS",
+    "Noesis.PosTex0CoverageRectTile_Stereo_VS",
+    "Noesis.PosColorTex1_SDF_Stereo_VS",
+    "Noesis.PosTex0Tex1_SDF_Stereo_VS",
+    "Noesis.PosTex0Tex1Rect_SDF_Stereo_VS",
+    "Noesis.PosTex0Tex1RectTile_SDF_Stereo_VS",
+    "Noesis.PosColorTex1_Stereo_VS",
+    "Noesis.PosTex0Tex1_Stereo_VS",
+    "Noesis.PosTex0Tex1Rect_Stereo_VS",
+    "Noesis.PosTex0Tex1RectTile_Stereo_VS",
+    "Noesis.PosColorTex0Tex1_Stereo_VS",
+    "Noesis.PosTex0Tex1_Downsample_Stereo_VS",
+    "Noesis.PosColorTex1Rect_Stereo_VS",
+    "Noesis.PosColorTex0RectImagePos_Stereo_VS",
+};
+
+static const std::string_view vertex_shaders_srgb_stereo[] =
+{
+    "Noesis.Pos_Stereo_VS",
+    "Noesis.PosColor_SRGB_Stereo_VS",
+    "Noesis.PosTex0_Stereo_VS",
+    "Noesis.PosTex0Rect_Stereo_VS",
+    "Noesis.PosTex0RectTile_Stereo_VS",
+    "Noesis.PosColorCoverage_SRGB_Stereo_VS",
+    "Noesis.PosTex0Coverage_Stereo_VS",
+    "Noesis.PosTex0CoverageRect_Stereo_VS",
+    "Noesis.PosTex0CoverageRectTile_Stereo_VS",
+    "Noesis.PosColorTex1_SDF_SRGB_Stereo_VS",
+    "Noesis.PosTex0Tex1_SDF_Stereo_VS",
+    "Noesis.PosTex0Tex1Rect_SDF_Stereo_VS",
+    "Noesis.PosTex0Tex1RectTile_SDF_Stereo_VS",
+    "Noesis.PosColorTex1_SRGB_Stereo_VS",
+    "Noesis.PosTex0Tex1_Stereo_VS",
+    "Noesis.PosTex0Tex1Rect_Stereo_VS",
+    "Noesis.PosTex0Tex1RectTile_Stereo_VS",
+    "Noesis.PosColorTex0Tex1_SRGB_Stereo_VS",
+    "Noesis.PosTex0Tex1_Downsample_Stereo_VS",
+    "Noesis.PosColorTex1Rect_SRGB_Stereo_VS",
+    "Noesis.PosColorTex0RectImagePos_SRGB_Stereo_VS",
+};
+
 ff::internal::ui::render_device::render_device(bool srgb)
     : commands(nullptr)
     , target_format(DXGI_FORMAT_UNKNOWN)
@@ -475,6 +523,7 @@ void ff::internal::ui::render_device::render_begin(
     this->target_format = target.format();
     this->commands->targets(&single_target, 1, &depth);
     this->commands->viewports(&viewport, 1);
+    this->commands->scissors(nullptr, 1);
 }
 
 void ff::internal::ui::render_device::render_end()
@@ -656,15 +705,11 @@ void ff::internal::ui::render_device::UnmapIndices()
 
 void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
 {
-    if (batch.pixelShader || !this->index_buffer || !this->vertex_buffer)
-    {
-        assert(false); // custom shaders aren't supported yet
-        return;
-    }
+    assert_msg_ret(!batch.pixelShader && this->index_buffer && this->vertex_buffer, "Custom shaders aren't supported yet");
 
     // Set pipeline state
     {
-        auto [pipeline_state, stride] = this->pipeline_state_and_stride(batch.shader.v, batch.renderState.v);
+        auto [pipeline_state, stride] = this->pipeline_state_and_stride(batch.shader.v, batch.renderState.v, batch.singlePassStereo);
         D3D12_VERTEX_BUFFER_VIEW vertex_view = this->vertex_buffer.vertex_view(stride, static_cast<uint64_t>(batch.vertexOffset), static_cast<size_t>(batch.numVertices));
         ff::dx12::buffer_base* single_vertex_buffer = &this->vertex_buffer;
 
@@ -780,7 +825,7 @@ void ff::internal::ui::render_device::DrawBatch(const Noesis::Batch& batch)
         this->commands->root_descriptors(6, samplers_gpu);
     }
 
-    this->commands->draw(batch.startIndex, batch.numIndices, 0);
+    this->commands->draw(batch.startIndex, batch.numIndices, 0, batch.singlePassStereo ? 2 : 1);
 }
 
 void ff::internal::ui::render_device::before_reset()
@@ -892,9 +937,12 @@ void ff::internal::ui::render_device::init_shaders()
     }
 }
 
-std::pair<ID3D12PipelineState*, size_t> ff::internal::ui::render_device::pipeline_state_and_stride(size_t shader_index, uint8_t render_state)
+std::pair<ID3D12PipelineState*, size_t> ff::internal::ui::render_device::pipeline_state_and_stride(size_t shader_index, uint8_t render_state, bool stereo)
 {
-    uint32_t pipeline_lookup = (static_cast<uint32_t>(render_state) << 24) ^ static_cast<uint32_t>(this->target_format);
+    uint32_t pipeline_lookup =
+        (static_cast<uint32_t>(render_state) << 24) ^
+        (static_cast<uint32_t>(this->target_format) << 16) ^
+        (static_cast<uint32_t>(stereo) << 0);
     shader_t& shader = this->shaders[shader_index];
     auto i = shader.pipeline_states.find(pipeline_lookup);
 
@@ -903,9 +951,12 @@ std::pair<ID3D12PipelineState*, size_t> ff::internal::ui::render_device::pipelin
         size_t vertex_index = Noesis::VertexForShader[shader_index];
         std::string pixel_shader_name(::pixel_shaders[shader_index]);
         std::string vertex_shader_name = this->caps.linearRendering
-            ? std::string(::vertex_shaders_srgb[vertex_index])
-            : std::string(::vertex_shaders[vertex_index]);
-
+            ? (stereo
+                ? std::string(::vertex_shaders_srgb_stereo[vertex_index])
+                : std::string(::vertex_shaders_srgb[vertex_index]))
+            : (stereo
+                ? std::string(::vertex_shaders_stereo[vertex_index])
+                : std::string(::vertex_shaders[vertex_index]));
         uint32_t format = Noesis::FormatForVertex[vertex_index];
         ff::stack_vector<D3D12_INPUT_ELEMENT_DESC, 16> elements;
         ::fill_elements(elements, format);

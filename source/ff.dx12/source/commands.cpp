@@ -299,7 +299,12 @@ void ff::dx12::commands::targets(ff::dxgi::target_base** targets, size_t count, 
 
 void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count)
 {
-    static D3D12_RECT scissor_rects[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] =
+    this->list(false)->RSSetViewports(static_cast<UINT>(count), viewports);
+}
+
+void ff::dx12::commands::scissors(const D3D12_RECT* rects, size_t count)
+{
+    static D3D12_RECT infinite_rects[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] =
     {
         D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
         D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
@@ -319,13 +324,7 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
         D3D12_RECT{ 0, 0, LONG_MAX, LONG_MAX },
     };
 
-    this->list(false)->RSSetViewports(static_cast<UINT>(count), viewports);
-    this->list(false)->RSSetScissorRects(static_cast<UINT>(count), scissor_rects);
-}
-
-void ff::dx12::commands::scissors(const D3D12_RECT* rects, size_t count)
-{
-    this->list(false)->RSSetScissorRects(static_cast<UINT>(count), rects);
+    this->list(false)->RSSetScissorRects(static_cast<UINT>(count), rects ? rects : infinite_rects);
 }
 
 void ff::dx12::commands::vertex_buffers(ff::dx12::buffer_base** buffers, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
@@ -374,9 +373,14 @@ void ff::dx12::commands::draw(size_t start, size_t count)
     this->list()->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(start), 0);
 }
 
-void ff::dx12::commands::draw(size_t start_index, size_t index_count, size_t start_vertex)
+void ff::dx12::commands::draw(size_t start_index, size_t index_count, size_t start_vertex, size_t instance_count, size_t start_instance)
 {
-    this->list()->DrawIndexedInstanced(static_cast<UINT>(index_count), 1, static_cast<UINT>(start_index), static_cast<UINT>(start_vertex), 0);
+    this->list()->DrawIndexedInstanced(
+        static_cast<UINT>(index_count),
+        static_cast<UINT>(instance_count),
+        static_cast<UINT>(start_index),
+        static_cast<UINT>(start_vertex),
+        static_cast<UINT>(start_instance));
 }
 
 void ff::dx12::commands::resolve(ff::dx12::resource& dest_resource, size_t dest_sub_resource, ff::point_size dest_pos, ff::dx12::resource& src_resource, size_t src_sub_resource, ff::rect_size src_rect)
