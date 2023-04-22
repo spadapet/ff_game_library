@@ -4,7 +4,7 @@
     <SharedCppPropsImported>true</SharedCppPropsImported>
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <NoesisVersion>3.1.7</NoesisVersion>
+    <NoesisVersion>3.2.0</NoesisVersion>
     <WinPixVersion>1.0.220810001</WinPixVersion>
     <CppWinRTVersion>2.0.230225.1</CppWinRTVersion>
 

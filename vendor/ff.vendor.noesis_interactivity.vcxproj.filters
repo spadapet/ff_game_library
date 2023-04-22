@@ -154,6 +154,9 @@
     <ClCompile Include="$(InteractivityRoot)Src\MoveFocusAction.cpp">
       <Filter>interactivity</Filter>
     </ClCompile>
+    <ClCompile Include="$(InteractivityRoot)Src\BackgroundEffectBehavior.cpp">
+      <Filter>interactivity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(InteractivityRoot)Src\ComparisonLogic.h">

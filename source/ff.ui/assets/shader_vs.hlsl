@@ -29,6 +29,10 @@ struct In
 #if HAS_IMAGE_POSITION
     float4 imagePos: IMAGE_POSITION;
 #endif
+
+#if STEREO_RENDERING
+    uint eyeIndex : SV_InstanceID;
+#endif
 };
 
 struct Out
@@ -71,11 +75,19 @@ struct Out
 #if HAS_IMAGE_POSITION
     float4 imagePos: IMAGE_POSITION;
 #endif
+
+#if STEREO_RENDERING
+    uint renderTargetIndex: SV_RenderTargetArrayIndex;
+#endif
 };
 
 cbuffer Buffer0: register(b0)
 {
+#if STEREO_RENDERING
+    float4x4 projectionMtx[2];
+ #else
     float4x4 projectionMtx;
+#endif
 }
 
 cbuffer Buffer1: register(b1)
@@ -101,10 +113,15 @@ float SRGBToLinear(float v)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void main(in In i, out Out o)
 {
+#if STEREO_RENDERING
+    o.position = mul(float4(i.position, 0, 1), projectionMtx[i.eyeIndex]);
+    o.renderTargetIndex = i.eyeIndex;
+#else
     o.position = mul(float4(i.position, 0, 1), projectionMtx);
+#endif
 
 #if HAS_COLOR
-  #if SRGB
+  #if LINEAR_COLOR_SPACE
     o.color.r = SRGBToLinear(i.color.r);
     o.color.g = SRGBToLinear(i.color.g);
     o.color.b = SRGBToLinear(i.color.b);

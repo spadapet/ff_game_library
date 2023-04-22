@@ -77,7 +77,8 @@ cbuffer Buffer0: register(b0)
 #endif
 
 #if PAINT_RADIAL
-    float4 radialGrad[2];
+    float4 radialGrad0;
+    float3 radialGrad1;
 #endif
 }
 
@@ -188,11 +189,11 @@ Out main(in In i)
         half opacity_ = opacity;
 
     #elif PAINT_RADIAL
-        half dd = radialGrad[1].x * i.uv0.x - radialGrad[1].y * i.uv0.y;
-        half u = radialGrad[0].x * i.uv0.x + radialGrad[0].y * i.uv0.y + radialGrad[0].z *
+        half dd = radialGrad1.x * i.uv0.x - radialGrad1.y * i.uv0.y;
+        half u = radialGrad0.x * i.uv0.x + radialGrad0.y * i.uv0.y + radialGrad0.z *
             sqrt(i.uv0.x * i.uv0.x + i.uv0.y * i.uv0.y - dd * dd);
-        half4 paint = ramps.Sample(rampsSampler, half2(u, radialGrad[1].z));
-        half opacity_ = radialGrad[0].w;
+        half4 paint = ramps.Sample(rampsSampler, half2(u, radialGrad1.z));
+        half opacity_ = radialGrad0.w;
 
     #elif PAINT_PATTERN
         #if CUSTOM_PATTERN

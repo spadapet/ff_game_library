@@ -4,6 +4,8 @@
 #include "texture.h"
 #include "ui.h"
 
+#define STEREO_RENDERING 0
+
 static void set_filter(Noesis::MinMagFilter::Enum minmag, Noesis::MipFilter::Enum mip, D3D12_SAMPLER_DESC& desc)
 {
     switch (minmag)
@@ -219,10 +221,9 @@ static void blend_desc(D3D12_BLEND_DESC& desc, Noesis::RenderState state)
 static void depth_stencil_desc(D3D12_DEPTH_STENCIL_DESC& desc, Noesis::RenderState state)
 {
     desc = {};
+    desc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
     desc.StencilReadMask = 0xFF;
     desc.StencilWriteMask = 0xFF;
-    desc.DepthEnable = false;
-    desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
     desc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
     desc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
     desc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
@@ -231,12 +232,18 @@ static void depth_stencil_desc(D3D12_DEPTH_STENCIL_DESC& desc, Noesis::RenderSta
     switch (state.f.stencilMode)
     {
         case Noesis::StencilMode::Disabled:
+            desc.DepthEnable = false;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
             desc.StencilEnable = false;
+            desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
             desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+            desc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
             desc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
             break;
 
         case Noesis::StencilMode::Equal_Keep:
+            desc.DepthEnable = false;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
             desc.StencilEnable = true;
             desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
             desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
@@ -245,6 +252,8 @@ static void depth_stencil_desc(D3D12_DEPTH_STENCIL_DESC& desc, Noesis::RenderSta
             break;
 
         case Noesis::StencilMode::Equal_Incr:
+            desc.DepthEnable = false;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
             desc.StencilEnable = true;
             desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
             desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
@@ -253,6 +262,8 @@ static void depth_stencil_desc(D3D12_DEPTH_STENCIL_DESC& desc, Noesis::RenderSta
             break;
 
         case Noesis::StencilMode::Equal_Decr:
+            desc.DepthEnable = false;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
             desc.StencilEnable = true;
             desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
             desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_DECR;
@@ -261,11 +272,33 @@ static void depth_stencil_desc(D3D12_DEPTH_STENCIL_DESC& desc, Noesis::RenderSta
             break;
 
         case Noesis::StencilMode::Clear:
+            desc.DepthEnable = false;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_NEVER;
             desc.StencilEnable = true;
             desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
             desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_ZERO;
             desc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
             desc.BackFace.StencilPassOp = D3D12_STENCIL_OP_ZERO;
+            break;
+
+        case Noesis::StencilMode::Disabled_ZTest:
+            desc.DepthEnable = true;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+            desc.StencilEnable = false;
+            desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+            desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+            desc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+            desc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+            break;
+
+        case Noesis::StencilMode::Equal_Keep_ZTest:
+            desc.DepthEnable = true;
+            desc.DepthFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+            desc.StencilEnable = true;
+            desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+            desc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+            desc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+            desc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
             break;
     }
 }
@@ -561,6 +594,24 @@ void ff::internal::ui::render_device::SetRenderTarget(Noesis::RenderTarget* surf
     this->target_format = single_target->format();
     this->commands->targets(&single_target, 1, surface2->depth().get());
     this->commands->viewports(&viewport, 1);
+}
+
+void ff::internal::ui::render_device::BeginTile(Noesis::RenderTarget* surface, const Noesis::Tile& tile)
+{
+    ff::internal::ui::render_target* surface2 = ff::internal::ui::render_target::get(surface);
+    ff::point_t<uint32_t> size = surface2->msaa_texture()->dxgi_texture()->size().cast<uint32_t>();
+
+    D3D12_RECT rect;
+    rect.left = static_cast<long>(tile.x);
+    rect.top = static_cast<long>(size.y - tile.y - tile.height);
+    rect.right = static_cast<long>(tile.x + tile.width);
+    rect.bottom = static_cast<long>(size.y - tile.y);
+
+    this->commands->scissors(&rect, 1);
+}
+
+void ff::internal::ui::render_device::EndTile(Noesis::RenderTarget* surface)
+{
 }
 
 void ff::internal::ui::render_device::ResolveRenderTarget(Noesis::RenderTarget* surface, const Noesis::Tile* tiles, uint32_t tile_count)

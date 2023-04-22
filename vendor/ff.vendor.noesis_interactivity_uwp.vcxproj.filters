@@ -151,6 +151,12 @@
     <ClCompile Include="$(MediaElementRoot)Src\MediaPlayer.cpp">
       <Filter>media_element</Filter>
     </ClCompile>
+    <ClCompile Include="$(InteractivityRoot)Src\BackgroundEffectBehavior.cpp">
+      <Filter>interactivity</Filter>
+    </ClCompile>
+    <ClCompile Include="$(InteractivityRoot)Src\MoveFocusAction.cpp">
+      <Filter>interactivity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(InteractivityRoot)Src\ComparisonLogic.h">
@@ -167,5 +173,8 @@
     <Filter Include="media_element">
       <UniqueIdentifier>{0d7e0599-bafd-4b89-8aca-0498ec94d782}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -2,39 +2,40 @@
 #include "stream.h"
 
 ff::internal::ui::stream::stream(ff::auto_resource_value&& resource)
-    : resource_(std::move(resource))
+    : resource(std::move(resource))
 {
-    auto resource_file = this->resource_.valid()
-        ? std::dynamic_pointer_cast<ff::resource_file>(this->resource_.value()->get<ff::resource_object_base>())
+    auto resource_file = this->resource.valid()
+        ? std::dynamic_pointer_cast<ff::resource_file>(this->resource.value()->get<ff::resource_object_base>())
         : nullptr;
 
     if (resource_file && resource_file->saved_data())
     {
-        this->reader_ = resource_file->saved_data()->loaded_reader();
+        this->data = resource_file->saved_data()->loaded_data();
+        this->reader = std::make_shared<ff::data_reader>(this->data);
     }
 
-    assert(this->reader_);
+    assert(this->reader);
 }
 
 ff::internal::ui::stream::stream(std::shared_ptr<ff::reader_base> reader)
-    : reader_(reader)
+    : reader(reader)
 {
-    assert(this->reader_);
+    assert(this->reader);
 }
 
 void ff::internal::ui::stream::SetPosition(uint32_t pos)
 {
-    if (this->reader_)
+    if (this->reader)
     {
-        this->reader_->pos(static_cast<size_t>(pos));
+        this->reader->pos(static_cast<size_t>(pos));
     }
 }
 
 uint32_t ff::internal::ui::stream::GetPosition() const
 {
-    if (this->reader_)
+    if (this->reader)
     {
-        return static_cast<uint32_t>(this->reader_->pos());
+        return static_cast<uint32_t>(this->reader->pos());
     }
 
     return 0;
@@ -42,9 +43,9 @@ uint32_t ff::internal::ui::stream::GetPosition() const
 
 uint32_t ff::internal::ui::stream::GetLength() const
 {
-    if (this->reader_)
+    if (this->reader)
     {
-        return static_cast<uint32_t>(this->reader_->size());
+        return static_cast<uint32_t>(this->reader->size());
     }
 
     return 0;
@@ -52,13 +53,13 @@ uint32_t ff::internal::ui::stream::GetLength() const
 
 uint32_t ff::internal::ui::stream::Read(void* buffer, uint32_t size)
 {
-    if (this->reader_)
+    if (this->reader)
     {
         size = std::min<uint32_t>(size, this->GetLength() - this->GetPosition());
 
         if (buffer)
         {
-            uint32_t size_read = static_cast<uint32_t>(this->reader_->read(buffer, static_cast<size_t>(size)));
+            uint32_t size_read = static_cast<uint32_t>(this->reader->read(buffer, static_cast<size_t>(size)));
             assert(size_read == size);
             size = size_read;
         }
@@ -73,8 +74,13 @@ uint32_t ff::internal::ui::stream::Read(void* buffer, uint32_t size)
     return 0;
 }
 
+const void* ff::internal::ui::stream::GetMemoryBase() const
+{
+    return this->data ? this->data->data() : nullptr;
+}
+
 void ff::internal::ui::stream::Close()
 {
-    this->resource_ = ff::auto_resource_value();
-    this->reader_.reset();
+    this->resource = ff::auto_resource_value();
+    this->reader.reset();
 }

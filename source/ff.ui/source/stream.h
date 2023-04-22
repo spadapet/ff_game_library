@@ -17,10 +17,12 @@ namespace ff::internal::ui
         virtual uint32_t GetPosition() const override;
         virtual uint32_t GetLength() const override;
         virtual uint32_t Read(void* buffer, uint32_t size) override;
+        virtual const void* GetMemoryBase() const override;
         virtual void Close() override;
 
     private:
-        ff::auto_resource_value resource_;
-        std::shared_ptr<ff::reader_base> reader_;
+        ff::auto_resource_value resource;
+        std::shared_ptr<ff::reader_base> reader;
+        std::shared_ptr<ff::data_base> data;
     };
 }

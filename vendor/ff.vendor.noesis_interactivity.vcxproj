@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="$(InteractivityRoot)Src\App.Interactivity.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\AttachableObject.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\BackgroundEffectBehavior.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\Behavior.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\BehaviorCollection.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\ChangePropertyAction.cpp" />

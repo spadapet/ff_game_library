@@ -298,7 +298,7 @@
     "defines":
     {
       "HAS_COLOR": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorCoverage_SRGB_VS":
@@ -310,7 +310,7 @@
     {
       "HAS_COLOR": "1",
       "HAS_COVERAGE": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorTex1_SDF_SRGB_VS":
@@ -323,7 +323,7 @@
       "HAS_COLOR": "1",
       "HAS_UV1": "1",
       "SDF": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorTex1_SRGB_VS":
@@ -335,7 +335,7 @@
     {
       "HAS_COLOR": "1",
       "HAS_UV1": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorTex0Tex1_SRGB_VS":
@@ -348,7 +348,7 @@
       "HAS_COLOR": "1",
       "HAS_UV0": "1",
       "HAS_UV1": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorTex1Rect_SRGB_VS":
@@ -361,7 +361,7 @@
       "HAS_COLOR": "1",
       "HAS_UV1": "1",
       "HAS_RECT": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.PosColorTex0RectImagePos_SRGB_VS":
@@ -375,7 +375,369 @@
       "HAS_UV0": "1",
       "HAS_RECT": "1",
       "HAS_IMAGE_POSITION": "1",
-      "SRGB": "1"
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.Pos_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1"
+    }
+  },
+  "Noesis.PosColor_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1"
+    }
+  },
+  "Noesis.PosTex0_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1"
+    }
+  },
+  "Noesis.PosTex0Rect_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_RECT": "1"
+    }
+  },
+  "Noesis.PosTex0RectTile_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_RECT": "1",
+      "HAS_TILE": "1"
+    }
+  },
+  "Noesis.PosColorCoverage_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_COVERAGE": "1"
+    }
+  },
+  "Noesis.PosTex0Coverage_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_COVERAGE": "1"
+    }
+  },
+  "Noesis.PosTex0CoverageRect_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_COVERAGE": "1",
+      "HAS_RECT": "1"
+    }
+  },
+  "Noesis.PosTex0CoverageRectTile_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_COVERAGE": "1",
+      "HAS_RECT": "1",
+      "HAS_TILE": "1"
+    }
+  },
+  "Noesis.PosColorTex1_SDF_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "SDF": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1_SDF_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "SDF": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1Rect_SDF_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1",
+      "SDF": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1RectTile_SDF_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1",
+      "HAS_TILE": "1",
+      "SDF": "1"
+    }
+  },
+  "Noesis.PosColorTex1_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1Rect_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1RectTile_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1",
+      "HAS_TILE": "1"
+    }
+  },
+  "Noesis.PosColorTex0Tex1_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1"
+    }
+  },
+  "Noesis.PosTex0Tex1_Downsample_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "DOWNSAMPLE": "1"
+    }
+  },
+  "Noesis.PosColorTex1Rect_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1"
+    }
+  },
+  "Noesis.PosColorTex0RectImagePos_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV0": "1",
+      "HAS_RECT": "1",
+      "HAS_IMAGE_POSITION": "1"
+    }
+  },
+  "Noesis.PosColor_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorCoverage_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_COVERAGE": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorTex1_SDF_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "SDF": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorTex1_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorTex0Tex1_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV0": "1",
+      "HAS_UV1": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorTex1Rect_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV1": "1",
+      "HAS_RECT": "1",
+      "LINEAR_COLOR_SPACE": "1"
+    }
+  },
+  "Noesis.PosColorTex0RectImagePos_SRGB_Stereo_VS":
+  {
+    "res:type": "shader",
+    "file": "file:shader_vs.hlsl",
+    "target": "vs_4_0",
+    "defines":
+    {
+      "STEREO_RENDERING": "1",
+      "HAS_COLOR": "1",
+      "HAS_UV0": "1",
+      "HAS_RECT": "1",
+      "HAS_IMAGE_POSITION": "1",
+      "LINEAR_COLOR_SPACE": "1"
     }
   },
   "Noesis.RGBA_PS":

@@ -23,6 +23,8 @@ namespace ff::internal::ui
         virtual void BeginOnscreenRender() override;
         virtual void EndOnscreenRender() override;
         virtual void SetRenderTarget(Noesis::RenderTarget* surface) override;
+        virtual void BeginTile(Noesis::RenderTarget* surface, const Noesis::Tile& tile) override;
+        virtual void EndTile(Noesis::RenderTarget* surface) override;
         virtual void ResolveRenderTarget(Noesis::RenderTarget* surface, const Noesis::Tile* tiles, uint32_t tile_count) override;
         virtual void* MapVertices(uint32_t bytes) override;
         virtual void UnmapVertices() override;

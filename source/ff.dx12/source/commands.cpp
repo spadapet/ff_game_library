@@ -323,6 +323,11 @@ void ff::dx12::commands::viewports(const D3D12_VIEWPORT* viewports, size_t count
     this->list(false)->RSSetScissorRects(static_cast<UINT>(count), scissor_rects);
 }
 
+void ff::dx12::commands::scissors(const D3D12_RECT* rects, size_t count)
+{
+    this->list(false)->RSSetScissorRects(static_cast<UINT>(count), rects);
+}
+
 void ff::dx12::commands::vertex_buffers(ff::dx12::buffer_base** buffers, const D3D12_VERTEX_BUFFER_VIEW* views, size_t start, size_t count)
 {
     for (size_t i = 0; buffers && i < count; i++)
