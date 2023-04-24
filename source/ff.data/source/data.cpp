@@ -46,7 +46,7 @@ ff::data_mem_mapped::data_mem_mapped(const std::shared_ptr<file_mem_mapped>& fil
     , offset_(offset)
     , size_(size)
 {
-    assert(*file && offset + size <= file->size());
+    assert(offset + size <= file->size());
 }
 
 ff::data_mem_mapped::data_mem_mapped(const std::filesystem::path& path)

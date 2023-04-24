@@ -188,21 +188,21 @@ static size_t stable_hash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc, size_t
     return hash;
 }
 
-static std::string cache_file_name(std::string_view extension)
+static std::string cache_file_name(std::string_view category, std::string_view extension)
 {
     std::filesystem::path exe_path = ff::filesystem::executable_path();
     std::filesystem::path name = exe_path.filename().replace_extension();
     size_t exe_hash = ff::stable_hash_func(exe_path);
-    return ff::string::concat("dx12_pso_", exe_hash, "_", ff::filesystem::to_string(name), extension);
+    return ff::string::concat("pso_", !category.empty() ? category : "dx12", "_", ff::filesystem::to_string(name), "_", exe_hash, extension);
 }
 
-ff::dx12::object_cache::object_cache()
+ff::dx12::object_cache::object_cache(std::string_view cache_category)
     : cache_dir(ff::filesystem::user_local_path() / "ff.cache")
-    , cache_library_path(this->cache_dir / ::cache_file_name(".bin"))
-    , cache_pack_path(this->cache_dir / ::cache_file_name(".pack"))
+    , cache_library_path(this->cache_dir / ::cache_file_name(cache_category, ".bin"))
+    , cache_pack_path(this->cache_dir / ::cache_file_name(cache_category, ".pack"))
 {
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
-    this->reset();
+    this->create_cache();
 }
 
 ff::dx12::object_cache::~object_cache()
@@ -245,51 +245,46 @@ ID3D12PipelineState* ff::dx12::object_cache::pipeline_state(const D3D12_GRAPHICS
     std::scoped_lock lock(this->mutex);
 
     auto i = this->pipeline_states.find(hash);
-    if (i == this->pipeline_states.end())
+    if (i == this->pipeline_states.end() && this->cache_library)
     {
-        std::string name = std::to_string(hash);
-
-        /*std::filesystem::path cache_path = this->cache_dir / (std::string("pso_") + std::to_string(hash) + std::string(".bin"));
-        if (ff::filesystem::exists(cache_path))
-        {
-            std::shared_ptr<ff::data_base> cache_data = ff::filesystem::map_binary_file(cache_path);
-            if (cache_data)
-            {
-                D3D12_GRAPHICS_PIPELINE_STATE_DESC cache_desc = desc;
-                cache_desc.CachedPSO.CachedBlobSizeInBytes = cache_data->size();
-                cache_desc.CachedPSO.pCachedBlob = cache_data->data();
-
-                Microsoft::WRL::ComPtr<ID3D12PipelineState> cache_state;
-                if (SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&cache_desc, IID_PPV_ARGS(&cache_state))))
-                {
-                    i = this->pipeline_states.try_emplace(hash, std::move(cache_state)).first;
-                }
-            }
-        }*/
+        std::wstring name = std::to_wstring(hash);
 
         Microsoft::WRL::ComPtr<ID3D12PipelineState> state;
-        if (i == this->pipeline_states.end() && SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state))))
+        if (SUCCEEDED(this->cache_library->LoadGraphicsPipeline(name.c_str(), &desc, IID_PPV_ARGS(&state))))
         {
-            Microsoft::WRL::ComPtr<ID3DBlob> cache_blob;
-            if (SUCCEEDED(state->GetCachedBlob(&cache_blob)))
-            {
-                //ff::thread_pool::add_task([cache_path, cache_blob]()
-                //{
-                //    ff::filesystem::write_binary_file(cache_path, cache_blob->GetBufferPointer(), cache_blob->GetBufferSize());
-                //});
-            }
-
             i = this->pipeline_states.try_emplace(hash, std::move(state)).first;
         }
     }
 
-    if (i != this->pipeline_states.end())
+    if (i == this->pipeline_states.end() && this->cache_pack)
     {
-        return i->second.Get();
+        std::string name = std::to_string(hash);
+        std::shared_ptr<ff::data_base> cache_data = this->cache_pack->get<ff::data_base>(name);
+        if (cache_data)
+        {
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC cache_desc = desc;
+            cache_desc.CachedPSO.CachedBlobSizeInBytes = cache_data->size();
+            cache_desc.CachedPSO.pCachedBlob = cache_data->data();
+
+            Microsoft::WRL::ComPtr<ID3D12PipelineState> state;
+            if (SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&cache_desc, IID_PPV_ARGS(&state))))
+            {
+                i = this->pipeline_states.try_emplace(hash, std::move(state)).first;
+            }
+        }
     }
 
-    assert(false);
-    return nullptr;
+    if (i == this->pipeline_states.end())
+    {
+        Microsoft::WRL::ComPtr<ID3D12PipelineState> state;
+        if (SUCCEEDED(ff::dx12::device()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&state))))
+        {
+            i = this->pipeline_states.try_emplace(hash, std::move(state)).first;
+        }
+    }
+
+    assert_ret_val(i != this->pipeline_states.end(), nullptr);
+    return i->second.Get();
 }
 
 size_t ff::dx12::object_cache::root_signature_hash(ID3D12RootSignature* root_signature)
@@ -326,30 +321,23 @@ D3D12_SHADER_BYTECODE ff::dx12::object_cache::shader(const std::string& name)
 
 void ff::dx12::object_cache::save()
 {
-    if (!this->cache_library && !this->cache_pack)
-    {
-        return;
-    }
-
     bool changed = false;
+    int64_t start_time = ff::timer::current_raw_time();
 
-    for (auto [hash, state] : pipeline_states)
+    for (auto [hash, state] : this->pipeline_states)
     {
         if (this->cache_library)
         {
             std::wstring name = std::to_wstring(hash);
-            if (SUCCEEDED(this->cache_library->StorePipeline(name.c_str(), state.Get())))
-            {
-                changed = true;
-            }
+            changed |= SUCCEEDED(this->cache_library->StorePipeline(name.c_str(), state.Get()));
         }
-        else
+        else if (this->cache_pack)
         {
             std::string name = std::to_string(hash);
             Microsoft::WRL::ComPtr<ID3DBlob> cache_blob;
             if (!this->cache_pack->get<ff::data_base>(name) && SUCCEEDED(state->GetCachedBlob(&cache_blob)))
             {
-                std::shared_ptr<ff::data_base> cache_value = std::make_shared<ff::dxgi::data_blob_dx>(cache_blob);
+                std::shared_ptr<ff::data_base> cache_value = std::make_shared<ff::dxgi::data_blob_dx>(cache_blob.Get());
                 this->cache_pack->set<ff::data_base>(name, cache_value, ff::saved_data_type::none);
                 changed = true;
             }
@@ -358,6 +346,7 @@ void ff::dx12::object_cache::save()
 
     if (!changed)
     {
+        ff::log::write(ff::log::type::dx12, "Skipped saving PSO library.");
         return;
     }
 
@@ -381,21 +370,38 @@ void ff::dx12::object_cache::save()
     }
     else if (this->cache_pack)
     {
-        // ff::dict::load
+        auto save_vector = std::make_shared<std::vector<uint8_t>>();
+        save_vector->reserve(this->cache_data ? this->cache_data->size() : 256 * 1024);
+
+        ff::data_writer writer(save_vector);
+        if (this->cache_pack->save(writer))
+        {
+            save_path = this->cache_pack_path;
+            save_data = std::make_shared<ff::data_vector>(std::move(save_vector));
+        }
     }
 
     if (save_path.empty() || !save_data)
     {
+        ff::log::write(ff::log::type::dx12, "Failed to save PSO library.");
         return;
     }
 
+    this->cache_library.Reset();
+    this->cache_pack.reset();
     this->cache_data.reset();
-    ff::filesystem::remove(this->cache_library_path);
-    ff::filesystem::remove(this->cache_pack_path);
 
-    if (ff::filesystem::write_binary_file(save_path, save_data->data(), save_data->size()))
+    if (!ff::filesystem::write_binary_file(save_path, save_data->data(), save_data->size()))
     {
+        ff::filesystem::remove(save_path);
     }
+
+    size_t save_size = save_data->size();
+    save_data.reset();
+    this->create_cache();
+
+    const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+    ff::log::write(ff::log::type::dx12, "Saved PSO library: ", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms, Size: ", save_size, ", File: '", ff::filesystem::to_string(save_path), "'");
 }
 
 void ff::dx12::object_cache::before_reset()
@@ -434,12 +440,15 @@ void ff::dx12::object_cache::create_cache()
         if (this->cache_data && FAILED(ff::dx12::device()->CreatePipelineLibrary(this->cache_data->data(), this->cache_data->size(), IID_PPV_ARGS(&this->cache_library))))
         {
             this->cache_data.reset();
-            ff::filesystem::remove(this->cache_library_path);
-            ff::dx12::device()->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&this->cache_library));
+        }
+
+        if (!this->cache_library && FAILED(ff::dx12::device()->CreatePipelineLibrary(nullptr, 0, IID_PPV_ARGS(&this->cache_library))))
+        {
+            use_library = false;
         }
     }
 
-    if (!this->cache_library)
+    if (!use_library)
     {
         this->cache_data = ff::filesystem::map_binary_file(this->cache_pack_path);
         if (this->cache_data)
@@ -453,7 +462,6 @@ void ff::dx12::object_cache::create_cache()
             else
             {
                 this->cache_data.reset();
-                ff::filesystem::remove(this->cache_pack_path);
             }
         }
 

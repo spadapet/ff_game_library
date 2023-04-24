@@ -5,7 +5,7 @@ namespace ff::dx12
     class object_cache : private ff::dxgi::device_child_base
     {
     public:
-        object_cache();
+        object_cache(std::string_view cache_category = "");
         object_cache(object_cache&& other) noexcept = delete;
         object_cache(const object_cache& other) = delete;
         ~object_cache();
@@ -38,7 +38,6 @@ namespace ff::dx12
         std::filesystem::path cache_pack_path;
         std::shared_ptr<ff::data_base> cache_data;
         std::unique_ptr<ff::dict> cache_pack;
-        std::mutex cache_mutex;
         Microsoft::WRL::ComPtr<ID3D12PipelineLibrary> cache_library;
     };
 }
