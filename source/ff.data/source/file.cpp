@@ -107,7 +107,6 @@ ff::file_read::file_read(const std::filesystem::path& path)
     : file_base(path)
 {
     win_handle file_handle(::CreateFile2(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, nullptr));
-    assert(file_handle);
     this->handle(std::move(file_handle));
 }
 
@@ -151,12 +150,11 @@ ff::co_task<size_t> ff::file_read::read_async(void* data, size_t size)
 ff::file_write::file_write(const std::filesystem::path& path, bool append)
     : file_base(path)
 {
-    std::error_code ec;
     std::filesystem::path parent_path = path.parent_path();
-    if (!parent_path.empty() && !std::filesystem::exists(parent_path, ec))
+    if (!parent_path.empty() && !ff::filesystem::exists(parent_path))
     {
         // Ignore failure here, let CreateFile fail
-        std::filesystem::create_directories(parent_path, ec);
+        ff::filesystem::create_directories(parent_path);
     }
 
     win_handle file_handle(::CreateFile2(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, append ? OPEN_ALWAYS : CREATE_ALWAYS, nullptr));

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "assert.h"
+#include "constants.h"
 #include "filesystem.h"
 #include "string.h"
 
@@ -23,24 +24,86 @@ static std::filesystem::path get_known_directory(REFGUID id, bool create)
 static std::filesystem::path append_ff_game_engine_directory(std::filesystem::path path)
 {
     path /= "ff_game_engine";
-
-    std::error_code ec;
-    bool status = std::filesystem::create_directories(path, ec);
-    assert(status || !ec.value());
-
+    ff::filesystem::create_directories(path);
     return path;
 }
 
 #endif
+
+bool ff::filesystem::exists(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    return std::filesystem::exists(path, ec);
+}
+
+bool ff::filesystem::equivalent(const std::filesystem::path& lhs, const std::filesystem::path& rhs)
+{
+    std::error_code ec;
+    return std::filesystem::equivalent(lhs, rhs, ec);
+}
+
+std::filesystem::file_time_type ff::filesystem::last_write_time(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    return std::filesystem::last_write_time(path, ec);
+}
+
+bool ff::filesystem::create_directories(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    return std::filesystem::create_directories(path, ec) || !ec.value();
+}
+
+size_t ff::filesystem::file_size(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    uintmax_t size = std::filesystem::file_size(path, ec);
+    return (size != ff::constants::invalid_uintmax) ? static_cast<size_t>(size) : ff::constants::invalid_size;
+}
+
+bool ff::filesystem::remove(const std::filesystem::path& path)
+{
+    if (!ff::filesystem::exists(path))
+    {
+        return true;
+    }
+
+    std::error_code ec;
+    return std::filesystem::remove(path, ec) || !ec.value();
+}
+
+bool ff::filesystem::remove_all(const std::filesystem::path& path)
+{
+    if (!ff::filesystem::exists(path))
+    {
+        return true;
+    }
+
+    std::error_code ec;
+    return std::filesystem::remove_all(path, ec) != ff::constants::invalid_uintmax || !ec.value();
+}
+
+std::filesystem::path ff::filesystem::weakly_canonical(const std::filesystem::path& path)
+{
+    std::error_code ec;
+    return std::filesystem::weakly_canonical(path, ec);
+}
+
+std::string ff::filesystem::to_string(const std::filesystem::path& path)
+{
+    return ff::string::to_string(path.native());
+}
 
 std::filesystem::path ff::filesystem::to_path(std::string_view path)
 {
     return std::filesystem::path(ff::string::to_wstring(path));
 }
 
-std::string ff::filesystem::to_string(const std::filesystem::path& path)
+std::filesystem::path ff::filesystem::executable_path()
 {
-    return ff::string::to_string(path.native());
+    wchar_t* wstr{};
+    ::_get_wpgmptr(&wstr);
+    return ff::filesystem::to_path(ff::string::to_string(wstr));
 }
 
 std::filesystem::path ff::filesystem::temp_directory_path()

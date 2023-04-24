@@ -57,10 +57,9 @@ const char* editor::project_vm::file_name_raw() const
 
 ff::co_task<bool> editor::project_vm::save_async(bool save_as)
 {
-    std::error_code ec;
     std::wstring path = ff::string::to_wstring(std::string_view(this->full_path_raw()));
 
-    if (!save_as && !path.empty() && std::filesystem::exists(path, ec) && co_await this->save_async(path))
+    if (!save_as && !path.empty() && ff::filesystem::exists(path) && co_await this->save_async(path))
     {
         co_return true;
     }

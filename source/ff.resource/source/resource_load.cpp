@@ -16,8 +16,7 @@ std::string_view ff::internal::RES_PREFIX("res:");
 
 static std::filesystem::path get_cache_path(const std::filesystem::path& source_path, bool debug)
 {
-    std::error_code ec;
-    std::filesystem::path path_canon = std::filesystem::weakly_canonical(source_path, ec);
+    std::filesystem::path path_canon = ff::filesystem::weakly_canonical(source_path);
     std::filesystem::path path_canon_lower = ff::filesystem::to_lower(path_canon);
     std::filesystem::path name = path_canon.filename().replace_extension();
 
@@ -29,13 +28,12 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
 
 static bool load_cached_resources(const std::filesystem::path& path, ff::dict& dict)
 {
-    std::error_code ec;
-    if (!std::filesystem::exists(path, ec))
+    if (!ff::filesystem::exists(path))
     {
         return false;
     }
 
-    std::filesystem::file_time_type time = std::filesystem::last_write_time(path, ec);
+    std::filesystem::file_time_type time = ff::filesystem::last_write_time(path);
     if (time == std::filesystem::file_time_type::min())
     {
         return false;
@@ -53,13 +51,13 @@ static bool load_cached_resources(const std::filesystem::path& path, ff::dict& d
     for (const std::string& file_ref : file_refs)
     {
         std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
-        if (!std::filesystem::exists(path_ref, ec))
+        if (!ff::filesystem::exists(path_ref))
         {
             // cache is out of data
             return false;
         }
 
-        std::filesystem::file_time_type file_ref_time = std::filesystem::last_write_time(path_ref, ec);
+        std::filesystem::file_time_type file_ref_time = ff::filesystem::last_write_time(path_ref);
         if (file_ref_time == std::filesystem::file_time_type::min() || time < file_ref_time)
         {
             // cache is out of data
@@ -102,8 +100,7 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
                 ff::file_writer writer(cache_path);
                 if (writer && !result.dict.save(writer))
                 {
-                    std::error_code ec;
-                    std::filesystem::remove(cache_path, ec);
+                    ff::filesystem::remove(cache_path);
                 }
             }
         }
@@ -135,7 +132,6 @@ bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, cons
     ff::dict dict;
     if (::load_cached_resources(cache_path, dict))
     {
-        std::error_code ec;
         std::filesystem::file_time_type input_time = std::filesystem::last_write_time(input_path);
         std::filesystem::file_time_type cache_time = std::filesystem::last_write_time(cache_path);
 
@@ -147,7 +143,7 @@ bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, cons
             std::vector<std::string> files = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
             for (const std::string& file : files)
             {
-                if (std::filesystem::equivalent(input_path, std::filesystem::path(file), ec))
+                if (ff::filesystem::equivalent(input_path, std::filesystem::path(file)))
                 {
                     return true;
                 }

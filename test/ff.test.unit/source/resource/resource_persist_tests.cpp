@@ -10,8 +10,7 @@ namespace ff::test::resource
             std::filesystem::path temp_path = ff::filesystem::temp_directory_path() / "resource_persist_test";
             ff::scope_exit cleanup([&temp_path]()
                 {
-                    std::error_code ec;
-                    std::filesystem::remove_all(temp_path, ec);
+                    ff::filesystem::remove_all(temp_path);
                 });
 
             std::filesystem::path source_path = temp_path / "res.json";

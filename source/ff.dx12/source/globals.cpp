@@ -447,6 +447,7 @@ bool ff::dx12::reset_device(bool force)
 void ff::dx12::trim_device()
 {
     ff::dx12::wait_for_idle();
+    ::object_cache->save();
 }
 
 bool ff::dx12::device_valid()

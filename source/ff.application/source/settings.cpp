@@ -31,9 +31,8 @@ void ff::internal::app::load_settings()
     std::scoped_lock lock(::mutex);
     ff::internal::app::clear_settings();
 
-    std::error_code ec;
     std::filesystem::path settings_path = ::settings_path();
-    if (std::filesystem::exists(settings_path, ec))
+    if (ff::filesystem::exists(settings_path))
     {
         auto data = ff::filesystem::read_binary_file(settings_path);
         ff::data_reader reader(data);

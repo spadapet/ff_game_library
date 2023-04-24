@@ -9,6 +9,7 @@ namespace ff::constants
     constexpr size_t bits_build = sizeof(size_t) * 8;
     constexpr size_t invalid_size = static_cast<size_t>(-1);
     constexpr DWORD invalid_dword = static_cast<DWORD>(-1);
+    constexpr uintmax_t invalid_uintmax = static_cast<std::uintmax_t>(-1);
 
     /// <summary>
     /// Fixed amount of times per second that the game loop advances

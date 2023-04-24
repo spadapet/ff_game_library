@@ -287,6 +287,7 @@ static void init_game_thread()
 static void destroy_game_thread()
 {
     ff::internal::app::request_save_settings();
+    ff::dxgi_client().trim_device();
     ::game_state.reset();
 
     if (::app_params.game_thread_finished_func)

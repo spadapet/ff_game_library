@@ -154,14 +154,12 @@ public:
     save_to_file_visitor()
         : root_path(ff::filesystem::temp_directory_path() / "dumpbin")
     {
-        std::error_code ec;
-        std::filesystem::create_directories(this->root_path, ec);
+        ff::filesystem::create_directories(this->root_path);
     }
 
     ~save_to_file_visitor()
     {
-        std::error_code ec;
-        if (std::filesystem::exists(this->root_path))
+        if (ff::filesystem::exists(this->root_path))
         {
             const wchar_t* path_str = this->root_path.native().c_str();
             ::ShellExecute(nullptr, L"open", path_str, nullptr, path_str, SW_SHOWDEFAULT);
@@ -202,8 +200,7 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
     ff::init_audio init_audio;
     ff::init_graphics init_graphics;
 
-    std::error_code ec;
-    if (!std::filesystem::exists(dump_source_file, ec))
+    if (!ff::filesystem::exists(dump_source_file))
     {
         std::cerr << "File doesn't exist: " << dump_source_file << std::endl;
         return 1;
@@ -345,8 +342,7 @@ int main()
         output_file.replace_extension(".pack");
     }
 
-    std::error_code ec;
-    if (!std::filesystem::exists(input_file, ec))
+    if (!ff::filesystem::exists(input_file))
     {
         std::cerr << "ff.resource.build: File doesn't exist: " << input_file << std::endl;
         return 2;

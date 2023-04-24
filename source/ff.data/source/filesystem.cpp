@@ -25,6 +25,12 @@ std::shared_ptr<ff::data_base> ff::filesystem::read_binary_file(const std::files
     return nullptr;
 }
 
+std::shared_ptr<ff::data_base> ff::filesystem::map_binary_file(const std::filesystem::path& path)
+{
+    auto data = std::make_shared<ff::data_mem_mapped>(path);
+    return data->valid() ? data : nullptr;
+}
+
 bool ff::filesystem::read_text_file(const std::filesystem::path& path, std::string& text)
 {
     file_mem_mapped mm(path);

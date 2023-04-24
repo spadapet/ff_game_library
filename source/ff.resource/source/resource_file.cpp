@@ -32,10 +32,8 @@ ff::resource_file::resource_file(const std::filesystem::path& path)
     : file_extension_(ff::filesystem::to_string(ff::filesystem::to_lower(path.extension())))
     , compress(::default_compress(path))
 {
-    std::error_code ec;
-    uintmax_t size = std::filesystem::file_size(path, ec);
-
-    if (size == static_cast<std::uintmax_t>(-1))
+    size_t size = ff::filesystem::file_size(path);
+    if (size == ff::constants::invalid_size)
     {
         assert(false);
         size = 0;
@@ -100,9 +98,8 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::l
         return nullptr;
     }
 
-    std::error_code ec;
-    uintmax_t max_size = std::filesystem::file_size(path, ec);
-    if (max_size == static_cast<std::uintmax_t>(-1))
+    size_t max_size = std::filesystem::file_size(path);
+    if (max_size == ff::constants::invalid_size)
     {
         std::ostringstream str;
         str << "Failed to get size of file: " << path;

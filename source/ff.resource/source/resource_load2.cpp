@@ -131,9 +131,7 @@ public:
 
     void add_file(const std::filesystem::path& path)
     {
-        std::error_code ec;
-        std::filesystem::path path_canon = std::filesystem::weakly_canonical(path, ec);
-
+        std::filesystem::path path_canon = std::filesystem::weakly_canonical(path);
         std::scoped_lock lock(this->mutex);
         this->paths_.insert(std::move(path_canon));
     }
@@ -213,11 +211,10 @@ protected:
             if (ff::string::starts_with(string_value, ff::internal::FILE_PREFIX))
             {
                 string_value = string_value.substr(ff::internal::FILE_PREFIX.size());
-                std::error_code ec;
                 std::filesystem::path path_value = string_value;
-                std::filesystem::path full_path = std::filesystem::weakly_canonical(this->context().base_path() / path_value, ec);
+                std::filesystem::path full_path = std::filesystem::weakly_canonical(this->context().base_path() / path_value);
 
-                if (std::filesystem::exists(full_path, ec))
+                if (ff::filesystem::exists(full_path))
                 {
                     this->context().add_file(full_path);
                 }

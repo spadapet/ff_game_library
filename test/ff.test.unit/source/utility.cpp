@@ -8,13 +8,7 @@ static std::filesystem::path get_temp_path()
 
 void ff::test::remove_temp_path()
 {
-    std::filesystem::path temp_path = get_temp_path();
-
-    std::error_code ec;
-    if (std::filesystem::exists(temp_path, ec))
-    {
-        std::filesystem::remove_all(::get_temp_path(), ec);
-    }
+    std::filesystem::remove_all(::get_temp_path());
 }
 
 std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::scope_exit> ff::test::create_resources(std::string_view json_source)
@@ -23,8 +17,7 @@ std::tuple<std::unique_ptr<ff::resource_objects>, std::filesystem::path, ff::sco
     ff::log::write(ff::log::type::debug, std::string("Temp path: " + ff::string::to_string(temp_path.native())));
     ff::scope_exit cleanup([temp_path]()
         {
-            std::error_code ec;
-            std::filesystem::remove_all(temp_path, ec);
+            std::filesystem::remove_all(temp_path);
         });
 
     // Create test files
