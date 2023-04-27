@@ -13,12 +13,16 @@
     <Filter Include="ui_assets\theme">
       <UniqueIdentifier>{5bd1fe0c-6176-480f-a815-ca39c33652b3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{d11f5130-c2ef-4a2f-b9a1-d7f9ef0267ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="source\utility.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -102,13 +106,15 @@
     </None>
     <None Include="$(NoesisDll)" />
     <None Include="$(WinPixDll)" />
+    <None Include="$(NoesisDll)" />
+    <None Include="$(WinPixDll)" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="ui_assets\assets.xaml.res.json">
       <Filter>ui_assets</Filter>
     </ResJson>
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="source\app.idl" />
+    <ResJson Include="assets\assets.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
   </ItemGroup>
 </Project>

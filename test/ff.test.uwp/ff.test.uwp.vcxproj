@@ -50,6 +50,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ResJson Include="assets\assets.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
     <None Include="ui_assets\application_resources.xaml">
       <FileType>Document</FileType>
     </None>

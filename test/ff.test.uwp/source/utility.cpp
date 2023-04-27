@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "utility.h"
 
+#include "assets.res.h"
 #include "assets.xaml.res.h"
 
 static std::shared_ptr<::ff::data_base> get_app_resources()
@@ -16,6 +17,7 @@ ff::init_ui_params test_uwp::get_init_ui_params()
     params.noesis_license_key = "W6pp7c/hae3wI3lh5mJbethhVN8j7OypHGdrxfGtracq/uFo";
     params.register_components_func = []()
     {
+        ff::global_resources::add(::assets::app::data());
         ff::global_resources::add(::assets::xaml::data());
     };
 

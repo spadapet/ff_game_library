@@ -1,0 +1,80 @@
+{
+  "res:namespace": "assets::app",
+
+  "font_data":
+  {
+    "res:type": "font_file",
+    "file": "file:pressstart2p.ttf"
+  },
+
+  "font":
+  {
+    "res:type": "font",
+    "data": "ref:font_data",
+    "size": 20
+  },
+
+  "player_sprites":
+  {
+    "res:type": "sprites",
+    "format": "bc2",
+    "mips": 3,
+    "sprites":
+    {
+      "player":
+      {
+        "file": "file:player.png",
+        "pos":
+        [
+          0,
+          0
+        ],
+        "size":
+        [
+          32,
+          32
+        ],
+        "handle":
+        [
+          16,
+          16
+        ]
+      }
+    }
+  },
+
+  "palette":
+  {
+    "res:type": "palette",
+    "file": "file:palette.pal"
+  },
+
+  "palette_sprites":
+  {
+    "res:type": "sprites",
+    "format": "pal",
+    "sprites":
+    {
+      "dirt":
+      {
+        "file": "file:using palette.png",
+        "pos":
+        [
+          16,
+          0
+        ],
+        "size":
+        [
+          16,
+          16
+        ],
+        "handle":
+        [
+          8,
+          8
+        ],
+        "repeat": 5
+      }
+    }
+  }
+}
