@@ -70,7 +70,7 @@ namespace
             }
 
             std::string text = ff::string::concat("Entities:", this->pos_datas.size());
-            this->font->draw_text(draw, text, ff::dxgi::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::dxgi::color_black()), ff::dxgi::color_white());
+            this->font->draw_text(draw, text, ff::dxgi::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::dxgi::color_white()), ff::dxgi::color_none());
         }
 
     private:
@@ -138,7 +138,7 @@ void winrt::test_uwp::implementation::test_app::loaded(const winrt::Windows::Fou
 
     app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
         {
-            color = ff::dxgi::color_blue();
+            color = ff::dxgi::color_black();
             return true;
         };
 

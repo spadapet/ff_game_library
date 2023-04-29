@@ -10,6 +10,13 @@
 #include "queues.h"
 #include "resource.h"
 
+extern "C"
+{
+    // NVIDIA and AMD globals to prefer their higher powered GPU over Intel
+    __declspec(dllexport) DWORD NvOptimusEnablement = 1;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 // DX12 globals
 static Microsoft::WRL::ComPtr<ID3D12Device1> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
@@ -18,6 +25,8 @@ static const ff::dxgi::host_functions* host_functions;
 static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
 static size_t outputs_hash;
+static bool supports_create_heap_not_resident_;
+static bool supports_mesh_shaders_;
 
 // Device children
 static std::mutex device_children_mutex;
@@ -124,6 +133,31 @@ static void flush_keep_alive()
     }
 }
 
+static bool supports_create_heap_not_resident()
+{
+    Microsoft::WRL::ComPtr<ID3D12Device8> device8;
+    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
+    if (SUCCEEDED(::device.As(&device8)) || SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))
+    {
+#if UWP_APP
+        return true;
+#elif defined(PROFILE) || defined(_DEBUG)
+        return !::is_graphics_debugger_present();
+#else
+        return !::IsDebuggerPresent() || !::is_graphics_debugger_present();
+#endif
+    }
+
+    return false;
+}
+
+static bool supports_mesh_shaders()
+{
+    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
+    return SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))) &&
+        options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
+}
+
 static bool init_dxgi()
 {
 #if !UWP_APP
@@ -162,6 +196,9 @@ static bool init_d3d(bool for_reset)
         ::device = ::create_dx12_device();
         assert_ret_val(::device, false);
     }
+
+    ::supports_create_heap_not_resident_ = ::supports_create_heap_not_resident();
+    ::supports_mesh_shaders_ = ::supports_mesh_shaders();
 
     // Break on debug error
     if (DEBUG && ::IsDebuggerPresent())
@@ -281,6 +318,8 @@ static void destroy_d3d(bool for_reset)
         ::video_memory_change_event.reset();
     }
 
+    ::supports_create_heap_not_resident_ = false;
+    ::supports_mesh_shaders_ = false;
     ::outputs_hash = 0;
     ::adapter.Reset();
     ::device.Reset();
@@ -516,28 +555,14 @@ static bool is_graphics_debugger_present()
 }
 #endif
 
-static bool supports_create_heap_not_resident()
-{
-    Microsoft::WRL::ComPtr<ID3D12Device8> device8;
-    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
-    if (SUCCEEDED(::device.As(&device8)) || SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))
-    {
-#if UWP_APP
-        return true;
-#elif defined(PROFILE) || defined(_DEBUG)
-        return !::is_graphics_debugger_present();
-#else
-        return !::IsDebuggerPresent() || !::is_graphics_debugger_present();
-#endif
-    }
-
-    return false;
-}
-
 bool ff::dx12::supports_create_heap_not_resident()
 {
-    static bool value = ::supports_create_heap_not_resident();
-    return value;
+    return supports_create_heap_not_resident_;
+}
+
+bool ff::dx12::supports_mesh_shaders()
+{
+    return supports_mesh_shaders_;
 }
 
 ff::dx12::object_cache& ff::dx12::get_object_cache()

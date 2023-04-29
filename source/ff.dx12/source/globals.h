@@ -35,6 +35,7 @@ namespace ff::dx12
     const DXGI_QUERY_VIDEO_MEMORY_INFO& get_video_memory_info();
     ff::dx12::fence& residency_fence();
     bool supports_create_heap_not_resident();
+    bool supports_mesh_shaders();
     void keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fence_values&& fence_values);
 
     size_t frame_count();

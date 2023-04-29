@@ -160,9 +160,14 @@ void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
         caches_to_reset.push_back(this->caches.back().get());
     }
 
-    ff::dx12::residency_data::make_resident(residency_set, next_fence_value, wait_before_execute);
+    bool all_resident = ff::dx12::residency_data::make_resident(residency_set, next_fence_value, wait_before_execute);
     wait_before_execute.wait(this);
-    this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
+
+    if (all_resident)
+    {
+        this->command_queue->ExecuteCommandLists(static_cast<UINT>(dx12_lists.size()), dx12_lists.data());
+    }
+
     fence_values.signal(this);
 
     ff::thread_pool::add_task([this, caches_to_reset = std::move(caches_to_reset)]()
