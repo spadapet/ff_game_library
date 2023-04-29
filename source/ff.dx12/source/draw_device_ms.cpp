@@ -1,9 +1,4 @@
 #include "pch.h"
-
-#include "draw_device.h"
-#include "globals.h"
-
-/*
 #include "buffer.h"
 #include "depth.h"
 #include "descriptor_allocator.h"
@@ -679,11 +674,7 @@ namespace
     };
 }
 
-*/
-
-std::unique_ptr<ff::dxgi::draw_device_base> ff::dx12::create_draw_device()
+std::unique_ptr<ff::dxgi::draw_device_base> ff::internal::dx12::create_draw_device_ms()
 {
-    return ff::dx12::supports_mesh_shaders()
-        ? ff::internal::dx12::create_draw_device_ms()
-        : ff::internal::dx12::create_draw_device_gs();
+    return std::make_unique<::dx12_draw_device>();
 }

@@ -17,6 +17,8 @@
     <ClCompile Include="source\descriptor_allocator.cpp" />
     <ClCompile Include="source\descriptor_range.cpp" />
     <ClCompile Include="source\draw_device.cpp" />
+    <ClCompile Include="source\draw_device_gs.cpp" />
+    <ClCompile Include="source\draw_device_ms.cpp" />
     <ClCompile Include="source\fence.cpp" />
     <ClCompile Include="source\fence_value.cpp" />
     <ClCompile Include="source\fence_values.cpp" />

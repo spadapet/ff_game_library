@@ -133,6 +133,13 @@ static void flush_keep_alive()
     }
 }
 
+#if !UWP_APP
+static bool is_graphics_debugger_present()
+{
+    return ::GetModuleHandle(L"DXCaptureReplay.dll"); // ::GetModuleHandle(L"renderdoc.dll");
+}
+#endif
+
 static bool supports_create_heap_not_resident()
 {
     Microsoft::WRL::ComPtr<ID3D12Device8> device8;
@@ -547,13 +554,6 @@ ff::dx12::fence& ff::dx12::residency_fence()
 {
     return *::residency_fence;
 }
-
-#if !UWP_APP
-static bool is_graphics_debugger_present()
-{
-    return ::GetModuleHandle(L"DXCaptureReplay.dll"); // ::GetModuleHandle(L"renderdoc.dll");
-}
-#endif
 
 bool ff::dx12::supports_create_heap_not_resident()
 {

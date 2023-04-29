@@ -68,7 +68,7 @@
     <ClCompile Include="source\buffer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\draw_device.cpp">
+    <ClCompile Include="source\draw_device_ms.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\vertex.cpp">
@@ -93,6 +93,12 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\gpu_event.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\draw_device.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\draw_device_gs.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
