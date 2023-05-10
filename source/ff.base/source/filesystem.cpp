@@ -101,9 +101,14 @@ std::filesystem::path ff::filesystem::to_path(std::string_view path)
 
 std::filesystem::path ff::filesystem::executable_path()
 {
-    wchar_t* wstr{};
-    ::_get_wpgmptr(&wstr);
-    return ff::filesystem::to_path(ff::string::to_string(wstr));
+    std::array<wchar_t, 2048> wpath;
+    DWORD size = static_cast<DWORD>(wpath.size());
+    if ((size = ::GetModuleFileName(nullptr, wpath.data(), size)) != 0)
+    {
+        return ff::filesystem::to_path(ff::string::to_string(std::wstring_view(wpath.data(), size)));
+    }
+
+    debug_fail_ret_val(std::filesystem::path{});
 }
 
 std::filesystem::path ff::filesystem::temp_directory_path()

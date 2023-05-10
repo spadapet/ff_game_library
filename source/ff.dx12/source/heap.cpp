@@ -122,24 +122,26 @@ bool ff::dx12::heap::reset()
 
         case ff::dx12::heap::usage_t::upload:
             props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
             priority = D3D12_RESIDENCY_PRIORITY_LOW;
             break;
 
         case ff::dx12::heap::usage_t::readback:
             props = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
             priority = D3D12_RESIDENCY_PRIORITY_LOW;
             break;
 
         case ff::dx12::heap::usage_t::gpu_buffers:
-            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
             break;
 
         case ff::dx12::heap::usage_t::gpu_textures:
-            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
+            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
             break;
 
         case ff::dx12::heap::usage_t::gpu_targets:
-            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+            flags |= D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
             priority = D3D12_RESIDENCY_PRIORITY_HIGH;
             alignment = D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT;
             break;
