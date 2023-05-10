@@ -279,9 +279,6 @@ namespace ff::dxgi::draw_util
         ff::dxgi::draw_util::geometry_shader_constants_0 geometry_constants_0{};
         ff::dxgi::draw_util::geometry_shader_constants_1 geometry_constants_1{};
         ff::dxgi::draw_util::pixel_shader_constants_0 pixel_constants_0{};
-        size_t geometry_constants_hash_0{};
-        size_t geometry_constants_hash_1{};
-        size_t pixel_constants_hash_0{};
 
         // Render state
         std::vector<bool> sampler_stack;
