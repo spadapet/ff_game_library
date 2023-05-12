@@ -344,7 +344,7 @@ bool ff::dx12::buffer_upload::update(ff::dxgi::command_context_base& context, co
 
 void* ff::dx12::buffer_upload::map(ff::dxgi::command_context_base& context, size_t size)
 {
-    this->version_ = (this->version_ + 1) ? this->version_ + 1 : 1;
+    this->version_++;
 
     if (size)
     {
@@ -408,8 +408,14 @@ bool ff::dx12::buffer_cpu::writable() const
 
 bool ff::dx12::buffer_cpu::update(ff::dxgi::command_context_base& context, const void* data, size_t size, size_t min_buffer_size)
 {
-    std::memcpy(this->map(context, size), data, size);
-    this->unmap();
+    size_t new_hash = size ? ff::stable_hash_bytes(data, size) : 0;
+    if (new_hash != this->data_hash)
+    {
+        std::memcpy(this->map(context, size), data, size);
+        this->data_hash = new_hash;
+        this->version_++;
+    }
+
     return true;
 }
 
@@ -425,6 +431,6 @@ void ff::dx12::buffer_cpu::unmap()
     if (new_hash != this->data_hash)
     {
         this->data_hash = new_hash;
-        this->version_ = (this->version_ + 1) ? (this->version_ + 1) : 1;
+        this->version_++;
     }
 }

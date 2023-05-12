@@ -6,6 +6,7 @@ namespace ff
     {
     public:
         png_image_reader(const uint8_t* bytes, size_t size);
+        png_image_reader(const std::shared_ptr<ff::reader_base>& data_reader);
         ~png_image_reader();
 
         std::unique_ptr<DirectX::ScratchImage> read(DXGI_FORMAT requested_format = DXGI_FORMAT_UNKNOWN);
@@ -13,6 +14,7 @@ namespace ff
         const std::string& error() const;
 
     private:
+        void init_png_structs();
         std::unique_ptr<DirectX::ScratchImage> internal_read(DXGI_FORMAT requested_format);
 
         static void png_error_callback(png_struct* png, const char* text);
@@ -24,31 +26,30 @@ namespace ff
         void on_png_read(uint8_t* data, size_t size);
 
         // Data
-        png_struct* png;
-        png_info* info;
-        png_info* end_info;
+        png_struct* png{};
+        png_info* info{};
+        png_info* end_info{};
         std::string error_;
 
         // Reading
-        const uint8_t* read_pos;
-        const uint8_t* end_pos;
+        std::shared_ptr<ff::reader_base> data_reader;
         std::vector<BYTE*> rows;
 
         // Properties
-        unsigned int width;
-        unsigned int height;
-        int bit_depth;
-        int color_type;
-        int interlate_method;
+        unsigned int width{};
+        unsigned int height{};
+        int bit_depth{};
+        int color_type{};
+        int interlate_method{};
 
         // Palette
-        bool has_palette;
-        png_color* palette_;
-        int palette_size;
-        bool has_trans_palette;
-        uint8_t* trans_palette;
-        int trans_palette_size;
-        png_color_16* trans_color;
+        bool has_palette{};
+        png_color* palette_{};
+        int palette_size{};
+        bool has_trans_palette{};
+        uint8_t* trans_palette{};
+        int trans_palette_size{};
+        png_color_16* trans_color{};
     };
 
     class png_image_writer

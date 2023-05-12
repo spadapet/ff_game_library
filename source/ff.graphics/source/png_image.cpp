@@ -2,32 +2,29 @@
 #include "png_image.h"
 
 ff::png_image_reader::png_image_reader(const uint8_t* bytes, size_t size)
-    : png(nullptr)
-    , info(nullptr)
-    , end_info(nullptr)
-    , read_pos(bytes)
-    , end_pos(bytes + size)
-    , width(0)
-    , height(0)
-    , bit_depth(0)
-    , color_type(0)
-    , interlate_method(0)
-    , has_palette(false)
-    , palette_(nullptr)
-    , palette_size(0)
-    , has_trans_palette(false)
-    , trans_palette(nullptr)
-    , trans_palette_size(0)
-    , trans_color(nullptr)
 {
-    this->png = ::png_create_read_struct(PNG_LIBPNG_VER_STRING, this, &png_image_reader::png_error_callback, &png_image_reader::png_warning_callback);
-    this->info = ::png_create_info_struct(this->png);
-    this->end_info = ::png_create_info_struct(this->png);
+    if (!::png_sig_cmp(bytes, 0, size))
+    {
+        this->data_reader = std::make_shared<ff::data_reader>(std::make_shared<ff::data_static>(bytes, size));
+    }
+
+    this->init_png_structs();
 }
+
+ff::png_image_reader::png_image_reader(const std::shared_ptr<ff::reader_base>& data_reader)
+    : data_reader(data_reader)
+{}
 
 ff::png_image_reader::~png_image_reader()
 {
     ::png_destroy_read_struct(&this->png, &this->info, &this->end_info);
+}
+
+void ff::png_image_reader::init_png_structs()
+{
+    this->png = ::png_create_read_struct(PNG_LIBPNG_VER_STRING, this, &png_image_reader::png_error_callback, &png_image_reader::png_warning_callback);
+    this->info = ::png_create_info_struct(this->png);
+    this->end_info = ::png_create_info_struct(this->png);
 }
 
 std::unique_ptr<DirectX::ScratchImage> ff::png_image_reader::read(DXGI_FORMAT requested_format)
@@ -85,7 +82,7 @@ const std::string& ff::png_image_reader::error() const
 
 std::unique_ptr<DirectX::ScratchImage> ff::png_image_reader::internal_read(DXGI_FORMAT requested_format)
 {
-    if (::png_sig_cmp(this->read_pos, 0, this->end_pos - this->read_pos) != 0)
+    if (!this->data_reader)
     {
         return nullptr;
     }
@@ -226,9 +223,7 @@ void ff::png_image_reader::on_png_warning(const char* text)
 
 void ff::png_image_reader::on_png_read(uint8_t* data, size_t size)
 {
-    size = std::min<size_t>(size, this->end_pos - this->read_pos);
-    ::memcpy(data, this->read_pos, size);
-    this->read_pos += size;
+    this->data_reader->read(data, size);
 }
 
 ff::png_image_writer::png_image_writer(ff::writer_base& writer)

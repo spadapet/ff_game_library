@@ -72,11 +72,21 @@ namespace ff::test::dx12
                 Assert::IsTrue(saved);
             }
 
-            ff::file_mem_mapped result_mem(file_path);
-            ff::data_static expect_mem(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_DX12_DRAW_SHAPE_RESULT));
+            {
+                ff::file_mem_mapped actual_mem(file_path);
+                ff::png_image_reader actual_png(actual_mem.data(), actual_mem.size());
+                std::unique_ptr<DirectX::ScratchImage> actual_image = actual_png.read();
+                Assert::IsNotNull(actual_image.get());
 
-            Assert::AreEqual(expect_mem.size(), result_mem.size());
-            Assert::IsTrue(std::memcmp(expect_mem.data(), result_mem.data(), expect_mem.size()) == 0);
+                ff::data_static expect_mem(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_DX12_DRAW_SHAPE_RESULT));
+                ff::png_image_reader expect_png(expect_mem.data(), expect_mem.size());
+                std::unique_ptr<DirectX::ScratchImage> expect_image = actual_png.read();
+                Assert::IsNotNull(expect_image.get());
+
+                Assert::AreEqual(expect_image->GetPixelsSize(), actual_image->GetPixelsSize());
+                Assert::IsTrue(std::memcmp(&expect_image->GetMetadata(), &actual_image->GetMetadata(), sizeof(DirectX::TexMetadata)) == 0);
+                Assert::IsTrue(std::memcmp(expect_image->GetPixels(), actual_image->GetPixels(), expect_image->GetPixelsSize()) == 0);
+            }
         }
     };
 }

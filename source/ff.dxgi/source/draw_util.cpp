@@ -841,9 +841,6 @@ void ff::dxgi::draw_util::draw_device_base::destroy()
     this->geometry_constants_0 = ff::dxgi::draw_util::geometry_shader_constants_0{};
     this->geometry_constants_1 = ff::dxgi::draw_util::geometry_shader_constants_1{};
     this->pixel_constants_0 = ff::dxgi::draw_util::pixel_shader_constants_0{};
-    this->geometry_constants_hash_0 = 0;
-    this->geometry_constants_hash_1 = 0;
-    this->pixel_constants_hash_0 = 0;
 
     this->sampler_stack.clear();
     this->custom_context_stack.clear();
@@ -991,13 +988,7 @@ void ff::dxgi::draw_util::draw_device_base::init_geometry_constant_buffer_0(ff::
 void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_0()
 {
     this->geometry_constants_0.projection = this->view_matrix;
-
-    size_t hash0 = ff::stable_hash_func(this->geometry_constants_0);
-    if (!this->geometry_constants_hash_0 || this->geometry_constants_hash_0 != hash0)
-    {
-        this->geometry_constants_buffer_0().update(*this->command_context_, &this->geometry_constants_0, sizeof(ff::dxgi::draw_util::geometry_shader_constants_0));
-        this->geometry_constants_hash_0 = hash0;
-    }
+    this->geometry_constants_buffer_0().update(*this->command_context_, &this->geometry_constants_0, sizeof(ff::dxgi::draw_util::geometry_shader_constants_0));
 }
 
 void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_1()
@@ -1011,20 +1002,12 @@ void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_1()
         this->geometry_constants_1.model[iter.second] = iter.first;
     }
 
-    size_t hash1 = world_matrix_count
-        ? ff::stable_hash_bytes(this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model))
-        : 0;
-
-    if (!this->geometry_constants_hash_1 || this->geometry_constants_hash_1 != hash1)
-    {
-        this->geometry_constants_hash_1 = hash1;
 #if DEBUG
-        size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * ff::dxgi::draw_util::MAX_TRANSFORM_MATRIXES;
+    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * ff::dxgi::draw_util::MAX_TRANSFORM_MATRIXES;
 #else
-        size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;
+    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;
 #endif
-        this->geometry_constants_buffer_1().update(*this->command_context_, this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
-    }
+    this->geometry_constants_buffer_1().update(*this->command_context_, this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
 }
 
 void ff::dxgi::draw_util::draw_device_base::update_pixel_constant_buffer_0()
@@ -1039,12 +1022,7 @@ void ff::dxgi::draw_util::draw_device_base::update_pixel_constant_buffer_0()
             rect.top = size.y;
         }
 
-        size_t hash0 = ff::stable_hash_func(this->pixel_constants_0);
-        if (!this->pixel_constants_hash_0 || this->pixel_constants_hash_0 != hash0)
-        {
-            this->pixel_constants_buffer_0().update(*this->command_context_, &this->pixel_constants_0, sizeof(ff::dxgi::draw_util::pixel_shader_constants_0));
-            this->pixel_constants_hash_0 = hash0;
-        }
+        this->pixel_constants_buffer_0().update(*this->command_context_, &this->pixel_constants_0, sizeof(ff::dxgi::draw_util::pixel_shader_constants_0));
     }
 }
 
