@@ -48,11 +48,7 @@ namespace ff::test::graphics
             Assert::IsTrue(saved);
 
             std::filesystem::path file_path = temp_path / "draw_device_test.0.png";
-            ff::file_mem_mapped result_mem(file_path);
-            ff::data_static expect_mem(ff::get_hinstance(), RT_RCDATA, MAKEINTRESOURCE(ID_DRAW_TEST_RESULT));
-
-            Assert::AreEqual(expect_mem.size(), result_mem.size());
-            Assert::IsTrue(std::memcmp(expect_mem.data(), result_mem.data(), expect_mem.size()) == 0);
+            ff::test::assert_image(file_path, ID_DRAW_TEST_RESULT);
         }
     };
 }
