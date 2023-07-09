@@ -26,6 +26,8 @@ namespace
             this->keys[VK_RMENU] = Noesis::Key_RightAlt;
             this->keys[VK_LWIN] = Noesis::Key_LWin;
             this->keys[VK_RWIN] = Noesis::Key_RWin;
+            this->keys[VK_APPS] = Noesis::Key_Apps;
+            this->keys[VK_SLEEP] = Noesis::Key_Sleep;
             this->keys[VK_ESCAPE] = Noesis::Key_Escape;
 
             this->keys[VK_SPACE] = Noesis::Key_Space;
