@@ -257,11 +257,19 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 #endif
         });
 
-        if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)) ||
-            FAILED(this->swap_chain->SetMaximumFrameLatency(ff::dx12::target_window::BACK_BUFFER_COUNT)))
+        if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)))
         {
             ff::dx12::device_fatal_error("Swap chain creation failed");
             return false;
+        }
+
+        if ((desc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) != 0)
+        {
+            if (FAILED(this->swap_chain->SetMaximumFrameLatency(1))) //ff::dx12::target_window::BACK_BUFFER_COUNT)))
+            {
+                ff::dx12::device_fatal_error("Swap chain failed to set frame latency");
+                return false;
+            }
         }
     }
 
@@ -281,7 +289,13 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
     }
 
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
-    this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
+    {
+        DXGI_SWAP_CHAIN_DESC1 desc;
+        if (SUCCEEDED(this->swap_chain->GetDesc1(&desc)) && (desc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) != 0)
+        {
+            this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
+        }
+    }
 
     for (size_t i = 0; i < ff::dx12::target_window::BACK_BUFFER_COUNT; i++)
     {
