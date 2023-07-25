@@ -12,7 +12,12 @@ namespace ff
         std::function<double()> get_time_scale_func;
         std::function<ff::state::advance_t()> get_advance_type_func;
         std::function<bool(DirectX::XMFLOAT4&)> get_clear_color_func;
-        bool allow_full_screen{ true };
+
+        // For target window
+        size_t buffer_count = 2;
+        size_t frame_latency = 1;
+        bool vsync = true;
+        bool allow_full_screen = true;
 #if UWP_APP
         bool use_swap_chain_panel{};
 #endif

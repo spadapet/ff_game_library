@@ -573,7 +573,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::app_time = ff::app_time_t{};
     ::app_time.time_scale = 1.0;
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
-    ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.allow_full_screen);
+    ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     ff::internal::app::load_settings();

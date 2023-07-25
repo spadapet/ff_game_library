@@ -12,7 +12,7 @@ ff::dx12::fence_value::fence_value(ff::dx12::fence* fence, uint64_t value)
     , value_(value)
 {}
 
-ff::dx12::fence_value::fence_value(fence_value && other) noexcept
+ff::dx12::fence_value::fence_value(fence_value&& other) noexcept
 {
     *this = std::move(other);
 }

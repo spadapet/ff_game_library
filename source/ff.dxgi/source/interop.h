@@ -50,7 +50,7 @@ namespace ff::dxgi
         std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const DirectX::XMFLOAT4* optimized_clear_color = nullptr) const;
         std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& scratch, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown) const;
         std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count = 1) const;
-        std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, bool allow_full_screen = true) const;
+        std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, size_t buffer_count = 0, size_t frame_latency = 0, bool vsync = true, bool allow_full_screen = true) const;
         std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(const std::shared_ptr<ff::dxgi::texture_base>& texture, size_t array_start = 0, size_t array_count = 0, size_t mip_level = 0, int dmdo_rotate = DMDO_DEFAULT, double dpi_scale = 1.0) const;
         std::unique_ptr<ff::dxgi::draw_device_base> create_draw_device() const;
 
@@ -66,7 +66,7 @@ namespace ff::dxgi
         std::function<std::shared_ptr<ff::dxgi::texture_base>(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)> create_render_texture_;
         std::function<std::shared_ptr<ff::dxgi::texture_base>(const std::shared_ptr<DirectX::ScratchImage>&, ff::dxgi::sprite_type)> create_static_texture_;
         std::function<std::shared_ptr<ff::dxgi::depth_base>(ff::point_size size, size_t sample_count)> create_depth_;
-        std::function<std::shared_ptr<ff::dxgi::target_window_base>(ff::window*, bool)> create_target_for_window_;
+        std::function<std::shared_ptr<ff::dxgi::target_window_base>(ff::window*, size_t, size_t, bool, bool)> create_target_for_window_;
         std::function<std::shared_ptr<ff::dxgi::target_base>(const std::shared_ptr<ff::dxgi::texture_base>&, size_t array_start, size_t array_count, size_t mip_level, int dmdo_rotate, double dpi_scale)> create_target_for_texture_;
         std::function<std::unique_ptr<ff::dxgi::draw_device_base>()> create_draw_device_;
     };

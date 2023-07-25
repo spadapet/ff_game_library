@@ -8,9 +8,15 @@ static void run_app()
     ff::init_ui_params ui_params{};
 
     app_params.create_initial_state_func = []()
-    {
-        return std::make_shared<StateT>();
-    };
+        {
+            return std::make_shared<StateT>();
+        };
+
+    app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
+        {
+            color = DirectX::XMFLOAT4(0, 0.125, 0, 1);
+            return true;
+        };
 
     ff::init_app init_app(app_params, ui_params);
     if (init_app)

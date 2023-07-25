@@ -62,11 +62,11 @@ static std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, s
         : std::make_shared<ff::dx12::depth>(sample_count);
 }
 
-static std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, bool allow_full_screen)
+static std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, size_t buffer_count, size_t frame_latency, bool vsync, bool allow_full_screen)
 {
     window = !window ? ff::window::main() : window;
     allow_full_screen = allow_full_screen && (window == ff::window::main());
-    return std::make_shared<ff::dx12::target_window>(window, allow_full_screen);
+    return std::make_shared<ff::dx12::target_window>(window, buffer_count, frame_latency, vsync, allow_full_screen);
 }
 
 static std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
