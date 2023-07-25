@@ -171,15 +171,9 @@ void ff::dx12::target_window::before_resize()
     this->before_reset();
 }
 
-bool ff::dx12::target_window::internal_reset(const ff::window_size& size, size_t buffer_count, size_t frame_latency)
+bool ff::dx12::target_window::internal_reset(size_t buffer_count, size_t frame_latency)
 {
-    ff::log::write(ff::log::type::dx12_target,
-        "Swap chain reset.",
-        " Pixels=", size.physical_pixel_size().x, ",", size.physical_pixel_size().y,
-        " Logical=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
-        " Buffers=", buffer_count,
-        " Latency=", frame_latency,
-        " VSync=", this->vsync_);
+    assert_ret_val(this->window, false);
 
     BOOL full_screen{};
 #if !UWP_APP
@@ -193,6 +187,8 @@ bool ff::dx12::target_window::internal_reset(const ff::window_size& size, size_t
 
     this->before_resize();
     this->swap_chain.Reset();
+
+    ff::window_size size = this->window->size();
     assert_ret_val(this->internal_size(size, buffer_count, frame_latency), false);
 
     if (this->allow_full_screen_ && full_screen)
@@ -243,7 +239,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
     if (this->swap_chain && (this->frame_latency() == 0) != (frame_latency == 0)) // on game thread
     {
         // Turn frame latency on/off requires recreating everything
-        if (!this->internal_reset(size, buffer_count, frame_latency))
+        if (!this->internal_reset(buffer_count, frame_latency))
         {
             ff::dx12::device_fatal_error("Swap chain failed to change frame latency");
             return false;
@@ -254,8 +250,8 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
 
     ff::log::write(ff::log::type::dx12_target,
         "Swap chain set size.",
-        " Pixels=", size.physical_pixel_size().x, ",", size.physical_pixel_size().y,
-        " Logical=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
+        " Size=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
+        " Rotate=", size.rotated_degrees(),
         " Buffers=", buffer_count,
         " Latency=", frame_latency,
         " VSync=", this->vsync_);
@@ -527,10 +523,7 @@ void ff::dx12::target_window::before_reset()
 
 bool ff::dx12::target_window::reset()
 {
-    assert_ret_val(this->window, false);
-
-    ff::window_size size = this->window->size();
-    return this->internal_reset(size, this->buffer_count(), this->frame_latency());
+    return this->internal_reset(this->buffer_count(), this->frame_latency());
 }
 
 void ff::dx12::target_window::handle_message(ff::window_message& msg)
@@ -581,9 +574,10 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
 #if !UWP_APP
                 if (::GetKeyState(VK_SHIFT) < 0)
                 {
-                    // Since this happens on the UI thread, the game thread could be in the middle of anything.
-                    // It's risky to access the DX12 device from this thread, but this is for debugging only.
-                    ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
+                    ff::thread_dispatch::get_game()->post([]()
+                    {
+                        ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
+                    });
                 }
                 else
 #endif

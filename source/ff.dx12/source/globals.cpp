@@ -27,6 +27,7 @@ static size_t adapters_hash;
 static size_t outputs_hash;
 static bool supports_create_heap_not_resident_;
 static bool supports_mesh_shaders_;
+static bool simulate_device_invalid;
 
 // Device children
 static std::mutex device_children_mutex;
@@ -327,6 +328,7 @@ static void destroy_d3d(bool for_reset)
 
     ::supports_create_heap_not_resident_ = false;
     ::supports_mesh_shaders_ = false;
+    ::simulate_device_invalid = false;
     ::outputs_hash = 0;
     ::adapter.Reset();
     ::device.Reset();
@@ -394,7 +396,7 @@ bool ff::dx12::reset_device(bool force)
         }
     }
 
-    if (!force && FAILED(::device->GetDeviceRemovedReason()))
+    if (!force && !ff::dx12::device_valid())
     {
         ff::log::write(ff::log::type::dx12, "DX12 device was reset/removed");
         force = true;
@@ -504,24 +506,16 @@ void ff::dx12::trim_device()
 
 bool ff::dx12::device_valid()
 {
-    return ::device->GetDeviceRemovedReason() == S_OK;
+    return !::simulate_device_invalid && ::device && ::device->GetDeviceRemovedReason() == S_OK;
 }
 
 void ff::dx12::device_fatal_error(std::string_view reason)
 {
-    Microsoft::WRL::ComPtr<ID3D12Device5> device5;
-    if (SUCCEEDED(::device.As(&device5)))
-    {
-        ff::log::write(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
+    ff::log::write(ff::log::type::dx12, "Removing DX12 device after fatal error: ", reason);
 
-        if (ff::dx12::device_valid())
-        {
-            device5->RemoveDevice();
-        }
-    }
-    else
+    if (ff::dx12::device_valid())
     {
-        ff::log::write_debug_fail(ff::log::type::dx12, "DX12 device does not support removal", reason);
+        ::simulate_device_invalid = true;
     }
 }
 

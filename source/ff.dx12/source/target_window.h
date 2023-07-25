@@ -57,7 +57,7 @@ namespace ff::dx12
 
         void handle_message(ff::window_message& msg);
         void before_resize();
-        bool internal_reset(const ff::window_size& size, size_t buffer_count, size_t frame_latency);
+        bool internal_reset(size_t buffer_count, size_t frame_latency);
         bool internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency);
 
         ff::window* window{};

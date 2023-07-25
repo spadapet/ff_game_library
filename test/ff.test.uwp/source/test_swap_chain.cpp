@@ -11,7 +11,7 @@ winrt::test_uwp::implementation::test_swap_chain::test_swap_chain()
 
 void winrt::test_uwp::implementation::test_swap_chain::loaded(const winrt::Windows::Foundation::IInspectable& sender, const winrt::Windows::UI::Xaml::RoutedEventArgs& args)
 {
-    this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), true);
+    this->target = std::make_unique<ff::dx12::target_window>(ff::window::main(), 2, 0, false, true);
 
     this->thread_handle = std::jthread([this](std::stop_token stop)
         {

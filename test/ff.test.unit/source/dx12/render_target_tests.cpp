@@ -16,9 +16,12 @@ namespace ff::test::graphics
 
         TEST_METHOD(target_window)
         {
-            ff::dx12::target_window target(ff::window::main(), true);
+            ff::dx12::target_window target(ff::window::main(), 2, 1, true, true);
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
+            Assert::AreEqual<size_t>(2, target.buffer_count());
+            Assert::AreEqual<size_t>(1, target.frame_latency());
+            Assert::IsTrue(target.vsync());
             Assert::IsTrue(target.dx12_target_texture());
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());

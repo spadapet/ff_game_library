@@ -14,13 +14,10 @@ size_t ff::dx12::descriptor_buffer_free_list::range_t::after_end() const
 }
 
 ff::dx12::descriptor_buffer_free_list::descriptor_buffer_free_list(ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count)
-    : descriptor_heap(descriptor_heap)
-    , descriptor_start(start)
+    : descriptor_start(start)
     , descriptor_count(count)
 {
-    D3D12_DESCRIPTOR_HEAP_DESC desc = this->descriptor_heap->GetDesc();
-    this->descriptor_size = static_cast<size_t>(ff::dx12::device()->GetDescriptorHandleIncrementSize(desc.Type));
-
+    this->set(descriptor_heap);
     this->free_ranges.emplace_back(range_t{ 0, this->descriptor_count });
 }
 
@@ -31,16 +28,22 @@ ff::dx12::descriptor_buffer_free_list::~descriptor_buffer_free_list()
 
 D3D12_DESCRIPTOR_HEAP_DESC ff::dx12::descriptor_buffer_free_list::set(ID3D12DescriptorHeap* descriptor_heap)
 {
-    D3D12_DESCRIPTOR_HEAP_DESC desc{};
-
+    D3D12_DESCRIPTOR_HEAP_DESC old_desc{};
     if (this->descriptor_heap)
     {
-        desc = this->descriptor_heap->GetDesc();
+        old_desc = this->descriptor_heap->GetDesc();
     }
 
     this->descriptor_heap = descriptor_heap;
+    this->descriptor_size = 0;
 
-    return desc;
+    if (this->descriptor_heap)
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC desc = this->descriptor_heap->GetDesc();
+        this->descriptor_size = static_cast<size_t>(ff::dx12::device()->GetDescriptorHandleIncrementSize(desc.Type));
+    }
+
+    return old_desc;
 }
 
 ff::dx12::descriptor_range ff::dx12::descriptor_buffer_free_list::alloc_range(size_t count)
@@ -134,12 +137,10 @@ size_t ff::dx12::descriptor_buffer_ring::range_t::after_end() const
 }
 
 ff::dx12::descriptor_buffer_ring::descriptor_buffer_ring(ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count)
-    : descriptor_heap(descriptor_heap)
-    , descriptor_start(start)
+    : descriptor_start(start)
     , descriptor_count(count)
 {
-    D3D12_DESCRIPTOR_HEAP_DESC desc = this->descriptor_heap->GetDesc();
-    this->descriptor_size = static_cast<size_t>(ff::dx12::device()->GetDescriptorHandleIncrementSize(desc.Type));
+    this->set(descriptor_heap);
 }
 
 ff::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
@@ -150,8 +151,14 @@ ff::dx12::descriptor_buffer_ring::~descriptor_buffer_ring()
 void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeap* descriptor_heap)
 {
     this->descriptor_heap = descriptor_heap;
+    this->descriptor_size = 0;
 
-    if (!this->descriptor_heap)
+    if (this->descriptor_heap)
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC desc = this->descriptor_heap->GetDesc();
+        this->descriptor_size = static_cast<size_t>(ff::dx12::device()->GetDescriptorHandleIncrementSize(desc.Type));
+    }
+    else
     {
         std::scoped_lock lock(this->ranges_mutex);
         this->ranges.clear();
