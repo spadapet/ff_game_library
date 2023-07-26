@@ -10,7 +10,6 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\event_perf.cpp" />
     <ClCompile Include="source\input_device_events.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\test_app.cpp" />
