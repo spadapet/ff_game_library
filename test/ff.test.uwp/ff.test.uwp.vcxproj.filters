@@ -40,9 +40,6 @@
     <Page Include="source\test_input_devices.xaml">
       <Filter>source</Filter>
     </Page>
-    <Page Include="source\test_swap_chain.xaml">
-      <Filter>source</Filter>
-    </Page>
     <Page Include="source\test_ui.xaml">
       <Filter>source</Filter>
     </Page>
@@ -104,8 +101,6 @@
     <None Include="ui_assets\theme\PT Root UI_Bold.otf">
       <Filter>ui_assets\theme</Filter>
     </None>
-    <None Include="$(NoesisDll)" />
-    <None Include="$(WinPixDll)" />
     <None Include="$(NoesisDll)" />
     <None Include="$(WinPixDll)" />
   </ItemGroup>

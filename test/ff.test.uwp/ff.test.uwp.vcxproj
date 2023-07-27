@@ -21,9 +21,6 @@
     <ClInclude Include="source\test_input_devices.h">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="source\test_swap_chain.h">
-      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
-    </ClInclude>
     <ClInclude Include="source\test_ui.h">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClInclude>
@@ -40,9 +37,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="source\test_input_devices.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="source\test_swap_chain.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="source\test_ui.xaml">
@@ -96,9 +90,6 @@
     <ClCompile Include="source\test_input_devices.cpp">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
     </ClCompile>
-    <ClCompile Include="source\test_swap_chain.cpp">
-      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
-    </ClCompile>
     <ClCompile Include="source\test_ui.cpp">
       <DependentUpon>source\test_ui.xaml</DependentUpon>
     </ClCompile>
@@ -120,10 +111,6 @@
     </Midl>
     <Midl Include="source\test_input_devices.idl">
       <DependentUpon>source\test_input_devices.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Midl>
-    <Midl Include="source\test_swap_chain.idl">
-      <DependentUpon>source\test_swap_chain.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Midl>
     <Midl Include="source\test_ui.idl">
