@@ -13,6 +13,7 @@
     <ClCompile Include="source\assert.cpp" />
     <ClCompile Include="source\co_awaiters.cpp" />
     <ClCompile Include="source\co_task.cpp" />
+    <ClCompile Include="source\perf_timer.cpp" />
     <ClCompile Include="source\scope_exit.cpp" />
     <ClCompile Include="source\exceptions.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
@@ -40,6 +41,7 @@
     <ClInclude Include="source\constants.h" />
     <ClInclude Include="source\co_awaiters.h" />
     <ClInclude Include="source\co_task.h" />
+    <ClInclude Include="source\perf_timer.h" />
     <ClInclude Include="source\stash.h" />
     <ClInclude Include="source\scope_exit.h" />
     <ClInclude Include="source\exceptions.h" />

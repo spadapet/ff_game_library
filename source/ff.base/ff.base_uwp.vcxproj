@@ -20,6 +20,7 @@
     <ClCompile Include="source\log.cpp" />
     <ClCompile Include="source\math.cpp" />
     <ClCompile Include="source\memory.cpp" />
+    <ClCompile Include="source\perf_timer.cpp" />
     <ClCompile Include="source\scope_exit.cpp" />
     <ClCompile Include="source\signal.cpp" />
     <ClCompile Include="source\stable_hash.cpp" />
@@ -50,9 +51,9 @@
     <ClInclude Include="source\log.h" />
     <ClInclude Include="source\math.h" />
     <ClInclude Include="source\memory.h" />
+    <ClInclude Include="source\perf_timer.h" />
     <ClInclude Include="source\point.h" />
     <ClInclude Include="source\pool_allocator.h" />
-    <ClInclude Include="source\pool_stash.h" />
     <ClInclude Include="source\push_back.h" />
     <ClInclude Include="source\rect.h" />
     <ClInclude Include="source\scope_exit.h" />

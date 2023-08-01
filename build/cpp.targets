@@ -69,7 +69,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Full</Optimization>
       <PreprocessorDefinitions>NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Profile' ">PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(Configuration)' != 'Release' ">PROFILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck></SDLCheck>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' == 'Debug' ">

@@ -15,6 +15,7 @@
 #include "../source/ff.base/source/log.h"
 #include "../source/ff.base/source/math.h"
 #include "../source/ff.base/source/memory.h"
+#include "../source/ff.base/source/perf_timer.h"
 #include "../source/ff.base/source/point.h"
 #include "../source/ff.base/source/pool_allocator.h"
 #include "../source/ff.base/source/push_back.h"

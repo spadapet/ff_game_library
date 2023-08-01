@@ -107,18 +107,6 @@
   </Choose>
 
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Profile|Win32">
-      <Configuration>Profile</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -131,17 +119,17 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <!--<ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Debug|ARM">
+    <!--<ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Debug|ARM64">
       <Configuration>Debug</Configuration>
-      <Platform>ARM</Platform>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Profile|ARM">
+    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Profile|ARM64">
       <Configuration>Profile</Configuration>
-      <Platform>ARM</Platform>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Release|ARM">
+    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Release|ARM64">
       <Configuration>Release</Configuration>
-      <Platform>ARM</Platform>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>-->
   </ItemGroup>
 
