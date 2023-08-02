@@ -333,23 +333,23 @@ void ff::debug_state::update_stats()
         this->rps_counter = 0;
     }
 
-    const double freq_d = ff::timer::raw_frequency_double();
+    const double freq_1d = 1.0 / ff::timer::raw_frequency_double();
 
     if (update_fast_numbers || !this->advance_count)
     {
         this->advance_count = ft.advance_count;
-        this->advance_time_total = advance_time_total_int / freq_d;
+        this->advance_time_total = advance_time_total_int * freq_1d;
         this->advance_time_average = ft.advance_count ? this->advance_time_total / std::min(ft.advance_count, ft.advance_times.size()) : 0.0;
-        this->vsync_time = ft.vsync_time / freq_d;
-        this->render_time = ft.render_time / freq_d;
-        this->flip_time = ft.flip_time / freq_d;
+        this->vsync_time = ft.vsync_time * freq_1d;
+        this->render_time = ft.render_time * freq_1d;
+        this->flip_time = ft.flip_time * freq_1d;
         this->bank_time = gt.unused_advance_seconds;
     }
 
     ff::debug_state::frame_t frame_info;
-    frame_info.advance_time = (float)(advance_time_total_int / freq_d);
-    frame_info.render_time = (float)(ft.render_time / freq_d);
-    frame_info.total_time = (float)((advance_time_total_int + ft.vsync_time + ft.render_time + ft.flip_time) / freq_d);
+    frame_info.advance_time = (float)(advance_time_total_int * freq_1d);
+    frame_info.render_time = (float)(ft.render_time * freq_1d);
+    frame_info.total_time = (float)((advance_time_total_int + ft.vsync_time + ft.render_time + ft.flip_time) * freq_1d);
 
     this->frames[this->frames_end] = frame_info;
     this->frames_end = (this->frames_end + 1) % this->frames.size();

@@ -9,7 +9,8 @@ static int64_t get_raw_frequency()
 }
 
 static int64_t raw_frequency = ::get_raw_frequency();
-static double raw_frequency_d = static_cast<double>(::get_raw_frequency());
+static double raw_frequency_d = static_cast<double>(::raw_frequency);
+static double raw_frequency_1d = 1.0 / ::raw_frequency_d;
 
 ff::timer::timer()
     : tick_count_(0)
@@ -34,11 +35,11 @@ double ff::timer::tick(double forced_offset)
     double oldTime = this->seconds_;
 
     this->cur_time = ff::timer::current_raw_time();
-    this->clock_seconds_ = (this->cur_time - this->reset_time) / ::raw_frequency_d;
+    this->clock_seconds_ = (this->cur_time - this->reset_time) * ::raw_frequency_1d;
 
     if (forced_offset < 0)
     {
-        this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) / ::raw_frequency_d);
+        this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) * ::raw_frequency_1d);
         this->pass_seconds = this->seconds_ - oldTime;
     }
     else
@@ -150,7 +151,7 @@ double ff::timer::raw_frequency_double()
 // static
 double ff::timer::seconds_between_raw(int64_t start, int64_t end)
 {
-    return (end - start) / ::raw_frequency_d;
+    return (end - start) * ::raw_frequency_1d;
 }
 
 int64_t ff::timer::last_tick_raw_time() const
