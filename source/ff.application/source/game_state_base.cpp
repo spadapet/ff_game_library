@@ -81,7 +81,7 @@ ff::dxgi::palette_base* ff::game::app_state_base::palette()
 
 bool ff::game::app_state_base::allow_debug_commands()
 {
-#if defined(PROFILE)
+#if PROFILE_APP
     return true;
 #else
     return false;
