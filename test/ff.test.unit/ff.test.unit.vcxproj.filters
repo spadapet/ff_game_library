@@ -158,6 +158,9 @@
     <ClCompile Include="source\base\stash_tests.cpp">
       <Filter>source\base</Filter>
     </ClCompile>
+    <ClCompile Include="source\base\perf_timer_tests.cpp">
+      <Filter>source\base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

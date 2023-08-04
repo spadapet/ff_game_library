@@ -17,6 +17,7 @@
     <ClCompile Include="source\base\filesystem_tests.cpp" />
     <ClCompile Include="source\base\fixed_tests.cpp" />
     <ClCompile Include="source\base\frame_allocator_tests.cpp" />
+    <ClCompile Include="source\base\perf_timer_tests.cpp" />
     <ClCompile Include="source\base\point_tests.cpp" />
     <ClCompile Include="source\base\pool_allocator_tests.cpp" />
     <ClCompile Include="source\base\rect_tests.cpp" />
