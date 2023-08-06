@@ -49,6 +49,12 @@ std::string ff::string::from_acp(std::string_view str)
     return str8;
 }
 
+std::string_view ff::string::indent_string(size_t spaces)
+{
+    static const std::string str(64, ' ');
+    return std::string_view(str.begin(), str.begin() + std::min<size_t>(spaces, str.size()));
+}
+
 bool ff::string::starts_with(std::string_view str, std::string_view str_start)
 {
     return str.size() >= str_start.size() && !str.compare(0, str_start.size(), str_start);

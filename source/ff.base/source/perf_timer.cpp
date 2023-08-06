@@ -16,11 +16,6 @@ ff::perf_counter::perf_counter(ff::perf_measures& measures, std::string_view nam
     , color(color)
 {}
 
-ff::perf_measures::perf_measures()
-{
-    this->reset();
-}
-
 ff::perf_measures& ff::perf_measures::game()
 {
     return ::perf_measures_game;
@@ -32,41 +27,44 @@ size_t ff::perf_measures::create()
     return this->counters++;
 }
 
-void ff::perf_measures::start(const ff::perf_counter& counter)
+bool ff::perf_measures::start(const ff::perf_counter& counter)
 {
-    if (!this->disabled)
+    if (this->disabled || counter.index >= this->entries.size())
     {
-        ff::perf_counter_entry& entry = this->entries[counter.index];
-        entry.count++;
+        return false;
+    }
 
-        if (!entry.counter)
+    ff::perf_counter_entry& entry = this->entries[counter.index];
+    entry.count++;
+
+    if (!entry.counter)
+    {
+        // First time a counter is hit
+        entry.counter = &counter;
+        entry.level = this->level;
+
+        if (!this->first_entry)
         {
-            // First time a counter is hit
-            entry.counter = &counter;
-            entry.level = this->level;
-
-            if (!this->first_entry)
-            {
-                this->first_entry = &entry;
-            }
-
-            if (this->last_entry)
-            {
-                this->last_entry->next = &entry;
-            }
-
-            this->last_entry = &entry;
+            this->first_entry = &entry;
+        }
+        else
+        {
+            this->last_entry->next = &entry;
         }
 
-        this->level++;
+        this->last_entry = &entry;
     }
+
+    this->level++;
+    return true;
 }
 
 void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
 {
-    if (!this->disabled)
-    {
-    }
+    ff::perf_counter_entry& entry = this->entries[counter.index];
+    assert(entry.counter == &counter);
+    entry.ticks += ticks;
+    this->level--;
 }
 
 const ff::perf_counter_entry* ff::perf_measures::first() const
@@ -92,30 +90,23 @@ bool ff::perf_measures::enabled() const
 
 void ff::perf_measures::enabled(bool value)
 {
-    if (value == this->disabled)
-    {
-        this->disabled = !value;
-
-        if (!this->disabled)
-        {
-            this->reset();
-        }
-    }
+    this->disabled = !value;
 }
 
 #if PROFILE_APP
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter)
-    : counter(counter)
+    : counter(counter.measures.start(counter) ? &counter : nullptr)
     , start(__rdtsc())
-{
-    this->counter.measures.start(this->counter);
-}
+{}
 
 ff::perf_timer::~perf_timer()
 {
-    int64_t end = __rdtsc();
-    this->counter.measures.end(this->counter, (end - this->start) * (end > this->start));
+    if (this->counter)
+    {
+        int64_t end = __rdtsc();
+        this->counter->measures.end(*this->counter, (end - this->start) * (end > this->start));
+    }
 }
 
 #else

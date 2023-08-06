@@ -41,8 +41,19 @@ namespace ff::test::base
             Assert::IsFalse(measures.enabled());
             Assert::IsNotNull(measures.first());
 
-            measures.enabled(true);
-            Assert::IsNull(measures.first());
+            for (const ff::perf_counter_entry* entry = measures.first(); entry; entry = entry->next)
+            {
+                ff::log::write(ff::log::type::test, ff::string::indent_string(entry->level * 2),
+                    "Counter:", entry->counter->name,
+                    ", Ticks:", entry->ticks,
+                    ", Count:", entry->count);
+            }
+
+            if (!::IsDebuggerPresent())
+            {
+                double percent = static_cast<double>(measures.first()->next->ticks) / static_cast<double>(measures.first()->ticks);
+                Assert::IsTrue(percent > 0.58 && percent < 0.62);
+            }
         }
     };
 }

@@ -51,12 +51,12 @@ namespace ff
     class perf_measures
     {
     public:
-        perf_measures();
+        perf_measures() = default;
 
         static ff::perf_measures& game();
 
         size_t create();
-        void start(const ff::perf_counter& counter);
+        bool start(const ff::perf_counter& counter);
         void end(const ff::perf_counter& counter, int64_t ticks);
         const ff::perf_counter_entry* first() const;
         void reset();
@@ -92,7 +92,7 @@ namespace ff
         perf_timer& operator=(perf_timer&& other) = delete;
 
 #if PROFILE_APP
-        const ff::perf_counter& counter;
+        const ff::perf_counter* counter;
         int64_t start;
 #endif
     };
