@@ -2,7 +2,6 @@
 #include "app.h"
 #include "app_time.h"
 #include "debug_state.h"
-#include "frame_time.h"
 
 using namespace std::string_view_literals;
 
@@ -309,15 +308,8 @@ void ff::debug_state::debug_page_toggle(size_t page, size_t index)
 
 void ff::debug_state::update_stats()
 {
-    const ff::frame_time_t& ft = ff::frame_time();
     const ff::app_time_t& gt = ff::app_time();
     bool update_fast_numbers = !(this->fast_number_counter++ % 8);
-
-    INT64 advance_time_total_int = 0;
-    for (size_t i = 0; i < ft.advance_count && i < ft.advance_times.size(); i++)
-    {
-        advance_time_total_int += ft.advance_times[i];
-    }
 
     this->mem_stats = ff::memory::get_allocation_stats();
     this->total_advance_count = gt.advance_count;
@@ -337,19 +329,19 @@ void ff::debug_state::update_stats()
 
     if (update_fast_numbers || !this->advance_count)
     {
-        this->advance_count = ft.advance_count;
-        this->advance_time_total = advance_time_total_int * freq_1d;
-        this->advance_time_average = ft.advance_count ? this->advance_time_total / std::min(ft.advance_count, ft.advance_times.size()) : 0.0;
-        this->vsync_time = ft.vsync_time * freq_1d;
-        this->render_time = ft.render_time * freq_1d;
-        this->flip_time = ft.flip_time * freq_1d;
+        this->advance_count = 0;
+        this->advance_time_total = 0;
+        this->advance_time_average = 0;
+        this->vsync_time = 0;
+        this->render_time = 0;
+        this->flip_time = 0;
         this->bank_time = gt.unused_advance_seconds;
     }
 
     ff::debug_state::frame_t frame_info;
-    frame_info.advance_time = (float)(advance_time_total_int * freq_1d);
-    frame_info.render_time = (float)(ft.render_time * freq_1d);
-    frame_info.total_time = (float)((advance_time_total_int + ft.vsync_time + ft.render_time + ft.flip_time) * freq_1d);
+    frame_info.advance_time = 0;
+    frame_info.render_time = 0;
+    frame_info.total_time = 0;
 
     this->frames[this->frames_end] = frame_info;
     this->frames_end = (this->frames_end + 1) % this->frames.size();

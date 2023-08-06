@@ -31,7 +31,6 @@
     <ClInclude Include="source\debug_pages.h" />
     <ClInclude Include="source\debug_state.h" />
     <ClInclude Include="source\filesystem.h" />
-    <ClInclude Include="source\frame_time.h" />
     <ClInclude Include="source\game_init.h" />
     <ClInclude Include="source\game_state_base.h" />
     <ClInclude Include="source\init.h" />

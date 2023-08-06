@@ -3,7 +3,6 @@
 #include "app_time.h"
 #include "debug_state.h"
 #include "filesystem.h"
-#include "frame_time.h"
 #include "init.h"
 #include "settings.h"
 #include "state_list.h"
@@ -49,7 +48,6 @@ namespace
 static int64_t raw_startup_time = ff::timer::current_raw_time();
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
-static ff::frame_time_t frame_time;
 static ff::timer timer;
 static ff::win_event game_thread_event;
 static ff::signal_connection window_message_connection;
@@ -87,9 +85,6 @@ static ff::state::advance_t frame_start_timer()
     ::app_time.unused_advance_seconds += ::timer.tick((advance_type == ff::state::advance_t::running) ? -1.0 : ff::constants::seconds_per_advance);
     ::app_time.clock_seconds = ::timer.clock_seconds();
 
-    ::frame_time.advance_count = 0;
-    ::frame_time.flip_time = ::timer.last_tick_stored_raw_time();
-
     ::game_state.frame_started(advance_type);
 
     return advance_type;
@@ -101,13 +96,9 @@ static void frame_reset_timer()
     ::timer.store_last_tick_raw_time();
 }
 
-static bool frame_advance_timer(ff::state::advance_t advance_type)
+static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advance_count)
 {
-    size_t max_advances = ff::frame_time_t::max_advance_count;
-    if (DEBUG && ::IsDebuggerPresent())
-    {
-        max_advances = 1;
-    }
+    size_t max_advances = (DEBUG && ::IsDebuggerPresent()) ? 1 : 4;
 
     switch (advance_type)
     {
@@ -115,7 +106,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type)
             return false;
 
         case ff::state::advance_t::single_step:
-            if (::frame_time.advance_count)
+            if (advance_count)
             {
                 return false;
             }
@@ -130,13 +121,13 @@ static bool frame_advance_timer(ff::state::advance_t advance_type)
             }
             else
             {
-                size_t multiplier = std::min(static_cast<size_t>(std::ceil(::timer.time_scale())), ff::frame_time_t::max_advance_multiplier);
+                size_t multiplier = std::min<size_t>(static_cast<size_t>(std::ceil(::timer.time_scale())), 4);
                 max_advances *= multiplier;
             }
             break;
     }
 
-    if (::frame_time.advance_count >= max_advances)
+    if (advance_count >= max_advances)
     {
         // The game is running way too slow
         ::app_time.unused_advance_seconds = std::fmod(::app_time.unused_advance_seconds, ff::constants::seconds_per_advance);
@@ -147,7 +138,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type)
         ::app_time.app_seconds += ff::constants::seconds_per_advance;
         ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance, 0.0);
         ::app_time.advance_count++;
-        ::frame_time.advance_count++;
+        advance_count++;
 
         ff::random_sprite::advance_all();
 
@@ -198,10 +189,7 @@ static void frame_render(ff::state::advance_t advance_type, ff::dxgi::command_co
 {
     ::game_state.frame_rendering(advance_type, context, *::render_targets);
     ::game_state.render(context, *::render_targets);
-
-    ::frame_time.render_time = ::timer.current_stored_raw_time();
     ::app_time.render_count++;
-
     ::game_state.frame_rendered(advance_type, context, *::render_targets);
 }
 
@@ -221,19 +209,15 @@ static void frame_advance_and_render()
     ::frame_advance_input();
 
     ff::state::advance_t advance_type = ::frame_start_timer();
-    while (::frame_advance_timer(advance_type))
+    size_t advance_count = 0;
+    while (::frame_advance_timer(advance_type, advance_count))
     {
-        if (::frame_time.advance_count > 1)
+        if (advance_count > 1)
         {
             ::frame_advance_input();
         }
 
         ::game_state.advance_time();
-
-        if (::frame_time.advance_count > 0 && ::frame_time.advance_count <= ::frame_time.advance_times.size())
-        {
-            ::frame_time.advance_times[::frame_time.advance_count - 1] = ::timer.current_stored_raw_time();
-        }
     }
 
     DirectX::XMFLOAT4 clear_color;
@@ -241,7 +225,6 @@ static void frame_advance_and_render()
 
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     ::target->wait_for_render_ready();
-    ::frame_time.vsync_time = ::timer.current_stored_raw_time();
 
     if (::target->begin_render(context, clear_color2))
     {
@@ -569,7 +552,6 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::app_params = params;
     ::init_app_name();
     ::init_log();
-    ::frame_time = ff::frame_time_t{};
     ::app_time = ff::app_time_t{};
     ::app_time.time_scale = 1.0;
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
@@ -607,11 +589,6 @@ const std::string& ff::app_internal_name()
 const ff::app_time_t& ff::app_time()
 {
     return ::app_time;
-}
-
-const ff::frame_time_t& ff::frame_time()
-{
-    return ::frame_time;
 }
 
 ff::dxgi::target_window_base& ff::app_render_target()
