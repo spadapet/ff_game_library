@@ -26,9 +26,6 @@
     <ClCompile Include="source\debug_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\debug_pages.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\filesystem.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -39,6 +36,9 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\system_options.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\debug_view.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,9 +71,6 @@
     <ClInclude Include="source\debug_state.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\debug_pages.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\filesystem.h">
       <Filter>source</Filter>
     </ClInclude>
@@ -86,6 +83,9 @@
     <ClInclude Include="source\system_options.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="source\debug_view.h">
+      <Filter>source</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">
@@ -96,13 +96,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="assets\debug_font.ttf">
-      <Filter>assets</Filter>
-    </Font>
-  </ItemGroup>
-  <ItemGroup>
     <ResJson Include="assets\ff.assets.res.json">
       <Filter>assets</Filter>
     </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\debug_view.xaml">
+      <Filter>assets</Filter>
+    </None>
+    <None Include="assets\debug_font.ttf">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

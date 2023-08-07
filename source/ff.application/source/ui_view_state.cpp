@@ -18,7 +18,12 @@ std::shared_ptr<ff::state> ff::ui_view_state::advance_time()
 
 void ff::ui_view_state::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
-    this->view_->render(context, targets.target(context, ff::render_target_type::rgba_pma), targets.depth(context));
+    ff::dxgi::depth_base& depth = targets.depth(context);
+    ff::dxgi::target_base& target = targets.target(context, ff::render_target_type::rgba_pma);
+    ff::window_size size = target.size();
+
+    this->view_->size(size);
+    this->view_->render(context, target, depth);
 }
 
 ff::state::cursor_t ff::ui_view_state::cursor()

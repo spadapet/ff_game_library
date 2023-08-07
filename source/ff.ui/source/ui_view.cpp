@@ -219,6 +219,8 @@ void ff::ui_view::advance()
 
 void ff::ui_view::render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
 {
+    assert(this->current_size.logical_pixel_size.x > 0 && this->current_size.logical_pixel_size.y > 0);
+
     ff::internal::ui::render_device& render_device = *ff::internal::ui::on_render_view(this);
     const ff::window_size target_size = target.size();
     const ff::point_size physical_pixel_size = target_size.physical_pixel_size();

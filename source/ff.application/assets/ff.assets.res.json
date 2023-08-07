@@ -1,18 +1,16 @@
 {
   "res:namespace": "assets::app",
 
-  "ff.debug_font_file":
+  "#ff/debug_font.ttf":
   {
-    "res:type": "font_file",
+    "res:type": "file",
     "file": "file:debug_font.ttf"
   },
 
-  "ff.debug_font":
+  "ff.debug_view.xaml":
   {
-    "res:type": "font",
-    "data": "ref:ff.debug_font_file",
-    "size": 14,
-    "outline": 1
+    "res:type": "file",
+    "file": "file:debug_view.xaml"
   },
 
   "ff.debug_page_input":
@@ -20,32 +18,12 @@
     "res:type": "input",
     "events":
     {
-      "toggle_numbers":
-      [
-        {
-          "action":
-          [
-            "f8"
-          ]
-        }
-      ],
-      "next_page":
+      "toggle_debug":
       [
         {
           "action":
           [
             "control",
-            "f8"
-          ]
-        }
-      ],
-      "prev_page":
-      [
-        {
-          "action":
-          [
-            "control",
-            "shift",
             "f8"
           ]
         }
@@ -57,106 +35,6 @@
           [
             "shift",
             "f8"
-          ]
-        }
-      ],
-      "toggle0":
-      [
-        {
-          "action":
-          [
-            "control",
-            "0"
-          ]
-        }
-      ],
-      "toggle1":
-      [
-        {
-          "action":
-          [
-            "control",
-            "1"
-          ]
-        }
-      ],
-      "toggle2":
-      [
-        {
-          "action":
-          [
-            "control",
-            "2"
-          ]
-        }
-      ],
-      "toggle3":
-      [
-        {
-          "action":
-          [
-            "control",
-            "3"
-          ]
-        }
-      ],
-      "toggle4":
-      [
-        {
-          "action":
-          [
-            "control",
-            "4"
-          ]
-        }
-      ],
-      "toggle5":
-      [
-        {
-          "action":
-          [
-            "control",
-            "5"
-          ]
-        }
-      ],
-      "toggle6":
-      [
-        {
-          "action":
-          [
-            "control",
-            "6"
-          ]
-        }
-      ],
-      "toggle7":
-      [
-        {
-          "action":
-          [
-            "control",
-            "7"
-          ]
-        }
-      ],
-      "toggle8":
-      [
-        {
-          "action":
-          [
-            "control",
-            "8"
-          ]
-        }
-      ],
-      "toggle9":
-      [
-        {
-          "action":
-          [
-            "control",
-            "9"
           ]
         }
       ]
@@ -191,15 +69,6 @@
             "1"
           ],
           "repeat": 0.25
-        }
-      ],
-      "ff.game.debug_render_toggle":
-      [
-        {
-          "action":
-          [
-            "minus"
-          ]
         }
       ]
     },

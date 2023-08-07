@@ -37,5 +37,11 @@ namespace ff::dxgi
             const ff::rect_fixed& view_rect,
             const ff::rect_fixed& world_rect,
             ff::dxgi::draw_options options = ff::dxgi::draw_options::none);
+
+        ff::dxgi::draw_ptr begin_draw(
+            ff::dxgi::command_context_base& context,
+            ff::dxgi::target_base& target,
+            ff::dxgi::depth_base* depth = nullptr,
+            ff::dxgi::draw_options options = ff::dxgi::draw_options::none);
     };
 }

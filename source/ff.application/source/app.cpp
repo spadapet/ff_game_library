@@ -2,6 +2,7 @@
 #include "app.h"
 #include "app_time.h"
 #include "debug_state.h"
+#include "debug_view.h"
 #include "filesystem.h"
 #include "init.h"
 #include "settings.h"
@@ -237,9 +238,20 @@ static void frame_advance_and_render()
     ::frame_update_cursor();
 }
 
+static void init_debug_components()
+{
+    Noesis::RegisterComponent<ff::internal::debug_view_model>();
+    Noesis::RegisterComponent<ff::internal::debug_view>();
+}
+
 static void init_game_thread()
 {
     ff::internal::ui::init_game_thread();
+
+    if (ff::constants::profile_build)
+    {
+        ::init_debug_components();
+    }
 
     if (::app_params.game_thread_started_func)
     {
@@ -260,7 +272,11 @@ static void init_game_thread()
             }
         }
 
-        states.push_back(std::make_shared<ff::debug_state>());
+        if (ff::constants::profile_build)
+        {
+            states.push_back(std::make_shared<ff::internal::debug_state>());
+        }
+
         ::game_state = std::make_shared<ff::state_list>(std::move(states));
     }
 

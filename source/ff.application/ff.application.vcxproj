@@ -11,8 +11,8 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\app.cpp" />
-    <ClCompile Include="source\debug_pages.cpp" />
     <ClCompile Include="source\debug_state.cpp" />
+    <ClCompile Include="source\debug_view.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\game_init.cpp" />
     <ClCompile Include="source\game_state_base.cpp" />
@@ -28,8 +28,8 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app.h" />
     <ClInclude Include="source\app_time.h" />
-    <ClInclude Include="source\debug_pages.h" />
     <ClInclude Include="source\debug_state.h" />
+    <ClInclude Include="source\debug_view.h" />
     <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\game_init.h" />
     <ClInclude Include="source\game_state_base.h" />
@@ -55,7 +55,8 @@
     </ResJson>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="assets\debug_font.ttf" />
+    <None Include="assets\debug_font.ttf" />
+    <None Include="assets\debug_view.xaml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

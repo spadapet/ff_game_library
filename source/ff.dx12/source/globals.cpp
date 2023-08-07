@@ -149,10 +149,8 @@ static bool supports_create_heap_not_resident()
     {
 #if UWP_APP
         return true;
-#elif PROFILE_APP
-        return !::is_graphics_debugger_present();
 #else
-        return !::IsDebuggerPresent() || !::is_graphics_debugger_present();
+        return !ff::constants::profile_build || !::is_graphics_debugger_present();
 #endif
     }
 

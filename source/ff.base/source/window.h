@@ -34,6 +34,24 @@ namespace ff
         int rotated_degrees(bool ccw = false) const;
 
         template<class T>
+        ff::point_t<T> logical_scaled_size() const
+        {
+            return (this->logical_pixel_size.cast<double>() / this->dpi_scale).cast<T>();
+        }
+
+        template<class T>
+        ff::rect_t<T> logical_pixel_rect() const
+        {
+            return ff::rect_t<T>({}, this->logical_pixel_size.cast<T>());
+        }
+
+        template<class T>
+        ff::rect_t<T> logical_scaled_rect() const
+        {
+            return ff::rect_t<T>({}, this->logical_pixel_size.cast<T>());
+        }
+
+        template<class T>
         ff::point_t<T> logical_to_physical_size(const ff::point_t<T>& size) const
         {
             return (this->rotation & 1) != 0 ? size.swap() : size;
