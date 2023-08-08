@@ -4,13 +4,13 @@
   "#ff/debug_font.ttf":
   {
     "res:type": "file",
-    "file": "file:debug_font.ttf"
+    "file": "file:../xaml/ff/debug_font.ttf"
   },
 
   "ff.debug_view.xaml":
   {
     "res:type": "file",
-    "file": "file:debug_view.xaml"
+    "file": "file:../xaml/debug_view.xaml"
   },
 
   "ff.debug_page_input":

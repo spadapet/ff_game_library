@@ -1,0 +1,44 @@
+﻿<UserControl
+    x:Class="ff.debug_view"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:ff="clr-namespace:ff"
+    mc:Ignorable="d" 
+    d:DesignWidth="640"
+    d:DesignHeight="360"
+    d:DataContext="{d:DesignInstance Type={x:Type ff:debug_view_model}, IsDesignTimeCreatable=True}"
+    DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
+    Foreground="White"
+    FontFamily="ff/#Inconsolata"
+    FontSize="14"
+    Focusable="False"
+    Style="{x:Null}">
+
+    <UserControl.Resources>
+        <!-- Block global styles from applying to any types used in this file -->
+        <Style TargetType="Button" BasedOn="{x:Null}">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="White" />
+        </Style>
+
+        <Style TargetType="Canvas" BasedOn="{x:Null}" />
+        <Style TargetType="Grid" BasedOn="{x:Null}" />
+        <Style TargetType="TextBlock" BasedOn="{x:Null}" />
+    </UserControl.Resources>
+
+    <Canvas>
+        <Border BorderThickness="1" BorderBrush="White" Background="#80000000" Padding="1">
+            <Grid Height="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Button Background="Red" Content="X" Padding="0" Width="20" ToolTip="Close debug overlay" />
+                <TextBlock Grid.Column="1" Text="Debug" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+    </Canvas>
+</UserControl>

@@ -4,14 +4,15 @@
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
 		<UseWPF>true</UseWPF>
-		<RootNamespace>designer</RootNamespace>
-		<StartupObject>designer.app</StartupObject>
-		<NoWarn>8981</NoWarn>
+		<RootNamespace>ff</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Page Remove="designer\app.xaml" />
-		<ApplicationDefinition Include="designer\app.xaml" />
+		<None Remove="ff\debug_font.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="ff\debug_font.ttf" />
 	</ItemGroup>
 
 	<ItemGroup>

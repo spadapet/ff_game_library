@@ -11,7 +11,7 @@ namespace ff::internal
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
     };
 
-    class debug_view : public Noesis::Grid
+    class debug_view : public Noesis::UserControl
     {
     public:
         debug_view();
@@ -21,6 +21,6 @@ namespace ff::internal
     private:
         Noesis::Ptr<ff::internal::debug_view_model> view_model_;
 
-        NS_DECLARE_REFLECTION(ff::internal::debug_view, Noesis::Grid);
+        NS_DECLARE_REFLECTION(ff::internal::debug_view, Noesis::UserControl);
     };
 }

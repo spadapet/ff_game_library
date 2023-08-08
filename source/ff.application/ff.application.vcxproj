@@ -54,9 +54,5 @@
       <FileType>Document</FileType>
     </ResJson>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="assets\debug_font.ttf" />
-    <None Include="assets\debug_view.xaml" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

@@ -4,5 +4,5 @@
   <PropertyGroup>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$(MSBuildThisFileDirectory)</DevRoot>
   </PropertyGroup>
-  <Import Condition=" '$(SharedCppPropsImported)' == '' " Project="build\cpp.props" />
+  <Import Condition=" '$(SharedCppPropsImported)' == '' And '$(MSBuildProjectExtension)' == '.vcxproj' " Project="build\cpp.props" />
 </Project>

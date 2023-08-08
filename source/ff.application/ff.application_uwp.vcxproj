@@ -50,10 +50,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\debug_font.ttf" />
-    <None Include="assets\debug_view.xaml" />
-  </ItemGroup>
-  <ItemGroup>
     <ResJson Include="assets\ff.assets.res.json">
       <FileType>Document</FileType>
     </ResJson>

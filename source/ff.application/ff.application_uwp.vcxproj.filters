@@ -100,12 +100,4 @@
       <Filter>assets</Filter>
     </ResJson>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="assets\debug_font.ttf">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\debug_view.xaml">
-      <Filter>assets</Filter>
-    </None>
-  </ItemGroup>
 </Project>
