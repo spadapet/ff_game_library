@@ -7,8 +7,19 @@ namespace ff::internal
     public:
         debug_view_model();
 
+        double ups() const;
+        void ups(double value);
+        double rps() const;
+        void rps(double value);
+        double fps() const;
+        void fps(double value);
+
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
+
+        double ups_{};
+        double rps_{};
+        double fps_{};
     };
 
     class debug_view : public Noesis::UserControl

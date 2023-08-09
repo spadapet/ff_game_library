@@ -3,10 +3,40 @@
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 {
+    NsProp("ups", &ff::internal::debug_view_model::ups);
+    NsProp("rps", &ff::internal::debug_view_model::rps);
+    NsProp("fps", &ff::internal::debug_view_model::fps);
 }
 
 ff::internal::debug_view_model::debug_view_model()
 {}
+
+double ff::internal::debug_view_model::ups() const
+{
+    return this->ups_;
+}
+
+void ff::internal::debug_view_model::ups(double value)
+{
+}
+
+double ff::internal::debug_view_model::rps() const
+{
+    return this->rps_;
+}
+
+void ff::internal::debug_view_model::rps(double value)
+{
+}
+
+double ff::internal::debug_view_model::fps() const
+{
+    return this->fps_;
+}
+
+void ff::internal::debug_view_model::fps(double value)
+{
+}
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
 {

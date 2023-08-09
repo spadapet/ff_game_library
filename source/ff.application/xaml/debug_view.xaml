@@ -6,8 +6,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:ff="clr-namespace:ff"
     mc:Ignorable="d" 
-    d:DesignWidth="640"
-    d:DesignHeight="360"
+    d:DesignWidth="320"
+    d:DesignHeight="128"
     d:DataContext="{d:DesignInstance Type={x:Type ff:debug_view_model}, IsDesignTimeCreatable=True}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Foreground="White"
@@ -20,6 +20,12 @@
         <!-- Block global styles from applying to any types used in this file -->
         <Style TargetType="Button" BasedOn="{x:Null}">
             <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Padding" Value="0" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="White" />
         </Style>
@@ -30,14 +36,40 @@
     </UserControl.Resources>
 
     <Canvas>
-        <Border BorderThickness="1" BorderBrush="White" Background="#80000000" Padding="1">
-            <Grid Height="20">
+        <Border BorderThickness="2" BorderBrush="Black" Background="#80000000" Padding="2">
+            <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Background="Red" Content="X" Padding="0" Width="20" ToolTip="Close debug overlay" />
-                <TextBlock Grid.Column="1" Text="Debug" VerticalAlignment="Center" />
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="18" />
+                    <RowDefinition Height="2" />
+                    <RowDefinition Height="18" />
+                </Grid.RowDefinitions>
+
+                <Button Background="Red" Content="X" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                <TextBlock Grid.Column="1" Text="Debug" Margin="2,0,0,0" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Background="Transparent" Content=">" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2" Orientation="Horizontal">
+                    <Border Background="SlateBlue" BorderBrush="DarkSlateBlue" BorderThickness="2">
+                        <TextBlock>
+                        <Run Text="U/s:" /><Run Text="{Binding ups, Mode=OneWay}" />
+                        </TextBlock>
+                    </Border>
+                    <Border Background="Olive" BorderBrush="DarkOliveGreen" BorderThickness="2" Margin="2,0,0,0">
+                        <TextBlock>
+                        <Run Text="R/s:" /><Run Text="{Binding rps, Mode=OneWay}" />
+                        </TextBlock>
+                    </Border>
+                    <Border Background="PaleVioletRed" BorderBrush="MediumVioletRed" BorderThickness="2" Margin="2,0,0,0">
+                        <TextBlock>
+                        <Run Text="F/s:" /><Run Text="{Binding fps, Mode=OneWay}" />
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
     </Canvas>

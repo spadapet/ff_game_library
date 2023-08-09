@@ -46,7 +46,6 @@ namespace
     };
 }
 
-static int64_t raw_startup_time = ff::timer::current_raw_time();
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::timer timer;
@@ -63,19 +62,10 @@ static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
-static void frame_advance_input()
-{
-    ff::thread_dispatch::get_game()->flush();
-    ff::input::combined_devices().advance();
-    ::game_state.advance_input();
-}
-
 static ff::state::advance_t frame_start_timer()
 {
-    double time_scale = ::app_params.get_time_scale_func
-        ? ::app_params.get_time_scale_func() : 1.0;
-    ff::state::advance_t advance_type = (time_scale <= 0.0)
-        ? ff::state::advance_t::stopped
+    const double time_scale = ::app_params.get_time_scale_func ? ::app_params.get_time_scale_func() : 1.0;
+    const ff::state::advance_t advance_type = (time_scale <= 0.0) ? ff::state::advance_t::stopped
         : (::app_params.get_advance_type_func ? ::app_params.get_advance_type_func() : ff::state::advance_t::running);
 
     ::app_time.time_scale = (advance_type == ff::state::advance_t::running) ? time_scale : 0.0;
@@ -86,20 +76,17 @@ static ff::state::advance_t frame_start_timer()
     ::app_time.unused_advance_seconds += ::timer.tick((advance_type == ff::state::advance_t::running) ? -1.0 : ff::constants::seconds_per_advance);
     ::app_time.clock_seconds = ::timer.clock_seconds();
 
-    ::game_state.frame_started(advance_type);
-
     return advance_type;
-}
-
-static void frame_reset_timer()
-{
-    ::timer.tick(0.0);
-    ::timer.store_last_tick_raw_time();
 }
 
 static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advance_count)
 {
-    size_t max_advances = (DEBUG && ::IsDebuggerPresent()) ? 1 : 4;
+    size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent()) ? 1 : 4;
+
+    ff::thread_dispatch::get_game()->flush();
+
+    ff::input::combined_devices().advance();
+    ::game_state.advance_input();
 
     switch (advance_type)
     {
@@ -131,7 +118,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
     if (advance_count >= max_advances)
     {
         // The game is running way too slow
-        ::app_time.unused_advance_seconds = std::fmod(::app_time.unused_advance_seconds, ff::constants::seconds_per_advance);
+        ::app_time.unused_advance_seconds = 0;
         return false;
     }
     else
@@ -186,40 +173,24 @@ static void frame_update_cursor()
     }
 }
 
-static void frame_render(ff::state::advance_t advance_type, ff::dxgi::command_context_base& context)
-{
-    ::game_state.frame_rendering(advance_type, context, *::render_targets);
-    ::game_state.render(context, *::render_targets);
-    ::app_time.render_count++;
-    ::game_state.frame_rendered(advance_type, context, *::render_targets);
-}
-
-static void frame_presented()
-{
-    if (::raw_startup_time)
-    {
-        double seconds = ff::timer::seconds_between_raw(::raw_startup_time, ff::timer::current_raw_time());
-        ::raw_startup_time = 0;
-
-        ff::log::write(ff::log::type::application, "Startup time: ", &std::fixed, std::setprecision(3), seconds, "s");
-    }
-}
-
 static void frame_advance_and_render()
 {
-    ::frame_advance_input();
+    // Get current time
 
     ff::state::advance_t advance_type = ::frame_start_timer();
+    ff::perf_measures::game().reset(::app_time.clock_seconds, ::app_time.frame_count % 16 == 0);
     size_t advance_count = 0;
+
+    // Advance based on time passed
+
+    ::game_state.frame_started(advance_type);
+
     while (::frame_advance_timer(advance_type, advance_count))
     {
-        if (advance_count > 1)
-        {
-            ::frame_advance_input();
-        }
-
         ::game_state.advance_time();
     }
+
+    // Render
 
     DirectX::XMFLOAT4 clear_color;
     const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func && ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
@@ -229,9 +200,10 @@ static void frame_advance_and_render()
 
     if (::target->begin_render(context, clear_color2))
     {
-        ::frame_render(advance_type, context);
+        ::game_state.frame_rendering(advance_type, context, *::render_targets);
+        ::game_state.render(context, *::render_targets);
+        ::game_state.frame_rendered(advance_type, context, *::render_targets);
         ::target->end_render(context);
-        ::frame_presented();
     }
 
     ff::dxgi_client().frame_complete();
@@ -280,7 +252,7 @@ static void init_game_thread()
         ::game_state = std::make_shared<ff::state_list>(std::move(states));
     }
 
-    ::frame_reset_timer();
+    ::timer.tick(0.0);
 }
 
 static void destroy_game_thread()
@@ -302,7 +274,7 @@ static void start_game_state()
     if (::game_thread_state != ::game_thread_state_t::stopped)
     {
         ::game_thread_state = ::game_thread_state_t::running;
-        ::frame_reset_timer();
+        ::timer.tick(0.0);
     }
 }
 

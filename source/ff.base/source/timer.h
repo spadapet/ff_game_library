@@ -19,8 +19,6 @@ namespace ff
         double seconds() const; // seconds passed since the last Reset, affected by SetTimeScale
         double tick_seconds() const; // seconds passed since the last Tick
         double clock_seconds() const; // seconds passed since the last Reset, not affected by SetTimeScale
-        size_t tick_count() const; // number of times tick() was called
-        size_t ticks_per_second() const; // number of times tick() was called during the last second
 
         double time_scale() const;
         void time_scale(double scale);
@@ -30,22 +28,12 @@ namespace ff
         static double raw_frequency_double();
         static double seconds_between_raw(int64_t start, int64_t end);
 
-        int64_t last_tick_raw_time() const;
-        void store_last_tick_raw_time();
-        int64_t last_tick_stored_raw_time(); // updates the stored start time too
-        int64_t current_stored_raw_time(); // updates the stored start time too
-
     private:
+        void reset(int64_t cur_time);
+
         int64_t reset_time;
         int64_t start_time;
         int64_t cur_time;
-        int64_t stored_time;
-
-        size_t tick_count_;
-        size_t tps_second;
-        size_t tps_cur_second;
-        size_t tps_count;
-        size_t tps;
 
         double time_scale_;
         double start_seconds;

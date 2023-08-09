@@ -222,12 +222,18 @@ static void init_application_resources()
 
 static bool init_noesis()
 {
+    const char* default_name = "f5025c38-29c4-476b-b18f-243889e0f620";
+    const char* default_key = "irwvZR3wL2X78PY/gymZz3py2y0cGTgBn6W3rpesAobcJa13";
+
     // Global handlers
     ::assert_handler = Noesis::SetAssertHandler(::noesis_assert_handler);
     ::error_handler = Noesis::SetErrorHandler(::noesis_error_handler);
     ::log_handler = Noesis::SetLogHandler(::noesis_log_handler);
     Noesis::SetMemoryCallbacks(::memory_callbacks);
-    Noesis::SetLicense(::ui_params.noesis_license_name.c_str(), ::ui_params.noesis_license_key.c_str());
+    Noesis::SetLicense(
+        ::ui_params.noesis_license_name.size() ? ::ui_params.noesis_license_name.c_str() : default_name,
+        ::ui_params.noesis_license_key.size() ? ::ui_params.noesis_license_key.c_str() : default_key);
+
     Noesis::GUI::DisableInspector();
     Noesis::GUI::Init();
 

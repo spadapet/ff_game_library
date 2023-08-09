@@ -13,34 +13,21 @@ static double raw_frequency_d = static_cast<double>(::raw_frequency);
 static double raw_frequency_1d = 1.0 / ::raw_frequency_d;
 
 ff::timer::timer()
-    : tick_count_(0)
-    , tps_second(0)
-    , tps_cur_second(0)
-    , tps_count(0)
-    , tps(0)
-    , time_scale_(1)
-    , start_seconds(0)
-    , seconds_(0)
-    , clock_seconds_(0)
-    , pass_seconds(0)
+    : time_scale_(1)
 {
-    this->reset_time = ff::timer::current_raw_time();
-    this->start_time = this->reset_time;
-    this->cur_time = this->reset_time;
-    this->stored_time = this->reset_time;
+    this->reset();
 }
 
 double ff::timer::tick(double forced_offset)
 {
-    double oldTime = this->seconds_;
-
     this->cur_time = ff::timer::current_raw_time();
     this->clock_seconds_ = (this->cur_time - this->reset_time) * ::raw_frequency_1d;
 
     if (forced_offset < 0)
     {
+        const double old_seconds = this->seconds_;
         this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) * ::raw_frequency_1d);
-        this->pass_seconds = this->seconds_ - oldTime;
+        this->pass_seconds = std::max(this->seconds_ - old_seconds, 0.0);
     }
     else
     {
@@ -50,39 +37,22 @@ double ff::timer::tick(double forced_offset)
         this->pass_seconds = forced_offset;
     }
 
-    if (this->pass_seconds < 0)
-    {
-        // something weird happened (sleep mode? processor switch?)
-        this->reset();
-    }
-
-    // ticks per second stuff
-    this->tick_count_++;
-    this->tps_count++;
-    this->tps_cur_second = static_cast<size_t>(this->seconds_);
-
-    if (this->tps_cur_second > this->tps_second)
-    {
-        this->tps = this->tps_count / (this->tps_cur_second - this->tps_second);
-        this->tps_count = 0;
-        this->tps_second = this->tps_cur_second;
-    }
-
     return this->pass_seconds;
 }
 
 void ff::timer::reset()
 {
-    this->start_time = ff::timer::current_raw_time();
-    this->cur_time = this->start_time;
-    this->stored_time = this->start_time;
-    this->tick_count_ = 0;
-    this->tps_second = 0;
-    this->tps_count = 0;
-    this->tps_cur_second = 0;
-    this->tps = 0;
+    this->reset(ff::timer::current_raw_time());
+}
+
+void ff::timer::reset(int64_t cur_time)
+{
+    this->reset_time = cur_time;
+    this->start_time = cur_time;
+    this->cur_time = cur_time;
     this->start_seconds = 0;
     this->seconds_ = 0;
+    this->clock_seconds_ = 0;
     this->pass_seconds = 0;
 
     // this->time_scale stays the same
@@ -101,16 +71,6 @@ double ff::timer::tick_seconds() const
 double ff::timer::clock_seconds() const
 {
     return this->clock_seconds_;
-}
-
-size_t ff::timer::tick_count() const
-{
-    return this->tick_count_;
-}
-
-size_t ff::timer::ticks_per_second() const
-{
-    return this->tps;
 }
 
 double ff::timer::time_scale() const
@@ -152,31 +112,4 @@ double ff::timer::raw_frequency_double()
 double ff::timer::seconds_between_raw(int64_t start, int64_t end)
 {
     return (end - start) * ::raw_frequency_1d;
-}
-
-int64_t ff::timer::last_tick_raw_time() const
-{
-    return this->cur_time;
-}
-
-void ff::timer::store_last_tick_raw_time()
-{
-    this->stored_time = this->cur_time;
-}
-
-int64_t ff::timer::last_tick_stored_raw_time()
-{
-    int64_t diff = this->cur_time - this->stored_time;
-    this->stored_time = this->cur_time;
-
-    return diff;
-}
-
-int64_t ff::timer::current_stored_raw_time()
-{
-    int64_t cur_time = ff::timer::current_raw_time();
-    int64_t diff = cur_time - this->stored_time;
-    this->stored_time = cur_time;
-
-    return diff;
 }

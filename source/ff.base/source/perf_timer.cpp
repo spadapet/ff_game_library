@@ -4,6 +4,7 @@
 #include "stack_vector.h"
 
 static ff::perf_measures perf_measures_game;
+static const ff::perf_counter_stats empty_stats{};
 
 ff::perf_counter::perf_counter(std::string_view name, ff::perf_color color)
     : ff::perf_counter(::perf_measures_game, name, color)
@@ -29,7 +30,15 @@ size_t ff::perf_measures::create()
 
 bool ff::perf_measures::start(const ff::perf_counter& counter)
 {
-    if (this->disabled || counter.index >= this->entries.size())
+    if (counter.index >= this->entries.size())
+    {
+        return false;
+    }
+
+    this->stats_[counter.index].hit_total++;
+    this->stats_[counter.index].hit_this_second++;
+
+    if (!this->enabled_)
     {
         return false;
     }
@@ -67,14 +76,35 @@ void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
     this->level--;
 }
 
+const ff::perf_counter_stats& ff::perf_measures::stats(const ff::perf_counter& counter) const
+{
+    return counter.index < this->stats_.size() ? this->stats_[counter.index] : ::empty_stats;
+}
+
 const ff::perf_counter_entry* ff::perf_measures::first() const
 {
     return this->first_entry;
 }
 
-void ff::perf_measures::reset()
+void ff::perf_measures::reset(double absolute_seconds, bool enabled)
 {
-    if (!this->disabled)
+    this->enabled(enabled);
+    this->last_delta_seconds = absolute_seconds - this->last_absolute_seconds;
+    this->last_absolute_seconds = absolute_seconds;
+
+    double cur_whole_seconds = std::floor(absolute_seconds);
+    if (ff::constants::profile_build && cur_whole_seconds > this->last_whole_seconds)
+    {
+        this->last_whole_seconds = cur_whole_seconds;
+
+        for (ff::perf_counter_stats& stats : this->stats_)
+        {
+            stats.hit_last_second = stats.hit_this_second;
+            stats.hit_this_second = 0;
+        }
+    }
+
+    if (this->enabled_)
     {
         this->first_entry = nullptr;
         this->last_entry = nullptr;
@@ -83,14 +113,24 @@ void ff::perf_measures::reset()
     }
 }
 
+double ff::perf_measures::absolute_seconds() const
+{
+    return this->last_absolute_seconds;
+}
+
+double ff::perf_measures::delta_seconds() const
+{
+    return this->last_delta_seconds;
+}
+
 bool ff::perf_measures::enabled() const
 {
-    return !this->disabled;
+    return this->enabled_;
 }
 
 void ff::perf_measures::enabled(bool value)
 {
-    this->disabled = !value;
+    this->enabled_ = ff::constants::profile_build && value;
 }
 
 #if PROFILE_APP
@@ -112,9 +152,6 @@ ff::perf_timer::~perf_timer()
 #else
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter)
-{}
-
-ff::perf_timer::perf_timer(const ff::perf_counter& counter, ff::perf_measures& measures)
 {}
 
 ff::perf_timer::~perf_timer()

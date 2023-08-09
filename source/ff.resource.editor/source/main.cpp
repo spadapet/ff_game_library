@@ -16,9 +16,6 @@ namespace res
     void register_xaml();
 }
 
-static const std::string_view NOESIS_NAME = "b20413ca-9556-41c8-b9f4-dd55a0df9a1b";
-static const std::string_view NOESIS_KEY = "gwGIxthLiMbra7qJErYvrJU/hcMlZRv1L9HPdeYK9YW3vk+I";
-
 static ff::init_app_params get_app_params()
 {
     ff::init_app_params params{};
@@ -43,8 +40,6 @@ static ff::init_ui_params get_ui_params()
     ff::init_ui_params params{};
     params.default_font = "#Segoe UI";
     params.default_font_size = 12;
-    params.noesis_license_name = ::NOESIS_NAME;
-    params.noesis_license_key = ::NOESIS_KEY;
     params.application_resources_name = "application_resources.xaml";
 
     params.register_components_func = []()
