@@ -28,7 +28,7 @@ ff::random_sprite::random_sprite(std::vector<count_t>&& repeat_counts, std::vect
     }
 }
 
-void ff::random_sprite::advance_all()
+void ff::random_sprite::advance_time()
 {
     ::advance_count++;
 }

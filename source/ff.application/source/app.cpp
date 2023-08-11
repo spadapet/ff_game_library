@@ -52,6 +52,10 @@ static ff::timer timer;
 static ff::win_event game_thread_event;
 static ff::signal_connection window_message_connection;
 static ff::state_wrapper game_state;
+static ff::perf_results perf_results;
+static ff::perf_counter perf_frame("Frame", ff::perf_color::white);
+static ff::perf_counter perf_advance("Update", ff::perf_color::magenta);
+static ff::perf_counter perf_render("Render", ff::perf_color::green);
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
@@ -64,16 +68,16 @@ static bool window_visible;
 
 static ff::state::advance_t frame_start_timer()
 {
-    const double time_scale = ::app_params.get_time_scale_func ? ::app_params.get_time_scale_func() : 1.0;
-    const ff::state::advance_t advance_type = (time_scale <= 0.0) ? ff::state::advance_t::stopped
-        : (::app_params.get_advance_type_func ? ::app_params.get_advance_type_func() : ff::state::advance_t::running);
+    const double time_scale = ::app_params.get_time_scale_func();
+    const ff::state::advance_t advance_type = (time_scale > 0.0) ? ::app_params.get_advance_type_func() : ff::state::advance_t::stopped;
+    const bool running = (advance_type == ff::state::advance_t::running);
 
-    ::app_time.time_scale = (advance_type == ff::state::advance_t::running) ? time_scale : 0.0;
+    ::app_time.time_scale = running ? time_scale : 0.0;
     ::timer.time_scale(::app_time.time_scale);
 
     ::app_time.frame_count++;
     ::app_time.app_seconds = ::timer.seconds();
-    ::app_time.unused_advance_seconds += ::timer.tick((advance_type == ff::state::advance_t::running) ? -1.0 : ff::constants::seconds_per_advance);
+    ::app_time.unused_advance_seconds += ::timer.tick(running ? -1.0 : ff::constants::seconds_per_advance);
     ::app_time.clock_seconds = ::timer.clock_seconds();
 
     return advance_type;
@@ -128,8 +132,6 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
         ::app_time.advance_count++;
         advance_count++;
 
-        ff::random_sprite::advance_all();
-
         return true;
     }
 }
@@ -175,25 +177,26 @@ static void frame_update_cursor()
 
 static void frame_advance_and_render()
 {
-    // Get current time
-
+    // How much time passed since the last frame
     ff::state::advance_t advance_type = ::frame_start_timer();
-    ff::perf_measures::game().reset(::app_time.clock_seconds, ::app_time.frame_count % 16 == 0);
+    int64_t start_ticks = ff::perf_measures::game().reset(::app_time.clock_seconds, (::app_time.frame_count % 16) ? &::perf_results : nullptr);
+    ff::perf_timer timer_frame(::perf_frame, start_ticks);
     size_t advance_count = 0;
 
     // Advance based on time passed
-
     ::game_state.frame_started(advance_type);
 
     while (::frame_advance_timer(advance_type, advance_count))
     {
+        ff::perf_timer timer_advance(::perf_advance);
+        ff::random_sprite::advance_time();
         ::game_state.advance_time();
     }
 
     // Render
 
     DirectX::XMFLOAT4 clear_color;
-    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func && ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
+    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
 
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     ::target->wait_for_render_ready();
@@ -246,7 +249,7 @@ static void init_game_thread()
 
         if (ff::constants::profile_build)
         {
-            states.push_back(std::make_shared<ff::internal::debug_state>());
+            states.push_back(std::make_shared<ff::internal::debug_state>(::perf_results));
         }
 
         ::game_state = std::make_shared<ff::state_list>(std::move(states));
@@ -538,6 +541,21 @@ bool ff::internal::app::init(const ff::init_app_params& params)
 #endif
 
     ::app_params = params;
+    if (!::app_params.get_advance_type_func)
+    {
+        ::app_params.get_advance_type_func = []() { return ff::state::advance_t::running; };
+    }
+
+    if (!::app_params.get_clear_color_func)
+    {
+        ::app_params.get_clear_color_func = [](DirectX::XMFLOAT4&) { return false; };
+    }
+
+    if (!::app_params.get_time_scale_func)
+    {
+        ::app_params.get_time_scale_func = []() { return 1.0; };
+    }
+
     ::init_app_name();
     ::init_log();
     ::app_time = ff::app_time_t{};

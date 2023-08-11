@@ -4,7 +4,6 @@
 #include "stack_vector.h"
 
 static ff::perf_measures perf_measures_game;
-static const ff::perf_counter_stats empty_stats{};
 
 ff::perf_counter::perf_counter(std::string_view name, ff::perf_color color)
     : ff::perf_counter(::perf_measures_game, name, color)
@@ -28,22 +27,13 @@ size_t ff::perf_measures::create()
     return this->counters++;
 }
 
-bool ff::perf_measures::start(const ff::perf_counter& counter)
+void ff::perf_measures::start(const ff::perf_counter& counter)
 {
-    if (counter.index >= this->entries.size())
-    {
-        return false;
-    }
+    ff::perf_measures::perf_counter_stats& stats = this->stats[counter.index];
+    stats.hit_total++;
+    stats.hit_this_second++;
 
-    this->stats_[counter.index].hit_total++;
-    this->stats_[counter.index].hit_this_second++;
-
-    if (!this->enabled_)
-    {
-        return false;
-    }
-
-    ff::perf_counter_entry& entry = this->entries[counter.index];
+    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
     entry.count++;
 
     if (!entry.counter)
@@ -65,31 +55,22 @@ bool ff::perf_measures::start(const ff::perf_counter& counter)
     }
 
     this->level++;
-    return true;
 }
 
 void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
 {
-    ff::perf_counter_entry& entry = this->entries[counter.index];
+    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
     assert(entry.counter == &counter);
     entry.ticks += ticks;
     this->level--;
 }
 
-const ff::perf_counter_stats& ff::perf_measures::stats(const ff::perf_counter& counter) const
+int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* results)
 {
-    return counter.index < this->stats_.size() ? this->stats_[counter.index] : ::empty_stats;
-}
-
-const ff::perf_counter_entry* ff::perf_measures::first() const
-{
-    return this->first_entry;
-}
-
-void ff::perf_measures::reset(double absolute_seconds, bool enabled)
-{
-    this->enabled(enabled);
-    this->last_delta_seconds = absolute_seconds - this->last_absolute_seconds;
+    const int64_t now_ticks = __rdtsc();
+    const int64_t delta_ticks = now_ticks - this->last_ticks;
+    const double delta_seconds = absolute_seconds - this->last_absolute_seconds;
+    this->last_ticks = now_ticks;
     this->last_absolute_seconds = absolute_seconds;
 
     double cur_whole_seconds = std::floor(absolute_seconds);
@@ -97,64 +78,70 @@ void ff::perf_measures::reset(double absolute_seconds, bool enabled)
     {
         this->last_whole_seconds = cur_whole_seconds;
 
-        for (ff::perf_counter_stats& stats : this->stats_)
+        for (size_t i = 0; i < this->counters; i++)
         {
+            ff::perf_measures::perf_counter_stats& stats = this->stats[i];
             stats.hit_last_second = stats.hit_this_second;
             stats.hit_this_second = 0;
         }
     }
 
-    if (this->enabled_)
+    if (results)
     {
-        this->first_entry = nullptr;
-        this->last_entry = nullptr;
-        this->level = 0;
-        std::memset(this->entries.data(), 0, ff::array_byte_size(this->entries));
+        results->delta_seconds = delta_seconds;
+        results->delta_ticks = delta_ticks;
+        results->counter_infos.clear();
+        results->counter_infos.reserve(this->counters);
+
+        for (const ff::perf_measures::perf_counter_entry* entry = this->first_entry; entry; entry = entry->next)
+        {
+            const ff::perf_measures::perf_counter_stats& stats = this->stats[entry->counter->index];
+
+            ff::perf_results::counter_info info;
+            info.counter = entry->counter;
+            info.ticks = entry->ticks;
+            info.level = entry->level;
+            info.hit_total = stats.hit_total;
+            info.hit_last_frame = entry->count;
+            info.hit_last_second = stats.hit_last_second;
+
+            results->counter_infos.push_back(info);
+        }
     }
-}
 
-double ff::perf_measures::absolute_seconds() const
-{
-    return this->last_absolute_seconds;
-}
+    this->first_entry = nullptr;
+    this->last_entry = nullptr;
+    this->level = 0;
+    std::memset(this->entries.data(), 0, this->counters * sizeof(ff::perf_measures::perf_counter_entry));
 
-double ff::perf_measures::delta_seconds() const
-{
-    return this->last_delta_seconds;
-}
-
-bool ff::perf_measures::enabled() const
-{
-    return this->enabled_;
-}
-
-void ff::perf_measures::enabled(bool value)
-{
-    this->enabled_ = ff::constants::profile_build && value;
+    return now_ticks;
 }
 
 #if PROFILE_APP
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter)
-    : counter(counter.measures.start(counter) ? &counter : nullptr)
-    , start(__rdtsc())
+    : ff::perf_timer(counter, __rdtsc())
 {}
+
+ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t start_ticks)
+    : counter(counter)
+    , start(start_ticks)
+{
+    counter.measures.start(counter);
+}
 
 ff::perf_timer::~perf_timer()
 {
-    if (this->counter)
-    {
-        int64_t end = __rdtsc();
-        this->counter->measures.end(*this->counter, (end - this->start) * (end > this->start));
-    }
+    const int64_t end = __rdtsc();
+    this->counter.measures.end(this->counter, (end - this->start) * (end > this->start));
 }
 
 #else
 
-ff::perf_timer::perf_timer(const ff::perf_counter& counter)
-{}
-
-ff::perf_timer::~perf_timer()
-{}
+ff::perf_timer::perf_timer(const ff::perf_counter& counter) {}
+ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t ticks) {}
+ff::perf_timer::perf_timer(ff::perf_timer&& other) noexcept {}
+ff::perf_timer& ff::perf_timer::operator=(ff::perf_timer&& other) noexcept {}
+ff::perf_timer::~perf_timer() {}
 
 #endif

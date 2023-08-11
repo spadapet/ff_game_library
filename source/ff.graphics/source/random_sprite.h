@@ -31,7 +31,7 @@ namespace ff
         random_sprite& operator=(random_sprite&& other) noexcept = default;
         random_sprite& operator=(const random_sprite& other) = default;
 
-        static void advance_all();
+        static void advance_time();
 
         // animation_base
         virtual float frame_length() const override;

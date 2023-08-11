@@ -24,8 +24,9 @@ ff::signal_sink<>& ff::custom_debug_sink()
     return ::custom_debug_signal;
 }
 
-ff::internal::debug_state::debug_state()
-    : input_mapping("ff.debug_page_input")
+ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
+    : perf_results(perf_results)
+    , input_mapping("ff.debug_page_input")
     , debug_view(*new ff::internal::debug_view())
     , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(this->debug_view)))
 {}

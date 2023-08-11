@@ -37,20 +37,21 @@ namespace ff
         perf_counter& operator=(perf_counter&& other) = delete;
     };
 
-    struct perf_counter_entry
+    struct perf_results
     {
-        const ff::perf_counter_entry* next;
-        const ff::perf_counter* counter;
-        int64_t ticks;
-        size_t count;
-        size_t level;
-    };
+        struct counter_info
+        {
+            const ff::perf_counter* counter;
+            int64_t ticks;
+            size_t level;
+            size_t hit_total;
+            size_t hit_last_frame;
+            size_t hit_last_second;
+        };
 
-    struct perf_counter_stats
-    {
-        size_t hit_total;
-        size_t hit_this_second;
-        size_t hit_last_second;
+        double delta_seconds;
+        int64_t delta_ticks;
+        std::vector<ff::perf_results::counter_info> counter_infos;
     };
 
     class perf_measures
@@ -61,16 +62,9 @@ namespace ff
         static ff::perf_measures& game();
 
         size_t create();
-        bool start(const ff::perf_counter& counter);
+        void start(const ff::perf_counter& counter);
         void end(const ff::perf_counter& counter, int64_t ticks);
-        const ff::perf_counter_stats& stats(const ff::perf_counter& counter) const;
-        const ff::perf_counter_entry* first() const;
-
-        void reset(double absolute_seconds, bool enabled);
-        double absolute_seconds() const;
-        double delta_seconds() const;
-        bool enabled() const;
-        void enabled(bool value);
+        int64_t reset(double absolute_seconds, ff::perf_results* results = nullptr);
 
     private:
         perf_measures(const perf_measures& other) = delete;
@@ -78,16 +72,31 @@ namespace ff
         perf_measures& operator=(const perf_measures& other) = delete;
         perf_measures& operator=(perf_measures&& other) = delete;
 
-        std::array<ff::perf_counter_entry, ff::perf_counter::MAX_COUNT> entries{};
-        std::array<ff::perf_counter_stats, ff::perf_counter::MAX_COUNT> stats_{};
-        const ff::perf_counter_entry* first_entry{};
-        ff::perf_counter_entry* last_entry{};
+        struct perf_counter_entry
+        {
+            const ff::perf_measures::perf_counter_entry* next;
+            const ff::perf_counter* counter;
+            int64_t ticks;
+            size_t count;
+            size_t level;
+        };
+
+        struct perf_counter_stats
+        {
+            size_t hit_total;
+            size_t hit_this_second;
+            size_t hit_last_second;
+        };
+
+        std::array<ff::perf_measures::perf_counter_entry, ff::perf_counter::MAX_COUNT> entries{};
+        std::array<ff::perf_measures::perf_counter_stats, ff::perf_counter::MAX_COUNT> stats{};
+        const ff::perf_measures::perf_counter_entry* first_entry{};
+        ff::perf_measures::perf_counter_entry* last_entry{};
         double last_whole_seconds{};
         double last_absolute_seconds{};
-        double last_delta_seconds{};
+        int64_t last_ticks{};
         size_t level{};
         size_t counters{};
-        bool enabled_{ PROFILE_APP };
     };
 
     // Put in a method to measure the current block
@@ -95,17 +104,18 @@ namespace ff
     {
     public:
         perf_timer(const ff::perf_counter& counter);
+        perf_timer(const ff::perf_counter& counter, int64_t start_ticks);
         ~perf_timer();
 
     private:
         perf_timer() = delete;
+        perf_timer(ff::perf_timer&& other) = delete;
         perf_timer(const perf_timer& other) = delete;
-        perf_timer(perf_timer&& other) = delete;
+        ff::perf_timer& operator=(ff::perf_timer&& other) = delete;
         perf_timer& operator=(const perf_timer& other) = delete;
-        perf_timer& operator=(perf_timer&& other) = delete;
 
 #if PROFILE_APP
-        const ff::perf_counter* counter;
+        const ff::perf_counter& counter;
         int64_t start;
 #endif
     };

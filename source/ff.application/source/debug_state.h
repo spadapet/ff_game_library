@@ -9,7 +9,7 @@ namespace ff::internal
     class debug_state : public ff::state
     {
     public:
-        debug_state();
+        debug_state(const ff::perf_results& perf_results);
 
         virtual void advance_input() override;
         virtual std::shared_ptr<ff::state> advance_time() override;
@@ -24,6 +24,7 @@ namespace ff::internal
         size_t aps_counter{};
         size_t rps_counter{};
         size_t stopped_counter{};
+        const ff::perf_results& perf_results;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
         Noesis::Ptr<ff::internal::debug_view> debug_view;
