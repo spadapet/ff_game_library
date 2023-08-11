@@ -8,8 +8,6 @@
 #include "resource_v.h"
 #include "resource_value_provider.h"
 
-#define DEBUG_RES DEBUG // Level: 0, 1, or 2
-
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
 static std::shared_ptr<ff::resource> create_null_resource(std::string_view name, ff::resource_object_loader* loading_owner = nullptr)

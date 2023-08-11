@@ -65,4 +65,10 @@ void ff::internal::assert_listener(std::function<bool(const char*, const char*, 
     ::assert_listener_ = std::move(listener);
 }
 
-#endif // _DEBUG
+#else
+
+void ff::internal::assert_listener(std::function<bool(const char*, const char*, const char*, unsigned int)>&& listener)
+{
+}
+
+#endif

@@ -140,7 +140,6 @@ namespace ff
 
         ff::signal_sink<unsigned int, const winrt::Windows::UI::Core::PointerEventArgs&>& pointer_message_sink();
         void notify_pointer_message(unsigned int msg, const winrt::Windows::UI::Core::PointerEventArgs& args);
-
 #else
         using handle_type = HWND;
 
@@ -158,6 +157,7 @@ namespace ff
         static window* main();
         ff::signal_sink<ff::window_message&>& message_sink();
         void notify_message(ff::window_message& message);
+        bool key_down(int vk) const;
 
         window_size size();
         double dpi_scale();

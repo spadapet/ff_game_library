@@ -1002,11 +1002,7 @@ void ff::dxgi::draw_util::draw_device_base::update_geometry_constant_buffer_1()
         this->geometry_constants_1.model[iter.second] = iter.first;
     }
 
-#if DEBUG
-    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * ff::dxgi::draw_util::MAX_TRANSFORM_MATRIXES;
-#else
-    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * world_matrix_count;
-#endif
+    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * (ff::constants::debug_build ? ff::dxgi::draw_util::MAX_TRANSFORM_MATRIXES : world_matrix_count);
     this->geometry_constants_buffer_1().update(*this->command_context_, this->geometry_constants_1.model.data(), ff::vector_byte_size(this->geometry_constants_1.model), buffer_size);
 }
 

@@ -25,7 +25,7 @@ ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, 
     , main_window(ff::window::main() == window)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , vsync_(vsync)
-    , allow_full_screen_(main_window && allow_full_screen)
+    , allow_full_screen_(main_window&& allow_full_screen)
     , target_views2(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
     this->internal_size(this->window->size(), ::fix_buffer_count(buffer_count), ::fix_frame_latency(frame_latency, buffer_count));
@@ -88,7 +88,6 @@ void ff::dx12::target_window::wait_for_render_ready()
 {
     if (*this)
     {
-        int64_t start_time = ff::timer::current_raw_time();
         ff::stack_vector<HANDLE, 2> handles;
 
         if (this->frame_latency_handle && !this->full_screen())
@@ -104,14 +103,6 @@ void ff::dx12::target_window::wait_for_render_ready()
         if (!handles.empty())
         {
             ff::wait_for_all_handles(handles.data(), handles.size(), INFINITE, false);
-        }
-
-        static int counter = 0;
-        if (!(counter++ % 16))
-        {
-            int64_t end_time = ff::timer::current_raw_time();
-            double seconds = ff::timer::seconds_between_raw(start_time, end_time);
-            ff::log::write(ff::log::type::dx12_fps, "*** wait_for_render_ready:", &std::fixed, std::setprecision(3), seconds);
         }
     }
 }
@@ -143,21 +134,10 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
         commands.resource_state(*this->target_textures2[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
         this->target_fence_values2[this->back_buffer_index] = commands.queue().execute(commands);
 
-        int64_t start_time = ff::timer::current_raw_time();
-
         HRESULT hr = this->swap_chain->Present(this->vsync_ ? 1 : 0, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-
-            static int counter = 0;
-            if (!(counter++ % 16))
-            {
-                int64_t end_time = ff::timer::current_raw_time();
-                double seconds = ff::timer::seconds_between_raw(start_time, end_time);
-                ff::log::write(ff::log::type::dx12_fps, "*** Present:", &std::fixed, std::setprecision(3), seconds);
-            }
-
             return true;
         }
     }
@@ -248,13 +228,16 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         return true;
     }
 
-    ff::log::write(ff::log::type::dx12_target,
-        "Swap chain set size.",
-        " Size=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
-        " Rotate=", size.rotated_degrees(),
-        " Buffers=", buffer_count,
-        " Latency=", frame_latency,
-        " VSync=", this->vsync_);
+    if (ff::constants::profile_build)
+    {
+        ff::log::write(ff::log::type::dx12_target,
+            "Swap chain set size.",
+            " Size=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
+            " Rotate=", size.rotated_degrees(),
+            " Buffers=", buffer_count,
+            " Latency=", frame_latency,
+            " VSync=", this->vsync_);
+    }
 
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
@@ -570,21 +553,20 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             }
             else if (this->main_window && msg.wp == VK_BACK)
             {
-#ifdef _DEBUG
-#if !UWP_APP
-                if (::GetKeyState(VK_SHIFT) < 0)
+                if constexpr (ff::constants::debug_build)
                 {
-                    ff::thread_dispatch::get_game()->post([]()
+                    if (this->window->key_down(VK_SHIFT))
                     {
-                        ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
-                    });
+                        ff::thread_dispatch::get_game()->post([]()
+                        {
+                            ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
+                        });
+                    }
+                    else
+                    {
+                        ff::dxgi_host().defer_reset_device(true);
+                    }
                 }
-                else
-#endif
-                {
-                    ff::dxgi_host().defer_reset_device(true);
-                }
-#endif
             }
             break;
 

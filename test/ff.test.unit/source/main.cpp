@@ -5,7 +5,6 @@ static std::unique_ptr<ff::init_ui> init_ui;
 
 TEST_MODULE_INITIALIZE(module_init)
 {
-#ifdef _DEBUG
     ff::internal::assert_listener([](const char* exp, const char* text, const char* file, unsigned int line)
     {
         char error_text[1024];
@@ -20,7 +19,6 @@ TEST_MODULE_INITIALIZE(module_init)
         Assert::Fail(ff::string::to_wstring(std::string_view(error_text)).c_str());
         return true;
     });
-#endif
 
     ::init_audio = std::make_unique<ff::init_audio>();
     ::init_ui = std::make_unique<ff::init_ui>(ff::init_ui_params{});

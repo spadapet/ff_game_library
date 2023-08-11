@@ -56,12 +56,10 @@ static void noesis_log_handler(const char* filename, uint32_t line, uint32_t lev
 
 static bool noesis_assert_handler(const char* file, uint32_t line, const char* expr)
 {
-#ifdef _DEBUG
-    if (::IsDebuggerPresent())
+    if (ff::constants::debug_build && ::IsDebuggerPresent())
     {
         __debugbreak();
     }
-#endif
 
     return ::assert_handler ? ::assert_handler(file, line, expr) : false;
 }

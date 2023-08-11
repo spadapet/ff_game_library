@@ -212,6 +212,11 @@ void ff::window::notify_message(ff::window_message& message)
     this->message_signal.notify(message);
 }
 
+bool ff::window::key_down(int vk) const
+{
+    return ::GetKeyState(vk) < 0;
+}
+
 ff::window_size ff::window::size()
 {
     ff::window_size size{};

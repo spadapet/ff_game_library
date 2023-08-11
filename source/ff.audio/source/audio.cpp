@@ -85,15 +85,13 @@ bool ff::internal::audio::init()
 {
     ::MFStartup(MF_VERSION);
 
-    if (SUCCEEDED(::XAudio2Create(&::xaudio2)))
+    if (SUCCEEDED(::XAudio2Create(&::xaudio2)) && ff::constants::debug_build)
     {
-#ifdef _DEBUG
         XAUDIO2_DEBUG_CONFIGURATION dc{};
         dc.TraceMask = XAUDIO2_LOG_ERRORS;
         dc.BreakMask = XAUDIO2_LOG_ERRORS;
         ::xaudio2->SetDebugConfiguration(&dc);
-#endif
-}
+    }
 
     return ::init_mastering_voice();
 }

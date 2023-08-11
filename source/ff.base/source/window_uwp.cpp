@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "assert.h"
+#include "flags.h"
 #include "log.h"
 #include "thread_dispatch.h"
 #include "window.h"
@@ -435,6 +436,12 @@ void ff::window::notify_message(ff::window_message& message)
     }
 
     this->message_signal.notify(message);
+}
+
+bool ff::window::key_down(int vk) const
+{
+    auto state = this->core_window.get().GetKeyState(static_cast<winrt::Windows::System::VirtualKey>(vk));
+    return ff::flags::has(state, winrt::Windows::UI::Core::CoreVirtualKeyStates::Down);
 }
 
 // https://docs.microsoft.com/en-us/uwp/api/windows.graphics.display.displayorientations?view=winrt-22000

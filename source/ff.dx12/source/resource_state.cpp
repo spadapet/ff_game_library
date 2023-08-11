@@ -3,38 +3,39 @@
 
 static void assert_type_change(ff::dx12::resource_state::type_t cur_type, ff::dx12::resource_state::type_t new_type)
 {
-#ifdef _DEBUG
-    switch (new_type)
+    if constexpr (ff::constants::debug_build)
     {
-        default:
-            assert(false);
-            break;
+        switch (new_type)
+        {
+            default:
+                assert(false);
+                break;
 
-        case ff::dx12::resource_state::type_t::none:
-            assert(cur_type == ff::dx12::resource_state::type_t::pending);
-            break;
+            case ff::dx12::resource_state::type_t::none:
+                assert(cur_type == ff::dx12::resource_state::type_t::pending);
+                break;
 
-        case ff::dx12::resource_state::type_t::global:
-            assert(cur_type == ff::dx12::resource_state::type_t::global);
-            break;
+            case ff::dx12::resource_state::type_t::global:
+                assert(cur_type == ff::dx12::resource_state::type_t::global);
+                break;
 
-        case ff::dx12::resource_state::type_t::pending:
-            assert(cur_type == ff::dx12::resource_state::type_t::none);
-            break;
+            case ff::dx12::resource_state::type_t::pending:
+                assert(cur_type == ff::dx12::resource_state::type_t::none);
+                break;
 
-        case ff::dx12::resource_state::type_t::promoted:
-            assert(cur_type == ff::dx12::resource_state::type_t::pending);
-            break;
+            case ff::dx12::resource_state::type_t::promoted:
+                assert(cur_type == ff::dx12::resource_state::type_t::pending);
+                break;
 
-        case ff::dx12::resource_state::type_t::decayed:
-            assert(cur_type == ff::dx12::resource_state::type_t::promoted || cur_type == ff::dx12::resource_state::type_t::barrier);
-            break;
+            case ff::dx12::resource_state::type_t::decayed:
+                assert(cur_type == ff::dx12::resource_state::type_t::promoted || cur_type == ff::dx12::resource_state::type_t::barrier);
+                break;
 
-        case ff::dx12::resource_state::type_t::barrier:
-            assert(cur_type != ff::dx12::resource_state::type_t::decayed);
-            break;
+            case ff::dx12::resource_state::type_t::barrier:
+                assert(cur_type != ff::dx12::resource_state::type_t::decayed);
+                break;
+        }
     }
-#endif
 }
 
 static void merge_state(ff::dx12::resource_state::state_t& dest, const ff::dx12::resource_state::state_t& source)
@@ -115,12 +116,13 @@ void ff::dx12::resource_state::set(D3D12_RESOURCE_STATES state, type_t type, siz
 
 void ff::dx12::resource_state::set(D3D12_RESOURCE_STATES state, type_t type, size_t sub_resource_index, size_t sub_resource_size)
 {
-#ifdef _DEBUG
-    for (size_t i = sub_resource_index; i != sub_resource_index + sub_resource_size; ++i)
+    if constexpr (ff::constants::debug_build)
     {
-        ::assert_type_change(this->get(i).second, type);
+        for (size_t i = sub_resource_index; i != sub_resource_index + sub_resource_size; ++i)
+        {
+            ::assert_type_change(this->get(i).second, type);
+        }
     }
-#endif
 
     const state_t value{ state, type };
 

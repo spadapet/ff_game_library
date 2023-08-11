@@ -56,6 +56,12 @@ static ff::perf_results perf_results;
 static ff::perf_counter perf_frame("Frame", ff::perf_color::white);
 static ff::perf_counter perf_advance("Update", ff::perf_color::magenta);
 static ff::perf_counter perf_render("Render", ff::perf_color::green);
+static ff::perf_counter perf_render_wait("Wait for ready", ::perf_render.color);
+static ff::perf_counter perf_render_begin("Target begin", ::perf_render.color);
+static ff::perf_counter perf_render_pre_game_render("Pre game render", ::perf_render.color);
+static ff::perf_counter perf_render_game_render("Game render", ::perf_render.color);
+static ff::perf_counter perf_render_post_game_render("Post game render", ::perf_render.color);
+static ff::perf_counter perf_render_present("Present", ::perf_render.color);
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
@@ -136,6 +142,57 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
     }
 }
 
+static void frame_advance_many(ff::state::advance_t advance_type)
+{
+    size_t advance_count = 0;
+    while (::frame_advance_timer(advance_type, advance_count))
+    {
+        ff::perf_timer timer(::perf_advance);
+        ff::random_sprite::advance_time();
+        ::game_state.advance_time();
+    }
+}
+
+static void frame_render(ff::state::advance_t advance_type)
+{
+    ff::perf_timer timer_render(::perf_render);
+
+    DirectX::XMFLOAT4 clear_color;
+    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
+
+    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
+    {
+        ff::perf_timer timer(::perf_render_wait);
+        ::target->wait_for_render_ready();
+    }
+
+    bool begin_render;
+    {
+        ff::perf_timer timer(::perf_render_begin);
+        begin_render = ::target->begin_render(context, clear_color2);
+    }
+
+    if (begin_render)
+    {
+        {
+            ff::perf_timer timer(::perf_render_pre_game_render);
+            ::game_state.frame_rendering(advance_type, context, *::render_targets);
+        }
+        {
+            ff::perf_timer timer(::perf_render_game_render);
+            ::game_state.render(context, *::render_targets);
+        }
+        {
+            ff::perf_timer timer(::perf_render_post_game_render);
+            ::game_state.frame_rendered(advance_type, context, *::render_targets);
+        }
+        {
+            ff::perf_timer timer(::perf_render_present);
+            ::target->end_render(context);
+        }
+    }
+}
+
 static void frame_update_cursor()
 {
     const wchar_t* cursor = nullptr;
@@ -181,34 +238,10 @@ static void frame_advance_and_render()
     ff::state::advance_t advance_type = ::frame_start_timer();
     int64_t start_ticks = ff::perf_measures::game().reset(::app_time.clock_seconds, (::app_time.frame_count % 16) ? &::perf_results : nullptr);
     ff::perf_timer timer_frame(::perf_frame, start_ticks);
-    size_t advance_count = 0;
 
-    // Advance based on time passed
     ::game_state.frame_started(advance_type);
-
-    while (::frame_advance_timer(advance_type, advance_count))
-    {
-        ff::perf_timer timer_advance(::perf_advance);
-        ff::random_sprite::advance_time();
-        ::game_state.advance_time();
-    }
-
-    // Render
-
-    DirectX::XMFLOAT4 clear_color;
-    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
-
-    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
-    ::target->wait_for_render_ready();
-
-    if (::target->begin_render(context, clear_color2))
-    {
-        ::game_state.frame_rendering(advance_type, context, *::render_targets);
-        ::game_state.render(context, *::render_targets);
-        ::game_state.frame_rendered(advance_type, context, *::render_targets);
-        ::target->end_render(context);
-    }
-
+    ::frame_advance_many(advance_type);
+    ::frame_render(advance_type);
     ff::dxgi_client().frame_complete();
     ::frame_update_cursor();
 }

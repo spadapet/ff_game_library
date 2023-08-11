@@ -8,12 +8,16 @@
 #undef verify
 #endif
 
+namespace ff::internal
+{
+    void assert_listener(std::function<bool(const char*, const char*, const char*, unsigned int)>&& listener);
+}
+
 #ifdef _DEBUG
 
 namespace ff::internal
 {
 	bool assert_core(const char* exp, const char* text, const char* file, unsigned int line);
-    void assert_listener(std::function<bool(const char*, const char*, const char*, unsigned int)>&& listener);
 }
 
 // The one true assert macro (all others call this)
@@ -25,7 +29,7 @@ namespace ff::internal
 	} \
 }
 
-#else // !_DEBUG
+#else
 
 #define assert_msg(exp, txt) ((void)0)
 

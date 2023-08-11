@@ -20,29 +20,30 @@ static void show_usage()
 
 static bool test_load_resources(const ff::dict& dict)
 {
-#ifdef _DEBUG
-    dict.debug_print();
-
-    ff::resource_objects resources(dict);
-    std::forward_list<ff::auto_resource_value> values;
-
-    for (std::string_view name : resources.resource_object_names())
+    if constexpr (ff::constants::debug_build)
     {
-        values.emplace_front(resources.get_resource_object(name));
-    }
+        dict.debug_print();
 
-    resources.flush_all_resources();
+        ff::resource_objects resources(dict);
+        std::forward_list<ff::auto_resource_value> values;
 
-    for (auto& value : values)
-    {
-        if (!value.valid() || value.value()->is_type<nullptr_t>())
+        for (std::string_view name : resources.resource_object_names())
         {
-            std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
-            assert(false);
-            return false;
+            values.emplace_front(resources.get_resource_object(name));
+        }
+
+        resources.flush_all_resources();
+
+        for (auto& value : values)
+        {
+            if (!value.valid() || value.value()->is_type<nullptr_t>())
+            {
+                std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
+                assert(false);
+                return false;
+            }
         }
     }
-#endif
 
     return true;
 }

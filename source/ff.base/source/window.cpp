@@ -20,3 +20,4 @@ int ff::window_size::rotated_degrees(bool ccw) const
 {
     return ccw ? (360 - this->rotation * 90) % 360 : this->rotation * 90;
 }
+

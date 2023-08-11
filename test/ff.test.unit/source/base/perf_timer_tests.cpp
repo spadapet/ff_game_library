@@ -12,7 +12,7 @@ namespace ff::test::base
             ff::perf_counter c1(measures, "Counter 1");
             ff::perf_counter c2(measures, "Counter 2");
 
-            measures.reset(0.0, true, &results);
+            measures.reset(1.0);
 
             // Nested timers
             {
@@ -31,9 +31,7 @@ namespace ff::test::base
                         std::this_thread::sleep_for(1s);
                     }
 
-                    measures.enabled(false);
-
-                    // Nest 3, disabled
+                    // Nest 3
                     {
                         ff::perf_timer t2(c2);
                         std::this_thread::sleep_for(1s);
@@ -41,11 +39,10 @@ namespace ff::test::base
                 }
             }
 
-            Assert::IsFalse(measures.enabled());
-            measures.reset(5.0, true, &results);
+            measures.reset(6.0, &results);
 
             Assert::AreEqual(5.0, results.delta_seconds);
-            Assert::AreEqual<size_t>(3, results.counter_infos.size());
+            Assert::AreEqual<size_t>(2, results.counter_infos.size());
 
             for (const ff::perf_results::counter_info& info : results.counter_infos)
             {
@@ -57,8 +54,8 @@ namespace ff::test::base
 
             if (!::IsDebuggerPresent())
             {
-                double percent = static_cast<double>(results.counter_infos[1].ticks / results.counter_infos[0].ticks);
-                Assert::IsTrue(percent > 0.58 && percent < 0.62);
+                double percent = static_cast<double>(results.counter_infos[1].ticks) / results.counter_infos[0].ticks;
+                Assert::IsTrue(percent > 0.78 && percent < 0.82);
             }
         }
     };

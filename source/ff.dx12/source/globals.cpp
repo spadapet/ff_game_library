@@ -185,7 +185,7 @@ static void destroy_dxgi()
 
 static bool init_d3d(bool for_reset)
 {
-    if (!for_reset && DEBUG && ::IsDebuggerPresent())
+    if (!for_reset && ff::constants::debug_build && ::IsDebuggerPresent())
     {
         Microsoft::WRL::ComPtr<ID3D12Debug> debug_interface;
         if (SUCCEEDED(::D3D12GetDebugInterface(IID_PPV_ARGS(&debug_interface))))
@@ -207,7 +207,7 @@ static bool init_d3d(bool for_reset)
     ::supports_mesh_shaders_ = ::supports_mesh_shaders();
 
     // Break on debug error
-    if (DEBUG && ::IsDebuggerPresent())
+    if (ff::constants::debug_build && ::IsDebuggerPresent())
     {
         Microsoft::WRL::ComPtr<ID3D12InfoQueue> info_queue;
 

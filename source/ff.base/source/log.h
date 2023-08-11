@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.h"
 #include "string.h"
 
 namespace ff::internal::log
@@ -25,7 +26,6 @@ namespace ff::log
         data,
         dx12,
         dx12_fence,
-        dx12_fps,
         dx12_residency,
         dx12_target,
         dxgi,
@@ -64,8 +64,10 @@ namespace ff::log
     void write_debug_fail(ff::log::type type, Args&&... args)
     {
         ff::log::write(type, std::forward<Args>(args)...);
-#ifdef _DEBUG
-        __debugbreak();
-#endif
+
+        if constexpr (ff::constants::debug_build)
+        {
+            __debugbreak();
+        }
     }
 }

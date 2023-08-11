@@ -227,10 +227,11 @@ void ff::thread_pool::add_wait(std::function<void()>&& func, HANDLE handle, size
 
 void ff::set_thread_name(std::string_view name)
 {
-#if DEBUG
-    if (!name.empty())
+    if constexpr (ff::constants::debug_build)
     {
-        ::SetThreadDescription(::GetCurrentThread(), ff::string::to_wstring(name).c_str());
+        if (!name.empty())
+        {
+            ::SetThreadDescription(::GetCurrentThread(), ff::string::to_wstring(name).c_str());
+        }
     }
-#endif
 }

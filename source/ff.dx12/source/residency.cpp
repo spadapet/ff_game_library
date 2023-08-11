@@ -83,7 +83,7 @@ bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::
     {
         ff::dx12::fence_values wait_to_evict;
         uint64_t delta_resident_size = make_resident_size;
-        static const bool debug_residency = false; // DEBUG; // evict everything that isn't needed right now
+        constexpr bool debug_residency = false; // ff::constants::debug_build; // evict everything that isn't needed right now
         {
             std::scoped_lock lock(::pageable_mutex);
 
