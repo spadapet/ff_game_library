@@ -38,8 +38,6 @@ static ff::init_app_params get_app_params()
 static ff::init_ui_params get_ui_params()
 {
     ff::init_ui_params params{};
-    params.default_font = "#Segoe UI";
-    params.default_font_size = 12;
     params.application_resources_name = "application_resources.xaml";
 
     params.register_components_func = []()

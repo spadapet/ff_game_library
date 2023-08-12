@@ -12,8 +12,6 @@ namespace ff
         std::string noesis_license_name;
         std::string noesis_license_key;
         std::string application_resources_name;
-        std::string default_font;
-        float default_font_size;
     };
 
     class init_ui

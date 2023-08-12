@@ -166,6 +166,11 @@ static void software_keyboard_callback(void* user, Noesis::UIElement* focused, b
     // Not implemented
 }
 
+static void load_assembly_callback(void* user, const char* assembly)
+{
+    // Not implemented
+}
+
 extern "C" void NsInitPackageAppMediaElement();
 extern "C" void NsRegisterReflectionAppInteractivity();
 
@@ -188,12 +193,11 @@ static void register_components()
     }
 }
 
-static void init_default_font()
+static void init_fallback_fonts()
 {
-    const char* default_fonts = !::ui_params.default_font.empty() ? ::ui_params.default_font.c_str() : "Segoe UI";
-    float default_size = ::ui_params.default_font_size > 0.0f ? ::ui_params.default_font_size : 12.0f;
-    Noesis::GUI::SetFontFallbacks(&default_fonts, 1);
-    Noesis::GUI::SetFontDefaultProperties(default_size, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
+    std::array<const char*, 3> default_fonts{ "#Segoe UI Emoji", "#Segoe UI Symbol", "#Segoe UI" };
+    Noesis::GUI::SetFontFallbacks(default_fonts.data(), static_cast<uint32_t>(default_fonts.size()));
+    Noesis::GUI::SetFontDefaultProperties(12.0f, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
 }
 
 static void init_application_resources()
@@ -240,6 +244,7 @@ static bool init_noesis()
     Noesis::GUI::SetOpenUrlCallback(nullptr, ::open_url_callback);
     Noesis::GUI::SetPlayAudioCallback(nullptr, ::play_sound_callback);
     Noesis::GUI::SetSoftwareKeyboardCallback(nullptr, ::software_keyboard_callback);
+    Noesis::GUI::SetLoadAssemblyCallback(nullptr, ::load_assembly_callback);
 
     // Resource providers
     ::resource_cache = std::make_unique<ff::internal::ui::resource_cache>();
@@ -253,7 +258,7 @@ static bool init_noesis()
     Noesis::GUI::SetFontProvider(::font_provider);
 
     ::register_components();
-    ::init_default_font();
+    ::init_fallback_fonts();
     ::init_application_resources();
     ::noesis_dump_mem_usage();
 

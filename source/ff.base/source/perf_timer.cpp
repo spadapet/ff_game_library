@@ -88,6 +88,7 @@ int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* resu
 
     if (results)
     {
+        results->absolute_seconds = absolute_seconds;
         results->delta_seconds = delta_seconds;
         results->delta_ticks = delta_ticks;
         results->counter_infos.clear();

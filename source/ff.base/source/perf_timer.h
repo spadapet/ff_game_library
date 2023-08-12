@@ -49,6 +49,7 @@ namespace ff
             size_t hit_last_second;
         };
 
+        double absolute_seconds;
         double delta_seconds;
         int64_t delta_ticks;
         std::vector<ff::perf_results::counter_info> counter_infos;

@@ -3,39 +3,64 @@
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 {
-    NsProp("ups", &ff::internal::debug_view_model::ups);
-    NsProp("rps", &ff::internal::debug_view_model::rps);
-    NsProp("fps", &ff::internal::debug_view_model::fps);
+    NsProp("game_seconds", &ff::internal::debug_view_model::game_seconds);
+    NsProp("delta_seconds", &ff::internal::debug_view_model::delta_seconds);
+    NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second);
+    NsProp("frame_count", &ff::internal::debug_view_model::frame_count);
+    NsProp("advance_stopped", &ff::internal::debug_view_model::advance_stopped);
 }
 
 ff::internal::debug_view_model::debug_view_model()
 {}
 
-double ff::internal::debug_view_model::ups() const
+double ff::internal::debug_view_model::game_seconds() const
 {
-    return this->ups_;
+    return this->game_seconds_;
 }
 
-void ff::internal::debug_view_model::ups(double value)
+void ff::internal::debug_view_model::game_seconds(double value)
 {
+    this->set_property(this->game_seconds_, value, "game_seconds");
 }
 
-double ff::internal::debug_view_model::rps() const
+double ff::internal::debug_view_model::delta_seconds() const
 {
-    return this->rps_;
+    return this->delta_seconds_;
 }
 
-void ff::internal::debug_view_model::rps(double value)
+void ff::internal::debug_view_model::delta_seconds(double value)
 {
+    this->set_property(this->delta_seconds_, value, "delta_seconds");
 }
 
-double ff::internal::debug_view_model::fps() const
+size_t ff::internal::debug_view_model::frames_per_second() const
 {
-    return this->fps_;
+    return this->frames_per_second_;
 }
 
-void ff::internal::debug_view_model::fps(double value)
+void ff::internal::debug_view_model::frames_per_second(size_t value)
 {
+    this->set_property(this->frames_per_second_, value, "frames_per_second");
+}
+
+size_t ff::internal::debug_view_model::frame_count() const
+{
+    return this->frame_count_;
+}
+
+void ff::internal::debug_view_model::frame_count(size_t value)
+{
+    this->set_property(this->frame_count_, value, "frame_count");
+}
+
+bool ff::internal::debug_view_model::advance_stopped() const
+{
+    return this->advance_stopped_;
+}
+
+void ff::internal::debug_view_model::advance_stopped(bool value)
+{
+    this->set_property(this->advance_stopped_, value, "advance_stopped");
 }
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")

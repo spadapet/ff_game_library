@@ -929,7 +929,7 @@ void ff::internal::ui::render_device::init_root_signature()
 
 void ff::internal::ui::render_device::init_shaders()
 {
-    for (size_t i = 0; i < _countof(this->shaders); i++)
+    for (size_t i = 0; i < this->shaders.size(); i++)
     {
         auto vs = static_cast<Noesis::Shader::Vertex::Enum>(Noesis::VertexForShader[i]);
         auto format = static_cast<Noesis::Shader::Vertex::Format::Enum>(Noesis::FormatForVertex[vs]);

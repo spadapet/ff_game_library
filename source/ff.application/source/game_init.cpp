@@ -82,8 +82,6 @@ static ff::init_ui_params get_ui_params()
     ff::init_ui_params params{};
     params.create_application_resources_func = ::init_params->noesis_create_application_resources_func;
     params.application_resources_name = ::init_params->noesis_application_resources_name;
-    params.default_font = ::init_params->noesis_default_font;
-    params.default_font_size = ::init_params->noesis_default_font_size;
     params.noesis_license_name = ::init_params->noesis_license_name;
     params.noesis_license_key = ::init_params->noesis_license_key;
     params.palette_func = ::get_noesis_palette;

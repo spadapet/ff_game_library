@@ -138,7 +138,7 @@ namespace
                             {
                                 if (check_y >= 0 &&
                                     check_y < this->size.y / TEXTURE_GRID_SIZE &&
-                                    check_y < _countof(this->row_right) &&
+                                    check_y < this->row_right.size() &&
                                     this->row_right[check_y] &&
                                     this->row_right[check_y] + 1 > x &&
                                     x + cell_size.x + 1 > this->row_left[check_y])

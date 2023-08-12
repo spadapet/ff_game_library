@@ -41,6 +41,18 @@ namespace ff::ui
     protected:
         virtual void property_changed(const char* name);
 
+        template<class T>
+        bool set_property(T& storage, const T& value, const char* name)
+        {
+            if (!std::equal_to<T>()(storage, value))
+            {
+                storage = value;
+                return true;
+            }
+
+            return false;
+        }
+
     private:
         Noesis::PropertyChangedEventHandler property_changed_;
 

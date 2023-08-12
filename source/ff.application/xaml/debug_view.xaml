@@ -33,10 +33,23 @@
         <Style TargetType="Canvas" BasedOn="{x:Null}" />
         <Style TargetType="Grid" BasedOn="{x:Null}" />
         <Style TargetType="TextBlock" BasedOn="{x:Null}" />
+
+        <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
     </UserControl.Resources>
 
-    <Canvas>
-        <Border BorderThickness="2" BorderBrush="Black" Background="#80000000" Padding="2">
+    <Grid>
+        <Border
+            BorderThickness="5"
+            BorderBrush="#A0662166"
+            Visibility="{Binding advance_stopped, Converter={StaticResource bool_to_visible_converter}}" />
+        <Border
+            BorderThickness="2"
+            BorderBrush="Black"
+            Background="#80000000"
+            Padding="2"
+            Margin="8"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -46,31 +59,31 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="18" />
                     <RowDefinition Height="2" />
-                    <RowDefinition Height="18" />
+                    <RowDefinition Height="20" />
                 </Grid.RowDefinitions>
 
                 <Button Background="Red" Content="X" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                <TextBlock Grid.Column="1" Text="Debug" Margin="2,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="FPS" Margin="2,0,0,0" VerticalAlignment="Center" />
                 <Button Grid.Column="2" Background="Transparent" Content=">" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
 
                 <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2" Orientation="Horizontal">
-                    <Border Background="SlateBlue" BorderBrush="DarkSlateBlue" BorderThickness="2">
-                        <TextBlock>
-                        <Run Text="U/s:" /><Run Text="{Binding ups, Mode=OneWay}" />
-                        </TextBlock>
+                    <StackPanel.Resources>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                        </Style>
+                    </StackPanel.Resources>
+                    <Border Background="SlateBlue" BorderBrush="DarkSlateBlue" BorderThickness="2" Width="32">
+                        <TextBlock Text="{Binding frames_per_second, Mode=OneWay}" />
                     </Border>
-                    <Border Background="Olive" BorderBrush="DarkOliveGreen" BorderThickness="2" Margin="2,0,0,0">
-                        <TextBlock>
-                        <Run Text="R/s:" /><Run Text="{Binding rps, Mode=OneWay}" />
-                        </TextBlock>
+                    <Border Background="Olive" BorderBrush="DarkOliveGreen" BorderThickness="2" Margin="2,0,0,0" Width="64">
+                        <TextBlock Text="{Binding frame_count, Mode=OneWay, StringFormat=🎞️:{0}}" />
                     </Border>
-                    <Border Background="PaleVioletRed" BorderBrush="MediumVioletRed" BorderThickness="2" Margin="2,0,0,0">
-                        <TextBlock>
-                        <Run Text="F/s:" /><Run Text="{Binding fps, Mode=OneWay}" />
-                        </TextBlock>
+                    <Border Background="PaleVioletRed" BorderBrush="MediumVioletRed" BorderThickness="2" Margin="2,0,0,0" Width="64">
+                        <TextBlock Text="{Binding game_seconds, Mode=OneWay, StringFormat=🕒:{0}}" />
                     </Border>
                 </StackPanel>
             </Grid>
         </Border>
-    </Canvas>
+    </Grid>
 </UserControl>

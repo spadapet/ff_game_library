@@ -13,16 +13,13 @@ namespace ff::internal
 
         virtual void advance_input() override;
         virtual std::shared_ptr<ff::state> advance_time() override;
-        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
+        virtual void frame_started(ff::state::advance_t type) override;
         virtual size_t child_state_count() override;
         virtual ff::state* child_state(size_t index) override;
 
     private:
         bool debug_enabled{};
         size_t current_page{};
-        size_t aps_counter{};
-        size_t rps_counter{};
         size_t stopped_counter{};
         const ff::perf_results& perf_results;
         ff::auto_resource<ff::input_mapping> input_mapping;
