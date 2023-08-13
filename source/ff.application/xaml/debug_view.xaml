@@ -22,6 +22,10 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
 
+        <Style TargetType="CheckBox" BasedOn="{x:Null}">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
         <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="18" />
             <Setter Property="Height" Value="18" />
@@ -39,49 +43,64 @@
 
     <Grid>
         <Border
+            x:Name="stopped_root"
             BorderThickness="5"
             BorderBrush="#A0662166"
-            Visibility="{Binding advance_stopped, Converter={StaticResource bool_to_visible_converter}}" />
+            Visibility="{Binding stopped_visible, Converter={StaticResource bool_to_visible_converter}}" />
         <Border
+            x:Name="debug_root"
             BorderThickness="2"
             BorderBrush="Black"
             Background="#80000000"
             Padding="2"
             Margin="8"
             HorizontalAlignment="Left"
-            VerticalAlignment="Top">
+            VerticalAlignment="Top"
+            Visibility="{Binding debug_visible, Converter={StaticResource bool_to_visible_converter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="18" />
                     <RowDefinition Height="2" />
-                    <RowDefinition Height="20" />
+                    <RowDefinition Height="18" />
+                    <RowDefinition Height="8" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Button Background="Red" Content="X" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                <TextBlock Grid.Column="1" Text="FPS" Margin="2,0,0,0" VerticalAlignment="Center" />
-                <Button Grid.Column="2" Background="Transparent" Content=">" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Background="Red" Content="X" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                    <TextBlock Grid.Column="1" Text="FPS" Margin="2,0,0,0" VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Background="Transparent" Content=">" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                </Grid>
 
-                <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2" Orientation="Horizontal">
+                <StackPanel Grid.Row="2" Orientation="Horizontal">
                     <StackPanel.Resources>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                             <Setter Property="HorizontalAlignment" Value="Center" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                         </Style>
                     </StackPanel.Resources>
-                    <Border Background="SlateBlue" BorderBrush="DarkSlateBlue" BorderThickness="2" Width="32">
+                    <Border Background="DarkSlateBlue" Width="40" ToolTip="Frames per second">
                         <TextBlock Text="{Binding frames_per_second, Mode=OneWay}" />
                     </Border>
-                    <Border Background="Olive" BorderBrush="DarkOliveGreen" BorderThickness="2" Margin="2,0,0,0" Width="64">
-                        <TextBlock Text="{Binding frame_count, Mode=OneWay, StringFormat=🎞️:{0}}" />
+                    <Border Background="DarkOliveGreen" Margin="2,0,0,0" Width="80" ToolTip="Frame count">
+                        <TextBlock Text="{Binding frame_count, Mode=OneWay, StringFormat={}{0}}" />
                     </Border>
-                    <Border Background="PaleVioletRed" BorderBrush="MediumVioletRed" BorderThickness="2" Margin="2,0,0,0" Width="64">
-                        <TextBlock Text="{Binding game_seconds, Mode=OneWay, StringFormat=🕒:{0}}" />
+                    <Border Background="MediumVioletRed" Margin="2,0,0,0" Width="80" ToolTip="Running time">
+                        <TextBlock Text="{Binding game_seconds, Mode=OneWay, StringFormat={}{0:F2}s}" />
                     </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Row="4" Orientation="Vertical">
+                    <CheckBox Content="Show timers" />
+                    <CheckBox Content="Show chart" />
                 </StackPanel>
             </Grid>
         </Border>

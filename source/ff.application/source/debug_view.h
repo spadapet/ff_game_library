@@ -15,8 +15,11 @@ namespace ff::internal
         void frames_per_second(size_t value);
         size_t frame_count() const;
         void frame_count(size_t value);
-        bool advance_stopped() const;
-        void advance_stopped(bool value);
+
+        bool debug_visible() const;
+        void debug_visible(bool value);
+        bool stopped_visible() const;
+        void stopped_visible(bool value);
 
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
@@ -25,13 +28,15 @@ namespace ff::internal
         double delta_seconds_{};
         size_t frames_per_second_{};
         size_t frame_count_{};
-        bool advance_stopped_{};
+        bool debug_visible_{};
+        bool stopped_visible_{};
     };
 
     class debug_view : public Noesis::UserControl
     {
     public:
         debug_view();
+        debug_view(ff::internal::debug_view_model* view_model);
 
         ff::internal::debug_view_model* view_model() const;
 

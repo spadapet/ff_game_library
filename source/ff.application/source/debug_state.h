@@ -5,6 +5,7 @@
 namespace ff::internal
 {
     class debug_view;
+    class debug_view_model;
 
     class debug_state : public ff::state
     {
@@ -18,12 +19,12 @@ namespace ff::internal
         virtual ff::state* child_state(size_t index) override;
 
     private:
-        bool debug_enabled{};
         size_t current_page{};
         size_t stopped_counter{};
         const ff::perf_results& perf_results;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
+        Noesis::Ptr<ff::internal::debug_view_model> view_model;
         Noesis::Ptr<ff::internal::debug_view> debug_view;
         std::shared_ptr<ff::state> debug_view_state;
     };

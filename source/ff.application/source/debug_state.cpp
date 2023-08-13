@@ -27,7 +27,8 @@ ff::signal_sink<>& ff::custom_debug_sink()
 ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping("ff.debug_page_input")
-    , debug_view(*new ff::internal::debug_view())
+    , view_model(*new ff::internal::debug_view_model())
+    , debug_view(*new ff::internal::debug_view(this->view_model))
     , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(this->debug_view)))
 {}
 
@@ -47,7 +48,7 @@ void ff::internal::debug_state::advance_input()
         }
         else if (this->input_events->event_hit(::EVENT_TOGGLE_DEBUG))
         {
-            this->debug_enabled = !this->debug_enabled;
+            this->view_model->debug_visible(!this->view_model->debug_visible());
         }
     }
 
@@ -56,16 +57,19 @@ void ff::internal::debug_state::advance_input()
 
 std::shared_ptr<ff::state> ff::internal::debug_state::advance_time()
 {
-    ff::internal::debug_view_model& vm = *this->debug_view->view_model();
-
-    vm.game_seconds(this->perf_results.absolute_seconds);
-    vm.delta_seconds(this->perf_results.delta_seconds);
-
-    if (this->perf_results.counter_infos.size())
+    if (this->view_model->debug_visible())
     {
-        const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
-        vm.frames_per_second(info.hit_last_second);
-        vm.frame_count(info.hit_total);
+        ff::internal::debug_view_model& vm = *this->debug_view->view_model();
+
+        vm.game_seconds(this->perf_results.absolute_seconds);
+        vm.delta_seconds(this->perf_results.delta_seconds);
+
+        if (this->perf_results.counter_infos.size())
+        {
+            const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
+            vm.frames_per_second(info.hit_last_second);
+            vm.frame_count(info.hit_total);
+        }
     }
 
     return ff::state::advance_time();
@@ -73,13 +77,15 @@ std::shared_ptr<ff::state> ff::internal::debug_state::advance_time()
 
 void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 {
-    this->debug_view->view_model()->advance_stopped(type == ff::state::advance_t::stopped);
+    this->view_model->stopped_visible(type == ff::state::advance_t::stopped);
     ff::state::frame_started(type);
 }
 
 size_t ff::internal::debug_state::child_state_count()
 {
-    return this->debug_enabled ? (this->current_page < ::debug_pages.size() ? 2 : 1) : 0;
+    return (this->view_model->debug_visible() || this->view_model->stopped_visible())
+        ? (this->current_page < ::debug_pages.size() ? 2 : 1)
+        : 0;
 }
 
 ff::state* ff::internal::debug_state::child_state(size_t index)

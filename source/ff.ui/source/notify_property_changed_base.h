@@ -47,6 +47,7 @@ namespace ff::ui
             if (!std::equal_to<T>()(storage, value))
             {
                 storage = value;
+                this->property_changed(name);
                 return true;
             }
 

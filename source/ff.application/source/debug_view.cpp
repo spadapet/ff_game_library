@@ -7,7 +7,7 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("delta_seconds", &ff::internal::debug_view_model::delta_seconds);
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second);
     NsProp("frame_count", &ff::internal::debug_view_model::frame_count);
-    NsProp("advance_stopped", &ff::internal::debug_view_model::advance_stopped);
+    NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible);
 }
 
 ff::internal::debug_view_model::debug_view_model()
@@ -53,14 +53,24 @@ void ff::internal::debug_view_model::frame_count(size_t value)
     this->set_property(this->frame_count_, value, "frame_count");
 }
 
-bool ff::internal::debug_view_model::advance_stopped() const
+bool ff::internal::debug_view_model::debug_visible() const
 {
-    return this->advance_stopped_;
+    return this->debug_visible_;
 }
 
-void ff::internal::debug_view_model::advance_stopped(bool value)
+void ff::internal::debug_view_model::debug_visible(bool value)
 {
-    this->set_property(this->advance_stopped_, value, "advance_stopped");
+    this->set_property(this->debug_visible_, value, "debug_visible");
+}
+
+bool ff::internal::debug_view_model::stopped_visible() const
+{
+    return this->stopped_visible_;
+}
+
+void ff::internal::debug_view_model::stopped_visible(bool value)
+{
+    this->set_property(this->stopped_visible_, value, "stopped_visible");
 }
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
@@ -70,6 +80,10 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
 
 ff::internal::debug_view::debug_view()
     : view_model_(*new ff::internal::debug_view_model())
+{}
+
+ff::internal::debug_view::debug_view(ff::internal::debug_view_model* view_model)
+    : view_model_(view_model)
 {
     Noesis::GUI::LoadComponent(this, "ff.debug_view.xaml");
 }
