@@ -39,15 +39,21 @@ namespace ff::ui
         NS_IMPLEMENT_INTERFACE_FIXUP;
 
     protected:
-        virtual void property_changed(const char* name);
+        virtual void property_changed(std::string_view name);
 
-        template<class T>
-        bool set_property(T& storage, const T& value, const char* name)
+        template<class T, typename... Args>
+        bool set_property(T& storage, const T& value, Args&&... property_names)
         {
             if (!std::equal_to<T>()(storage, value))
             {
                 storage = value;
-                this->property_changed(name);
+
+                std::initializer_list<std::string_view> name_list{ property_names... };
+                for (std::string_view name : name_list)
+                {
+                    this->property_changed(name);
+                }
+
                 return true;
             }
 

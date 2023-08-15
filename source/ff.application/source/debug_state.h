@@ -13,7 +13,6 @@ namespace ff::internal
         debug_state(const ff::perf_results& perf_results);
 
         virtual void advance_input() override;
-        virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void frame_started(ff::state::advance_t type) override;
         virtual size_t child_state_count() override;
         virtual ff::state* child_state(size_t index) override;

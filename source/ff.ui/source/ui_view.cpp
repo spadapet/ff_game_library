@@ -171,6 +171,7 @@ void ff::ui_view::focused(bool focus)
 {
     if (this->focused_ != focus)
     {
+        ff::log::write(ff::log::type::ui_focus, "Set view focus:", focus, " (", this, ")");
         if (focus)
         {
             this->focused_ = true;
@@ -193,7 +194,11 @@ bool ff::ui_view::focused() const
 
 void ff::ui_view::enabled(bool enabled)
 {
-    this->enabled_ = enabled;
+    if (this->enabled_ != enabled)
+    {
+        ff::log::write(ff::log::type::ui_focus, "Enable view:", enabled, " (", this, ")");
+        this->enabled_ = enabled;
+    }
 }
 
 bool ff::ui_view::enabled() const

@@ -27,6 +27,7 @@ ff::signal_sink<>& ff::custom_debug_sink()
 ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping("ff.debug_page_input")
+    , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
     , view_model(*new ff::internal::debug_view_model())
     , debug_view(*new ff::internal::debug_view(this->view_model))
     , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(this->debug_view)))
@@ -34,12 +35,6 @@ ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
 
 void ff::internal::debug_state::advance_input()
 {
-    if (!this->input_events)
-    {
-        std::vector<const ff::input_vk*> input_devices{ &ff::input::keyboard() };
-        this->input_events = std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::move(input_devices));
-    }
-
     if (this->input_events->advance())
     {
         if (this->input_events->event_hit(::EVENT_CUSTOM))
@@ -55,8 +50,10 @@ void ff::internal::debug_state::advance_input()
     ff::state::advance_input();
 }
 
-std::shared_ptr<ff::state> ff::internal::debug_state::advance_time()
+void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 {
+    this->view_model->stopped_visible(type == ff::state::advance_t::stopped);
+
     if (this->view_model->debug_visible())
     {
         ff::internal::debug_view_model& vm = *this->debug_view->view_model();
@@ -67,17 +64,11 @@ std::shared_ptr<ff::state> ff::internal::debug_state::advance_time()
         if (this->perf_results.counter_infos.size())
         {
             const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
-            vm.frames_per_second(info.hit_last_second);
+            vm.frames_per_second(info.hit_per_second);
             vm.frame_count(info.hit_total);
         }
     }
 
-    return ff::state::advance_time();
-}
-
-void ff::internal::debug_state::frame_started(ff::state::advance_t type)
-{
-    this->view_model->stopped_visible(type == ff::state::advance_t::stopped);
     ff::state::frame_started(type);
 }
 

@@ -46,7 +46,7 @@ namespace ff
             size_t level;
             size_t hit_total;
             size_t hit_last_frame;
-            size_t hit_last_second;
+            size_t hit_per_second;
         };
 
         double absolute_seconds;
@@ -85,15 +85,17 @@ namespace ff
         struct perf_counter_stats
         {
             size_t hit_total;
-            size_t hit_this_second;
-            size_t hit_last_second;
+            size_t hit_floor_second;
+            size_t hit_round_second;
+            size_t hit_per_second;
         };
 
         std::array<ff::perf_measures::perf_counter_entry, ff::perf_counter::MAX_COUNT> entries{};
         std::array<ff::perf_measures::perf_counter_stats, ff::perf_counter::MAX_COUNT> stats{};
         const ff::perf_measures::perf_counter_entry* first_entry{};
         ff::perf_measures::perf_counter_entry* last_entry{};
-        double last_whole_seconds{};
+        double last_floor_seconds{};
+        double last_round_seconds{};
         double last_absolute_seconds{};
         int64_t last_ticks{};
         size_t level{};

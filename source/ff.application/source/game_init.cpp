@@ -29,19 +29,6 @@ static std::shared_ptr<ff::state> create_app_state()
     return app_state;
 }
 
-static void register_noesis_components()
-{
-    if (::init_params->register_global_resources)
-    {
-        ::init_params->register_global_resources();
-    }
-
-    if (::init_params->register_noesis_components)
-    {
-        ::init_params->register_noesis_components();
-    }
-}
-
 static const ff::dxgi::palette_base* get_noesis_palette()
 {
     auto app_state = ::app_state.lock();
@@ -80,12 +67,11 @@ static ff::init_app_params get_app_params()
 static ff::init_ui_params get_ui_params()
 {
     ff::init_ui_params params{};
-    params.create_application_resources_func = ::init_params->noesis_create_application_resources_func;
     params.application_resources_name = ::init_params->noesis_application_resources_name;
     params.noesis_license_name = ::init_params->noesis_license_name;
     params.noesis_license_key = ::init_params->noesis_license_key;
     params.palette_func = ::get_noesis_palette;
-    params.register_components_func = ::register_noesis_components;
+    params.register_components_func = ::init_params->register_global_resources;
 
     return params;
 }

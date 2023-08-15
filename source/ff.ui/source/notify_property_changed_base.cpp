@@ -11,10 +11,11 @@ Noesis::PropertyChangedEventHandler& ff::ui::notify_propety_changed_base::Proper
     return this->property_changed_;
 }
 
-void ff::ui::notify_propety_changed_base::property_changed(const char* name)
+void ff::ui::notify_propety_changed_base::property_changed(std::string_view name)
 {
     if (this->property_changed_)
     {
-        this->property_changed_.Invoke(this, Noesis::PropertyChangedEventArgs(Noesis::Symbol(name)));
+        std::string name_str(name);
+        this->property_changed_.Invoke(this, Noesis::PropertyChangedEventArgs(Noesis::Symbol(name_str.c_str())));
     }
 }

@@ -1,42 +1,50 @@
 ﻿<UserControl
-    x:Class="ff.debug_view"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ff="clr-namespace:ff"
+    xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions"
+    x:Class="ff.debug_view"
     mc:Ignorable="d" 
     d:DesignWidth="320"
     d:DesignHeight="128"
-    d:DataContext="{d:DesignInstance Type={x:Type ff:debug_view_model}, IsDesignTimeCreatable=True}"
+    d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type ff:debug_view_model}}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Foreground="White"
     FontFamily="ff/#Inconsolata"
     FontSize="14"
     Focusable="False"
+    UseLayoutRounding="True"
     Style="{x:Null}">
 
+    <!-- Block global styles from applying to any types used in this file -->
     <UserControl.Resources>
-        <!-- Block global styles from applying to any types used in this file -->
-        <Style TargetType="Button" BasedOn="{x:Null}">
+        <Style TargetType="{x:Type Border}" BasedOn="{x:Null}" />
+
+        <Style TargetType="{x:Type Button}" BasedOn="{x:Null}">
             <Setter Property="Foreground" Value="White" />
         </Style>
 
-        <Style TargetType="CheckBox" BasedOn="{x:Null}">
+        <Style TargetType="{x:Type Canvas}" BasedOn="{x:Null}" />
+
+        <Style TargetType="{x:Type CheckBox}" BasedOn="{x:Null}">
             <Setter Property="Foreground" Value="White" />
         </Style>
 
-        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Style x:Key="ToolButton" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="18" />
             <Setter Property="Height" Value="18" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="FontFamily" Value="#Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="10" />
         </Style>
 
-        <Style TargetType="Canvas" BasedOn="{x:Null}" />
-        <Style TargetType="Grid" BasedOn="{x:Null}" />
-        <Style TargetType="TextBlock" BasedOn="{x:Null}" />
+        <Style TargetType="{x:Type Grid}" BasedOn="{x:Null}" />
+        <Style TargetType="{x:Type StackPanel}" BasedOn="{x:Null}" />
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{x:Null}" />
 
         <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
     </UserControl.Resources>
@@ -49,60 +57,47 @@
             Visibility="{Binding stopped_visible, Converter={StaticResource bool_to_visible_converter}}" />
         <Border
             x:Name="debug_root"
-            BorderThickness="2"
-            BorderBrush="Black"
-            Background="#80000000"
+            BorderThickness="1"
             Padding="2"
             Margin="8"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            Visibility="{Binding debug_visible, Converter={StaticResource bool_to_visible_converter}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="18" />
-                    <RowDefinition Height="2" />
-                    <RowDefinition Height="18" />
-                    <RowDefinition Height="8" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            Visibility="{Binding debug_visible, Converter={StaticResource bool_to_visible_converter}}"
+            noesis:Text.StrokeThickness="2" noesis:Text.Stroke="Black">
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource {x:Type Border}}">
+                    <Setter Property="Background" Value="#20000000" />
+                    <Setter Property="BorderBrush" Value="Black" />
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#80000000" />
+                            <Setter Property="BorderBrush" Value="White" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Vertical">
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Button Background="Red" Content="X" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                    <TextBlock Grid.Column="1" Text="FPS" Margin="2,0,0,0" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Background="Transparent" Content=">" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                </Grid>
-
-                <StackPanel Grid.Row="2" Orientation="Horizontal">
-                    <StackPanel.Resources>
-                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                            <Setter Property="HorizontalAlignment" Value="Center" />
-                            <Setter Property="VerticalAlignment" Value="Center" />
-                        </Style>
-                    </StackPanel.Resources>
-                    <Border Background="DarkSlateBlue" Width="40" ToolTip="Frames per second">
-                        <TextBlock Text="{Binding frames_per_second, Mode=OneWay}" />
-                    </Border>
-                    <Border Background="DarkOliveGreen" Margin="2,0,0,0" Width="80" ToolTip="Frame count">
-                        <TextBlock Text="{Binding frame_count, Mode=OneWay, StringFormat={}{0}}" />
-                    </Border>
-                    <Border Background="MediumVioletRed" Margin="2,0,0,0" Width="80" ToolTip="Running time">
-                        <TextBlock Text="{Binding game_seconds, Mode=OneWay, StringFormat={}{0:F2}s}" />
-                    </Border>
+                <StackPanel Orientation="Horizontal">
+                    <Button Background="Red" Content="&#xE711;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                    <Button Background="Transparent" Content="&#xE76B;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                    <Button Background="Transparent" Content="&#xE76C;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
+                    <TextBlock Grid.Column="1" Text="Perf" Margin="2,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="4" Orientation="Vertical">
-                    <CheckBox Content="Show timers" />
-                    <CheckBox Content="Show chart" />
-                </StackPanel>
-            </Grid>
+                <TextBlock Grid.Row="2">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="FPS:{0}, #{1}, {2:F2}s">
+                            <Binding Path="frames_per_second" Mode="OneWay" />
+                            <Binding Path="frame_count" Mode="OneWay" />
+                            <Binding Path="game_seconds" Mode="OneWay" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+
+                <CheckBox Content="Show timers" />
+                <CheckBox Content="Show chart" />
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

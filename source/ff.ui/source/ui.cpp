@@ -195,29 +195,20 @@ static void register_components()
 
 static void init_fallback_fonts()
 {
-    std::array<const char*, 3> default_fonts{ "#Segoe UI Emoji", "#Segoe UI Symbol", "#Segoe UI" };
+    std::array<const char*, 3> default_fonts{ "#Segoe UI Emoji", "#Segoe MDL2 Assets", "#Segoe UI" };
     Noesis::GUI::SetFontFallbacks(default_fonts.data(), static_cast<uint32_t>(default_fonts.size()));
     Noesis::GUI::SetFontDefaultProperties(12.0f, Noesis::FontWeight_Normal, Noesis::FontStretch_Normal, Noesis::FontStyle_Normal);
 }
 
 static void init_application_resources()
 {
-    if (::ui_params.create_application_resources_func)
-    {
-        ::application_resources = ::ui_params.create_application_resources_func(::ui_params.application_resources_name);
-    }
-    else if (!::ui_params.application_resources_name.empty())
+    if (!::ui_params.application_resources_name.empty())
     {
         ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
     }
 
     if (::application_resources)
     {
-        if (::ui_params.application_resources_loaded_func)
-        {
-            ::ui_params.application_resources_loaded_func(::application_resources);
-        }
-
         Noesis::GUI::SetApplicationResources(::application_resources);
     }
 }
@@ -634,6 +625,8 @@ void ff::ui::state_rendered()
 
     if ((!::focused_view || !::focused_view->focused()) && !::input_views.empty() && ff::window::main()->active())
     {
+        ff::log::write(ff::log::type::ui_focus, "No focus, choosing new view to focus.");
+
         // No visible view has focus, so choose a new one
         ff::ui_view* view = ::input_views.back();
         view->focused(true);

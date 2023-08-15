@@ -6,8 +6,6 @@ namespace ff
     {
         std::function<const ff::dxgi::palette_base* ()> palette_func;
         std::function<void()> register_components_func;
-        std::function<Noesis::Ptr<Noesis::ResourceDictionary>(std::string_view)> create_application_resources_func;
-        std::function<void(Noesis::ResourceDictionary*)> application_resources_loaded_func;
 
         std::string noesis_license_name;
         std::string noesis_license_key;

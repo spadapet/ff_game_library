@@ -31,7 +31,8 @@ void ff::perf_measures::start(const ff::perf_counter& counter)
 {
     ff::perf_measures::perf_counter_stats& stats = this->stats[counter.index];
     stats.hit_total++;
-    stats.hit_this_second++;
+    stats.hit_floor_second++;
+    stats.hit_round_second++;
 
     ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
     entry.count++;
@@ -73,16 +74,34 @@ int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* resu
     this->last_ticks = now_ticks;
     this->last_absolute_seconds = absolute_seconds;
 
-    double cur_whole_seconds = std::floor(absolute_seconds);
-    if (ff::constants::profile_build && cur_whole_seconds > this->last_whole_seconds)
+    if (ff::constants::profile_build)
     {
-        this->last_whole_seconds = cur_whole_seconds;
+        // Update twice per second
+        double cur_floor_seconds = std::floor(absolute_seconds);
+        double cur_round_seconds = std::round(absolute_seconds);
 
-        for (size_t i = 0; i < this->counters; i++)
+        if (cur_floor_seconds > this->last_floor_seconds)
         {
-            ff::perf_measures::perf_counter_stats& stats = this->stats[i];
-            stats.hit_last_second = stats.hit_this_second;
-            stats.hit_this_second = 0;
+            this->last_floor_seconds = cur_floor_seconds;
+
+            for (size_t i = 0; i < this->counters; i++)
+            {
+                ff::perf_measures::perf_counter_stats& stats = this->stats[i];
+                stats.hit_per_second = stats.hit_floor_second;
+                stats.hit_floor_second = 0;
+            }
+        }
+
+        if (cur_round_seconds > this->last_round_seconds)
+        {
+            this->last_round_seconds = cur_round_seconds;
+
+            for (size_t i = 0; i < this->counters; i++)
+            {
+                ff::perf_measures::perf_counter_stats& stats = this->stats[i];
+                stats.hit_per_second = stats.hit_round_second;
+                stats.hit_round_second = 0;
+            }
         }
     }
 
@@ -104,7 +123,7 @@ int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* resu
             info.level = entry->level;
             info.hit_total = stats.hit_total;
             info.hit_last_frame = entry->count;
-            info.hit_last_second = stats.hit_last_second;
+            info.hit_per_second = stats.hit_per_second;
 
             results->counter_infos.push_back(info);
         }

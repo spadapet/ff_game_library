@@ -35,6 +35,7 @@ namespace ff::log
         resource_load,
         test,
         ui,
+        ui_focus,
     };
 
     std::vector<ff::log::type> types();

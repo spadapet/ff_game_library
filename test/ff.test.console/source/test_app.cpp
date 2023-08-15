@@ -6,6 +6,7 @@ static void run_app()
 {
     ff::init_app_params app_params{};
     ff::init_ui_params ui_params{};
+    static DirectX::XMFLOAT4 clear_color(0, 0.125, 0, 1);
 
     app_params.create_initial_state_func = []()
         {
@@ -14,7 +15,8 @@ static void run_app()
 
     app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
         {
-            color = DirectX::XMFLOAT4(0, 0.125, 0, 1);
+            clear_color.y = std::fmod(clear_color.y + 1.0f / 512.0f, 1.0f);
+            color = clear_color;
             return true;
         };
 

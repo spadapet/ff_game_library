@@ -28,8 +28,8 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::data, { "ff/data", true } },
     { ff::log::type::dx12, { "ff/dx12", true } },
     { ff::log::type::dx12_fence, { "ff/dx12_fence", false } },
-    { ff::log::type::dx12_residency, { "ff/dx12_residency", ff::constants::profile_build } },
-    { ff::log::type::dx12_target, { "ff/dx12_target", ff::constants::profile_build } },
+    { ff::log::type::dx12_residency, { "ff/dx12_residency", ff::constants::debug_build } },
+    { ff::log::type::dx12_target, { "ff/dx12_target", ff::constants::debug_build } },
     { ff::log::type::dxgi, { "ff/dxgi", true } },
     { ff::log::type::graphics, { "ff/graph", true } },
     { ff::log::type::input, { "ff/input", true } },
@@ -37,6 +37,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::resource_load, { "ff/res_load", false } },
     { ff::log::type::test, { "ff/test", true } },
     { ff::log::type::ui, { "ff/ui", true } },
+    { ff::log::type::ui_focus, { "ff/ui_focus", ff::constants::debug_build } },
 };
 
 void ff::internal::log::write(std::string_view text)

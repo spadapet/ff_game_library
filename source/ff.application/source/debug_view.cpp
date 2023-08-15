@@ -53,6 +53,11 @@ void ff::internal::debug_view_model::frame_count(size_t value)
     this->set_property(this->frame_count_, value, "frame_count");
 }
 
+bool ff::internal::debug_view_model::anything_visible() const
+{
+    return this->debug_visible_ || this->stopped_visible_;
+}
+
 bool ff::internal::debug_view_model::debug_visible() const
 {
     return this->debug_visible_;
@@ -60,7 +65,7 @@ bool ff::internal::debug_view_model::debug_visible() const
 
 void ff::internal::debug_view_model::debug_visible(bool value)
 {
-    this->set_property(this->debug_visible_, value, "debug_visible");
+    this->set_property(this->debug_visible_, value, "debug_visible", "anything_visible");
 }
 
 bool ff::internal::debug_view_model::stopped_visible() const
@@ -70,7 +75,7 @@ bool ff::internal::debug_view_model::stopped_visible() const
 
 void ff::internal::debug_view_model::stopped_visible(bool value)
 {
-    this->set_property(this->stopped_visible_, value, "stopped_visible");
+    this->set_property(this->stopped_visible_, value, "stopped_visible", "anything_visible");
 }
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")

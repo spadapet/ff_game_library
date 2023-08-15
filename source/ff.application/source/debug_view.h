@@ -16,6 +16,7 @@ namespace ff::internal
         size_t frame_count() const;
         void frame_count(size_t value);
 
+        bool anything_visible() const;
         bool debug_visible() const;
         void debug_visible(bool value);
         bool stopped_visible() const;
