@@ -14,7 +14,7 @@
 #include "resource.h"
 #include "vertex.h"
 
-static void get_alpha_blend(D3D12_RENDER_TARGET_BLEND_DESC& desc)
+static void get_alpha_blend_desc(D3D12_RENDER_TARGET_BLEND_DESC& desc)
 {
     // newColor = (srcColor * SrcBlend) BlendOp (destColor * DestBlend)
     // newAlpha = (srcAlpha * SrcBlendAlpha) BlendOpAlpha (destAlpha * DestBlendAlpha)
@@ -174,7 +174,7 @@ namespace
 
             if (ff::flags::has(index, state_t::blend_alpha))
             {
-                ::get_alpha_blend(desc.BlendState.RenderTarget[0]);
+                ::get_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
             }
             else if (ff::flags::has(index, state_t::blend_pma))
             {

@@ -11,7 +11,7 @@ static std::shared_ptr<ff::dxgi::texture_base> get_texture_1080()
     std::shared_ptr<ff::dxgi::texture_base> texture = ::weak_texture_1080.lock();
     if (!texture)
     {
-        texture = ff::dxgi_client().create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM);
+        texture = ff::dxgi_client().create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, &ff::dxgi::color_none());
         ::weak_texture_1080 = texture;
     }
 
@@ -138,8 +138,10 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
 
         if (!entry.used_targets[index])
         {
-            bool palette = (type == ff::render_target_type::palette);
-            const DirectX::XMFLOAT4& clear_color = palette ? entry.palette_clear_color : entry.clear_color;
+            const bool palette = (type == ff::render_target_type::palette);
+            const DirectX::XMFLOAT4& clear_color = palette
+                ? entry.palette_clear_color
+                : (type == ff::render_target_type::rgba_pma ? ff::dxgi::color_none() : entry.clear_color);
 
             if (!entry.textures[index])
             {
