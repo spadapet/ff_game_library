@@ -3,11 +3,14 @@
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 {
-    NsProp("game_seconds", &ff::internal::debug_view_model::game_seconds);
-    NsProp("delta_seconds", &ff::internal::debug_view_model::delta_seconds);
-    NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second);
-    NsProp("frame_count", &ff::internal::debug_view_model::frame_count);
-    NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible);
+    NsProp("game_seconds", &ff::internal::debug_view_model::game_seconds, &ff::internal::debug_view_model::game_seconds);
+    NsProp("delta_seconds", &ff::internal::debug_view_model::delta_seconds, &ff::internal::debug_view_model::delta_seconds);
+    NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
+    NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
+    NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
+    NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
+    NsProp("chart_visible", &ff::internal::debug_view_model::chart_visible, &ff::internal::debug_view_model::chart_visible);
+    NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
 }
 
 ff::internal::debug_view_model::debug_view_model()
@@ -65,7 +68,31 @@ bool ff::internal::debug_view_model::debug_visible() const
 
 void ff::internal::debug_view_model::debug_visible(bool value)
 {
-    this->set_property(this->debug_visible_, value, "debug_visible", "anything_visible");
+    this->set_property(this->debug_visible_, value,
+        "debug_visible",
+        "anything_visible",
+        "timers_visible",
+        "chart_visible");
+}
+
+bool ff::internal::debug_view_model::timers_visible() const
+{
+    return this->debug_visible_ && this->timers_visible_;
+}
+
+void ff::internal::debug_view_model::timers_visible(bool value)
+{
+    this->set_property(this->timers_visible_, value, "timers_visible");
+}
+
+bool ff::internal::debug_view_model::chart_visible() const
+{
+    return this->debug_visible_ && this->chart_visible_;
+}
+
+void ff::internal::debug_view_model::chart_visible(bool value)
+{
+    this->set_property(this->chart_visible_, value, "chart_visible");
 }
 
 bool ff::internal::debug_view_model::stopped_visible() const

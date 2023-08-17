@@ -20,8 +20,10 @@ namespace ff
         public double delta_seconds => 0.125;
         public int frames_per_second => 60;
         public int frame_count => 32;
-        public bool debug_visible => true;
-        public bool stopped_visible => true;
+        public bool debug_visible { get => true; set { } }
+        public bool timers_visible { get => true; set { } }
+        public bool chart_visible { get => true; set { } }
+        public bool stopped_visible { get => true; set { } }
     }
 
     public partial class debug_view : UserControl

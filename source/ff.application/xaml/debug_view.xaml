@@ -7,8 +7,9 @@
     xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions"
     x:Class="ff.debug_view"
     mc:Ignorable="d" 
-    d:DesignWidth="320"
-    d:DesignHeight="128"
+    d:Background="DarkRed"
+    d:DesignWidth="640"
+    d:DesignHeight="480"
     d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type ff:debug_view_model}}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Foreground="White"
@@ -20,16 +21,99 @@
 
     <!-- Block global styles from applying to any types used in this file -->
     <UserControl.Resources>
+        <ControlTemplate x:Key="ButtonTemplate" TargetType="{x:Type Button}">
+            <Grid>
+                <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Opacity="0" />
+                <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </Border>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="border" Property="Opacity" Value="1" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter TargetName="border" Property="Opacity" Value="0.5" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="CheckBoxTemplate" TargetType="{x:Type CheckBox}">
+            <BulletDecorator>
+                <BulletDecorator.Bullet>
+                    <TextBlock x:Name="bullet" Text="&#xE739; " FontFamily="#Segoe MDL2 Assets" />
+                </BulletDecorator.Bullet>
+                <ContentPresenter />
+            </BulletDecorator>
+            <ControlTemplate.Triggers>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True" />
+                        <Condition Property="IsChecked" Value="False" />
+                    </MultiTrigger.Conditions>
+                    <Setter TargetName="bullet" Property="Text" Value="&#xE73B; " />
+                </MultiTrigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True" />
+                        <Condition Property="IsChecked" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter TargetName="bullet" Property="Text" Value="&#xE73D; " />
+                </MultiTrigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="False" />
+                        <Condition Property="IsChecked" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter TargetName="bullet" Property="Text" Value="&#xE73A; " />
+                </MultiTrigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter TargetName="bullet" Property="Text" Value="&#xE73C; " />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="ControlFocusVisualStyle" TargetType="{x:Type Control}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Control}">
+                        <Grid Margin="-2">
+                            <Rectangle StrokeThickness="1" Stroke="Black" />
+                            <Rectangle StrokeThickness="1" Stroke="White" StrokeDashArray="1 2" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="{x:Type Border}" BasedOn="{x:Null}" />
 
+        <Style x:Key="ContainerBorder" TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="2" />
+            <Setter Property="Background" Value="#20000000" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="noesis:Text.StrokeThickness" Value="2" />
+            <Setter Property="noesis:Text.Stroke" Value="Black" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#80000000" />
+                    <Setter Property="BorderBrush" Value="White" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type Button}" BasedOn="{x:Null}">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template" Value="{StaticResource ButtonTemplate}" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
         </Style>
 
         <Style TargetType="{x:Type Canvas}" BasedOn="{x:Null}" />
 
         <Style TargetType="{x:Type CheckBox}" BasedOn="{x:Null}">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template" Value="{StaticResource CheckBoxTemplate}" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
 
         <Style x:Key="ToolButton" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
@@ -40,11 +124,33 @@
             <Setter Property="BorderBrush" Value="White" />
             <Setter Property="FontFamily" Value="#Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="10" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="{x:Type Button}" BasedOn="{StaticResource ToolButton}">
+            <Setter Property="Background" Value="Red" />
+            <Setter Property="Content" Value="&#xE711;" />
+            <Setter Property="ToolTip" Value="Close" />
         </Style>
 
         <Style TargetType="{x:Type Grid}" BasedOn="{x:Null}" />
         <Style TargetType="{x:Type StackPanel}" BasedOn="{x:Null}" />
         <Style TargetType="{x:Type TextBlock}" BasedOn="{x:Null}" />
+
+        <Style TargetType="{x:Type ToolTip}" BasedOn="{x:Null}">
+            <Setter Property="FontFamily" Value="ff/#Inconsolata" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToolTip}">
+                        <Border BorderThickness="1" BorderBrush="White" Background="DarkSlateBlue" Padding="4,2">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
     </UserControl.Resources>
@@ -55,49 +161,72 @@
             BorderThickness="5"
             BorderBrush="#A0662166"
             Visibility="{Binding stopped_visible, Converter={StaticResource bool_to_visible_converter}}" />
-        <Border
-            x:Name="debug_root"
-            BorderThickness="1"
-            Padding="2"
-            Margin="8"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Top"
-            Visibility="{Binding debug_visible, Converter={StaticResource bool_to_visible_converter}}"
-            noesis:Text.StrokeThickness="2" noesis:Text.Stroke="Black">
-            <Border.Style>
-                <Style TargetType="Border" BasedOn="{StaticResource {x:Type Border}}">
-                    <Setter Property="Background" Value="#20000000" />
-                    <Setter Property="BorderBrush" Value="Black" />
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#80000000" />
-                            <Setter Property="BorderBrush" Value="White" />
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
-            <StackPanel Orientation="Vertical">
+        <Grid Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Horizontal">
-                    <Button Background="Red" Content="&#xE711;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                    <Button Background="Transparent" Content="&#xE76B;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                    <Button Background="Transparent" Content="&#xE76C;" ToolTip="Close debug overlay" Style="{StaticResource ToolButton}" />
-                    <TextBlock Grid.Column="1" Text="Perf" Margin="2,0,0,0" VerticalAlignment="Center" />
+            <Border
+                x:Name="debug_root"
+                Visibility="{Binding debug_visible, Converter={StaticResource bool_to_visible_converter}}"
+                Style="{StaticResource ContainerBorder}">
+
+                <StackPanel Orientation="Vertical">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource CloseButton}" />
+                        <!--<Button Background="Transparent" Content="&#xE76B;" ToolTip="Previous" Style="{StaticResource ToolButton}" />-->
+                        <!--<Button Background="Transparent" Content="&#xE76C;" ToolTip="Next" Style="{StaticResource ToolButton}" />-->
+                        <TextBlock Text=" Debug" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2" Margin="0,4">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="FPS:{0}, #{1}, {2:F2}s">
+                                <Binding Path="frames_per_second" Mode="OneWay" />
+                                <Binding Path="frame_count" Mode="OneWay" />
+                                <Binding Path="game_seconds" Mode="OneWay" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+
+                    <CheckBox Content="Show timers" IsChecked="{Binding timers_visible, Mode=TwoWay}" />
+                    <CheckBox Content="Show chart" IsChecked="{Binding chart_visible, Mode=TwoWay}" />
                 </StackPanel>
+            </Border>
 
-                <TextBlock Grid.Row="2">
-                    <TextBlock.Text>
-                        <MultiBinding StringFormat="FPS:{0}, #{1}, {2:F2}s">
-                            <Binding Path="frames_per_second" Mode="OneWay" />
-                            <Binding Path="frame_count" Mode="OneWay" />
-                            <Binding Path="game_seconds" Mode="OneWay" />
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
+            <Border
+                x:Name="timers_root"
+                Grid.Row="2"
+                Visibility="{Binding timers_visible, Converter={StaticResource bool_to_visible_converter}}"
+                Style="{StaticResource ContainerBorder}">
 
-                <CheckBox Content="Show timers" />
-                <CheckBox Content="Show chart" />
-            </StackPanel>
-        </Border>
+                <StackPanel Orientation="Vertical">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource CloseButton}" />
+                        <TextBlock Text=" Timers" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <ItemsControl>
+                        <ListViewItem>Item 0</ListViewItem>
+                        <ListViewItem>Item 1</ListViewItem>
+                        <ListViewItem>Item 2</ListViewItem>
+                        <ListViewItem>Item 3</ListViewItem>
+                        <ListViewItem>Item 4</ListViewItem>
+                        <ListViewItem>Item 5</ListViewItem>
+                        <ListViewItem>Item 6</ListViewItem>
+                        <ListViewItem>Item 7</ListViewItem>
+                        <ListViewItem>Item 8</ListViewItem>
+                        <ListViewItem>Item 9</ListViewItem>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
