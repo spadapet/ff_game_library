@@ -1,4 +1,5 @@
 #pragma once
+#pragma push_macro("assert")
 
 // C++
 #include <array>
@@ -43,3 +44,5 @@
 #include <winrt/Windows.UI.Xaml.h>
 #include <winrt/Windows.UI.Xaml.Controls.h>
 #endif
+
+#pragma pop_macro("assert")

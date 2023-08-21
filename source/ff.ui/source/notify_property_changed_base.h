@@ -22,6 +22,16 @@ namespace ff::ui
             }
         }
 
+        template<typename... Args>
+        bool properties_changed(Args&&... property_names)
+        {
+            std::initializer_list<std::string_view> name_list{ property_names... };
+            for (std::string_view name : name_list)
+            {
+                this->property_changed(name);
+            }
+        }
+
     private:
         Noesis::PropertyChangedEventHandler property_changed_;
 
@@ -40,6 +50,16 @@ namespace ff::ui
 
     protected:
         virtual void property_changed(std::string_view name);
+
+        template<typename... Args>
+        bool properties_changed(Args&&... property_names)
+        {
+            std::initializer_list<std::string_view> name_list{ property_names... };
+            for (std::string_view name : name_list)
+            {
+                this->property_changed(name);
+            }
+        }
 
         template<class T, typename... Args>
         bool set_property(T& storage, const T& value, Args&&... property_names)

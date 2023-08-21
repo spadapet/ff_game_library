@@ -6,6 +6,7 @@ namespace ff::internal
 {
     class debug_view;
     class debug_view_model;
+    class stopped_view;
 
     class debug_state : public ff::state
     {
@@ -18,19 +19,18 @@ namespace ff::internal
         virtual ff::state* child_state(size_t index) override;
 
     private:
-        size_t current_page{};
-        size_t stopped_counter{};
         const ff::perf_results& perf_results;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
         Noesis::Ptr<ff::internal::debug_view_model> view_model;
-        Noesis::Ptr<ff::internal::debug_view> debug_view;
         std::shared_ptr<ff::state> debug_view_state;
+        std::shared_ptr<ff::state> stopped_view_state;
     };
 }
 
 namespace ff
 {
-    void add_debug_page(const std::shared_ptr<ff::state>& page);
-    ff::signal_sink<>& custom_debug_sink();
+    void add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory);
+    void remove_debug_page(std::string_view name);
+    ff::signal_sink<>& custom_debug_sink(); // Shift-F8
 }

@@ -1,4 +1,5 @@
 #pragma once
+#pragma push_macro("assert")
 
 // Windows
 #include <DirectXMath.h>
@@ -8,4 +9,5 @@
 #include <directxtex/DirectXTex/DirectXTex.h>
 
 // FF
+#pragma pop_macro("assert")
 #include <ff.data.h>

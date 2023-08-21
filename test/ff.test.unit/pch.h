@@ -1,18 +1,19 @@
 #pragma once
+#pragma push_macro("assert")
 
 // C++
 #include <filesystem>
 #include <iostream>
-
-// FF
-#include <ff.all.h>
-#include <ff.dx12.h>
 
 // VS
 #include <CppUnitTest.h>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::literals;
+
+// FF
+#pragma pop_macro("assert")
+#include <ff.all.h>
 
 // Local
 #include "source/resource.h"

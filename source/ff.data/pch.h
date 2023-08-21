@@ -1,4 +1,5 @@
 #pragma once
+#pragma push_macro("assert")
 
 // C++
 #include <charconv>
@@ -12,4 +13,5 @@
 #include <wrl.h>
 
 // FF
+#pragma pop_macro("assert")
 #include <ff.base.h>

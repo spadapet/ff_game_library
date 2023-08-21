@@ -1,4 +1,5 @@
 #pragma once
+#pragma push_macro("assert")
 
 // C++
 #include <algorithm>
@@ -15,4 +16,5 @@
 #include <directxtex/DirectXTex/d3dx12.h>
 
 // FF
+#pragma pop_macro("assert")
 #include <ff.dxgi.h>

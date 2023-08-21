@@ -13,6 +13,12 @@
     "file": "file:../xaml/debug_view.xaml"
   },
 
+  "ff.stopped_view.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/stopped_view.xaml"
+  },
+
   "ff.debug_page_input":
   {
     "res:type": "input",

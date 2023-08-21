@@ -1,22 +1,32 @@
 #include "pch.h"
-#include "app.h"
-#include "app_time.h"
 #include "debug_state.h"
 #include "debug_view.h"
-#include "state_wrapper.h"
 #include "ui_view_state.h"
 
 using namespace std::string_view_literals;
 
 static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
-
-static std::vector<std::shared_ptr<ff::state>> debug_pages;
 static ff::signal<> custom_debug_signal;
 
-void ff::add_debug_page(const std::shared_ptr<ff::state>& page)
+void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
 {
-    ::debug_pages.push_back(page->wrap());
+    ff::internal::debug_view_model::static_pages()->Add(Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory)));
+}
+
+void ff::remove_debug_page(std::string_view name)
+{
+    Noesis::ObservableCollection<ff::internal::debug_page_model>* pages = ff::internal::debug_view_model::static_pages();
+    for (uint32_t i = 0; i < static_cast<uint32_t>(pages->Count()); i++)
+    {
+        ff::internal::debug_page_model* page = pages->Get(i);
+        if (!page->is_none() && name == page->name())
+        {
+            page->set_removed();
+            pages->RemoveAt(i);
+            break;
+        }
+    }
 }
 
 ff::signal_sink<>& ff::custom_debug_sink()
@@ -28,9 +38,9 @@ ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping("ff.debug_page_input")
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
-    , view_model(*new ff::internal::debug_view_model())
-    , debug_view(*new ff::internal::debug_view(this->view_model))
-    , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(this->debug_view)))
+    , view_model(Noesis::MakePtr<ff::internal::debug_view_model>())
+    , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::debug_view>(this->view_model))))
+    , stopped_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::stopped_view>(this->view_model))))
 {}
 
 void ff::internal::debug_state::advance_input()
@@ -56,16 +66,14 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 
     if (this->view_model->debug_visible())
     {
-        ff::internal::debug_view_model& vm = *this->debug_view->view_model();
-
-        vm.game_seconds(this->perf_results.absolute_seconds);
-        vm.delta_seconds(this->perf_results.delta_seconds);
+        this->view_model->game_seconds(this->perf_results.absolute_seconds);
+        this->view_model->delta_seconds(this->perf_results.delta_seconds);
 
         if (this->perf_results.counter_infos.size())
         {
             const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
-            vm.frames_per_second(info.hit_per_second);
-            vm.frame_count(info.hit_total);
+            this->view_model->frames_per_second(info.hit_per_second);
+            this->view_model->frame_count(info.hit_total);
         }
     }
 
@@ -74,14 +82,35 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 
 size_t ff::internal::debug_state::child_state_count()
 {
-    return (this->view_model->debug_visible() || this->view_model->stopped_visible())
-        ? (this->current_page < ::debug_pages.size() ? 2 : 1)
-        : 0;
+    return
+        (this->view_model->debug_visible() ? 1 : 0) +
+        (this->view_model->stopped_visible() ? 1 : 0) +
+        (this->view_model->page_visible() ? 1 : 0);
 }
 
 ff::state* ff::internal::debug_state::child_state(size_t index)
 {
-    return index
-        ? ::debug_pages[this->current_page].get()
-        : this->debug_view_state.get();
+    switch (index)
+    {
+        case 1:
+            if (this->view_model->stopped_visible() && this->view_model->page_visible())
+            {
+                return this->view_model->selected_page()->state();
+            }
+            break;
+
+        case 0:
+            if (this->view_model->stopped_visible())
+            {
+                return this->stopped_view_state.get();
+            }
+
+            if (this->view_model->page_visible())
+            {
+                this->view_model->selected_page()->state();
+            }
+            break;
+    }
+
+    return this->debug_view_state.get();
 }

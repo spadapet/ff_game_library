@@ -8,5 +8,8 @@
         Title="Application"
         Width="640" Height="360"
         Background="White">
-    <ff:debug_view />
+    <Grid>
+        <ff:stopped_view />
+        <ff:debug_view />
+    </Grid>
 </Window>

@@ -19,31 +19,6 @@ namespace
         pausing,
         paused
     };
-
-    class ui_state : public ff::state
-    {
-    public:
-        virtual std::shared_ptr<ff::state> advance_time() override
-        {
-            ff::ui::state_advance_time();
-            return nullptr;
-        }
-
-        virtual void advance_input() override
-        {
-            ff::ui::state_advance_input();
-        }
-
-        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
-        {
-            ff::ui::state_rendering();
-        }
-
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
-        {
-            ff::ui::state_rendered();
-        }
-    };
 }
 
 static ff::init_app_params app_params;
@@ -157,9 +132,6 @@ static void frame_render(ff::state::advance_t advance_type)
 {
     ff::perf_timer timer_render(::perf_render);
 
-    DirectX::XMFLOAT4 clear_color;
-    const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
-
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     {
         ff::perf_timer timer(::perf_render_wait);
@@ -169,27 +141,30 @@ static void frame_render(ff::state::advance_t advance_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_begin);
+        DirectX::XMFLOAT4 clear_color;
+        const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
         begin_render = ::target->begin_render(context, clear_color2);
     }
 
     if (begin_render)
     {
+        ff::perf_timer timer(::perf_render_game_render);
         {
             ff::perf_timer timer(::perf_render_pre_game_render);
             ::game_state.frame_rendering(advance_type, context, *::render_targets);
         }
-        {
-            ff::perf_timer timer(::perf_render_game_render);
-            ::game_state.render(context, *::render_targets);
-        }
+
+        ::game_state.render(context, *::render_targets);
         {
             ff::perf_timer timer(::perf_render_post_game_render);
             ::game_state.frame_rendered(advance_type, context, *::render_targets);
         }
-        {
-            ff::perf_timer timer(::perf_render_present);
-            ::target->end_render(context);
-        }
+    }
+
+    if (begin_render)
+    {
+        ff::perf_timer timer(::perf_render_present);
+        ::target->end_render(context);
     }
 }
 
@@ -252,6 +227,36 @@ static void init_debug_components()
     Noesis::RegisterComponent<ff::internal::debug_view>();
 }
 
+static std::shared_ptr<ff::state> create_ui_state()
+{
+    class ui_state : public ff::state
+    {
+    public:
+        virtual std::shared_ptr<ff::state> advance_time() override
+        {
+            ff::ui::state_advance_time();
+            return nullptr;
+        }
+
+        virtual void advance_input() override
+        {
+            ff::ui::state_advance_input();
+        }
+
+        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
+        {
+            ff::ui::state_rendering();
+        }
+
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
+        {
+            ff::ui::state_rendered();
+        }
+    };
+
+    return std::make_shared<ui_state>();
+}
+
 static void init_game_thread()
 {
     ff::internal::ui::init_game_thread();
@@ -269,7 +274,7 @@ static void init_game_thread()
     if (!::game_state)
     {
         std::vector<std::shared_ptr<ff::state>> states;
-        states.push_back(std::make_shared<::ui_state>());
+        states.push_back(::create_ui_state());
 
         if (::app_params.create_initial_state_func)
         {
