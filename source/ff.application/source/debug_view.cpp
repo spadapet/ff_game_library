@@ -4,6 +4,7 @@
 
 using namespace std::string_view_literals;
 static std::string_view NONE_NAME = "None"sv;
+static Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> static_pages;
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_page_model, "ff.debug_page_model")
 {
@@ -78,6 +79,7 @@ ff::internal::debug_view_model::debug_view_model()
 ff::internal::debug_view_model::~debug_view_model()
 {
     this->pages()->CollectionChanged() -= Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
+    ::static_pages.Reset();
 }
 
 double ff::internal::debug_view_model::game_seconds() const
@@ -178,15 +180,13 @@ Noesis::ObservableCollection<ff::internal::debug_page_model>* ff::internal::debu
 
 Noesis::ObservableCollection<ff::internal::debug_page_model>* ff::internal::debug_view_model::static_pages()
 {
-    static auto create_static_pages = []()
-        {
-            auto pages = Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>();
-            pages->Add(Noesis::MakePtr<ff::internal::debug_page_model>());
-            return pages;
-        };
+    if (!::static_pages)
+    {
+        ::static_pages = Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>();
+        ::static_pages->Add(Noesis::MakePtr<ff::internal::debug_page_model>());
+    }
 
-    static auto pages = create_static_pages();
-    return pages;
+    return ::static_pages;
 }
 
 ff::internal::debug_page_model* ff::internal::debug_view_model::selected_page() const

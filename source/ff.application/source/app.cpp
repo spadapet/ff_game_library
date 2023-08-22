@@ -223,8 +223,10 @@ static void frame_advance_and_render()
 
 static void init_debug_components()
 {
+    Noesis::RegisterComponent<ff::internal::debug_page_model>();
     Noesis::RegisterComponent<ff::internal::debug_view_model>();
     Noesis::RegisterComponent<ff::internal::debug_view>();
+    Noesis::RegisterComponent<ff::internal::stopped_view>();
 }
 
 static std::shared_ptr<ff::state> create_ui_state()

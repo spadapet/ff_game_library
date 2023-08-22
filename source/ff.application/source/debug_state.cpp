@@ -11,7 +11,8 @@ static ff::signal<> custom_debug_signal;
 
 void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
 {
-    ff::internal::debug_view_model::static_pages()->Add(Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory)));
+    auto page = Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory));
+    ff::internal::debug_view_model::static_pages()->Add(page);
 }
 
 void ff::remove_debug_page(std::string_view name)
