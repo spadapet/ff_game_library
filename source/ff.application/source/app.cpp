@@ -221,12 +221,15 @@ static void frame_advance_and_render()
     ::frame_update_cursor();
 }
 
-static void init_debug_components()
+static void register_components()
 {
-    Noesis::RegisterComponent<ff::internal::debug_page_model>();
-    Noesis::RegisterComponent<ff::internal::debug_view_model>();
-    Noesis::RegisterComponent<ff::internal::debug_view>();
-    Noesis::RegisterComponent<ff::internal::stopped_view>();
+    if constexpr (ff::constants::profile_build)
+    {
+        Noesis::RegisterComponent<ff::internal::debug_page_model>();
+        Noesis::RegisterComponent<ff::internal::debug_view_model>();
+        Noesis::RegisterComponent<ff::internal::debug_view>();
+        Noesis::RegisterComponent<ff::internal::stopped_view>();
+    }
 }
 
 static std::shared_ptr<ff::state> create_ui_state()
@@ -261,12 +264,19 @@ static std::shared_ptr<ff::state> create_ui_state()
 
 static void init_game_thread()
 {
-    ff::internal::ui::init_game_thread();
+#if PROFILE_APP
+    Noesis::Ptr<ff::internal::debug_view_model> debug_view_model;
+#endif
 
-    if (ff::constants::profile_build)
-    {
-        ::init_debug_components();
-    }
+    ff::internal::ui::init_game_thread([&debug_view_model]()
+        {
+            ::register_components();
+
+            if constexpr (ff::constants::profile_build)
+            {
+                debug_view_model = Noesis::MakePtr<ff::internal::debug_view_model>();
+            }
+        });
 
     if (::app_params.game_thread_started_func)
     {
@@ -287,9 +297,10 @@ static void init_game_thread()
             }
         }
 
-        if (ff::constants::profile_build)
+        if constexpr (ff::constants::profile_build)
         {
-            states.push_back(std::make_shared<ff::internal::debug_state>(::perf_results));
+            assert(debug_view_model);
+            states.push_back(std::make_shared<ff::internal::debug_state>(debug_view_model, ::perf_results));
         }
 
         ::game_state = std::make_shared<ff::state_list>(std::move(states));

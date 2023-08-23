@@ -4,7 +4,7 @@
 
 using namespace std::string_view_literals;
 static std::string_view NONE_NAME = "None"sv;
-static Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> static_pages;
+static ff::internal::debug_view_model* global_debug_view_model{};
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_page_model, "ff.debug_page_model")
 {
@@ -40,7 +40,7 @@ ff::state* ff::internal::debug_page_model::state() const
 
 bool ff::internal::debug_page_model::is_none() const
 {
-    return ff::internal::debug_view_model::static_pages()->Get(0) == this;
+    return this->name() == ::NONE_NAME;
 }
 
 bool ff::internal::debug_page_model::removed() const
@@ -61,7 +61,6 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
     NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
     NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
-    NsProp("extensions_visible", &ff::internal::debug_view_model::extensions_visible, &ff::internal::debug_view_model::extensions_visible);
     NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
     NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
     NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
@@ -71,15 +70,28 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 }
 
 ff::internal::debug_view_model::debug_view_model()
-    : selected_page_(ff::internal::debug_view_model::static_pages()->Get(0))
+    : pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
+    , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
 {
+    this->pages_->Add(this->selected_page_);
     this->pages()->CollectionChanged() += Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
+
+    assert(!::global_debug_view_model);
+    ::global_debug_view_model = this;
 }
 
 ff::internal::debug_view_model::~debug_view_model()
 {
     this->pages()->CollectionChanged() -= Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
-    ::static_pages.Reset();
+
+    assert(::global_debug_view_model == this);
+    ::global_debug_view_model = nullptr;
+}
+
+ff::internal::debug_view_model* ff::internal::debug_view_model::get()
+{
+    assert(::global_debug_view_model);
+    return ::global_debug_view_model;
 }
 
 double ff::internal::debug_view_model::game_seconds() const
@@ -132,19 +144,9 @@ void ff::internal::debug_view_model::debug_visible(bool value)
     this->set_property(this->debug_visible_, value, "debug_visible");
 }
 
-bool ff::internal::debug_view_model::extensions_visible() const
-{
-    return this->extensions_visible_;
-}
-
-void ff::internal::debug_view_model::extensions_visible(bool value)
-{
-    this->set_property(this->extensions_visible_, value, "extensions_visible");
-}
-
 bool ff::internal::debug_view_model::timers_visible() const
 {
-    return this->debug_visible_ && this->timers_visible_;
+    return this->timers_visible_;
 }
 
 void ff::internal::debug_view_model::timers_visible(bool value)
@@ -175,18 +177,7 @@ bool ff::internal::debug_view_model::page_visible() const
 
 Noesis::ObservableCollection<ff::internal::debug_page_model>* ff::internal::debug_view_model::pages() const
 {
-    return ff::internal::debug_view_model::static_pages();
-}
-
-Noesis::ObservableCollection<ff::internal::debug_page_model>* ff::internal::debug_view_model::static_pages()
-{
-    if (!::static_pages)
-    {
-        ::static_pages = Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>();
-        ::static_pages->Add(Noesis::MakePtr<ff::internal::debug_page_model>());
-    }
-
-    return ::static_pages;
+    return this->pages_;
 }
 
 ff::internal::debug_page_model* ff::internal::debug_view_model::selected_page() const

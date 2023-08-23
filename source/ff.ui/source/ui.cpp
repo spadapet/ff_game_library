@@ -174,7 +174,7 @@ static void load_assembly_callback(void* user, const char* assembly)
 extern "C" void NsInitPackageAppMediaElement();
 extern "C" void NsRegisterReflectionAppInteractivity();
 
-static void register_components()
+static void register_components(std::function<void()>&& register_extra_components)
 {
     ::NsInitPackageAppMediaElement();
     ::NsRegisterReflectionAppInteractivity();
@@ -186,6 +186,11 @@ static void register_components()
     Noesis::RegisterComponent<ff::ui::object_to_collapsed_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_object_converter>();
     Noesis::RegisterComponent<ff::ui::set_panel_child_focus_action>();
+
+    if (register_extra_components)
+    {
+        register_extra_components();
+    }
 
     if (::ui_params.register_components_func)
     {
@@ -213,7 +218,7 @@ static void init_application_resources()
     }
 }
 
-static bool init_noesis()
+static bool init_noesis(std::function<void()>&& register_extra_components)
 {
     const char* default_name = "f5025c38-29c4-476b-b18f-243889e0f620";
     const char* default_key = "irwvZR3wL2X78PY/gymZz3py2y0cGTgBn6W3rpesAobcJa13";
@@ -248,7 +253,7 @@ static bool init_noesis()
     Noesis::GUI::SetTextureProvider(::texture_provider);
     Noesis::GUI::SetFontProvider(::font_provider);
 
-    ::register_components();
+    ::register_components(std::move(register_extra_components));
     ::init_fallback_fonts();
     ::init_application_resources();
     ::noesis_dump_mem_usage();
@@ -305,9 +310,9 @@ void ff::internal::ui::destroy()
     ::device_events_connection.disconnect();
 }
 
-void ff::internal::ui::init_game_thread()
+void ff::internal::ui::init_game_thread(std::function<void()>&& register_extra_components)
 {
-    bool status = ::init_noesis();
+    bool status = ::init_noesis(std::move(register_extra_components));
     assert(status);
 }
 

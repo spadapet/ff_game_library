@@ -11,21 +11,67 @@ static ff::signal<> custom_debug_signal;
 
 void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
 {
-    auto page = Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory));
-    ff::internal::debug_view_model::static_pages()->Add(page);
+    if constexpr (ff::constants::profile_build)
+    {
+        if (ff::internal::debug_view_model::get())
+        {
+            auto page = Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory));
+            ff::internal::debug_view_model::get()->pages()->Add(page);
+        }
+    }
 }
 
 void ff::remove_debug_page(std::string_view name)
 {
-    Noesis::ObservableCollection<ff::internal::debug_page_model>* pages = ff::internal::debug_view_model::static_pages();
-    for (uint32_t i = 0; i < static_cast<uint32_t>(pages->Count()); i++)
+    if constexpr (ff::constants::profile_build)
     {
-        ff::internal::debug_page_model* page = pages->Get(i);
-        if (!page->is_none() && name == page->name())
+        if (ff::internal::debug_view_model::get())
         {
-            page->set_removed();
-            pages->RemoveAt(i);
-            break;
+            Noesis::ObservableCollection<ff::internal::debug_page_model>* pages = ff::internal::debug_view_model::get()->pages();
+            for (uint32_t i = 0; i < static_cast<uint32_t>(pages->Count()); i++)
+            {
+                ff::internal::debug_page_model* page = pages->Get(i);
+                if (!page->is_none() && name == page->name())
+                {
+                    page->set_removed();
+                    pages->RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void ff::show_debug_page(std::string_view name)
+{
+    if constexpr (ff::constants::profile_build)
+    {
+        if (ff::internal::debug_view_model::get())
+        {
+            ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
+            Noesis::ObservableCollection<ff::internal::debug_page_model>* pages = vm->pages();
+
+            for (uint32_t i = 0; i < static_cast<uint32_t>(pages->Count()); i++)
+            {
+                ff::internal::debug_page_model* page = pages->Get(i);
+                if (page->name() == name || (!name.size() && page->is_none()))
+                {
+                    vm->selected_page(page);
+                    vm->debug_visible(true);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void ff::debug_visible(bool value)
+{
+    if constexpr (ff::constants::profile_build)
+    {
+        if (ff::internal::debug_view_model::get())
+        {
+            ff::internal::debug_view_model::get()->debug_visible(value);
         }
     }
 }
@@ -35,11 +81,11 @@ ff::signal_sink<>& ff::custom_debug_sink()
     return ::custom_debug_signal;
 }
 
-ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
+ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping("ff.debug_page_input")
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
-    , view_model(Noesis::MakePtr<ff::internal::debug_view_model>())
+    , view_model(view_model)
     , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::debug_view>(this->view_model))))
     , stopped_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::stopped_view>(this->view_model))))
 {}

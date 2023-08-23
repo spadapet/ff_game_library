@@ -11,7 +11,7 @@ namespace ff::internal
     class debug_state : public ff::state
     {
     public:
-        debug_state(const ff::perf_results& perf_results);
+        debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results);
 
         virtual void advance_input() override;
         virtual void frame_started(ff::state::advance_t type) override;
@@ -32,5 +32,7 @@ namespace ff
 {
     void add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory);
     void remove_debug_page(std::string_view name);
+    void show_debug_page(std::string_view name);
+    void debug_visible(bool value);
     ff::signal_sink<>& custom_debug_sink(); // Shift-F8
 }

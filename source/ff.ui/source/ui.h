@@ -30,7 +30,7 @@ namespace ff::internal::ui
     bool init(const ff::init_ui_params& params);
     void destroy();
 
-    void init_game_thread();
+    void init_game_thread(std::function<void()>&& register_extra_components);
     void destroy_game_thread();
 
     ff::internal::ui::font_provider* global_font_provider();

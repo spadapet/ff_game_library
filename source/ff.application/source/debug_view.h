@@ -34,6 +34,8 @@ namespace ff::internal
         debug_view_model();
         ~debug_view_model() override;
 
+        static ff::internal::debug_view_model* get();
+
         double game_seconds() const;
         void game_seconds(double value);
 
@@ -49,9 +51,6 @@ namespace ff::internal
         bool debug_visible() const;
         void debug_visible(bool value);
 
-        bool extensions_visible() const;
-        void extensions_visible(bool value);
-
         bool timers_visible() const;
         void timers_visible(bool value);
 
@@ -61,7 +60,6 @@ namespace ff::internal
         bool has_pages() const;
         bool page_visible() const;
         Noesis::ObservableCollection<ff::internal::debug_page_model>* pages() const;
-        static Noesis::ObservableCollection<ff::internal::debug_page_model>* static_pages();
         ff::internal::debug_page_model* selected_page() const;
         void selected_page(ff::internal::debug_page_model* value);
 
@@ -75,9 +73,9 @@ namespace ff::internal
         size_t frames_per_second_{};
         size_t frame_count_{};
         bool debug_visible_{};
-        bool extensions_visible_{};
         bool timers_visible_{};
         bool stopped_visible_{};
+        Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
     };
 
