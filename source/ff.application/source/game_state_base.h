@@ -1,10 +1,21 @@
 #pragma once
 
 #include "state.h"
-#include "system_options.h"
 
 namespace ff::game
 {
+    struct system_options
+    {
+        static const uint8_t CURRENT_VERSION = 2;
+
+        uint8_t version{ ff::game::system_options::CURRENT_VERSION };
+        bool full_screen{};
+        bool sound{ true };
+        bool music{ true };
+        ff::fixed_int sound_volume{ 1 };
+        ff::fixed_int music_volume{ 1 };
+    };
+
     class app_state_base : public ff::state
     {
     public:

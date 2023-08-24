@@ -18,7 +18,7 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
 
             ff::thread_dispatch thread_dispatch(ff::thread_dispatch_type::game);
             ff::init_ui init_ui(::test_uwp::get_init_ui_params());
-            ff::internal::ui::init_game_thread();
+            ff::internal::ui::init_game_thread({});
             auto target = ff::dxgi_client().create_target_for_window({});
             auto depth = ff::dxgi_client().create_depth({}, {});
             ff::ui_view view("overlay.xaml", ff::ui_view_options::cache_render);

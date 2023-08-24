@@ -14,12 +14,6 @@
     <ClCompile Include="source\state.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\state_list.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\state_wrapper.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\ui_view_state.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -35,12 +29,6 @@
     <ClCompile Include="source\game_state_base.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\system_options.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\debug_view.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -50,19 +38,10 @@
     <ClInclude Include="source\init.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\app_time.h">
-      <Filter>source</Filter>
-    </ClInclude>
     <ClInclude Include="source\settings.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\state.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\state_list.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\state_wrapper.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\ui_view_state.h">
@@ -78,12 +57,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\game_state_base.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\system_options.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\debug_view.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

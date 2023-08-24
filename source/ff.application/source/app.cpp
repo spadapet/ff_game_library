@@ -1,13 +1,9 @@
 #include "pch.h"
 #include "app.h"
-#include "app_time.h"
 #include "debug_state.h"
-#include "debug_view.h"
 #include "filesystem.h"
 #include "init.h"
 #include "settings.h"
-#include "state_list.h"
-#include "state_wrapper.h"
 
 namespace
 {
@@ -28,6 +24,7 @@ static ff::win_event game_thread_event;
 static ff::signal_connection window_message_connection;
 static ff::state_wrapper game_state;
 static ff::perf_results perf_results;
+static ff::perf_counter perf_input("Input", ff::perf_color::yellow);
 static ff::perf_counter perf_frame("Frame", ff::perf_color::white);
 static ff::perf_counter perf_advance("Update", ff::perf_color::magenta);
 static ff::perf_counter perf_render("Render", ff::perf_color::green);
@@ -47,18 +44,28 @@ static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
-static ff::state::advance_t frame_start_timer()
+static void frame_advance_input()
+{
+    ff::perf_timer timer(::perf_input);
+    ff::thread_dispatch::get_game()->flush();
+    ff::input::combined_devices().advance();
+    ::game_state.advance_input();
+}
+
+static ff::state::advance_t frame_start_timer(ff::state::advance_t previous_advance_type)
 {
     const double time_scale = ::app_params.get_time_scale_func();
     const ff::state::advance_t advance_type = (time_scale > 0.0) ? ::app_params.get_advance_type_func() : ff::state::advance_t::stopped;
-    const bool running = (advance_type == ff::state::advance_t::running);
+    const bool was_running = (previous_advance_type == ff::state::advance_t::running);
+    const bool stopped = (advance_type == ff::state::advance_t::stopped);
 
-    ::app_time.time_scale = running ? time_scale : 0.0;
+    ::app_time.time_scale = !stopped ? time_scale : 0.0;
     ::timer.time_scale(::app_time.time_scale);
 
-    ::app_time.frame_count++;
+    ::app_time.frame_count += !stopped;
     ::app_time.app_seconds = ::timer.seconds();
-    ::app_time.unused_advance_seconds += ::timer.tick(running ? -1.0 : ff::constants::seconds_per_advance);
+    ::app_time.perf_clock_ticks = ff::perf_measures::now_ticks();
+    ::app_time.unused_advance_seconds += ::timer.tick(was_running ? -1.0 : ff::constants::seconds_per_advance);
     ::app_time.clock_seconds = ::timer.clock_seconds();
 
     return advance_type;
@@ -68,19 +75,16 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
 {
     size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent()) ? 1 : 4;
 
-    ff::thread_dispatch::get_game()->flush();
-
-    ff::input::combined_devices().advance();
-    ::game_state.advance_input();
-
     switch (advance_type)
     {
         case ff::state::advance_t::stopped:
+            ::app_time.unused_advance_seconds = 0;
             return false;
 
         case ff::state::advance_t::single_step:
             if (advance_count)
             {
+                ::app_time.unused_advance_seconds = 0;
                 return false;
             }
             break;
@@ -122,6 +126,11 @@ static void frame_advance_many(ff::state::advance_t advance_type)
     size_t advance_count = 0;
     while (::frame_advance_timer(advance_type, advance_count))
     {
+        if (advance_count > 1)
+        {
+            ::frame_advance_input();
+        }
+
         ff::perf_timer timer(::perf_advance);
         ff::random_sprite::advance_time();
         ::game_state.advance_time();
@@ -207,18 +216,23 @@ static void frame_update_cursor()
     }
 }
 
-static void frame_advance_and_render()
+static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previous_advance_type)
 {
-    // How much time passed since the last frame
-    ff::state::advance_t advance_type = ::frame_start_timer();
-    int64_t start_ticks = ff::perf_measures::game().reset(::app_time.clock_seconds, (::app_time.frame_count % 16) ? &::perf_results : nullptr);
-    ff::perf_timer timer_frame(::perf_frame, start_ticks);
+    // Input is part of previous frame's perf measures. But it must be first, before the timer updates,
+    // because user input can affect how time is computed (like stopping or single stepping through frames)
+    ::frame_advance_input();
+
+    ff::state::advance_t advance_type = ::frame_start_timer(previous_advance_type);
+    ff::perf_measures::game().reset(::app_time.clock_seconds, &::perf_results, true, ::app_time.perf_clock_ticks);
+    ff::perf_timer timer_frame(::perf_frame, ::app_time.perf_clock_ticks);
 
     ::game_state.frame_started(advance_type);
     ::frame_advance_many(advance_type);
     ::frame_render(advance_type);
     ff::dxgi_client().frame_complete();
     ::frame_update_cursor();
+
+    return advance_type;
 }
 
 static void register_components()
@@ -264,10 +278,7 @@ static std::shared_ptr<ff::state> create_ui_state()
 
 static void init_game_thread()
 {
-#if PROFILE_APP
     Noesis::Ptr<ff::internal::debug_view_model> debug_view_model;
-#endif
-
     ff::internal::ui::init_game_thread([&debug_view_model]()
         {
             ::register_components();
@@ -348,11 +359,13 @@ static void game_thread()
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
     ::game_thread_event.set();
     ::init_game_thread();
+    ff::state::advance_t advance_type = ff::state::advance_t::stopped;
 
     while (::game_thread_state != ::game_thread_state_t::stopped)
     {
         if (::game_thread_state == ::game_thread_state_t::pausing)
         {
+            advance_type = ff::state::advance_t::stopped;
             ::pause_game_state();
             ::game_thread_event.set();
         }
@@ -363,7 +376,7 @@ static void game_thread()
         }
         else
         {
-            ::frame_advance_and_render();
+            advance_type = ::frame_advance_and_render(advance_type);
         }
     }
 

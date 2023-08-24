@@ -31,10 +31,10 @@ double ff::timer::tick(double forced_offset)
     }
     else
     {
+        this->pass_seconds = forced_offset;
         this->seconds_ += forced_offset;
         this->start_seconds = this->seconds_;
         this->start_time = this->cur_time;
-        this->pass_seconds = forced_offset;
     }
 
     return this->pass_seconds;

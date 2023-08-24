@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "ui_view_state.h"
 
-ff::ui_view_state::ui_view_state(std::shared_ptr<ff::ui_view> view)
+ff::ui_view_state::ui_view_state(std::shared_ptr<ff::ui_view> view, bool advance_at_frame_start)
     : view_(view)
+    , advance_at_frame_start(advance_at_frame_start)
 {}
 
 const std::shared_ptr<ff::ui_view>& ff::ui_view_state::view()
@@ -10,9 +11,21 @@ const std::shared_ptr<ff::ui_view>& ff::ui_view_state::view()
     return this->view_;
 }
 
+void ff::ui_view_state::frame_started(ff::state::advance_t type)
+{
+    if (this->advance_at_frame_start)
+    {
+        this->view_->advance();
+    }
+}
+
 std::shared_ptr<ff::state> ff::ui_view_state::advance_time()
 {
-    this->view_->advance();
+    if (!this->advance_at_frame_start)
+    {
+        this->view_->advance();
+    }
+
     return nullptr;
 }
 

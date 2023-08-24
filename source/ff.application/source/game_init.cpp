@@ -180,7 +180,10 @@ static void handle_window_message(ff::window_message& msg)
             break;
 
         case WM_SYSKEYDOWN:
-            if ((msg.wp == VK_DELETE || msg.wp == VK_PRIOR || msg.wp == VK_NEXT) && ::GetKeyState(VK_SHIFT) < 0 && !ff::app_render_target().full_screen())
+            if (ff::constants::profile_build &&
+                (msg.wp == VK_DELETE || msg.wp == VK_PRIOR || msg.wp == VK_NEXT) &&
+                ::GetKeyState(VK_SHIFT) < 0 &&
+                !ff::app_render_target().full_screen())
             {
                 // Shift-Alt-Del: Force 1080p client area
                 // Shift-Alt-PgUp|PgDown: Force multiples of 1080p client area

@@ -61,11 +61,12 @@ namespace ff
         perf_measures() = default;
 
         static ff::perf_measures& game();
+        static int64_t now_ticks();
 
         size_t create();
         void start(const ff::perf_counter& counter);
         void end(const ff::perf_counter& counter, int64_t ticks);
-        int64_t reset(double absolute_seconds, ff::perf_results* results = nullptr);
+        int64_t reset(double absolute_seconds, ff::perf_results* results = nullptr, bool get_timer_results = false, int64_t override_start_ticks = 0);
 
     private:
         perf_measures(const perf_measures& other) = delete;

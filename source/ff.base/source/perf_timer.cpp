@@ -21,6 +21,11 @@ ff::perf_measures& ff::perf_measures::game()
     return ::perf_measures_game;
 }
 
+int64_t ff::perf_measures::now_ticks()
+{
+    return __rdtsc();
+}
+
 size_t ff::perf_measures::create()
 {
     assert_msg(this->counters < ff::perf_counter::MAX_COUNT, "Too many perf_counters are registered!");
@@ -66,9 +71,9 @@ void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
     this->level--;
 }
 
-int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* results)
+int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* results, bool get_timer_results, int64_t override_start_ticks)
 {
-    const int64_t now_ticks = __rdtsc();
+    const int64_t now_ticks = override_start_ticks ? override_start_ticks : ff::perf_measures::now_ticks();
     const int64_t delta_ticks = now_ticks - this->last_ticks;
     const double delta_seconds = absolute_seconds - this->last_absolute_seconds;
     this->last_ticks = now_ticks;
@@ -113,19 +118,22 @@ int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* resu
         results->counter_infos.clear();
         results->counter_infos.reserve(this->counters);
 
-        for (const ff::perf_measures::perf_counter_entry* entry = this->first_entry; entry; entry = entry->next)
+        if (get_timer_results)
         {
-            const ff::perf_measures::perf_counter_stats& stats = this->stats[entry->counter->index];
+            for (const ff::perf_measures::perf_counter_entry* entry = this->first_entry; entry; entry = entry->next)
+            {
+                const ff::perf_measures::perf_counter_stats& stats = this->stats[entry->counter->index];
 
-            ff::perf_results::counter_info info;
-            info.counter = entry->counter;
-            info.ticks = entry->ticks;
-            info.level = entry->level;
-            info.hit_total = stats.hit_total;
-            info.hit_last_frame = entry->count;
-            info.hit_per_second = stats.hit_per_second;
+                ff::perf_results::counter_info info;
+                info.counter = entry->counter;
+                info.ticks = entry->ticks;
+                info.level = entry->level;
+                info.hit_total = stats.hit_total;
+                info.hit_last_frame = entry->count;
+                info.hit_per_second = stats.hit_per_second;
 
-            results->counter_infos.push_back(info);
+                results->counter_infos.push_back(info);
+            }
         }
     }
 
@@ -140,7 +148,7 @@ int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* resu
 #if PROFILE_APP
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter)
-    : ff::perf_timer(counter, __rdtsc())
+    : ff::perf_timer(counter, ff::perf_measures::now_ticks())
 {}
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t start_ticks)
@@ -152,7 +160,7 @@ ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t start_ticks)
 
 ff::perf_timer::~perf_timer()
 {
-    const int64_t end = __rdtsc();
+    const int64_t end = ff::perf_measures::now_ticks();
     this->counter.measures.end(this->counter, (end - this->start) * (end > this->start));
 }
 

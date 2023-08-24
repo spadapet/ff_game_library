@@ -3,7 +3,6 @@
 #include "debug_state.h"
 #include "game_state_base.h"
 #include "settings.h"
-#include "state_wrapper.h"
 
 using namespace std::string_view_literals;
 

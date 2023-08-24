@@ -16,33 +16,24 @@
     </ClCompile>
     <ClCompile Include="source\app.cpp" />
     <ClCompile Include="source\debug_state.cpp" />
-    <ClCompile Include="source\debug_view.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\game_init.cpp" />
     <ClCompile Include="source\game_state_base.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\settings.cpp" />
     <ClCompile Include="source\state.cpp" />
-    <ClCompile Include="source\state_list.cpp" />
-    <ClCompile Include="source\state_wrapper.cpp" />
-    <ClCompile Include="source\system_options.cpp" />
     <ClCompile Include="source\ui_view_state.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="source\app.h" />
-    <ClInclude Include="source\app_time.h" />
     <ClInclude Include="source\debug_state.h" />
-    <ClInclude Include="source\debug_view.h" />
     <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\game_init.h" />
     <ClInclude Include="source\game_state_base.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\settings.h" />
     <ClInclude Include="source\state.h" />
-    <ClInclude Include="source\state_list.h" />
-    <ClInclude Include="source\state_wrapper.h" />
-    <ClInclude Include="source\system_options.h" />
     <ClInclude Include="source\ui_view_state.h" />
   </ItemGroup>
   <ItemGroup>
