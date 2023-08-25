@@ -14,6 +14,6 @@
     Focusable="False"
     IsHitTestVisible="False">
 
-    <Rectangle Stroke="#A0662166" StrokeThickness="5" />
+	<Rectangle Stroke="#A0662166" StrokeThickness="6" />
 
 </UserControl>

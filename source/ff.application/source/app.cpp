@@ -17,6 +17,9 @@ namespace
     };
 }
 
+static const size_t MAX_ADVANCES_PER_FRAME = 4;
+static const size_t MAX_ADVANCE_MULTIPLIER = 4;
+
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::timer timer;
@@ -56,24 +59,22 @@ static ff::state::advance_t frame_start_timer(ff::state::advance_t previous_adva
 {
     const double time_scale = ::app_params.get_time_scale_func();
     const ff::state::advance_t advance_type = (time_scale > 0.0) ? ::app_params.get_advance_type_func() : ff::state::advance_t::stopped;
+    const bool running = (advance_type != ff::state::advance_t::stopped);
     const bool was_running = (previous_advance_type == ff::state::advance_t::running);
-    const bool stopped = (advance_type == ff::state::advance_t::stopped);
 
-    ::app_time.time_scale = !stopped ? time_scale : 0.0;
-    ::timer.time_scale(::app_time.time_scale);
-
-    ::app_time.frame_count += !stopped;
-    ::app_time.app_seconds = ::timer.seconds();
+    ::app_time.time_scale = time_scale * running;
+    ::app_time.frame_count += running;
     ::app_time.perf_clock_ticks = ff::perf_measures::now_ticks();
-    ::app_time.unused_advance_seconds += ::timer.tick(was_running ? -1.0 : ff::constants::seconds_per_advance);
-    ::app_time.clock_seconds = ::timer.clock_seconds();
+    const double delta_time = ::timer.tick() * ::app_time.time_scale;
+    ::app_time.unused_advance_seconds += was_running ? delta_time : (ff::constants::seconds_per_advance * ::app_time.time_scale);
+    ::app_time.clock_seconds = ::timer.seconds();
 
     return advance_type;
 }
 
 static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advance_count)
 {
-    size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent()) ? 1 : 4;
+    size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent()) ? 1 : ::MAX_ADVANCES_PER_FRAME;
 
     switch (advance_type)
     {
@@ -90,15 +91,14 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
             break;
 
         case ff::state::advance_t::running:
-            assert(::timer.time_scale() > 0.0);
-
             if (::app_time.unused_advance_seconds < ff::constants::seconds_per_advance)
             {
                 return false;
             }
-            else
+            else if (::app_time.time_scale > 1.0)
             {
-                size_t multiplier = std::min<size_t>(static_cast<size_t>(std::ceil(::timer.time_scale())), 4);
+                size_t time_scale = static_cast<size_t>(std::ceil(::app_time.time_scale));
+                size_t multiplier = std::min(time_scale, ::MAX_ADVANCE_MULTIPLIER);
                 max_advances *= multiplier;
             }
             break;
@@ -110,15 +110,13 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
         ::app_time.unused_advance_seconds = 0;
         return false;
     }
-    else
-    {
-        ::app_time.app_seconds += ff::constants::seconds_per_advance;
-        ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance, 0.0);
-        ::app_time.advance_count++;
-        advance_count++;
 
-        return true;
-    }
+    ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance, 0.0);
+    ::app_time.advance_count++;
+    ::app_time.advance_seconds = ::app_time.advance_count / ff::constants::advances_per_second;
+    advance_count++;
+
+    return true;
 }
 
 static void frame_advance_many(ff::state::advance_t advance_type)
@@ -175,6 +173,8 @@ static void frame_render(ff::state::advance_t advance_type)
         ff::perf_timer timer(::perf_render_present);
         ::target->end_render(context);
     }
+
+    ff::dxgi_client().frame_complete();
 }
 
 static void frame_update_cursor()
@@ -229,7 +229,6 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
     ::game_state.frame_started(advance_type);
     ::frame_advance_many(advance_type);
     ::frame_render(advance_type);
-    ff::dxgi_client().frame_complete();
     ::frame_update_cursor();
 
     return advance_type;
@@ -278,6 +277,19 @@ static std::shared_ptr<ff::state> create_ui_state()
 
 static void init_game_thread()
 {
+    ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
+    ::game_thread_event.set();
+
+    if (::game_state)
+    {
+        if (::app_params.game_thread_started_func)
+        {
+            ::app_params.game_thread_started_func();
+        }
+
+        return;
+    }
+
     Noesis::Ptr<ff::internal::debug_view_model> debug_view_model;
     ff::internal::ui::init_game_thread([&debug_view_model]()
         {
@@ -294,30 +306,25 @@ static void init_game_thread()
         ::app_params.game_thread_started_func();
     }
 
-    if (!::game_state)
+    std::vector<std::shared_ptr<ff::state>> states;
+    states.push_back(::create_ui_state());
+
+    if (::app_params.create_initial_state_func)
     {
-        std::vector<std::shared_ptr<ff::state>> states;
-        states.push_back(::create_ui_state());
-
-        if (::app_params.create_initial_state_func)
+        auto initial_state = ::app_params.create_initial_state_func();
+        if (initial_state)
         {
-            auto initial_state = ::app_params.create_initial_state_func();
-            if (initial_state)
-            {
-                states.push_back(initial_state);
-            }
+            states.push_back(initial_state);
         }
-
-        if constexpr (ff::constants::profile_build)
-        {
-            assert(debug_view_model);
-            states.push_back(std::make_shared<ff::internal::debug_state>(debug_view_model, ::perf_results));
-        }
-
-        ::game_state = std::make_shared<ff::state_list>(std::move(states));
     }
 
-    ::timer.tick(0.0);
+    if constexpr (ff::constants::profile_build)
+    {
+        assert(debug_view_model);
+        states.push_back(std::make_shared<ff::internal::debug_state>(debug_view_model, ::perf_results));
+    }
+
+    ::game_state = std::make_shared<ff::state_list>(std::move(states));
 }
 
 static void destroy_game_thread()
@@ -332,6 +339,8 @@ static void destroy_game_thread()
     }
 
     ff::internal::ui::destroy_game_thread();
+    ::game_thread_dispatch.reset();
+    ::game_thread_event.set();
 }
 
 static void start_game_state()
@@ -339,7 +348,6 @@ static void start_game_state()
     if (::game_thread_state != ::game_thread_state_t::stopped)
     {
         ::game_thread_state = ::game_thread_state_t::running;
-        ::timer.tick(0.0);
     }
 }
 
@@ -351,27 +359,23 @@ static void pause_game_state()
         ff::internal::app::request_save_settings();
         ff::dxgi_client().trim_device();
     }
+
+    ::game_thread_event.set();
 }
 
 static void game_thread()
 {
-    ff::set_thread_name("ff::game_loop");
-    ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
-    ::game_thread_event.set();
     ::init_game_thread();
-    ff::state::advance_t advance_type = ff::state::advance_t::stopped;
 
-    while (::game_thread_state != ::game_thread_state_t::stopped)
+    for (ff::state::advance_t advance_type = ff::state::advance_t::stopped; ::game_thread_state != ::game_thread_state_t::stopped;)
     {
         if (::game_thread_state == ::game_thread_state_t::pausing)
         {
             advance_type = ff::state::advance_t::stopped;
             ::pause_game_state();
-            ::game_thread_event.set();
         }
         else if (::game_thread_state == ::game_thread_state_t::paused)
         {
-            size_t completed_index = 0;
             ::game_thread_dispatch->wait_for_dispatch();
         }
         else
@@ -381,8 +385,6 @@ static void game_thread()
     }
 
     ::destroy_game_thread();
-    ::game_thread_dispatch.reset();
-    ::game_thread_event.set();
 }
 
 static void start_game_thread()
@@ -599,7 +601,6 @@ static void init_window()
 
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
-    ff::set_thread_name("ff::user_interface");
 #if UWP_APP
     ff::window::main()->allow_swap_chain_panel(params.use_swap_chain_panel);
 #endif

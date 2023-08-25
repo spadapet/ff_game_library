@@ -7,6 +7,12 @@ static thread_local ff::thread_dispatch* task_thread_dispatch = nullptr;
 static ff::thread_dispatch* main_thread_dispatch = nullptr;
 static ff::thread_dispatch* game_thread_dispatch = nullptr;
 
+namespace ff
+{
+    // from thread_pool.cpp
+    void set_thread_name(std::string_view name);
+}
+
 ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     : thread_id(::GetCurrentThreadId())
     , destroyed(false)
@@ -33,11 +39,13 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
         case thread_dispatch_type::main:
             assert(!::main_thread_dispatch);
             ::main_thread_dispatch = this;
+            ff::set_thread_name("ff::main");
             break;
 
         case thread_dispatch_type::game:
             assert(!::game_thread_dispatch);
             ::game_thread_dispatch = this;
+            ff::set_thread_name("ff::game");
             break;
     }
 

@@ -13,31 +13,19 @@ static double raw_frequency_d = static_cast<double>(::raw_frequency);
 static double raw_frequency_1d = 1.0 / ::raw_frequency_d;
 
 ff::timer::timer()
-    : time_scale_(1)
 {
     this->reset();
 }
 
-double ff::timer::tick(double forced_offset)
+double ff::timer::tick()
 {
-    this->cur_time = ff::timer::current_raw_time();
-    this->clock_seconds_ = (this->cur_time - this->reset_time) * ::raw_frequency_1d;
+    this->now_time = ff::timer::current_raw_time();
 
-    if (forced_offset < 0)
-    {
-        const double old_seconds = this->seconds_;
-        this->seconds_ = this->start_seconds + (this->time_scale_ * (this->cur_time - this->start_time) * ::raw_frequency_1d);
-        this->pass_seconds = std::max(this->seconds_ - old_seconds, 0.0);
-    }
-    else
-    {
-        this->pass_seconds = forced_offset;
-        this->seconds_ += forced_offset;
-        this->start_seconds = this->seconds_;
-        this->start_time = this->cur_time;
-    }
+    const double old_seconds = this->seconds_;
+    this->seconds_ = (this->now_time - this->reset_time) * ::raw_frequency_1d;
+    this->delta_seconds_ = std::max(this->seconds_ - old_seconds, 0.0);
 
-    return this->pass_seconds;
+    return this->delta_seconds_;
 }
 
 void ff::timer::reset()
@@ -45,17 +33,12 @@ void ff::timer::reset()
     this->reset(ff::timer::current_raw_time());
 }
 
-void ff::timer::reset(int64_t cur_time)
+void ff::timer::reset(int64_t now_time)
 {
-    this->reset_time = cur_time;
-    this->start_time = cur_time;
-    this->cur_time = cur_time;
-    this->start_seconds = 0;
+    this->reset_time = now_time;
+    this->now_time = now_time;
     this->seconds_ = 0;
-    this->clock_seconds_ = 0;
-    this->pass_seconds = 0;
-
-    // this->time_scale stays the same
+    this->delta_seconds_ = 0;
 }
 
 double ff::timer::seconds() const
@@ -63,29 +46,9 @@ double ff::timer::seconds() const
     return this->seconds_;
 }
 
-double ff::timer::tick_seconds() const
+double ff::timer::delta_seconds() const
 {
-    return this->pass_seconds;
-}
-
-double ff::timer::clock_seconds() const
-{
-    return this->clock_seconds_;
-}
-
-double ff::timer::time_scale() const
-{
-    return this->time_scale_;
-}
-
-void ff::timer::time_scale(double scale)
-{
-    if (scale != this->time_scale_)
-    {
-        this->time_scale_ = scale;
-        this->start_seconds = this->seconds_;
-        this->start_time = this->cur_time;
-    }
+    return this->delta_seconds_;
 }
 
 // static

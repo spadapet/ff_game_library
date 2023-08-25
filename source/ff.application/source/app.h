@@ -10,7 +10,7 @@ namespace ff
         size_t advance_count;
         int64_t perf_clock_ticks;
         double clock_seconds;
-        double app_seconds;
+        double advance_seconds;
         double unused_advance_seconds;
         double time_scale;
     };

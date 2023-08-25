@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "app.h"
 #include "debug_state.h"
 #include "ui_view_state.h"
 
@@ -248,13 +249,21 @@ ff::internal::debug_view_model* ff::internal::stopped_view::view_model() const
     return this->view_model_;
 }
 
+template<class T>
+static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_view_model* view_model)
+{
+    auto noesis_view = Noesis::MakePtr<T>(view_model);
+    auto ui_view = std::make_shared<ff::ui_view>(noesis_view);
+    return std::make_shared<ff::ui_view_state>(ui_view, ff::ui_view_state::advance_when_t::frame_started);
+}
+
 ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping("ff.debug_page_input")
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
     , view_model(view_model)
-    , debug_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::debug_view>(this->view_model)), true))
-    , stopped_view_state(std::make_shared<ff::ui_view_state>(std::make_shared<ff::ui_view>(Noesis::MakePtr<ff::internal::stopped_view>(this->view_model)), true))
+    , debug_view_state(::create_view_state<ff::internal::debug_view>(view_model))
+    , stopped_view_state(::create_view_state<ff::internal::stopped_view>(view_model))
 {}
 
 void ff::internal::debug_state::advance_input()
@@ -280,14 +289,14 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 
     if (this->view_model->debug_visible())
     {
-        this->view_model->game_seconds(this->perf_results.absolute_seconds);
+        this->view_model->game_seconds(ff::app_time().advance_seconds);
+        this->view_model->frame_count(ff::app_time().advance_count);
         this->view_model->delta_seconds(this->perf_results.delta_seconds);
 
         if (this->perf_results.counter_infos.size())
         {
             const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
             this->view_model->frames_per_second(info.hit_per_second);
-            this->view_model->frame_count(info.hit_total);
         }
     }
 
