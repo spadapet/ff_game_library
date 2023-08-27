@@ -7,6 +7,12 @@
     "file": "file:../xaml/ff/debug_font.ttf"
   },
 
+  "ff/debug_resources.xaml":
+  {
+    "res:type": "file",
+    "file": "file:../xaml/ff/debug_resources.xaml"
+  },
+
   "ff.debug_view.xaml":
   {
     "res:type": "file",

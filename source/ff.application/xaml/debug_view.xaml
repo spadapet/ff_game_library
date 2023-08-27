@@ -4,196 +4,48 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ff="clr-namespace:ff"
-    xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions"
     x:Class="ff.debug_view"
     mc:Ignorable="d" 
-    d:Background="DarkRed"
     d:DesignWidth="512"
     d:DesignHeight="320"
     d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type ff:debug_view_model}}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Foreground="White"
-    FontFamily="ff/#Inconsolata"
+    FontFamily="/ff/#Inconsolata"
     FontSize="14"
     Focusable="False"
     UseLayoutRounding="True"
-    Padding="8"
+    OverridesDefaultStyle="True"
     Style="{x:Null}">
 
-    <!-- Block global styles from applying to any types used in this file -->
     <UserControl.Resources>
-        <ControlTemplate x:Key="ButtonTemplate" TargetType="{x:Type Button}">
-            <Grid>
-                <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Opacity="0" />
-                <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
-                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                </Border>
-            </Grid>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="border" Property="Opacity" Value="1" />
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter TargetName="border" Property="Opacity" Value="0.5" />
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <ControlTemplate x:Key="CheckBoxTemplate" TargetType="{x:Type CheckBox}">
-            <BulletDecorator>
-                <BulletDecorator.Bullet>
-                    <TextBlock x:Name="bullet" Text="&#xE739; " FontFamily="#Segoe MDL2 Assets" />
-                </BulletDecorator.Bullet>
-                <ContentPresenter />
-            </BulletDecorator>
-            <ControlTemplate.Triggers>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsMouseOver" Value="True" />
-                        <Condition Property="IsChecked" Value="False" />
-                    </MultiTrigger.Conditions>
-                    <Setter TargetName="bullet" Property="Text" Value="&#xE73B; " />
-                </MultiTrigger>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsMouseOver" Value="True" />
-                        <Condition Property="IsChecked" Value="True" />
-                    </MultiTrigger.Conditions>
-                    <Setter TargetName="bullet" Property="Text" Value="&#xE73D; " />
-                </MultiTrigger>
-                <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                        <Condition Property="IsMouseOver" Value="False" />
-                        <Condition Property="IsChecked" Value="True" />
-                    </MultiTrigger.Conditions>
-                    <Setter TargetName="bullet" Property="Text" Value="&#xE73A; " />
-                </MultiTrigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter TargetName="bullet" Property="Text" Value="&#xE73C; " />
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <Style x:Key="ControlFocusVisualStyle" TargetType="{x:Type Control}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Control}">
-                        <Grid Margin="-2">
-                            <Rectangle StrokeThickness="1" Stroke="Black" />
-                            <Rectangle StrokeThickness="1" Stroke="White" StrokeDashArray="1 2" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="{x:Type Border}" BasedOn="{x:Null}" />
-
-        <Style x:Key="ContainerBorder" TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="2" />
-            <Setter Property="Background" Value="#20000000" />
-            <Setter Property="BorderBrush" Value="Black" />
-            <Setter Property="noesis:Text.StrokeThickness" Value="2" />
-            <Setter Property="noesis:Text.Stroke" Value="Black" />
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#80000000" />
-                    <Setter Property="BorderBrush" Value="White" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="{x:Type Button}" BasedOn="{x:Null}">
-            <Setter Property="Template" Value="{StaticResource ButtonTemplate}" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
-        </Style>
-
-        <Style TargetType="{x:Type Canvas}" BasedOn="{x:Null}" />
-
-        <Style TargetType="{x:Type CheckBox}" BasedOn="{x:Null}">
-            <Setter Property="Template" Value="{StaticResource CheckBoxTemplate}" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-        </Style>
-
-        <Style x:Key="ToolButton" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Width" Value="18" />
-            <Setter Property="Height" Value="18" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="White" />
-            <Setter Property="FontFamily" Value="#Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="10" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="CloseButton" TargetType="{x:Type Button}" BasedOn="{StaticResource ToolButton}">
-            <Setter Property="Background" Value="Red" />
-            <Setter Property="Content" Value="&#xE653;" />
-            <Setter Property="ToolTip" Value="Close" />
-        </Style>
-
-        <Style TargetType="{x:Type Grid}" BasedOn="{x:Null}" />
-        <Style TargetType="{x:Type StackPanel}" BasedOn="{x:Null}" />
-        <Style TargetType="{x:Type TextBlock}" BasedOn="{x:Null}" />
-
-        <Style TargetType="{x:Type ToolTip}" BasedOn="{x:Null}">
-            <Setter Property="FontFamily" Value="ff/#Inconsolata" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ToolTip}">
-                        <Border BorderThickness="1" BorderBrush="White" Background="DarkSlateBlue" Padding="4,2">
-                            <ContentPresenter />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ff/debug_resources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
 
+    <UserControl.Template>
+        <ControlTemplate TargetType="UserControl">
+            <ContentPresenter Margin="8" />
+        </ControlTemplate>
+    </UserControl.Template>
+
     <Border HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Style="{StaticResource ContainerBorder}">
-
         <StackPanel Orientation="Vertical">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource CloseButton}" />
-                <TextBlock Text=" Debug" VerticalAlignment="Center" />
-            </StackPanel>
-
-            <TextBlock Grid.Row="2" Margin="0,4">
-                <TextBlock.Text>
-                    <MultiBinding StringFormat="{}{0}hz, #{1}, {2:F2}s">
-                        <Binding Path="frames_per_second" Mode="OneWay" />
-                        <Binding Path="frame_count" Mode="OneWay" />
-                        <Binding Path="game_seconds" Mode="OneWay" />
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
-
-            <Expander Header="Extensions" Visibility="{Binding extensions_visible, Converter={StaticResource bool_to_visible_converter}}">
-                <StackPanel Orientation="Vertical">
-                    <CheckBox Content="No custom pane" />
-                    <CheckBox Content="Custom pane" />
-                </StackPanel>
-            </Expander>
-
-            <Expander Header="Timers" Visibility="{Binding timers_visible, Converter={StaticResource bool_to_visible_converter}}">
-                <StackPanel Orientation="Vertical">
-                    <TreeView Background="Transparent">
-                        <TreeViewItem Header="Hello 1">
-                            <TreeViewItem Header="Nested 1" />
-                        </TreeViewItem>
-                        <TreeViewItem Header="Hello 2">
-                            <TreeViewItem Header="Nested 2" />
-                        </TreeViewItem>
-                    </TreeView>
-                </StackPanel>
-            </Expander>
-
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Command="{Binding close_command}" Style="{StaticResource CloseButton}" />
+                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding timers_visible, Mode=TwoWay}" Style="{StaticResource ExpanderButton}" />
+                <TextBlock Margin="4,0" VerticalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0}hz #{1}">
+                            <Binding Path="frames_per_second" Mode="OneWay" />
+                            <Binding Path="frame_count" Mode="OneWay" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </DockPanel>
         </StackPanel>
     </Border>
 </UserControl>

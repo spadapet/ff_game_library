@@ -33,11 +33,8 @@ namespace ff::internal
 
         static ff::internal::debug_view_model* get();
 
-        double game_seconds() const;
-        void game_seconds(double value);
-
-        double delta_seconds() const;
-        void delta_seconds(double value);
+        double advance_seconds() const;
+        void advance_seconds(double value);
 
         size_t frames_per_second() const;
         void frames_per_second(size_t value);
@@ -64,9 +61,9 @@ namespace ff::internal
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
 
         void on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args);
+        void close_command(Noesis::BaseComponent*);
 
         double game_seconds_{};
-        double delta_seconds_{};
         size_t frames_per_second_{};
         size_t frame_count_{};
         bool debug_visible_{};
@@ -74,6 +71,7 @@ namespace ff::internal
         bool stopped_visible_{};
         Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
+        Noesis::Ptr<Noesis::BaseCommand> close_command_;
     };
 
     class debug_view : public Noesis::UserControl

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using WpfTools;
 
 namespace ff
@@ -22,8 +23,7 @@ namespace ff
 
     public class debug_view_model : PropertyNotifier
     {
-        public double game_seconds => 90000.0;
-        public double delta_seconds => 0.125;
+        public double advance_seconds => 90000.0;
         public int frames_per_second => 60;
         public int frame_count => 5400000;
         public bool debug_visible { get => true; set { } }
@@ -52,5 +52,10 @@ namespace ff
             get => this.selected_page_;
             set => this.SetProperty(ref this.selected_page_, value);
         }
+
+        public ICommand close_command { get; } = new DelegateCommand(() =>
+        {
+            App.Current.MainWindow.Close();
+        });
     }
 }

@@ -6,14 +6,21 @@
     xmlns:ff="clr-namespace:ff"
     x:Class="ff.stopped_view"
     mc:Ignorable="d"
-    d:Background="Black"
     d:DesignWidth="320"
     d:DesignHeight="240"
     d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type ff:debug_view_model}}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Focusable="False"
-    IsHitTestVisible="False">
+    IsHitTestVisible="False"
+    OverridesDefaultStyle="True"
+    Style="{x:Null}">
 
-	<Rectangle Stroke="#A0662166" StrokeThickness="6" />
+    <UserControl.Template>
+        <ControlTemplate TargetType="UserControl">
+            <ContentPresenter />
+        </ControlTemplate>
+    </UserControl.Template>
+
+    <Rectangle Stroke="#A0FF0066" StrokeThickness="6" />
 
 </UserControl>

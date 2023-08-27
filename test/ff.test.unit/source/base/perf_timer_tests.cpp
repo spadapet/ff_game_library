@@ -39,7 +39,7 @@ namespace ff::test::base
                 }
             }
 
-            measures.reset(6.0, &results);
+            measures.reset(6.0, &results, true);
 
             Assert::AreEqual(5.0, results.delta_seconds);
             Assert::AreEqual<size_t>(2, results.counter_infos.size());

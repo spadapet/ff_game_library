@@ -61,8 +61,9 @@ void ff::internal::debug_page_model::set_removed()
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 {
-    NsProp("game_seconds", &ff::internal::debug_view_model::game_seconds, &ff::internal::debug_view_model::game_seconds);
-    NsProp("delta_seconds", &ff::internal::debug_view_model::delta_seconds, &ff::internal::debug_view_model::delta_seconds);
+    NsProp("close_command", &ff::internal::debug_view_model::close_command_);
+
+    NsProp("advance_seconds", &ff::internal::debug_view_model::advance_seconds, &ff::internal::debug_view_model::advance_seconds);
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
     NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
     NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
@@ -77,6 +78,7 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 ff::internal::debug_view_model::debug_view_model()
     : pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
     , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
+    , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::close_command)))
 {
     this->pages_->Add(this->selected_page_);
     this->pages()->CollectionChanged() += Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
@@ -99,24 +101,14 @@ ff::internal::debug_view_model* ff::internal::debug_view_model::get()
     return ::global_debug_view_model;
 }
 
-double ff::internal::debug_view_model::game_seconds() const
+double ff::internal::debug_view_model::advance_seconds() const
 {
     return this->game_seconds_;
 }
 
-void ff::internal::debug_view_model::game_seconds(double value)
+void ff::internal::debug_view_model::advance_seconds(double value)
 {
-    this->set_property(this->game_seconds_, value, "game_seconds");
-}
-
-double ff::internal::debug_view_model::delta_seconds() const
-{
-    return this->delta_seconds_;
-}
-
-void ff::internal::debug_view_model::delta_seconds(double value)
-{
-    this->set_property(this->delta_seconds_, value, "delta_seconds");
+    this->set_property(this->game_seconds_, value, "advance_seconds");
 }
 
 size_t ff::internal::debug_view_model::frames_per_second() const
@@ -209,6 +201,11 @@ void ff::internal::debug_view_model::on_pages_changed(Noesis::BaseComponent*, co
     this->property_changed("has_pages");
 }
 
+void ff::internal::debug_view_model::close_command(Noesis::BaseComponent*)
+{
+    this->debug_visible(false);
+}
+
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
 {
     NsProp("view_model", &ff::internal::debug_view::view_model);
@@ -289,9 +286,8 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 
     if (this->view_model->debug_visible())
     {
-        this->view_model->game_seconds(ff::app_time().advance_seconds);
+        this->view_model->advance_seconds(ff::app_time().advance_seconds);
         this->view_model->frame_count(ff::app_time().advance_count);
-        this->view_model->delta_seconds(this->perf_results.delta_seconds);
 
         if (this->perf_results.counter_infos.size())
         {
