@@ -28,14 +28,28 @@ namespace ff
         public int frame_count => 5400000;
         public bool debug_visible { get => true; set { } }
         public bool stopped_visible { get => true; set { } }
-        public bool has_pages { get; }
-        public bool page_visible { get; }
+        public bool has_pages => this.pages.Count > 0;
+        public bool page_visible => false;
+
+        private bool page_picker_visible_;
+        public bool page_picker_visible
+        {
+            get => this.page_picker_visible_;
+            set => this.SetProperty(ref this.page_picker_visible_, value);
+        }
 
         private bool timers_visible_;
         public bool timers_visible
         {
             get => this.timers_visible_;
             set => this.SetProperty(ref this.timers_visible_, value);
+        }
+
+        private bool chart_visible_;
+        public bool chart_visible
+        {
+            get => this.chart_visible_;
+            set => this.SetProperty(ref this.chart_visible_, value);
         }
 
         public ObservableCollection<debug_page_model> pages { get; } = new()

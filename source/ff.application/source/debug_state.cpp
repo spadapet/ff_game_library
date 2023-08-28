@@ -141,6 +141,16 @@ void ff::internal::debug_view_model::debug_visible(bool value)
     this->set_property(this->debug_visible_, value, "debug_visible");
 }
 
+bool ff::internal::debug_view_model::page_picker_visible() const
+{
+    return this->page_picker_visible_;
+}
+
+void ff::internal::debug_view_model::page_picker_visible(bool value)
+{
+    this->set_property(this->page_picker_visible_, value, "page_picker_visible");
+}
+
 bool ff::internal::debug_view_model::timers_visible() const
 {
     return this->timers_visible_;
@@ -149,6 +159,16 @@ bool ff::internal::debug_view_model::timers_visible() const
 void ff::internal::debug_view_model::timers_visible(bool value)
 {
     this->set_property(this->timers_visible_, value, "timers_visible");
+}
+
+bool ff::internal::debug_view_model::chart_visible() const
+{
+    return this->chart_visible_;
+}
+
+void ff::internal::debug_view_model::chart_visible(bool value)
+{
+    this->set_property(this->chart_visible_, value, "chart_visible");
 }
 
 bool ff::internal::debug_view_model::stopped_visible() const

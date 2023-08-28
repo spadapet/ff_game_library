@@ -45,8 +45,14 @@ namespace ff::internal
         bool debug_visible() const;
         void debug_visible(bool value);
 
+        bool page_picker_visible() const;
+        void page_picker_visible(bool value);
+
         bool timers_visible() const;
         void timers_visible(bool value);
+
+        bool chart_visible() const;
+        void chart_visible(bool value);
 
         bool stopped_visible() const;
         void stopped_visible(bool value);
@@ -67,7 +73,9 @@ namespace ff::internal
         size_t frames_per_second_{};
         size_t frame_count_{};
         bool debug_visible_{};
+        bool page_picker_visible_{};
         bool timers_visible_{};
+        bool chart_visible_{};
         bool stopped_visible_{};
         Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;

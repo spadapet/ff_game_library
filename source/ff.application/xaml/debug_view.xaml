@@ -28,15 +28,35 @@
 
     <UserControl.Template>
         <ControlTemplate TargetType="UserControl">
-            <ContentPresenter Margin="8" />
+            <ContentPresenter />
         </ControlTemplate>
     </UserControl.Template>
 
-    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Style="{StaticResource ContainerBorder}">
-        <StackPanel Orientation="Vertical">
+    <Grid Width="200" HorizontalAlignment="Left" Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition>
+                <RowDefinition.Height>
+                    <Binding Path="timers_visible">
+                        <Binding.Converter>
+                            <ff:bool_to_object_converter>
+                                <ff:bool_to_object_converter.TrueValue>
+                                    <GridLength>*</GridLength>
+                                </ff:bool_to_object_converter.TrueValue>
+                                <ff:bool_to_object_converter.FalseValue>
+                                    <GridLength>Auto</GridLength>
+                                </ff:bool_to_object_converter.FalseValue>
+                            </ff:bool_to_object_converter>
+                        </Binding.Converter>
+                    </Binding>
+                </RowDefinition.Height>
+            </RowDefinition>
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border Style="{StaticResource ContainerBorder}">
             <DockPanel>
                 <Button DockPanel.Dock="Left" Command="{Binding close_command}" Style="{StaticResource CloseButton}" />
-                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding timers_visible, Mode=TwoWay}" Style="{StaticResource ExpanderButton}" />
                 <TextBlock Margin="4,0" VerticalAlignment="Center">
                     <TextBlock.Text>
                         <MultiBinding StringFormat="{}{0}hz #{1}">
@@ -46,6 +66,22 @@
                     </TextBlock.Text>
                 </TextBlock>
             </DockPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+        <Border Grid.Row="1" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+            <Expander Header="Panels" IsExpanded="{Binding page_picker_visible, Mode=TwoWay}">
+                <ItemsControl>
+                    <CheckBox Content="None" />
+                    <CheckBox Content="One" />
+                    <RadioButton Content="Two" />
+                    <RadioButton Content="Three" />
+                </ItemsControl>
+            </Expander>
+        </Border>
+        <Border Grid.Row="2" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+            <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}" />
+        </Border>
+        <Border Grid.Row="3" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+            <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}" />
+        </Border>
+    </Grid>
 </UserControl>

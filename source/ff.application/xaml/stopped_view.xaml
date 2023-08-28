@@ -12,8 +12,15 @@
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Focusable="False"
     IsHitTestVisible="False"
+    UseLayoutRounding="True"
     OverridesDefaultStyle="True"
     Style="{x:Null}">
+
+    <UserControl.Resources>
+        <Style TargetType="{x:Type Rectangle}" BasedOn="{x:Null}">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+        </Style>
+    </UserControl.Resources>
 
     <UserControl.Template>
         <ControlTemplate TargetType="UserControl">

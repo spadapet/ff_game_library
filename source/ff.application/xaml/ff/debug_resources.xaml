@@ -1,61 +1,14 @@
 ﻿<ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ff="clr-namespace:ff"
     xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions">
 
-    <ControlTemplate x:Key="ButtonTemplate" TargetType="{x:Type ButtonBase}">
-        <Grid>
-            <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Opacity="0" />
-            <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
-                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-            </Border>
-        </Grid>
-        <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="border" Property="Opacity" Value="1" />
-            </Trigger>
-            <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="border" Property="Opacity" Value="0.5" />
-            </Trigger>
-        </ControlTemplate.Triggers>
-    </ControlTemplate>
+    <Style TargetType="{x:Type FrameworkElement}" BasedOn="{x:Null}">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+    </Style>
 
-    <ControlTemplate x:Key="CheckBoxTemplate" TargetType="{x:Type CheckBox}">
-        <BulletDecorator>
-            <BulletDecorator.Bullet>
-                <TextBlock x:Name="bullet" Text="&#xE739; " FontFamily="#Segoe MDL2 Assets" />
-            </BulletDecorator.Bullet>
-            <ContentPresenter />
-        </BulletDecorator>
-        <ControlTemplate.Triggers>
-            <MultiTrigger>
-                <MultiTrigger.Conditions>
-                    <Condition Property="IsMouseOver" Value="True" />
-                    <Condition Property="IsChecked" Value="False" />
-                </MultiTrigger.Conditions>
-                <Setter TargetName="bullet" Property="Text" Value="&#xE73B; " />
-            </MultiTrigger>
-            <MultiTrigger>
-                <MultiTrigger.Conditions>
-                    <Condition Property="IsMouseOver" Value="True" />
-                    <Condition Property="IsChecked" Value="True" />
-                </MultiTrigger.Conditions>
-                <Setter TargetName="bullet" Property="Text" Value="&#xE73D; " />
-            </MultiTrigger>
-            <MultiTrigger>
-                <MultiTrigger.Conditions>
-                    <Condition Property="IsMouseOver" Value="False" />
-                    <Condition Property="IsChecked" Value="True" />
-                </MultiTrigger.Conditions>
-                <Setter TargetName="bullet" Property="Text" Value="&#xE73A; " />
-            </MultiTrigger>
-            <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="bullet" Property="Text" Value="&#xE73C; " />
-            </Trigger>
-        </ControlTemplate.Triggers>
-    </ControlTemplate>
-
-    <Style x:Key="ControlFocusVisualStyle" TargetType="{x:Type Control}">
+    <Style x:Key="ControlFocusVisualStyle" TargetType="{x:Type Control}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Control}">
@@ -68,12 +21,17 @@
         </Setter>
     </Style>
 
-    <Style TargetType="{x:Type Border}" BasedOn="{x:Null}" />
+    <Style TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
+    <Style TargetType="{x:Type BulletDecorator}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
+    <Style TargetType="{x:Type DockPanel}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
+    <Style TargetType="{x:Type Grid}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
+    <Style TargetType="{x:Type StackPanel}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
+    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type FrameworkElement}}" />
 
     <Style x:Key="ContainerBorder" TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="2" />
-        <Setter Property="Background" Value="#80000000" />
+        <Setter Property="Background" Value="#70000000" />
         <Setter Property="BorderBrush" Value="Black" />
         <Setter Property="noesis:Text.StrokeThickness" Value="2" />
         <Setter Property="noesis:Text.Stroke" Value="Black" />
@@ -85,14 +43,33 @@
         </Style.Triggers>
     </Style>
 
-    <Style TargetType="{x:Type Button}" BasedOn="{x:Null}" />
-
-    <Style TargetType="{x:Type ButtonBase}" BasedOn="{x:Null}">
+    <Style TargetType="{x:Type ButtonBase}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="Template" Value="{StaticResource ButtonTemplate}" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Grid>
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Opacity="0" />
+                        <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
+
+    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type ButtonBase}}" />
 
     <Style x:Key="ToolButton" TargetType="{x:Type ButtonBase}" BasedOn="{StaticResource {x:Type ButtonBase}}">
         <Setter Property="Width" Value="18" />
@@ -123,17 +100,122 @@
         </Style.Triggers>
     </Style>
 
-    <Style TargetType="{x:Type Canvas}" BasedOn="{x:Null}" />
-
-    <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource {x:Type ButtonBase}}">
-        <Setter Property="Template" Value="{StaticResource CheckBoxTemplate}" />
+    <Style x:Key="ExpanderText" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource {x:Type ButtonBase}}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
-    <Style TargetType="{x:Type Grid}" BasedOn="{x:Null}" />
-    <Style TargetType="{x:Type StackPanel}" BasedOn="{x:Null}" />
-    <Style TargetType="{x:Type TextBlock}" BasedOn="{x:Null}" />
+    <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource {x:Type ButtonBase}}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <BulletDecorator>
+                        <BulletDecorator.Bullet>
+                            <TextBlock x:Name="bullet" Text="&#xE739; " FontFamily="#Segoe MDL2 Assets" />
+                        </BulletDecorator.Bullet>
+                        <ContentPresenter />
+                    </BulletDecorator>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xE73B; " />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xE73D; " />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="False" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xE73A; " />
+                        </MultiTrigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bullet" Property="Text" Value="&#xE73C; " />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
-    <Style TargetType="{x:Type ToolTip}" BasedOn="{x:Null}">
+    <Style TargetType="{x:Type RadioButton}" BasedOn="{StaticResource {x:Type ButtonBase}}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <BulletDecorator>
+                        <BulletDecorator.Bullet>
+                            <TextBlock x:Name="bullet" Text="&#xECCA; " FontFamily="#Segoe MDL2 Assets" />
+                        </BulletDecorator.Bullet>
+                        <ContentPresenter />
+                    </BulletDecorator>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xED66; " />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xEC14; " />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="False" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bullet" Property="Text" Value="&#xECCB; " />
+                        </MultiTrigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bullet" Property="Text" Value="&#xECCC; " />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Expander}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Expander}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.Resources>
+                            <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
+                        </Grid.Resources>
+                        <ToggleButton Content="{TemplateBinding Header}" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource ExpanderText}" />
+                        <ToggleButton Grid.Column="1" IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Style="{StaticResource ExpanderButton}" />
+                        <ContentPresenter Grid.ColumnSpan="2" Grid.Row="1" Visibility="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource bool_to_visible_converter}}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ToolTip}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
         <Setter Property="Foreground" Value="White" />
         <Setter Property="FontFamily" Value="/ff/#Inconsolata" />
         <Setter Property="FontSize" Value="14" />
