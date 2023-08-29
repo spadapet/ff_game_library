@@ -11,8 +11,6 @@
 #include "ui_view.h"
 #include "xaml_provider.h"
 
-#define DEBUG_MEM_ALLOC 0
-
 static ff::init_ui_params ui_params;
 static std::vector<ff::ui_view*> views;
 static std::vector<ff::ui_view*> input_views;
@@ -77,43 +75,27 @@ static void noesis_error_handler(const char* file, uint32_t line, const char* me
 static void* noesis_alloc(void* user, size_t size)
 {
     void* ptr = std::malloc(size);
-#if DEBUG_MEM_ALLOC
-    std::ostringstream str;
-    str << "[NOESIS/Mem] ALLOC: " << ptr << " (" << size << ")";
-    ff::log::write_debug(str);
-#endif
+    ff::log::write(ff::log::type::ui_mem, "NOESIS alloc: ", ptr, " (", size, ")");
     return ptr;
 }
 
 static void* noesis_realloc(void* user, void* ptr, size_t size)
 {
     void* ptr2 = std::realloc(ptr, size);
-#if DEBUG_MEM_ALLOC
-    std::ostringstream str;
-    str << "[NOESIS/Mem] REALLOC: " << ptr << " -> " << ptr2 << " (" << size << ")";
-    ff::log::write_debug(str);
-#endif
+    ff::log::write(ff::log::type::ui_mem, "NOESIS realloc: ", ptr, " -> ", ptr2, " (", size, ")");
     return ptr2;
 }
 
 static void noesis_dealloc(void* user, void* ptr)
 {
-#if DEBUG_MEM_ALLOC
-    std::ostringstream str;
-    str << "[NOESIS/Mem] FREE: " << ptr;
-    ff::log::write_debug(str);
-#endif
+    ff::log::write(ff::log::type::ui_mem, "NOESIS dealloc: ", ptr);
     return std::free(ptr);
 }
 
 static size_t noesis_alloc_size(void* user, void* ptr)
 {
     size_t size = _msize(ptr);
-#if DEBUG_MEM_ALLOC
-    std::ostringstream str;
-    str << "[NOESIS/Mem] SIZE: " << ptr << " (" << size << ")";
-    ff::log::write_debug(str);
-#endif
+    ff::log::write(ff::log::type::ui_mem, "NOESIS alloc size: ", ptr, " (", size, ")");
     return size;
 }
 
@@ -181,6 +163,7 @@ static void register_components(std::function<void()>&& register_extra_component
 
     Noesis::RegisterComponent<ff::ui::bool_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_collapsed_converter>();
+    Noesis::RegisterComponent<ff::ui::bool_to_inverse_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_object_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_collapsed_converter>();

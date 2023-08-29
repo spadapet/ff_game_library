@@ -4,8 +4,11 @@
 
 static std::vector<std::shared_ptr<ff::data_base>> global_resource_datas;
 static std::shared_ptr<ff::resource_objects> global_resources;
+static std::unique_ptr<ff::co_task<>> global_rebuild_task;
+static std::mutex global_rebuild_mutex;
 static std::mutex global_resources_mutex;
-static ff::signal<> rebuilt_global_signal;
+static ff::signal<> rebuild_begin_signal;
+static ff::signal<size_t> rebuild_end_signal;
 
 static std::shared_ptr<ff::resource_objects> create_global_resources(const std::vector<std::shared_ptr<ff::data_base>>& datas, bool from_source)
 {
@@ -78,37 +81,86 @@ std::shared_ptr<ff::resource> ff::global_resources::get(std::string_view name)
 
 void ff::global_resources::reset()
 {
+    ff::co_task<> task;
+    if (::global_rebuild_task)
+    {
+        std::scoped_lock lock(::global_rebuild_mutex);
+        if (::global_rebuild_task)
+        {
+            task = *::global_rebuild_task;
+            ::global_rebuild_task.reset();
+        }
+    }
+
+    task.wait();
+
     std::scoped_lock lock(::global_resources_mutex);
     ::global_resource_datas.clear();
     ::global_resources.reset();
 }
 
-ff::co_task<> ff::global_resources::rebuild_async()
+static ff::co_task<> rebuild_async_internal()
 {
+    co_await ff::task::yield_on_game();
+    ::rebuild_begin_signal.notify();
+
     std::vector<std::shared_ptr<ff::data_base>> datas;
     {
         std::scoped_lock lock(::global_resources_mutex);
         datas = ::global_resource_datas;
     }
 
-    co_await ff::task::run([datas]()
+    co_await ff::task::resume_on_task();
+    std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
+
+    co_await ff::task::resume_on_game();
+    if (global_resources)
     {
-        std::shared_ptr<ff::resource_objects> global_resources = ::create_global_resources(datas, true);
+        std::scoped_lock lock(::global_resources_mutex);
+        ::global_resources = global_resources;
+    }
 
-        ff::thread_dispatch::get_game()->post([global_resources]()
-            {
-                if (global_resources)
-                {
-                    std::scoped_lock lock(::global_resources_mutex);
-                    ::global_resources = global_resources;
-                }
+    if (::global_rebuild_task)
+    {
+        std::scoped_lock lock(::global_rebuild_mutex);
+        ::global_rebuild_task.reset();
+    }
 
-                ::rebuilt_global_signal.notify();
-            });
-    });
+    for (size_t i = 0; i < ff::global_resources::rebuild_round_count; i++)
+    {
+        ::rebuild_end_signal.notify(i);
+    }
 }
 
-ff::signal_sink<>& ff::global_resources::rebuilt_sink()
+ff::co_task<> ff::global_resources::rebuild_async()
 {
-    return ::rebuilt_global_signal;
+    std::scoped_lock lock(::global_rebuild_mutex);
+
+    if (!::global_rebuild_task || ::global_rebuild_task->done())
+    {
+        ::global_rebuild_task = std::make_unique<ff::co_task<>>(::rebuild_async_internal());
+    }
+
+    return *::global_rebuild_task;
+}
+
+bool ff::global_resources::is_rebuilding()
+{
+    if (::global_rebuild_task)
+    {
+        std::scoped_lock lock(::global_rebuild_mutex);
+        return ::global_rebuild_task && !::global_rebuild_task->done();
+    }
+
+    return false;
+}
+
+ff::signal_sink<>& ff::global_resources::rebuild_begin_sink()
+{
+    return ::rebuild_begin_signal;
+}
+
+ff::signal_sink<size_t>& ff::global_resources::rebuild_end_sink()
+{
+    return ::rebuild_end_signal;
 }

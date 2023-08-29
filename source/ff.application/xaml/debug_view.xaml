@@ -23,6 +23,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/ff/debug_resources.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <ff:bool_to_inverse_converter x:Key="bool_to_inverse_converter" />
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -57,7 +59,34 @@
         <Border Style="{StaticResource ContainerBorder}">
             <DockPanel>
                 <Button DockPanel.Dock="Left" Command="{Binding close_command}" Style="{StaticResource CloseButton}" />
-                <TextBlock Margin="4,0" VerticalAlignment="Center">
+                <Button DockPanel.Dock="Right" Command="{Binding build_resources_command}" RenderTransformOrigin="0.5,0.5">
+                    <Button.RenderTransform>
+                        <RotateTransform Angle="0" />
+                    </Button.RenderTransform>
+                    <Button.Style>
+                        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ToolButton}">
+                            <Setter Property="Content" Value="&#xE72C;" />
+                            <Setter Property="ToolTip" Value="Rebuild resources" />
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Content" Value="&#xF16A;" />
+                                    <Setter Property="ToolTip" Value="Building resources, please wait..." />
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard Name="spinning">
+                                            <Storyboard RepeatBehavior="Forever">
+                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(RotateTransform.Angle)" To="360" Duration="0:0:2"  />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <StopStoryboard BeginStoryboardName="spinning" />
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock Margin="4,0,0,0" VerticalAlignment="Center">
                     <TextBlock.Text>
                         <MultiBinding StringFormat="{}{0}hz #{1}">
                             <Binding Path="frames_per_second" Mode="OneWay" />
@@ -67,7 +96,7 @@
                 </TextBlock>
             </DockPanel>
         </Border>
-        <Border Grid.Row="1" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="1" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Panels" IsExpanded="{Binding page_picker_visible, Mode=TwoWay}">
                 <ItemsControl>
                     <CheckBox Content="None" />
@@ -77,10 +106,10 @@
                 </ItemsControl>
             </Expander>
         </Border>
-        <Border Grid.Row="2" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="2" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}" />
         </Border>
-        <Border Grid.Row="3" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="3" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}" />
         </Border>
     </Grid>

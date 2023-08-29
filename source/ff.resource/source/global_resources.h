@@ -14,5 +14,8 @@ namespace ff::global_resources
 
     void reset();
     ff::co_task<> rebuild_async();
-    ff::signal_sink<>& rebuilt_sink();
+    bool is_rebuilding();
+    ff::signal_sink<>& rebuild_begin_sink();
+    ff::signal_sink<size_t>& rebuild_end_sink();
+    constexpr size_t rebuild_round_count = 2;
 }

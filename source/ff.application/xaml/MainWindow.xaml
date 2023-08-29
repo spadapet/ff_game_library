@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Application"
         Width="640" Height="360"
-        Background="White">
+        Background="Gray">
     <Grid>
         <ff:stopped_view />
         <ff:debug_view />

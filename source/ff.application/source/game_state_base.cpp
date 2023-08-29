@@ -24,7 +24,7 @@ ff::game::app_state_base::app_state_base()
 {
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
-    this->connections.emplace_front(ff::global_resources::rebuilt_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this)));
+    this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this)));
 
     this->internal_setup_init();
 }

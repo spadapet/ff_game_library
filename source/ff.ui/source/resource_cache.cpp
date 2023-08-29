@@ -3,6 +3,10 @@
 
 static const size_t MAX_COUNTER = 60;
 
+ff::internal::ui::resource_cache::resource_cache()
+    : resource_rebuild_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::ui::resource_cache::on_resource_rebuild, this, std::placeholders::_1)))
+{}
+
 void ff::internal::ui::resource_cache::advance()
 {
     using iter_t = std::unordered_map<std::string_view, entry_t>::const_iterator;
@@ -42,4 +46,12 @@ std::shared_ptr<ff::resource> ff::internal::ui::resource_cache::get_resource_obj
 std::vector<std::string_view> ff::internal::ui::resource_cache::resource_object_names() const
 {
     return ff::global_resources::get()->resource_object_names();
+}
+
+void ff::internal::ui::resource_cache::on_resource_rebuild(size_t round)
+{
+    if (round == 0)
+    {
+        this->cache.clear();
+    }
 }

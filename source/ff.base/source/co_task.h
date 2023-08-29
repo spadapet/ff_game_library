@@ -411,6 +411,11 @@ namespace ff::task
     ff::internal::co_thread_awaiter resume_on_main();
     ff::internal::co_thread_awaiter resume_on_game();
     ff::internal::co_thread_awaiter resume_on_task();
+
+    ff::internal::co_thread_awaiter yield_on_main();
+    ff::internal::co_thread_awaiter yield_on_game();
+    ff::internal::co_thread_awaiter yield_on_task();
+
     ff::internal::co_thread_awaiter delay(size_t delay_ms, std::stop_token stop = {}, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
     ff::internal::co_thread_awaiter yield(ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
     ff::internal::co_handle_awaiter wait_handle(HANDLE handle, size_t timeout_ms = ff::constants::invalid_size, ff::thread_dispatch_type type = ff::thread_dispatch_type::none);

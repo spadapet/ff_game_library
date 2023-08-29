@@ -31,6 +31,21 @@ bool ff::ui::bool_to_collapsed_converter::TryConvert(Noesis::BaseComponent* valu
     return false;
 }
 
+NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_inverse_converter, "ff.bool_to_inverse_converter")
+{}
+
+bool ff::ui::bool_to_inverse_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
+{
+    if (Noesis::Boxing::CanUnbox<bool>(value))
+    {
+        bool inverse = !Noesis::Boxing::Unbox<bool>(value);
+        result = Noesis::Boxing::Box(inverse);
+        return true;
+    }
+
+    return false;
+}
+
 NS_IMPLEMENT_REFLECTION(ff::ui::bool_to_object_converter, "ff.bool_to_object_converter")
 {
     NsProp("TrueValue", &bool_to_object_converter::true_value, &bool_to_object_converter::true_value);

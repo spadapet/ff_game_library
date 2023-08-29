@@ -9,6 +9,8 @@ namespace ff::internal::ui
     class resource_cache : public ff::resource_object_provider
     {
     public:
+        resource_cache();
+
         void advance();
 
         // resource_object_provider
@@ -23,6 +25,9 @@ namespace ff::internal::ui
             size_t counter;
         };
 
+        void on_resource_rebuild(size_t round);
+
         std::unordered_map<std::string_view, entry_t> cache;
+        ff::signal_connection resource_rebuild_connection;
     };
 }

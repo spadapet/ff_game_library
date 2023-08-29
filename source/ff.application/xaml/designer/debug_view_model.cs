@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using WpfTools;
 
@@ -52,6 +53,19 @@ namespace ff
             set => this.SetProperty(ref this.chart_visible_, value);
         }
 
+        private bool building_resources_;
+        public bool building_resources
+        {
+            get => this.building_resources_;
+            set
+            {
+                if (this.SetProperty(ref this.building_resources_, value))
+                {
+                    this.build_resources_command_?.UpdateCanExecute();
+                }
+            }
+        }
+
         public ObservableCollection<debug_page_model> pages { get; } = new()
         {
             new debug_page_model(is_none: true),
@@ -67,9 +81,17 @@ namespace ff
             set => this.SetProperty(ref this.selected_page_, value);
         }
 
-        public ICommand close_command { get; } = new DelegateCommand(() =>
+        public ICommand close_command => new DelegateCommand(() =>
         {
             App.Current.MainWindow.Close();
         });
+
+        private DelegateCommand build_resources_command_;
+        public ICommand build_resources_command => this.build_resources_command_ ??= new DelegateCommand(async () =>
+        {
+            this.building_resources = true;
+            await Task.Delay(4000);
+            this.building_resources = false;
+        }, () => !this.building_resources);
     }
 }

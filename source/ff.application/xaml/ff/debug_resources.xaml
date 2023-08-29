@@ -32,7 +32,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="2" />
         <Setter Property="Background" Value="#70000000" />
-        <Setter Property="BorderBrush" Value="Black" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="noesis:Text.StrokeThickness" Value="2" />
         <Setter Property="noesis:Text.Stroke" Value="Black" />
         <Style.Triggers>
@@ -52,7 +52,7 @@
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Grid>
                         <Border x:Name="border" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Opacity="0" />
-                        <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="bg" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{x:Null}" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                         </Border>
                     </Grid>
@@ -62,6 +62,10 @@
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="border" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Opacity" Value="0" />
+                            <!--<Setter TargetName="bg" Property="Opacity" Value="0.5" />-->
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -81,6 +85,7 @@
         <Setter Property="FontSize" Value="10" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
     </Style>
 
     <Style x:Key="CloseButton" TargetType="{x:Type Button}" BasedOn="{StaticResource ToolButton}">

@@ -23,4 +23,12 @@ namespace ff
             return value is bool visible && visible ? this.TrueValue : this.FalseValue;
         }
     }
+
+    public class bool_to_inverse_converter : ValueConverter
+    {
+        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is not bool bool_value || !bool_value;
+        }
+    }
 }

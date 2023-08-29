@@ -62,6 +62,7 @@ void ff::internal::debug_page_model::set_removed()
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
 {
     NsProp("close_command", &ff::internal::debug_view_model::close_command_);
+    NsProp("build_resources_command", &ff::internal::debug_view_model::build_resources_command_);
 
     NsProp("advance_seconds", &ff::internal::debug_view_model::advance_seconds, &ff::internal::debug_view_model::advance_seconds);
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
@@ -69,6 +70,7 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
     NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
     NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
+    NsProp("building_resources", &ff::internal::debug_view_model::building_resources);
     NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
     NsProp("page_visible", &ff::internal::debug_view_model::page_visible);
     NsProp("pages", &ff::internal::debug_view_model::pages);
@@ -79,6 +81,11 @@ ff::internal::debug_view_model::debug_view_model()
     : pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
     , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
     , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::close_command)))
+    , build_resources_command_(Noesis::MakePtr<ff::ui::delegate_command>(
+        Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_command),
+        Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_can_execute)))
+    , resource_rebuild_begin_connection(ff::global_resources::rebuild_begin_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
+    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_end, this, std::placeholders::_1)))
 {
     this->pages_->Add(this->selected_page_);
     this->pages()->CollectionChanged() += Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
@@ -181,6 +188,11 @@ void ff::internal::debug_view_model::stopped_visible(bool value)
     this->set_property(this->stopped_visible_, value, "stopped_visible");
 }
 
+bool ff::internal::debug_view_model::building_resources() const
+{
+    return ff::global_resources::is_rebuilding();
+}
+
 bool ff::internal::debug_view_model::has_pages() const
 {
     return this->pages()->Count() > 1;
@@ -210,6 +222,20 @@ void ff::internal::debug_view_model::selected_page(ff::internal::debug_page_mode
     }
 }
 
+void ff::internal::debug_view_model::on_resources_rebuild_begin()
+{
+    this->property_changed("building_resources");
+    this->build_resources_command_->RaiseCanExecuteChanged();
+}
+
+void ff::internal::debug_view_model::on_resources_rebuild_end(size_t round)
+{
+    if (round == ff::global_resources::rebuild_round_count - 1)
+    {
+        this->on_resources_rebuild_begin();
+    }
+}
+
 void ff::internal::debug_view_model::on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args)
 {
     if (this->selected_page()->removed())
@@ -224,6 +250,16 @@ void ff::internal::debug_view_model::on_pages_changed(Noesis::BaseComponent*, co
 void ff::internal::debug_view_model::close_command(Noesis::BaseComponent*)
 {
     this->debug_visible(false);
+}
+
+void ff::internal::debug_view_model::build_resources_command(Noesis::BaseComponent*)
+{
+    ff::global_resources::rebuild_async();
+}
+
+bool ff::internal::debug_view_model::build_resources_can_execute(Noesis::BaseComponent*)
+{
+    return !this->building_resources();
 }
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
@@ -276,12 +312,13 @@ static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_
 
 ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
     : perf_results(perf_results)
+    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_state::on_resources_rebuild_end, this, std::placeholders::_1)))
     , input_mapping("ff.debug_page_input")
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
     , view_model(view_model)
-    , debug_view_state(::create_view_state<ff::internal::debug_view>(view_model))
-    , stopped_view_state(::create_view_state<ff::internal::stopped_view>(view_model))
-{}
+{
+    this->init_resources();
+}
 
 void ff::internal::debug_state::advance_input()
 {
@@ -322,9 +359,9 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 size_t ff::internal::debug_state::child_state_count()
 {
     return
-        (this->view_model->debug_visible() ? 1 : 0) +
-        (this->view_model->stopped_visible() ? 1 : 0) +
-        (this->view_model->page_visible() ? 1 : 0);
+        static_cast<size_t>(this->view_model->debug_visible()) +
+        static_cast<size_t>(this->view_model->stopped_visible()) +
+        static_cast<size_t>(this->view_model->page_visible());
 }
 
 ff::state* ff::internal::debug_state::child_state(size_t index)
@@ -352,6 +389,20 @@ ff::state* ff::internal::debug_state::child_state(size_t index)
     }
 
     return this->debug_view_state.get();
+}
+
+void ff::internal::debug_state::init_resources()
+{
+    this->debug_view_state = ::create_view_state<ff::internal::debug_view>(view_model);
+    this->stopped_view_state = ::create_view_state<ff::internal::stopped_view>(view_model);
+}
+
+void ff::internal::debug_state::on_resources_rebuild_end(size_t round)
+{
+    if (round == ff::global_resources::rebuild_round_count)
+    {
+        this->init_resources();
+    }
 }
 
 void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)

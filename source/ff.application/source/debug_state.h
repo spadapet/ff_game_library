@@ -57,6 +57,8 @@ namespace ff::internal
         bool stopped_visible() const;
         void stopped_visible(bool value);
 
+        bool building_resources() const;
+
         bool has_pages() const;
         bool page_visible() const;
         Noesis::ObservableCollection<ff::internal::debug_page_model>* pages() const;
@@ -66,8 +68,12 @@ namespace ff::internal
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
 
+        void on_resources_rebuild_begin();
+        void on_resources_rebuild_end(size_t round);
         void on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args);
         void close_command(Noesis::BaseComponent*);
+        void build_resources_command(Noesis::BaseComponent*);
+        bool build_resources_can_execute(Noesis::BaseComponent*);
 
         double game_seconds_{};
         size_t frames_per_second_{};
@@ -80,6 +86,9 @@ namespace ff::internal
         Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
+        Noesis::Ptr<Noesis::BaseCommand> build_resources_command_;
+        ff::signal_connection resource_rebuild_begin_connection;
+        ff::signal_connection resource_rebuild_end_connection;
     };
 
     class debug_view : public Noesis::UserControl
@@ -121,7 +130,11 @@ namespace ff::internal
         virtual ff::state* child_state(size_t index) override;
 
     private:
+        void init_resources();
+        void on_resources_rebuild_end(size_t round);
+
         const ff::perf_results& perf_results;
+        ff::signal_connection resource_rebuild_end_connection;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
         Noesis::Ptr<ff::internal::debug_view_model> view_model;

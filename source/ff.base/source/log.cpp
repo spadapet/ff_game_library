@@ -38,6 +38,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::test, { "ff/test", true } },
     { ff::log::type::ui, { "ff/ui", true } },
     { ff::log::type::ui_focus, { "ff/ui_focus", ff::constants::debug_build } },
+    { ff::log::type::ui_mem, { "ff/ui_mem", false } },
 };
 
 void ff::internal::log::write(std::string_view text)

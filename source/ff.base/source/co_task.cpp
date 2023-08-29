@@ -107,6 +107,21 @@ ff::internal::co_thread_awaiter ff::task::resume_on_task()
     return ff::internal::co_thread_awaiter{ ff::thread_dispatch_type::task };
 }
 
+ff::internal::co_thread_awaiter ff::task::yield_on_main()
+{
+    return ff::task::yield(ff::thread_dispatch_type::main);
+}
+
+ff::internal::co_thread_awaiter ff::task::yield_on_game()
+{
+    return ff::task::yield(ff::thread_dispatch_type::game);
+}
+
+ff::internal::co_thread_awaiter ff::task::yield_on_task()
+{
+    return ff::task::yield(ff::thread_dispatch_type::task);
+}
+
 ff::internal::co_thread_awaiter ff::task::delay(size_t delay_ms, std::stop_token stop, ff::thread_dispatch_type type)
 {
     return ff::internal::co_thread_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, delay_ms, stop);
