@@ -76,5 +76,20 @@ namespace ff::test::base
             Assert::IsFalse(c1);
             Assert::AreEqual(150, i);
         }
+
+        TEST_METHOD(reuse_disconnected_entry)
+        {
+            ff::signal<> sig;
+            int i = 0;
+
+            ff::signal_connection c1 = sig.connect([&i]() { i += 10; });
+            ff::signal_connection c2 = sig.connect([&i]() { i += 100; });
+            c1 = sig.connect([&i]() { i += 1000; });
+            c2 = sig.connect([&i]() { i += 10000; });
+
+            sig.notify();
+
+            Assert::AreEqual(11000, i);
+        }
     };
 }

@@ -65,7 +65,6 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="border" Property="Opacity" Value="0" />
-                            <!--<Setter TargetName="bg" Property="Opacity" Value="0.5" />-->
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

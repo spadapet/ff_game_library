@@ -1,18 +1,12 @@
 #include "pch.h"
 #include "signal.h"
 
-ff::signal_connection::signal_connection()
-    : entry(nullptr)
-{}
-
 ff::signal_connection::signal_connection(entry_t* entry)
-    : entry(nullptr)
 {
     this->connect(entry);
 }
 
 ff::signal_connection::signal_connection(signal_connection&& other) noexcept
-    : entry(nullptr)
 {
     *this = std::move(other);
 }
@@ -47,7 +41,7 @@ void ff::signal_connection::connect(entry_t* entry)
 {
     if (this->entry)
     {
-        this->entry->connection = nullptr;
+        this->entry->sink->disconnecting(this->entry);
     }
 
     this->entry = entry;
