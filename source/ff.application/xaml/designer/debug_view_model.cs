@@ -19,11 +19,23 @@ namespace ff
 
         public string name { get; }
         public bool is_none => this.name == debug_page_model.none_name;
-        public bool removed => false;
+
+        private bool selected_;
+        public bool selected
+        {
+            get => this.selected_;
+            set => this.SetProperty(ref this.selected_, value);
+        }
     }
 
     public class debug_view_model : PropertyNotifier
     {
+        public debug_view_model()
+        {
+            this.selected_page_ = this.pages[0];
+            this.selected_page_.selected = true;
+        }
+
         public double advance_seconds => 90000.0;
         public int frames_per_second => 60;
         public int frame_count => 5400000;
@@ -78,7 +90,15 @@ namespace ff
         public debug_page_model selected_page
         {
             get => this.selected_page_;
-            set => this.SetProperty(ref this.selected_page_, value);
+            set
+            {
+                debug_page_model old_selected_page = this.selected_page_;
+                if (this.SetProperty(ref this.selected_page_, value))
+                {
+                    old_selected_page.selected = false;
+                    this.selected_page_.selected = true;
+                }
+            }
         }
 
         public ICommand close_command => new DelegateCommand(() =>
@@ -93,5 +113,13 @@ namespace ff
             await Task.Delay(4000);
             this.building_resources = false;
         }, () => !this.building_resources);
+
+        public ICommand select_page_command => new DelegateCommand(param =>
+        {
+            if (param is debug_page_model page)
+            {
+                this.selected_page = page;
+            }
+        });
     }
 }

@@ -13,6 +13,14 @@ namespace ff
         }
     }
 
+    public class bool_to_collapsed_converter : ValueConverter
+    {
+        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool collapsed && collapsed ? Visibility.Collapsed : Visibility.Visible;
+        }
+    }
+
     public class bool_to_object_converter : ValueConverter
     {
         public object TrueValue { get; set; }

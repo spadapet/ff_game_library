@@ -11,10 +11,9 @@ namespace ff::internal
         debug_page_model(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory);
 
         std::string_view name() const;
+        const char* name_cstr() const;
         ff::state* state();
         bool is_none() const;
-        bool removed() const;
-        void set_removed();
 
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_page_model, ff::ui::notify_propety_changed_base);
@@ -22,7 +21,6 @@ namespace ff::internal
         Noesis::String name_;
         std::function<std::shared_ptr<ff::state>()> factory;
         std::shared_ptr<ff::state> state_;
-        bool removed_{};
     };
 
     class debug_view_model : public ff::ui::notify_propety_changed_base
@@ -73,7 +71,8 @@ namespace ff::internal
         void on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args);
         void close_command(Noesis::BaseComponent*);
         void build_resources_command(Noesis::BaseComponent*);
-        bool build_resources_can_execute(Noesis::BaseComponent*);
+        bool build_resources_can_execute(Noesis::BaseComponent*) const;
+        void select_page_command(Noesis::BaseComponent* param);
 
         double game_seconds_{};
         size_t frames_per_second_{};
@@ -87,6 +86,7 @@ namespace ff::internal
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
         Noesis::Ptr<Noesis::BaseCommand> build_resources_command_;
+        Noesis::Ptr<Noesis::BaseCommand> select_page_command_;
         ff::signal_connection resource_rebuild_begin_connection;
         ff::signal_connection resource_rebuild_end_connection;
     };
