@@ -19,13 +19,7 @@
     Style="{x:Null}">
 
     <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ff/debug_resources.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-
-            <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
-        </ResourceDictionary>
+        <ResourceDictionary Source="/ff/debug_resources.xaml" />
     </UserControl.Resources>
 
     <UserControl.Template>
@@ -76,7 +70,40 @@
             </Expander>
         </Border>
         <Border Grid.Row="2" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
-            <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}" />
+            <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl>
+                        <ListBoxItem>Item 0</ListBoxItem>
+                        <ListBoxItem>Item 1</ListBoxItem>
+                        <ListBoxItem>Item 2</ListBoxItem>
+                        <ListBoxItem>Item 3</ListBoxItem>
+                        <ListBoxItem>Item 4</ListBoxItem>
+                        <ListBoxItem>Item 5</ListBoxItem>
+                        <ListBoxItem>Item 6</ListBoxItem>
+                        <ListBoxItem>Item 8</ListBoxItem>
+                        <ListBoxItem>Item 9</ListBoxItem>
+                        <ListBoxItem>Item 0</ListBoxItem>
+                        <ListBoxItem>Item 1</ListBoxItem>
+                        <ListBoxItem>Item 2</ListBoxItem>
+                        <ListBoxItem>Item 3</ListBoxItem>
+                        <ListBoxItem>Item 4</ListBoxItem>
+                        <ListBoxItem>Item 5</ListBoxItem>
+                        <ListBoxItem>Item 6</ListBoxItem>
+                        <ListBoxItem>Item 8</ListBoxItem>
+                        <ListBoxItem>Item 9</ListBoxItem>
+                        <ListBoxItem>Item 0</ListBoxItem>
+                        <ListBoxItem>Item 1</ListBoxItem>
+                        <ListBoxItem>Item 2</ListBoxItem>
+                        <ListBoxItem>Item 3</ListBoxItem>
+                        <ListBoxItem>Item 4</ListBoxItem>
+                        <ListBoxItem>Item 5</ListBoxItem>
+                        <ListBoxItem>Item 6</ListBoxItem>
+                        <ListBoxItem>Item 8</ListBoxItem>
+                        <ListBoxItem>Item 9</ListBoxItem>
+                        <ListBoxItem>Item 0</ListBoxItem>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Expander>
         </Border>
         <Border Grid.Row="3" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}" />
