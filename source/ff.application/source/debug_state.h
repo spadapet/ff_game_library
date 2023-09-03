@@ -18,9 +18,32 @@ namespace ff::internal
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_page_model, ff::ui::notify_propety_changed_base);
 
-        Noesis::String name_;
+        std::string name_;
         std::function<std::shared_ptr<ff::state>()> factory;
         std::shared_ptr<ff::state> state_;
+    };
+
+    class debug_timer_model : public ff::ui::notify_propety_changed_base
+    {
+    public:
+        debug_timer_model() = default;
+        debug_timer_model(const ff::perf_results& results, const ff::perf_results::counter_info& info);
+
+        void info(const ff::perf_results& results, const ff::perf_results::counter_info& info);
+
+        const char* name_cstr() const;
+        Noesis::Brush* name_brush() const;
+        double time_ms() const;
+        int level() const;
+        int hit_total() const;
+        int hit_last_frame() const;
+        int hit_per_second() const;
+
+    private:
+        NS_DECLARE_REFLECTION(ff::internal::debug_timer_model, ff::ui::notify_propety_changed_base);
+
+        ff::perf_results::counter_info info_{};
+        double time_ms_{};
     };
 
     class debug_view_model : public ff::ui::notify_propety_changed_base
@@ -40,6 +63,9 @@ namespace ff::internal
         size_t frame_count() const;
         void frame_count(size_t value);
 
+        size_t frame_start_counter() const;
+        void frame_start_counter(size_t value);
+
         bool debug_visible() const;
         void debug_visible(bool value);
 
@@ -48,6 +74,12 @@ namespace ff::internal
 
         bool timers_visible() const;
         void timers_visible(bool value);
+
+        bool timers_updating() const;
+        void timers_updating(bool value);
+
+        size_t timer_update_speed() const;
+        void timer_update_speed(size_t value);
 
         bool chart_visible() const;
         void chart_visible(bool value);
@@ -63,6 +95,11 @@ namespace ff::internal
         ff::internal::debug_page_model* selected_page() const;
         void selected_page(ff::internal::debug_page_model* value);
 
+        Noesis::ObservableCollection<ff::internal::debug_timer_model>* timers() const;
+        void timers(const ff::perf_results& results) const;
+        ff::internal::debug_timer_model* selected_timer() const;
+        void selected_timer(ff::internal::debug_timer_model* value);
+
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
 
@@ -77,13 +114,18 @@ namespace ff::internal
         double game_seconds_{};
         size_t frames_per_second_{};
         size_t frame_count_{};
+        size_t timer_update_speed_{ 16 };
+        size_t frame_start_counter_{};
         bool debug_visible_{};
         bool page_picker_visible_{};
         bool timers_visible_{};
+        bool timers_updating_{ true };
         bool chart_visible_{};
         bool stopped_visible_{};
+        Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_timer_model>> timers_;
         Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
         Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
+        Noesis::Ptr<ff::internal::debug_timer_model> selected_timer_;
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
         Noesis::Ptr<Noesis::BaseCommand> build_resources_command_;
         Noesis::Ptr<Noesis::BaseCommand> select_page_command_;

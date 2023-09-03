@@ -239,6 +239,7 @@ static void register_components()
     if constexpr (ff::constants::profile_build)
     {
         Noesis::RegisterComponent<ff::internal::debug_page_model>();
+        Noesis::RegisterComponent<ff::internal::debug_timer_model>();
         Noesis::RegisterComponent<ff::internal::debug_view_model>();
         Noesis::RegisterComponent<ff::internal::debug_view>();
         Noesis::RegisterComponent<ff::internal::stopped_view>();

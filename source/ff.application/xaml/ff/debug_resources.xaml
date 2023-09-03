@@ -22,6 +22,20 @@
         </Setter>
     </Style>
 
+    <Style x:Key="ControlFocusInsideVisualStyle" TargetType="{x:Type Control}" BasedOn="{x:Null}">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Control}">
+                    <Grid>
+                        <Rectangle StrokeThickness="1" Stroke="Black" />
+                        <Rectangle StrokeThickness="1" Stroke="White" StrokeDashArray="1 2" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="{x:Type FrameworkElement}" BasedOn="{x:Null}">
         <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusVisualStyle}" />
@@ -280,10 +294,38 @@
     <Style TargetType="{x:Type ListBox}" BasedOn="{StaticResource {x:Type ItemsControl}}" />
 
     <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource ControlFocusInsideVisualStyle}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                    <ContentPresenter />
+                    <Border x:Name="bg" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsSelected" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bg" Property="BorderBrush" Value="White" />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsSelected" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bg" Property="BorderBrush" Value="White" />
+                            <Setter TargetName="bg" Property="Background" Value="#40FFFFFF" />
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="False" />
+                                <Condition Property="IsSelected" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bg" Property="BorderBrush" Value="#40FFFFFF" />
+                            <Setter TargetName="bg" Property="Background" Value="#40FFFFFF" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -497,6 +539,8 @@
         <Setter Property="MinHeight" Value="{StaticResource Size.ScrollBar}"/>
         <Setter Property="MinWidth" Value="{StaticResource Size.ScrollBar}"/>
         <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ScrollViewer}">

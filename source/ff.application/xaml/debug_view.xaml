@@ -66,42 +66,31 @@
         </Border>
         <Border Grid.Row="1" Margin="0,-1,0,0" Visibility="{Binding has_pages, Converter={StaticResource bool_to_visible_converter}}" Style="{StaticResource ContainerBorder}">
             <Expander Header="Panels" IsExpanded="{Binding page_picker_visible, Mode=TwoWay}">
-                <ListBox ItemsSource="{Binding pages}" SelectedItem="{Binding selected_page}" DisplayMemberPath="name" ItemContainerStyle="{StaticResource ListBoxRadioItem}" />
+                <ScrollViewer MaxHeight="100">
+                    <ListBox ItemsSource="{Binding pages}" SelectedItem="{Binding selected_page}" DisplayMemberPath="name" ItemContainerStyle="{StaticResource ListBoxRadioItem}" />
+                </ScrollViewer>
             </Expander>
         </Border>
         <Border Grid.Row="2" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl>
-                        <ListBoxItem>Item 0</ListBoxItem>
-                        <ListBoxItem>Item 1</ListBoxItem>
-                        <ListBoxItem>Item 2</ListBoxItem>
-                        <ListBoxItem>Item 3</ListBoxItem>
-                        <ListBoxItem>Item 4</ListBoxItem>
-                        <ListBoxItem>Item 5</ListBoxItem>
-                        <ListBoxItem>Item 6</ListBoxItem>
-                        <ListBoxItem>Item 8</ListBoxItem>
-                        <ListBoxItem>Item 9</ListBoxItem>
-                        <ListBoxItem>Item 0</ListBoxItem>
-                        <ListBoxItem>Item 1</ListBoxItem>
-                        <ListBoxItem>Item 2</ListBoxItem>
-                        <ListBoxItem>Item 3</ListBoxItem>
-                        <ListBoxItem>Item 4</ListBoxItem>
-                        <ListBoxItem>Item 5</ListBoxItem>
-                        <ListBoxItem>Item 6</ListBoxItem>
-                        <ListBoxItem>Item 8</ListBoxItem>
-                        <ListBoxItem>Item 9</ListBoxItem>
-                        <ListBoxItem>Item 0</ListBoxItem>
-                        <ListBoxItem>Item 1</ListBoxItem>
-                        <ListBoxItem>Item 2</ListBoxItem>
-                        <ListBoxItem>Item 3</ListBoxItem>
-                        <ListBoxItem>Item 4</ListBoxItem>
-                        <ListBoxItem>Item 5</ListBoxItem>
-                        <ListBoxItem>Item 6</ListBoxItem>
-                        <ListBoxItem>Item 8</ListBoxItem>
-                        <ListBoxItem>Item 9</ListBoxItem>
-                        <ListBoxItem>Item 0</ListBoxItem>
-                    </ItemsControl>
+                <ScrollViewer>
+                    <ListBox ItemsSource="{Binding timers}" SelectedItem="selected_timer">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ff:debug_timer_model}">
+                                <TextBlock Foreground="{Binding name_brush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0} {1:N1}ms {4}hz (x{3} #{2})">
+                                            <Binding Path="name" />
+                                            <Binding Path="time_ms" />
+                                            <Binding Path="hit_total" />
+                                            <Binding Path="hit_last_frame" />
+                                            <Binding Path="hit_per_second" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </ScrollViewer>
             </Expander>
         </Border>

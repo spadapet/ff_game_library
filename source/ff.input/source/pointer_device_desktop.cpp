@@ -158,11 +158,13 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
                 break;
 
             case WM_MOUSEWHEEL:
+                ::ScreenToClient(message.hwnd, reinterpret_cast<LPPOINT>(&mouse_pos));
                 this->pending_mouse.wheel_scroll.y += GET_WHEEL_DELTA_WPARAM(message.wp);
                 device_event = ff::input_device_event_mouse_wheel_y(GET_WHEEL_DELTA_WPARAM(message.wp), mouse_pos);
                 break;
 
             case WM_MOUSEHWHEEL:
+                ::ScreenToClient(message.hwnd, reinterpret_cast<LPPOINT>(&mouse_pos));
                 this->pending_mouse.wheel_scroll.x += GET_WHEEL_DELTA_WPARAM(message.wp);
                 device_event = ff::input_device_event_mouse_wheel_x(GET_WHEEL_DELTA_WPARAM(message.wp), mouse_pos);
                 break;

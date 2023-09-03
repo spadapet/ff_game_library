@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Media;
 using WpfTools;
 
 namespace ff
@@ -19,13 +20,17 @@ namespace ff
 
         public string name { get; }
         public bool is_none => this.name == debug_page_model.none_name;
+    }
 
-        private bool selected_;
-        public bool selected
-        {
-            get => this.selected_;
-            set => this.SetProperty(ref this.selected_, value);
-        }
+    public class debug_timer_model : PropertyNotifier
+    {
+        public string name { get; } = $"Timer {Random.Shared.Next(1000)}";
+        public Brush name_brush => Brushes.White;
+        public double time_ms => 10.0;
+        public int level => 0;
+        public int hit_total => 100;
+        public int hit_last_frame => 10;
+        public int hit_per_second => 60;
     }
 
     public class debug_view_model : PropertyNotifier
@@ -33,7 +38,6 @@ namespace ff
         public debug_view_model()
         {
             this.selected_page_ = this.pages[0];
-            this.selected_page_.selected = true;
         }
 
         public double advance_seconds => 90000.0;
@@ -84,21 +88,46 @@ namespace ff
             new debug_page_model(),
             new debug_page_model(),
             new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+            new debug_page_model(),
+        };
+
+        public ObservableCollection<debug_timer_model> timers{ get; } = new()
+        {
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
+            new debug_timer_model(),
         };
 
         private debug_page_model selected_page_;
         public debug_page_model selected_page
         {
             get => this.selected_page_;
-            set
-            {
-                debug_page_model old_selected_page = this.selected_page_;
-                if (this.SetProperty(ref this.selected_page_, value))
-                {
-                    old_selected_page.selected = false;
-                    this.selected_page_.selected = true;
-                }
-            }
+            set => this.SetProperty(ref this.selected_page_, value ?? this.pages[0]);
+        }
+
+        private debug_page_model selected_timer_;
+        public debug_page_model selected_timer
+        {
+            get => this.selected_timer_;
+            set => this.SetProperty(ref this.selected_timer_, value);
         }
 
         public ICommand close_command => new DelegateCommand(() =>

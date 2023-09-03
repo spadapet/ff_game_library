@@ -22,18 +22,18 @@ ff::internal::debug_page_model::debug_page_model()
 {}
 
 ff::internal::debug_page_model::debug_page_model(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
-    : name_(name.data(), name.data() + name.size())
+    : name_(name)
     , factory(std::move(factory))
 {}
 
 std::string_view ff::internal::debug_page_model::name() const
 {
-    return this->is_none() ? ::NONE_NAME : std::string_view(this->name_.Begin(), this->name_.Size());
+    return this->is_none() ? ::NONE_NAME : this->name_;
 }
 
 const char* ff::internal::debug_page_model::name_cstr() const
 {
-    return this->name().data();
+    return this->name_.c_str();
 }
 
 ff::state* ff::internal::debug_page_model::state()
@@ -49,7 +49,93 @@ ff::state* ff::internal::debug_page_model::state()
 
 bool ff::internal::debug_page_model::is_none() const
 {
-    return !this->name_.Size();
+    return this->name_.empty();
+}
+
+NS_IMPLEMENT_REFLECTION(ff::internal::debug_timer_model, "ff.debug_timer_model")
+{
+    NsProp("name", &ff::internal::debug_timer_model::name_cstr);
+    NsProp("name_brush", &ff::internal::debug_timer_model::name_brush);
+    NsProp("time_ms", &ff::internal::debug_timer_model::time_ms);
+    NsProp("level", &ff::internal::debug_timer_model::level);
+    NsProp("hit_total", &ff::internal::debug_timer_model::hit_total);
+    NsProp("hit_last_frame", &ff::internal::debug_timer_model::hit_last_frame);
+    NsProp("hit_per_second", &ff::internal::debug_timer_model::hit_per_second);
+}
+
+ff::internal::debug_timer_model::debug_timer_model(const ff::perf_results& results, const ff::perf_results::counter_info& info)
+    : ff::internal::debug_timer_model::debug_timer_model()
+{
+    this->info(results, info);
+}
+
+void ff::internal::debug_timer_model::info(const ff::perf_results& results, const ff::perf_results::counter_info& info)
+{
+    const double time_ms = results.delta_ticks ? (info.ticks * results.delta_seconds * 1000.0 / results.delta_ticks) : 0.0;
+
+    this->set_property(this->info_.counter, info.counter, "name", "name_brush");
+    this->set_property(this->time_ms_, time_ms, "time_ms");
+    this->set_property(this->info_.level, info.level, "level");
+    this->set_property(this->info_.hit_total, info.hit_total, "hit_total");
+    this->set_property(this->info_.hit_last_frame, info.hit_last_frame, "hit_last_frame");
+    this->set_property(this->info_.hit_per_second, info.hit_per_second, "hit_per_second");
+}
+
+const char* ff::internal::debug_timer_model::name_cstr() const
+{
+    return this->info_.counter ? this->info_.counter->name.c_str() : "";
+}
+
+Noesis::Brush* ff::internal::debug_timer_model::name_brush() const
+{
+    switch (this->info_.counter ? this->info_.counter->color : ff::perf_color::white)
+    {
+        case ff::perf_color::blue:
+            return Noesis::Brushes::Blue();
+
+        case ff::perf_color::cyan:
+            return Noesis::Brushes::Cyan();
+
+        case ff::perf_color::green:
+            return Noesis::Brushes::LightGreen();
+
+        case ff::perf_color::magenta:
+            return Noesis::Brushes::Magenta();
+
+        case ff::perf_color::red:
+            return Noesis::Brushes::Red();
+
+        case ff::perf_color::yellow:
+            return Noesis::Brushes::Yellow();
+
+        default:
+            return Noesis::Brushes::White();
+    }
+}
+
+double ff::internal::debug_timer_model::time_ms() const
+{
+    return this->time_ms_;
+}
+
+int ff::internal::debug_timer_model::level() const
+{
+    return static_cast<int>(this->info_.level);
+}
+
+int ff::internal::debug_timer_model::hit_total() const
+{
+    return static_cast<int>(this->info_.hit_total);
+}
+
+int ff::internal::debug_timer_model::hit_last_frame() const
+{
+    return static_cast<int>(this->info_.hit_last_frame);
+}
+
+int ff::internal::debug_timer_model::hit_per_second() const
+{
+    return static_cast<int>(this->info_.hit_per_second);
 }
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
@@ -61,18 +147,24 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("advance_seconds", &ff::internal::debug_view_model::advance_seconds, &ff::internal::debug_view_model::advance_seconds);
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
     NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
+    NsProp("frame_start_counter", &ff::internal::debug_view_model::frame_start_counter, &ff::internal::debug_view_model::frame_start_counter);
     NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
     NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
+    NsProp("timers_updating", &ff::internal::debug_view_model::timers_updating, &ff::internal::debug_view_model::timers_updating);
+    NsProp("timers_update_speed", &ff::internal::debug_view_model::timer_update_speed, &ff::internal::debug_view_model::timer_update_speed);
     NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
     NsProp("building_resources", &ff::internal::debug_view_model::building_resources);
     NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
     NsProp("page_visible", &ff::internal::debug_view_model::page_visible);
     NsProp("pages", &ff::internal::debug_view_model::pages);
+    NsProp("timers", &ff::internal::debug_view_model::timers);
     NsProp("selected_page", &ff::internal::debug_view_model::selected_page, &ff::internal::debug_view_model::selected_page);
+    NsProp("selected_timer", &ff::internal::debug_view_model::selected_timer, &ff::internal::debug_view_model::selected_timer);
 }
 
 ff::internal::debug_view_model::debug_view_model()
     : pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
+    , timers_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_timer_model>>())
     , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
     , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::close_command)))
     , build_resources_command_(Noesis::MakePtr<ff::ui::delegate_command>(
@@ -133,6 +225,16 @@ void ff::internal::debug_view_model::frame_count(size_t value)
     this->set_property(this->frame_count_, value, "frame_count");
 }
 
+size_t ff::internal::debug_view_model::frame_start_counter() const
+{
+    return this->frame_start_counter_;
+}
+
+void ff::internal::debug_view_model::frame_start_counter(size_t value)
+{
+    this->set_property(this->frame_start_counter_, value, "frame_start_counter");
+}
+
 bool ff::internal::debug_view_model::debug_visible() const
 {
     return this->debug_visible_;
@@ -161,6 +263,27 @@ bool ff::internal::debug_view_model::timers_visible() const
 void ff::internal::debug_view_model::timers_visible(bool value)
 {
     this->set_property(this->timers_visible_, value, "timers_visible");
+}
+
+bool ff::internal::debug_view_model::timers_updating() const
+{
+    return this->timers_updating_;
+}
+
+void ff::internal::debug_view_model::timers_updating(bool value)
+{
+    this->set_property(this->timers_updating_, value, "timers_updating");
+}
+
+size_t ff::internal::debug_view_model::timer_update_speed() const
+{
+    return this->timer_update_speed_;
+}
+
+void ff::internal::debug_view_model::timer_update_speed(size_t value)
+{
+    value = ff::math::clamp<size_t>(value, 1, 60);
+    this->set_property(this->timer_update_speed_, value, "timer_update_speed");
 }
 
 bool ff::internal::debug_view_model::chart_visible() const
@@ -216,6 +339,44 @@ void ff::internal::debug_view_model::selected_page(ff::internal::debug_page_mode
     {
         this->debug_visible(true);
     }
+}
+
+Noesis::ObservableCollection<ff::internal::debug_timer_model>* ff::internal::debug_view_model::timers() const
+{
+    return this->timers_;
+}
+
+void ff::internal::debug_view_model::timers(const ff::perf_results& results) const
+{
+    uint32_t i = 0;
+    uint32_t timers_count = static_cast<uint32_t>(this->timers_->Count());
+    for (; i < results.counter_infos.size(); i++)
+    {
+        if (i < timers_count)
+        {
+            this->timers_->Get(i)->info(results, results.counter_infos[i]);
+        }
+        else
+        {
+            this->timers_->Add(Noesis::MakePtr<ff::internal::debug_timer_model>(results, results.counter_infos[i]));
+            timers_count++;
+        }
+    }
+
+    while (timers_count > i)
+    {
+        this->timers_->RemoveAt(--timers_count);
+    }
+}
+
+ff::internal::debug_timer_model* ff::internal::debug_view_model::selected_timer() const
+{
+    return this->selected_timer_;
+}
+
+void ff::internal::debug_view_model::selected_timer(ff::internal::debug_timer_model* value)
+{
+    this->set_property(this->selected_timer_, Noesis::Ptr(value), "selected_timer");
 }
 
 void ff::internal::debug_view_model::on_resources_rebuild_begin()
@@ -344,21 +505,31 @@ void ff::internal::debug_state::advance_input()
 
 void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 {
-    this->view_model->stopped_visible(type == ff::state::advance_t::stopped);
+    ff::internal::debug_view_model* vm = this->view_model;
+    const ff::perf_results& pr = this->perf_results;
 
-    if (this->view_model->debug_visible())
+    vm->stopped_visible(type == ff::state::advance_t::stopped);
+
+    if (vm->debug_visible())
     {
-        this->view_model->advance_seconds(ff::app_time().advance_seconds);
-        this->view_model->frame_count(ff::app_time().advance_count);
+        vm->advance_seconds(ff::app_time().advance_seconds);
+        vm->frame_count(ff::app_time().advance_count);
 
-        if (this->perf_results.counter_infos.size())
+        if (vm->timers_visible() && vm->timers_updating() && (vm->frame_start_counter() % vm->timer_update_speed()) == 0)
         {
-            const ff::perf_results::counter_info& info = this->perf_results.counter_infos.front();
-            this->view_model->frames_per_second(info.hit_per_second);
+            vm->timers(pr);
+        }
+
+        if (pr.counter_infos.size())
+        {
+            const ff::perf_results::counter_info& info = pr.counter_infos.front();
+            vm->frames_per_second(info.hit_per_second);
         }
     }
 
     ff::state::frame_started(type);
+
+    vm->frame_start_counter(vm->frame_start_counter() + 1);
 }
 
 size_t ff::internal::debug_state::child_state_count()

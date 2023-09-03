@@ -39,4 +39,12 @@ namespace ff
             return value is not bool bool_value || !bool_value;
         }
     }
+
+    public class level_to_timer_indent_converter : ValueConverter
+    {
+        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value;
+        }
+    }
 }
