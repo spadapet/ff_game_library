@@ -40,11 +40,12 @@ namespace ff
         }
     }
 
-    public class level_to_timer_indent_converter : ValueConverter
+    public class level_to_indent_converter : ValueConverter
     {
         public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value;
+            double? indent = parameter as double?;
+            return value is int level ? new Thickness(level * (indent ?? 8.0), 0, 0, 0) : new Thickness();
         }
     }
 }

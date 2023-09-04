@@ -27,7 +27,7 @@ namespace ff
         public string name { get; } = $"Timer {Random.Shared.Next(1000)}";
         public Brush name_brush => Brushes.White;
         public double time_ms => 10.0;
-        public int level => 0;
+        public int level { get; } = Random.Shared.Next(4);
         public int hit_total => 100;
         public int hit_last_frame => 10;
         public int hit_per_second => 60;

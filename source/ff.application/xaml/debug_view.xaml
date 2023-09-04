@@ -77,9 +77,9 @@
                     <ListBox ItemsSource="{Binding timers}" SelectedItem="selected_timer">
                         <ListBox.ItemTemplate>
                             <DataTemplate DataType="{x:Type ff:debug_timer_model}">
-                                <TextBlock Foreground="{Binding name_brush}">
+                                <TextBlock Foreground="{Binding name_brush}" Margin="{Binding level, Converter={StaticResource level_to_indent_converter}, ConverterParameter=8.0}">
                                     <TextBlock.Text>
-                                        <MultiBinding StringFormat="{}{0} {1:N1}ms {4}hz (x{3} #{2})">
+                                        <MultiBinding StringFormat="{}{0} {1:N1}ms {4}hz">
                                             <Binding Path="name" />
                                             <Binding Path="time_ms" />
                                             <Binding Path="hit_total" />

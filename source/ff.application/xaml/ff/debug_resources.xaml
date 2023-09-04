@@ -7,6 +7,7 @@
 
     <ff:bool_to_visible_converter x:Key="bool_to_visible_converter" />
     <ff:bool_to_collapsed_converter x:Key="bool_to_collapsed_converter" />
+    <ff:level_to_indent_converter x:Key="level_to_indent_converter" />
 
     <Style x:Key="ControlFocusVisualStyle" TargetType="{x:Type Control}" BasedOn="{x:Null}">
         <Setter Property="OverridesDefaultStyle" Value="True" />

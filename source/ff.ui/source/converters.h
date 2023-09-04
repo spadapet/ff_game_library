@@ -80,4 +80,13 @@ namespace ff::ui
 
         NS_DECLARE_REFLECTION(object_to_object_converter, Noesis::BaseValueConverter);
     };
+
+    class level_to_indent_converter : public Noesis::BaseValueConverter
+    {
+    public:
+        virtual bool TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result) override;
+
+    private:
+        NS_DECLARE_REFLECTION(level_to_indent_converter, Noesis::BaseValueConverter);
+    };
 }

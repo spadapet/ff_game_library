@@ -133,3 +133,14 @@ void ff::ui::object_to_object_converter::non_null_value(Noesis::BaseComponent* v
 {
     this->non_null_value_.Reset(value);
 }
+
+NS_IMPLEMENT_REFLECTION(ff::ui::level_to_indent_converter, "ff.level_to_indent_converter")
+{}
+
+bool ff::ui::level_to_indent_converter::TryConvert(Noesis::BaseComponent* value, const Noesis::Type* targetType, Noesis::BaseComponent* parameter, Noesis::Ptr<Noesis::BaseComponent>& result)
+{
+    double indent = Noesis::Boxing::CanUnbox<double>(parameter) ? Noesis::Boxing::Unbox<double>(parameter) : 8.0;
+    int level = Noesis::Boxing::CanUnbox<int>(value) ? Noesis::Boxing::Unbox<int>(value) : 0;
+    result = Noesis::Boxing::Box<Noesis::Thickness>(Noesis::Thickness(static_cast<float>(level * indent), 0, 0, 0));
+    return true;
+}

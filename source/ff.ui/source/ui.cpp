@@ -165,6 +165,7 @@ static void register_components(std::function<void()>&& register_extra_component
     Noesis::RegisterComponent<ff::ui::bool_to_collapsed_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_inverse_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_object_converter>();
+    Noesis::RegisterComponent<ff::ui::level_to_indent_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_collapsed_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_object_converter>();

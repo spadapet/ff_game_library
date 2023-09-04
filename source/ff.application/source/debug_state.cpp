@@ -97,7 +97,7 @@ Noesis::Brush* ff::internal::debug_timer_model::name_brush() const
             return Noesis::Brushes::Cyan();
 
         case ff::perf_color::green:
-            return Noesis::Brushes::LightGreen();
+            return Noesis::Brushes::LawnGreen();
 
         case ff::perf_color::magenta:
             return Noesis::Brushes::Magenta();
