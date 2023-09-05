@@ -62,6 +62,13 @@ namespace ff
             set => this.SetProperty(ref this.timers_visible_, value);
         }
 
+        private bool timers_updating_ = true;
+        public bool timers_updating
+        {
+            get => this.timers_updating_;
+            set => this.SetProperty(ref this.timers_updating_, value);
+        }
+
         private bool chart_visible_;
         public bool chart_visible
         {
