@@ -69,6 +69,13 @@ namespace ff
             set => this.SetProperty(ref this.timers_updating_, value);
         }
 
+        private int timer_update_speed_ = 16;
+        public int timer_update_speed
+        {
+            get => this.timer_update_speed_;
+            set => this.SetProperty(ref this.timer_update_speed_, value);
+        }
+
         private bool chart_visible_;
         public bool chart_visible
         {

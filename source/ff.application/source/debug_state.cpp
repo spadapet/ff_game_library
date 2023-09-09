@@ -151,11 +151,12 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
     NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
     NsProp("timers_updating", &ff::internal::debug_view_model::timers_updating, &ff::internal::debug_view_model::timers_updating);
-    NsProp("timers_update_speed", &ff::internal::debug_view_model::timer_update_speed, &ff::internal::debug_view_model::timer_update_speed);
+    NsProp("timer_update_speed", &ff::internal::debug_view_model::timer_update_speed, &ff::internal::debug_view_model::timer_update_speed);
     NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
     NsProp("building_resources", &ff::internal::debug_view_model::building_resources);
     NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
     NsProp("page_visible", &ff::internal::debug_view_model::page_visible);
+    NsProp("page_picker_visible", &ff::internal::debug_view_model::page_picker_visible, &ff::internal::debug_view_model::page_picker_visible);
     NsProp("pages", &ff::internal::debug_view_model::pages);
     NsProp("timers", &ff::internal::debug_view_model::timers);
     NsProp("selected_page", &ff::internal::debug_view_model::selected_page, &ff::internal::debug_view_model::selected_page);

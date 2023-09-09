@@ -576,149 +576,39 @@
         </Setter>
     </Style>
 
-    <!--<Style x:Key="Style.Slider.Thumb" TargetType="Thumb">
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Thumb">
-                    <Grid Background="Transparent">
-                        <Ellipse x:Name="Thumb" Fill="{TemplateBinding Background}" Width="20" Height="20" Margin="-8"/>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsDragging" Value="True">
-                            <Setter Property="Fill" Value="{DynamicResource Brush.Thumb.Pressed}" TargetName="Thumb"/>
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Fill" Value="{DynamicResource Brush.Border.DisabledChecked}" TargetName="Thumb"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-    <Style x:Key="Style.Slider.RepeatButton" TargetType="RepeatButton" BasedOn="{StaticResource {x:Type RepeatButton}}">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="IsTabStop" Value="False"/>
-        <Setter Property="Focusable" Value="False"/>
-        <Setter Property="ClickMode" Value="Press"/>
-        <Setter Property="Delay" Value="250"/>
-        <Setter Property="Interval" Value="100"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RepeatButton">
-                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource Corner.Border2}"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
     <ControlTemplate x:Key="Template.Slider.Horizontal" TargetType="Slider">
-        <Grid x:Name="TemplateRoot" Height="20" Margin="8,0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Border x:Name="Background" Grid.Row="1" Height="2" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource Corner.Border2}"/>
-            <Border Grid.Row="0" Height="8">
-                <TickBar x:Name="TopTicks" Fill="{TemplateBinding Background}" Placement="Top" VerticalAlignment="Top" Height="4" Visibility="Hidden"/>
-            </Border>
-            <Border Grid.Row="2" Height="8">
-                <TickBar x:Name="BottomTicks" Fill="{TemplateBinding Background}" Placement="Bottom" VerticalAlignment="Bottom" Height="4" Visibility="Hidden"/>
-            </Border>
-            <Track x:Name="PART_Track" Grid.RowSpan="3" Orientation="Horizontal">
+        <Grid>
+            <Border Height="1" Background="White" VerticalAlignment="Center" />
+            <Track x:Name="PART_Track" Orientation="Horizontal">
                 <Track.DecreaseRepeatButton>
-                    <RepeatButton x:Name="DecreaseButton" Command="Slider.DecreaseLarge" Padding="0,9" Margin="0,0,-1,0" Background="{TemplateBinding Foreground}" Style="{StaticResource Style.Slider.RepeatButton}"/>
+                    <RepeatButton x:Name="DecreaseButton" Command="Slider.DecreaseLarge" Style="{StaticResource Style.ScrollBar.PageButton}"/>
                 </Track.DecreaseRepeatButton>
                 <Track.IncreaseRepeatButton>
-                    <RepeatButton x:Name="IncreaseButton" Command="Slider.IncreaseLarge" Padding="0,9" Background="Transparent" Style="{StaticResource Style.Slider.RepeatButton}"/>
+                    <RepeatButton x:Name="IncreaseButton" Command="Slider.IncreaseLarge" Style="{StaticResource Style.ScrollBar.PageButton}"/>
                 </Track.IncreaseRepeatButton>
                 <Track.Thumb>
-                    <Thumb x:Name="Thumb" Background="{TemplateBinding Foreground}" Style="{StaticResource Style.Slider.Thumb}"/>
+                    <Thumb x:Name="Thumb" Width="12" Background="Gray" Style="{StaticResource Style.ScrollBar.Thumb}"/>
                 </Track.Thumb>
             </Track>
         </Grid>
-        <ControlTemplate.Triggers>
-            <Trigger Property="IsDirectionReversed" Value="True">
-                <Setter Property="Margin" Value="-2,0,0,0" TargetName="DecreaseButton"/>
-            </Trigger>
-            <Trigger Property="noesis:Element.IsFocusEngaged" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Border.Pressed}" TargetName="Thumb"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Glyph.Over}" TargetName="Thumb"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="TopLeft">
-                <Setter TargetName="TopTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="BottomRight">
-                <Setter TargetName="BottomTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="Both">
-                <Setter TargetName="TopTicks" Property="Visibility" Value="Visible"/>
-                <Setter TargetName="BottomTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Background" Value="{DynamicResource Brush.Border.DisabledChecked}" TargetName="DecreaseButton"/>
-            </Trigger>
-        </ControlTemplate.Triggers>
     </ControlTemplate>
     <ControlTemplate x:Key="Template.Slider.Vertical" TargetType="Slider">
-        <Grid x:Name="TemplateRoot" Width="20" Margin="0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Border x:Name="Background" Grid.Column="1" Width="2" Background="{TemplateBinding Background}" CornerRadius="{DynamicResource Corner.Border2}"/>
-            <Border Grid.Column="0" Width="8">
-                <TickBar x:Name="LeftTicks" Fill="{TemplateBinding Background}" Placement="Left" HorizontalAlignment="Left" Width="4" Visibility="Hidden"/>
-            </Border>
-            <Border Grid.Column="2" Width="8">
-                <TickBar x:Name="RightTicks" Fill="{TemplateBinding Background}" Placement="Right" HorizontalAlignment="Right" Width="4" Visibility="Hidden"/>
-            </Border>
-            <Track x:Name="PART_Track" Grid.ColumnSpan="3" Orientation="Vertical">
+        <Grid>
+            <Border Width="1" Background="White" HorizontalAlignment="Center" />
+            <Track x:Name="PART_Track" Orientation="Vertical">
                 <Track.DecreaseRepeatButton>
-                    <RepeatButton x:Name="DecreaseButton" Command="Slider.DecreaseLarge" Padding="9,0" Margin="0,-1,0,0" Background="{TemplateBinding Foreground}" Style="{StaticResource Style.Slider.RepeatButton}"/>
+                    <RepeatButton x:Name="DecreaseButton" Command="Slider.DecreaseLarge" Style="{StaticResource Style.ScrollBar.PageButton}" />
                 </Track.DecreaseRepeatButton>
                 <Track.IncreaseRepeatButton>
-                    <RepeatButton x:Name="IncreaseButton" Command="Slider.IncreaseLarge" Padding="9,0" Background="Transparent" Style="{StaticResource Style.Slider.RepeatButton}"/>
+                    <RepeatButton x:Name="IncreaseButton" Command="Slider.IncreaseLarge" Style="{StaticResource Style.ScrollBar.PageButton}" />
                 </Track.IncreaseRepeatButton>
                 <Track.Thumb>
-                    <Thumb x:Name="Thumb" Background="{TemplateBinding Foreground}" Style="{StaticResource Style.Slider.Thumb}"/>
+                    <Thumb x:Name="Thumb" Height="12" Background="Gray" Style="{StaticResource Style.ScrollBar.Thumb}"/>
                 </Track.Thumb>
             </Track>
         </Grid>
-        <ControlTemplate.Triggers>
-            <Trigger Property="IsDirectionReversed" Value="True">
-                <Setter Property="Margin" Value="0,0,0,-2" TargetName="DecreaseButton"/>
-            </Trigger>
-            <Trigger Property="noesis:Element.IsFocusEngaged" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Border.Pressed}" TargetName="Thumb"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource Brush.Glyph.Over}" TargetName="Thumb"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="TopLeft">
-                <Setter TargetName="LeftTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="BottomRight">
-                <Setter TargetName="RightTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="TickPlacement" Value="Both">
-                <Setter TargetName="LeftTicks" Property="Visibility" Value="Visible"/>
-                <Setter TargetName="RightTicks" Property="Visibility" Value="Visible"/>
-            </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Background" Value="{DynamicResource Brush.Border.DisabledChecked}" TargetName="DecreaseButton"/>
-            </Trigger>
-        </ControlTemplate.Triggers>
     </ControlTemplate>
     <Style TargetType="{x:Type Slider}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="Foreground" Value="{DynamicResource Brush.Background.Checked}"/>
-        <Setter Property="Background" Value="{DynamicResource Brush.Background.Normal}"/>
-        <Setter Property="FocusVisualStyle" Value="{StaticResource Style.Focus.Outer.Uniform}"/>
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Template" Value="{StaticResource Template.Slider.Horizontal}"/>
@@ -727,6 +617,6 @@
                 <Setter Property="Template" Value="{StaticResource Template.Slider.Vertical}"/>
             </Trigger>
         </Style.Triggers>
-    </Style>-->
+    </Style>
 
 </ResourceDictionary>

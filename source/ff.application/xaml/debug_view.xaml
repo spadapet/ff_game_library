@@ -28,7 +28,7 @@
         </ControlTemplate>
     </UserControl.Template>
 
-    <Grid Width="200" HorizontalAlignment="Left" Margin="8">
+    <Grid Width="256" HorizontalAlignment="Left" Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -83,7 +83,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Slider />
+                        <Slider Minimum="1" Maximum="60" Value="{Binding timer_update_speed}" />
                         <ToggleButton Grid.Column="1" IsChecked="{Binding timers_updating}" Style="{StaticResource PlayButton}" />
                     </Grid>
                     <ScrollViewer Grid.Row="1">
@@ -92,12 +92,12 @@
                                 <DataTemplate DataType="{x:Type ff:debug_timer_model}">
                                     <TextBlock Foreground="{Binding name_brush}" Margin="{Binding level, Converter={StaticResource level_to_indent_converter}, ConverterParameter=8.0}">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}{0} {1:N1}ms {4}hz">
+                                            <MultiBinding StringFormat="{}{0} {1:N1}ms">
                                                 <Binding Path="name" />
                                                 <Binding Path="time_ms" />
-                                                <Binding Path="hit_total" />
+                                                <!--<Binding Path="hit_total" />
                                                 <Binding Path="hit_last_frame" />
-                                                <Binding Path="hit_per_second" />
+                                                <Binding Path="hit_per_second" />-->
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>
