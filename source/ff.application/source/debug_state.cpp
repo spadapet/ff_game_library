@@ -5,11 +5,54 @@
 
 using namespace std::string_view_literals;
 
+constexpr size_t CHART_WIDTH = 125;
+constexpr uint32_t CHART_WIDTH_U = static_cast<uint32_t>(::CHART_WIDTH);
+constexpr uint16_t CHART_WIDTH_U16 = static_cast<uint16_t>(::CHART_WIDTH);
+constexpr float CHART_WIDTH_F = static_cast<float>(::CHART_WIDTH);
+constexpr double CHART_HEIGHT_D = 64.0;
+constexpr float CHART_HEIGHT_F = static_cast<float>(::CHART_HEIGHT_D);
 static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
 static std::string_view NONE_NAME = "None"sv;
 static ff::internal::debug_view_model* global_debug_view_model{};
 static ff::signal<> custom_debug_signal;
+
+static Noesis::Ptr<Noesis::MeshGeometry> CreateChartGeometry()
+{
+    auto geometry = Noesis::MakePtr<Noesis::MeshGeometry>();
+    geometry->SetBounds(Noesis::Rect(0, 0, ::CHART_WIDTH_F, ::CHART_HEIGHT_F));
+    geometry->SetNumVertices(::CHART_WIDTH_U * 2 + 2);
+    geometry->SetNumIndices(::CHART_WIDTH_U * 6);
+
+    // Vertices
+    {
+        Noesis::Point* points = geometry->GetVertices();
+        for (size_t i = 0; i < ::CHART_WIDTH * 2 + 2; i++, points++)
+        {
+            points->x = (::CHART_WIDTH_F - i / 2) * 2.0f;
+            points->y = ::CHART_HEIGHT_F;
+        }
+    }
+
+    // Indices
+    {
+        uint16_t* indices = geometry->GetIndices();
+        for (uint16_t i = 0; i < ::CHART_WIDTH_U16; i++)
+        {
+            const uint16_t start = i * 2;
+            *indices++ = start + 0;
+            *indices++ = start + 2;
+            *indices++ = start + 1;
+            *indices++ = start + 1;
+            *indices++ = start + 2;
+            *indices++ = start + 3;
+        }
+    }
+
+    geometry->Update();
+
+    return geometry;
+}
 
 NS_IMPLEMENT_REFLECTION(ff::internal::debug_page_model, "ff.debug_page_model")
 {
@@ -152,6 +195,7 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
     NsProp("timers_updating", &ff::internal::debug_view_model::timers_updating, &ff::internal::debug_view_model::timers_updating);
     NsProp("timer_update_speed", &ff::internal::debug_view_model::timer_update_speed, &ff::internal::debug_view_model::timer_update_speed);
+    NsProp("chart_visible", &ff::internal::debug_view_model::chart_visible, &ff::internal::debug_view_model::chart_visible);
     NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
     NsProp("building_resources", &ff::internal::debug_view_model::building_resources);
     NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
@@ -161,17 +205,24 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("timers", &ff::internal::debug_view_model::timers);
     NsProp("selected_page", &ff::internal::debug_view_model::selected_page, &ff::internal::debug_view_model::selected_page);
     NsProp("selected_timer", &ff::internal::debug_view_model::selected_timer, &ff::internal::debug_view_model::selected_timer);
+    NsProp("geometry_total", &ff::internal::debug_view_model::geometry_total);
+    NsProp("geometry_total", &ff::internal::debug_view_model::geometry_total);
+    NsProp("geometry_render", &ff::internal::debug_view_model::geometry_render);
+    NsProp("geometry_wait", &ff::internal::debug_view_model::geometry_wait);
 }
 
 ff::internal::debug_view_model::debug_view_model()
-    : pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
-    , timers_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_timer_model>>())
+    : timers_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_timer_model>>())
+    , pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
     , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
     , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::close_command)))
     , build_resources_command_(Noesis::MakePtr<ff::ui::delegate_command>(
         Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_command),
         Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_can_execute)))
     , select_page_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::select_page_command)))
+    , geometry_total_(::CreateChartGeometry())
+    , geometry_render_(::CreateChartGeometry())
+    , geometry_wait_(::CreateChartGeometry())
     , resource_rebuild_begin_connection(ff::global_resources::rebuild_begin_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
     , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_end, this, std::placeholders::_1)))
 {
@@ -380,6 +431,77 @@ void ff::internal::debug_view_model::selected_timer(ff::internal::debug_timer_mo
     this->set_property(this->selected_timer_, Noesis::Ptr(value), "selected_timer");
 }
 
+void ff::internal::debug_view_model::update_chart(const ff::perf_results& results)
+{
+    if (!results.delta_ticks)
+    {
+        return;
+    }
+
+    int64_t total_ticks{};
+    int64_t render_ticks{};
+    int64_t wait_ticks{};
+
+    for (const ff::perf_results::counter_info& info : results.counter_infos)
+    {
+        switch (info.counter->chart_type)
+        {
+            case ff::perf_chart_t::frame_total:
+                total_ticks += info.ticks;
+                break;
+
+            case ff::perf_chart_t::render_total:
+                render_ticks += info.ticks;
+                break;
+
+            case ff::perf_chart_t::render_wait:
+                wait_ticks += info.ticks;
+                break;
+        }
+    }
+
+    Noesis::Point* total_points = this->geometry_total_->GetVertices();
+    Noesis::Point* render_points = this->geometry_render_->GetVertices();
+    Noesis::Point* wait_points = this->geometry_wait_->GetVertices();
+
+    for (size_t i = ::CHART_WIDTH * 2 + 1; i > 1; i--)
+    {
+        total_points[i].y = total_points[i - 2].y;
+        render_points[i].y = render_points[i - 2].y;
+        wait_points[i].y = wait_points[i - 2].y;
+    }
+
+    float height_scale = (static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F) / (2.0f * ff::constants::seconds_per_advance_f * results.delta_ticks);
+
+    wait_points[0].y = ::CHART_HEIGHT_F;
+    wait_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - wait_ticks * height_scale);
+
+    render_points[0].y = wait_points[1].y;
+    render_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - render_ticks * height_scale);
+
+    total_points[0].y = render_points[1].y;
+    total_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - total_ticks * height_scale);
+
+    this->geometry_total_->Update();
+    this->geometry_render_->Update();
+    this->geometry_wait_->Update();
+}
+
+Noesis::Geometry* ff::internal::debug_view_model::geometry_total() const
+{
+    return this->geometry_total_;
+}
+
+Noesis::Geometry* ff::internal::debug_view_model::geometry_render() const
+{
+    return this->geometry_render_;
+}
+
+Noesis::Geometry* ff::internal::debug_view_model::geometry_wait() const
+{
+    return this->geometry_wait_;
+}
+
 void ff::internal::debug_view_model::on_resources_rebuild_begin()
 {
     this->property_changed("building_resources");
@@ -521,16 +643,24 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
             vm->timers(pr);
         }
 
-        if (pr.counter_infos.size())
+        if (vm->chart_visible())
         {
-            const ff::perf_results::counter_info& info = pr.counter_infos.front();
-            vm->frames_per_second(info.hit_per_second);
+            vm->update_chart(pr);
+        }
+
+        for (const ff::perf_results::counter_info& info : pr.counter_infos)
+        {
+            if (info.counter->chart_type == ff::perf_chart_t::frame_total)
+            {
+                vm->frames_per_second(info.hit_per_second);
+                break;
+            }
         }
     }
 
     ff::state::frame_started(type);
 
-    vm->frame_start_counter(vm->frame_start_counter() + 1);
+    vm->frame_start_counter(vm->frame_start_counter() + 1); // after UI updates
 }
 
 size_t ff::internal::debug_state::child_state_count()
@@ -576,7 +706,7 @@ void ff::internal::debug_state::init_resources()
 
 void ff::internal::debug_state::on_resources_rebuild_end(size_t round)
 {
-    if (round == ff::global_resources::rebuild_round_count)
+    if (round == ff::global_resources::rebuild_round_count - 1)
     {
         this->init_resources();
     }

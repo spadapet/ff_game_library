@@ -205,7 +205,7 @@ static void init_application_resources()
 static bool init_noesis(std::function<void()>&& register_extra_components)
 {
     const char* default_name = "f5025c38-29c4-476b-b18f-243889e0f620";
-    const char* default_key = "irwvZR3wL2X78PY/gymZz3py2y0cGTgBn6W3rpesAobcJa13";
+    const char* default_key = "MLhMe4j0THtzCEE+EBIJV30vZOoWjqX2saINt/gUHw9iteoJ";
 
     // Global handlers
     ::assert_handler = Noesis::SetAssertHandler(::noesis_assert_handler);

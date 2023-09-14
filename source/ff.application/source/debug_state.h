@@ -100,6 +100,11 @@ namespace ff::internal
         ff::internal::debug_timer_model* selected_timer() const;
         void selected_timer(ff::internal::debug_timer_model* value);
 
+        void update_chart(const ff::perf_results& results);
+        Noesis::Geometry* geometry_total() const;
+        Noesis::Geometry* geometry_render() const;
+        Noesis::Geometry* geometry_wait() const;
+
     private:
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
 
@@ -129,6 +134,9 @@ namespace ff::internal
         Noesis::Ptr<Noesis::BaseCommand> close_command_;
         Noesis::Ptr<Noesis::BaseCommand> build_resources_command_;
         Noesis::Ptr<Noesis::BaseCommand> select_page_command_;
+        Noesis::Ptr<Noesis::MeshGeometry> geometry_total_;
+        Noesis::Ptr<Noesis::MeshGeometry> geometry_render_;
+        Noesis::Ptr<Noesis::MeshGeometry> geometry_wait_;
         ff::signal_connection resource_rebuild_begin_connection;
         ff::signal_connection resource_rebuild_end_connection;
     };

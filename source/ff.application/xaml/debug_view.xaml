@@ -73,19 +73,16 @@
         </Border>
         <Border Grid.Row="2" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Slider Minimum="1" Maximum="60" Value="{Binding timer_update_speed}" />
-                        <ToggleButton Grid.Column="1" IsChecked="{Binding timers_updating}" Style="{StaticResource PlayButton}" />
-                    </Grid>
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top">
+                        <TextBlock DockPanel.Dock="Left" Width="20" Text="{Binding timer_update_speed}" />
+                        <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding timers_updating}" Style="{StaticResource PlayButton}" />
+                        <Slider Minimum="1" Maximum="60" Value="{Binding timer_update_speed}">
+                            <Slider.ToolTip>
+                                <TextBlock Text="{Binding timer_update_speed, StringFormat='Update every {0} frames.'}" />
+                            </Slider.ToolTip>
+                        </Slider>
+                    </DockPanel>
                     <ScrollViewer Grid.Row="1">
                         <ListBox ItemsSource="{Binding timers}" SelectedItem="selected_timer">
                             <ListBox.ItemTemplate>
@@ -95,9 +92,6 @@
                                             <MultiBinding StringFormat="{}{0} {1:N1}ms">
                                                 <Binding Path="name" />
                                                 <Binding Path="time_ms" />
-                                                <!--<Binding Path="hit_total" />
-                                                <Binding Path="hit_last_frame" />
-                                                <Binding Path="hit_per_second" />-->
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>
@@ -105,11 +99,18 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </ScrollViewer>
-                </Grid>
+                </DockPanel>
             </Expander>
         </Border>
         <Border Grid.Row="3" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
-            <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}" />
+            <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}">
+                <Grid Width="250" Height="64">
+                    <Path x:Name="path_total" Data="{Binding geometry_total}" Fill="#FFFF00FF" Stretch="None" />
+                    <Path x:Name="path_render" Data="{Binding geometry_render}" Fill="#FF00FF00" Stretch="None" />
+                    <Path x:Name="path_wait" Data="{Binding geometry_wait}" Fill="DarkCyan" Stretch="None" />
+                    <Border Height="1" VerticalAlignment="Center" Background="#60FFFFFF" />
+                </Grid>
+            </Expander>
         </Border>
     </Grid>
 </UserControl>

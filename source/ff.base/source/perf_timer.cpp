@@ -5,15 +5,16 @@
 
 static ff::perf_measures perf_measures_game;
 
-ff::perf_counter::perf_counter(std::string_view name, ff::perf_color color)
-    : ff::perf_counter(::perf_measures_game, name, color)
+ff::perf_counter::perf_counter(std::string_view name, ff::perf_color color, ff::perf_chart_t chart_type)
+    : ff::perf_counter(::perf_measures_game, name, color, chart_type)
 {}
 
-ff::perf_counter::perf_counter(ff::perf_measures& measures, std::string_view name, ff::perf_color color)
+ff::perf_counter::perf_counter(ff::perf_measures& measures, std::string_view name, ff::perf_color color, ff::perf_chart_t chart_type)
     : measures(measures)
     , index(measures.create())
     , name(name)
     , color(color)
+    , chart_type(chart_type)
 {}
 
 ff::perf_measures& ff::perf_measures::game()

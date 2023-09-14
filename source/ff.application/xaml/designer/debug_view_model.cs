@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using WpfTools;
@@ -47,6 +48,9 @@ namespace ff
         public bool stopped_visible { get => true; set { } }
         public bool has_pages => this.pages.Count > 0;
         public bool page_visible => false;
+        public Geometry geometry_total { get; } = new EllipseGeometry(new Rect(10, 5, 64, 32));
+        public Geometry geometry_render { get; } = new EllipseGeometry(new Rect(20, 10, 64, 32));
+        public Geometry geometry_wait { get; } = new EllipseGeometry(new Rect(30, 15, 64, 32));
 
         private bool page_picker_visible_;
         public bool page_picker_visible

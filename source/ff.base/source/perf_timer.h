@@ -15,12 +15,20 @@ namespace ff
         magenta,
     };
 
+    enum class perf_chart_t
+    {
+        none,
+        frame_total,
+        render_total,
+        render_wait,
+    };
+
     // Should be static
     class perf_counter
     {
     public:
-        perf_counter(std::string_view name, ff::perf_color color = ff::perf_color::white);
-        perf_counter(ff::perf_measures& measures, std::string_view name, ff::perf_color color = ff::perf_color::white);
+        perf_counter(std::string_view name, ff::perf_color color = ff::perf_color::white, ff::perf_chart_t chart_type = ff::perf_chart_t::none);
+        perf_counter(ff::perf_measures& measures, std::string_view name, ff::perf_color color = ff::perf_color::white, ff::perf_chart_t chart_type = ff::perf_chart_t::none);
 
         static const size_t MAX_COUNT = 256;
 
@@ -28,6 +36,7 @@ namespace ff
         const size_t index;
         const std::string name;
         const ff::perf_color color;
+        const ff::perf_chart_t chart_type;
 
     private:
         perf_counter() = delete;

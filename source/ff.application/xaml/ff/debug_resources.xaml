@@ -400,14 +400,14 @@
     <Style x:Key="Style.ScrollBar.Thumb" TargetType="{x:Type Thumb}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="BorderBrush" Value="White" />
-        <Setter Property="Background" Value="#40FFFFFF" />
+        <Setter Property="Background" Value="Gray" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Thumb}">
                     <Border x:Name="Thumb" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" />
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#80FFFFFF" TargetName="Thumb"/>
+                            <Setter Property="Background" Value="LightGray" TargetName="Thumb"/>
                         </Trigger>
                         <Trigger Property="IsDragging" Value="True">
                             <Setter Property="Background" Value="White" TargetName="Thumb"/>
@@ -415,7 +415,7 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Background" Value="Transparent" TargetName="Thumb"/>
-                            <Setter Property="BorderBrush" Value="#40FFFFFF" TargetName="Thumb"/>
+                            <Setter Property="BorderBrush" Value="Gray" TargetName="Thumb"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -578,7 +578,7 @@
 
     <ControlTemplate x:Key="Template.Slider.Horizontal" TargetType="Slider">
         <Grid>
-            <Border Height="1" Background="White" VerticalAlignment="Center" />
+            <Border Height="1" Background="#60FFFFFF" VerticalAlignment="Center" />
             <Track x:Name="PART_Track" Orientation="Horizontal">
                 <Track.DecreaseRepeatButton>
                     <RepeatButton x:Name="DecreaseButton" Command="Slider.DecreaseLarge" Style="{StaticResource Style.ScrollBar.PageButton}"/>
