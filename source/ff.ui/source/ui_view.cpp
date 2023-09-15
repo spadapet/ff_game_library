@@ -8,14 +8,8 @@ ff::ui_view::ui_view(std::string_view xaml_file, ff::ui_view_options options)
 {}
 
 ff::ui_view::ui_view(Noesis::FrameworkElement* content, ff::ui_view_options options)
-    : focused_(false)
-    , enabled_(true)
-    , block_input_below_(false)
-    , update_render(false)
+    : keyboard_enabled_(!ff::flags::has(options, ff::ui_view_options::unfocusable))
     , cache_render(ff::flags::has(options, ff::ui_view_options::cache_render))
-    , counter(0)
-    , current_size{}
-    , viewport_{}
     , cursor_(Noesis::CursorType_Arrow)
     , view_grid(Noesis::MakePtr<Noesis::Grid>())
     , view_box(Noesis::MakePtr<Noesis::Viewbox>())
@@ -169,6 +163,8 @@ ff::point_float ff::ui_view::view_to_screen(ff::point_float pos) const
 
 void ff::ui_view::focused(bool focus)
 {
+    focus = focus && this->keyboard_enabled();
+
     if (this->focused_ != focus)
     {
         ff::log::write(ff::log::type::ui_focus, "Set view focus:", focus, " (", this, ")");
@@ -192,18 +188,37 @@ bool ff::ui_view::focused() const
     return this->focused_;
 }
 
-void ff::ui_view::enabled(bool enabled)
+void ff::ui_view::mouse_enabled(bool enabled)
 {
-    if (this->enabled_ != enabled)
+    if (this->mouse_enabled_ != enabled)
     {
-        ff::log::write(ff::log::type::ui_focus, "Enable view:", enabled, " (", this, ")");
-        this->enabled_ = enabled;
+        ff::log::write(ff::log::type::ui_focus, "Mouse enable view:", enabled, " (", this, ")");
+        this->mouse_enabled_ = enabled;
     }
 }
 
-bool ff::ui_view::enabled() const
+bool ff::ui_view::mouse_enabled() const
 {
-    return this->enabled_;
+    return this->mouse_enabled_;
+}
+
+void ff::ui_view::keyboard_enabled(bool enabled)
+{
+    if (this->keyboard_enabled_ != enabled)
+    {
+        ff::log::write(ff::log::type::ui_focus, "Keyboard enable view:", enabled, " (", this, ")");
+        this->keyboard_enabled_ = enabled;
+    }
+
+    if (!enabled)
+    {
+        this->focused(false);
+    }
+}
+
+bool ff::ui_view::keyboard_enabled() const
+{
+    return this->keyboard_enabled_;
 }
 
 void ff::ui_view::block_input_below(bool block)

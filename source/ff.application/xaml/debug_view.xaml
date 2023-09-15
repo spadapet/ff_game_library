@@ -64,14 +64,14 @@
                 </TextBlock>
             </DockPanel>
         </Border>
-        <Border Grid.Row="1" Margin="0,-1,0,0" Visibility="{Binding has_pages, Converter={StaticResource bool_to_visible_converter}}" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="1" Margin="0,2,0,0" Visibility="{Binding has_pages, Converter={StaticResource bool_to_visible_converter}}" Style="{StaticResource ContainerBorder}">
             <Expander Header="Panels" IsExpanded="{Binding page_picker_visible, Mode=TwoWay}">
                 <ScrollViewer MaxHeight="100">
                     <ListBox ItemsSource="{Binding pages}" SelectedItem="{Binding selected_page}" DisplayMemberPath="name" ItemContainerStyle="{StaticResource ListBoxRadioItem}" />
                 </ScrollViewer>
             </Expander>
         </Border>
-        <Border Grid.Row="2" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="2" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top">
@@ -102,7 +102,7 @@
                 </DockPanel>
             </Expander>
         </Border>
-        <Border Grid.Row="3" Margin="0,-1,0,0" Style="{StaticResource ContainerBorder}">
+        <Border Grid.Row="3" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
             <Expander Header="Chart" IsExpanded="{Binding chart_visible, Mode=TwoWay}">
                 <Grid Width="250" Height="64">
                     <Path x:Name="path_total" Data="{Binding geometry_total}" Fill="#FFFF00FF" Stretch="None" />

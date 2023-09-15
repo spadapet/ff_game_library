@@ -13,7 +13,8 @@
 
 static ff::init_ui_params ui_params;
 static std::vector<ff::ui_view*> views;
-static std::vector<ff::ui_view*> input_views;
+static std::vector<ff::ui_view*> keyboard_input_views;
+static std::vector<ff::ui_view*> mouse_input_views;
 static std::vector<ff::ui_view*> rendered_views;
 static Noesis::Ptr<ff::internal::ui::font_provider> font_provider;
 static Noesis::Ptr<ff::internal::ui::texture_provider> texture_provider;
@@ -28,6 +29,36 @@ static std::vector<ff::input_device_event> device_events;
 static ff::signal_connection device_events_connection;
 static std::mutex device_events_mutex;
 static std::unique_ptr<ff::internal::ui::resource_cache> resource_cache;
+
+static bool valid_view(ff::ui_view* view)
+{
+    return view && std::find(::views.cbegin(), ::views.cend(), view) != ::views.cend();
+}
+
+static bool valid_keyboard_view(ff::ui_view* view)
+{
+    return view && std::find(::keyboard_input_views.cbegin(), ::keyboard_input_views.cend(), view) != ::keyboard_input_views.cend();
+}
+
+static bool valid_mouse_view(ff::ui_view* view)
+{
+    return view && std::find(::mouse_input_views.cbegin(), ::mouse_input_views.cend(), view) != ::mouse_input_views.cend();
+}
+
+static bool valid_rendered_view(ff::ui_view* view)
+{
+    return view && std::find(::rendered_views.cbegin(), ::rendered_views.cend(), view) != ::rendered_views.cend();
+}
+
+template<class T>
+static void erase(std::vector<T>& vec, T item)
+{
+    auto i = std::find(vec.cbegin(), vec.cend(), item);
+    if (i != vec.cend())
+    {
+        vec.erase(i);
+    }
+}
 
 static std::string_view log_levels[] =
 {
@@ -332,7 +363,7 @@ ff::internal::ui::xaml_provider* ff::internal::ui::global_xaml_provider()
 
 void ff::internal::ui::register_view(ff::ui_view* view)
 {
-    if (view && std::find(::views.cbegin(), ::views.cend(), view) == ::views.cend())
+    if (view && !::valid_view(view))
     {
         ::views.push_back(view);
     }
@@ -340,23 +371,10 @@ void ff::internal::ui::register_view(ff::ui_view* view)
 
 void ff::internal::ui::unregister_view(ff::ui_view* view)
 {
-    auto i = std::find(::views.cbegin(), ::views.cend(), view);
-    if (i != ::views.cend())
-    {
-        ::views.erase(i);
-    }
-
-    i = std::find(::input_views.cbegin(), ::input_views.cend(), view);
-    if (i != ::input_views.cend())
-    {
-        ::input_views.erase(i);
-    }
-
-    i = std::find(::rendered_views.cbegin(), ::rendered_views.cend(), view);
-    if (i != ::rendered_views.cend())
-    {
-        ::rendered_views.erase(i);
-    }
+    ::erase(::views, view);
+    ::erase(::keyboard_input_views, view);
+    ::erase(::mouse_input_views, view);
+    ::erase(::rendered_views, view);
 
     if (::focused_view == view)
     {
@@ -366,19 +384,29 @@ void ff::internal::ui::unregister_view(ff::ui_view* view)
 
 ff::internal::ui::render_device* ff::internal::ui::on_render_view(ff::ui_view* view)
 {
-    if (std::find(::rendered_views.cbegin(), ::rendered_views.cend(), view) == ::rendered_views.cend())
+    if (!::valid_rendered_view(view))
     {
         ::rendered_views.push_back(view);
     }
 
-    if (view->enabled())
+    if (view->keyboard_enabled() && !::valid_keyboard_view(view))
     {
         if (view->block_input_below())
         {
-            ::input_views.clear();
+            ::keyboard_input_views.clear();
         }
 
-        ::input_views.push_back(view);
+        ::keyboard_input_views.push_back(view);
+    }
+
+    if (view->mouse_enabled() && !::valid_mouse_view(view))
+    {
+        if (view->block_input_below())
+        {
+            ::mouse_input_views.clear();
+        }
+
+        ::mouse_input_views.push_back(view);
     }
 
     return ff::internal::ui::global_render_device();
@@ -440,7 +468,7 @@ void ff::ui::state_advance_input()
             case ff::input_device_event_type::mouse_press:
                 if (ff::internal::ui::valid_mouse_button(event.id))
                 {
-                    for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                    for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                     {
                         bool handled = false;
                         ff::ui_view* view = *i;
@@ -459,7 +487,7 @@ void ff::ui::state_advance_input()
                             handled = view->internal_view()->MouseButtonDown(pos.x, pos.y, ff::internal::ui::get_mouse_button(event.id));
                         }
 
-                        if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                        if (!::valid_mouse_view(view))
                         {
                             view = nullptr;
                         }
@@ -483,7 +511,7 @@ void ff::ui::state_advance_input()
                 break;
 
             case ff::input_device_event_type::mouse_move:
-                for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
                     ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
@@ -493,7 +521,7 @@ void ff::ui::state_advance_input()
                         break;
                     }
 
-                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    if (!::valid_mouse_view(view))
                     {
                         view = nullptr;
                     }
@@ -506,7 +534,7 @@ void ff::ui::state_advance_input()
                 break;
 
             case ff::input_device_event_type::mouse_wheel_x:
-                for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
                     ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
@@ -519,7 +547,7 @@ void ff::ui::state_advance_input()
                 break;
 
             case ff::input_device_event_type::mouse_wheel_y:
-                for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
                     ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
@@ -532,7 +560,7 @@ void ff::ui::state_advance_input()
                 break;
 
             case ff::input_device_event_type::touch_press:
-                for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                 {
                     bool handled = false;
                     ff::ui_view* view = *i;
@@ -547,7 +575,7 @@ void ff::ui::state_advance_input()
                         handled = view->internal_view()->TouchDown(pos.x, pos.y, event.id);
                     }
 
-                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    if (!::valid_mouse_view(view))
                     {
                         view = nullptr;
                     }
@@ -570,7 +598,7 @@ void ff::ui::state_advance_input()
                 break;
 
             case ff::input_device_event_type::touch_move:
-                for (auto i = ::input_views.rbegin(); i != ::input_views.rend(); i++)
+                for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
                 {
                     ff::ui_view* view = *i;
                     ff::point_int pos = view->screen_to_view(event_posf).cast<int>();
@@ -580,7 +608,7 @@ void ff::ui::state_advance_input()
                         break;
                     }
 
-                    if (std::find(::input_views.cbegin(), ::input_views.cend(), view) == ::input_views.cend())
+                    if (!::valid_mouse_view(view))
                     {
                         view = nullptr;
                     }
@@ -598,7 +626,8 @@ void ff::ui::state_advance_input()
 void ff::ui::state_rendering()
 {
     // on_render_view will need to be called again for each view actually rendered
-    ::input_views.clear();
+    ::keyboard_input_views.clear();
+    ::mouse_input_views.clear();
     ::rendered_views.clear();
 }
 
@@ -608,16 +637,16 @@ void ff::ui::state_rendered()
 
     if (::focused_view)
     {
-        bool focus = std::find(::input_views.cbegin(), ::input_views.cend(), ::focused_view) != ::input_views.cend() && ff::window::main()->active();
+        bool focus = ::valid_keyboard_view(::focused_view) && ff::window::main()->active();
         ::focused_view->focused(focus);
     }
 
-    if ((!::focused_view || !::focused_view->focused()) && !::input_views.empty() && ff::window::main()->active())
+    if ((!::focused_view || !::focused_view->focused()) && !::keyboard_input_views.empty() && ff::window::main()->active())
     {
         ff::log::write(ff::log::type::ui_focus, "No focus, choosing new view to focus.");
 
         // No visible view has focus, so choose a new one
-        ff::ui_view* view = ::input_views.back();
+        ff::ui_view* view = ::keyboard_input_views.back();
         view->focused(true);
         assert(::focused_view == view);
     }
@@ -630,7 +659,7 @@ const ff::dxgi::palette_base* ff::ui::global_palette()
 
 const std::vector<ff::ui_view*>& ff::ui::input_views()
 {
-    return ::input_views;
+    return ::mouse_input_views;
 }
 
 const std::vector<ff::ui_view*>& ff::ui::rendered_views()

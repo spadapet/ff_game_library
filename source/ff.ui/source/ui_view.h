@@ -8,6 +8,7 @@ namespace ff
         per_pixel_anti_alias = 0x01,
         sub_pixel_rendering = 0x02,
         cache_render = 0x04,
+        unfocusable = 0x08,
     };
 
     class ui_view
@@ -39,26 +40,29 @@ namespace ff
 
         void focused(bool focus);
         bool focused() const;
-        void enabled(bool value);
-        bool enabled() const;
+        void mouse_enabled(bool value);
+        bool mouse_enabled() const;
+        void keyboard_enabled(bool value);
+        bool keyboard_enabled() const;
         void block_input_below(bool block);
         bool block_input_below() const;
 
     private:
         void internal_size(const ff::window_size& value);
 
-        bool focused_;
-        bool enabled_;
-        bool block_input_below_;
-        bool update_render;
-        bool cache_render;
-        double counter;
+        bool focused_{};
+        bool mouse_enabled_{ true };
+        bool keyboard_enabled_; // depends on options
+        bool block_input_below_{};
+        bool update_render{};
+        bool cache_render; // depends on options
+        double counter{};
 
         ff::signal_connection target_size_changed;
         ff::signal<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&> rendering_;
         ff::signal<ff::ui_view*, ff::dxgi::target_base&, ff::dxgi::depth_base&> rendered_;
-        ff::window_size current_size;
-        ff::rect_float viewport_;
+        ff::window_size current_size{};
+        ff::rect_float viewport_{};
         std::shared_ptr<ff::texture> cache_texture;
         std::shared_ptr<ff::dxgi::target_base> cache_target;
 

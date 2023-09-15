@@ -9,8 +9,7 @@ constexpr size_t CHART_WIDTH = 125;
 constexpr uint32_t CHART_WIDTH_U = static_cast<uint32_t>(::CHART_WIDTH);
 constexpr uint16_t CHART_WIDTH_U16 = static_cast<uint16_t>(::CHART_WIDTH);
 constexpr float CHART_WIDTH_F = static_cast<float>(::CHART_WIDTH);
-constexpr double CHART_HEIGHT_D = 64.0;
-constexpr float CHART_HEIGHT_F = static_cast<float>(::CHART_HEIGHT_D);
+constexpr float CHART_HEIGHT_F = 64.0f;
 static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
 static std::string_view NONE_NAME = "None"sv;
@@ -433,11 +432,6 @@ void ff::internal::debug_view_model::selected_timer(ff::internal::debug_timer_mo
 
 void ff::internal::debug_view_model::update_chart(const ff::perf_results& results)
 {
-    if (!results.delta_ticks)
-    {
-        return;
-    }
-
     int64_t total_ticks{};
     int64_t render_ticks{};
     int64_t wait_ticks{};
@@ -471,7 +465,9 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
         wait_points[i].y = wait_points[i - 2].y;
     }
 
-    float height_scale = (static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F) / (2.0f * ff::constants::seconds_per_advance_f * results.delta_ticks);
+    float height_scale = results.delta_ticks
+        ? static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F / (2.0f * ff::constants::seconds_per_advance_f * results.delta_ticks)
+        : 0.0f;
 
     wait_points[0].y = ::CHART_HEIGHT_F;
     wait_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - wait_ticks * height_scale);
@@ -595,7 +591,7 @@ template<class T>
 static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_view_model* view_model)
 {
     auto noesis_view = Noesis::MakePtr<T>(view_model);
-    auto ui_view = std::make_shared<ff::ui_view>(noesis_view);
+    auto ui_view = std::make_shared<ff::ui_view>(noesis_view, ff::ui_view_options::unfocusable);
     return std::make_shared<ff::ui_view_state>(ui_view, ff::ui_view_state::advance_when_t::frame_started);
 }
 
