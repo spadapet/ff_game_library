@@ -54,6 +54,9 @@ namespace ff::internal
 
         static ff::internal::debug_view_model* get();
 
+        bool dock_right() const;
+        void dock_right(bool value);
+
         double advance_seconds() const;
         void advance_seconds(double value);
 
@@ -121,6 +124,7 @@ namespace ff::internal
         size_t frame_count_{};
         size_t timer_update_speed_{ 16 };
         size_t frame_start_counter_{};
+        bool dock_right_{};
         bool debug_visible_{};
         bool page_picker_visible_{};
         bool timers_visible_{};

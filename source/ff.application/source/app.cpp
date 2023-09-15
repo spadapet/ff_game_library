@@ -33,9 +33,7 @@ static ff::perf_counter perf_advance("Update", ::perf_input.color);
 static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
 static ff::perf_counter perf_render_wait("Wait for ready", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 static ff::perf_counter perf_render_begin("Target begin", ::perf_render.color);
-static ff::perf_counter perf_render_pre_game_render("Pre game render", ::perf_render.color);
 static ff::perf_counter perf_render_game_render("Game render", ::perf_render.color);
-static ff::perf_counter perf_render_post_game_render("Post game render", ::perf_render.color);
 static ff::perf_counter perf_render_present("Present", ::perf_render_wait.color, ff::perf_chart_t::render_wait);
 static std::string app_product_name;
 static std::string app_internal_name;
@@ -156,16 +154,9 @@ static void frame_render(ff::state::advance_t advance_type)
     if (begin_render)
     {
         ff::perf_timer timer(::perf_render_game_render);
-        {
-            ff::perf_timer timer(::perf_render_pre_game_render);
-            ::game_state.frame_rendering(advance_type, context, *::render_targets);
-        }
-
+        ::game_state.frame_rendering(advance_type, context, *::render_targets);
         ::game_state.render(context, *::render_targets);
-        {
-            ff::perf_timer timer(::perf_render_post_game_render);
-            ::game_state.frame_rendered(advance_type, context, *::render_targets);
-        }
+        ::game_state.frame_rendered(advance_type, context, *::render_targets);
     }
 
     if (begin_render)

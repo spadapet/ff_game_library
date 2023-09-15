@@ -135,6 +135,17 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="DockLocationButton" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource ToolButton}">
+        <Setter Property="Content" Value="&#xE64D;" />
+        <Setter Property="ToolTip" Value="Dock right" />
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="ToolTip" Value="Dock left" />
+                <Setter Property="Content" Value="&#xE64E;" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="ExpanderText" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource {x:Type ButtonBase}}">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Padding" Value="0" />

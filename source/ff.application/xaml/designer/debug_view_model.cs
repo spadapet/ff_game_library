@@ -52,6 +52,13 @@ namespace ff
         public Geometry geometry_render { get; } = new EllipseGeometry(new Rect(20, 10, 64, 32));
         public Geometry geometry_wait { get; } = new EllipseGeometry(new Rect(30, 15, 64, 32));
 
+        private bool dock_right_;
+        public bool dock_right
+        {
+            get => this.dock_right_;
+            set => this.SetProperty(ref this.dock_right_, value);
+        }
+
         private bool page_picker_visible_;
         public bool page_picker_visible
         {

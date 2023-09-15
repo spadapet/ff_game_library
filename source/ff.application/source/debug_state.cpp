@@ -186,6 +186,7 @@ NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
     NsProp("build_resources_command", &ff::internal::debug_view_model::build_resources_command_);
     NsProp("select_page_command", &ff::internal::debug_view_model::select_page_command_);
 
+    NsProp("dock_right", &ff::internal::debug_view_model::dock_right, &ff::internal::debug_view_model::dock_right);
     NsProp("advance_seconds", &ff::internal::debug_view_model::advance_seconds, &ff::internal::debug_view_model::advance_seconds);
     NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
     NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
@@ -244,6 +245,16 @@ ff::internal::debug_view_model* ff::internal::debug_view_model::get()
 {
     assert(::global_debug_view_model);
     return ::global_debug_view_model;
+}
+
+bool ff::internal::debug_view_model::dock_right() const
+{
+    return this->dock_right_;
+}
+
+void ff::internal::debug_view_model::dock_right(bool value)
+{
+    this->set_property(this->dock_right_, value, "dock_right");
 }
 
 double ff::internal::debug_view_model::advance_seconds() const

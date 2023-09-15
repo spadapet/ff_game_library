@@ -28,7 +28,21 @@
         </ControlTemplate>
     </UserControl.Template>
 
-    <Grid Width="256" HorizontalAlignment="Left" Margin="8">
+    <Grid Width="256" Margin="8">
+        <Grid.HorizontalAlignment>
+            <Binding Path="dock_right">
+                <Binding.Converter>
+                    <ff:bool_to_object_converter>
+                        <ff:bool_to_object_converter.TrueValue>
+                            <HorizontalAlignment>Right</HorizontalAlignment>
+                        </ff:bool_to_object_converter.TrueValue>
+                        <ff:bool_to_object_converter.FalseValue>
+                            <HorizontalAlignment>Left</HorizontalAlignment>
+                        </ff:bool_to_object_converter.FalseValue>
+                    </ff:bool_to_object_converter>
+                </Binding.Converter>
+            </Binding>
+        </Grid.HorizontalAlignment>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -53,6 +67,7 @@
         <Border Style="{StaticResource ContainerBorder}">
             <DockPanel>
                 <Button DockPanel.Dock="Left" Command="{Binding close_command}" Style="{StaticResource CloseButton}" />
+                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding dock_right}" Style="{StaticResource DockLocationButton}" />
                 <Button DockPanel.Dock="Right" Command="{Binding build_resources_command}" Style="{StaticResource RefreshButton}" />
                 <TextBlock Margin="4,0,0,0" VerticalAlignment="Center">
                     <TextBlock.Text>
