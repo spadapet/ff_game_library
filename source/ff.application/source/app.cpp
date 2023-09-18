@@ -31,8 +31,8 @@ static ff::perf_counter perf_input("Input", ff::perf_color::magenta);
 static ff::perf_counter perf_frame("Frame", ff::perf_color::white, ff::perf_chart_t::frame_total);
 static ff::perf_counter perf_advance("Update", ::perf_input.color);
 static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
-static ff::perf_counter perf_render_wait("Wait for ready", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
-static ff::perf_counter perf_render_begin("Target begin", ::perf_render.color);
+static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
+static ff::perf_counter perf_render_begin("Clear", ::perf_render.color);
 static ff::perf_counter perf_render_game_render("Game render", ::perf_render.color);
 static ff::perf_counter perf_render_present("Present", ::perf_render_wait.color, ff::perf_chart_t::render_wait);
 static std::string app_product_name;
@@ -135,15 +135,15 @@ static void frame_advance_many(ff::state::advance_t advance_type)
 
 static void frame_render(ff::state::advance_t advance_type)
 {
+    bool begin_render;
     ff::perf_timer timer_render(::perf_render);
-
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
     {
         ff::perf_timer timer(::perf_render_wait);
-        ::target->wait_for_render_ready();
+        begin_render = ::target->wait_for_render_ready();
     }
 
-    bool begin_render;
+    if (begin_render)
     {
         ff::perf_timer timer(::perf_render_begin);
         DirectX::XMFLOAT4 clear_color;

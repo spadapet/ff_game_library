@@ -19,7 +19,7 @@ namespace ff::dxgi
         virtual bool vsync() const = 0;
         virtual void vsync(bool value) = 0;
 
-        virtual void wait_for_render_ready() = 0;
+        virtual bool wait_for_render_ready() = 0;
         virtual bool allow_full_screen() const = 0;
         virtual bool full_screen() = 0;
         virtual bool full_screen(bool value) = 0;

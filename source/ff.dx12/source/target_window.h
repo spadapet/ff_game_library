@@ -45,7 +45,7 @@ namespace ff::dx12
         virtual void frame_latency(size_t value) override;
         virtual bool vsync() const override;
         virtual void vsync(bool value) override;
-        virtual void wait_for_render_ready() override;
+        virtual bool wait_for_render_ready() override;
         virtual bool allow_full_screen() const override;
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;
@@ -68,9 +68,9 @@ namespace ff::dx12
         ff::win_event target_ready_event;
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
-        std::vector<std::unique_ptr<ff::dx12::resource>> target_textures2;
-        std::vector<ff::dx12::fence_value> target_fence_values2;
-        ff::dx12::descriptor_range target_views2;
+        std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
+        std::vector<ff::dx12::fence_value> target_fence_values;
+        ff::dx12::descriptor_range target_views;
         size_t back_buffer_index{};
 
         bool main_window{};

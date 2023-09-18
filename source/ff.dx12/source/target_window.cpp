@@ -26,7 +26,7 @@ ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, 
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , vsync_(vsync)
     , allow_full_screen_(main_window&& allow_full_screen)
-    , target_views2(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
+    , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
     this->internal_size(this->window->size(), ::fix_buffer_count(buffer_count), ::fix_frame_latency(frame_latency, buffer_count));
 
@@ -55,8 +55,8 @@ ff::dx12::target_window::operator bool() const
 {
     return this->swap_chain &&
         this->window &&
-        this->target_textures2.size() > this->back_buffer_index &&
-        this->target_textures2[this->back_buffer_index];
+        this->target_textures.size() > this->back_buffer_index &&
+        this->target_textures[this->back_buffer_index];
 }
 
 DXGI_FORMAT ff::dx12::target_window::format() const
@@ -71,12 +71,12 @@ ff::window_size ff::dx12::target_window::size() const
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
-    return *this->target_textures2[this->back_buffer_index];
+    return *this->target_textures[this->back_buffer_index];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
-    return this->target_views2.cpu_handle(this->back_buffer_index);
+    return this->target_views.cpu_handle(this->back_buffer_index);
 }
 
 void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
@@ -84,7 +84,7 @@ void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, con
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-void ff::dx12::target_window::wait_for_render_ready()
+bool ff::dx12::target_window::wait_for_render_ready()
 {
     if (*this)
     {
@@ -92,10 +92,16 @@ void ff::dx12::target_window::wait_for_render_ready()
 
         if (this->frame_latency_handle && !this->full_screen())
         {
+            //if (!this->frame_latency_handle.is_set())
+            //{
+            //    handles.push_back(this->frame_latency_handle);
+            //    ff::log::write(ff::log::type::dx12_target, "Skip rendering frame, back buffer not ready");
+            //    return false;
+            //}
+
             handles.push_back(this->frame_latency_handle);
         }
-
-        if (this->target_fence_values2[this->back_buffer_index].set_event(this->target_ready_event))
+        else if (this->target_fence_values[this->back_buffer_index].set_event(this->target_ready_event))
         {
             handles.push_back(this->target_ready_event);
         }
@@ -105,6 +111,8 @@ void ff::dx12::target_window::wait_for_render_ready()
             ff::wait_for_all_handles(handles.data(), handles.size(), INFINITE, false);
         }
     }
+
+    return true;
 }
 
 bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
@@ -131,10 +139,11 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
     if (*this && ff::dx12::device_valid())
     {
         ff::dx12::commands& commands = ff::dx12::commands::get(context);
-        commands.resource_state(*this->target_textures2[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        this->target_fence_values2[this->back_buffer_index] = commands.queue().execute(commands);
+        commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
+        this->target_fence_values[this->back_buffer_index] = commands.queue().execute(commands);
 
-        HRESULT hr = this->swap_chain->Present(this->vsync_ ? 1 : 0, 0);
+        UINT sync_count = this->vsync_ ? 1 : 0;
+        HRESULT hr = this->swap_chain->Present(sync_count, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
@@ -355,7 +364,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
     this->frame_latency_handle = ff::win_handle(frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
 
-    assert(this->target_textures2.empty() && this->target_fence_values2.empty());
+    assert(this->target_textures.empty() && this->target_fence_values.empty());
     for (size_t i = 0; i < buffer_count; i++)
     {
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
@@ -366,9 +375,9 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         }
 
         auto texture_resource = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
-        this->target_textures2.push_back(std::move(texture_resource));
-        this->target_fence_values2.emplace_back();
-        ff::dx12::create_target_view(this->target_textures2.back().get(), this->target_views2.cpu_handle(i));
+        this->target_textures.push_back(std::move(texture_resource));
+        this->target_fence_values.emplace_back();
+        ff::dx12::create_target_view(this->target_textures.back().get(), this->target_views.cpu_handle(i));
     }
 
     this->size_changed_.notify(size);
@@ -500,8 +509,8 @@ bool ff::dx12::target_window::full_screen(bool value)
 void ff::dx12::target_window::before_reset()
 {
     this->frame_latency_handle.close();
-    this->target_textures2.clear();
-    this->target_fence_values2.clear();
+    this->target_textures.clear();
+    this->target_fence_values.clear();
 }
 
 bool ff::dx12::target_window::reset()
