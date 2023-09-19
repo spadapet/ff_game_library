@@ -11,6 +11,9 @@
     <ClCompile Include="source\test_app.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\test_game.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

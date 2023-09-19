@@ -13,6 +13,7 @@
     <ClCompile Include="source\input_device_events.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\test_app.cpp" />
+    <ClCompile Include="source\test_game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

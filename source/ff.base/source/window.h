@@ -48,7 +48,7 @@ namespace ff
         template<class T>
         ff::rect_t<T> logical_scaled_rect() const
         {
-            return ff::rect_t<T>({}, this->logical_pixel_size.cast<T>());
+            return ff::rect_t<T>({}, this->logical_scaled_size<T>());
         }
 
         template<class T>
