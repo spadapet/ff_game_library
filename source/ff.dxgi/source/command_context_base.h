@@ -7,5 +7,7 @@ namespace ff::dxgi
     /// </summary>
     class command_context_base
     {
+    public:
+        virtual ~command_context_base() = default;
     };
 }

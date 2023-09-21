@@ -47,7 +47,7 @@ namespace ff::dx12
         commands(ff::dx12::queue& queue, std::unique_ptr<ff::dx12::commands::data_cache_t>&& data_cache);
         commands(commands&& other) noexcept = default;
         commands(const commands& other) = delete;
-        ~commands();
+        virtual ~commands() override;
 
         static commands& get(ff::dxgi::command_context_base& obj);
         commands& operator=(commands&& other) noexcept = default;

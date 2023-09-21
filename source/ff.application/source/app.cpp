@@ -18,6 +18,7 @@ namespace
 }
 
 static const size_t MAX_ADVANCES_PER_FRAME = 4;
+static const size_t MAX_ADVANCES_PER_FRAME_DEBUGGER = 4;
 static const size_t MAX_ADVANCE_MULTIPLIER = 4;
 
 static ff::init_app_params app_params;
@@ -72,7 +73,9 @@ static ff::state::advance_t frame_start_timer(ff::state::advance_t previous_adva
 
 static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advance_count)
 {
-    size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent()) ? 1 : ::MAX_ADVANCES_PER_FRAME;
+    size_t max_advances = (ff::constants::debug_build && ::IsDebuggerPresent())
+        ? ::MAX_ADVANCES_PER_FRAME_DEBUGGER
+        : ::MAX_ADVANCES_PER_FRAME;
 
     switch (advance_type)
     {

@@ -64,7 +64,7 @@ ff::dx12::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, f
 
     this->resource_ = std::make_unique<ff::dx12::resource>(
         ff::string::concat("Static texture ", ::static_texture_counter.fetch_add(1)),
-        std::shared_ptr<ff::dx12::mem_range>(),
+        std::shared_ptr<ff::dx12::mem_range>(), // allocate new memory
         CD3DX12_RESOURCE_DESC::Tex2D(md.format,
             static_cast<UINT64>(md.width),
             static_cast<UINT>(md.height),

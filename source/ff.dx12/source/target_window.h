@@ -68,15 +68,17 @@ namespace ff::dx12
         ff::win_event target_ready_event;
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
+        std::unique_ptr<ff::dx12::resource> extra_buffer_resource;
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
         std::vector<ff::dx12::fence_value> target_fence_values;
-        ff::dx12::descriptor_range target_views;
+        ff::dx12::descriptor_range target_views; // one extra at the end for extra_buffer_resource
         size_t back_buffer_index{};
 
         bool main_window{};
         bool allow_full_screen_{};
         bool was_full_screen_on_close{};
         bool vsync_{ true };
+        bool use_extra_buffer{};
 #if UWP_APP
         bool use_xaml_composition{};
         bool cached_full_screen_uwp{};
