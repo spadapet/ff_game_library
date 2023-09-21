@@ -45,7 +45,6 @@ namespace ff::dx12
         virtual void frame_latency(size_t value) override;
         virtual bool vsync() const override;
         virtual void vsync(bool value) override;
-        virtual bool wait_for_render_ready() override;
         virtual bool allow_full_screen() const override;
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;
@@ -59,6 +58,7 @@ namespace ff::dx12
         void before_resize();
         bool internal_reset(size_t buffer_count, size_t frame_latency);
         bool internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency);
+        void ensure_extra_buffer(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color);
 
         ff::window* window{};
         ff::window_size cached_size{};
@@ -70,7 +70,6 @@ namespace ff::dx12
 
         std::unique_ptr<ff::dx12::resource> extra_buffer_resource;
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
-        std::vector<ff::dx12::fence_value> target_fence_values;
         ff::dx12::descriptor_range target_views; // one extra at the end for extra_buffer_resource
         size_t back_buffer_index{};
 

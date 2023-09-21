@@ -88,21 +88,48 @@ void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, con
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_window::wait_for_render_ready()
+void ff::dx12::target_window::ensure_extra_buffer(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this && ff::dx12::device_valid())
-    {
-        this->use_extra_buffer = this->frame_latency_handle && !this->full_screen() && !this->frame_latency_handle.is_set();
-        return true;
-    }
+    const ff::window_size size = this->size();
+    const ff::point_size buffer_size = size.physical_pixel_size();
 
-    return false;
+    const D3D12_RESOURCE_DESC new_desc = CD3DX12_RESOURCE_DESC::Tex2D(
+        this->format(), static_cast<UINT64>(buffer_size.x), static_cast<UINT>(buffer_size.y),
+        1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+    const D3D12_CLEAR_VALUE new_clear = CD3DX12_CLEAR_VALUE(this->format(),
+        reinterpret_cast<const float*>(clear_color ? clear_color : &ff::dxgi::color_black()));
+
+    bool changed = !this->extra_buffer_resource ||
+        this->extra_buffer_resource->desc() != new_desc ||
+        (clear_color && this->extra_buffer_resource->optimized_clear_value() != new_clear);
+
+    if (changed)
+    {
+        auto old_resource = std::move(this->extra_buffer_resource);
+        auto old_mem_range = old_resource ? old_resource->mem_range() : std::shared_ptr<ff::dx12::mem_range>();
+        this->extra_buffer_resource = std::make_unique<ff::dx12::resource>("Extra back buffer", old_mem_range, new_desc, new_clear);
+
+        if (old_mem_range == this->extra_buffer_resource->mem_range())
+        {
+            ff::dx12::commands& commands = ff::dx12::commands::get(context);
+            commands.resource_alias(old_resource.get(), this->extra_buffer_resource.get());
+        }
+
+        ff::dx12::create_target_view(this->extra_buffer_resource.get(), this->target_views.cpu_handle(this->target_views.count() - 1));
+    }
 }
 
 bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
     if (*this && ff::dx12::device_valid())
     {
+        this->use_extra_buffer = this->frame_latency_handle && !this->full_screen() && !this->frame_latency_handle.is_set();
+        if (this->use_extra_buffer)
+        {
+            this->ensure_extra_buffer(context, clear_color);
+        }
+
         if (clear_color)
         {
             this->clear(context, *clear_color);
@@ -118,6 +145,9 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
     return false;
 }
 
+static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
+static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
+
 bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context)
 {
     if (*this && ff::dx12::device_valid())
@@ -129,6 +159,8 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
         {
             if (!this->frame_latency_handle.is_set())
             {
+                ff::perf_timer timer(::perf_render_wait);
+
                 commands->queue().execute(*commands);
                 new_commands = commands->queue().new_commands();
                 commands = new_commands.get();
@@ -139,8 +171,10 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
             commands->copy_resource(*this->target_textures[this->back_buffer_index], *this->extra_buffer_resource);
         }
 
+        ff::perf_timer timer(::perf_render_present);
+
         commands->resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        this->target_fence_values[this->back_buffer_index] = commands->queue().execute(*commands);
+        commands->queue().execute(*commands);
 
         HRESULT hr = this->swap_chain->Present(this->vsync_ ? 1 : 0, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
@@ -359,8 +393,8 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
 
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
     this->frame_latency_handle = ff::win_handle(frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
+    assert(this->target_textures.empty());
 
-    assert(this->target_textures.empty() && this->target_fence_values.empty());
     for (size_t i = 0; i < buffer_count; i++)
     {
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
@@ -372,27 +406,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
 
         auto texture_resource = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
         this->target_textures.push_back(std::move(texture_resource));
-        this->target_fence_values.emplace_back();
         ff::dx12::create_target_view(this->target_textures.back().get(), this->target_views.cpu_handle(i));
-    }
-
-    if (!this->full_screen())
-    {
-        // No need for aliasing of this resource, there are no commands in flight
-        auto mem_range = this->extra_buffer_resource ? this->extra_buffer_resource->mem_range() : std::shared_ptr<ff::dx12::mem_range>();
-
-        this->extra_buffer_resource = std::make_unique<ff::dx12::resource>(
-            "Extra back buffer",
-            mem_range,
-            CD3DX12_RESOURCE_DESC::Tex2D(this->format(), buffer_size.x, buffer_size.y, 1, 1, 1, 0,
-                D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET),
-                CD3DX12_CLEAR_VALUE(this->format(), reinterpret_cast<const float*>(&ff::dxgi::color_black())));
-
-        ff::dx12::create_target_view(this->extra_buffer_resource.get(), this->target_views.cpu_handle(this->target_views.count() - 1));
-    }
-    else
-    {
-        this->extra_buffer_resource.reset();
     }
 
     this->size_changed_.notify(size);
@@ -525,7 +539,6 @@ void ff::dx12::target_window::before_reset()
 {
     this->frame_latency_handle.close();
     this->target_textures.clear();
-    this->target_fence_values.clear();
 }
 
 bool ff::dx12::target_window::reset()

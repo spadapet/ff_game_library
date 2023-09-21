@@ -52,7 +52,6 @@ void winrt::test_uwp::implementation::test_ui::loaded(const winrt::Windows::Foun
                 view.advance();
 
                 ff::dxgi_client().frame_started();
-                target->wait_for_render_ready();
                 target->begin_render(ff::dxgi_client().frame_context(), &bg_color);
                 ff::ui::state_rendering();
                 view.render(ff::dxgi_client().frame_context(), *target, *depth);
