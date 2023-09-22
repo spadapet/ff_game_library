@@ -71,14 +71,14 @@ ff::window_size ff::dx12::target_window::size() const
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
-    return this->use_extra_buffer
+    return this->frame_latency_handle
         ? *this->extra_buffer_resource
         : *this->target_textures[this->back_buffer_index];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
-    return this->target_views.cpu_handle(this->use_extra_buffer
+    return this->target_views.cpu_handle(this->frame_latency_handle
         ? this->target_views.count() - 1
         : this->back_buffer_index);
 }
@@ -124,8 +124,7 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
 {
     if (*this && ff::dx12::device_valid())
     {
-        this->use_extra_buffer = this->frame_latency_handle && !this->full_screen() && !this->frame_latency_handle.is_set();
-        if (this->use_extra_buffer)
+        if (this->frame_latency_handle)
         {
             this->ensure_extra_buffer(context, clear_color);
         }
@@ -155,18 +154,15 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
         ff::dx12::commands* commands = &ff::dx12::commands::get(context);
         std::unique_ptr<ff::dx12::commands> new_commands;
 
-        if (this->use_extra_buffer)
+        if (this->frame_latency_handle)
         {
-            if (!this->frame_latency_handle.is_set())
-            {
-                ff::perf_timer timer(::perf_render_wait);
+            ff::perf_timer timer(::perf_render_wait);
 
-                commands->queue().execute(*commands);
-                new_commands = commands->queue().new_commands();
-                commands = new_commands.get();
+            commands->queue().execute(*commands);
+            new_commands = commands->queue().new_commands();
+            commands = new_commands.get();
 
-                this->frame_latency_handle.wait(INFINITE, false);
-            }
+            this->frame_latency_handle.wait(INFINITE, false);
 
             commands->copy_resource(*this->target_textures[this->back_buffer_index], *this->extra_buffer_resource);
         }
