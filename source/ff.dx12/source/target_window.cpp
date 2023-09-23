@@ -71,14 +71,14 @@ ff::window_size ff::dx12::target_window::size() const
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
-    return this->frame_latency_handle
+    return this->use_extra_buffer
         ? *this->extra_buffer_resource
         : *this->target_textures[this->back_buffer_index];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
-    return this->target_views.cpu_handle(this->frame_latency_handle
+    return this->target_views.cpu_handle(this->use_extra_buffer
         ? this->target_views.count() - 1
         : this->back_buffer_index);
 }
@@ -124,7 +124,8 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
 {
     if (*this && ff::dx12::device_valid())
     {
-        if (this->frame_latency_handle)
+        this->use_extra_buffer = this->frame_latency_handle && !this->full_screen();
+        if (this->use_extra_buffer)
         {
             this->ensure_extra_buffer(context, clear_color);
         }
@@ -164,7 +165,10 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 
             this->frame_latency_handle.wait(INFINITE, false);
 
-            commands->copy_resource(*this->target_textures[this->back_buffer_index], *this->extra_buffer_resource);
+            if (this->use_extra_buffer)
+            {
+                commands->copy_resource(*this->target_textures[this->back_buffer_index], *this->extra_buffer_resource);
+            }
         }
 
         ff::perf_timer timer(::perf_render_present);
@@ -317,9 +321,9 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
 
         ff::thread_dispatch::get_main()->send([this, factory, command_queue, &new_swap_chain, &desc]()
         {
-#if UWP_APP
-            if (this->window)
+            if (this->window && this->window_message_connection)
             {
+#if UWP_APP
                 winrt::Windows::UI::Xaml::Controls::SwapChainPanel swap_chain_panel = this->window->swap_chain_panel();
                 this->use_xaml_composition = (swap_chain_panel != nullptr);
 
@@ -339,15 +343,14 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
                 {
                     debug_fail();
                 }
-            }
 #else
-            if (!*this->window ||
-                FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
-                FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
-            {
-                debug_fail();
-            }
+                if (FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
+                    FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
+                {
+                    debug_fail();
+                }
 #endif
+            }
         });
 
         if (!new_swap_chain || FAILED(new_swap_chain.As(&this->swap_chain)))
