@@ -132,9 +132,11 @@ namespace ff::internal
         {
             ff::window_message msg1{ WM_CLOSE };
             ff::window_message msg2{ WM_DESTROY };
+            ff::window_message msg3{ WM_NCDESTROY };
 
             this->main_window->notify_message(msg1);
             this->main_window->notify_message(msg2);
+            this->main_window->notify_message(msg3);
         }
 
         void character_received(const winrt::Windows::UI::Core::CoreWindow& sender, const winrt::Windows::UI::Core::CharacterReceivedEventArgs& args)

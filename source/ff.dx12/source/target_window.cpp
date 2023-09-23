@@ -258,6 +258,12 @@ bool ff::dx12::target_window::size(const ff::window_size& size)
 
 bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency)
 {
+    if (!this->window || !this->window_message_connection)
+    {
+        // Could be called while the window is being destroyed in full screen mode
+        return false;
+    }
+
     if (this->swap_chain && (this->frame_latency() == 0) != (frame_latency == 0)) // on game thread
     {
         // Turn frame latency on/off requires recreating everything
@@ -565,9 +571,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             }
             break;
 
-        case WM_DESTROY:
-            this->window_message_connection.disconnect();
-
+        case WM_CLOSE:
             if (this->allow_full_screen_)
             {
                 ff::thread_dispatch::get_game()->send([this]()
@@ -576,7 +580,10 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                         this->full_screen(false);
                     });
             }
+            break;
 
+        case WM_DESTROY:
+            this->window_message_connection.disconnect();
             this->window = nullptr;
             break;
 
