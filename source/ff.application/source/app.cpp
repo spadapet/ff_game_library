@@ -33,7 +33,7 @@ static ff::perf_counter perf_frame("Frame", ff::perf_color::white, ff::perf_char
 static ff::perf_counter perf_advance("Update", ::perf_input.color);
 static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
 static ff::perf_counter perf_render_begin("Clear", ::perf_render.color);
-static ff::perf_counter perf_render_game_render("Game render", ::perf_render.color);
+static ff::perf_counter perf_render_game_render("Game", ::perf_render.color);
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;

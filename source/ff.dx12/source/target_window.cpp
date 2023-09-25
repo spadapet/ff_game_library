@@ -10,6 +10,9 @@
 static const size_t MIN_BUFFER_COUNT = 2;
 static const size_t MAX_BUFFER_COUNT = 4;
 
+static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
+static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
+
 static size_t fix_buffer_count(size_t value)
 {
     return ff::math::clamp<size_t>(value, MIN_BUFFER_COUNT, MAX_BUFFER_COUNT);
@@ -144,9 +147,6 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
 
     return false;
 }
-
-static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
-static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 
 bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context)
 {
