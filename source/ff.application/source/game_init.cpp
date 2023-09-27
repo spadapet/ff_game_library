@@ -167,7 +167,7 @@ static void handle_window_message(ff::window_message& msg)
     {
         case WM_GETMINMAXINFO:
             {
-                RECT rect{ 0, 0, 480, 270 };
+                RECT rect{ 0, 0, 240, 135 };
                 const DWORD style = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_STYLE));
                 const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_EXSTYLE));
                 if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(msg.hwnd)))
@@ -191,8 +191,9 @@ static void handle_window_message(ff::window_message& msg)
                 RECT rect;
                 if (::GetClientRect(msg.hwnd, &rect))
                 {
-                    const std::array<ff::point_int, 4> sizes
+                    const std::array<ff::point_int, 5> sizes
                     {
+                        ff::point_int(240, 135),
                         ff::point_int(480, 270),
                         ff::point_int(960, 540),
                         ff::point_int(1920, 1080),

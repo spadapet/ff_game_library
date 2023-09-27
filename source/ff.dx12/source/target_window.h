@@ -58,7 +58,6 @@ namespace ff::dx12
         void before_resize();
         bool internal_reset(size_t buffer_count, size_t frame_latency);
         bool internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency);
-        void ensure_extra_buffer(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color);
 
         ff::window* window{};
         ff::window_size cached_size{};
@@ -68,16 +67,14 @@ namespace ff::dx12
         ff::win_event target_ready_event;
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
-        std::unique_ptr<ff::dx12::resource> extra_buffer_resource;
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
-        ff::dx12::descriptor_range target_views; // one extra at the end for extra_buffer_resource
+        ff::dx12::descriptor_range target_views;
         size_t back_buffer_index{};
 
         bool main_window{};
         bool allow_full_screen_{};
         bool was_full_screen_on_close{};
         bool vsync_{ true };
-        bool use_extra_buffer{};
 #if UWP_APP
         bool use_xaml_composition{};
         bool cached_full_screen_uwp{};

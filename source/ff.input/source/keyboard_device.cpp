@@ -88,6 +88,12 @@ void ff::keyboard_device::handle_window_message(ff::window_message& message)
             break;
 
         case WM_SYSKEYDOWN:
+            if (message.wp == VK_RETURN)
+            {
+                break;
+            }
+            [[fallthrough]];
+
         case WM_KEYDOWN:
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {
@@ -109,6 +115,12 @@ void ff::keyboard_device::handle_window_message(ff::window_message& message)
             break;
 
         case WM_SYSKEYUP:
+            if (message.wp == VK_RETURN)
+            {
+                break;
+            }
+            [[fallthrough]];
+
         case WM_KEYUP:
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {

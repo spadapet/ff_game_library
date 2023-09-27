@@ -193,7 +193,7 @@ void ff::pointer_device::mouse_message(const ff::window_message& message)
                     {
                         this->pending_mouse.double_clicks[vk_button]++;
                     }
-                    __fallthrough;
+                    [[fallthrough]];
 
                 case 1:
                     this->pending_mouse.pressing[vk_button] = true;

@@ -202,7 +202,7 @@ ff::input_device_event ff::pointer_device::mouse_pressed(const winrt::Windows::U
                 {
                     this->pending_mouse.double_clicks[vk_button]++;
                 }
-                __fallthrough;
+                [[fallthrough]];
 
             case 1:
                 this->pending_mouse.pressing[vk_button] = true;
