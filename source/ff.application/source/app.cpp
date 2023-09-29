@@ -32,7 +32,6 @@ static ff::perf_counter perf_input("Input", ff::perf_color::magenta);
 static ff::perf_counter perf_frame("Frame", ff::perf_color::white, ff::perf_chart_t::frame_total);
 static ff::perf_counter perf_advance("Update", ::perf_input.color);
 static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
-static ff::perf_counter perf_render_begin("Clear", ::perf_render.color);
 static ff::perf_counter perf_render_game_render("Game", ::perf_render.color);
 static std::string app_product_name;
 static std::string app_internal_name;
@@ -138,22 +137,19 @@ static void frame_render(ff::state::advance_t advance_type)
 {
     ff::perf_timer timer_render(::perf_render);
     ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
-    bool begin_render = true;
-
-    if (begin_render)
+    bool begin_render;
     {
-        ff::perf_timer timer(::perf_render_begin);
+        ff::perf_timer timer(::perf_render_game_render);
         DirectX::XMFLOAT4 clear_color;
         const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
         begin_render = ::target->begin_render(context, clear_color2);
-    }
 
-    if (begin_render)
-    {
-        ff::perf_timer timer(::perf_render_game_render);
-        ::game_state.frame_rendering(advance_type, context, *::render_targets);
-        ::game_state.render(context, *::render_targets);
-        ::game_state.frame_rendered(advance_type, context, *::render_targets);
+        if (begin_render)
+        {
+            ::game_state.frame_rendering(advance_type, context, *::render_targets);
+            ::game_state.render(context, *::render_targets);
+            ::game_state.frame_rendered(advance_type, context, *::render_targets);
+        }
     }
 
     if (begin_render)
