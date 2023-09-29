@@ -24,7 +24,7 @@ static const size_t MAX_ADVANCE_MULTIPLIER = 4;
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::timer timer;
-static ff::win_event game_thread_event;
+static std::unique_ptr<ff::win_event> game_thread_event;
 static ff::signal_connection window_message_connection;
 static ff::state_wrapper game_state;
 static ff::perf_results perf_results;
@@ -266,7 +266,7 @@ static std::shared_ptr<ff::state> create_ui_state()
 static void init_game_thread()
 {
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
-    ::game_thread_event.set();
+    ::game_thread_event->set();
 
     if (::game_state)
     {
@@ -329,7 +329,7 @@ static void destroy_game_thread()
     ff::internal::ui::destroy_game_thread();
     ff::thread_pool::flush();
     ::game_thread_dispatch.reset();
-    ::game_thread_event.set();
+    ::game_thread_event->set();
 }
 
 static void start_game_state()
@@ -349,7 +349,7 @@ static void pause_game_state()
         ff::dxgi_client().trim_device();
     }
 
-    ::game_thread_event.set();
+    ::game_thread_event->set();
 }
 
 static void game_thread()
@@ -388,7 +388,7 @@ static void start_game_thread()
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
         std::jthread(::game_thread).detach();
-        ::game_thread_event.wait_and_reset();
+        ::game_thread_event->wait_and_reset();
     }
 }
 
@@ -405,11 +405,11 @@ static void pause_game_thread()
                 }
                 else
                 {
-                    ::game_thread_event.set();
+                    ::game_thread_event->set();
                 }
             });
 
-        ::game_thread_event.wait_and_reset();
+        ::game_thread_event->wait_and_reset();
     }
 
     // Just in case the app gets killed while paused
@@ -427,7 +427,7 @@ static void stop_game_thread()
                 ::game_thread_state = ::game_thread_state_t::stopped;
             });
 
-        ::game_thread_event.wait_and_reset();
+        ::game_thread_event->wait_and_reset();
     }
 }
 
@@ -615,6 +615,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::app_time = ff::app_time_t{};
     ::app_time.time_scale = 1.0;
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
+    ::game_thread_event = std::make_unique<ff::win_event>();
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 
@@ -632,6 +633,7 @@ void ff::internal::app::destroy()
 
     ::render_targets.reset();
     ::target.reset();
+    ::game_thread_event.reset();
     ::window_message_connection.disconnect();
     ::destroy_log();
 }
