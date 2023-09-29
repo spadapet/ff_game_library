@@ -5,7 +5,12 @@
 #include "thread_dispatch.h"
 #include "win_handle.h"
 
-static ff::stash<ff::internal::win_event_data> event_stash;
+static ff::stash<ff::internal::win_event_data>& event_stash()
+{
+    // Hide it in a method so that it stays valid for static win_event objects in other files
+    static ff::stash<ff::internal::win_event_data> stash;
+    return stash;
+}
 
 static constexpr bool is_valid_handle(HANDLE handle)
 {
@@ -14,7 +19,7 @@ static constexpr bool is_valid_handle(HANDLE handle)
 
 ff::intrusive_ptr<ff::internal::win_event_data> create_win_event_data()
 {
-    return ::event_stash.get_obj();
+    return ::event_stash().get_obj();
 }
 
 ff::internal::win_event_data::win_event_data()
@@ -32,7 +37,7 @@ void ff::internal::win_event_data::release_ref()
     if (this->refs.fetch_sub(1) == 1)
     {
         ::ResetEvent(this->handle);
-        ::event_stash.stash_obj(this);
+        ::event_stash().stash_obj(this);
     }
 }
 
@@ -138,7 +143,7 @@ bool ff::win_handle::is_set() const
 }
 
 ff::win_event::win_event()
-    : data(::event_stash.get_obj())
+    : data(::event_stash().get_obj())
 {}
 
 ff::internal::co_event_awaiter ff::win_event::operator co_await()

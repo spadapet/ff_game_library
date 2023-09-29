@@ -3,13 +3,6 @@
 #include "music.h"
 #include "music_playing.h"
 
-static ff::pool_allocator<ff::internal::music_playing> music_pool;
-
-static void delete_music(ff::audio_playing_base* value)
-{
-    ::music_pool.delete_obj(static_cast<ff::internal::music_playing*>(value));
-}
-
 ff::music::music(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop)
     : file(file_resource)
     , volume(volume)

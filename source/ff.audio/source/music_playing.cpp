@@ -4,7 +4,7 @@
 #include "music_playing.h"
 #include "destroy_voice.h"
 
-static const size_t MAX_BUFFERS = 2;
+constexpr size_t MAX_BUFFERS = 2;
 
 namespace ff::internal
 {

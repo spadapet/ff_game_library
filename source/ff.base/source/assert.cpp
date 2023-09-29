@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "assert.h"
 #include "log.h"
+#include "scope_exit.h"
 #include "string.h"
 #include "thread_dispatch.h"
 #include "win_msg.h"
@@ -9,6 +10,8 @@
 
 static std::atomic_int handling_assert = 0;
 static std::function<bool(const char*, const char*, const char*, unsigned int)> assert_listener_;
+static bool statics_destroyed{};
+static ff::scope_exit statics_invalidate([]() { ::statics_destroyed = true; });
 
 bool ff::internal::assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {
@@ -20,7 +23,7 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
         return false;
     }
 
-    if (::assert_listener_ && ::assert_listener_(exp, text, file, line))
+    if (!::statics_destroyed && ::assert_listener_ && ::assert_listener_(exp, text, file, line))
     {
         // Handled by the listener (most likely a test a running)
         ::handling_assert.fetch_sub(1);

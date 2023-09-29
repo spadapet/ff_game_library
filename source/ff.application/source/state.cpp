@@ -1,7 +1,11 @@
 #include "pch.h"
 #include "state.h"
 
-static std::shared_ptr<ff::state> EMPTY_STATE = std::make_shared<ff::state>();
+static const std::shared_ptr<ff::state>& EMPTY_STATE()
+{
+    static std::shared_ptr<ff::state> value = std::make_shared<ff::state>();
+    return value;
+}
 
 std::shared_ptr<ff::state> ff::state::advance_time()
 {
@@ -122,28 +126,28 @@ ff::state* ff::state_list::child_state(size_t index)
 }
 
 ff::state_wrapper::state_wrapper()
-    : state(::EMPTY_STATE)
+    : state(::EMPTY_STATE())
 {}
 
 ff::state_wrapper::state_wrapper(std::shared_ptr<ff::state> state)
-    : state(state ? state->unwrap() : ::EMPTY_STATE)
+    : state(state ? state->unwrap() : ::EMPTY_STATE())
 {}
 
 ff::state_wrapper& ff::state_wrapper::operator=(std::shared_ptr<ff::state> state)
 {
-    this->state = state ? state->unwrap() : ::EMPTY_STATE;
+    this->state = state ? state->unwrap() : ::EMPTY_STATE();
     return *this;
 }
 
 ff::state_wrapper::operator bool() const
 {
     assert(this->state);
-    return this->state != ::EMPTY_STATE;
+    return this->state != ::EMPTY_STATE();
 }
 
 void ff::state_wrapper::reset()
 {
-    this->state = ::EMPTY_STATE;
+    this->state = ::EMPTY_STATE();
 }
 
 std::shared_ptr<ff::state> ff::state_wrapper::advance_time()

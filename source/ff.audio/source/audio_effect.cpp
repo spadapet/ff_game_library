@@ -4,11 +4,15 @@
 #include "audio_effect_playing.h"
 #include "wav_file.h"
 
-static ff::pool_allocator<ff::internal::audio_effect_playing> audio_effect_pool;
+static ff::pool_allocator<ff::internal::audio_effect_playing>& audio_effect_pool()
+{
+    static ff::pool_allocator<ff::internal::audio_effect_playing> value;
+    return value;
+}
 
 static void delete_audio_effect(ff::audio_playing_base* value)
 {
-    ::audio_effect_pool.delete_obj(static_cast<ff::internal::audio_effect_playing*>(value));
+    ::audio_effect_pool().delete_obj(static_cast<ff::internal::audio_effect_playing*>(value));
 }
 
 ff::audio_effect::audio_effect(
@@ -55,7 +59,7 @@ std::shared_ptr<ff::audio_playing_base> ff::audio_effect::play(bool start_now, f
 
     std::shared_ptr<ff::internal::audio_effect_playing> effect_ptr;
     {
-        ff::internal::audio_effect_playing* effect = ::audio_effect_pool.new_obj(this);
+        ff::internal::audio_effect_playing* effect = ::audio_effect_pool().new_obj(this);
         effect_ptr = std::shared_ptr<ff::internal::audio_effect_playing>(effect, ::delete_audio_effect);
     }
 

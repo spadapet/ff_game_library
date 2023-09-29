@@ -10,7 +10,7 @@
 #include "string_v.h"
 #include "value_vector.h"
 
-static const size_t INDENT_SPACES = 2;
+constexpr size_t INDENT_SPACES = 2;
 
 static bool json_write_value(const ff::value* value, size_t spaces, std::ostream& output);
 static void json_write_object(const ff::dict& dict, size_t spaces, std::ostream& output);

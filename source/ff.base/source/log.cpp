@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "assert.h"
-#include "constants.h"
 #include "log.h"
+#include "scope_exit.h"
 #include "stable_hash.h"
 #include "string.h"
 
@@ -13,8 +13,6 @@ namespace
         bool enabled;
     };
 }
-
-static std::ostream* file_stream;
 
 static std::unordered_map<ff::log::type, ::log_type> types
 {
@@ -40,6 +38,14 @@ static std::unordered_map<ff::log::type, ::log_type> types
     { ff::log::type::ui_focus, { "ff/ui_focus", ff::constants::debug_build } },
     { ff::log::type::ui_mem, { "ff/ui_mem", false } },
 };
+
+static std::ostream* file_stream{};
+static bool statics_destroyed{};
+static ff::scope_exit statics_invalidate([]()
+    {
+        assert_msg(!::file_stream, "ff::log::file(nullptr) must be called before exit.");
+        ::statics_destroyed = true;
+    });
 
 void ff::internal::log::write(std::string_view text)
 {
@@ -70,11 +76,15 @@ void ff::log::file(std::ostream* file_stream)
 std::vector<ff::log::type> ff::log::types()
 {
     std::vector<ff::log::type> types;
-    types.reserve(::types.size());
 
-    for (auto& i : ::types)
+    if (!::statics_destroyed)
     {
-        types.push_back(i.first);
+        types.reserve(::types.size());
+
+        for (auto& i : ::types)
+        {
+            types.push_back(i.first);
+        }
     }
 
     return types;
@@ -82,6 +92,7 @@ std::vector<ff::log::type> ff::log::types()
 
 ff::log::type ff::log::register_type(std::string_view name, bool enabled)
 {
+    assert(!::statics_destroyed);
     ff::log::type type = static_cast<ff::log::type>(ff::stable_hash_func(name));
     auto i = ::types.try_emplace(type, ::log_type{ std::string(name), enabled });
     assert_msg(i.second, "Log name already registered");
@@ -91,20 +102,29 @@ ff::log::type ff::log::register_type(std::string_view name, bool enabled)
 
 ff::log::type ff::log::lookup_type(std::string_view name)
 {
-    for (auto& i : ::types)
+    if (!::statics_destroyed)
     {
-        if (i.second.name == name)
+        for (auto& i : ::types)
         {
-            return i.first;
+            if (i.second.name == name)
+            {
+                return i.first;
+            }
         }
+
+        debug_fail_msg("Invalid log type name");
     }
 
-    debug_fail_msg("Invalid log type name");
     return ff::log::type::none;
 }
 
 std::string_view ff::log::type_name(ff::log::type type)
 {
+    if (::statics_destroyed)
+    {
+        return "ff/debug"; // only debug works after shut down
+    }
+
     auto i = ::types.find(type);
     assert_msg_ret_val(i != ::types.end(), "Invalid log type", "");
     return i->second.name;
@@ -112,6 +132,11 @@ std::string_view ff::log::type_name(ff::log::type type)
 
 bool ff::log::type_enabled(ff::log::type type)
 {
+    if (::statics_destroyed)
+    {
+        return type == ff::log::type::debug && ff::constants::profile_build;
+    }
+
     auto i = ::types.find(type);
     assert_msg_ret_val(i != ::types.end(), "Invalid log type", false);
     return i->second.enabled;
@@ -119,6 +144,7 @@ bool ff::log::type_enabled(ff::log::type type)
 
 void ff::log::type_enabled(ff::log::type type, bool value)
 {
+    assert_ret(!::statics_destroyed);
     auto i = ::types.find(type);
     assert_msg_ret(i != ::types.end(), "Invalid log type");
     i->second.enabled = value;
