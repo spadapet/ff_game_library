@@ -12,6 +12,8 @@
 #include <pix3.h>
 #endif
 
+static ff::perf_counter perf_execute("Execute", ff::perf_color::green);
+
 ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)
     : type(type)
     , name_(name)
@@ -104,11 +106,9 @@ ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
     return fence_value;
 }
 
-static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
-
 void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 {
-    ff::perf_timer timer(::perf_draw);
+    ff::perf_timer timer(::perf_execute);
     ff::stack_vector<ff::dx12::commands*, 32> valid_commands;
     valid_commands.reserve(count);
 

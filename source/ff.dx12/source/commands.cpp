@@ -20,7 +20,7 @@
 #include <pix3.h>
 #endif
 
-static std::atomic_int data_counter;
+static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
 
 ff::dx12::commands::data_cache_t::data_cache_t(ff::dx12::queue* queue)
     : fence(queue->name() + " fence", queue)
@@ -370,11 +370,13 @@ void ff::dx12::commands::stencil(uint32_t value)
 
 void ff::dx12::commands::draw(size_t start, size_t count)
 {
+    ff::perf_timer timer(::perf_draw);
     this->list()->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(start), 0);
 }
 
 void ff::dx12::commands::draw(size_t start_index, size_t index_count, size_t start_vertex, size_t instance_count, size_t start_instance)
 {
+    ff::perf_timer timer(::perf_draw);
     this->list()->DrawIndexedInstanced(
         static_cast<UINT>(index_count),
         static_cast<UINT>(instance_count),
