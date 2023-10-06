@@ -578,8 +578,27 @@ static void destroy_log()
 static void init_window()
 {
 #if !UWP_APP
-    ::SetWindowText(*ff::window::main(), ff::string::to_wstring(ff::app_product_name()).c_str());
-    ::ShowWindow(*ff::window::main(), SW_SHOWDEFAULT);
+    HWND hwnd = *ff::window::main();
+    LPCWSTR icon_name = MAKEINTRESOURCE(1);
+
+    if (::FindResourceW(ff::get_hinstance(), icon_name, RT_ICON))
+    {
+        HICON icon = ::LoadIcon(ff::get_hinstance(), icon_name);
+        assert(icon);
+
+        if (icon)
+        {
+            ::SendMessage(hwnd, WM_SETICON, 0, reinterpret_cast<LPARAM>(icon));
+            ::SendMessage(hwnd, WM_SETICON, 1, reinterpret_cast<LPARAM>(icon));
+        }
+    }
+
+    if (!::GetWindowTextLength(hwnd))
+    {
+        ::SetWindowText(hwnd, ff::string::to_wstring(ff::app_product_name()).c_str());
+    }
+
+    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
 #endif
     ::update_window_visible(true);
 }

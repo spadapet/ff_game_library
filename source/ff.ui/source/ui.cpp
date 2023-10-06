@@ -222,7 +222,15 @@ static void init_fallback_fonts()
 
 static void init_application_resources()
 {
-    if (!::ui_params.application_resources_name.empty())
+    if (::ui_params.application_resources_name.empty())
+    {
+        ff::auto_resource_value app_res = ::resource_cache->get_resource_object("application_resources.xaml");
+        if (!app_res.value()->is_type<nullptr_t>())
+        {
+            ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>("application_resources.xaml");
+        }
+    }
+    else
     {
         ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
     }
