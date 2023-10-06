@@ -87,7 +87,7 @@
             </Expander>
         </Border>
         <Border Grid.Row="2" Margin="0,2,0,0" Style="{StaticResource ContainerBorder}">
-            <Expander Header="Timers" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
+            <Expander Header="Counters" IsExpanded="{Binding timers_visible, Mode=TwoWay}">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top">
                         <TextBlock DockPanel.Dock="Left" Width="20" Text="{Binding timer_update_speed}" />
@@ -98,7 +98,23 @@
                             </Slider.ToolTip>
                         </Slider>
                     </DockPanel>
-                    <ScrollViewer Grid.Row="1">
+                    <ListView Grid.Row="1" ItemsSource="{Binding timers}" SelectionMode="Single" SelectedItem="selected_timer">
+                        <ListView.View>
+                            <GridView AllowsColumnReorder="False">
+                                <GridViewColumn Header="Counter" Width="155">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type ff:debug_timer_model}">
+                                            <TextBlock Text="{Binding name}" Foreground="{Binding name_brush}" Margin="{Binding level, Converter={StaticResource level_to_indent_converter}, ConverterParameter=4.0}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="ms" DisplayMemberBinding="{Binding time_ms, StringFormat={}{0:N1}}" Width="45" />
+                                <GridViewColumn Header="#" DisplayMemberBinding="{Binding hit_last_frame}" Width="30" />
+                                <!--<GridViewColumn Header="Hz" DisplayMemberBinding="{Binding hit_per_second}" Width="30" />-->
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <!--<ScrollViewer Grid.Row="1">
                         <ListBox ItemsSource="{Binding timers}" SelectedItem="selected_timer">
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type ff:debug_timer_model}">
@@ -113,7 +129,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </ScrollViewer>
+                    </ScrollViewer>-->
                 </DockPanel>
             </Expander>
         </Border>

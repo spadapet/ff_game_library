@@ -104,8 +104,11 @@ ff::dx12::fence_value ff::dx12::queue::execute(ff::dx12::commands& commands)
     return fence_value;
 }
 
+static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
+
 void ff::dx12::queue::execute(ff::dx12::commands** commands, size_t count)
 {
+    ff::perf_timer timer(::perf_draw);
     ff::stack_vector<ff::dx12::commands*, 32> valid_commands;
     valid_commands.reserve(count);
 
