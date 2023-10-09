@@ -26,6 +26,7 @@ namespace ff::game
         static const size_t ID_DEBUG_RESTART_GAME;
         static const size_t ID_DEBUG_REBUILD_RESOURCES;
 
+        void internal_init();
         const ff::game::system_options& system_options() const;
         void system_options(const ff::game::system_options& options);
         ff::signal_sink<>& reload_resources_sink();
@@ -55,9 +56,6 @@ namespace ff::game
         void show_debug_state(std::shared_ptr<ff::state> top_state, std::shared_ptr<ff::state> under_state = nullptr);
 
     private:
-        void internal_setup_init();
-        void internal_init();
-
         void load_settings();
         void init_resources();
         void init_game_state();

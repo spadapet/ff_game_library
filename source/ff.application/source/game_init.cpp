@@ -5,25 +5,16 @@
 #include "init.h"
 
 static const ff::game::init_params* init_params{};
-static std::function<void()> init_app_func;
 static std::weak_ptr<ff::game::app_state_base> app_state;
-
-void ff::game::app_state_base::internal_setup_init()
-{
-    ::init_app_func = std::bind(&ff::game::app_state_base::internal_init, this);
-}
 
 static std::shared_ptr<ff::state> create_app_state()
 {
-    ::init_app_func = {};
-
     auto app_state = ::init_params->create_initial_state();
     ::app_state = app_state;
 
-    if (::init_app_func)
+    if (app_state)
     {
-        ::init_app_func();
-        ::init_app_func = {};
+        app_state->internal_init();
     }
 
     return app_state;
