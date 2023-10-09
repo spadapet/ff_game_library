@@ -674,3 +674,17 @@ const std::vector<ff::ui_view*>& ff::ui::rendered_views()
 {
     return ::rendered_views;
 }
+
+bool ff::ui::is_hand_cursor()
+{
+    for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
+    {
+        ff::ui_view* view = *i;
+        if (view->cursor() == Noesis::CursorType_Hand)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}

@@ -46,15 +46,3 @@ void ff::ui_view_state::render(ff::dxgi::command_context_base& context, ff::rend
     this->view_->size(size);
     this->view_->render(context, target, depth);
 }
-
-ff::state::cursor_t ff::ui_view_state::cursor()
-{
-    switch (this->view_->cursor())
-    {
-    default:
-        return ff::state::cursor_t::default_;
-
-    case Noesis::CursorType_Hand:
-        return ff::state::cursor_t::hand;
-    }
-}

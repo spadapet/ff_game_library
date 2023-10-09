@@ -57,20 +57,6 @@ void ff::state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_cont
     }
 }
 
-ff::state::cursor_t ff::state::cursor()
-{
-    for (size_t i = 0; i < this->child_state_count(); i++)
-    {
-        ff::state::cursor_t cursor = this->child_state(i)->cursor();
-        if (cursor != ff::state::cursor_t::default_)
-        {
-            return cursor;
-        }
-    }
-
-    return ff::state::cursor_t::default_;
-}
-
 std::shared_ptr<ff::state_wrapper> ff::state::wrap()
 {
     return std::make_shared<ff::state_wrapper>(this->shared_from_this());
@@ -184,11 +170,6 @@ void ff::state_wrapper::frame_rendering(ff::state::advance_t type, ff::dxgi::com
 void ff::state_wrapper::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     this->state->frame_rendered(type, context, targets);
-}
-
-ff::state::cursor_t ff::state_wrapper::cursor()
-{
-    return this->state->cursor();
 }
 
 std::shared_ptr<ff::state_wrapper> ff::state_wrapper::wrap()

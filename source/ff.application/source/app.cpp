@@ -162,19 +162,8 @@ static void frame_render(ff::state::advance_t advance_type)
 
 static void frame_update_cursor()
 {
-    const wchar_t* cursor = nullptr;
-    switch (::game_state.cursor())
-    {
-        default:
-            cursor = IDC_ARROW;
-            break;
-
-        case ff::state::cursor_t::hand:
-            cursor = IDC_HAND;
-            break;
-    }
-
-    if (cursor && cursor != ::window_cursor.load())
+    const wchar_t* cursor = ff::ui::is_hand_cursor() ? IDC_HAND : IDC_ARROW;
+    if (cursor != ::window_cursor.load())
     {
         ::window_cursor = cursor;
 

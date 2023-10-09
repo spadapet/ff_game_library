@@ -8,7 +8,6 @@ namespace ff
     class state : public std::enable_shared_from_this<ff::state>
     {
     public:
-        enum class cursor_t { default_, hand };
         enum class advance_t { running, single_step, stopped };
 
         virtual ~state() = default;
@@ -21,7 +20,6 @@ namespace ff
         virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets);
         virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets);
 
-        virtual ff::state::cursor_t cursor();
         virtual std::shared_ptr<ff::state_wrapper> wrap();
         virtual std::shared_ptr<ff::state> unwrap();
 
@@ -73,7 +71,6 @@ namespace ff
         virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
         virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
-        virtual ff::state::cursor_t cursor() override;
         virtual std::shared_ptr<ff::state_wrapper> wrap() override;
         virtual std::shared_ptr<ff::state> unwrap() override;
 

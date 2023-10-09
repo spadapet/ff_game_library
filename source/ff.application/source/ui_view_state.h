@@ -21,7 +21,6 @@ namespace ff
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
         virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
-        virtual ff::state::cursor_t cursor() override;
 
     private:
         std::shared_ptr<ff::ui_view> view_;
