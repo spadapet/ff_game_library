@@ -117,8 +117,10 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
     return true;
 }
 
-static void frame_advance_many(ff::state::advance_t advance_type)
+static void frame_advance(ff::state::advance_t advance_type)
 {
+    ::game_state.frame_started(advance_type);
+
     size_t advance_count = 0;
     while (::frame_advance_timer(advance_type, advance_count))
     {
@@ -198,8 +200,7 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
     ff::perf_measures::game().reset(::app_time.clock_seconds, &::perf_results, true, ::app_time.perf_clock_ticks);
     ff::perf_timer timer_frame(::perf_frame, ::app_time.perf_clock_ticks);
 
-    ::game_state.frame_started(advance_type);
-    ::frame_advance_many(advance_type);
+    ::frame_advance(advance_type);
     ::frame_render(advance_type);
     ::frame_update_cursor();
 

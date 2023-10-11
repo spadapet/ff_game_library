@@ -165,7 +165,8 @@ static void open_url_callback(void* user, const char* url)
             winrt::Windows::System::Launcher::LaunchUriAsync(winrt::Windows::Foundation::Uri(purl));
         });
 #else
-    ::ShellExecute(nullptr, L"open", ff::string::to_wstring(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    std::wstring purl = ff::string::to_wstring(url);
+    ::ShellExecute(*ff::window::main(), L"open", purl.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #endif
 }
 
