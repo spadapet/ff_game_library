@@ -108,9 +108,10 @@ void ff::game::app_state_base::debug_command(size_t command_id)
     }
 }
 
-bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4&)
+bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4& color)
 {
-    return false;
+    color = ff::dxgi::color_black();
+    return true;
 }
 
 std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
