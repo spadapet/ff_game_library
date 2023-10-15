@@ -85,11 +85,21 @@ void ff::game::app_state_base::debug_command(size_t command_id)
 {
     if (this->allow_debug_commands())
     {
-        if (command_id == ff::game::app_state_base::ID_DEBUG_HIDE_UI)
+        if (command_id == ::ID_DEBUG_CANCEL_STEP_ONE_FRAME)
+        {
+            this->debug_step_one_frame = false;
+            this->debug_stepping_frames = false;
+        }
+        else if (command_id == ::ID_DEBUG_STEP_ONE_FRAME)
+        {
+            this->debug_step_one_frame = this->debug_stepping_frames;
+            this->debug_stepping_frames = true;
+        }
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_HIDE_UI)
         {
             this->show_debug_state(nullptr);
         }
-        else if (command_id == ff::game::app_state_base::ID_DEBUG_SHOW_UI)
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_SHOW_UI || command_id == ::ID_SHOW_CUSTOM_DEBUG)
         {
             this->show_debug_state(this->create_debug_overlay_state(), this->game_state_);
         }
@@ -127,34 +137,47 @@ std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
 
 void ff::game::app_state_base::advance_input()
 {
-    if (this->allow_debug_commands())
+    if (!this->allow_debug_commands())
     {
-        if (!this->debug_input_events)
+        if (!this->debug_input_events[0])
         {
-            this->debug_input_events = std::make_unique<ff::input_event_provider>(*this->debug_input_mapping.object(),
+            this->debug_input_events[0] = std::make_unique<ff::input_event_provider>(*this->debug_input_mapping[0].object(),
                 std::vector<const ff::input_vk*>{ &ff::input::keyboard(), & ff::input::pointer() });
+
+            if (this->debug_input_mapping[1].object())
+            {
+                this->debug_input_events[1] = std::make_unique<ff::input_event_provider>(*this->debug_input_mapping[1].object(),
+                    std::vector<const ff::input_vk*>{ &ff::input::keyboard(), & ff::input::pointer() });
+            }
         }
 
-        if (this->debug_input_events->advance())
+        if (this->debug_input_events[0]->advance())
         {
-            if (this->debug_input_events->event_hit(::ID_DEBUG_CANCEL_STEP_ONE_FRAME))
+            for (const ff::input_event& event_ : this->debug_input_events[0]->events())
             {
-                this->debug_step_one_frame = false;
-                this->debug_stepping_frames = false;
-            }
-
-            if (this->debug_input_events->event_hit(::ID_DEBUG_STEP_ONE_FRAME))
-            {
-                this->debug_step_one_frame = this->debug_stepping_frames;
-                this->debug_stepping_frames = true;
+                if (event_.count >= 1)
+                {
+                    this->debug_command(event_.event_id);
+                }
             }
         }
 
-        if (this->debug_input_events->digital_value(::ID_DEBUG_SPEED_FAST))
+        if (this->debug_input_mapping[1].object() && this->debug_input_events[1]->advance())
+        {
+            for (const ff::input_event& event_ : this->debug_input_events[1]->events())
+            {
+                if (event_.count >= 1)
+                {
+                    this->debug_command(event_.event_id);
+                }
+            }
+        }
+
+        if (this->debug_input_events[0]->digital_value(::ID_DEBUG_SPEED_FAST))
         {
             this->debug_time_scale = 4.0;
         }
-        else if (this->debug_input_events->digital_value(::ID_DEBUG_SPEED_SLOW))
+        else if (this->debug_input_events[0]->digital_value(::ID_DEBUG_SPEED_SLOW))
         {
             this->debug_time_scale = 0.25;
         }
@@ -235,8 +258,10 @@ void ff::game::app_state_base::load_settings()
 
 void ff::game::app_state_base::init_resources()
 {
-    this->debug_input_events.reset();
-    this->debug_input_mapping = "ff.game.debug_input";
+    this->debug_input_events[0].reset();
+    this->debug_input_events[1].reset();
+    this->debug_input_mapping[0] = "ff.game.debug_input";
+    this->debug_input_mapping[1] = "game.debug_input";
 
     this->load_resources();
 }

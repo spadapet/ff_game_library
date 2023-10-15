@@ -90,8 +90,8 @@ namespace ff::game
         // Debugging
         std::shared_ptr<debug_state> debug_state_;
         std::unique_ptr<std::pair<std::shared_ptr<ff::state>, std::shared_ptr<ff::state>>> pending_debug_state;
-        std::unique_ptr<ff::input_event_provider> debug_input_events;
-        ff::auto_resource<ff::input_mapping> debug_input_mapping;
+        std::unique_ptr<ff::input_event_provider> debug_input_events[2];
+        ff::auto_resource<ff::input_mapping> debug_input_mapping[2];
         double debug_time_scale{ 1 };
         bool debug_stepping_frames{};
         bool debug_step_one_frame{};
