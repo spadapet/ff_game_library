@@ -19,8 +19,10 @@ static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_cu
 static const std::string_view ID_APP_STATE = "ff::game::ID_APP_STATE";
 static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
 
-ff::game::app_state_base::app_state_base()
-    : debug_state_(std::make_shared<debug_state>())
+ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources)
+    : palette_resources(palette_resources)
+    , render_target(std::move(render_target))
+    , debug_state_(std::make_shared<debug_state>())
 {
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
@@ -33,6 +35,43 @@ void ff::game::app_state_base::internal_init()
     this->init_resources();
     this->init_game_state();
     this->apply_system_options();
+}
+
+void ff::game::app_state_base::debug_command(size_t command_id)
+{
+    if (this->allow_debug_commands() && !this->debug_command_override(command_id))
+    {
+        if (command_id == ::ID_DEBUG_CANCEL_STEP_ONE_FRAME)
+        {
+            this->debug_step_one_frame = false;
+            this->debug_stepping_frames = false;
+        }
+        else if (command_id == ::ID_DEBUG_STEP_ONE_FRAME)
+        {
+            this->debug_step_one_frame = this->debug_stepping_frames;
+            this->debug_stepping_frames = true;
+        }
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_HIDE_UI)
+        {
+            this->show_debug_state(nullptr);
+        }
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_SHOW_UI || command_id == ::ID_SHOW_CUSTOM_DEBUG)
+        {
+            this->show_debug_state(this->create_debug_overlay_state(), this->game_state_);
+        }
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_REBUILD_RESOURCES)
+        {
+            if (!this->rebuilding_resources)
+            {
+                this->rebuilding_resources = true;
+                ff::global_resources::rebuild_async();
+            }
+        }
+        else if (command_id == ff::game::app_state_base::ID_DEBUG_RESTART_GAME)
+        {
+            this->init_game_state();
+        }
+    }
 }
 
 const ff::game::system_options& ff::game::app_state_base::system_options() const
@@ -73,49 +112,12 @@ ff::state::advance_t ff::game::app_state_base::advance_type()
 
 ff::dxgi::palette_base* ff::game::app_state_base::palette()
 {
-    return nullptr;
+    return this->palettes.size() ? this->palettes.front().get() : nullptr;
 }
 
 bool ff::game::app_state_base::allow_debug_commands()
 {
     return ff::constants::profile_build;
-}
-
-void ff::game::app_state_base::debug_command(size_t command_id)
-{
-    if (this->allow_debug_commands())
-    {
-        if (command_id == ::ID_DEBUG_CANCEL_STEP_ONE_FRAME)
-        {
-            this->debug_step_one_frame = false;
-            this->debug_stepping_frames = false;
-        }
-        else if (command_id == ::ID_DEBUG_STEP_ONE_FRAME)
-        {
-            this->debug_step_one_frame = this->debug_stepping_frames;
-            this->debug_stepping_frames = true;
-        }
-        else if (command_id == ff::game::app_state_base::ID_DEBUG_HIDE_UI)
-        {
-            this->show_debug_state(nullptr);
-        }
-        else if (command_id == ff::game::app_state_base::ID_DEBUG_SHOW_UI || command_id == ::ID_SHOW_CUSTOM_DEBUG)
-        {
-            this->show_debug_state(this->create_debug_overlay_state(), this->game_state_);
-        }
-        else if (command_id == ff::game::app_state_base::ID_DEBUG_REBUILD_RESOURCES)
-        {
-            if (!this->rebuilding_resources)
-            {
-                this->rebuilding_resources = true;
-                ff::global_resources::rebuild_async();
-            }
-        }
-        else if (command_id == ff::game::app_state_base::ID_DEBUG_RESTART_GAME)
-        {
-            this->init_game_state();
-        }
-    }
 }
 
 bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4& color)
@@ -126,6 +128,11 @@ bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4& color)
 
 std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
 {
+    for (auto& i : this->palettes)
+    {
+        i->advance();
+    }
+
     if (this->pending_debug_state)
     {
         auto pending_debug_state = std::move(this->pending_debug_state);
@@ -196,6 +203,20 @@ void ff::game::app_state_base::advance_input()
     ff::state::advance_input();
 }
 
+void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
+{
+    size_t old_ui_view_count = ff::ui::rendered_views().size();
+
+    targets.push(this->render_target);
+    ff::state::render(context, targets);
+    ff::rect_float target_rect = targets.pop(context, nullptr, this->palette());
+
+    for (auto i = ff::ui::rendered_views().cbegin() + old_ui_view_count; i != ff::ui::rendered_views().cend(); i++)
+    {
+        (*i)->viewport(target_rect);
+    }
+}
+
 void ff::game::app_state_base::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     this->debug_step_one_frame = false;
@@ -228,11 +249,16 @@ std::shared_ptr<ff::state> ff::game::app_state_base::create_initial_game_state()
 void ff::game::app_state_base::save_settings(ff::dict& dict)
 {}
 
+void ff::game::app_state_base::load_settings(const ff::dict& dict)
+{}
+
 void ff::game::app_state_base::load_resources()
 {}
 
-void ff::game::app_state_base::load_settings(const ff::dict& dict)
-{}
+bool ff::game::app_state_base::debug_command_override(size_t command_id)
+{
+    return false;
+}
 
 const std::shared_ptr<ff::state>& ff::game::app_state_base::game_state() const
 {
@@ -262,6 +288,13 @@ void ff::game::app_state_base::init_resources()
     this->debug_input_events[1].reset();
     this->debug_input_mapping[0] = "ff.game.debug_input";
     this->debug_input_mapping[1] = "game.debug_input";
+
+    this->palettes.clear();
+    for (auto& i : this->palette_resources)
+    {
+        ff::auto_resource<ff::palette_data> palette_data(i.resource_name);
+        this->palettes.push_back(std::make_shared<ff::palette_cycle>(palette_data.object(), i.remap_name, i.cycles_per_second));
+    }
 
     this->load_resources();
 }

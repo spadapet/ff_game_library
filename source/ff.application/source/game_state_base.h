@@ -19,14 +19,13 @@ namespace ff::game
     class app_state_base : public ff::state
     {
     public:
-        app_state_base();
-
         static const size_t ID_DEBUG_HIDE_UI;
         static const size_t ID_DEBUG_SHOW_UI;
         static const size_t ID_DEBUG_RESTART_GAME;
         static const size_t ID_DEBUG_REBUILD_RESOURCES;
 
         void internal_init();
+        void debug_command(size_t command_id);
         const ff::game::system_options& system_options() const;
         void system_options(const ff::game::system_options& options);
         ff::signal_sink<>& reload_resources_sink();
@@ -36,21 +35,31 @@ namespace ff::game
         virtual ff::dxgi::palette_base* palette();
         virtual bool clear_color(DirectX::XMFLOAT4&);
         virtual bool allow_debug_commands();
-        virtual void debug_command(size_t command_id);
 
         // ff::state
         virtual std::shared_ptr<ff::state> advance_time() override;
         virtual void advance_input() override;
+        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
         virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
         virtual size_t child_state_count() override;
         virtual ff::state* child_state(size_t index) override;
 
     protected:
+        struct palette_t
+        {
+            std::string resource_name;
+            std::string remap_name;
+            float cycles_per_second{};
+        };
+
+        app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources);
+
         virtual std::shared_ptr<ff::state> create_initial_game_state();
         virtual std::shared_ptr<ff::state> create_debug_overlay_state();
         virtual void save_settings(ff::dict& dict);
         virtual void load_settings(const ff::dict& dict);
         virtual void load_resources();
+        virtual bool debug_command_override(size_t command_id);
 
         const std::shared_ptr<ff::state>& game_state() const;
         void show_debug_state(std::shared_ptr<ff::state> top_state, std::shared_ptr<ff::state> under_state = nullptr);
@@ -84,8 +93,11 @@ namespace ff::game
         // Data
         std::shared_ptr<ff::state> game_state_;
         std::forward_list<ff::signal_connection> connections;
+        std::vector<ff::game::app_state_base::palette_t> palette_resources;
+        std::vector<std::shared_ptr<ff::palette_cycle>> palettes;
         ff::game::system_options system_options_{};
         ff::signal<> reload_resources_signal;
+        ff::render_target&& render_target;
 
         // Debugging
         std::shared_ptr<debug_state> debug_state_;
