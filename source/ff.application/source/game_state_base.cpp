@@ -144,7 +144,7 @@ std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
 
 void ff::game::app_state_base::advance_input()
 {
-    if (!this->allow_debug_commands())
+    if (this->allow_debug_commands())
     {
         if (!this->debug_input_events[0])
         {

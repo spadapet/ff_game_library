@@ -11,6 +11,10 @@
 #include "ui_view.h"
 #include "xaml_provider.h"
 
+// https://www.noesisengine.com/trial
+constexpr const char* DEFAULT_NAME = "f5025c38-29c4-476b-b18f-243889e0f620";
+constexpr const char* DEFAULT_KEY = "cVLVT64e1U/mgBa11Sh0c6Z+YY5psKtaMp3EIMS7cbAZ3h6w";
+
 static ff::init_ui_params ui_params;
 static std::vector<ff::ui_view*> views;
 static std::vector<ff::ui_view*> keyboard_input_views;
@@ -244,17 +248,14 @@ static void init_application_resources()
 
 static bool init_noesis(std::function<void()>&& register_extra_components)
 {
-    const char* default_name = "f5025c38-29c4-476b-b18f-243889e0f620";
-    const char* default_key = "MLhMe4j0THtzCEE+EBIJV30vZOoWjqX2saINt/gUHw9iteoJ";
-
     // Global handlers
     ::assert_handler = Noesis::SetAssertHandler(::noesis_assert_handler);
     ::error_handler = Noesis::SetErrorHandler(::noesis_error_handler);
     ::log_handler = Noesis::SetLogHandler(::noesis_log_handler);
     Noesis::SetMemoryCallbacks(::memory_callbacks);
     Noesis::SetLicense(
-        ::ui_params.noesis_license_name.size() ? ::ui_params.noesis_license_name.c_str() : default_name,
-        ::ui_params.noesis_license_key.size() ? ::ui_params.noesis_license_key.c_str() : default_key);
+        ::ui_params.noesis_license_name.size() ? ::ui_params.noesis_license_name.c_str() : ::DEFAULT_NAME,
+        ::ui_params.noesis_license_key.size() ? ::ui_params.noesis_license_key.c_str() : ::DEFAULT_KEY);
 
     Noesis::GUI::DisableInspector();
     Noesis::GUI::Init();
