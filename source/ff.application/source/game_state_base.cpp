@@ -110,9 +110,9 @@ ff::state::advance_t ff::game::app_state_base::advance_type()
     return ff::state::advance_t::running;
 }
 
-ff::dxgi::palette_base* ff::game::app_state_base::palette()
+ff::dxgi::palette_base* ff::game::app_state_base::palette(size_t index)
 {
-    return this->palettes.size() ? this->palettes.front().get() : nullptr;
+    return (index < this->palettes.size()) ? this->palettes[index].get() : nullptr;
 }
 
 bool ff::game::app_state_base::allow_debug_commands()
@@ -209,7 +209,7 @@ void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, f
 
     targets.push(this->render_target);
     ff::state::render(context, targets);
-    ff::rect_float target_rect = targets.pop(context, nullptr, this->palette());
+    ff::rect_float target_rect = targets.pop(context, nullptr, this->palette(0));
 
     for (auto i = ff::ui::rendered_views().cbegin() + old_ui_view_count; i != ff::ui::rendered_views().cend(); i++)
     {

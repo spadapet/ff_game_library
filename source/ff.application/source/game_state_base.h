@@ -32,7 +32,7 @@ namespace ff::game
 
         virtual double time_scale();
         virtual ff::state::advance_t advance_type();
-        virtual ff::dxgi::palette_base* palette();
+        virtual ff::dxgi::palette_base* palette(size_t index);
         virtual bool clear_color(DirectX::XMFLOAT4&);
         virtual bool allow_debug_commands();
 
@@ -97,7 +97,7 @@ namespace ff::game
         std::vector<std::shared_ptr<ff::palette_cycle>> palettes;
         ff::game::system_options system_options_{};
         ff::signal<> reload_resources_signal;
-        ff::render_target&& render_target;
+        ff::render_target render_target;
 
         // Debugging
         std::shared_ptr<debug_state> debug_state_;

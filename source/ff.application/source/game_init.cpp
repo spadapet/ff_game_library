@@ -23,7 +23,7 @@ static std::shared_ptr<ff::state> create_app_state()
 static const ff::dxgi::palette_base* get_noesis_palette()
 {
     auto app_state = ::app_state.lock();
-    return app_state ? app_state->palette() : nullptr;
+    return app_state ? app_state->palette(0) : nullptr;
 }
 
 static double get_time_scale()
