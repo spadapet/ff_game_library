@@ -477,9 +477,13 @@ static bool parse_event_def(std::string_view name, const ff::dict& dict, std::ve
 
     if (action_value->is_type<std::string>())
     {
-        int vk = ::name_to_vk(action_value->get<std::string>());
-        if (vk)
+        std::string vk_names_str = action_value->get<std::string>();
+        std::vector<std::string_view> vk_names = ff::string::split(vk_names_str, " +");
+
+        for (std::string_view vk_name : vk_names)
         {
+            int vk = ::name_to_vk(action_value->get<std::string>());
+            assert_ret_val(vk, false);
             vks.push_back(vk);
         }
     }
@@ -488,10 +492,8 @@ static bool parse_event_def(std::string_view name, const ff::dict& dict, std::ve
         for (ff::value_ptr single_action_value : action_value->get<std::vector<ff::value_ptr>>())
         {
             int vk = ::name_to_vk(single_action_value->get<std::string>());
-            if (vk)
-            {
-                vks.push_back(vk);
-            }
+            assert_ret_val(vk, false);
+            vks.push_back(vk);
         }
     }
 
@@ -511,7 +513,16 @@ static bool parse_event_defs(const ff::dict& dict, std::vector<ff::input_event_d
     {
         ff::value_ptr value = dict.get(name);
 
-        if (value->is_type<ff::dict>())
+        if (value->is_type<std::string>())
+        {
+            ff::dict def_dict;
+            def_dict.set<std::string>("action", value->get<std::string>());
+            if (!::parse_event_def(name, def_dict, defs))
+            {
+                return false;
+            }
+        }
+        else if (value->is_type<ff::dict>())
         {
             if (!::parse_event_def(name, value->get<ff::dict>(), defs))
             {
@@ -522,7 +533,16 @@ static bool parse_event_defs(const ff::dict& dict, std::vector<ff::input_event_d
         {
             for (ff::value_ptr nested_value : value->get<std::vector<ff::value_ptr>>())
             {
-                if (!::parse_event_def(name, nested_value->get<ff::dict>(), defs))
+                if (nested_value->is_type<std::string>())
+                {
+                    ff::dict def_dict;
+                    def_dict.set<std::string>("action", nested_value->get<std::string>());
+                    if (!::parse_event_def(name, def_dict, defs))
+                    {
+                        return false;
+                    }
+                }
+                else if (!::parse_event_def(name, nested_value->get<ff::dict>(), defs))
                 {
                     return false;
                 }
