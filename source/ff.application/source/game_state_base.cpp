@@ -19,9 +19,13 @@ static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_cu
 static const std::string_view ID_APP_STATE = "ff::game::ID_APP_STATE";
 static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
 
+ff::game::app_state_base::app_state_base()
+    : debug_state_(std::make_shared<debug_state>())
+{}
+
 ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources)
     : palette_resources(palette_resources)
-    , render_target(std::move(render_target))
+    , render_target(std::make_unique<ff::render_target>(std::move(render_target)))
     , debug_state_(std::make_shared<debug_state>())
 {
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
@@ -207,13 +211,21 @@ void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, f
 {
     size_t old_ui_view_count = ff::ui::rendered_views().size();
 
-    targets.push(this->render_target);
-    ff::state::render(context, targets);
-    ff::rect_float target_rect = targets.pop(context, nullptr, this->palette(0));
-
-    for (auto i = ff::ui::rendered_views().cbegin() + old_ui_view_count; i != ff::ui::rendered_views().cend(); i++)
+    if (this->render_target)
     {
-        (*i)->viewport(target_rect);
+        targets.push(*this->render_target);
+    }
+
+    ff::state::render(context, targets);
+
+    if (this->render_target)
+    {
+        ff::rect_float target_rect = targets.pop(context, nullptr, this->palette(0));
+
+        for (auto i = ff::ui::rendered_views().cbegin() + old_ui_view_count; i != ff::ui::rendered_views().cend(); i++)
+        {
+            (*i)->viewport(target_rect);
+        }
     }
 }
 

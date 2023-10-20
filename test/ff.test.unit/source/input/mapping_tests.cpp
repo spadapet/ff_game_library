@@ -49,24 +49,8 @@ namespace ff::test::input
             int advance_count = 0;
         };
 
-    public:
-        TEST_METHOD(persist_and_create_events)
+        void run_persist_and_create_events(std::string_view json_source)
         {
-            std::string json_source =
-                "{ \n"
-                "  'test_input': {\n"
-                "    'res:type': 'input',\n"
-                "    'events': {\n"
-                "      'up': [ { 'action': 'up', 'repeat': 0.5 }, { 'action': 'gamepad_left_up' } ],\n"
-                "      'print': { 'action': [ 'control', 'p' ] }\n"
-                "    },\n"
-                "    'values': {\n"
-                "      'down': [ { 'action': 'down' }, { 'action': 'gamepad_left_down' } ]\n"
-                "    }\n"
-                "  }\n"
-                "}\n";
-            std::replace(json_source.begin(), json_source.end(), '\'', '\"');
-
             const size_t up_id = ff::stable_hash_func("up"sv);
             const size_t down_id = ff::stable_hash_func("down"sv);
             const size_t print_id = ff::stable_hash_func("print"sv);
@@ -99,6 +83,47 @@ namespace ff::test::input
             Assert::IsTrue(events.event_stopped(up_id));
             Assert::IsFalse(events.event_hit(up_id));
             Assert::IsFalse(events.event_hit(print_id));
+        }
+
+    public:
+        TEST_METHOD(persist_and_create_events)
+        {
+            std::string json_source =
+                "{ \n"
+                "  'test_input': {\n"
+                "    'res:type': 'input',\n"
+                "    'events': {\n"
+                "      'up': [ { 'action': 'up', 'repeat': 0.5 }, { 'action': 'gamepad_left_up' } ],\n"
+                "      'print': { 'action': [ 'control', 'p' ] }\n"
+                "    },\n"
+                "    'values': {\n"
+                "      'down': [ { 'action': 'down' }, { 'action': 'gamepad_left_down' } ]\n"
+                "    }\n"
+                "  }\n"
+                "}\n";
+            std::replace(json_source.begin(), json_source.end(), '\'', '\"');
+
+            this->run_persist_and_create_events(json_source);
+        }
+
+        TEST_METHOD(persist_and_create_events2)
+        {
+            std::string json_source =
+                "{ \n"
+                "  'test_input': {\n"
+                "    'res:type': 'input',\n"
+                "    'events': {\n"
+                "      'up': [ { 'action': 'up', 'repeat': 0.5 }, 'gamepad_left_up' ],\n"
+                "      'print': 'control+p' }\n"
+                "    },\n"
+                "    'values': {\n"
+                "      'down': [ 'down', 'gamepad_left_down' ]\n"
+                "    }\n"
+                "  }\n"
+                "}\n";
+            std::replace(json_source.begin(), json_source.end(), '\'', '\"');
+
+            this->run_persist_and_create_events(json_source);
         }
     };
 }

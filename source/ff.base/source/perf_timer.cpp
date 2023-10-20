@@ -169,8 +169,6 @@ ff::perf_timer::~perf_timer()
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter) {}
 ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t ticks) {}
-ff::perf_timer::perf_timer(ff::perf_timer&& other) noexcept {}
-ff::perf_timer& ff::perf_timer::operator=(ff::perf_timer&& other) noexcept {}
 ff::perf_timer::~perf_timer() {}
 
 #endif

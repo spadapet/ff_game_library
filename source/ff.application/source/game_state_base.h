@@ -24,6 +24,16 @@ namespace ff::game
         static const size_t ID_DEBUG_RESTART_GAME;
         static const size_t ID_DEBUG_REBUILD_RESOURCES;
 
+        struct palette_t
+        {
+            std::string resource_name;
+            std::string remap_name;
+            float cycles_per_second{};
+        };
+
+        app_state_base();
+        app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources);
+
         void internal_init();
         void debug_command(size_t command_id);
         const ff::game::system_options& system_options() const;
@@ -45,15 +55,6 @@ namespace ff::game
         virtual ff::state* child_state(size_t index) override;
 
     protected:
-        struct palette_t
-        {
-            std::string resource_name;
-            std::string remap_name;
-            float cycles_per_second{};
-        };
-
-        app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources);
-
         virtual std::shared_ptr<ff::state> create_initial_game_state();
         virtual std::shared_ptr<ff::state> create_debug_overlay_state();
         virtual void save_settings(ff::dict& dict);
@@ -97,7 +98,7 @@ namespace ff::game
         std::vector<std::shared_ptr<ff::palette_cycle>> palettes;
         ff::game::system_options system_options_{};
         ff::signal<> reload_resources_signal;
-        ff::render_target render_target;
+        std::unique_ptr<ff::render_target> render_target;
 
         // Debugging
         std::shared_ptr<debug_state> debug_state_;
