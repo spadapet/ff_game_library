@@ -482,7 +482,7 @@ static bool parse_event_def(std::string_view name, const ff::dict& dict, std::ve
 
         for (std::string_view vk_name : vk_names)
         {
-            int vk = ::name_to_vk(action_value->get<std::string>());
+            int vk = ::name_to_vk(vk_name);
             assert_ret_val(vk, false);
             vks.push_back(vk);
         }

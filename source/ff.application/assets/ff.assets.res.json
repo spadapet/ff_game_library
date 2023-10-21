@@ -30,26 +30,8 @@
     "res:type": "input",
     "events":
     {
-      "toggle_debug":
-      [
-        {
-          "action":
-          [
-            "control",
-            "f8"
-          ]
-        }
-      ],
-      "custom_debug":
-      [
-        {
-          "action":
-          [
-            "shift",
-            "f8"
-          ]
-        }
-      ]
+      "toggle_debug": "control+f8",
+      "custom_debug": "shift+f8"
     }
   },
 
@@ -58,46 +40,13 @@
     "res:type": "input",
     "events":
     {
-      "ff.game.cancel_step_one_frame":
-      [
-        {
-          "action":
-          [
-            "escape"
-          ]
-        },
-        {
-          "action":
-          [
-            "tilde"
-          ]
-        }
-      ],
-      "ff.game.step_one_frame":
-      [
-        {
-          "action":
-          [
-            "1"
-          ],
-          "repeat": 0.25
-        }
-      ]
+      "ff.game.cancel_step_one_frame": [ "escape", "tilde" ],
+      "ff.game.step_one_frame": { "action": "1", "repeat": 0.25 }
     },
     "values":
     {
-      "ff.game.speed_slow":
-      [
-        {
-          "action": "2"
-        }
-      ],
-      "ff.game.speed_fast":
-      [
-        {
-          "action": "3"
-        }
-      ]
+      "ff.game.speed_slow": "2",
+      "ff.game.speed_fast": "3"
     }
   }
 }
