@@ -73,7 +73,7 @@ namespace ff::game
 
         void on_save_settings();
         void on_custom_debug();
-        void on_resources_rebuilt();
+        void on_resources_rebuilt(size_t round);
 
         class debug_state : public ff::state
         {

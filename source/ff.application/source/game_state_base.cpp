@@ -30,7 +30,7 @@ ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std:
 {
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
-    this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this)));
+    this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this, std::placeholders::_1)));
 }
 
 void ff::game::app_state_base::internal_init()
@@ -345,11 +345,14 @@ void ff::game::app_state_base::on_custom_debug()
     }
 }
 
-void ff::game::app_state_base::on_resources_rebuilt()
+void ff::game::app_state_base::on_resources_rebuilt(size_t round)
 {
-    this->rebuilding_resources = false;
-    this->init_resources();
-    this->reload_resources_signal.notify();
+    if (round == ff::global_resources::rebuild_round_count - 1)
+    {
+        this->rebuilding_resources = false;
+        this->init_resources();
+        this->reload_resources_signal.notify();
+    }
 }
 
 bool ff::game::app_state_base::debug_state::visible()
