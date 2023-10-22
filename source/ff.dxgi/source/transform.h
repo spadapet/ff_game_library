@@ -10,6 +10,7 @@ namespace ff::dxgi
     {
         transform();
         transform(ff::point_float position, ff::point_float scale = ff::point_float(1, 1), float rotation = 0.0f, const DirectX::XMFLOAT4& color = ff::dxgi::color_white());
+        transform(ff::point_float position, ff::point_float scale, float rotation, int palette_index);
         transform(const pixel_transform& other);
         transform(const transform& other) = default;
 

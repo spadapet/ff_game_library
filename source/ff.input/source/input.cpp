@@ -134,11 +134,9 @@ static void gamepad_removed(const winrt::Windows::Gaming::Input::Gamepad& gamepa
 
 bool ff::internal::input::init()
 {
-    assert(ff::window::main());
-
     ::combined_devices_ = std::make_unique<::combined_input_devices>();
-    ::keyboard = std::make_unique<ff::keyboard_device>(ff::window::main());
-    ::pointer = std::make_unique<ff::pointer_device>(ff::window::main());
+    ::keyboard = std::make_unique<ff::keyboard_device>();
+    ::pointer = std::make_unique<ff::pointer_device>();
     ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect(std::bind(&::combined_input_devices::notify_main_window_message, ::combined_devices_.get(), std::placeholders::_1)));
 
 #if UWP_APP

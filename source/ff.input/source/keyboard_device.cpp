@@ -3,11 +3,7 @@
 #include "input_device_event.h"
 #include "keyboard_device.h"
 
-ff::keyboard_device::keyboard_device(ff::window* window)
-    : window(window)
-    , window_connection(window->message_sink().connect(std::bind(&ff::keyboard_device::handle_window_message, this, std::placeholders::_1)))
-    , state{}
-    , pending_state{}
+ff::keyboard_device::keyboard_device()
 {
     ff::internal::input::add_device(this);
 }
@@ -67,7 +63,7 @@ void ff::keyboard_device::kill_pending()
 
 bool ff::keyboard_device::connected() const
 {
-    return this->window && *this->window;
+    return true;
 }
 
 ff::signal_sink<const ff::input_device_event&>& ff::keyboard_device::event_sink()
@@ -76,17 +72,9 @@ ff::signal_sink<const ff::input_device_event&>& ff::keyboard_device::event_sink(
 }
 
 void ff::keyboard_device::notify_main_window_message(ff::window_message& message)
-{ }
-
-void ff::keyboard_device::handle_window_message(ff::window_message& message)
 {
     switch (message.msg)
     {
-        case WM_DESTROY:
-            this->window_connection.disconnect();
-            this->window = nullptr;
-            break;
-
         case WM_SYSKEYDOWN:
             if (message.wp == VK_RETURN)
             {

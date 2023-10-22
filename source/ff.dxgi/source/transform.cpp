@@ -18,6 +18,13 @@ ff::dxgi::transform::transform(ff::point_float position, ff::point_float scale, 
     , color(color)
 {}
 
+ff::dxgi::transform::transform(ff::point_float position, ff::point_float scale, float rotation, int palette_index)
+    : position(position)
+    , scale(scale)
+    , rotation(rotation)
+    , color(ff::dxgi::palette_index_to_color(palette_index))
+{}
+
 ff::dxgi::transform::transform(const pixel_transform& other)
     : position(other.position.cast<float>())
     , scale(other.scale.cast<float>())
