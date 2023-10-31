@@ -33,6 +33,9 @@ namespace ff::game
 
         app_state_base();
         app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources);
+        virtual ~app_state_base() override;
+
+        static ff::game::app_state_base& get();
 
         void internal_init();
         void debug_command(size_t command_id);

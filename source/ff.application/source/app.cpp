@@ -312,6 +312,7 @@ static void destroy_game_thread()
         ::app_params.game_thread_finished_func();
     }
 
+    ff::global_resources::reset();
     ff::internal::ui::destroy_game_thread();
     ff::thread_pool::flush();
     ::game_thread_dispatch.reset();

@@ -1,12 +1,16 @@
 #pragma once
 
+namespace ff::dxgi
+{
+    class draw_base;
+    struct pixel_transform;
+    struct transform;
+}
+
 namespace ff
 {
     class animation_base;
-    class draw_base;
     struct animation_event;
-    struct transform;
-    struct pixel_transform;
 
     class animation_player_base
     {

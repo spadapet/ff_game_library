@@ -18,10 +18,14 @@ static const size_t ID_DEBUG_SPEED_FAST = ff::stable_hash_func("ff.game.speed_fa
 static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_custom_debug"sv);
 static const std::string_view ID_APP_STATE = "ff::game::ID_APP_STATE";
 static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
+static ff::game::app_state_base* global_app{};
 
 ff::game::app_state_base::app_state_base()
     : debug_state_(std::make_shared<debug_state>())
-{}
+{
+    assert(!::global_app);
+    ::global_app = this;
+}
 
 ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources)
     : palette_resources(palette_resources)
@@ -31,6 +35,21 @@ ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std:
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
     this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this, std::placeholders::_1)));
+
+    assert(!::global_app);
+    ::global_app = this;
+}
+
+ff::game::app_state_base::~app_state_base()
+{
+    assert(::global_app == this);
+    ::global_app = nullptr;
+}
+
+ff::game::app_state_base& ff::game::app_state_base::get()
+{
+    assert(::global_app);
+    return *::global_app;
 }
 
 void ff::game::app_state_base::internal_init()
