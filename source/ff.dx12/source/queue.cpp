@@ -69,6 +69,7 @@ std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
         if (!this->caches.empty() && this->caches.front()->lists_reset_event.is_set())
         {
             cache = std::move(this->caches.front());
+            cache->lists_reset_event.reset();
             this->caches.pop_front();
         }
     }
@@ -244,7 +245,7 @@ void ff::dx12::queue::wait_for_tasks()
         }
     }
 
-    ff::wait_for_all_handles(handles.data(), handles.size());
+    ff::wait_for_all_handles(handles.data(), handles.size(), INFINITE, false);
 }
 
 void ff::dx12::queue::before_reset()

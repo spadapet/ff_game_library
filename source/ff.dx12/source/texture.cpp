@@ -231,13 +231,14 @@ std::shared_ptr<DirectX::ScratchImage> ff::dx12::texture::data() const
         ff::dx12::resource* resource = this->resource_.get();
 
         // Can't use the device context on background threads
-        ff::thread_dispatch::get_game()->send([&scratch, resource]()
+        if (ff::thread_dispatch::get_game()->send([&scratch, resource]()
             {
                 size_t image_count = resource->desc().MipLevels * resource->desc().DepthOrArraySize;
                 scratch = resource->capture_texture(nullptr, 0, image_count, nullptr);
-            });
-
-        return scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch)) : nullptr;
+            }, 500))
+        {
+            return scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch)) : nullptr;
+        }
     }
 
     return this->data_;

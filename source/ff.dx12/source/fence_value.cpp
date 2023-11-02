@@ -2,27 +2,79 @@
 #include "fence.h"
 #include "fence_value.h"
 
-ff::dx12::fence_value::fence_value()
-    : fence_(nullptr)
-    , value_(0)
-{}
-
 ff::dx12::fence_value::fence_value(ff::dx12::fence* fence, uint64_t value)
     : fence_(fence)
     , value_(value)
-{}
+{
+    if (this->fence_)
+    {
+        this->fence_->register_value(*this);
+    }
+}
 
 ff::dx12::fence_value::fence_value(fence_value&& other) noexcept
 {
     *this = std::move(other);
 }
 
+ff::dx12::fence_value::fence_value(const fence_value& other)
+{
+    *this = other;
+}
+
+ff::dx12::fence_value::~fence_value()
+{
+    if (this->fence_)
+    {
+        this->fence_->unregister_value(*this);
+    }
+}
+
 ff::dx12::fence_value& ff::dx12::fence_value::operator=(fence_value&& other) noexcept
 {
-    this->fence_ = other.fence_;
-    this->value_ = other.value_;
-    other.fence_ = nullptr;
-    other.value_ = 0;
+    if (this != &other)
+    {
+        if (this->fence_ && this->fence_ != other.fence_)
+        {
+            this->fence_->unregister_value(*this);
+        }
+
+        if (other.fence_)
+        {
+            if (this->fence_ != other.fence_)
+            {
+                other.fence_->register_value(*this);
+            }
+
+            other.fence_->unregister_value(other);
+        }
+
+        this->fence_ = other.fence_;
+        this->value_ = other.value_;
+        other.fence_ = nullptr;
+        other.value_ = 0;
+    }
+
+    return *this;
+}
+
+ff::dx12::fence_value& ff::dx12::fence_value::operator=(const fence_value& other)
+{
+    if (this != &other)
+    {
+        if (this->fence_ && this->fence_ != other.fence_)
+        {
+            this->fence_->unregister_value(*this);
+        }
+
+        if (other.fence_ && this->fence_ != other.fence_)
+        {
+            other.fence_->register_value(*this);
+        }
+
+        this->fence_ = other.fence_;
+        this->value_ = other.value_;
+    }
 
     return *this;
 }

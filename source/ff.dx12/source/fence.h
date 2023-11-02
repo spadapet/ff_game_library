@@ -29,6 +29,9 @@ namespace ff::dx12
         bool set_event(uint64_t value, HANDLE handle);
         bool complete(uint64_t value);
 
+        void register_value(ff::dx12::fence_value& value);
+        void unregister_value(ff::dx12::fence_value& value);
+
         static void wait(ff::dx12::fence_value* values, size_t count, ff::dx12::queue* queue);
         static bool complete(ff::dx12::fence_value* values, size_t count);
 
@@ -40,8 +43,11 @@ namespace ff::dx12
         virtual bool reset() override;
 
         Microsoft::WRL::ComPtr<ID3D12Fence> fence_;
-        ff::dx12::queue* queue_;
+        ff::dx12::queue* queue_{};
+        ff::dx12::fence_value* fence_value_front{};
+        ff::dx12::fence_value* fence_value_back{};
         std::string name_;
+        std::mutex fence_value_mutex;
         std::mutex completed_value_mutex;
         uint64_t completed_value;
         uint64_t next_value_;

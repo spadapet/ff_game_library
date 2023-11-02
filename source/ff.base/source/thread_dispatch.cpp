@@ -158,11 +158,12 @@ void ff::thread_dispatch::post(std::function<void()>&& func, bool run_if_current
     }
 }
 
-void ff::thread_dispatch::send(std::function<void()>&& func)
+bool ff::thread_dispatch::send(std::function<void()>&& func, size_t timeout_ms, bool allow_dispatch)
 {
     if (this->current_thread())
     {
         func();
+        return true;
     }
     else
     {
@@ -175,7 +176,7 @@ void ff::thread_dispatch::send(std::function<void()>&& func)
             event.set();
         });
 
-        event.wait();
+        return event.wait(timeout_ms, allow_dispatch);
     }
 }
 

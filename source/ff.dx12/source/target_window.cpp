@@ -515,7 +515,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 ff::thread_dispatch::get_game()->send([this]()
                     {
                         this->was_full_screen_on_close = this->full_screen();
-                    });
+                    }, 500);
             }
             break;
 
@@ -533,7 +533,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             }
             else if (this->main_window && msg.wp == VK_BACK)
             {
-                if constexpr (ff::constants::debug_build)
+                if constexpr (ff::constants::profile_build)
                 {
                     if (this->window->key_down(VK_SHIFT))
                     {

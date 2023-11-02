@@ -5,16 +5,17 @@ namespace ff::dx12
     class fence;
     class queue;
 
-    class fence_value
+    class fence_value : public ff::intrusive_list::data<fence_value>
     {
     public:
-        fence_value();
+        fence_value() = default;
         fence_value(ff::dx12::fence* fence, uint64_t value);
         fence_value(fence_value&& other) noexcept;
-        fence_value(const fence_value& other) = default;
+        fence_value(const fence_value& other);
+        ~fence_value();
 
         fence_value& operator=(fence_value&& other) noexcept;
-        fence_value& operator=(const fence_value& other) = default;
+        fence_value& operator=(const fence_value& other);
         bool operator==(const fence_value& other) const;
         bool operator!=(const fence_value& other) const;
 
@@ -28,7 +29,7 @@ namespace ff::dx12
         bool complete() const;
 
     private:
-        ff::dx12::fence* fence_;
-        uint64_t value_;
+        ff::dx12::fence* fence_{};
+        uint64_t value_{};
     };
 }

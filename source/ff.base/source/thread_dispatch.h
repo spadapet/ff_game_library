@@ -31,7 +31,7 @@ namespace ff
         static ff::thread_dispatch_type get_type();
 
         void post(std::function<void()>&& func, bool run_if_current_thread = false);
-        void send(std::function<void()>&& func);
+        bool send(std::function<void()>&& func, size_t timeout_ms = INFINITE, bool allow_dispatch = true);
         void flush();
         bool current_thread() const;
         bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE, bool force_allow_dispatch = false);
