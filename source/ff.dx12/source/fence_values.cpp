@@ -148,6 +148,6 @@ void ff::dx12::fence_values::internal_add(ff::dx12::fence_value fence_value)
             }
         }
 
-        this->values_.push_back(fence_value);
+        this->values_.push_back(std::move(fence_value));
     }
 }

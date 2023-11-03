@@ -8,6 +8,7 @@
 ff::dx12::fence::fence(std::string_view name, ff::dx12::queue* queue, uint64_t initial_value)
     : queue_(queue)
     , name_(name)
+    , wrapper_(std::make_shared<ff::dx12::fence_wrapper_t>(this))
     , completed_value(initial_value ? initial_value : 1)
     , next_value_(this->completed_value + 1)
 {
@@ -18,31 +19,9 @@ ff::dx12::fence::fence(std::string_view name, ff::dx12::queue* queue, uint64_t i
 
 ff::dx12::fence::~fence()
 {
-    std::vector<ff::dx12::fence_value*> values;
-    {
-        std::scoped_lock lock(this->fence_value_mutex);
-
-        const size_t count = ff::intrusive_list::count(this->fence_value_front);
-        ff::log::write(ff::log::type::dx12, "Destroy fence: ", this->name_, "(", count, count == 1 ? " value)" : " values)");
-        values.reserve(count);
-
-        for (ff::dx12::fence_value* front = this->fence_value_front; front; front = front->intrusive_next_)
-        {
-            values.push_back(front);
-        }
-
-        this->fence_value_front = nullptr;
-        this->fence_value_back = nullptr;
-    }
-
-    for (ff::dx12::fence_value* value : values)
-    {
-        *value = {};
-    }
-
-    assert(!this->fence_value_front && !this->fence_value_back);
-
     ff::dx12::remove_device_child(this);
+
+    this->wrapper_->fence = nullptr;
 }
 
 ff::dx12::fence::operator bool() const
@@ -225,29 +204,9 @@ bool ff::dx12::fence::complete(uint64_t value)
     return value <= this->completed_value;
 }
 
-void ff::dx12::fence::register_value(ff::dx12::fence_value& value)
+std::shared_ptr<ff::dx12::fence_wrapper_t> ff::dx12::fence::wrapper() const
 {
-    // ff::log::write(ff::log::type::dx12_fence, "Register fence value: ", this->name_, "(", &value, ")");
-
-    std::scoped_lock lock(this->fence_value_mutex);
-    ff::intrusive_list::add_back(this->fence_value_front, this->fence_value_back, &value);
-}
-
-void ff::dx12::fence::unregister_value(ff::dx12::fence_value& value)
-{
-    // ff::log::write(ff::log::type::dx12_fence, "Unregister fence value: ", this->name_, "(", &value, ")");
-
-    std::scoped_lock lock(this->fence_value_mutex);
-    if (this->fence_value_front)
-    {
-        ff::intrusive_list::remove(this->fence_value_front, this->fence_value_back, &value);
-    }
-    else
-    {
-        // Probably in the destructor
-        value.intrusive_next_ = nullptr;
-        value.intrusive_prev_ = nullptr;
-    }
+    return this->wrapper_;
 }
 
 void ff::dx12::fence::before_reset()
