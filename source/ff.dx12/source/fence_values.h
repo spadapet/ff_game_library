@@ -15,12 +15,12 @@ namespace ff::dx12
         fence_values& operator=(fence_values&& other) noexcept = default;
         fence_values& operator=(const fence_values& other) = default;
 
-        void add(ff::dx12::fence_value fence_value);
+        void add(ff::dx12::fence_value&& fence_value);
+        void add(const ff::dx12::fence_value& fence_value);
         void add(const ff::dx12::fence_values& fence_values);
-        void add(const ff::dx12::fence_values& read_values, ff::dx12::fence_value write_value);
+        void add(const ff::dx12::fence_values& read_values, ff::dx12::fence_value&& write_value);
         void reserve(size_t count);
         void clear();
-        void clear_completed();
 
         void signal(ff::dx12::queue* queue);
         void wait(ff::dx12::queue* queue);
@@ -28,7 +28,7 @@ namespace ff::dx12
         const ff::stack_vector<ff::dx12::fence_value, 4>& values() const;
 
     private:
-        void internal_add(ff::dx12::fence_value fence_value);
+        void internal_add(ff::dx12::fence_value&& fence_value);
 
         ff::stack_vector<ff::dx12::fence_value, 4> values_;
     };

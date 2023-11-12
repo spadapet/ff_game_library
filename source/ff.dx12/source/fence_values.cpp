@@ -7,37 +7,42 @@ ff::dx12::fence_values::fence_values(std::initializer_list<ff::dx12::fence_value
 {
     this->values_.reserve(list.size());
 
-    for (const ff::dx12::fence_value& value : list)
+    for (ff::dx12::fence_value value : list)
     {
-        this->internal_add(value);
+        this->internal_add(std::move(value));
     }
 }
 
-void ff::dx12::fence_values::add(ff::dx12::fence_value fence_value)
+void ff::dx12::fence_values::add(ff::dx12::fence_value&& fence_value)
 {
-    this->internal_add(fence_value);
+    this->internal_add(std::move(fence_value));
+}
+
+void ff::dx12::fence_values::add(const ff::dx12::fence_value& fence_value)
+{
+    this->internal_add(ff::dx12::fence_value(fence_value));
 }
 
 void ff::dx12::fence_values::add(const ff::dx12::fence_values& fence_values)
 {
     this->values_.reserve(fence_values.values_.size() + this->values_.size());
 
-    for (const ff::dx12::fence_value& value : fence_values.values_)
+    for (ff::dx12::fence_value value : fence_values.values_)
     {
-        this->internal_add(value);
+        this->internal_add(std::move(value));
     }
 }
 
-void ff::dx12::fence_values::add(const ff::dx12::fence_values& read_values, ff::dx12::fence_value write_value)
+void ff::dx12::fence_values::add(const ff::dx12::fence_values& read_values, ff::dx12::fence_value&& write_value)
 {
     this->values_.reserve(read_values.values_.size() + this->values_.size() + 1);
 
-    for (const ff::dx12::fence_value& value : read_values.values_)
+    for (ff::dx12::fence_value value : read_values.values_)
     {
-        this->internal_add(value);
+        this->internal_add(std::move(value));
     }
 
-    this->internal_add(write_value);
+    this->internal_add(std::move(write_value));
 }
 
 void ff::dx12::fence_values::reserve(size_t count)
@@ -48,14 +53,6 @@ void ff::dx12::fence_values::reserve(size_t count)
 void ff::dx12::fence_values::clear()
 {
     this->values_.clear();
-}
-
-void ff::dx12::fence_values::clear_completed()
-{
-    std::remove_if(this->values_.begin(), this->values_.end(), [](ff::dx12::fence_value& value)
-        {
-            return value.complete();
-        });
 }
 
 void ff::dx12::fence_values::signal(ff::dx12::queue* queue)
@@ -131,7 +128,7 @@ const ff::stack_vector<ff::dx12::fence_value, 4>& ff::dx12::fence_values::values
     return this->values_;
 }
 
-void ff::dx12::fence_values::internal_add(ff::dx12::fence_value fence_value)
+void ff::dx12::fence_values::internal_add(ff::dx12::fence_value&& fence_value)
 {
     if (fence_value)
     {
@@ -141,7 +138,7 @@ void ff::dx12::fence_values::internal_add(ff::dx12::fence_value fence_value)
             {
                 if (value.get() < fence_value.get())
                 {
-                    value = fence_value;
+                    value = std::move(fence_value);
                 }
 
                 return;

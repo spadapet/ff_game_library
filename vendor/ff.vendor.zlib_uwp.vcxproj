@@ -36,6 +36,7 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <DisableSpecificWarnings>4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <CompileAs>CompileAsCpp</CompileAs>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

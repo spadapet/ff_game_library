@@ -222,7 +222,7 @@ void ff::dx12::resource::prepare_state(
 
     if ((state & write_states) != 0)
     {
-        wait_before_execute.add(this->global_reads_, this->global_write_);
+        wait_before_execute.add(this->global_reads_, std::move(this->global_write_));
         this->global_reads_.clear();
         this->global_write_ = next_fence_value;
 
@@ -235,7 +235,7 @@ void ff::dx12::resource::prepare_state(
     {
         if (this->global_write_)
         {
-            wait_before_execute.add(this->global_write_);
+            wait_before_execute.add(std::move(this->global_write_));
             this->global_write_ = {};
         }
 
