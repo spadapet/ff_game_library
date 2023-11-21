@@ -47,7 +47,7 @@ std::unique_ptr<DirectX::ScratchImage> ff::png_image_reader::read(DXGI_FORMAT re
     return scratch;
 }
 
-std::unique_ptr<DirectX::ScratchImage> ff::png_image_reader::pallete() const
+std::unique_ptr<DirectX::ScratchImage> ff::png_image_reader::palette() const
 {
     std::unique_ptr<DirectX::ScratchImage> scratch;
 

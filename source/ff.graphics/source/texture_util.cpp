@@ -39,7 +39,7 @@ static DirectX::ScratchImage load_texture_png(
 
     if (ff::dxgi::palette_format(new_format))
     {
-        std::unique_ptr<DirectX::ScratchImage> palette_scratch_2 = png.pallete();
+        std::unique_ptr<DirectX::ScratchImage> palette_scratch_2 = png.palette();
         if (palette_scratch_2)
         {
             palette_scratch = std::move(*palette_scratch_2);

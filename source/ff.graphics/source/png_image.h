@@ -10,7 +10,7 @@ namespace ff
         ~png_image_reader();
 
         std::unique_ptr<DirectX::ScratchImage> read(DXGI_FORMAT requested_format = DXGI_FORMAT_UNKNOWN);
-        std::unique_ptr<DirectX::ScratchImage> pallete() const;
+        std::unique_ptr<DirectX::ScratchImage> palette() const;
         const std::string& error() const;
 
     private:
