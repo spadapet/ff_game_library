@@ -5,7 +5,7 @@
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <NoesisVersion>3.2.2</NoesisVersion>
-    <WinPixVersion>1.0.230302001</WinPixVersion>
+    <WinPixVersion>1.0.231030001</WinPixVersion>
     <CppWinRTVersion>2.0.230706.1</CppWinRTVersion>
 
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))))</FFRoot>
