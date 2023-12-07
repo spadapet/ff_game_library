@@ -257,6 +257,8 @@ static bool init_noesis(std::function<void()>&& register_extra_components)
         ::ui_params.noesis_license_name.size() ? ::ui_params.noesis_license_name.c_str() : ::DEFAULT_NAME,
         ::ui_params.noesis_license_key.size() ? ::ui_params.noesis_license_key.c_str() : ::DEFAULT_KEY);
 
+    Noesis::GUI::DisableHotReload();
+    Noesis::GUI::DisableSocketInit();
     Noesis::GUI::DisableInspector();
     Noesis::GUI::Init();
 
