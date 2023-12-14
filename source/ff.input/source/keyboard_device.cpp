@@ -71,6 +71,30 @@ ff::signal_sink<const ff::input_device_event&>& ff::keyboard_device::event_sink(
     return this->device_event;
 }
 
+static unsigned int get_other_vk(const ff::window_message& message)
+{
+    unsigned int other_vk = 0;
+    switch (message.wp)
+    {
+        case VK_SHIFT:
+            {
+                const UINT scan_code = (message.lp & 0x00ff0000) >> 16;
+                other_vk = (scan_code == 42) ? VK_LSHIFT : VK_RSHIFT;
+            }
+            break;
+
+        case VK_CONTROL:
+            other_vk = (message.lp & 0x01000000) ? VK_RCONTROL : VK_LCONTROL;
+            break;
+
+        case VK_MENU:
+            other_vk = (message.lp & 0x01000000) ? VK_RMENU : VK_LMENU;
+            break;
+    }
+
+    return other_vk;
+}
+
 void ff::keyboard_device::notify_main_window_message(ff::window_message& message)
 {
     switch (message.msg)
@@ -90,6 +114,7 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
 
                 if (!(message.lp & 0x40000000)) // wasn't already down
                 {
+                    unsigned int other_vk = ::get_other_vk(message);
                     std::scoped_lock lock(this->mutex);
 
                     if (this->pending_state.press_count[message.wp] != 0xFF)
@@ -98,6 +123,16 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
                     }
 
                     this->pending_state.pressing[message.wp] = 1;
+
+                    if (other_vk)
+                    {
+                        if (this->pending_state.press_count[other_vk] != 0xFF)
+                        {
+                            this->pending_state.press_count[other_vk]++;
+                        }
+
+                        this->pending_state.pressing[other_vk] = 1;
+                    }
                 }
             }
             break;
@@ -113,9 +148,15 @@ void ff::keyboard_device::notify_main_window_message(ff::window_message& message
             if (message.wp >= 0 && message.wp < ff::keyboard_device::KEY_COUNT)
             {
                 this->device_event.notify(ff::input_device_event_key_press(static_cast<unsigned int>(message.wp), 0));
-
+                unsigned int other_vk = ::get_other_vk(message);
                 std::scoped_lock lock(this->mutex);
+
                 this->pending_state.pressing[message.wp] = 0;
+
+                if (other_vk)
+                {
+                    this->pending_state.pressing[other_vk] = 0;
+                }
             }
             break;
 
