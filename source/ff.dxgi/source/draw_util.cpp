@@ -639,18 +639,25 @@ void ff::dxgi::draw_util::draw_device_base::nudge_depth()
 
 void ff::dxgi::draw_util::draw_device_base::push_palette(ff::dxgi::palette_base* palette)
 {
-    assert(!this->target_requires_palette_ && palette);
-    this->palette_stack.push_back(palette);
-    this->palette_index = ff::constants::invalid_dword;
+    assert(palette);
+
+    if (!this->target_requires_palette_)
+    {
+        this->palette_stack.push_back(palette);
+        this->palette_index = ff::constants::invalid_dword;
+    }
 
     this->push_palette_remap(palette->index_remap(), palette->index_remap_hash());
 }
 
 void ff::dxgi::draw_util::draw_device_base::pop_palette()
 {
-    assert(this->palette_stack.size() > 1);
-    this->palette_stack.pop_back();
-    this->palette_index = ff::constants::invalid_dword;
+    if (!this->target_requires_palette_)
+    {
+        assert(this->palette_stack.size() > 1);
+        this->palette_stack.pop_back();
+        this->palette_index = ff::constants::invalid_dword;
+    }
 
     this->pop_palette_remap();
 }
