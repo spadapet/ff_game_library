@@ -13,7 +13,7 @@
 
 // https://www.noesisengine.com/trial
 constexpr const char* DEFAULT_NAME = "f5025c38-29c4-476b-b18f-243889e0f620";
-constexpr const char* DEFAULT_KEY = "cVLVT64e1U/mgBa11Sh0c6Z+YY5psKtaMp3EIMS7cbAZ3h6w";
+constexpr const char* DEFAULT_KEY = "FHHHPA88xzzkNh12lLZv7ozN4Cdd/5DLg3+G/FqFbBH1Q3pK";
 
 static ff::init_ui_params ui_params;
 static std::vector<ff::ui_view*> views;
