@@ -102,10 +102,10 @@ ff::point_float ff::sprite_font::draw_text(
     return size;
 }
 
-ff::point_float ff::sprite_font::draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::dxgi::transform& transform, int palette_index, ff::sprite_font_options options) const
+ff::point_float ff::sprite_font::draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::dxgi::transform& transform, int outline_palette_index, ff::sprite_font_options options) const
 {
-    DirectX::XMFLOAT4 color = ff::dxgi::palette_index_to_color(palette_index);
-    return this->draw_text(draw, text, transform, color, options);
+    DirectX::XMFLOAT4 outline_color = ff::dxgi::palette_index_to_color(outline_palette_index);
+    return this->draw_text(draw, text, transform, outline_color, options);
 }
 
 ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_float scale) const
