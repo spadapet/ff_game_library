@@ -25,7 +25,6 @@ namespace ff::test::graphics
             Assert::IsTrue(texture->dxgi_texture()->array_size() == 1);
             Assert::IsTrue(texture->dxgi_texture()->sample_count() == 1);
             Assert::IsTrue(texture->dxgi_texture()->mip_count() == 4);
-            Assert::IsNotNull(texture->animation());
         }
 
         TEST_METHOD(convert)

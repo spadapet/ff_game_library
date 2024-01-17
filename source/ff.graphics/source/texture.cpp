@@ -108,55 +108,14 @@ const ff::dxgi::sprite_data& ff::texture::sprite_data() const
     return this->sprite_data_;
 }
 
-float ff::texture::frame_length() const
-{
-    return 0.0f;
-}
-
-float ff::texture::frames_per_second() const
-{
-    return 0.0f;
-}
-
-void ff::texture::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
-{}
-
 void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
-    draw.draw_sprite(this->sprite_data_, transform);
+    this->draw_animation(draw, transform);
 }
-
-void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
-{
-    draw.draw_sprite(this->sprite_data_, transform);
-}
-
-ff::value_ptr ff::texture::frame_value(size_t value_id, float frame, const ff::dict* params)
-{
-    return ff::value_ptr();
-}
-
-void ff::texture::advance_animation(ff::push_base<ff::animation_event>* events)
-{}
 
 void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
-}
-
-void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
-{
-    draw.draw_sprite(this->sprite_data_, transform);
-}
-
-float ff::texture::animation_frame() const
-{
-    return 0.0f;
-}
-
-const ff::animation_base* ff::texture::animation() const
-{
-    return this;
 }
 
 bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const

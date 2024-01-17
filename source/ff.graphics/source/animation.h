@@ -29,7 +29,6 @@ namespace ff
         virtual float frames_per_second() const override;
         virtual void frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events) override;
         virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params = nullptr) override;
-        virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params = nullptr) override;
         virtual ff::value_ptr frame_value(size_t value_id, float frame, const ff::dict* params = nullptr) override;
 
     protected:
@@ -74,6 +73,7 @@ namespace ff
         using cached_visuals_t = typename std::vector<std::shared_ptr<ff::animation_base>>;
         const ff::animation::cached_visuals_t* get_cached_visuals(const ff::value_ptr& value);
 
+        float play_length_;
         float frame_length_;
         float frames_per_second_;
         ff::animation_keys::method_t method;

@@ -11,8 +11,10 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\animation.cpp" />
+    <ClCompile Include="source\animation_base.cpp" />
     <ClCompile Include="source\animation_keys.cpp" />
     <ClCompile Include="source\animation_player.cpp" />
+    <ClCompile Include="source\animation_player_base.cpp" />
     <ClCompile Include="source\render_targets.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\font_file.cpp" />

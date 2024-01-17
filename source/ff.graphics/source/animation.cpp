@@ -2,14 +2,15 @@
 #include "animation.h"
 
 ff::animation::animation()
-    : frame_length_(0)
+    : play_length_(0)
+    , frame_length_(0)
     , frames_per_second_(0)
     , method(ff::animation_keys::method_t::none)
 {}
 
 float ff::animation::frame_length() const
 {
-    return this->frame_length_;
+    return this->play_length_; // this->frame_length_ is the part that loops
 }
 
 float ff::animation::frames_per_second() const
@@ -146,11 +147,6 @@ void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transf
     }
 }
 
-void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
-{
-    this->draw_frame(draw, ff::dxgi::transform(transform), frame, params);
-}
-
 ff::value_ptr ff::animation::frame_value(size_t value_id, float frame, const ff::dict* params)
 {
     auto i = this->keys.find(value_id);
@@ -237,6 +233,7 @@ ff::dict ff::animation::save_keys_to_cache() const
 bool ff::animation::load(const ff::dict& dict, bool from_source, ff::resource_load_context& context)
 {
     this->frame_length_ = dict.get<float>("length");
+    this->play_length_ = dict.get<float>("play_length", this->frame_length_);
     this->frames_per_second_ = dict.get<float>("fps");
     this->method = ff::animation_keys::load_method(dict, from_source);
 
@@ -379,6 +376,7 @@ const ff::animation::cached_visuals_t* ff::animation::get_cached_visuals(const f
 bool ff::animation::save_to_cache(ff::dict& dict, bool& allow_compress) const
 {
     dict.set<float>("length", this->frame_length_);
+    dict.set<float>("play_length", this->play_length_);
     dict.set<float>("fps", this->frames_per_second_);
     dict.set_enum("method", this->method);
 

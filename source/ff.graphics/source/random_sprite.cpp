@@ -33,36 +33,10 @@ void ff::random_sprite::advance_time()
     ::advance_count++;
 }
 
-float ff::random_sprite::frame_length() const
-{
-    return 0.0f;
-}
-
-float ff::random_sprite::frames_per_second() const
-{
-    return 0.0f;
-}
-
-void ff::random_sprite::frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events)
-{}
-
 void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
-
-void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform, float frame, const ff::dict* params)
-{
-    this->draw_animation(draw, transform);
-}
-
-ff::value_ptr ff::random_sprite::frame_value(size_t value_id, float frame, const ff::dict* params)
-{
-    return nullptr;
-}
-
-void ff::random_sprite::advance_animation(ff::push_base<ff::animation_event>* events)
-{}
 
 void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
@@ -70,24 +44,6 @@ void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi
     {
         i.first->draw_frame(draw, transform, i.second);
     }
-}
-
-void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
-{
-    for (const auto& i : this->pick_sprites())
-    {
-        i.first->draw_frame(draw, transform, i.second);
-    }
-}
-
-float ff::random_sprite::animation_frame() const
-{
-    return 0.0f;
-}
-
-const ff::animation_base* ff::random_sprite::animation() const
-{
-    return this;
 }
 
 bool ff::random_sprite::resource_load_complete(bool from_source)

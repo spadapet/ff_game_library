@@ -14,11 +14,9 @@ namespace ff
         animation_player& operator=(animation_player&& other) noexcept = default;
         animation_player& operator=(const animation_player & other) = default;
 
-        virtual void advance_animation(ff::push_base<ff::animation_event>* events) override;
+        // animation_player_base
+        virtual bool advance_animation(ff::push_base<ff::animation_event>* events) override;
         virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const override;
-        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const override;
-        virtual float animation_frame() const override;
-        virtual const ff::animation_base* animation() const override;
 
     private:
         ff::dict params;

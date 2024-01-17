@@ -11,7 +11,7 @@ ff::animation_player::animation_player(const std::shared_ptr<ff::animation_base>
     , advances(0)
 {}
 
-void ff::animation_player::advance_animation(ff::push_base<ff::animation_event>* events)
+bool ff::animation_player::advance_animation(ff::push_base<ff::animation_event>* events)
 {
     bool first_advance = !this->advances;
     float begin_frame = this->frame;
@@ -22,24 +22,11 @@ void ff::animation_player::advance_animation(ff::push_base<ff::animation_event>*
     {
         this->animation_->frame_events(begin_frame, this->frame, first_advance, *events);
     }
+
+    return this->frame < this->animation_->frame_length();
 }
 
 void ff::animation_player::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
 {
     this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
-}
-
-void ff::animation_player::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::pixel_transform& transform) const
-{
-    this->animation_->draw_frame(draw, transform, this->frame, !this->params.empty() ? &this->params : nullptr);
-}
-
-float ff::animation_player::animation_frame() const
-{
-    return this->frame;
-}
-
-const ff::animation_base* ff::animation_player::animation() const
-{
-    return this->animation_.get();
 }

@@ -81,14 +81,10 @@ namespace ff::test::graphics
             Assert::AreEqual(7.0f, anim->frame_length());
 
             ff::animation_player player(anim);
-            Assert::IsTrue(player.animation() == anim.get());
-            Assert::AreEqual(0.0f, player.animation_frame());
-
             std::vector<ff::animation_event> events;
             ff::push_back_collection push_back_events(events);
             player.advance_animation(&push_back_events);
 
-            Assert::AreNotEqual(0.0f, player.animation_frame());
             Assert::AreEqual<size_t>(1, events.size());
             Assert::AreEqual<size_t>(ff::stable_hash_func("start"sv), events[0].event_id);
         }
