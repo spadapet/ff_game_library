@@ -86,7 +86,7 @@ void ff::internal::co_data_base::run_continuations()
     }
 }
 
-void ff::internal::co_data_base::set_current_exception()
+void ff::internal::co_data_base::set_exception()
 {
     assert(!this->done());
     this->exception = std::current_exception();

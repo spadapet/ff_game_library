@@ -9,9 +9,10 @@ namespace ff
     enum class thread_dispatch_type
     {
         none,
-        main,
-        game,
-        task,
+        main, // main UI thread
+        game, // game thread, dispatches between frame updates
+        frame, // game thread, only during a frame update
+        task, // background thread, not related to game or UI
     };
 
     class thread_dispatch
@@ -28,6 +29,7 @@ namespace ff
         static thread_dispatch* get(thread_dispatch_type type = thread_dispatch_type::none);
         static thread_dispatch* get_main();
         static thread_dispatch* get_game();
+        static thread_dispatch* get_frame();
         static ff::thread_dispatch_type get_type();
 
         void post(std::function<void()>&& func, bool run_if_current_thread = false);
@@ -60,5 +62,15 @@ namespace ff
         ff::window message_window;
         ff::signal_connection message_window_connection;
 #endif
+    };
+
+    class frame_dispatch_scope
+    {
+    public:
+        frame_dispatch_scope(ff::thread_dispatch& dispatch);
+        ~frame_dispatch_scope();
+
+    private:
+        ff::thread_dispatch* old_dispatch;
     };
 }

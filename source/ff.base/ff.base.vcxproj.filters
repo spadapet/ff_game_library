@@ -77,9 +77,6 @@
     <ClCompile Include="source\perf_timer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\frame_dispatch.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -177,9 +174,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\perf_timer.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\frame_dispatch.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

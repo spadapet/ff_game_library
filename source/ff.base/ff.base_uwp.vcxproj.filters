@@ -74,6 +74,9 @@
     <ClCompile Include="source\scope_exit.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\perf_timer.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -165,6 +168,12 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\scope_exit.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\stash.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="source\perf_timer.h">
       <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>

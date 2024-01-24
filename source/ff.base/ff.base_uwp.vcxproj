@@ -16,7 +16,6 @@
     <ClCompile Include="source\exceptions.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\frame_allocator.cpp" />
-    <ClCompile Include="source\frame_dispatch.cpp" />
     <ClCompile Include="source\init.cpp" />
     <ClCompile Include="source\log.cpp" />
     <ClCompile Include="source\math.cpp" />
@@ -47,7 +46,6 @@
     <ClInclude Include="source\fixed.h" />
     <ClInclude Include="source\flags.h" />
     <ClInclude Include="source\frame_allocator.h" />
-    <ClInclude Include="source\frame_dispatch.h" />
     <ClInclude Include="source\init.h" />
     <ClInclude Include="source\intrusive_ptr.h" />
     <ClInclude Include="source\log.h" />

@@ -65,6 +65,12 @@
     <ClCompile Include="source\render_targets.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\animation_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="source\animation_player_base.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

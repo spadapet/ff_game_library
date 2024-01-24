@@ -15,22 +15,20 @@ namespace ff::internal
         using continuation_type = typename std::forward_list<continuation_func>;
 
     public:
-        virtual ~co_data_base();
+        ~co_data_base();
 
         bool done() const;
         bool wait(size_t timeout_ms = INFINITE);
         void continue_with(continuation_func&& continuation);
         void run_continuations();
-
-    protected:
-        void set_current_exception();
+        void set_exception();
 
     private:
         mutable std::mutex mutex;
         ff::win_event done_event;
         continuation_type continuations;
-        std::exception_ptr exception{ nullptr };
-        bool done_{ false };
+        std::exception_ptr exception{};
+        bool done_{};
     };
 
     template<class T>
@@ -49,11 +47,6 @@ namespace ff::internal
             this->result_ = std::move(result);
         }
 
-        void set_exception()
-        {
-            this->set_current_exception();
-        }
-
         const T& result()
         {
             this->wait();
@@ -61,7 +54,7 @@ namespace ff::internal
             return this->result_.value();
         }
 
-    protected:
+    private:
         std::optional<T> result_;
     };
 
@@ -72,11 +65,6 @@ namespace ff::internal
         void set_result()
         {
             assert(!this->done());
-        }
-
-        void set_exception()
-        {
-            this->set_current_exception();
         }
 
         void result()
@@ -126,42 +114,12 @@ namespace ff::internal
 
         auto await_resume() const
         {
-            if constexpr (std::is_same_v<void, T>)
-            {
-                this->data->result();
-            }
-            else
-            {
-                return this->data->result();
-            }
+            return this->data->result();
         }
 
     private:
         std::shared_ptr<data_type> data;
         ff::thread_dispatch_type thread_type;
-    };
-
-    template<class T>
-    class co_final_awaiter
-    {
-    public:
-        using data_type = typename ff::internal::co_data<T>;
-
-        co_final_awaiter(const std::shared_ptr<data_type>& data)
-            : data(data)
-        {}
-
-        bool await_ready() const
-        {}
-
-        void await_suspend(std::coroutine_handle<> coroutine) const
-        {}
-
-        auto await_resume() const
-        {}
-
-    private:
-        std::shared_ptr<data_type> data;
     };
 
     template<class Task, class T = typename Task::result_type>
@@ -246,20 +204,8 @@ namespace ff::internal
 
 namespace ff
 {
-    class win_event;
-
-    class co_task_base
-    {
-    public:
-        virtual ~co_task_base() = default;
-
-        virtual bool valid() const = 0;
-        virtual bool done() const = 0;
-        virtual bool wait(size_t timeout_ms = INFINITE) const = 0;
-    };
-
     template<class T = void>
-    class co_task : public ff::co_task_base
+    class co_task
     {
     public:
         using this_type = typename ff::co_task<T>;
@@ -286,17 +232,17 @@ namespace ff
             return this->valid();
         }
 
-        virtual bool valid() const override
+        bool valid() const
         {
             return this->data_ != nullptr;
         }
 
-        virtual bool done() const override
+        bool done() const
         {
             return this->valid() && this->data_->done();
         }
 
-        virtual bool wait(size_t timeout_ms = INFINITE) const override
+        bool wait(size_t timeout_ms = INFINITE) const
         {
             return this->valid() && this->data_->wait(timeout_ms);
         }

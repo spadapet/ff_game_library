@@ -4,6 +4,7 @@
 #include "win_msg.h"
 
 static thread_local ff::thread_dispatch* task_thread_dispatch = nullptr;
+static thread_local ff::thread_dispatch* frame_thread_dispatch = nullptr;
 static ff::thread_dispatch* main_thread_dispatch = nullptr;
 static ff::thread_dispatch* game_thread_dispatch = nullptr;
 
@@ -49,8 +50,11 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
             break;
     }
 
-    assert(!::task_thread_dispatch);
-    ::task_thread_dispatch = this;
+    if (type != thread_dispatch_type::frame)
+    {
+        assert(!::task_thread_dispatch);
+        ::task_thread_dispatch = this;
+    }
 }
 
 ff::thread_dispatch::~thread_dispatch()
@@ -77,12 +81,23 @@ ff::thread_dispatch::~thread_dispatch()
     {
         ::task_thread_dispatch = nullptr;
     }
+
+    if (::frame_thread_dispatch == this)
+    {
+        ::frame_thread_dispatch = nullptr;
+    }
 }
 
 ff::thread_dispatch* ff::thread_dispatch::get(thread_dispatch_type type)
 {
     switch (type)
     {
+        case thread_dispatch_type::none:
+            return ::frame_thread_dispatch ? ::frame_thread_dispatch : ::task_thread_dispatch;
+
+        case thread_dispatch_type::frame:
+            return ::frame_thread_dispatch; // can be null outside of frame updates
+
         case thread_dispatch_type::game:
             if (::game_thread_dispatch)
             {
@@ -112,8 +127,18 @@ ff::thread_dispatch* ff::thread_dispatch::get_game()
     return ff::thread_dispatch::get(ff::thread_dispatch_type::game);
 }
 
+ff::thread_dispatch* ff::thread_dispatch::get_frame()
+{
+    return ::frame_thread_dispatch;
+}
+
 ff::thread_dispatch_type ff::thread_dispatch::get_type()
 {
+    if (ff::thread_dispatch::get_frame()->current_thread())
+    {
+        return ff::thread_dispatch_type::frame;
+    }
+
     if (ff::thread_dispatch::get_main()->current_thread())
     {
         return ff::thread_dispatch_type::main;
@@ -356,3 +381,19 @@ void ff::thread_dispatch::handle_message(ff::window_message& msg)
 }
 
 #endif
+
+ff::frame_dispatch_scope::frame_dispatch_scope(ff::thread_dispatch& dispatch)
+    : old_dispatch(::frame_thread_dispatch)
+{
+    ::frame_thread_dispatch = &dispatch;
+}
+
+ff::frame_dispatch_scope::~frame_dispatch_scope()
+{
+    if (::frame_thread_dispatch)
+    {
+        ::frame_thread_dispatch->flush();
+    }
+
+    ::frame_thread_dispatch = this->old_dispatch;
+}
