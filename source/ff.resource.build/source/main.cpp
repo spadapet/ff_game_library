@@ -93,6 +93,7 @@ static bool compile_resource_pack(
     const std::filesystem::path& output_file,
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
+    const std::filesystem::path& symbol_header_file,
     bool debug)
 {
     ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
@@ -129,6 +130,15 @@ static bool compile_resource_pack(
     {
         std::ofstream header_stream(header_file);
         if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
+        {
+            debug_fail_ret_val(false);
+        }
+    }
+
+    if (!symbol_header_file.empty())
+    {
+        std::ofstream symbol_header_stream(symbol_header_file);
+        if (!symbol_header_stream || !::write_symbol_header(result.dict, symbol_header_stream, result.namespace_))
         {
             debug_fail_ret_val(false);
         }
@@ -264,6 +274,7 @@ int main()
     std::filesystem::path output_file;
     std::filesystem::path pdb_output;
     std::filesystem::path header_file;
+    std::filesystem::path symbol_header_file;
     std::filesystem::path dump_source_file;
     bool debug = false;
     bool force = false;
@@ -290,6 +301,10 @@ int main()
         else if (arg == "-header" && i + 1 < args.size())
         {
             header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+        }
+        else if (arg == "-symbol_header" && i + 1 < args.size())
+        {
+            symbol_header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
         }
         else if (arg == "-ref" && i + 1 < args.size())
         {
@@ -393,7 +408,7 @@ int main()
             }
         }
 
-        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, debug))
+        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
         {
             std::cerr << "ff.resource.build: Compile failed" << std::endl;
             return 6;

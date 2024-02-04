@@ -162,6 +162,16 @@ public:
         return output_files_copy;
     }
 
+    void set_id_to_name(std::string_view id, std::string_view name)
+    {
+        this->id_to_name_.try_emplace(std::string(id), std::string(name));
+    }
+
+    const std::unordered_map<std::string, std::string>& id_to_name()
+    {
+        return this->id_to_name_;
+    }
+
 private:
     mutable std::recursive_mutex mutex;
     std::filesystem::path base_path_;
@@ -170,6 +180,7 @@ private:
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
     std::unordered_set<std::filesystem::path, ff::stable_hash<std::filesystem::path>> paths_;
+    std::unordered_map<std::string, std::string> id_to_name_;
     bool debug_;
 };
 
@@ -631,6 +642,35 @@ protected:
     }
 };
 
+class get_resource_symbols_transformer : public transformer_base
+{
+public:
+    using transformer_base::transformer_base;
+
+    std::unordered_map<std::string, std::string> id_to_name;
+
+protected:
+    virtual ff::value_ptr transform_dict(const ff::dict& dict) override
+    {
+        ff::value_ptr root_value = transformer_base::transform_dict(dict);
+        if (this->is_root())
+        {
+            ff::value_ptr dict_value = ff::type::try_get_dict_from_data(root_value);
+            if (dict_value)
+            {
+                ff::dict output_dict = dict_value->get<ff::dict>();
+
+                for (std::string_view name : output_dict.child_names())
+                {
+                    ff::value_ptr object_value = output_dict.get(name);
+                }
+            }
+        }
+
+        return root_value;
+    }
+};
+
 class save_objects_to_dict_transformer : public transformer_base
 {
 public:
@@ -713,5 +753,17 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE);
     result.dict = std::move(dict);
     result.output_files = context.output_files();
+
+    ff::load_resources_result::id_to_name_t id_to_name;
+    for (const auto& i : context.id_to_name())
+    {
+        result.id_to_name.push_back(i);
+    }
+
+    std::sort(result.id_to_name.begin(), result.id_to_name.end(), [](auto& l, auto& r)
+        {
+            return 0;
+        });
+
     return result;
 }
