@@ -2,6 +2,7 @@
 #include "source/models/main_vm.h"
 #include "source/models/project_vm.h"
 #include "source/ui/save_project_dialog.xaml.h"
+#include "xaml.res.id.h"
 
 NS_IMPLEMENT_REFLECTION(editor::save_project_dialog, "editor.save_project_dialog")
 {
@@ -11,7 +12,7 @@ NS_IMPLEMENT_REFLECTION(editor::save_project_dialog, "editor.save_project_dialog
 editor::save_project_dialog::save_project_dialog()
     : project_(editor::main_vm::get()->project())
 {
-    Noesis::GUI::LoadComponent(this, "save_project_dialog.xaml");
+    Noesis::GUI::LoadComponent(this, assets::xaml::SAVE_PROJECT_DIALOG_XAML.data());
 }
 
 editor::project_vm* editor::save_project_dialog::project() const

@@ -4,6 +4,7 @@
 #include "source/ui/dialog_content_base.h"
 #include "source/ui/main_window.xaml.h"
 #include "source/ui/save_project_dialog.xaml.h"
+#include "xaml.res.id.h"
 
 static editor::main_window* instance{};
 
@@ -21,7 +22,7 @@ editor::main_window::main_window()
         ::instance = this;
     }
 
-    Noesis::GUI::LoadComponent(this, "main_window.xaml");
+    Noesis::GUI::LoadComponent(this, assets::xaml::MAIN_WINDOW_XAML.data());
 }
 
 editor::main_window::~main_window()

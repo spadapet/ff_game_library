@@ -52,12 +52,6 @@
     </ResJson>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\quad_vs.hlsl">
-      <FileType>Document</FileType>
-    </None>
-    <None Include="assets\resolve_ps.hlsl">
-      <FileType>Document</FileType>
-    </None>
     <None Include="assets\shader_ps.hlsl">
       <FileType>Document</FileType>
     </None>

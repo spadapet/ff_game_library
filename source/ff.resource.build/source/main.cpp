@@ -88,6 +88,20 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
     return true;
 }
 
+static bool write_symbol_header(const ff::load_resources_result::id_to_name_t& id_to_name, std::ostream& output, std::string_view cpp_namespace)
+{
+    output << "namespace " << cpp_namespace << std::endl << "{" << std::endl;
+
+    for (const auto& [id, name] : id_to_name)
+    {
+        output << "    inline constexpr std::string_view " << id << " = R\"(" << name << ")\";" << std::endl;
+    }
+
+    output << "}" << std::endl;
+
+    return true;
+}
+
 static bool compile_resource_pack(
     const std::filesystem::path& input_file,
     const std::filesystem::path& output_file,
@@ -138,7 +152,7 @@ static bool compile_resource_pack(
     if (!symbol_header_file.empty())
     {
         std::ofstream symbol_header_stream(symbol_header_file);
-        if (!symbol_header_stream || !::write_symbol_header(result.dict, symbol_header_stream, result.namespace_))
+        if (!symbol_header_stream || !::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_))
         {
             debug_fail_ret_val(false);
         }

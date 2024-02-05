@@ -250,7 +250,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
     ff::value_ptr dict_value = ff::type::try_get_dict_from_data(value);
     if (dict_value)
     {
-        // Convert dicts with a "res:type" value to a COM object
+        // Convert dicts with a "res:type" value to a ff::resource_object_base
         ff::dict dict = dict_value->get<ff::dict>();
         std::string type = dict.get<std::string>(ff::internal::RES_TYPE);
         const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type);

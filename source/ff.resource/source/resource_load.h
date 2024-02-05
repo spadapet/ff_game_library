@@ -22,7 +22,7 @@ namespace ff
     struct load_resources_result
     {
         using output_files_t = typename std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>>;
-        using id_to_name_t = typename std::vector<std::pair<const std::string, std::string>>;
+        using id_to_name_t = typename std::vector<std::pair<std::string, std::string>>;
 
         bool status;
         std::vector<std::string> errors;

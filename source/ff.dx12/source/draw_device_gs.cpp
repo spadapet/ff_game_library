@@ -4,6 +4,7 @@
 #include "descriptor_allocator.h"
 #include "device_reset_priority.h"
 #include "draw_device.h"
+#include "ff.dx12.res.id.h"
 #include "globals.h"
 #include "gpu_event.h"
 #include "object_cache.h"
@@ -336,16 +337,16 @@ namespace
             {
                 ID3D12RootSignature* rs = this->root_signature.Get();
 
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines).reset(rs, "ff.dx12.line_vs", "ff.dx12.line_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles).reset(rs, "ff.dx12.circle_vs", "ff.dx12.circle_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles).reset(rs, "ff.dx12.triangle_vs", "ff.dx12.triangle_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites).reset(rs, "ff.dx12.sprite_vs", "ff.dx12.sprite_gs", "ff.dx12.sprite_ps", "ff.dx12.palette_out_sprite_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::palette_sprites).reset(rs, "ff.dx12.sprite_vs", "ff.dx12.sprite_gs", "ff.dx12.sprite_palette_ps", "ff.dx12.palette_out_sprite_palette_ps");
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::palette_sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PALETTE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PALETTE_PS);
 
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines_alpha).reset(rs, "ff.dx12.line_vs", "ff.dx12.line_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles_alpha).reset(rs, "ff.dx12.circle_vs", "ff.dx12.circle_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha).reset(rs, "ff.dx12.triangle_vs", "ff.dx12.triangle_gs", "ff.dx12.color_ps", "ff.dx12.palette_out_color_ps");
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha).reset(rs, "ff.dx12.sprite_vs", "ff.dx12.sprite_gs", "ff.dx12.sprite_ps", "ff.dx12.palette_out_sprite_ps");
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines_alpha).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles_alpha).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
             }
         }
 

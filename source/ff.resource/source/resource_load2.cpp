@@ -7,6 +7,33 @@
 #include "resource_object_factory_base.h"
 #include "resource_object_v.h"
 
+static std::string make_symbol_from_name(std::string_view name)
+{
+    std::ostringstream id;
+    bool replaced_bad_char = false;
+
+    for (char ch : name)
+    {
+        if (std::isalnum(ch) || ch == '_')
+        {
+            if (id.tellp() == 0 && std::isdigit(ch))
+            {
+                id << '_';
+            }
+
+            id << static_cast<char>(std::toupper(ch));
+            replaced_bad_char = false;
+        }
+        else if (!replaced_bad_char)
+        {
+            id << '_';
+            replaced_bad_char = true;
+        }
+    }
+
+    return id.str();
+}
+
 class transformer_context : public ff::resource_load_context
 {
 public:
@@ -164,12 +191,28 @@ public:
 
     void set_id_to_name(std::string_view id, std::string_view name)
     {
+        std::scoped_lock lock(this->mutex);
         this->id_to_name_.try_emplace(std::string(id), std::string(name));
     }
 
-    const std::unordered_map<std::string, std::string>& id_to_name()
+    ff::load_resources_result::id_to_name_t id_to_name()
     {
-        return this->id_to_name_;
+        ff::load_resources_result::id_to_name_t id_to_name_copy;
+        {
+            std::scoped_lock lock(this->mutex);
+            for (const auto& i : this->id_to_name_)
+            {
+                id_to_name_copy.push_back(i);
+            }
+        }
+
+        std::sort(id_to_name_copy.begin(), id_to_name_copy.end(),
+            [](const auto& l, const auto& r)
+            {
+                return l.first < r.first;
+            });
+
+        return id_to_name_copy;
     }
 
 private:
@@ -433,7 +476,6 @@ protected:
     virtual ff::value_ptr transform_dict(const ff::dict& dict) override
     {
         ff::value_ptr output_value = transformer_base::transform_dict(dict);
-
         if (this->is_root())
         {
             // Save references to all root objects
@@ -464,6 +506,20 @@ protected:
             {
                 const ff::dict& output_dict = output_dict_value->get<ff::dict>();
                 ff::value_ptr type_value = output_dict.get(ff::internal::RES_TYPE);
+                ff::value_ptr symbol_value = output_dict.get(ff::internal::RES_SYMBOL);
+
+                if (this->path_depth() == 1)
+                {
+                    std::string name = this->path();
+                    std::string id = (symbol_value && symbol_value->is_type<std::string>())
+                        ? symbol_value->get<std::string>()
+                        : ::make_symbol_from_name(name);
+
+                    if (id.size())
+                    {
+                        this->context().set_id_to_name(id, name);
+                    }
+                }
 
                 if (type_value && type_value->is_type<std::string>())
                 {
@@ -642,35 +698,6 @@ protected:
     }
 };
 
-class get_resource_symbols_transformer : public transformer_base
-{
-public:
-    using transformer_base::transformer_base;
-
-    std::unordered_map<std::string, std::string> id_to_name;
-
-protected:
-    virtual ff::value_ptr transform_dict(const ff::dict& dict) override
-    {
-        ff::value_ptr root_value = transformer_base::transform_dict(dict);
-        if (this->is_root())
-        {
-            ff::value_ptr dict_value = ff::type::try_get_dict_from_data(root_value);
-            if (dict_value)
-            {
-                ff::dict output_dict = dict_value->get<ff::dict>();
-
-                for (std::string_view name : output_dict.child_names())
-                {
-                    ff::value_ptr object_value = output_dict.get(name);
-                }
-            }
-        }
-
-        return root_value;
-    }
-};
-
 class save_objects_to_dict_transformer : public transformer_base
 {
 public:
@@ -753,17 +780,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE);
     result.dict = std::move(dict);
     result.output_files = context.output_files();
-
-    ff::load_resources_result::id_to_name_t id_to_name;
-    for (const auto& i : context.id_to_name())
-    {
-        result.id_to_name.push_back(i);
-    }
-
-    std::sort(result.id_to_name.begin(), result.id_to_name.end(), [](auto& l, auto& r)
-        {
-            return 0;
-        });
+    result.id_to_name = context.id_to_name();
 
     return result;
 }

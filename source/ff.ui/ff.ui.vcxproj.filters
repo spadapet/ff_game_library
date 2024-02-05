@@ -103,12 +103,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\quad_vs.hlsl">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\resolve_ps.hlsl">
-      <Filter>assets</Filter>
-    </None>
     <None Include="assets\shader_ps.hlsl">
       <Filter>assets</Filter>
     </None>

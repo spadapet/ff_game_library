@@ -14,8 +14,8 @@
 
     <ItemGroup>
       <ResJson>
-        <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.resource.build.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
-        <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h</Outputs>
+        <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.resource.build.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
+        <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
         <ContentOutputs>$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
         <TreatOutputAsContent Condition=" '$(AppType)' == 'UWP' ">false</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>

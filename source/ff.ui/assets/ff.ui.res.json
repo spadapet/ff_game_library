@@ -1,52 +1,6 @@
 {
   "res:namespace": "assets::ui",
 
-  "Noesis.Quad_VS":
-  {
-    "res:type": "shader",
-    "file": "file:quad_vs.hlsl",
-    "target": "vs_4_0"
-  },
-  "Noesis.Resolve2_PS":
-  {
-    "res:type": "shader",
-    "file": "file:resolve_ps.hlsl",
-    "target": "ps_4_0",
-    "defines":
-    {
-      "NUM_SAMPLES": "2"
-    }
-  },
-  "Noesis.Resolve4_PS":
-  {
-    "res:type": "shader",
-    "file": "file:resolve_ps.hlsl",
-    "target": "ps_4_0",
-    "defines":
-    {
-      "NUM_SAMPLES": "4"
-    }
-  },
-  "Noesis.Resolve8_PS":
-  {
-    "res:type": "shader",
-    "file": "file:resolve_ps.hlsl",
-    "target": "ps_4_0",
-    "defines":
-    {
-      "NUM_SAMPLES": "8"
-    }
-  },
-  "Noesis.Resolve16_PS":
-  {
-    "res:type": "shader",
-    "file": "file:resolve_ps.hlsl",
-    "target": "ps_4_0",
-    "defines":
-    {
-      "NUM_SAMPLES": "16"
-    }
-  },
   "Noesis.Pos_VS":
   {
     "res:type": "shader",
