@@ -36,7 +36,7 @@ static bool test_load_resources(const ff::dict& dict)
 
         for (auto& value : values)
         {
-            if (!value.valid() || value.value()->is_type<nullptr_t>())
+            if (value.value()->is_type<nullptr_t>())
             {
                 std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
                 assert(false);

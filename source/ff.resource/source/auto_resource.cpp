@@ -32,19 +32,9 @@ const std::shared_ptr<ff::resource>& ff::auto_resource_value::resource() const
     return this->resource_;
 }
 
-const std::shared_ptr<ff::resource>& ff::auto_resource_value::resource()
+ff::value_ptr ff::auto_resource_value::value(bool force) const
 {
-    if (this->valid())
-    {
-        ff::resource_object_loader* loader = this->resource_->loading_owner();
-        std::shared_ptr<ff::resource> new_resource = loader ? loader->flush_resource(this->resource_) : this->resource_->new_resource();
-        return new_resource ? (this->resource_ = new_resource) : this->resource_;
-    }
-
-    return this->resource_;
-}
-
-ff::value_ptr ff::auto_resource_value::value()
-{
-    return this->valid() ? this->resource()->value() : nullptr;
+    return this->resource_
+        ? this->resource_->value(force)
+        : ff::value::create<nullptr_t>();
 }

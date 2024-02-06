@@ -31,7 +31,6 @@ namespace ff
 
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
-        virtual std::shared_ptr<ff::resource> flush_resource(const std::shared_ptr<ff::resource>& value) override;
         virtual void flush_all_resources() override;
 
         void add_object_provider(std::shared_ptr<ff::resource_object_provider> value);
@@ -47,10 +46,9 @@ namespace ff
 
         struct resource_object_loading_info
         {
-            ff::win_event event;
             std::recursive_mutex mutex;
-            std::shared_ptr<ff::resource> original_value;
-            std::shared_ptr<ff::resource> final_value;
+            std::shared_ptr<ff::resource> loading_resource;
+            ff::value_ptr final_value;
             std::vector<std::shared_ptr<resource_object_loading_info>> parent_loading_infos;
             int blocked_count;
             std::string name;
@@ -65,7 +63,7 @@ namespace ff
         };
 
         void add_resources(const ff::dict& dict);
-        void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, std::shared_ptr<ff::resource> new_value);
+        void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
         ff::value_ptr get_localized_value(std::string_view name);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);

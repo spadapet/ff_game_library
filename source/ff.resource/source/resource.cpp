@@ -1,10 +1,16 @@
 #include "pch.h"
 #include "resource.h"
 
-ff::resource::resource(std::string_view name, ff::value_ptr value, resource_object_loader* loading_owner)
+ff::resource::resource(std::string_view name)
+    : name_(name)
+    , value_(ff::value::create<nullptr_t>())
+    , finalized_event(std::make_shared<ff::win_event>())
+{}
+
+ff::resource::resource(std::string_view name, ff::value_ptr value)
     : name_(name)
     , value_(value ? value : ff::value::create<nullptr_t>())
-    , loading_owner_(loading_owner)
+    , finalized_event(!value ? std::make_shared<ff::win_event>() : std::shared_ptr<ff::win_event>())
 {}
 
 std::string_view ff::resource::name() const
@@ -12,41 +18,56 @@ std::string_view ff::resource::name() const
     return this->name_;
 }
 
-ff::value_ptr ff::resource::value() const
+ff::value_ptr ff::resource::value(bool force) const
 {
-    return this->value_;
-}
-
-std::shared_ptr<ff::resource> ff::resource::new_resource() const
-{
-    std::shared_ptr<ff::resource> new_resource;
-
-    if (!this->loading_owner_.load())
+    auto finalized_event = this->finalized_event.load();
+    if (finalized_event && !finalized_event->is_set())
     {
-        new_resource = this->new_resource_;
-        if (new_resource)
+        if (force)
         {
-            std::shared_ptr<ff::resource> new_resource2 = new_resource->new_resource();
-            while (new_resource2)
-            {
-                new_resource = new_resource2;
-                new_resource2 = new_resource2->new_resource();
-            }
+            int64_t start_time = ff::timer::current_raw_time();
+
+            finalized_event->wait();
+
+            const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+            ff::log::write(ff::log::type::resource, "Waited (blocked): ", this->name_, " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
+        }
+        else
+        {
+            // Still loading, cannot access this->_value
+            return ff::value::create<nullptr_t>();
         }
     }
 
-    return new_resource;
+    return this->value_;
 }
 
-void ff::resource::new_resource(const std::shared_ptr<resource>& new_value)
+ff::co_task<ff::value_ptr> ff::resource::value_async() const
 {
-    assert(new_value);
+    auto finalized_event = this->finalized_event.load();
+    if (finalized_event && !finalized_event->is_set())
+    {
+        int64_t start_time = ff::timer::current_raw_time();
 
-    this->new_resource_ = new_value;
-    this->loading_owner_.store(nullptr);
+        co_await *finalized_event;
+
+        const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+        ff::log::write(ff::log::type::resource, "Waited (async): ", this->name_, " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
+    }
+
+    assert(!this->finalized_event.load());
+    co_return this->value_;
 }
 
-ff::resource_object_loader* ff::resource::loading_owner()
+void ff::resource::finalize_value(ff::value_ptr value)
 {
-    return this->loading_owner_.load();
+    auto finalized_event = this->finalized_event.load();
+    assert(finalized_event && !finalized_event->is_set());
+
+    if (finalized_event)
+    {
+        this->value_ = value ? value : ff::value::create<nullptr_t>();
+        finalized_event->set();
+        this->finalized_event.store(nullptr);
+    }
 }

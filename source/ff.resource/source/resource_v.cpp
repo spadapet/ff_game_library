@@ -35,11 +35,6 @@ ff::value* ff::type::resource_v::get_static_default_value()
 ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::type_index type) const
 {
     std::shared_ptr<ff::resource> src = val->get<ff::resource>();
-    if (src && src->new_resource())
-    {
-        src = src->new_resource();
-    }
-
     if (src)
     {
         if (type == typeid(ff::type::string_v))
@@ -49,7 +44,7 @@ ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::typ
             return ff::value::create<std::string>(std::move(ref_str));
         }
 
-        return src->value()->try_convert(type);
+        return src->value(true)->try_convert(type);
     }
 
     return nullptr;

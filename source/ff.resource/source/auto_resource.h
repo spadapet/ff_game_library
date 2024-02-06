@@ -22,8 +22,7 @@ namespace ff
 
         bool valid() const;
         const std::shared_ptr<ff::resource>& resource() const;
-        const std::shared_ptr<ff::resource>& resource();
-        ff::value_ptr value();
+        ff::value_ptr value(bool force = true) const;
 
     private:
         std::shared_ptr<ff::resource> resource_;
@@ -48,18 +47,32 @@ namespace ff
 
         const std::shared_ptr<T>& object()
         {
-            if (this->valid())
+            if (!this->cached_object)
             {
-                ff::value_ptr value = this->resource()->value();
-                if (value != this->resource_value)
-                {
-                    auto object = value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
-                    this->resource_object = std::dynamic_pointer_cast<T>(object);
-                    this->resource_value = value;
-                }
+                this->object_async().wait();
+                assert(this->cached_object);
             }
 
             return this->resource_object;
+        }
+
+        ff::co_task<std::shared_ptr<T>> object_async()
+        {
+            if (!this->cached_object)
+            {
+                std::shared_ptr<ff::resource_object_base> object;
+                if (this->valid())
+                {
+                    ff::value_ptr value = co_await this->resource()->value_async();
+                    object = value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
+                }
+
+                this->resource_object = std::dynamic_pointer_cast<T>(object);
+                assert(this->resource_object);
+                this->cached_object = true;
+            }
+
+            co_return this->resource_object;
         }
 
         T* operator->()
@@ -69,6 +82,6 @@ namespace ff
 
     private:
         std::shared_ptr<T> resource_object;
-        ff::value_ptr resource_value;
+        bool cached_object{};
     };
 }

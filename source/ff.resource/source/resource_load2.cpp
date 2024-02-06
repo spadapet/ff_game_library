@@ -131,29 +131,25 @@ public:
         }
     }
 
-    std::shared_ptr<ff::resource> set_reference(std::shared_ptr<ff::resource> res)
+    std::shared_ptr<ff::resource> set_reference(std::string_view name_view, ff::value_ptr value = nullptr)
     {
-        std::string name(res->name());
+        std::string name(name_view);
         std::scoped_lock lock(this->mutex);
 
         auto i = this->name_to_resource.find(name);
         if (i != this->name_to_resource.cend())
         {
-            if (res->value()->is_type<nullptr_t>())
+            if (value && !value->is_type<nullptr_t>())
             {
-                res = i->second;
-            }
-            else
-            {
-                i->second->new_resource(res);
+                i->second->finalize_value(value);
             }
         }
         else
         {
-            this->name_to_resource.try_emplace(std::move(name), res);
+            i = this->name_to_resource.try_emplace(std::move(name), std::make_shared<ff::resource>(name_view, value)).first;
         }
 
-        return res;
+        return i->second;
     }
 
     void add_file(const std::filesystem::path& path)
@@ -401,11 +397,8 @@ protected:
             }
             else if (ff::string::starts_with(string_value, ff::internal::REF_PREFIX))
             {
-                std::shared_ptr<ff::resource> res_val = std::make_shared<ff::resource>(
-                    string_value.substr(ff::internal::REF_PREFIX.size()),
-                    ff::value::create<nullptr_t>());
-                res_val = this->context().set_reference(res_val);
-
+                std::string res_name = string_value.substr(ff::internal::REF_PREFIX.size());
+                std::shared_ptr<ff::resource> res_val = this->context().set_reference(res_name);
                 value = ff::value::create<ff::resource>(res_val);
             }
         }
@@ -490,7 +483,7 @@ protected:
                     ff::value_ptr object_value = output_dict.get(name);
                     if (object_value->is_type<ff::resource_object_base>())
                     {
-                        this->context().set_reference(std::make_shared<ff::resource>(name, object_value));
+                        this->context().set_reference(name, object_value);
                     }
                 }
 
@@ -604,11 +597,6 @@ private:
         {
             for (std::shared_ptr<ff::resource> dep : obj->resource_get_dependencies())
             {
-                if (dep && dep->new_resource())
-                {
-                    dep = dep->new_resource();
-                }
-
                 std::shared_ptr<ff::resource_object_base> dep_obj = dep ? dep->value()->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>() : nullptr;
                 if (dep_obj && !this->finish_loading_object(dep_obj.get()))
                 {
@@ -684,7 +672,7 @@ protected:
 
                             for (auto& pair : siblings)
                             {
-                                this->context().set_reference(std::make_shared<ff::resource>(pair.first, pair.second));
+                                this->context().set_reference(pair.first, pair.second);
                             }
                         }
                     }
