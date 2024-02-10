@@ -596,7 +596,8 @@ Noesis::Ptr<Noesis::Texture> ff::internal::ui::render_device::CreateTexture(cons
 
 void ff::internal::ui::render_device::UpdateTexture(Noesis::Texture* texture, uint32_t level, uint32_t x, uint32_t y, uint32_t width, uint32_t height, const void* data)
 {
-    ff::dxgi::texture_base* texture2 = ff::internal::ui::texture::get(texture)->internal_texture()->dxgi_texture().get();
+    auto internal_texture = ff::internal::ui::texture::get(texture)->internal_texture();
+    ff::dxgi::texture_base* texture2 = internal_texture->dxgi_texture().get();
     ff::point_size pos(x, y);
 
     size_t row_pitch, slice_pitch;

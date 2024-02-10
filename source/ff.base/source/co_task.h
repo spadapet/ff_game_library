@@ -79,9 +79,9 @@ namespace ff::internal
     public:
         using data_type = typename ff::internal::co_data<T>;
 
-        co_data_awaiter(const std::shared_ptr<data_type>& data)
+        co_data_awaiter(const std::shared_ptr<data_type>& data, ff::thread_dispatch_type thread_type = ff::thread_dispatch_type::none)
             : data(data)
-            , thread_type(ff::thread_dispatch::get_type())
+            , thread_type((thread_type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : thread_type)
         {}
 
         bool await_ready() const
@@ -224,7 +224,7 @@ namespace ff
         auto operator co_await()
         {
             assert(this->valid());
-            return ff::internal::co_data_awaiter<T>(this->data_);
+            return ff::internal::co_data_awaiter<T>(this->data_, this->thread_type);
         }
 
         operator bool() const
@@ -262,8 +262,14 @@ namespace ff
             return this->data_->result();
         }
 
+        void resume_on(ff::thread_dispatch_type thread_type)
+        {
+            this->thread_type = thread_type;
+        }
+
     protected:
         std::shared_ptr<data_type> data_;
+        ff::thread_dispatch_type thread_type{};
     };
 
     template<class T = void>

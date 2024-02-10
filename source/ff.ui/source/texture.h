@@ -10,7 +10,7 @@ namespace ff::internal::ui
 
         static ff::internal::ui::texture* get(Noesis::Texture* texture);
         const std::string& name() const;
-        const std::shared_ptr<ff::texture>& internal_texture() const;
+        std::shared_ptr<ff::texture> internal_texture() const;
 
         virtual uint32_t GetWidth() const override;
         virtual uint32_t GetHeight() const override;
