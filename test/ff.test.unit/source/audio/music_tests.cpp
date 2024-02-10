@@ -14,12 +14,8 @@ namespace ff::test::audio
                     "test_music": { "res:type": "music", "file": "ref:test_mp3" }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::audio_effect_base> music_res = res->get_resource_object("test_music");
-            Assert::IsTrue(music_res.valid());
-
-            std::shared_ptr<ff::audio_effect_base> music = music_res.object();
+            auto music = ff::get_resource<ff::audio_effect_base>(*std::get<0>(result), "test_music");
             Assert::IsNotNull(music.get());
 
             Assert::IsFalse(music->playing());

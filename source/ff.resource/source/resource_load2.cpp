@@ -10,7 +10,7 @@
 static std::string make_symbol_from_name(std::string_view name)
 {
     std::ostringstream id;
-    bool replaced_bad_char = false;
+    bool pending_underscore = false;
 
     for (char ch : name)
     {
@@ -18,16 +18,20 @@ static std::string make_symbol_from_name(std::string_view name)
         {
             if (id.tellp() == 0 && std::isdigit(ch))
             {
+                pending_underscore = true;
+            }
+
+            if (pending_underscore && ch != '_')
+            {
                 id << '_';
             }
 
+            pending_underscore = false;
             id << static_cast<char>(std::toupper(ch));
-            replaced_bad_char = false;
         }
-        else if (!replaced_bad_char)
+        else
         {
-            id << '_';
-            replaced_bad_char = true;
+            pending_underscore = true;
         }
     }
 
@@ -672,6 +676,8 @@ protected:
 
                             for (auto& pair : siblings)
                             {
+                                std::string id = ::make_symbol_from_name(pair.first);
+                                this->context().set_id_to_name(id, pair.first);
                                 this->context().set_reference(pair.first, pair.second);
                             }
                         }
@@ -765,7 +771,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
     ff::load_resources_result result{};
     result.status = true;
-    result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE);
+    result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE, "assets");
     result.dict = std::move(dict);
     result.output_files = context.output_files();
     result.id_to_name = context.id_to_name();

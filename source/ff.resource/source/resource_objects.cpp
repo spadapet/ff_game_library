@@ -38,7 +38,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
     }
 
     assert_msg(value, "Missing resource");
-    return value;
+    return value ? value : std::make_shared<ff::resource>(name, ff::value::create<nullptr_t>());
 }
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std::string_view name)
@@ -172,8 +172,6 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
 
         for (auto parent_loading_info : loading_info->parent_loading_infos)
         {
-            std::unique_lock loading_lock(parent_loading_info->mutex);
-
             ff::log::write(ff::log::type::resource_load, "Unblocking: '", parent_loading_info->name, "' unblocked by '", loading_info->name, "'");
 
             this->update_resource_object_info(parent_loading_info, parent_loading_info->final_value);

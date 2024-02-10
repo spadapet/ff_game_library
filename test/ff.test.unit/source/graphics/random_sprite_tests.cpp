@@ -37,12 +37,8 @@ namespace ff::test::graphics
                   }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::random_sprite> random_res = res->get_resource_object("test_random_sprite");
-            Assert::IsTrue(random_res.valid());
-
-            std::shared_ptr<ff::random_sprite> random = random_res.object();
+            auto random = ff::get_resource<ff::random_sprite>(*std::get<0>(result), "test_random_sprite");
             Assert::IsNotNull(random.get());
         }
     };

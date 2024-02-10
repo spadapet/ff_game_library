@@ -8,7 +8,7 @@ ff::internal::ui::texture::texture(const std::shared_ptr<ff::resource>& resource
     , placeholder_texture(placeholder_texture)
     , name_(name)
 {
-    assert(this->resource.valid() && this->placeholder_texture);
+    assert(this->placeholder_texture);
 }
 
 ff::internal::ui::texture::texture(const std::shared_ptr<ff::texture>& texture, std::string_view name)
@@ -28,7 +28,7 @@ const std::string& ff::internal::ui::texture::name() const
 
 const std::shared_ptr<ff::texture>& ff::internal::ui::texture::internal_texture() const
 {
-    auto& texture = this->resource.valid() ? this->resource.object() : this->static_texture;
+    auto& texture = this->resource.object();
     return texture ? texture : this->placeholder_texture;
 
 }

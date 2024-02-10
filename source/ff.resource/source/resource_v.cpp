@@ -44,7 +44,7 @@ ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::typ
             return ff::value::create<std::string>(std::move(ref_str));
         }
 
-        return src->value(true)->try_convert(type);
+        return src->value()->try_convert(type);
     }
 
     return nullptr;

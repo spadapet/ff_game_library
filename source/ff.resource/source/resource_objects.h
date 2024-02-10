@@ -50,9 +50,9 @@ namespace ff
             std::shared_ptr<ff::resource> loading_resource;
             ff::value_ptr final_value;
             std::vector<std::shared_ptr<resource_object_loading_info>> parent_loading_infos;
-            int blocked_count;
             std::string name;
             resource_object_info* owner;
+            int blocked_count;
         };
 
         struct resource_object_info

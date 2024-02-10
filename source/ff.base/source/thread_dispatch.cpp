@@ -313,7 +313,9 @@ bool ff::thread_dispatch::wait_for_dispatch(size_t timeout_ms)
 
 bool ff::thread_dispatch::allow_dispatch_during_wait() const
 {
-    return this != ::game_thread_dispatch;
+    // DO NOT dispatch to the game thread while it's in the middle of a frame update,
+    // that could destroy the graphics device or handle window resize at a bad time.
+    return this != ::game_thread_dispatch || !::frame_thread_dispatch;
 }
 
 void ff::thread_dispatch::flush(bool force)

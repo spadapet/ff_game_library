@@ -17,15 +17,22 @@ bool ff::internal::co_thread_awaiter::ready(ff::thread_dispatch_type thread_type
         return false;
     }
 
-    if (thread_type == ff::thread_dispatch_type::main || thread_type == ff::thread_dispatch_type::game)
+    if (thread_type == ff::thread_dispatch_type::main ||
+        thread_type == ff::thread_dispatch_type::game ||
+        thread_type == ff::thread_dispatch_type::frame)
     {
         ff::thread_dispatch* td = ff::thread_dispatch::get(thread_type);
         return td && td->current_thread();
     }
 
+    // Must be for a background task
     ff::thread_dispatch* main_td = ff::thread_dispatch::get_main();
     ff::thread_dispatch* game_td = ff::thread_dispatch::get_game();
-    return (!main_td || !main_td->current_thread()) && (!game_td || !game_td->current_thread());
+    ff::thread_dispatch* frame_td = ff::thread_dispatch::get_frame();
+    return
+        (!main_td || !main_td->current_thread()) &&
+        (!game_td || !game_td->current_thread()) &&
+        (!frame_td || !frame_td->current_thread());
 }
 
 void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms, std::stop_token stop)
@@ -38,7 +45,9 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
 
     delay_ms = (delay_ms != ff::constants::invalid_size) ? delay_ms : 0;
 
-    if (thread_type == ff::thread_dispatch_type::main || thread_type == ff::thread_dispatch_type::game)
+    if (thread_type == ff::thread_dispatch_type::main ||
+        thread_type == ff::thread_dispatch_type::game ||
+        thread_type == ff::thread_dispatch_type::frame)
     {
         ff::thread_dispatch* td = ff::thread_dispatch::get(thread_type);
         if (td)
@@ -98,7 +107,9 @@ void ff::internal::co_handle_awaiter_base::await_suspend(std::coroutine_handle<>
         coroutine.resume();
     };
 
-    if (this->thread_type == ff::thread_dispatch_type::main || this->thread_type == ff::thread_dispatch_type::game)
+    if (this->thread_type == ff::thread_dispatch_type::main ||
+        this->thread_type == ff::thread_dispatch_type::game ||
+        this->thread_type == ff::thread_dispatch_type::frame)
     {
         ff::thread_dispatch* td = ff::thread_dispatch::get(this->thread_type);
         if (td)

@@ -39,6 +39,7 @@ static std::unique_ptr<std::ofstream> log_file;
 static std::shared_ptr<ff::dxgi::target_window_base> target;
 static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
+static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
 static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
@@ -252,6 +253,7 @@ static std::shared_ptr<ff::state> create_ui_state()
 static void init_game_thread()
 {
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
+    ::frame_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::frame);
     ::game_thread_event.set();
 
     if (::game_state)
@@ -315,6 +317,7 @@ static void destroy_game_thread()
     ff::global_resources::reset();
     ff::internal::ui::destroy_game_thread();
     ff::thread_pool::flush();
+    ::frame_thread_dispatch.reset();
     ::game_thread_dispatch.reset();
     ::game_thread_event.set();
 }
@@ -356,6 +359,7 @@ static void game_thread()
         }
         else
         {
+            ff::frame_dispatch_scope frame_dispatch(*::frame_thread_dispatch);
             advance_type = ::frame_advance_and_render(advance_type);
         }
     }

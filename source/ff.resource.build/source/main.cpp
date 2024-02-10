@@ -36,7 +36,7 @@ static bool test_load_resources(const ff::dict& dict)
 
         for (auto& value : values)
         {
-            if (value.value()->is_type<nullptr_t>())
+            if (value->value()->is_type<nullptr_t>())
             {
                 std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
                 assert(false);
@@ -53,7 +53,7 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    output << "namespace { namespace " << cpp_namespace << R"(
+    output << "namespace " << cpp_namespace << R"(
 {
     namespace internal
     {
@@ -82,7 +82,7 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
     {
         return std::make_shared<::ff::data_static>(internal::bytes, internal::byte_size);
     }
-} }
+}
 )";
 
     return true;
@@ -94,7 +94,7 @@ static bool write_symbol_header(const ff::load_resources_result::id_to_name_t& i
 
     for (const auto& [id, name] : id_to_name)
     {
-        output << "    inline constexpr std::string_view " << id << " = R\"(" << name << ")\";" << std::endl;
+        output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";" << std::endl;
     }
 
     output << "}" << std::endl;

@@ -18,25 +18,17 @@ std::string_view ff::resource::name() const
     return this->name_;
 }
 
-ff::value_ptr ff::resource::value(bool force) const
+ff::value_ptr ff::resource::value() const
 {
     auto finalized_event = this->finalized_event.load();
     if (finalized_event && !finalized_event->is_set())
     {
-        if (force)
-        {
-            int64_t start_time = ff::timer::current_raw_time();
+        int64_t start_time = ff::timer::current_raw_time();
 
-            finalized_event->wait();
+        finalized_event->wait();
 
-            const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
-            ff::log::write(ff::log::type::resource, "Waited (blocked): ", this->name_, " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
-        }
-        else
-        {
-            // Still loading, cannot access this->_value
-            return ff::value::create<nullptr_t>();
-        }
+        const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+        ff::log::write(ff::log::type::resource, "Waited (blocked): ", this->name_, " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
     }
 
     return this->value_;
@@ -48,7 +40,6 @@ ff::co_task<ff::value_ptr> ff::resource::value_async() const
     if (finalized_event && !finalized_event->is_set())
     {
         int64_t start_time = ff::timer::current_raw_time();
-
         co_await *finalized_event;
 
         const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
@@ -57,6 +48,12 @@ ff::co_task<ff::value_ptr> ff::resource::value_async() const
 
     assert(!this->finalized_event.load());
     co_return this->value_;
+}
+
+bool ff::resource::is_loading() const
+{
+    auto finalized_event = this->finalized_event.load();
+    return finalized_event && !finalized_event->is_set();
 }
 
 void ff::resource::finalize_value(ff::value_ptr value)

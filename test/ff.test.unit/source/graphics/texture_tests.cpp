@@ -13,12 +13,8 @@ namespace ff::test::graphics
                     "test_texture": { "res:type": "texture", "file": "file:test_texture.png", "format": "bc3", "mips": "4" }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::texture> texture_res = res->get_resource_object("test_texture");
-            Assert::IsTrue(texture_res.valid());
-
-            std::shared_ptr<ff::texture> texture = texture_res.object();
+            auto texture = ff::get_resource<ff::texture>(*std::get<0>(result), "test_texture");
             Assert::IsNotNull(texture.get());
             Assert::IsTrue(texture->dxgi_texture()->format() == DXGI_FORMAT_BC3_UNORM);
             Assert::IsTrue(texture->dxgi_texture()->size() == ff::point_int(256, 256));

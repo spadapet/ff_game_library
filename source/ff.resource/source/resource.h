@@ -16,8 +16,9 @@ namespace ff
         resource& operator=(const resource& other) = delete;
 
         std::string_view name() const;
-        ff::value_ptr value(bool force = false) const;
+        ff::value_ptr value() const;
         ff::co_task<ff::value_ptr> value_async() const;
+        bool is_loading() const;
         void finalize_value(ff::value_ptr value);
 
     private:

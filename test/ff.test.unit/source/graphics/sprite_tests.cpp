@@ -18,12 +18,8 @@ namespace ff::test::graphics
                     }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::sprite_list> sprites_res = res->get_resource_object("test_sprites");
-            Assert::IsTrue(sprites_res.valid());
-
-            std::shared_ptr<ff::sprite_list> sprites = sprites_res.object();
+            auto sprites = ff::get_resource<ff::sprite_list>(*std::get<0>(result), "test_sprites");
             Assert::IsNotNull(sprites.get());
             Assert::IsTrue(sprites->size() == 5);
             Assert::IsNotNull(sprites->get(0)->sprite_data().view());

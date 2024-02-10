@@ -63,10 +63,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::random_sprite::resource_get_depen
 
     for (auto& i : this->sprites)
     {
-        if (i.source.valid())
-        {
-            deps.push_back(i.source.resource());
-        }
+        deps.push_back(i.source.resource());
     }
 
     return deps;
@@ -169,10 +166,7 @@ bool ff::random_sprite::save_to_cache(ff::dict& dict, bool& allow_compress) cons
 
     for (auto& i : this->sprites)
     {
-        ff::value_ptr value = i.source.valid()
-            ? ff::value::create<ff::resource>(i.source.resource())
-            : ff::value::create<nullptr_t>();
-
+        ff::value_ptr value = ff::value::create<ff::resource>(i.source.resource());
         sprites.push_back(std::move(value));
         sprite_weights.push_back(i.weight);
     }

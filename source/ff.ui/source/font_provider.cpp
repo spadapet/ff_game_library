@@ -31,10 +31,7 @@ Noesis::Ptr<Noesis::Stream> ff::internal::ui::font_provider::OpenFont(const Noes
     if (name.size() > 0 && name[0] == L'#')
     {
         ff::auto_resource_value value = ff::internal::ui::global_resource_cache()->get_resource_object(name);
-        if (value.valid())
-        {
-            return Noesis::MakePtr<ff::internal::ui::stream>(std::move(value));
-        }
+        return Noesis::MakePtr<ff::internal::ui::stream>(std::move(value));
     }
 
     return nullptr;

@@ -70,12 +70,8 @@ namespace ff::test::graphics
                   }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::animation> anim_res = res->get_resource_object("test_anim");
-            Assert::IsTrue(anim_res.valid());
-
-            std::shared_ptr<ff::animation> anim = anim_res.object();
+            auto anim = ff::get_resource<ff::animation>(*std::get<0>(result), "test_anim");
             Assert::IsNotNull(anim.get());
             Assert::AreEqual(2.0f, anim->frames_per_second());
             Assert::AreEqual(7.0f, anim->frame_length());

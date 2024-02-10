@@ -15,12 +15,8 @@ namespace ff::test::graphics
                     }
                 }
             )");
-            auto& res = std::get<0>(result);
 
-            ff::auto_resource<ff::palette_data> palette_data_res = res->get_resource_object("test_palette");
-            Assert::IsTrue(palette_data_res.valid());
-
-            std::shared_ptr<ff::palette_data> palette_data = palette_data_res.object();
+            auto palette_data = ff::get_resource<ff::palette_data>(*std::get<0>(result), "test_palette");
             Assert::IsNotNull(palette_data.get());
             Assert::IsTrue(*palette_data);
 

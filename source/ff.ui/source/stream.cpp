@@ -4,9 +4,7 @@
 ff::internal::ui::stream::stream(ff::auto_resource_value&& resource)
     : resource(std::move(resource))
 {
-    auto resource_file = this->resource.valid()
-        ? std::dynamic_pointer_cast<ff::resource_file>(this->resource.value()->get<ff::resource_object_base>())
-        : nullptr;
+    auto resource_file = std::dynamic_pointer_cast<ff::resource_file>(this->resource->value()->get<ff::resource_object_base>());
 
     if (resource_file && resource_file->saved_data())
     {
