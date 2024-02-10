@@ -26,11 +26,9 @@ const std::string& ff::internal::ui::texture::name() const
     return this->name_;
 }
 
-std::shared_ptr<ff::texture> ff::internal::ui::texture::internal_texture() const
+const std::shared_ptr<ff::texture>& ff::internal::ui::texture::internal_texture() const
 {
-    std::shared_ptr<ff::texture> texture = this->resource.resource()
-        ? this->resource.object()
-        : this->static_texture;
+    auto& texture = this->resource.resource() ? this->resource.object() : this->static_texture;
     return texture ? texture : this->placeholder_texture;
 }
 
