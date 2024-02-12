@@ -506,8 +506,6 @@ protected:
                     }
                 }
 
-                this->context().finalize_missing_references();
-
                 output_value = ff::value::create<ff::dict>(std::move(output_dict));
             }
         }
@@ -703,6 +701,8 @@ protected:
 
                 root_value = ff::value::create<ff::dict>(std::move(output_dict));
             }
+
+            this->context().finalize_missing_references();
         }
 
         return root_value;
