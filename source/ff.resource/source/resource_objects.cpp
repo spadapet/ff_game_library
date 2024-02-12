@@ -37,7 +37,6 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::str
         }
     }
 
-    assert_msg(value, "Missing resource");
     return value ? value : std::make_shared<ff::resource>(name, ff::value::create<nullptr_t>());
 }
 

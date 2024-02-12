@@ -63,7 +63,10 @@ std::vector<std::shared_ptr<ff::resource>> ff::random_sprite::resource_get_depen
 
     for (auto& i : this->sprites)
     {
-        deps.push_back(i.source.resource());
+        if (i.source.resource())
+        {
+            deps.push_back(i.source.resource());
+        }
     }
 
     return deps;

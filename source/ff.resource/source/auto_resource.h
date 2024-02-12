@@ -85,10 +85,10 @@ namespace ff
         {
             if (!this->resource_object)
             {
-                ff::value_ptr value = co_await this->resource()->value_async();
+                ff::value_ptr value = this->resource() ? co_await this->resource()->value_async() : ff::value::create<nullptr_t>();
                 std::shared_ptr<ff::resource_object_base> object = value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
                 this->resource_object = std::dynamic_pointer_cast<T>(object);
-                assert(this->resource_object);
+                assert(this->resource_object || value->is_type<nullptr_t>());
             }
 
             co_return this->resource_object;

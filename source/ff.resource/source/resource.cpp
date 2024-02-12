@@ -10,7 +10,7 @@ ff::resource::resource(std::string_view name)
 ff::resource::resource(std::string_view name, ff::value_ptr value)
     : name_(name)
     , value_(value ? value : ff::value::create<nullptr_t>())
-    , finalized_event(!value ? std::make_shared<ff::win_event>() : std::shared_ptr<ff::win_event>())
+    , finalized_event{}
 {}
 
 std::string_view ff::resource::name() const

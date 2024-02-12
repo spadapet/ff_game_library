@@ -143,17 +143,32 @@ public:
         auto i = this->name_to_resource.find(name);
         if (i != this->name_to_resource.cend())
         {
-            if (value && !value->is_type<nullptr_t>())
+            if (value)
             {
                 i->second->finalize_value(value);
             }
         }
         else
         {
-            i = this->name_to_resource.try_emplace(std::move(name), std::make_shared<ff::resource>(name_view, value)).first;
+            i = this->name_to_resource.try_emplace(std::move(name), value
+                ? std::make_shared<ff::resource>(name_view, value)
+                : std::make_shared<ff::resource>(name_view)).first;
         }
 
         return i->second;
+    }
+
+    void finalize_missing_references()
+    {
+        std::scoped_lock lock(this->mutex);
+
+        for (auto& i : this->name_to_resource)
+        {
+            if (i.second->is_loading())
+            {
+                i.second->finalize_value(nullptr);
+            }
+        }
     }
 
     void add_file(const std::filesystem::path& path)
@@ -490,6 +505,8 @@ protected:
                         this->context().set_reference(name, object_value);
                     }
                 }
+
+                this->context().finalize_missing_references();
 
                 output_value = ff::value::create<ff::dict>(std::move(output_dict));
             }
