@@ -26,8 +26,8 @@ namespace ff::internal
 
         static ff::value* get_static_default_value()
         {
-            static value_vector_base<T> empty = std::vector<T>();
-            return &empty;
+            static value_vector_base<T> default_value = std::vector<T>();
+            return &default_value;
         }
 
     private:

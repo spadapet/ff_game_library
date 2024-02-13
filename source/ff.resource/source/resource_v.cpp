@@ -58,7 +58,8 @@ ff::value_ptr ff::type::resource_type::load(reader_base& reader) const
     {
         if (str.empty())
         {
-            return resource_v::get_static_default_value();
+            std::shared_ptr<ff::resource> res_val;
+            return ff::value::create<ff::resource>(res_val);
         }
 
         str.insert(0, ff::internal::REF_PREFIX);
