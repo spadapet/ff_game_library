@@ -5,10 +5,10 @@
     <description>ffui</description>
     <authors>ffui</authors>
     <owners>ffui</owners>
-    <version>3.2.2</version>
+    <version>3.2.3</version>
     <license type="file">content\LICENSE.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <copyright>Copyright 2023</copyright>
+    <copyright>Copyright 2024</copyright>
   </metadata>
   <files>
     <file src="ffui\**\*.*" target="content" />

@@ -43,6 +43,7 @@
     <ClCompile Include="$(InteractivityRoot)Src\InvokeCommandAction.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\KeyTrigger.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\LaunchUriOrFileAction.cpp" />
+    <ClCompile Include="$(InteractivityRoot)Src\LineDecorationBehavior.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\MouseDragElementBehavior.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\MoveFocusAction.cpp" />
     <ClCompile Include="$(InteractivityRoot)Src\PlaySoundAction.cpp" />
