@@ -41,6 +41,9 @@
     <ClCompile Include="source\ui\properties.cpp">
       <Filter>source\ui</Filter>
     </ClCompile>
+    <ClCompile Include="source\models\file_vm.cpp">
+      <Filter>source\models</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -76,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="source\ui\properties.h">
       <Filter>source\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="source\models\file_vm.h">
+      <Filter>source\models</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

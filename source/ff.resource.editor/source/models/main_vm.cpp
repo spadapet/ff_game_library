@@ -13,6 +13,7 @@ NS_IMPLEMENT_REFLECTION(editor::main_vm, "editor.main_vm")
     NsProp("file_save_command", &editor::main_vm::file_save_command_);
     NsProp("file_save_as_command", &editor::main_vm::file_save_as_command_);
     NsProp("file_exit_command", &editor::main_vm::file_exit_command_);
+    NsProp("sources_add_command", &editor::main_vm::sources_add_command_);
 
     NsProp("project", &editor::main_vm::project, &editor::main_vm::project);
     NsProp("has_modal_dialog", &editor::main_vm::has_modal_dialog);
@@ -25,6 +26,7 @@ editor::main_vm::main_vm()
     , file_save_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_save_command)))
     , file_save_as_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_save_as_command)))
     , file_exit_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::file_exit_command)))
+    , sources_add_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &editor::main_vm::sources_add_command)))
     , project_(Noesis::MakePtr<editor::project_vm>())
 {
     assert(!::instance);
@@ -128,4 +130,38 @@ void editor::main_vm::file_save_as_command(Noesis::BaseComponent* param)
 void editor::main_vm::file_exit_command(Noesis::BaseComponent* param)
 {
     ff::window::main()->close();
+}
+
+void editor::main_vm::sources_add_command(Noesis::BaseComponent* param)
+{
+    auto async_func = []() -> ff::co_task<>
+        {
+            co_await ff::task::resume_on_main();
+
+            //wchar_t buffer[1024]{};
+            //
+            //::OPENFILENAME ofn{};
+            //ofn.lStructSize = sizeof(ofn);
+            //ofn.hwndOwner = *ff::window::main();
+            //ofn.hInstance = ff::get_hinstance();
+            //ofn.lpstrDefExt = L"res.json";
+            //ofn.lpstrFilter = L"Source Files (*.res.json)\0*.res.json\0";
+            //ofn.lpstrFile = buffer;
+            //ofn.nMaxFile = 1024;
+            //ofn.Flags = OFN_ALLOWMULTISELECT | OFN_CREATEPROMPT | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+            //
+            //if (::GetSaveFileName(&ofn))
+            //{
+            //    path = ofn.lpstrFile;
+            //    co_await ff::task::resume_on_game();
+            //    co_return this->save_async(path);
+            //}
+
+            co_await ff::task::resume_on_game();
+        };
+
+    async_func().continue_with<void>([](ff::co_task<> task)
+        {
+            task.wait();
+        });
 }

@@ -165,7 +165,9 @@ static void frame_render(ff::state::advance_t advance_type)
 
 static void frame_update_cursor()
 {
-    const wchar_t* cursor = ff::ui::is_hand_cursor() ? IDC_HAND : IDC_ARROW;
+    const wchar_t* cursor = ff::ui::cursor_resource();
+    cursor = cursor ? cursor : IDC_ARROW;
+
     if (cursor != ::window_cursor.load())
     {
         ::window_cursor = cursor;

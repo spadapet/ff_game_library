@@ -4,7 +4,7 @@
 
 namespace ff::internal
 {
-    class debug_page_model : public ff::ui::notify_propety_changed_base
+    class debug_page_model : public ff::ui::notify_property_changed_base
     {
     public:
         debug_page_model();
@@ -16,14 +16,14 @@ namespace ff::internal
         bool is_none() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_page_model, ff::ui::notify_propety_changed_base);
+        NS_DECLARE_REFLECTION(ff::internal::debug_page_model, ff::ui::notify_property_changed_base);
 
         std::string name_;
         std::function<std::shared_ptr<ff::state>()> factory;
         std::shared_ptr<ff::state> state_;
     };
 
-    class debug_timer_model : public ff::ui::notify_propety_changed_base
+    class debug_timer_model : public ff::ui::notify_property_changed_base
     {
     public:
         debug_timer_model() = default;
@@ -40,13 +40,13 @@ namespace ff::internal
         int hit_per_second() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_timer_model, ff::ui::notify_propety_changed_base);
+        NS_DECLARE_REFLECTION(ff::internal::debug_timer_model, ff::ui::notify_property_changed_base);
 
         ff::perf_results::counter_info info_{};
         double time_ms_{};
     };
 
-    class debug_view_model : public ff::ui::notify_propety_changed_base
+    class debug_view_model : public ff::ui::notify_property_changed_base
     {
     public:
         debug_view_model();
@@ -109,7 +109,7 @@ namespace ff::internal
         Noesis::Geometry* geometry_wait() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_propety_changed_base);
+        NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_property_changed_base);
 
         void on_resources_rebuild_begin();
         void on_resources_rebuild_end(size_t round);

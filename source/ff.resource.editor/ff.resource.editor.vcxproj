@@ -16,6 +16,7 @@
     </ClCompile>
     <ClCompile Include="source\assets\xaml.res.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\models\file_vm.cpp" />
     <ClCompile Include="source\models\main_vm.cpp" />
     <ClCompile Include="source\models\plugin_vm.cpp" />
     <ClCompile Include="source\models\project_vm.cpp" />
@@ -30,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="source\models\file_vm.h" />
     <ClInclude Include="source\models\main_vm.h" />
     <ClInclude Include="source\models\plugin_vm.h" />
     <ClInclude Include="source\models\project_vm.h" />

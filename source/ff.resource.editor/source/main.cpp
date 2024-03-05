@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "source/models/file_vm.h"
 #include "source/models/main_vm.h"
 #include "source/models/plugin_vm.h"
 #include "source/models/project_vm.h"
@@ -38,13 +39,13 @@ static ff::init_app_params get_app_params()
 static ff::init_ui_params get_ui_params()
 {
     ff::init_ui_params params{};
-    params.application_resources_name = "application_resources.xaml";
 
     params.register_components_func = []()
     {
         ::res::register_xaml();
 
         // Model classes
+        Noesis::RegisterComponent<editor::file_vm>();
         Noesis::RegisterComponent<editor::main_vm>();
         Noesis::RegisterComponent<editor::plugin_vm>();
         Noesis::RegisterComponent<editor::project_vm>();

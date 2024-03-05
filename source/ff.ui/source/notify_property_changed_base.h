@@ -3,7 +3,7 @@
 namespace ff::ui
 {
     template<class T = Noesis::BaseComponent, class = std::enable_if_t<std::is_base_of_v<Noesis::BaseComponent, T>>>
-    class notify_propety_changed_t : public T, public Noesis::INotifyPropertyChanged
+    class notify_property_changed_t : public T, public Noesis::INotifyPropertyChanged
     {
     public:
         virtual Noesis::PropertyChangedEventHandler& PropertyChanged() override
@@ -35,13 +35,13 @@ namespace ff::ui
     private:
         Noesis::PropertyChangedEventHandler property_changed_;
 
-        NS_IMPLEMENT_INLINE_REFLECTION(ff::ui::notify_propety_changed_t<T>, T, "notify_propety_changed_t")
+        NS_IMPLEMENT_INLINE_REFLECTION(ff::ui::notify_property_changed_t<T>, T, "notify_property_changed_t")
         {
             NsImpl<Noesis::INotifyPropertyChanged>();
         }
     };
 
-    class notify_propety_changed_base : public Noesis::BaseComponent, public Noesis::INotifyPropertyChanged
+    class notify_property_changed_base : public Noesis::BaseComponent, public Noesis::INotifyPropertyChanged
     {
     public:
         virtual Noesis::PropertyChangedEventHandler& PropertyChanged() override;
@@ -52,7 +52,7 @@ namespace ff::ui
         virtual void property_changed(std::string_view name);
 
         template<typename... Args>
-        bool properties_changed(Args&&... property_names)
+        void properties_changed(Args&&... property_names)
         {
             std::initializer_list<std::string_view> name_list{ property_names... };
             for (std::string_view name : name_list)
@@ -83,6 +83,6 @@ namespace ff::ui
     private:
         Noesis::PropertyChangedEventHandler property_changed_;
 
-        NS_DECLARE_REFLECTION(notify_propety_changed_base, Noesis::BaseComponent);
+        NS_DECLARE_REFLECTION(notify_property_changed_base, Noesis::BaseComponent);
     };
 }

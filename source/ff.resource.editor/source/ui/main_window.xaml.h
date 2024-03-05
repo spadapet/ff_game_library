@@ -7,7 +7,7 @@ namespace editor
 {
     struct dialog_request_close_event_args;
 
-    class main_window : public ff::ui::notify_propety_changed_t<editor::window_base>
+    class main_window : public ff::ui::notify_property_changed_t<editor::window_base>
     {
     public:
         main_window();
@@ -36,6 +36,6 @@ namespace editor
 
         Noesis::Ptr<editor::main_vm> view_model_;
 
-        NS_DECLARE_REFLECTION(editor::main_window, ff::ui::notify_propety_changed_t<editor::window_base>);
+        NS_DECLARE_REFLECTION(editor::main_window, ff::ui::notify_property_changed_t<editor::window_base>);
     };
 }

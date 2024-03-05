@@ -679,16 +679,41 @@ const std::vector<ff::ui_view*>& ff::ui::rendered_views()
     return ::rendered_views;
 }
 
-bool ff::ui::is_hand_cursor()
+const wchar_t* ff::ui::cursor_resource()
 {
     for (auto i = ::mouse_input_views.rbegin(); i != ::mouse_input_views.rend(); i++)
     {
         ff::ui_view* view = *i;
-        if (view->cursor() == Noesis::CursorType_Hand)
+        switch (view->cursor())
         {
-            return true;
+            case Noesis::CursorType_Hand: return IDC_HAND;
+            case Noesis::CursorType_SizeAll: return IDC_SIZEALL;
+            case Noesis::CursorType_SizeNESW: return IDC_SIZENESW;
+            case Noesis::CursorType_SizeNS: return IDC_SIZENS;
+            case Noesis::CursorType_SizeNWSE: return IDC_SIZENWSE;
+            case Noesis::CursorType_SizeWE: return IDC_SIZEWE;
+            case Noesis::CursorType_No: return IDC_NO;
+            case Noesis::CursorType_AppStarting: return IDC_APPSTARTING;
+            case Noesis::CursorType_Cross: return IDC_CROSS;
+            case Noesis::CursorType_Help: return IDC_HELP;
+            case Noesis::CursorType_IBeam: return IDC_IBEAM;
+            case Noesis::CursorType_UpArrow: return IDC_UPARROW;
+            case Noesis::CursorType_Wait: return IDC_WAIT;
+
+            // case Noesis::CursorType_ArrowCD: return ;
+            // case Noesis::CursorType_ScrollAll: return ;
+            // case Noesis::CursorType_ScrollE: return ;
+            // case Noesis::CursorType_ScrollN: return ;
+            // case Noesis::CursorType_ScrollNE: return ;
+            // case Noesis::CursorType_ScrollNS: return ;
+            // case Noesis::CursorType_ScrollNW: return ;
+            // case Noesis::CursorType_ScrollS: return ;
+            // case Noesis::CursorType_ScrollSE: return ;
+            // case Noesis::CursorType_ScrollSW: return ;
+            // case Noesis::CursorType_ScrollW: return ;
+            // case Noesis::CursorType_Pen: return ;
         }
     }
 
-    return false;
+    return IDC_ARROW;
 }

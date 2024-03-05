@@ -1,22 +1,17 @@
 #pragma once
 
+#include "source/models/file_vm.h"
+
 namespace editor
 {
-    class source_vm : public ff::ui::notify_propety_changed_base
+    class source_vm : public editor::file_vm
     {
     public:
         source_vm();
         source_vm(const std::filesystem::path& path);
-
-        const char* full_path() const;
-        const char* file_name() const;
-
-        ff::dict save() const;
+        source_vm(const ff::dict& dict);
 
     private:
-        std::string path_;
-        std::string name_;
-
-        NS_DECLARE_REFLECTION(editor::source_vm, ff::ui::notify_propety_changed_base);
+        NS_DECLARE_REFLECTION(editor::source_vm, editor::file_vm);
     };
 }

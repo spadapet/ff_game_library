@@ -11,7 +11,7 @@ namespace ff::ui
     const ff::dxgi::palette_base* global_palette();
     const std::vector<ff::ui_view*>& input_views();
     const std::vector<ff::ui_view*>& rendered_views();
-    bool is_hand_cursor();
+    const wchar_t* cursor_resource();
 
     // These notifications must be called at the right time (just use application's ui_state class to do it automatically)
     void state_advance_time();
