@@ -7,6 +7,7 @@ namespace ff
         stable_hash_data_t();
         stable_hash_data_t(size_t data_size);
 
+        void hash(const void* data, size_t size);
         size_t hash() const;
         operator size_t() const;
 

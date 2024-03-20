@@ -64,6 +64,11 @@ ff::stable_hash_data_t::stable_hash_data_t(uint32_t a, uint32_t b, uint32_t c)
     , c(c)
 {}
 
+void ff::stable_hash_data_t::hash(const void* data, size_t size)
+{
+    *this = ff::stable_hash_incremental(data, size, *this);
+}
+
 size_t ff::stable_hash_data_t::hash() const
 {
     stable_hash_data_t other = *this;

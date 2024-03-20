@@ -22,38 +22,40 @@ static Microsoft::WRL::ComPtr<IDXGIAdapter> fix_adapter(IDXGIFactory* dxgi, Micr
 
 size_t ff::dxgi::get_adapters_hash(IDXGIFactory* factory)
 {
-    ff::stack_vector<LUID, 32> luids;
-
     Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
-    for (UINT i = 0; SUCCEEDED(factory->EnumAdapters(i, &adapter)); i++, adapter.Reset())
+    ff::stable_hash_data_t hash;
+    UINT i = 0;
+
+    for (; SUCCEEDED(factory->EnumAdapters(i, &adapter)); i++, adapter.Reset())
     {
         DXGI_ADAPTER_DESC desc;
         if (SUCCEEDED(adapter->GetDesc(&desc)))
         {
-            luids.push_back(desc.AdapterLuid);
+            hash.hash(&desc.AdapterLuid, sizeof(desc.AdapterLuid));
         }
     }
 
-    return !luids.empty() ? ff::stable_hash_bytes(luids.data(), ff::vector_byte_size(luids)) : 0;
+    return i ? hash.hash() : 0;
 }
 
 size_t ff::dxgi::get_outputs_hash(IDXGIFactory* factory, IDXGIAdapter* adapter)
 {
-    ff::stack_vector<HMONITOR, 32> outputs;
     Microsoft::WRL::ComPtr<IDXGIAdapter> adapter2 = ::fix_adapter(factory, adapter);
-
     Microsoft::WRL::ComPtr<IDXGIOutput> output;
-    for (UINT i = 0; SUCCEEDED(adapter2->EnumOutputs(i++, &output)); output.Reset())
+    ff::stable_hash_data_t hash;
+    UINT i = 0;
+
+    for (; SUCCEEDED(adapter2->EnumOutputs(i++, &output)); output.Reset())
     {
         DXGI_OUTPUT_DESC desc;
         if (SUCCEEDED(output->GetDesc(&desc)))
         {
             ff::log::write(ff::log::type::dxgi, "Adapter Output[", i - 1, "] = ", ff::string::to_string(std::wstring_view(&desc.DeviceName[0])));
-            outputs.push_back(desc.Monitor);
+            hash.hash(&desc.Monitor, sizeof(desc.Monitor));
         }
     }
 
-    return !outputs.empty() ? ff::stable_hash_bytes(outputs.data(), ff::vector_byte_size(outputs)) : 0;
+    return i ? hash.hash() : 0;
 }
 
 DXGI_QUERY_VIDEO_MEMORY_INFO ff::dxgi::get_video_memory_info(IDXGIAdapter* adapter)
