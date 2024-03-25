@@ -134,8 +134,8 @@
     </ProjectConfiguration>-->
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(AppType)' == 'UWP' And '$(ConfigurationType)' != 'StaticLibrary' ">
-    <!-- For Desktop builds, these files are copied in AfterBuild2 in cpp.targets -->
+  <ItemGroup Condition=" '$(ConfigurationType)' != 'StaticLibrary' ">
+    <!-- For Desktop builds, these files are also copied in AfterBuild2 in cpp.targets -->
     <None Condition="Exists('$(NoesisDll)')" Include="$(NoesisDll)">
       <DeploymentContent>true</DeploymentContent>
     </None>
