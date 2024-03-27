@@ -42,9 +42,6 @@ namespace ff
         virtual bool connected() const override;
         virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override;
         virtual void notify_main_window_message(ff::window_message& message) override;
-#if UWP_APP
-        void notify_main_window_pointer_message(unsigned int msg, const winrt::Windows::UI::Core::PointerEventArgs& args);
-#endif
 
     private:
         struct mouse_info
@@ -65,28 +62,14 @@ namespace ff
         {
             internal_touch_info();
 
-#if UWP_APP
-            winrt::Windows::UI::Input::PointerPoint point;
-#endif
             ff::pointer_touch_info info;
         };
 
-#if UWP_APP
-        ff::input_device_event mouse_moved(const winrt::Windows::UI::Input::PointerPoint& point);
-        ff::input_device_event mouse_pressed(const winrt::Windows::UI::Input::PointerPoint& point);
-        ff::input_device_event touch_moved(const winrt::Windows::UI::Input::PointerPoint& point);
-        ff::input_device_event touch_pressed(const winrt::Windows::UI::Input::PointerPoint& point);
-        ff::input_device_event touch_released(const winrt::Windows::UI::Input::PointerPoint& point);
-
-        std::vector<internal_touch_info>::iterator find_touch_info(const winrt::Windows::UI::Input::PointerPoint& point, bool allow_create);
-        void update_touch_info(internal_touch_info& info, const winrt::Windows::UI::Input::PointerPoint& point);
-#else
         void mouse_message(const ff::window_message& message);
         void pointer_message(const ff::window_message& message);
 
         std::vector<internal_touch_info>::iterator find_touch_info(const ff::window_message& message, bool allow_create);
         void update_touch_info(internal_touch_info& info, const ff::window_message& message);
-#endif
 
         std::mutex mutex;
         mouse_info mouse{};

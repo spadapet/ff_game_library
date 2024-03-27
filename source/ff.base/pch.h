@@ -32,17 +32,4 @@
 #include <Windows.h>
 #include <ShlObj.h>
 
-// WinRT
-#if UWP_APP
-#include <winrt/Windows.ApplicationModel.Core.h>
-#include <winrt/Windows.Foundation.h>
-#include <winrt/Windows.Gaming.Input.h>
-#include <winrt/Windows.Graphics.Display.h>
-#include <winrt/Windows.Storage.h>
-#include <winrt/Windows.UI.Core.h>
-#include <winrt/Windows.UI.ViewManagement.h>
-#include <winrt/Windows.UI.Xaml.h>
-#include <winrt/Windows.UI.Xaml.Controls.h>
-#endif
-
 #pragma pop_macro("assert")

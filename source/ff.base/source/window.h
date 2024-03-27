@@ -4,20 +4,11 @@
 #include "rect.h"
 #include "signal.h"
 
-#if UWP_APP
-namespace ff::internal
-{
-    class main_window_events;
-}
-#endif
-
 namespace ff
 {
     struct window_message
     {
-#if !UWP_APP
         const HWND hwnd;
-#endif
         const UINT msg;
         const WPARAM wp;
         const LPARAM lp;
@@ -126,21 +117,6 @@ namespace ff
         operator bool() const;
         bool operator!() const;
 
-#if UWP_APP
-        using handle_type = typename winrt::Windows::UI::Core::CoreWindow;
-
-        bool allow_swap_chain_panel();
-        void allow_swap_chain_panel(bool value);
-        winrt::Windows::UI::Xaml::Controls::SwapChainPanel swap_chain_panel() const;
-        const winrt::Windows::Graphics::Display::DisplayInformation& display_info() const;
-        const winrt::Windows::UI::ViewManagement::ApplicationView& application_view() const;
-
-        ff::signal_sink<bool, const winrt::Windows::Gaming::Input::Gamepad&>& gamepad_message_sink();
-        void notify_gamepad_message(bool added, const winrt::Windows::Gaming::Input::Gamepad& gamepad);
-
-        ff::signal_sink<unsigned int, const winrt::Windows::UI::Core::PointerEventArgs&>& pointer_message_sink();
-        void notify_pointer_message(unsigned int msg, const winrt::Windows::UI::Core::PointerEventArgs& args);
-#else
         using handle_type = HWND;
 
         static bool class_exists(std::string_view name, HINSTANCE instance);
@@ -148,7 +124,6 @@ namespace ff
         static window create(window_type type, std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance = nullptr, HMENU menu = nullptr);
         static window create_blank(window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style = 0, int x = 0, int y = 0, int cx = 0, int cy = 0, HMENU menu = nullptr);
         static window create_message_window();
-#endif
 
         handle_type handle() const;
         operator handle_type() const;
@@ -168,18 +143,6 @@ namespace ff
         bool close();
 
     private:
-#if UWP_APP
-        winrt::agile_ref<winrt::Windows::UI::Core::CoreWindow> core_window;
-        winrt::Windows::Graphics::Display::DisplayInformation display_info_;
-        winrt::Windows::UI::ViewManagement::ApplicationView application_view_;
-        std::unique_ptr<ff::internal::main_window_events> window_events;
-        ff::signal<bool, const winrt::Windows::Gaming::Input::Gamepad&> gamepad_message_signal;
-        ff::signal<unsigned int, const winrt::Windows::UI::Core::PointerEventArgs&> pointer_message_signal;
-        double dpi_scale_;
-        bool allow_swap_chain_panel_;
-        bool active_;
-        bool visible_;
-#else
         void reset(HWND hwnd);
         void destroy();
 
@@ -198,8 +161,6 @@ namespace ff
 
         HWND hwnd;
         state_t state;
-#endif
-
         ff::signal<window_message&> message_signal;
     };
 }

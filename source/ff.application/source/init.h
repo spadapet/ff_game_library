@@ -18,9 +18,6 @@ namespace ff
         size_t frame_latency = 1;
         bool vsync = true;
         bool allow_full_screen = true;
-#if UWP_APP
-        bool use_swap_chain_panel{};
-#endif
     };
 
     class init_app

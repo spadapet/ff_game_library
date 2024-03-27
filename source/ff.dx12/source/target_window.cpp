@@ -143,14 +143,12 @@ bool ff::dx12::target_window::internal_reset(size_t buffer_count, size_t frame_l
     assert_ret_val(this->window, false);
 
     BOOL full_screen{};
-#if !UWP_APP
     if (this->allow_full_screen_ && this->swap_chain)
     {
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
         this->swap_chain->GetFullscreenState(&full_screen, &output);
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
-#endif
 
     this->before_resize();
     this->swap_chain.Reset();
@@ -232,10 +230,6 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
     this->cached_size = size;
-#if UWP_APP
-    this->cached_full_screen_uwp = false;
-#endif
-
     this->before_resize();
 
     if (this->swap_chain && (old_size != size || this->buffer_count() != buffer_count)) // on game thread
@@ -274,33 +268,11 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         {
             if (this->window && this->window_message_connection)
             {
-#if UWP_APP
-                winrt::Windows::UI::Xaml::Controls::SwapChainPanel swap_chain_panel = this->window->swap_chain_panel();
-                this->use_xaml_composition = (swap_chain_panel != nullptr);
-
-                if (this->use_xaml_composition)
-                {
-                    desc.Scaling = DXGI_SCALING_STRETCH;
-
-                    Microsoft::WRL::ComPtr<ISwapChainPanelNative> native_panel;
-                    if (FAILED(swap_chain_panel.as(IID_PPV_ARGS(&native_panel))) ||
-                        FAILED(factory->CreateSwapChainForComposition(command_queue.Get(), &desc, nullptr, &new_swap_chain)) ||
-                        FAILED(native_panel->SetSwapChain(new_swap_chain.Get())))
-                    {
-                        debug_fail();
-                    }
-                }
-                else if (FAILED(factory->CreateSwapChainForCoreWindow(command_queue.Get(), this->window->handle().as<IUnknown>().get(), &desc, nullptr, &new_swap_chain)))
-                {
-                    debug_fail();
-                }
-#else
                 if (FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
                     FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
                 {
                     debug_fail();
                 }
-#endif
             }
         });
 
@@ -320,20 +292,6 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         ff::dx12::device_fatal_error("Swap chain failed to set frame latency");
         return false;
     }
-
-#if UWP_APP
-    // Scale the back buffer to the panel
-    {
-        DXGI_MATRIX_3X2_F inverse_scale{};
-        inverse_scale._11 = inverse_scale._22 = 1 / static_cast<float>(size.dpi_scale);
-
-        if (this->use_xaml_composition && FAILED(this->swap_chain->SetMatrixTransform(&inverse_scale)))
-        {
-            ff::dx12::device_fatal_error("Swap chain set matrix transform failed");
-            return false;
-        }
-    }
-#endif
 
     if (FAILED(this->swap_chain->SetRotation(ff::dxgi::get_dxgi_rotation(size.rotation, true))))
     {
@@ -440,19 +398,9 @@ bool ff::dx12::target_window::full_screen()
 {
     if (this->allow_full_screen_ && *this)
     {
-#if UWP_APP
-        if (!this->cached_full_screen_uwp)
-        {
-            this->full_screen_uwp = this->window->application_view().IsFullScreenMode();
-            this->cached_full_screen_uwp = true;
-        }
-
-        return this->full_screen_uwp;
-#else
         BOOL full_screen = FALSE;
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
         return SUCCEEDED(this->swap_chain->GetFullscreenState(&full_screen, &output)) && full_screen;
-#endif
     }
 
     return this->was_full_screen_on_close;
@@ -464,22 +412,10 @@ bool ff::dx12::target_window::full_screen(bool value)
     {
         ff::log::write(ff::log::type::dx12_target, "Set swap chain full screen: ", value);
 
-#if UWP_APP
-        if (value)
-        {
-            return this->window->application_view().TryEnterFullScreenMode();
-        }
-        else
-        {
-            this->window->application_view().ExitFullScreenMode();
-            return true;
-        }
-#else
         if (SUCCEEDED(this->swap_chain->SetFullscreenState(value, nullptr)))
         {
             return this->size(this->window->size());
         }
-#endif
     }
 
     return false;
@@ -559,7 +495,6 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             }
             break;
 
-#if !UWP_APP
         case WM_WINDOWPOSCHANGED:
             if (this->allow_full_screen_)
             {
@@ -570,6 +505,5 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 }
             }
             break;
-#endif
     }
 }

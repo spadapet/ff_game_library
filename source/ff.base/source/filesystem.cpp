@@ -4,8 +4,6 @@
 #include "filesystem.h"
 #include "string.h"
 
-#if !UWP_APP
-
 static std::filesystem::path get_known_directory(REFGUID id, bool create)
 {
     wchar_t* wpath = nullptr;
@@ -27,8 +25,6 @@ static std::filesystem::path append_ff_game_engine_directory(std::filesystem::pa
     ff::filesystem::create_directories(path);
     return path;
 }
-
-#endif
 
 bool ff::filesystem::exists(const std::filesystem::path& path)
 {
@@ -113,29 +109,17 @@ std::filesystem::path ff::filesystem::executable_path()
 
 std::filesystem::path ff::filesystem::temp_directory_path()
 {
-#if UWP_APP
-    return ff::string::to_string(winrt::Windows::Storage::ApplicationData::Current().TemporaryFolder().Path());
-#else
     return ::append_ff_game_engine_directory(std::filesystem::temp_directory_path());
-#endif
 }
 
 std::filesystem::path ff::filesystem::user_local_path()
 {
-#if UWP_APP
-    return ff::string::to_string(winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path());
-#else
     return ::get_known_directory(FOLDERID_LocalAppData, true);
-#endif
 }
 
 std::filesystem::path ff::filesystem::user_roaming_path()
 {
-#if UWP_APP
-    return ff::string::to_string(winrt::Windows::Storage::ApplicationData::Current().RoamingFolder().Path());
-#else
     return ::get_known_directory(FOLDERID_RoamingAppData, true);
-#endif
 }
 
 std::filesystem::path ff::filesystem::to_lower(const std::filesystem::path& path)

@@ -75,10 +75,5 @@ namespace ff::dx12
         bool allow_full_screen_{};
         bool was_full_screen_on_close{};
         bool vsync_{ true };
-#if UWP_APP
-        bool use_xaml_composition{};
-        bool cached_full_screen_uwp{};
-        bool full_screen_uwp{};
-#endif
     };
 }

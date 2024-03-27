@@ -162,16 +162,8 @@ static void update_cursor_callback(void* user, Noesis::IView* internal_view, Noe
 
 static void open_url_callback(void* user, const char* url)
 {
-#if UWP_APP
-    winrt::hstring purl = winrt::to_hstring(std::string_view(url));
-    ff::thread_dispatch::get_main()->post([purl]()
-        {
-            winrt::Windows::System::Launcher::LaunchUriAsync(winrt::Windows::Foundation::Uri(purl));
-        });
-#else
     std::wstring purl = ff::string::to_wstring(url);
     ::ShellExecute(*ff::window::main(), L"open", purl.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-#endif
 }
 
 static void play_sound_callback(void* user, const Noesis::Uri& uri, float volume)

@@ -104,34 +104,6 @@ static std::vector<std::unique_ptr<ff::gamepad_device>> gamepads;
 static std::vector<ff::signal_connection> main_window_connections;
 static const size_t MIN_GAMEPADS = 4;
 
-#if UWP_APP
-static void gamepad_added(const winrt::Windows::Gaming::Input::Gamepad& gamepad)
-{
-    for (const std::unique_ptr<ff::gamepad_device>& device : ::gamepads)
-    {
-        if (!device->gamepad())
-        {
-            device->gamepad(gamepad);
-            return;
-        }
-    }
-
-    // More than MIN_GAMEPADS gamepads are OK
-    ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(gamepad));
-}
-
-static void gamepad_removed(const winrt::Windows::Gaming::Input::Gamepad& gamepad)
-{
-    for (const std::unique_ptr<ff::gamepad_device>& device : ::gamepads)
-    {
-        if (device->gamepad() == gamepad)
-        {
-            device->gamepad(nullptr);
-        }
-    }
-}
-#endif
-
 bool ff::internal::input::init()
 {
     ::combined_devices_ = std::make_unique<::combined_input_devices>();
@@ -139,36 +111,10 @@ bool ff::internal::input::init()
     ::pointer = std::make_unique<ff::pointer_device>();
     ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect(std::bind(&::combined_input_devices::notify_main_window_message, ::combined_devices_.get(), std::placeholders::_1)));
 
-#if UWP_APP
-    ::main_window_connections.emplace_back(ff::window::main()->pointer_message_sink().connect(std::bind(&ff::pointer_device::notify_main_window_pointer_message, ::pointer.get(), std::placeholders::_1, std::placeholders::_2)));
-
-    ::main_window_connections.emplace_back(ff::window::main()->gamepad_message_sink().connect([](bool added, const winrt::Windows::Gaming::Input::Gamepad& gamepad)
-        {
-            if (added)
-            {
-                ::gamepad_added(gamepad);
-            }
-            else
-            {
-                ::gamepad_removed(gamepad);
-            }
-        }));
-
-    for (size_t i = 0; i < ::MIN_GAMEPADS; i++)
-    {
-        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(nullptr));
-    }
-
-    for (const winrt::Windows::Gaming::Input::Gamepad& gamepad : winrt::Windows::Gaming::Input::Gamepad::Gamepads())
-    {
-        ::gamepad_added(gamepad);
-    }
-#else
     for (size_t i = 0; i < ::MIN_GAMEPADS; i++)
     {
         ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(i));
     }
-#endif
 
     return true;
 }

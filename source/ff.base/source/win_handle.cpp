@@ -192,16 +192,12 @@ bool ff::win_event::wait_and_reset(size_t timeout_ms, bool allow_dispatch) const
     return false;
 }
 
-#if !UWP_APP
-
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 HINSTANCE ff::get_hinstance()
 {
     HINSTANCE instance = reinterpret_cast<HINSTANCE>(&__ImageBase);
     return instance ? instance : ::GetModuleHandle(nullptr);
 }
-
-#endif
 
 ff::win_handle ff::win_handle::create_event(bool initial_set)
 {

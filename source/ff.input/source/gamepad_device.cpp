@@ -94,11 +94,7 @@ void ff::gamepad_device::kill_pending()
 
 bool ff::gamepad_device::connected() const
 {
-#if UWP_APP
-    return this->connected_ && this->gamepad_;
-#else
     return this->connected_;
-#endif
 }
 
 ff::signal_sink<const ff::input_device_event&>& ff::gamepad_device::event_sink()
@@ -111,39 +107,6 @@ void ff::gamepad_device::notify_main_window_message(ff::window_message& message)
 
 bool ff::gamepad_device::poll(reading_t& reading)
 {
-#if UWP_APP
-    if (this->gamepad_)
-    {
-        winrt::Windows::Gaming::Input::GamepadReading gr = this->gamepad_.GetCurrentReading();
-
-        reading.values[::vk_to_index(VK_GAMEPAD_A)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::A) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_B)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::B) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_X)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::X) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_Y)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::Y) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_SHOULDER)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::RightShoulder) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_SHOULDER)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::LeftShoulder) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_TRIGGER)] = static_cast<float>(gr.RightTrigger);
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_TRIGGER)] = static_cast<float>(gr.LeftTrigger);
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_UP)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadUp) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_DOWN)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadDown) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_LEFT)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadLeft) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_DPAD_RIGHT)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::DPadRight) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_MENU)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::Menu) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_VIEW)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::View) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::LeftThumbstick) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_BUTTON)] = ff::flags::has(gr.Buttons, winrt::Windows::Gaming::Input::GamepadButtons::RightThumbstick) ? 1.0f : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_UP)] = (gr.LeftThumbstickY > 0.0) ? static_cast<float>(gr.LeftThumbstickY) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_DOWN)] = (gr.LeftThumbstickY < 0.0) ? -static_cast<float>(gr.LeftThumbstickY) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_RIGHT)] = (gr.LeftThumbstickX > 0.0) ? static_cast<float>(gr.LeftThumbstickX) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_LEFT_THUMBSTICK_LEFT)] = (gr.LeftThumbstickX < 0.0) ? -static_cast<float>(gr.LeftThumbstickX) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_UP)] = (gr.RightThumbstickY > 0.0) ? static_cast<float>(gr.RightThumbstickY) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_DOWN)] = (gr.RightThumbstickY < 0.0) ? -static_cast<float>(gr.RightThumbstickY) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_RIGHT)] = (gr.RightThumbstickX > 0.0) ? static_cast<float>(gr.RightThumbstickX) : 0.0f;
-        reading.values[::vk_to_index(VK_GAMEPAD_RIGHT_THUMBSTICK_LEFT)] = (gr.RightThumbstickX < 0.0) ? -static_cast<float>(gr.RightThumbstickX) : 0.0f;
-
-        return true;
-    }
-#else
     XINPUT_STATE gs;
 
     DWORD status = ::XInputGetState(static_cast<DWORD>(this->gamepad_), &gs);
@@ -179,7 +142,6 @@ bool ff::gamepad_device::poll(reading_t& reading)
 
         return true;
     }
-#endif
 
     return false;
 }
@@ -205,10 +167,6 @@ void ff::gamepad_device::update_pending_state(const reading_t& reading)
 
 void ff::gamepad_device::update_press_count(size_t index)
 {
-    // UWP will already create key events for gamepads, so just do it for desktop
-#if UWP_APP
-    this->pending_state.press_count[index] = this->pending_state.pressing[index] ? this->pending_state.press_count[index] + 1 : 0;
-#else
     unsigned int vk = static_cast<unsigned int>(index) + VK_GAMEPAD_A;
     ff::input_device_event device_event{};
 
@@ -244,5 +202,4 @@ void ff::gamepad_device::update_press_count(size_t index)
         // Gamepad activity should prevent Windows from going to sleep
         ::SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
     }
-#endif
 }

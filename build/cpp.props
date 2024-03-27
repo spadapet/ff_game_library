@@ -7,19 +7,13 @@
     <!-- Also update Noesis version in /vendor/packages.config -->
     <NoesisVersion>3.2.3</NoesisVersion>
     <WinPixVersion>1.0.231030001</WinPixVersion>
-    <CppWinRTVersion>2.0.230706.1</CppWinRTVersion>
 
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ..))))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove($(FFRoot).., .gitmodules)), $(FFRoot)))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>
     <PackagesRoot Condition=" '$(PackagesRoot)' == '' ">$(DevRoot)packages\</PackagesRoot>
-    <CppWinRTPackageDir>$(PackagesRoot)Microsoft.Windows.CppWinRT.$(CppWinRTVersion)\</CppWinRTPackageDir>
-    <CppWinRTRoot>$(CppWinRTPackageDir)\build\native\</CppWinRTRoot>
-    <CppWinRTPath>$(CppWinRTPackageDir)bin\</CppWinRTPath>
 
     <!-- Project config -->
-    <AppType Condition=" '$(AppType)' == '' And $(MSBuildProjectName.EndsWith('_uwp')) ">UWP</AppType>
-    <AppType Condition=" '$(AppType)' == '' And $(MSBuildProjectName.EndsWith('.uwp')) ">UWP</AppType>
     <AppType Condition=" '$(AppType)' == '' ">Desktop</AppType>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -27,11 +21,7 @@
     <XPlatform Condition=" '$(Platform)' == 'Win32' ">x86</XPlatform>
     <APlatform>$(XPlatform)</APlatform>
     <APlatform Condition=" '$(Platform)' == 'x64' ">amd64</APlatform>
-  </PropertyGroup>
 
-  <Import Project="$(CppWinRTRoot)Microsoft.Windows.CppWinRT.props" Condition="Exists('$(CppWinRTRoot)Microsoft.Windows.CppWinRT.props')" />
-
-  <PropertyGroup>
     <!-- Project properties -->
     <CharacterSet Condition=" '$(CharacterSet)' == '' ">Unicode</CharacterSet>
     <ConfigurationType Condition=" '$(ConfigurationType)' == '' ">Application</ConfigurationType>
@@ -42,6 +32,8 @@
     <ProjectName Condition=" '$(ProjectName)' == '' ">$(MSBuildProjectName)</ProjectName>
     <RootNamespace Condition=" '$(RootNamespace)' == '' ">$(ProjectName)</RootNamespace>
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.8</TargetFrameworkVersion>
+    <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">false</AppContainerApplication>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
 
     <!-- Output paths -->
     <ConfigOutRoot>$(OutRoot)$(Configuration.ToLowerInvariant())_$(XPlatform.ToLowerInvariant())_$(AppType.ToLowerInvariant())\</ConfigOutRoot>
@@ -56,13 +48,8 @@
     <NoesisRoot Condition=" '$(NoesisRoot)' == '' ">$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\windows_x86\</NoesisLibDir>
     <NoesisLibDir Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
-    <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)lib\uwp_x86\</NoesisLibDir>
-    <NoesisLibDir Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)lib\uwp_x86_64\</NoesisLibDir>
     <NoesisDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\windows_x86\noesis.dll</NoesisDll>
     <NoesisDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\windows_x86_64\noesis.dll</NoesisDll>
-    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x86' ">$(NoesisRoot)bin\uwp_x86\noesis.dll</NoesisDll>
-    <NoesisDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(NoesisRoot)bin\uwp_x86_64\noesis.dll</NoesisDll>
-    <NoesisDll Condition=" '$(AppType)' == 'UWP' And !Exists('$(NoesisDll)') ">$(NoesisDll.Replace("\uwp_", "\windows_"))</NoesisDll>
   </PropertyGroup>
 
   <PropertyGroup Condition="Exists('$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)')">
@@ -70,7 +57,6 @@
     <WinPixRoot Condition=" '$(WinPixRoot)' == '' And '$(XPlatform)' == 'x64' ">$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
     <WinPixLibDir Condition=" '$(XPlatform)' == 'x64' ">$(WinPixRoot)bin\x64\</WinPixLibDir>
     <WinPixIncDir Condition=" '$(XPlatform)' == 'x64' ">$(WinPixRoot)Include\WinPixEventRuntime\</WinPixIncDir>
-    <WinPixDll Condition=" '$(AppType)' == 'UWP' And '$(XPlatform)' == 'x64' ">$(WinPixLibDir)WinPixEventRuntime_UAP.dll</WinPixDll>
     <WinPixDll Condition=" '$(AppType)' == 'Desktop' And '$(XPlatform)' == 'x64' ">$(WinPixLibDir)WinPixEventRuntime.dll</WinPixDll>
   </PropertyGroup>
 
@@ -81,31 +67,6 @@
       <Targets>ResJsonBuild</Targets>
     </AvailableItemName>
   </ItemGroup>
-
-  <!-- UWP app properties -->
-  <Choose>
-    <When Condition=" '$(AppType)' == 'UWP' ">
-      <PropertyGroup>
-        <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">true</AppContainerApplication>
-        <ApplicationType Condition=" '$(ApplicationType)' == '' ">Windows Store</ApplicationType>
-        <ApplicationTypeRevision Condition=" '$(ApplicationTypeRevision)' == '' ">10.0</ApplicationTypeRevision>
-        <AppxPackageSigningEnabled Condition=" '$(AppxPackageSigningEnabled)' == '' ">false</AppxPackageSigningEnabled>
-        <CppWinRTOptimized>true</CppWinRTOptimized>
-        <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
-        <EnableDotNetNativeCompatibleProfile Condition=" '$(EnableDotNetNativeCompatibleProfile)' == '' And '$(ConfigurationType)' == 'Application' ">true</EnableDotNetNativeCompatibleProfile>
-        <GenerateManifest Condition=" '$(GenerateManifest)' == '' And '$(ConfigurationType)' != 'Application' ">false</GenerateManifest>
-        <MinimalCoreWin>true</MinimalCoreWin>
-        <WindowsTargetPlatformMinVersion Condition=" '$(WindowsTargetPlatformMinVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformMinVersion>
-        <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">false</AppContainerApplication>
-        <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
 
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -120,22 +81,10 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <!--<ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Debug|ARM64">
-      <Configuration>Debug</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Profile|ARM64">
-      <Configuration>Profile</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Condition=" '$(AppType)' == 'UWP' " Include="Release|ARM64">
-      <Configuration>Release</Configuration>
-      <Platform>ARM64</Platform>
-    </ProjectConfiguration>-->
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ConfigurationType)' != 'StaticLibrary' ">
-    <!-- For Desktop builds, these files are also copied in AfterBuild2 in cpp.targets -->
+    <!-- For Desktop builds, these files are also copied in AfterBuild2 in cpp.targets. Right here is for MSIX builds. -->
     <None Condition="Exists('$(NoesisDll)')" Include="$(NoesisDll)">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -155,7 +104,6 @@
   <PropertyGroup Condition=" '$(Configuration)' != 'Debug' " Label="Configuration">
     <LinkIncremental>false</LinkIncremental>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <UseDotNetNativeToolchain Condition=" '$(UseDotNetNativeToolchain)' == '' And '$(AppType)' == 'UWP' And '$(ConfigurationType)' == 'Application' ">true</UseDotNetNativeToolchain>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
 

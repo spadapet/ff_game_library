@@ -20,11 +20,7 @@ namespace ff
     class gamepad_device : public input_device_base
     {
     public:
-#if UWP_APP
-        using gamepad_type = typename winrt::Windows::Gaming::Input::Gamepad;
-#else
         using gamepad_type = typename size_t;
-#endif
         gamepad_device(gamepad_type gamepad);
         virtual ~gamepad_device() override;
 

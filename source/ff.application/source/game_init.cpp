@@ -67,66 +67,6 @@ static ff::init_ui_params get_ui_params()
     return params;
 }
 
-#if UWP_APP
-
-namespace game
-{
-    class app : public winrt::implements<app, winrt::Windows::ApplicationModel::Core::IFrameworkViewSource, winrt::Windows::ApplicationModel::Core::IFrameworkView>
-    {
-    public:
-        winrt::Windows::ApplicationModel::Core::IFrameworkView CreateView()
-        {
-            return *this;
-        }
-
-        void Initialize(const winrt::Windows::ApplicationModel::Core::CoreApplicationView& view)
-        {
-            view.Activated({ this, &app::activated });
-        }
-
-        void Load(const winrt::hstring& entry_point)
-        {}
-
-        void Run()
-        {
-            ff::handle_messages_until_quit();
-        }
-
-        void SetWindow(const winrt::Windows::UI::Core::CoreWindow& window)
-        {}
-
-        void Uninitialize()
-        {}
-
-    private:
-        void activated(const winrt::Windows::ApplicationModel::Core::CoreApplicationView& view, const winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs& args)
-        {
-            if (!this->init_app)
-            {
-                auto app_view = winrt::Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
-                app_view.SetPreferredMinSize(winrt::Windows::Foundation::Size(480, 270));
-
-                this->init_app = std::make_unique<ff::init_app>(::get_app_params(), ::get_ui_params());
-                assert(*this->init_app);
-            }
-
-            winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Activate();
-        }
-
-        std::unique_ptr<ff::init_app> init_app;
-    };
-}
-
-int ff::game::run(const ff::game::init_params& params)
-{
-    ::init_params = &params;
-    winrt::init_apartment();
-    winrt::Windows::ApplicationModel::Core::CoreApplication::Run(winrt::make<::game::app>());
-    return 0;
-}
-
-#else
-
 static void set_window_client_size(HWND hwnd, const ff::point_int& new_size)
 {
     RECT rect{ 0, 0, new_size.x, new_size.y }, rect2;
@@ -234,5 +174,3 @@ int ff::game::run(const ff::game::init_params& params)
     ff::signal_connection message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     return ff::handle_messages_until_quit();
 }
-
-#endif

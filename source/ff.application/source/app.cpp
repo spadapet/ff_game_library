@@ -173,23 +173,15 @@ static void frame_update_cursor()
         ::window_cursor = cursor;
 
         ff::thread_dispatch::get_main()->post([]()
+        {
+            POINT pos;
+            if (::GetCursorPos(&pos) &&
+                ::WindowFromPoint(pos) == *ff::window::main() &&
+                ::SendMessage(*ff::window::main(), WM_NCHITTEST, 0, MAKELPARAM(pos.x, pos.y)) == HTCLIENT)
             {
-#if UWP_APP
-                winrt::Windows::UI::Core::CoreCursorType core_cursor_type = (::window_cursor.load() == IDC_HAND)
-                    ? winrt::Windows::UI::Core::CoreCursorType::Hand
-                    : winrt::Windows::UI::Core::CoreCursorType::Arrow;
-
-                ff::window::main()->handle().PointerCursor(winrt::Windows::UI::Core::CoreCursor(core_cursor_type, 0));
-#else
-                POINT pos;
-                if (::GetCursorPos(&pos) &&
-                    ::WindowFromPoint(pos) == *ff::window::main() &&
-                    ::SendMessage(*ff::window::main(), WM_NCHITTEST, 0, MAKELPARAM(pos.x, pos.y)) == HTCLIENT)
-                {
-                    ::SetCursor(::LoadCursor(nullptr, ::window_cursor.load()));
-                }
-#endif
-            });
+                ::SetCursor(::LoadCursor(nullptr, ::window_cursor.load()));
+            }
+        });
     }
 }
 
@@ -477,7 +469,6 @@ static void handle_window_message(ff::window_message& message)
             }
             break;
 
-#if !UWP_APP
         case WM_SETCURSOR:
             if (LOWORD(message.lp) == HTCLIENT)
             {
@@ -490,7 +481,6 @@ static void handle_window_message(ff::window_message& message)
                 }
             }
             break;
-#endif
     }
 }
 
@@ -505,9 +495,6 @@ static void init_app_name()
 {
     if (::app_product_name.empty())
     {
-#if UWP_APP
-        ::app_product_name = ff::string::to_string(winrt::Windows::ApplicationModel::AppInfo::Current().DisplayInfo().DisplayName());
-#else
         std::array<wchar_t, 2048> wpath;
         DWORD size = static_cast<DWORD>(wpath.size());
         if ((size = ::GetModuleFileName(nullptr, wpath.data(), size)) != 0)
@@ -546,7 +533,6 @@ static void init_app_name()
                 ::app_product_name = ff::filesystem::to_string(path.stem());
             }
         }
-#endif
     }
 
     if (::app_product_name.empty())
@@ -574,7 +560,6 @@ static void destroy_log()
 
 static void init_window()
 {
-#if !UWP_APP
     HWND hwnd = *ff::window::main();
     LPCWSTR icon_name = MAKEINTRESOURCE(1);
 
@@ -596,16 +581,11 @@ static void init_window()
     }
 
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-#endif
     ::update_window_visible(true);
 }
 
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
-#if UWP_APP
-    ff::window::main()->allow_swap_chain_panel(params.use_swap_chain_panel);
-#endif
-
     ::app_params = params;
     if (!::app_params.get_advance_type_func)
     {

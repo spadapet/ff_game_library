@@ -8,25 +8,6 @@ bool ff::got_quit_message()
     return ::got_quit_message_;
 }
 
-#if UWP_APP
-
-bool ff::handle_messages()
-{
-    winrt::Windows::UI::Core::CoreWindow window = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
-    window.Dispatcher().ProcessEvents(winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
-    return true;
-}
-
-int ff::handle_messages_until_quit()
-{
-    winrt::Windows::UI::Core::CoreWindow window = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
-    window.Dispatcher().ProcessEvents(winrt::Windows::UI::Core::CoreProcessEventsOption::ProcessUntilQuit);
-    ::got_quit_message_ = true;
-    return 0;
-}
-
-#else
-
 static int exit_code{};
 
 static void handle_message(::MSG& msg)
@@ -83,5 +64,3 @@ int ff::handle_messages_until_quit()
 
     return ::exit_code;
 }
-
-#endif

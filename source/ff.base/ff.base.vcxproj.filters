@@ -41,12 +41,6 @@
     <ClCompile Include="source\init.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\window_desktop.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\window_uwp.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\math.cpp">
       <Filter>source</Filter>
     </ClCompile>

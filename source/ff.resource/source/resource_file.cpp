@@ -16,8 +16,6 @@ static bool default_compress(const std::filesystem::path& path)
     return true;
 }
 
-#if !UWP_APP
-
 ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name)
     : file_extension_(file_extension)
     , compress(::default_compress(file_extension))
@@ -25,8 +23,6 @@ ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE inst
     std::shared_ptr<ff::data_base> data = std::make_shared<ff::data_static>(instance, rc_type, rc_name);
     this->saved_data_ = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
 }
-
-#endif
 
 ff::resource_file::resource_file(const std::filesystem::path& path)
     : file_extension_(ff::filesystem::to_string(ff::filesystem::to_lower(path.extension())))

@@ -134,12 +134,10 @@ static void flush_keep_alive()
     }
 }
 
-#if !UWP_APP
 static bool is_graphics_debugger_present()
 {
-    return ::GetModuleHandle(L"DXCaptureReplay.dll"); // ::GetModuleHandle(L"renderdoc.dll");
+    return ::GetModuleHandle(L"DXCaptureReplay.dll") != nullptr; // ::GetModuleHandle(L"renderdoc.dll");
 }
-#endif
 
 static bool supports_create_heap_not_resident()
 {
@@ -147,11 +145,7 @@ static bool supports_create_heap_not_resident()
     D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
     if (SUCCEEDED(::device.As(&device8)) || SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))))
     {
-#if UWP_APP
-        return true;
-#else
         return !ff::constants::profile_build || !::is_graphics_debugger_present();
-#endif
     }
 
     return false;
@@ -166,9 +160,7 @@ static bool supports_mesh_shaders()
 
 static bool init_dxgi()
 {
-#if !UWP_APP
     ::DXGIDeclareAdapterRemovalSupport();
-#endif
 
     ::factory = ff::dxgi::create_factory();
     assert_ret_val(::factory, false);

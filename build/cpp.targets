@@ -17,7 +17,7 @@
         <Command>&quot;$(FFRoot)build\$(XPlatform)\ff.resource.build.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
         <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
         <ContentOutputs>$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
-        <TreatOutputAsContent Condition=" '$(AppType)' == 'UWP' ">false</TreatOutputAsContent>
+        <TreatOutputAsContent>true</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>
       </ResJson>
     </ItemGroup>
@@ -32,7 +32,7 @@
   </Target>
 
   <Target Name="AfterBuild2" AfterTargets="AfterBuild" Condition=" '$(AppType)' == 'Desktop' And '$(ConfigurationType)' != 'StaticLibrary' ">
-    <!-- For UWP builds, these files are copied in cpp.props as None.DeploymentContent -->
+    <!-- For MSIX builds, these files are copied in cpp.props as None.DeploymentContent -->
     <Copy Condition="Exists('$(NoesisDll)')" SourceFiles="$(NoesisDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
     <Copy Condition="Exists('$(WinPixDll)') And '$(Configuration)' != 'Release' " SourceFiles="$(WinPixDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="True" />
   </Target>
@@ -50,9 +50,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
-      <PreprocessorDefinitions Condition=" '$(AppType)' == 'UWP' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;_UWP_APP;UWP_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(AppType)' == 'Desktop' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;UWP_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' And '$(AppType)' == 'UWP' ">_WINRT_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(AppType)' == 'Desktop' ">WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -87,10 +85,6 @@
     </Lib>
     <!-- Typelib options -->
     <Midl>
-      <!--<OutputDirectory>$(GeneratedFilesDir)</OutputDirectory>
-      <TargetEnvironment>Win32</TargetEnvironment>
-      <TargetEnvironment Condition=" '$(Platform)' == 'x64' ">X64</TargetEnvironment>
-      <TypeLibraryName>$(GeneratedFilesDir)%(FileName).tlb</TypeLibraryName>-->
       <WarnAsError>true</WarnAsError>
       <WarningLevel>3</WarningLevel>
     </Midl>
@@ -115,7 +109,5 @@
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
     </Link>
   </ItemDefinitionGroup>
-
-  <Import Project="$(CppWinRTRoot)Microsoft.Windows.CppWinRT.targets" Condition="Exists('$(CppWinRTRoot)Microsoft.Windows.CppWinRT.targets')" />
 
 </Project>

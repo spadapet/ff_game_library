@@ -12,12 +12,10 @@ namespace
         one_time_init_base()
             : thread_dispatch(ff::thread_dispatch_type::main)
         {
-#if !UWP_APP
             if (!::IsMouseInPointerEnabled())
             {
                 ::EnableMouseInPointer(TRUE);
             }
-#endif
 
 #ifdef TRACK_MEMORY_ALLOCATIONS
             ff::memory::start_tracking_allocations();
@@ -42,11 +40,7 @@ namespace
     struct one_time_init_main_window
     {
         one_time_init_main_window(const ff::init_main_window_params& params)
-#if UWP_APP
-            : main_window(ff::window_type::main)
-#else
             : main_window(one_time_init_main_window::create_window(params))
-#endif
         {}
 
         ~one_time_init_main_window()
@@ -56,7 +50,6 @@ namespace
             ff::thread_dispatch::get_main()->flush();
         }
 
-#if !UWP_APP
         static ff::window create_window(const ff::init_main_window_params& params)
         {
             if (params.window_class.empty())
@@ -70,7 +63,6 @@ namespace
                 WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT);
         }
-#endif
 
     private:
         ff::window main_window;

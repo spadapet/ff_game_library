@@ -38,9 +38,8 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     std::wstring message_text = ff::string::to_wstring(dialog_text_view) + L"\r\n\r\nBreak?";
     ff::log::write(ff::log::type::debug, dialog_text_view);
 
-    bool ignored = !ff::constants::uwp_build;
-#if !UWP_APP
     // Only the main thread should show dialog UI
+    bool ignored = true;
     bool main_thread = ff::thread_dispatch::get_main()->current_thread();
 
     if (nested || !main_thread || ff::got_quit_message() || ::IsDebuggerPresent())
@@ -51,7 +50,6 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     {
         ignored = false;
     }
-#endif
 
     ::handling_assert.fetch_sub(1);
 

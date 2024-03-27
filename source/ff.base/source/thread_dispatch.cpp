@@ -17,23 +17,10 @@ namespace ff
 ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     : thread_id(::GetCurrentThreadId())
     , destroyed(false)
-#if UWP_APP
-    , dispatcher(nullptr)
-#else
     , message_window(ff::window::create_message_window())
     , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1)))
-#endif
 {
     this->flushed_event.set();
-
-#if UWP_APP
-    winrt::Windows::UI::Core::CoreWindow window = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread();
-    if (window)
-    {
-        this->dispatcher = window.Dispatcher();
-        this->handler = winrt::Windows::UI::Core::DispatchedHandler([this]() { this->flush(true); });
-    }
-#endif
 
     switch (type)
     {
@@ -228,11 +215,8 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
     {
         DWORD wait_ms = (timeout_ms != INFINITE) ? static_cast<DWORD>(end_tick - cur_tick) : INFINITE;
         DWORD wait_size = static_cast<DWORD>(handles_vector.size());
-#if UWP_APP
-        DWORD result = ::WaitForMultipleObjectsEx(wait_size, handles_vector.data(), FALSE, wait_ms, TRUE);
-#else
         DWORD result = ::MsgWaitForMultipleObjectsEx(wait_size, handles_vector.data(), wait_ms, QS_ALLINPUT, MWMO_ALERTABLE | MWMO_INPUTAVAILABLE);
-#endif
+
         switch (result)
         {
             default:
@@ -271,9 +255,8 @@ bool ff::thread_dispatch::wait_for_any_handle(const HANDLE* handles, size_t coun
                 break;
         }
 
-#if !UWP_APP
         ff::handle_messages();
-#endif
+
         if (cur_tick == end_tick)
         {
             break;
@@ -320,13 +303,11 @@ bool ff::thread_dispatch::allow_dispatch_during_wait() const
 
 void ff::thread_dispatch::flush(bool force)
 {
-#if !UWP_APP
     if (ff::thread_dispatch::get_main() != this)
     {
         // background threads might only call flush to pump messages
         ff::handle_messages();
     }
-#endif
 
     if (force || this->current_thread())
     {
@@ -362,17 +343,8 @@ void ff::thread_dispatch::flush(bool force)
 
 void ff::thread_dispatch::post_flush()
 {
-#if UWP_APP
-    if (this->dispatcher)
-    {
-        this->dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, this->handler);
-    }
-#else
     ::PostMessage(this->message_window, WM_USER, 0, 0);
-#endif
 }
-
-#if !UWP_APP
 
 void ff::thread_dispatch::handle_message(ff::window_message& msg)
 {
@@ -381,8 +353,6 @@ void ff::thread_dispatch::handle_message(ff::window_message& msg)
         this->flush(true);
     }
 }
-
-#endif
 
 ff::frame_dispatch_scope::frame_dispatch_scope(ff::thread_dispatch& dispatch)
     : old_dispatch(::frame_thread_dispatch)

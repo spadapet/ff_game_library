@@ -8,9 +8,7 @@ namespace ff
     class resource_file : public ff::resource_object_base
     {
     public:
-#if !UWP_APP
         resource_file(std::string_view file_extension, HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name);
-#endif
         resource_file(const std::filesystem::path& path);
         resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
 

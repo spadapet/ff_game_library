@@ -81,9 +81,8 @@ namespace ff
         ff::intrusive_ptr<ff::internal::win_event_data> data;
     };
 
-#if !UWP_APP
     HINSTANCE get_hinstance();
-#endif
+
     bool wait_for_event_and_reset(HANDLE handle, size_t timeout_ms = INFINITE, bool allow_dispatch = true);
     bool wait_for_handle(HANDLE handle, size_t timeout_ms = INFINITE, bool allow_dispatch = true);
     bool wait_for_any_handle(const HANDLE* handles, size_t count, size_t& completed_index, size_t timeout_ms = INFINITE, bool allow_dispatch = true);

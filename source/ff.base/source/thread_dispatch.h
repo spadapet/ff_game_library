@@ -53,15 +53,10 @@ namespace ff
         ff::win_event pending_event;
         DWORD thread_id;
         bool destroyed;
-#if UWP_APP
-        winrt::Windows::UI::Core::CoreDispatcher dispatcher;
-        winrt::Windows::UI::Core::DispatchedHandler handler;
-#else
         void handle_message(ff::window_message& msg);
 
         ff::window message_window;
         ff::signal_connection message_window_connection;
-#endif
     };
 
     class frame_dispatch_scope
