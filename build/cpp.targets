@@ -17,24 +17,25 @@
         <Command>&quot;$(FFRoot)build\$(Platform)\ff.resource.build.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
         <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
         <ContentOutputs>$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
-        <TreatOutputAsContent>true</TreatOutputAsContent>
+        <TreatOutputAsContent>$(TreatResPackAsContent)</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>
       </ResJson>
     </ItemGroup>
-
-    <PropertyGroup>
-      <AdditionalContentFiles>@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'));$(AdditionalContentFiles)</AdditionalContentFiles>
-    </PropertyGroup>
   </Target>
 
   <Target Name="ResJsonBuild" Condition=" '@(ResJson)' != '' " BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild">
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
+    <ItemGroup>
+      <Content Include="@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'))">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
   </Target>
 
   <ItemDefinitionGroup>
     <!-- Compiler options -->
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc;$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include;$(WinPixIncDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc;$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
@@ -48,7 +49,7 @@
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'DynamicLibrary' ">_WINDLL;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'StaticLibrary' ">_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(ConfigurationType)' == 'Application' ">_WINEXE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOMINMAX;D3D12_AGILITY_SDK_VERSION_EXPORT=$(D3D12AgilitySDK);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(Configuration)' != 'Release' ">PROFILE;PROFILE_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Release' ">PROFILE_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
@@ -89,7 +90,7 @@
     </ResourceCompile>
     <!-- Linker options -->
     <Link>
-      <AdditionalLibraryDirectories>$(NoesisLibDir);$(WinPixLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NoesisLibDir);$(WinPixRoot)bin\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>

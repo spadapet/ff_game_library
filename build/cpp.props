@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="base.props"/>
   <PropertyGroup>
     <SharedCppPropsImported>true</SharedCppPropsImported>
 
@@ -13,18 +12,17 @@
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.8</TargetFrameworkVersion>
     <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">false</AppContainerApplication>
     <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
-    <IgnoreImportLibrary>false</IgnoreImportLibrary>
+    <IgnoreImportLibrary Condition=" '$(IgnoreImportLibrary)' == '' ">false</IgnoreImportLibrary>
+    <TreatResPackAsContent Condition=" '$(TreatResPackAsContent)' == '' ">false</TreatResPackAsContent>
 
     <!-- Noesis -->
     <NoesisRoot>$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir>$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
     <NoesisDll>$(NoesisRoot)bin\windows_x86_64\noesis.dll</NoesisDll>
 
-    <!-- WinPix -->
+    <!-- WinPix/D3D SDK -->
     <WinPixRoot>$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
-    <WinPixLibDir>$(WinPixRoot)bin\x64\</WinPixLibDir>
-    <WinPixIncDir>$(WinPixRoot)Include\WinPixEventRuntime\</WinPixIncDir>
-    <WinPixDll>$(WinPixLibDir)WinPixEventRuntime.dll</WinPixDll>
+    <D3D12AgilityRoot>$(PackagesRoot)Microsoft.Direct3D.D3D12.$(D3D12AgilityVersion)\</D3D12AgilityRoot>
   </PropertyGroup>
 
   <!-- .res.json build -->
@@ -35,16 +33,9 @@
     </AvailableItemName>
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(ConfigurationType)' == 'Application' ">
+  <ItemGroup Condition=" '$(ConfigurationType)' != 'StaticLibrary' ">
     <Content Condition="Exists('$(NoesisDll)')" Include="$(NoesisDll)">
-      <DeploymentContent>true</DeploymentContent>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Condition="Exists('$(WinPixDll)') And '$(Configuration)' != 'Release' " Include="$(WinPixDll)">
-      <DeploymentContent>true</DeploymentContent>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 
@@ -61,5 +52,4 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-
 </Project>

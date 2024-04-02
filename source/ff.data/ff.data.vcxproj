@@ -79,9 +79,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.zlib.vcxproj">
       <Project>{d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc}</Project>
+      <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\ff.base\ff.base.vcxproj">
       <Project>{dfdbd2c1-61cb-4606-8e52-85b65c9aaef2}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

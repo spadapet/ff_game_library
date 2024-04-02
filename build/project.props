@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SharedProjectPropsImported>true</SharedProjectPropsImported>
+  </PropertyGroup>
+  
+  <Import Condition=" '$(BasePropsImported)' == '' " Project="base.props" />
+  <Import Condition=" '$(SharedCppPropsImported)' == '' And '$(MSBuildProjectExtension)' == '.vcxproj' " Project="cpp.props" />
+  <Import Condition=" '$(SharedWapPropsImported)' == '' And '$(MSBuildProjectExtension)' == '.wapproj' " Project="wap.props" />
+  <Import Condition=" '$(SharedCsprojPropsImported)' == '' And '$(MSBuildProjectExtension)' == '.csproj' " Project="cs.props" />
+</Project>

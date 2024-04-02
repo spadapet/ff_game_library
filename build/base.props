@@ -2,12 +2,19 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BasePropsImported>true</BasePropsImported>
+
+    <!-- Versions -->
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <!-- Also update Noesis version in /vendor/packages.config -->
+    <!-- Also update Noesis version in /vendor/packages.ff.vendor.noesis_interactivity.config -->
     <NoesisVersion>3.2.3</NoesisVersion>
-    <WinPixVersion>1.0.231030001</WinPixVersion>
+    <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
+    <WinPixVersion>1.0.240308001</WinPixVersion>
+    <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
+    <D3D12AgilitySDK>613</D3D12AgilitySDK>
+    <D3D12AgilityVersion>1.$(D3D12AgilitySDK).2</D3D12AgilityVersion>
 
+    <!-- Root dirs -->
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ".."))))</FFRoot>
     <DevRoot Condition=" '$(DevRoot)' == '' ">$([MSBuild]::EnsureTrailingSlash($([MSBuild]::ValueOrDefault($([MSBuild]::GetDirectoryNameOfFileAbove("$(FFRoot)..", ".gitmodules")), "$(FFRoot)"))))</DevRoot>
     <OutRoot Condition=" '$(OutRoot)' == '' ">$(DevRoot)out\</OutRoot>
@@ -27,7 +34,6 @@
     <OutDir>$(ProjectOutRoot)bin\</OutDir>
     <GeneratedFilesDir>$(ProjectOutRoot)inc\</GeneratedFilesDir>
     <IntermediateOutputPath>$(IntDir)</IntermediateOutputPath>
-    <MSBuildProjectExtensionsPath Condition=" '$(MSBuildProjectExtension)' == '.wapproj' ">$(IntDir)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 
   <ItemGroup Label="ProjectConfigurations">

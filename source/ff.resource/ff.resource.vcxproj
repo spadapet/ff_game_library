@@ -46,6 +46,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ff.data\ff.data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -14,8 +14,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{F488DCA8
 		build\cpp.props = build\cpp.props
 		build\cpp.targets = build\cpp.targets
 		build\cpp.xml = build\cpp.xml
+		build\cs.props = build\cs.props
 		directory.build.props = directory.build.props
 		directory.build.targets = directory.build.targets
+		build\project.props = build\project.props
+		build\wap.props = build\wap.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vendor", "vendor", "{52A574D0-F4AE-4047-8541-6A966540969A}"

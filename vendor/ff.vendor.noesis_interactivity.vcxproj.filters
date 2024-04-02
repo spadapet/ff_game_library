@@ -175,6 +175,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.ff.vendor.noesis_interactivity.config" />
   </ItemGroup>
 </Project>

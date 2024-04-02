@@ -13,8 +13,10 @@
 extern "C"
 {
     // NVIDIA and AMD globals to prefer their higher powered GPU over Intel
-    __declspec(dllexport) DWORD NvOptimusEnablement = 1;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+    __declspec(dllexport) extern const DWORD NvOptimusEnablement = 1;
+    __declspec(dllexport) extern const int AmdPowerXpressRequestHighPerformance = 1;
+    __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
+    __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 }
 
 // DX12 globals

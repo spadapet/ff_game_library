@@ -64,9 +64,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">
       <Project>{5f0b3fd1-44d5-4524-8f61-e22098986a43}</Project>
+      <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\ff.data\ff.data.vcxproj">
       <Project>{76418cad-574e-4d62-81bd-41321411fd63}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

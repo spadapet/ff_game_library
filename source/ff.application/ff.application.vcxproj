@@ -39,9 +39,11 @@
   <ItemGroup>
     <ProjectReference Include="..\ff.audio\ff.audio.vcxproj">
       <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
+      <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\ff.ui\ff.ui.vcxproj">
       <Project>{8147a742-08ac-49fd-8c51-3956e1a65e16}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
