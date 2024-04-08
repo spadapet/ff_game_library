@@ -4,7 +4,7 @@
 static const size_t MAX_COUNTER = 60;
 
 ff::internal::ui::resource_cache::resource_cache()
-    : resource_rebuild_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::ui::resource_cache::on_resource_rebuild, this, std::placeholders::_1)))
+    : resource_rebuild_connection(ff::global_resources::rebuild_resources_sink().connect(std::bind(&ff::internal::ui::resource_cache::on_resource_rebuild, this)))
 {}
 
 void ff::internal::ui::resource_cache::advance()
@@ -48,10 +48,7 @@ std::vector<std::string_view> ff::internal::ui::resource_cache::resource_object_
     return ff::global_resources::get()->resource_object_names();
 }
 
-void ff::internal::ui::resource_cache::on_resource_rebuild(size_t round)
+void ff::internal::ui::resource_cache::on_resource_rebuild()
 {
-    if (round == 0)
-    {
-        this->cache.clear();
-    }
+    this->cache.clear();
 }

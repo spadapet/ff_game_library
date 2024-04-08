@@ -19,11 +19,14 @@ namespace ff
         ff::value_ptr value() const;
         ff::co_task<ff::value_ptr> value_async() const;
         bool is_loading() const;
+        bool is_expired() const;
         void finalize_value(ff::value_ptr value);
+        void expire();
 
     private:
         std::string name_;
         ff::value_ptr value_;
         std::atomic<std::shared_ptr<ff::win_event>> finalized_event;
+        bool expired{};
     };
 }

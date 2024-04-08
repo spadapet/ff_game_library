@@ -16,6 +16,6 @@ namespace ff::global_resources
     ff::co_task<> rebuild_async();
     bool is_rebuilding();
     ff::signal_sink<>& rebuild_begin_sink();
-    ff::signal_sink<size_t>& rebuild_end_sink();
-    constexpr size_t rebuild_round_count = 2;
+    ff::signal_sink<ff::push_base<ff::co_task<>>&>& rebuild_resources_sink();
+    ff::signal_sink<>& rebuild_end_sink();
 }

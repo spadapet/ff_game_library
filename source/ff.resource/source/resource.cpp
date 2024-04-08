@@ -56,6 +56,11 @@ bool ff::resource::is_loading() const
     return finalized_event && !finalized_event->is_set();
 }
 
+bool ff::resource::is_expired() const
+{
+    return this->expired;
+}
+
 void ff::resource::finalize_value(ff::value_ptr value)
 {
     auto finalized_event = this->finalized_event.load();
@@ -67,4 +72,9 @@ void ff::resource::finalize_value(ff::value_ptr value)
         finalized_event->set();
         this->finalized_event.store(nullptr);
     }
+}
+
+void ff::resource::expire()
+{
+    this->expired = true;
 }

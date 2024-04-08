@@ -32,15 +32,15 @@ namespace ff
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
         virtual void flush_all_resources() override;
-
-        void add_object_provider(std::shared_ptr<ff::resource_object_provider> value);
-        void add_value_provider(std::shared_ptr<ff::resource_value_provider> value);
+        virtual ff::co_task<> flush_all_resources_async() override;
 
     protected:
         virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
 
     private:
         friend void ff::global_resources::add(std::shared_ptr<ff::data_base> data);
+        void rebuild(ff::push_base<ff::co_task<>>& tasks);
+        ff::co_task<> rebuild_async();
 
         struct resource_object_info;
 
@@ -65,15 +65,16 @@ namespace ff
         void add_resources(const ff::dict& dict);
         void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
-        ff::value_ptr get_localized_value(std::string_view name);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);
 
         mutable std::recursive_mutex resource_object_info_mutex;
         std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
-        std::vector<std::shared_ptr<ff::resource_object_provider>> object_providers;
-        std::vector<std::shared_ptr<ff::resource_value_provider>> value_providers;
         ff::win_event done_loading_event;
         std::atomic<int> loading_count;
+
+        // hot reload
+        ff::signal_connection rebuild_connection;
+        std::unordered_set<std::string> rebuild_source_files;
     };
 }
 

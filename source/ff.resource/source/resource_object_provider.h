@@ -19,5 +19,6 @@ namespace ff
         virtual ~resource_object_loader() = default;
 
         virtual void flush_all_resources() = 0;
+        virtual ff::co_task<> flush_all_resources_async() = 0;
     };
 }

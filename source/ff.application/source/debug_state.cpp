@@ -225,7 +225,7 @@ ff::internal::debug_view_model::debug_view_model()
     , geometry_render_(::CreateChartGeometry())
     , geometry_wait_(::CreateChartGeometry())
     , resource_rebuild_begin_connection(ff::global_resources::rebuild_begin_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
-    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_end, this, std::placeholders::_1)))
+    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
 {
     this->pages_->Add(this->selected_page_);
     this->pages()->CollectionChanged() += Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
@@ -516,14 +516,6 @@ void ff::internal::debug_view_model::on_resources_rebuild_begin()
     this->build_resources_command_->RaiseCanExecuteChanged();
 }
 
-void ff::internal::debug_view_model::on_resources_rebuild_end(size_t round)
-{
-    if (round == ff::global_resources::rebuild_round_count - 1)
-    {
-        this->on_resources_rebuild_begin();
-    }
-}
-
 void ff::internal::debug_view_model::on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args)
 {
     if (this->pages()->IndexOf(this->selected_page()) < 0)
@@ -609,7 +601,7 @@ static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_
 
 ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
     : perf_results(perf_results)
-    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_state::on_resources_rebuild_end, this, std::placeholders::_1)))
+    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_state::on_resources_rebuild_end, this)))
     , input_mapping(assets::app::FF_DEBUG_PAGE_INPUT)
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
     , view_model(view_model)
@@ -712,12 +704,9 @@ void ff::internal::debug_state::init_resources()
     this->stopped_view_state = ::create_view_state<ff::internal::stopped_view>(view_model);
 }
 
-void ff::internal::debug_state::on_resources_rebuild_end(size_t round)
+void ff::internal::debug_state::on_resources_rebuild_end()
 {
-    if (round == ff::global_resources::rebuild_round_count - 1)
-    {
-        this->init_resources();
-    }
+    this->init_resources();
 }
 
 void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)

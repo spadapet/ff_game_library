@@ -112,7 +112,6 @@ namespace ff::internal
         NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_property_changed_base);
 
         void on_resources_rebuild_begin();
-        void on_resources_rebuild_end(size_t round);
         void on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args);
         void close_command(Noesis::BaseComponent*);
         void build_resources_command(Noesis::BaseComponent*);
@@ -185,7 +184,7 @@ namespace ff::internal
 
     private:
         void init_resources();
-        void on_resources_rebuild_end(size_t round);
+        void on_resources_rebuild_end();
 
         const ff::perf_results& perf_results;
         ff::signal_connection resource_rebuild_end_connection;

@@ -765,6 +765,12 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
             ff::load_resources_result result{};
             result.status = false;
             result.errors = std::move(errors);
+
+            for (const std::string& error : result.errors)
+            {
+                ff::log::write(ff::log::type::resource_load, "Load resource error: ", error, "\r\n");
+            }
+
             std::copy(context.errors().cbegin(), context.errors().cend(), std::back_inserter(result.errors));
             return result;
         }

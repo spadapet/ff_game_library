@@ -25,7 +25,7 @@ namespace ff::internal::ui
             size_t counter;
         };
 
-        void on_resource_rebuild(size_t round);
+        void on_resource_rebuild();
 
         std::unordered_map<std::string_view, entry_t> cache;
         ff::signal_connection resource_rebuild_connection;
