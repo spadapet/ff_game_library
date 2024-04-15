@@ -29,7 +29,21 @@ const std::shared_ptr<ff::resource>& ff::auto_resource_value::resource() const
     return this->resource_;
 }
 
+const std::shared_ptr<ff::resource>& ff::auto_resource_value::latest_resource()
+{
+    if (this->resource_)
+    {
+        std::shared_ptr<ff::resource> new_resource = this->resource_->new_resource();
+        if (new_resource && new_resource != this->resource_)
+        {
+            this->resource_ = new_resource;
+        }
+    }
+
+    return this->resource_;
+}
+
 ff::resource* ff::auto_resource_value::operator->()
 {
-    return this->resource_.get();
+    return this->resource().get();
 }

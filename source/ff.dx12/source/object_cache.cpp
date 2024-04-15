@@ -400,7 +400,7 @@ void ff::dx12::object_cache::save()
     save_data.reset();
     this->create_cache();
 
-    const double seconds = ff::timer::seconds_between_raw(start_time, ff::timer::current_raw_time());
+    const double seconds = ff::timer::seconds_since_raw(start_time);
     ff::log::write(ff::log::type::dx12, "Saved PSO library: ", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms, Size: ", save_size, ", File: '", ff::filesystem::to_string(save_path), "'");
 }
 

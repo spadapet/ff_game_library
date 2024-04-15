@@ -14,7 +14,6 @@ namespace ff
         auto_resource_value(const auto_resource_value& other) = default;
         auto_resource_value(const std::shared_ptr<ff::resource>& resource);
         auto_resource_value(std::string_view resource_name);
-        virtual ~auto_resource_value() = default;
 
         auto_resource_value& operator=(auto_resource_value&& other) noexcept = default;
         auto_resource_value& operator=(const auto_resource_value& other) = default;
@@ -22,6 +21,7 @@ namespace ff
         auto_resource_value& operator=(std::string_view resource_name);
 
         const std::shared_ptr<ff::resource>& resource() const;
+        const std::shared_ptr<ff::resource>& latest_resource();
         ff::resource* operator->();
 
     private:
@@ -73,9 +73,11 @@ namespace ff
 
         const std::shared_ptr<T>& object()
         {
-            if (!this->resource_object)
+            std::shared_ptr<ff::resource> resource = this->latest_resource();
+            if (this->resource_for_object != resource)
             {
-                this->object_async().wait();
+                ff::value_ptr value = resource ? resource->value() : ff::value::create<nullptr_t>();
+                this->create_resource_object(resource, value);
             }
 
             return this->resource_object;
@@ -83,12 +85,11 @@ namespace ff
 
         ff::co_task<std::shared_ptr<T>> object_async()
         {
-            if (!this->resource_object)
+            std::shared_ptr<ff::resource> resource = this->latest_resource();
+            if (this->resource_for_object != resource)
             {
-                ff::value_ptr value = this->resource() ? co_await this->resource()->value_async() : ff::value::create<nullptr_t>();
-                std::shared_ptr<ff::resource_object_base> object = value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
-                this->resource_object = std::dynamic_pointer_cast<T>(object);
-                assert(this->resource_object || value->is_type<nullptr_t>());
+                ff::value_ptr value = resource ? co_await resource->value_async() : ff::value::create<nullptr_t>();
+                this->create_resource_object(resource, value);
             }
 
             co_return this->resource_object;
@@ -100,6 +101,15 @@ namespace ff
         }
 
     private:
+        void create_resource_object(const std::shared_ptr<ff::resource>& resource, ff::value_ptr value)
+        {
+            std::shared_ptr<ff::resource_object_base> object = value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>();
+            this->resource_for_object = resource;
+            this->resource_object = std::dynamic_pointer_cast<T>(object);
+            assert(this->resource_object || value->is_type<nullptr_t>());
+        }
+
+        std::shared_ptr<ff::resource> resource_for_object;
         std::shared_ptr<T> resource_object;
     };
 

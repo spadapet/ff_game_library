@@ -52,6 +52,7 @@ namespace ff
             std::vector<std::shared_ptr<resource_object_loading_info>> parent_loading_infos;
             std::string name;
             resource_object_info* owner;
+            int64_t start_time;
             int blocked_count;
         };
 
@@ -74,7 +75,7 @@ namespace ff
 
         // hot reload
         ff::signal_connection rebuild_connection;
-        std::unordered_set<std::string> rebuild_source_files;
+        std::unordered_set<std::filesystem::path> rebuild_source_files;
     };
 }
 

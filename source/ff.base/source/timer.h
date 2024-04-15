@@ -16,6 +16,7 @@ namespace ff
         static int64_t raw_frequency();
         static double raw_frequency_double();
         static double seconds_between_raw(int64_t start, int64_t end);
+        static double seconds_since_raw(int64_t start);
 
     private:
         void reset(int64_t now_time);

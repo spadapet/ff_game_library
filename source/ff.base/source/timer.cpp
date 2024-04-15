@@ -76,3 +76,9 @@ double ff::timer::seconds_between_raw(int64_t start, int64_t end)
 {
     return (end - start) * ::raw_frequency_1d;
 }
+
+// static
+double ff::timer::seconds_since_raw(int64_t start)
+{
+    return ff::timer::seconds_between_raw(start, ff::timer::current_raw_time());
+}

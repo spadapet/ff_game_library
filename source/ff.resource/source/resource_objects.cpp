@@ -25,40 +25,51 @@ ff::resource_objects::~resource_objects()
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
 {
-    auto value = this->get_resource_object_here(name);
-    return value ? value : std::make_shared<ff::resource>(name, ff::value::create<nullptr_t>());
+    std::shared_ptr<ff::resource> value;
+    {
+        std::scoped_lock lock(this->resource_object_info_mutex);
+        value = this->get_resource_object_here(name);
+    }
+
+    if (!value)
+    {
+        value = std::make_shared<ff::resource>(name, ff::value::create<nullptr_t>());
+    }
+
+    return value;
 }
 
+// Caller must own the this->resource_object_info_mutex lock
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std::string_view name)
 {
-    std::scoped_lock lock(this->resource_object_info_mutex);
-    std::shared_ptr<ff::resource> value;
+    std::shared_ptr<ff::resource> resource_result;
 
     auto iter = this->resource_object_infos.find(name);
     if (iter != this->resource_object_infos.cend())
     {
         resource_object_info& info = iter->second;
-        value = info.weak_value.lock();
+        resource_result = info.weak_value.lock();
 
-        if (!value)
+        if (!resource_result)
         {
             if (this->loading_count.fetch_add(1) == 0)
             {
                 this->done_loading_event.reset();
             }
 
-            value = std::make_shared<ff::resource>(name);
+            resource_result = std::make_shared<ff::resource>(name);
 
             auto loading_info = std::make_shared<resource_object_loading_info>();
-            loading_info->loading_resource = value;
+            loading_info->loading_resource = resource_result;
             loading_info->blocked_count = 1;
             loading_info->name = name;
             loading_info->owner = &info;
+            loading_info->start_time = ff::timer::current_raw_time();
 
-            info.weak_value = value;
+            info.weak_value = resource_result;
             info.weak_loading_info = loading_info;
 
-            ff::log::write(ff::log::type::resource_load, "Load: ", name);
+            ff::log::write(ff::log::type::resource_load, "Loading: ", name);
 
             ff::thread_pool::add_task([this, loading_info]()
             {
@@ -69,7 +80,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
         }
     }
 
-    return value;
+    return resource_result;
 }
 
 std::vector<std::string_view> ff::resource_objects::resource_object_names() const
@@ -89,7 +100,6 @@ std::vector<std::string_view> ff::resource_objects::resource_object_names() cons
 void ff::resource_objects::flush_all_resources()
 {
     this->done_loading_event.wait();
-    assert(!this->loading_count.load());
 }
 
 ff::co_task<> ff::resource_objects::flush_all_resources_async()
@@ -121,10 +131,10 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
             info.dict_value = dict.get(name);
             this->resource_object_infos.try_emplace(name, std::move(info));
         }
-        else if (name == ff::internal::RES_SOURCE)
+        else if (ff::constants::profile_build && name == ff::internal::RES_SOURCE)
         {
-            std::string source_path = dict.get<std::string>(ff::internal::RES_SOURCE);
-            this->rebuild_source_files.emplace(std::move(source_path));
+            std::string source_string = dict.get<std::string>(ff::internal::RES_SOURCE);
+            this->rebuild_source_files.emplace(ff::filesystem::to_path(source_string));
         }
     }
 }
@@ -164,6 +174,9 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
 
             this->update_resource_object_info(parent_loading_info, parent_loading_info->final_value);
         }
+
+        const double seconds = ff::timer::seconds_since_raw(loading_info->start_time);
+        ff::log::write(ff::log::type::resource, "Loaded: ", loading_info->name, " (", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms)");
     }
 
     loading_lock.unlock();
@@ -290,52 +303,41 @@ void ff::resource_objects::rebuild(ff::push_base<ff::co_task<>>& tasks)
 
 ff::co_task<> ff::resource_objects::rebuild_async()
 {
+    if constexpr (!ff::constants::profile_build)
+    {
+        co_return;
+    }
+
     co_await ff::task::yield_on_task();
     co_await this->flush_all_resources_async();
 
-    ff::dict dict;
-    if (ff::constants::profile_build)
-    {
-        std::vector<std::string> source_files;
-        {
-            std::scoped_lock lock(this->resource_object_info_mutex);
-            for (const std::string& source_file : this->rebuild_source_files)
-            {
-                source_files.push_back(source_file);
-            }
-        }
-
-        for (const std::string& source_string : source_files)
-        {
-            std::filesystem::path source_path = ff::filesystem::to_path(source_string);
-            dict = ff::load_resources_from_file(source_path, true, ff::constants::debug_build).dict;
-        }
-    }
-
     std::scoped_lock lock(this->resource_object_info_mutex);
-    std::vector<std::string_view> remove_names;
+    std::unordered_map<std::string_view, std::shared_ptr<ff::resource>> old_resources;
 
     for (auto& [name, info] : this->resource_object_infos)
     {
         std::shared_ptr<ff::resource> old_resource = info.weak_value.lock();
-        info.weak_loading_info.reset();
-        info.weak_value.reset();
-        info.dict_value = dict.get(name);
-
-        if (!info.dict_value)
-        {
-            remove_names.push_back(name);
-        }
-
         if (old_resource)
         {
-            old_resource->expire();
+            old_resources.try_emplace(name, std::move(old_resource));
         }
     }
 
-    for (std::string_view name : remove_names)
+    this->resource_object_infos.clear();
+
+    for (const std::filesystem::path& source_path : this->rebuild_source_files)
     {
-        this->resource_object_infos.erase(name);
+        ff::load_resources_result result = ff::load_resources_from_file(source_path, true, ff::constants::debug_build);
+        this->add_resources(result.dict);
+    }
+
+    for (auto& [name, old_resource] : old_resources)
+    {
+        std::shared_ptr<ff::resource> new_resource = this->get_resource_object_here(name);
+        if (new_resource)
+        {
+            old_resource->new_resource(new_resource);
+        }
     }
 }
 
@@ -357,5 +359,5 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory
 
 std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory::load_from_cache(const ff::dict& dict) const
 {
-    return std::make_shared<resource_objects>(dict);
+    return std::make_shared<ff::resource_objects>(dict);
 }

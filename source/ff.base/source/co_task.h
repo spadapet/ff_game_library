@@ -224,7 +224,7 @@ namespace ff
         auto operator co_await()
         {
             assert(this->valid());
-            return ff::internal::co_data_awaiter<T>(this->data_, this->thread_type);
+            return ff::internal::co_data_awaiter<T>(this->data_);
         }
 
         operator bool() const
@@ -262,14 +262,8 @@ namespace ff
             return this->data_->result();
         }
 
-        void resume_on(ff::thread_dispatch_type thread_type)
-        {
-            this->thread_type = thread_type;
-        }
-
     protected:
         std::shared_ptr<data_type> data_;
-        ff::thread_dispatch_type thread_type{};
     };
 
     template<class T = void>
