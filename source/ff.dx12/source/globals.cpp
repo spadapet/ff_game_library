@@ -10,6 +10,8 @@
 #include "queues.h"
 #include "resource.h"
 
+#include "ff.dx12.res.h"
+
 extern "C"
 {
     // NVIDIA and AMD globals to prefer their higher powered GPU over Intel
@@ -52,6 +54,7 @@ static std::unique_ptr<ff::dx12::fence> residency_fence;
 static std::mutex keep_alive_mutex;
 static std::list<std::pair<ff::dx12::resource, ff::dx12::fence_values>> keep_alive_resources;
 
+static std::unique_ptr<ff::resource_objects> shader_resources;
 static std::unique_ptr<ff::dxgi::draw_device_base> draw_device;
 static std::unique_ptr<ff::dx12::object_cache> object_cache;
 static std::unique_ptr<ff::dx12::queues> queues;
@@ -254,6 +257,12 @@ static bool init_d3d(bool for_reset)
         }
     }
 
+    // Shader resources
+    if (!for_reset)
+    {
+        ::shader_resources = std::make_unique<ff::resource_objects>(::assets::dx12::data());
+    }
+
     if (!for_reset)
     {
         const uint64_t one_meg = 1024 * 1024;
@@ -308,6 +317,7 @@ static void destroy_d3d(bool for_reset)
         ::queues.reset();
         ::object_cache.reset();
         ::residency_fence.reset();
+        ::shader_resources.reset();
     }
 
     if (::video_memory_change_event)
@@ -695,4 +705,9 @@ ff::dx12::mem_allocator& ff::dx12::texture_allocator()
 ff::dx12::mem_allocator& ff::dx12::target_allocator()
 {
     return *::target_allocator;
+}
+
+ff::resource_object_provider& ff::internal::dx12::shader_resources()
+{
+    return *::shader_resources;
 }

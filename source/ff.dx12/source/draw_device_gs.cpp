@@ -158,11 +158,13 @@ namespace
 
         Microsoft::WRL::ComPtr<ID3D12PipelineState> create_pipeline_state(state_t index) const
         {
+            ff::resource_object_provider* shader_resources = &ff::internal::dx12::shader_resources();
+
             D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
             desc.pRootSignature = this->root_signature.Get();
-            desc.VS = ff::dx12::get_object_cache().shader(this->vs_res_name);
-            desc.GS = ff::dx12::get_object_cache().shader(this->gs_res_name);
-            desc.PS = ff::dx12::get_object_cache().shader(ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
+            desc.VS = ff::dx12::get_object_cache().shader(shader_resources, this->vs_res_name);
+            desc.GS = ff::dx12::get_object_cache().shader(shader_resources, this->gs_res_name);
+            desc.PS = ff::dx12::get_object_cache().shader(shader_resources, ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
             desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
             desc.SampleMask = UINT_MAX;
             desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);

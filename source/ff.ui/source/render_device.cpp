@@ -966,8 +966,8 @@ std::pair<ID3D12PipelineState*, size_t> ff::internal::ui::render_device::pipelin
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
         desc.pRootSignature = this->root_signature.Get();
-        desc.VS = ff::dx12::get_object_cache().shader(vertex_shader_name);
-        desc.PS = ff::dx12::get_object_cache().shader(pixel_shader_name);
+        desc.VS = ff::dx12::get_object_cache().shader(&ff::internal::ui::shader_resources(), vertex_shader_name);
+        desc.PS = ff::dx12::get_object_cache().shader(&ff::internal::ui::shader_resources(), pixel_shader_name);
         desc.InputLayout.pInputElementDescs = elements.data();
         desc.InputLayout.NumElements = static_cast<UINT>(elements.size());
         desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

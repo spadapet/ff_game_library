@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "app.h"
-#include "ff.assets.res.id.h"
+#include "ff.app.res.id.h"
 #include "debug_state.h"
 #include "ui_view_state.h"
 
@@ -563,7 +563,7 @@ ff::internal::debug_view::debug_view()
 ff::internal::debug_view::debug_view(ff::internal::debug_view_model* view_model)
     : view_model_(view_model)
 {
-    Noesis::GUI::LoadComponent(this, assets::app::FF_DEBUG_VIEW_XAML.data());
+    Noesis::GUI::LoadComponent(this, ff::string::concat(ff::internal::app::xaml_pack_uri, assets::app::FF_DEBUG_VIEW_XAML).c_str());
 }
 
 ff::internal::debug_view_model* ff::internal::debug_view::view_model() const
@@ -583,7 +583,7 @@ ff::internal::stopped_view::stopped_view()
 ff::internal::stopped_view::stopped_view(ff::internal::debug_view_model* view_model)
     : view_model_(view_model)
 {
-    Noesis::GUI::LoadComponent(this, assets::app::FF_STOPPED_VIEW_XAML.data());
+    Noesis::GUI::LoadComponent(this, ff::string::concat(ff::internal::app::xaml_pack_uri, assets::app::FF_STOPPED_VIEW_XAML).c_str());
 }
 
 ff::internal::debug_view_model* ff::internal::stopped_view::view_model() const
@@ -602,7 +602,7 @@ static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_
 ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_state::on_resources_rebuild_end, this)))
-    , input_mapping(assets::app::FF_DEBUG_PAGE_INPUT)
+    , input_mapping(ff::internal::app::app_resources().get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
     , view_model(view_model)
 {

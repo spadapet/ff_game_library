@@ -3,8 +3,9 @@
 
 static const size_t MAX_COUNTER = 60;
 
-ff::internal::ui::resource_cache::resource_cache()
-    : resource_rebuild_connection(ff::global_resources::rebuild_resources_sink().connect(std::bind(&ff::internal::ui::resource_cache::on_resource_rebuild, this)))
+ff::internal::ui::resource_cache::resource_cache(std::shared_ptr<ff::resource_object_provider> resources)
+    : resources(resources)
+    , resource_rebuild_connection(ff::global_resources::rebuild_resources_sink().connect(std::bind(&ff::internal::ui::resource_cache::on_resource_rebuild, this)))
 {}
 
 void ff::internal::ui::resource_cache::advance()
@@ -32,7 +33,7 @@ std::shared_ptr<ff::resource> ff::internal::ui::resource_cache::get_resource_obj
     auto i = this->cache.find(name);
     if (i == this->cache.cend())
     {
-        auto value = ff::global_resources::get(name);
+        auto value = this->resources->get_resource_object(name);
         entry_t entry{ std::make_unique<std::string>(name), value, 0 };
         std::string_view key = *entry.name;
         i = this->cache.try_emplace(key, std::move(entry)).first;
@@ -45,7 +46,7 @@ std::shared_ptr<ff::resource> ff::internal::ui::resource_cache::get_resource_obj
 
 std::vector<std::string_view> ff::internal::ui::resource_cache::resource_object_names() const
 {
-    return ff::global_resources::get()->resource_object_names();
+    return this->resources->resource_object_names();
 }
 
 void ff::internal::ui::resource_cache::on_resource_rebuild()

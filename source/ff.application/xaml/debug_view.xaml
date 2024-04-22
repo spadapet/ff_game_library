@@ -11,7 +11,7 @@
     d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type ff:debug_view_model}}"
     DataContext="{Binding view_model, RelativeSource={RelativeSource Mode=Self}}"
     Foreground="White"
-    FontFamily="/ff/#Inconsolata"
+    FontFamily="pack://application:,,,/ff.application.xaml;component/ff/#Inconsolata"
     FontSize="14"
     Focusable="False"
     UseLayoutRounding="True"
@@ -19,7 +19,7 @@
     Style="{x:Null}">
 
     <UserControl.Resources>
-        <ResourceDictionary Source="/ff/debug_resources.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/ff.application.xaml;component/ff/debug_resources.xaml" />
     </UserControl.Resources>
 
     <UserControl.Template>

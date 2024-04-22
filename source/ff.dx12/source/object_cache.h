@@ -17,10 +17,12 @@ namespace ff::dx12
         ID3D12PipelineState* pipeline_state(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
         size_t root_signature_hash(ID3D12RootSignature* root_signature);
         size_t pipeline_state_hash(const D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
-        D3D12_SHADER_BYTECODE shader(const std::string& name);
+        D3D12_SHADER_BYTECODE shader(ff::resource_object_provider* resource_provider, const std::string& name);
         void save();
 
     private:
+        void on_rebuild_resources();
+
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
@@ -31,6 +33,7 @@ namespace ff::dx12
         std::unordered_map<ID3D12RootSignature*, size_t> root_signature_to_hash;
         std::unordered_map<size_t, Microsoft::WRL::ComPtr<ID3D12PipelineState>, ff::no_hash<size_t>> pipeline_states;
         std::unordered_map<std::string, std::shared_ptr<ff::data_base>, ff::stable_hash<std::string>> shaders;
+        ff::signal_connection rebuild_resources_connection;
 
         // Pipeline library
         std::filesystem::path cache_dir;

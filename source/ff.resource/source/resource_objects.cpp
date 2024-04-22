@@ -10,12 +10,23 @@
 
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 
-ff::resource_objects::resource_objects(const ff::dict& dict)
+ff::resource_objects::resource_objects()
     : loading_count(0)
     , rebuild_connection(ff::global_resources::rebuild_resources_sink().connect(std::bind(&ff::resource_objects::rebuild, this, std::placeholders::_1)))
 {
     this->done_loading_event.set();
+}
+
+ff::resource_objects::resource_objects(const ff::dict& dict)
+    : resource_objects()
+{
     this->add_resources(dict);
+}
+
+ff::resource_objects::resource_objects(std::shared_ptr<ff::data_base> data)
+    : resource_objects()
+{
+    this->add_resources(data);
 }
 
 ff::resource_objects::~resource_objects()
@@ -137,6 +148,14 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
             this->rebuild_source_files.emplace(ff::filesystem::to_path(source_string));
         }
     }
+}
+
+void ff::resource_objects::add_resources(std::shared_ptr<ff::data_base> data)
+{
+    ff::dict dict;
+    ff::data_reader reader(data);
+    assert_ret(ff::dict::load(reader, dict));
+    this->add_resources(dict);
 }
 
 void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value)

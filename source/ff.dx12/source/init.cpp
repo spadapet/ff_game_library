@@ -8,8 +8,6 @@
 #include "target_window.h"
 #include "texture.h"
 
-#include "ff.dx12.res.h"
-
 static bool init_status;
 
 namespace
@@ -18,8 +16,6 @@ namespace
     {
         one_time_init(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
         {
-            host_functions.set_shader_resource_data(::assets::dx12::data());
-
             ::init_status = ff::dx12::init_globals(host_functions, feature_level);
         }
 

@@ -26,4 +26,9 @@ namespace ff::internal::app
 {
     bool init(const ff::init_app_params& params);
     void destroy();
+    ff::resource_object_provider& app_resources();
+
+    using namespace std::string_view_literals;
+    static constexpr std::string_view xaml_assembly_name = "ff.application.xaml"sv;
+    static constexpr std::string_view xaml_pack_uri = "pack://application:,,,/ff.application.xaml;component/"sv;
 }

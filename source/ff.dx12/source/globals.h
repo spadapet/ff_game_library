@@ -68,3 +68,8 @@ namespace ff::dx12
     void add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
     void remove_device_child(ff::dxgi::device_child_base* child);
 }
+
+namespace ff::internal::dx12
+{
+    ff::resource_object_provider& shader_resources();
+}

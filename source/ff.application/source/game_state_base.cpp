@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "app.h"
 #include "debug_state.h"
-#include "ff.assets.res.id.h"
+#include "ff.app.res.id.h"
 #include "game_state_base.h"
 #include "settings.h"
 
@@ -318,7 +318,7 @@ void ff::game::app_state_base::init_resources()
 {
     this->debug_input_events[0].reset();
     this->debug_input_events[1].reset();
-    this->debug_input_mapping[0] = assets::app::FF_GAME_DEBUG_INPUT;
+    this->debug_input_mapping[0] = ff::internal::app::app_resources().get_resource_object(assets::app::FF_GAME_DEBUG_INPUT);
     this->debug_input_mapping[1] = "game.debug_input"; // optional for the game to provide this resource
 
     this->palettes.clear();

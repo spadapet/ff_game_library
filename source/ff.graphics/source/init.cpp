@@ -13,7 +13,6 @@
 #include "texture_metadata.h"
 
 static bool init_graphics_status;
-static std::unique_ptr<ff::resource_objects> shader_resources;
 
 namespace
 {
@@ -39,7 +38,6 @@ namespace
         ~one_time_init_graphics()
         {
             ff::internal::graphics::destroy();
-            ::shader_resources.reset();
             ::init_graphics_status = false;
         }
     };
@@ -48,33 +46,6 @@ namespace
 static int init_graphics_refs;
 static std::unique_ptr<one_time_init_graphics> init_graphics_data;
 static std::mutex init_graphics_mutex;
-
-static void host_set_shader_resource_data(std::shared_ptr<ff::data_base> data)
-{
-    ::shader_resources.reset();
-
-    ff::dict dict;
-    ff::data_reader reader(data);
-    assert_ret(ff::dict::load(reader, dict));
-    ::shader_resources = std::make_unique<ff::resource_objects>(dict);
-}
-
-static std::shared_ptr<ff::data_base> host_shader_data(std::string_view name)
-{
-    ff::auto_resource<ff::resource_file> res;
-
-    if (::shader_resources)
-    {
-        res = ::shader_resources->get_resource_object(name);
-    }
-
-    if (!res.object())
-    {
-        res = name;
-    }
-
-    return res.object() ? res->loaded_data() : nullptr;
-}
 
 static const ff::dxgi::host_functions& get_dxgi_host_functions()
 {
@@ -87,8 +58,6 @@ static const ff::dxgi::host_functions& get_dxgi_host_functions()
         ff::graphics::defer::resize_target,
         ff::graphics::defer::full_screen,
         ff::graphics::defer::reset_device,
-        ::host_set_shader_resource_data,
-        ::host_shader_data,
     };
 
     return host_functions;

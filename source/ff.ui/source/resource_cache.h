@@ -9,7 +9,7 @@ namespace ff::internal::ui
     class resource_cache : public ff::resource_object_provider
     {
     public:
-        resource_cache();
+        resource_cache(std::shared_ptr<ff::resource_object_provider> resources);
 
         void advance();
 
@@ -27,6 +27,7 @@ namespace ff::internal::ui
 
         void on_resource_rebuild();
 
+        std::shared_ptr<ff::resource_object_provider> resources;
         std::unordered_map<std::string_view, entry_t> cache;
         ff::signal_connection resource_rebuild_connection;
     };

@@ -37,16 +37,6 @@ void ff::dxgi::host_functions::defer_reset_device(bool force) const
     this->defer_reset_device_(force);
 }
 
-void ff::dxgi::host_functions::set_shader_resource_data(std::shared_ptr<ff::data_base> data) const
-{
-    this->set_shader_resource_data_(data);
-}
-
-std::shared_ptr<ff::data_base> ff::dxgi::host_functions::shader_data(std::string_view name) const
-{
-    return this->shader_data_(name);
-}
-
 bool ff::dxgi::client_functions::reset_device(bool force) const
 {
     return this->reset_device_(force);

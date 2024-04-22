@@ -11,28 +11,115 @@
 #include "ui_view.h"
 #include "xaml_provider.h"
 
+#include "ff.ui.res.h"
+
 // https://www.noesisengine.com/trial
 constexpr const char* DEFAULT_NAME = "f5025c38-29c4-476b-b18f-243889e0f620";
 constexpr const char* DEFAULT_KEY = "+r76BKzz+gQBxqpmGB7Haw8gWMME3duNjEhIQMi//8Xc6/0f";
 
+namespace
+{
+    // This is the link between ff::resource_object_provider and Noesis data stream providers
+    class providers_t
+    {
+    public:
+        enum class type_t
+        {
+            global,
+            scheme,
+            assembly,
+        };
+
+        const std::string name;
+        const ::providers_t::type_t type;
+        const std::shared_ptr<ff::internal::ui::resource_cache> resources;
+
+        providers_t(std::string_view name, ::providers_t::type_t type, std::shared_ptr<ff::resource_object_provider> resources)
+            : name(name)
+            , type(type)
+            , resources(std::make_shared<ff::internal::ui::resource_cache>(resources))
+            , xaml_provider(Noesis::MakePtr<ff::internal::ui::xaml_provider>(this->resources))
+            , font_provider(Noesis::MakePtr<ff::internal::ui::font_provider>(this->resources))
+            , texture_provider(Noesis::MakePtr<ff::internal::ui::texture_provider>(this->resources))
+        {
+            switch (this->type)
+            {
+                case ::providers_t::type_t::global:
+                    assert(this->name.empty());
+                    Noesis::GUI::SetXamlProvider(this->xaml_provider);
+                    Noesis::GUI::SetTextureProvider(this->texture_provider);
+                    Noesis::GUI::SetFontProvider(this->font_provider);
+                    break;
+
+                case ::providers_t::type_t::scheme:
+                    assert(!this->name.empty());
+                    Noesis::GUI::SetSchemeXamlProvider(this->name.c_str(), this->xaml_provider);
+                    Noesis::GUI::SetSchemeTextureProvider(this->name.c_str(), this->texture_provider);
+                    Noesis::GUI::SetSchemeFontProvider(this->name.c_str(), this->font_provider);
+                    break;
+
+                case ::providers_t::type_t::assembly:
+                    assert(!this->name.empty());
+                    Noesis::GUI::SetAssemblyXamlProvider(this->name.c_str(), this->xaml_provider);
+                    Noesis::GUI::SetAssemblyTextureProvider(this->name.c_str(), this->texture_provider);
+                    Noesis::GUI::SetAssemblyFontProvider(this->name.c_str(), this->font_provider);
+                    break;
+            }
+        }
+
+        ~providers_t()
+        {
+            switch (this->type)
+            {
+                case ::providers_t::type_t::global:
+                    Noesis::GUI::SetXamlProvider(nullptr);
+                    Noesis::GUI::SetTextureProvider(nullptr);
+                    Noesis::GUI::SetFontProvider(nullptr);
+                    break;
+
+                case ::providers_t::type_t::scheme:
+                    assert(!this->name.empty());
+                    Noesis::GUI::SetSchemeXamlProvider(this->name.c_str(), nullptr);
+                    Noesis::GUI::SetSchemeTextureProvider(this->name.c_str(), nullptr);
+                    Noesis::GUI::SetSchemeFontProvider(this->name.c_str(), nullptr);
+                    break;
+
+                case ::providers_t::type_t::assembly:
+                    assert(!this->name.empty());
+                    Noesis::GUI::SetAssemblyXamlProvider(this->name.c_str(), nullptr);
+                    Noesis::GUI::SetAssemblyTextureProvider(this->name.c_str(), nullptr);
+                    Noesis::GUI::SetAssemblyFontProvider(this->name.c_str(), nullptr);
+                    break;
+            }
+        }
+
+    private:
+        Noesis::Ptr<ff::internal::ui::xaml_provider> xaml_provider;
+        Noesis::Ptr<ff::internal::ui::font_provider> font_provider;
+        Noesis::Ptr<ff::internal::ui::texture_provider> texture_provider;
+
+    };
+}
+
 static ff::init_ui_params ui_params;
+// Views
 static std::vector<ff::ui_view*> views;
 static std::vector<ff::ui_view*> keyboard_input_views;
 static std::vector<ff::ui_view*> mouse_input_views;
 static std::vector<ff::ui_view*> rendered_views;
-static Noesis::Ptr<ff::internal::ui::font_provider> font_provider;
-static Noesis::Ptr<ff::internal::ui::texture_provider> texture_provider;
-static Noesis::Ptr<ff::internal::ui::xaml_provider> xaml_provider;
-static Noesis::Ptr<ff::internal::ui::render_device> render_device;
-static Noesis::Ptr<Noesis::ResourceDictionary> application_resources;
 static ff::ui_view* focused_view;
+// Handlers
 static Noesis::AssertHandler assert_handler;
 static Noesis::ErrorHandler error_handler;
 static Noesis::LogHandler log_handler;
+// Devices
+static Noesis::Ptr<ff::internal::ui::render_device> render_device;
 static std::vector<ff::input_device_event> device_events;
 static ff::signal_connection device_events_connection;
 static std::mutex device_events_mutex;
-static std::unique_ptr<ff::internal::ui::resource_cache> resource_cache;
+// Resources
+static std::unique_ptr<ff::resource_objects> shader_resources;
+static std::vector<std::unique_ptr<::providers_t>> resource_providers;
 
 static bool valid_view(ff::ui_view* view)
 {
@@ -219,22 +306,24 @@ static void init_fallback_fonts()
 
 static void init_application_resources()
 {
+    Noesis::Ptr<Noesis::ResourceDictionary> application_resources;
+
     if (::ui_params.application_resources_name.empty())
     {
-        ff::auto_resource_value app_res = ::resource_cache->get_resource_object("application_resources.xaml");
+        ff::auto_resource_value app_res = ff::global_resources::get("application_resources.xaml");
         if (!app_res->value()->is_type<nullptr_t>())
         {
-            ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>("application_resources.xaml");
+            application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>("application_resources.xaml");
         }
     }
     else
     {
-        ::application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
+        application_resources = Noesis::GUI::LoadXaml<Noesis::ResourceDictionary>(::ui_params.application_resources_name.c_str());
     }
 
-    if (::application_resources)
+    if (application_resources)
     {
-        Noesis::GUI::SetApplicationResources(::application_resources);
+        Noesis::GUI::SetApplicationResources(application_resources);
     }
 }
 
@@ -261,17 +350,8 @@ static bool init_noesis(std::function<void()>&& register_extra_components)
     Noesis::GUI::SetSoftwareKeyboardCallback(nullptr, ::software_keyboard_callback);
     Noesis::GUI::SetLoadAssemblyCallback(nullptr, ::load_assembly_callback);
 
-    // Resource providers
-    ::resource_cache = std::make_unique<ff::internal::ui::resource_cache>();
+    ::resource_providers.push_back(std::make_unique<::providers_t>("", ::providers_t::type_t::global, ff::global_resources::get()));
     ::render_device = Noesis::MakePtr<ff::internal::ui::render_device>();
-    ::xaml_provider = Noesis::MakePtr<ff::internal::ui::xaml_provider>();
-    ::font_provider = Noesis::MakePtr<ff::internal::ui::font_provider>();
-    ::texture_provider = Noesis::MakePtr<ff::internal::ui::texture_provider>();
-
-    Noesis::GUI::SetXamlProvider(::xaml_provider);
-    Noesis::GUI::SetTextureProvider(::texture_provider);
-    Noesis::GUI::SetFontProvider(::font_provider);
-
     ::register_components(std::move(register_extra_components));
     ::init_fallback_fonts();
     ::init_application_resources();
@@ -289,13 +369,10 @@ static void destroy_noesis()
 
     assert(::views.empty());
 
-    ::application_resources.Reset();
-    ::xaml_provider.Reset();
-    ::font_provider.Reset();
-    ::texture_provider.Reset();
     ::render_device.Reset();
-    ::resource_cache.reset();
+    ::resource_providers.clear();
 
+    Noesis::GUI::SetApplicationResources(nullptr);
     Noesis::GUI::Shutdown();
 
     ::noesis_dump_mem_usage();
@@ -314,7 +391,7 @@ static void destroy_noesis()
 bool ff::internal::ui::init(const ff::init_ui_params& params)
 {
     ::ui_params = params;
-
+    ::shader_resources = std::make_unique<ff::resource_objects>(::assets::ui::data());
     ::device_events_connection = ff::input::combined_devices().event_sink().connect([](const ff::input_device_event& event)
         {
             std::scoped_lock lock(::device_events_mutex);
@@ -326,6 +403,7 @@ bool ff::internal::ui::init(const ff::init_ui_params& params)
 
 void ff::internal::ui::destroy()
 {
+    ::shader_resources.reset();
     ::device_events_connection.disconnect();
 }
 
@@ -340,29 +418,14 @@ void ff::internal::ui::destroy_game_thread()
     ::destroy_noesis();
 }
 
-ff::internal::ui::font_provider* ff::internal::ui::global_font_provider()
-{
-    return ::font_provider;
-}
-
 ff::internal::ui::render_device* ff::internal::ui::global_render_device()
 {
     return ::render_device;
 }
 
-ff::internal::ui::resource_cache* ff::internal::ui::global_resource_cache()
+ff::resource_object_provider& ff::internal::ui::shader_resources()
 {
-    return ::resource_cache.get();
-}
-
-ff::internal::ui::texture_provider* ff::internal::ui::global_texture_provider()
-{
-    return ::texture_provider;
-}
-
-ff::internal::ui::xaml_provider* ff::internal::ui::global_xaml_provider()
-{
-    return ::xaml_provider;
+    return *::shader_resources;
 }
 
 void ff::internal::ui::register_view(ff::ui_view* view)
@@ -431,7 +494,10 @@ void ff::internal::ui::on_focus_view(ff::ui_view* view, bool focused)
 
 void ff::ui::state_advance_time()
 {
-    ::resource_cache->advance();
+    for (auto& i : ::resource_providers)
+    {
+        i->resources->advance();
+    }
 }
 
 void ff::ui::state_advance_input()
@@ -692,20 +758,30 @@ const wchar_t* ff::ui::cursor_resource()
             case Noesis::CursorType_UpArrow: return IDC_UPARROW;
             case Noesis::CursorType_Wait: return IDC_WAIT;
 
-            // case Noesis::CursorType_ArrowCD: return ;
-            // case Noesis::CursorType_ScrollAll: return ;
-            // case Noesis::CursorType_ScrollE: return ;
-            // case Noesis::CursorType_ScrollN: return ;
-            // case Noesis::CursorType_ScrollNE: return ;
-            // case Noesis::CursorType_ScrollNS: return ;
-            // case Noesis::CursorType_ScrollNW: return ;
-            // case Noesis::CursorType_ScrollS: return ;
-            // case Noesis::CursorType_ScrollSE: return ;
-            // case Noesis::CursorType_ScrollSW: return ;
-            // case Noesis::CursorType_ScrollW: return ;
-            // case Noesis::CursorType_Pen: return ;
+                // case Noesis::CursorType_ArrowCD: return ;
+                // case Noesis::CursorType_ScrollAll: return ;
+                // case Noesis::CursorType_ScrollE: return ;
+                // case Noesis::CursorType_ScrollN: return ;
+                // case Noesis::CursorType_ScrollNE: return ;
+                // case Noesis::CursorType_ScrollNS: return ;
+                // case Noesis::CursorType_ScrollNW: return ;
+                // case Noesis::CursorType_ScrollS: return ;
+                // case Noesis::CursorType_ScrollSE: return ;
+                // case Noesis::CursorType_ScrollSW: return ;
+                // case Noesis::CursorType_ScrollW: return ;
+                // case Noesis::CursorType_Pen: return ;
         }
     }
 
     return IDC_ARROW;
+}
+
+void ff::ui::add_scheme_resources(std::string_view name, std::shared_ptr<ff::resource_object_provider> resources)
+{
+    ::resource_providers.push_back(std::make_unique<::providers_t>(name, ::providers_t::type_t::scheme, resources));
+}
+
+void ff::ui::add_assembly_resources(std::string_view name, std::shared_ptr<ff::resource_object_provider> resources)
+{
+    ::resource_providers.push_back(std::make_unique<::providers_t>(name, ::providers_t::type_t::assembly, resources));
 }

@@ -405,7 +405,7 @@
 
     <Style TargetType="{x:Type ToolTip}" BasedOn="{StaticResource {x:Type FrameworkElement}}">
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="FontFamily" Value="/ff/#Inconsolata" />
+        <Setter Property="FontFamily" Value="pack://application:,,,/ff.application.xaml;component/ff/#Inconsolata" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>

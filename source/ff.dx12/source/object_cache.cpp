@@ -200,6 +200,7 @@ ff::dx12::object_cache::object_cache(std::string_view cache_category)
     : cache_dir(ff::filesystem::user_local_path() / "ff.cache")
     , cache_library_path(this->cache_dir / ::cache_file_name(cache_category, ".bin"))
     , cache_pack_path(this->cache_dir / ::cache_file_name(cache_category, ".pack"))
+    , rebuild_resources_connection(ff::global_resources::rebuild_begin_sink().connect(std::bind(&ff::dx12::object_cache::on_rebuild_resources, this)))
 {
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
     this->create_cache();
@@ -301,21 +302,44 @@ size_t ff::dx12::object_cache::pipeline_state_hash(const D3D12_GRAPHICS_PIPELINE
     return ::stable_hash(desc, this->root_signature_hash(desc.pRootSignature));
 }
 
-D3D12_SHADER_BYTECODE ff::dx12::object_cache::shader(const std::string& name)
+D3D12_SHADER_BYTECODE ff::dx12::object_cache::shader(ff::resource_object_provider* resource_provider, const std::string& name)
 {
-    auto i = this->shaders.find(name);
-    if (i == this->shaders.end())
+    std::shared_ptr<ff::data_base> data;
+
+    // Check if it already exists in the cache
     {
-        auto shader_data = ff::dxgi_host().shader_data(name);
-        if (shader_data)
+        std::scoped_lock lock(this->mutex);
+        auto i = this->shaders.find(name);
+        if (i != this->shaders.end())
         {
-            i = this->shaders.try_emplace(name, shader_data).first;
+            data = i->second;
         }
     }
 
-    assert(i != this->shaders.end());
-    return (i != this->shaders.end())
-        ? D3D12_SHADER_BYTECODE{ i->second->data(), i->second->size() }
+    // Load the shader data
+    if (!data)
+    {
+        ff::auto_resource<ff::resource_file> res;
+        if (resource_provider)
+        {
+            res = resource_provider->get_resource_object(name);
+        }
+        else // use global resources
+        {
+            res = name;
+        }
+
+        auto shader_data = res.object() ? res->loaded_data() : nullptr;
+        if (shader_data)
+        {
+            std::scoped_lock lock(this->mutex);
+            data = this->shaders.try_emplace(name, shader_data).first->second;
+        }
+    }
+
+    assert(data);
+    return data
+        ? D3D12_SHADER_BYTECODE{ data->data(), data->size() }
         : D3D12_SHADER_BYTECODE{};
 }
 
@@ -402,6 +426,12 @@ void ff::dx12::object_cache::save()
 
     const double seconds = ff::timer::seconds_since_raw(start_time);
     ff::log::write(ff::log::type::dx12, "Saved PSO library: ", &std::fixed, std::setprecision(1), seconds * 1000.0, "ms, Size: ", save_size, ", File: '", ff::filesystem::to_string(save_path), "'");
+}
+
+void ff::dx12::object_cache::on_rebuild_resources()
+{
+    std::scoped_lock lock(this->mutex);
+    this->shaders.clear();
 }
 
 void ff::dx12::object_cache::before_reset()

@@ -13,6 +13,11 @@ namespace ff::ui
     const std::vector<ff::ui_view*>& rendered_views();
     const wchar_t* cursor_resource();
 
+    // <name>:///MainWindow.xaml
+    void add_scheme_resources(std::string_view name, std::shared_ptr<ff::resource_object_provider> resources);
+    // pack://application:,,,/<name>;component/MainWindow.xaml
+    void add_assembly_resources(std::string_view name, std::shared_ptr<ff::resource_object_provider> resources);
+
     // These notifications must be called at the right time (just use application's ui_state class to do it automatically)
     void state_advance_time();
     void state_advance_input();
@@ -22,11 +27,7 @@ namespace ff::ui
 
 namespace ff::internal::ui
 {
-    class font_provider;
     class render_device;
-    class resource_cache;
-    class texture_provider;
-    class xaml_provider;
 
     bool init(const ff::init_ui_params& params);
     void destroy();
@@ -34,11 +35,8 @@ namespace ff::internal::ui
     void init_game_thread(std::function<void()>&& register_extra_components);
     void destroy_game_thread();
 
-    ff::internal::ui::font_provider* global_font_provider();
     ff::internal::ui::render_device* global_render_device();
-    ff::internal::ui::resource_cache* global_resource_cache();
-    ff::internal::ui::texture_provider* global_texture_provider();
-    ff::internal::ui::xaml_provider* global_xaml_provider();
+    ff::resource_object_provider& shader_resources();
 
     void register_view(ff::ui_view* view);
     void unregister_view(ff::ui_view* view);

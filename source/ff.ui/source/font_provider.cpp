@@ -1,8 +1,10 @@
 #include "pch.h"
 #include "font_provider.h"
-#include "resource_cache.h"
 #include "stream.h"
-#include "ui.h"
+
+ff::internal::ui::font_provider::font_provider(std::shared_ptr<ff::resource_object_provider> resources)
+    : resources(resources)
+{}
 
 void ff::internal::ui::font_provider::ScanFolder(const Noesis::Uri& folder)
 {
@@ -16,7 +18,7 @@ void ff::internal::ui::font_provider::ScanFolder(const Noesis::Uri& folder)
         prefix += "/";
     }
 
-    for (std::string_view name : ff::internal::ui::global_resource_cache()->resource_object_names())
+    for (std::string_view name : this->resources->resource_object_names())
     {
         if (name.size() > prefix.size() && !::_strnicmp(name.data(), prefix.c_str(), prefix.size()))
         {
@@ -30,7 +32,7 @@ Noesis::Ptr<Noesis::Stream> ff::internal::ui::font_provider::OpenFont(const Noes
     std::string_view name(filename);
     if (name.size() > 0 && name[0] == L'#')
     {
-        ff::auto_resource_value value = ff::internal::ui::global_resource_cache()->get_resource_object(name);
+        ff::auto_resource_value value = this->resources->get_resource_object(name);
         return Noesis::MakePtr<ff::internal::ui::stream>(std::move(value));
     }
 

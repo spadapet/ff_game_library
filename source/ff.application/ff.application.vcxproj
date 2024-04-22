@@ -47,7 +47,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResJson Include="assets\ff.assets.res.json">
+    <ResJson Include="assets\ff.app.res.json">
       <FileType>Document</FileType>
     </ResJson>
   </ItemGroup>

@@ -5,6 +5,8 @@
 #include "init.h"
 #include "settings.h"
 
+#include "ff.app.res.h"
+
 namespace
 {
     enum class game_thread_state_t
@@ -40,6 +42,7 @@ static std::shared_ptr<ff::dxgi::target_window_base> target;
 static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
+static std::shared_ptr<ff::resource_object_provider> app_resources;
 static std::atomic<const wchar_t*> window_cursor;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
@@ -206,6 +209,8 @@ static void register_components()
 {
     if constexpr (ff::constants::profile_build)
     {
+        ff::ui::add_assembly_resources("ff.application.xaml", ::app_resources);
+
         Noesis::RegisterComponent<ff::internal::debug_page_model>();
         Noesis::RegisterComponent<ff::internal::debug_timer_model>();
         Noesis::RegisterComponent<ff::internal::debug_view_model>();
@@ -308,7 +313,7 @@ static void destroy_game_thread()
         ::app_params.game_thread_finished_func();
     }
 
-    ff::global_resources::reset();
+    ff::global_resources::destroy_game_thread();
     ff::internal::ui::destroy_game_thread();
     ff::thread_pool::flush();
     ::frame_thread_dispatch.reset();
@@ -609,6 +614,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
+    ::app_resources = std::make_shared<ff::resource_objects>(::assets::app::data());
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);
@@ -622,10 +628,16 @@ void ff::internal::app::destroy()
     ff::internal::app::save_settings();
     ff::internal::app::clear_settings();
 
+    ::app_resources.reset();
     ::render_targets.reset();
     ::target.reset();
     ::window_message_connection.disconnect();
     ::destroy_log();
+}
+
+ff::resource_object_provider& ff::internal::app::app_resources()
+{
+    return *::app_resources;
 }
 
 const std::string& ff::app_product_name()

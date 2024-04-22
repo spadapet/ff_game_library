@@ -21,7 +21,9 @@ namespace ff
         , public ff::resource_object_loader
     {
     public:
+        resource_objects();
         resource_objects(const ff::dict& dict);
+        resource_objects(std::shared_ptr<ff::data_base> data);
         resource_objects(resource_objects&& other) noexcept = delete;
         resource_objects(const resource_objects& other) = delete;
         ~resource_objects();
@@ -64,6 +66,7 @@ namespace ff
         };
 
         void add_resources(const ff::dict& dict);
+        void add_resources(std::shared_ptr<ff::data_base> data);
         void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);

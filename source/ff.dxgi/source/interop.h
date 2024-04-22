@@ -21,8 +21,6 @@ namespace ff::dxgi
         void defer_resize(ff::dxgi::target_window_base* target, const ff::window_size& size) const;
         void defer_full_screen(bool value) const;
         void defer_reset_device(bool force) const;
-        void set_shader_resource_data(std::shared_ptr<ff::data_base> data) const;
-        std::shared_ptr<ff::data_base> shader_data(std::string_view name) const;
 
         // Data
         std::function<void(ff::dxgi::command_context_base&)> on_frame_started_;
@@ -32,8 +30,6 @@ namespace ff::dxgi
         std::function<void(ff::dxgi::target_window_base*, const ff::window_size&)> defer_resize_;
         std::function<void(bool value)> defer_full_screen_;
         std::function<void(bool force)> defer_reset_device_;
-        std::function<void(std::shared_ptr<ff::data_base>)> set_shader_resource_data_;
-        std::function<std::shared_ptr<ff::data_base>(std::string_view)> shader_data_;
     };
 
     class client_functions

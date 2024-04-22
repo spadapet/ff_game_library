@@ -12,6 +12,8 @@ ff::init_resource::init_resource()
     {
         one_time_init()
         {
+            ff::internal::global_resources::init();
+
             // Values
             ff::value::register_type<ff::type::resource_type>("resource");
             ff::value::register_type<ff::type::resource_object_type>("resource_object");
@@ -26,7 +28,7 @@ ff::init_resource::init_resource()
 
 ff::init_resource::~init_resource()
 {
-    ff::global_resources::reset();
+    ff::internal::global_resources::destroy();
 }
 
 ff::init_resource::operator bool() const
