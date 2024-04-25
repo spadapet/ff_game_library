@@ -6,7 +6,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -104,7 +104,7 @@
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
-  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" />
 
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
