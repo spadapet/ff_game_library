@@ -22,7 +22,7 @@ namespace ff
         virtual ff::dict resource_get_siblings(const std::shared_ptr<resource>& self) const;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         std::vector<ff::sprite> sprites;

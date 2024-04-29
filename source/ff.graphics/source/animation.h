@@ -32,7 +32,7 @@ namespace ff
         virtual ff::value_ptr frame_value(size_t value_id, float frame, const ff::dict* params = nullptr) override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         friend class ff::internal::animation_factory;

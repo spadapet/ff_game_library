@@ -7,9 +7,8 @@
 #include "saved_data_v.h"
 #include "stream.h"
 
-ff::type::dict_v::dict_v(ff::dict&& value, bool save_compressed)
+ff::type::dict_v::dict_v(ff::dict&& value)
     : value(std::move(value))
-    , save_compressed_(save_compressed)
 {}
 
 const ff::dict& ff::type::dict_v::get() const
@@ -17,12 +16,7 @@ const ff::dict& ff::type::dict_v::get() const
     return this->value;
 }
 
-bool ff::type::dict_v::save_compressed() const
-{
-    return this->save_compressed_;
-}
-
-ff::value* ff::type::dict_v::get_static_value(ff::dict&& value, bool)
+ff::value* ff::type::dict_v::get_static_value(ff::dict&& value)
 {
     return value.empty() ? dict_v::get_static_default_value() : nullptr;
 }
@@ -38,15 +32,13 @@ ff::value_ptr ff::type::dict_type::try_convert_to(const value* val, std::type_in
     if (type == typeid(ff::type::data_v))
     {
         const ff::dict& dict = val->get<ff::dict>();
-        bool save_compressed = static_cast<const dict_v*>(val)->save_compressed();
         auto buffer = std::make_shared<std::vector<uint8_t>>();
 
         ff::data_writer writer(buffer);
         if (dict.save(writer))
         {
             auto data = std::make_shared<ff::data_vector>(buffer);
-            ff::saved_data_type data_type = save_compressed ? ff::flags::combine(ff::saved_data_type::dict, ff::saved_data_type::zlib_compressed) : ff::saved_data_type::dict;
-            return ff::value::create<ff::data_base>(data, data_type);
+            return ff::value::create<ff::data_base>(data, ff::saved_data_type::dict);
         }
     }
     else if (type == typeid(ff::type::saved_data_v))

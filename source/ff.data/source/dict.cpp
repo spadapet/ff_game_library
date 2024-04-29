@@ -9,6 +9,10 @@
 #include "value.h"
 #include "value_vector.h"
 
+using namespace std::string_view_literals;
+
+static const size_t DICT_PERSIST_COOKIE = ff::stable_hash_func("ff::dict"sv);
+
 static const std::string& get_cached_string(std::string_view str)
 {
     static std::forward_list<std::string> string_list;
@@ -212,29 +216,36 @@ bool ff::dict::load_child_dicts()
     return changed;
 }
 
-bool ff::dict::save(writer_base& writer) const
+bool ff::dict::save(ff::writer_base& writer, ff::push_base<ff::dict::location_t>* saved_locations) const
 {
-    size_t size = this->size();
-    if (!ff::save(writer, size))
-    {
-        return false;
-    }
+    const size_t start_pos = writer.pos();
+    const size_t size = this->size();
+    assert_ret_val(ff::save(writer, ::DICT_PERSIST_COOKIE) && ff::save(writer, size), false);
 
     for (const auto& i : *this)
     {
-        if (!ff::save(writer, i.first) || !i.second->save_typed(writer))
+        ff::dict::location_t location{ i.first };
+
+        assert_ret_val(ff::save(writer, i.first), false);
+        location.offset = writer.pos() - start_pos;
+
+        assert_ret_val(i.second->save_typed(writer), false);
+        location.size = writer.pos() - location.offset;
+
+        if (saved_locations)
         {
-            return false;
+            saved_locations->push(location);
         }
     }
 
     return true;
 }
 
-bool ff::dict::load(reader_base& reader, dict& data)
+bool ff::dict::load(ff::reader_base& reader, ff::dict& data)
 {
-    size_t size;
-    if (!ff::load(reader, size))
+    size_t cookie, size;
+    if (!ff::load(reader, cookie) || cookie != ::DICT_PERSIST_COOKIE ||
+        !ff::load(reader, size))
     {
         return false;
     }

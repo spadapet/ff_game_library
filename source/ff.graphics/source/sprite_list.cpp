@@ -51,7 +51,7 @@ ff::dict ff::sprite_list::resource_get_siblings(const std::shared_ptr<resource>&
     return dict;
 }
 
-bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::sprite_list::save_to_cache(ff::dict& dict) const
 {
     // Find all unique textures
     std::vector<const ff::texture*> textures;
@@ -70,8 +70,7 @@ bool ff::sprite_list::save_to_cache(ff::dict& dict, bool& allow_compress) const
         for (const ff::texture* texture : textures)
         {
             ff::dict dict;
-            bool allow_compress = false;
-            if (!ff::resource_object_base::save_to_cache_typed(*texture, dict, allow_compress))
+            if (!ff::resource_object_base::save_to_cache_typed(*texture, dict))
             {
                 assert(false);
                 return false;

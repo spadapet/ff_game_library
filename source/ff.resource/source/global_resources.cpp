@@ -9,9 +9,9 @@ static ff::signal<> rebuild_begin_signal;
 static ff::signal<ff::push_base<ff::co_task<>>&> rebuild_resources_signal;
 static ff::signal<> rebuild_end_signal;
 
-void ff::global_resources::add(std::shared_ptr<ff::data_base> data)
+void ff::global_resources::add(ff::reader_base& reader)
 {
-    ::global_resources->add_resources(data);
+    ::global_resources->add_resources(reader);
 }
 
 std::shared_ptr<ff::resource_objects> ff::global_resources::get()

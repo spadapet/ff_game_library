@@ -21,7 +21,7 @@ namespace ff
         virtual std::string get_string_resource_value(std::string_view name) const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         void populate_user_languages();

@@ -23,7 +23,7 @@ namespace ff
     public:
         resource_objects();
         resource_objects(const ff::dict& dict);
-        resource_objects(std::shared_ptr<ff::data_base> data);
+        resource_objects(ff::reader_base& reader);
         resource_objects(resource_objects&& other) noexcept = delete;
         resource_objects(const resource_objects& other) = delete;
         ~resource_objects();
@@ -31,16 +31,18 @@ namespace ff
         resource_objects& operator=(resource_objects&& other) noexcept = delete;
         resource_objects& operator=(const resource_objects& other) = delete;
 
+        bool save(ff::writer_base& writer);
+
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
         virtual void flush_all_resources() override;
         virtual ff::co_task<> flush_all_resources_async() override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
-        friend void ff::global_resources::add(std::shared_ptr<ff::data_base> data);
+        friend void ff::global_resources::add(ff::reader_base& reader);
         void rebuild(ff::push_base<ff::co_task<>>& tasks);
         ff::co_task<> rebuild_async();
 
@@ -61,12 +63,13 @@ namespace ff
         struct resource_object_info
         {
             ff::value_ptr dict_value;
+            std::shared_ptr<ff::saved_data_base> saved_value;
             std::weak_ptr<ff::resource> weak_value;
             std::weak_ptr<resource_object_loading_info> weak_loading_info;
         };
 
         void add_resources(const ff::dict& dict);
-        void add_resources(std::shared_ptr<ff::data_base> data);
+        void add_resources(ff::reader_base& reader);
         void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);

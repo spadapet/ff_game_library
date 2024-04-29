@@ -171,7 +171,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::audio_effect::resource_get_depend
     };
 }
 
-bool ff::audio_effect::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::audio_effect::save_to_cache(ff::dict& dict) const
 {
     dict.set<ff::resource>("file", this->file.resource());
     dict.set<size_t>("start", this->start);

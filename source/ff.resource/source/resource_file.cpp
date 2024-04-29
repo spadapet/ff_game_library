@@ -2,23 +2,8 @@
 #include "resource_file.h"
 #include "resource_load_context.h"
 
-static bool default_compress(const std::filesystem::path& path)
-{
-    std::string extension = ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
-
-    if (extension == ".mp3" ||
-        extension == ".png" ||
-        extension == ".jpg")
-    {
-        return false;
-    }
-
-    return true;
-}
-
 ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name)
     : file_extension_(file_extension)
-    , compress(::default_compress(file_extension))
 {
     std::shared_ptr<ff::data_base> data = std::make_shared<ff::data_static>(instance, rc_type, rc_name);
     this->saved_data_ = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
@@ -26,7 +11,6 @@ ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE inst
 
 ff::resource_file::resource_file(const std::filesystem::path& path)
     : file_extension_(ff::filesystem::to_string(ff::filesystem::to_lower(path.extension())))
-    , compress(::default_compress(path))
 {
     size_t size = ff::filesystem::file_size(path);
     if (size == ff::constants::invalid_size)
@@ -38,10 +22,9 @@ ff::resource_file::resource_file(const std::filesystem::path& path)
     this->saved_data_ = std::make_shared<ff::saved_data_file>(path, 0, static_cast<size_t>(size), static_cast<size_t>(size), ff::saved_data_type::none);
 }
 
-ff::resource_file::resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress)
+ff::resource_file::resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension)
     : saved_data_(saved_data)
     , file_extension_(file_extension)
-    , compress(compress)
 {
     assert(this->saved_data_);
 }
@@ -73,13 +56,10 @@ bool ff::resource_file::resource_save_to_file(const std::filesystem::path& direc
     return copied_size == size;
 }
 
-bool ff::resource_file::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_file::save_to_cache(ff::dict& dict) const
 {
-    allow_compress = this->compress;
-
     dict.set<ff::saved_data_base>("data", this->saved_data_);
     dict.set<std::string>("extension", this->file_extension_);
-    dict.set<bool>("compress", this->compress);
 
     return true;
 }
@@ -107,15 +87,13 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::l
     auto saved_data = std::make_shared<ff::saved_data_file>(path, 0, size, size, ff::saved_data_type::none);
 
     std::string file_extension = ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
-    bool compress = dict.get<bool>("compress", ::default_compress(path));
-    return std::make_shared<resource_file>(saved_data, file_extension, compress);
+    return std::make_shared<resource_file>(saved_data, file_extension);
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::load_from_cache(const ff::dict& dict) const
 {
     auto saved_data = dict.get<ff::saved_data_base>("data");
     std::string file_extension = dict.get<std::string>("extension");
-    bool compress = dict.get<bool>("compress", true);
 
-    return saved_data ? std::make_shared<resource_file>(saved_data, file_extension, compress) : nullptr;
+    return saved_data ? std::make_shared<resource_file>(saved_data, file_extension) : nullptr;
 }

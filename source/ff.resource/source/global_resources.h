@@ -8,7 +8,7 @@ namespace ff
 
 namespace ff::global_resources
 {
-    void add(std::shared_ptr<ff::data_base> data);
+    void add(ff::reader_base& reader);
     std::shared_ptr<ff::resource_objects> get();
     std::shared_ptr<ff::resource> get(std::string_view name);
     void destroy_game_thread();

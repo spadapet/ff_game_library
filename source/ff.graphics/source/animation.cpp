@@ -373,7 +373,7 @@ const ff::animation::cached_visuals_t* ff::animation::get_cached_visuals(const f
     return &i->second;
 }
 
-bool ff::animation::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::animation::save_to_cache(ff::dict& dict) const
 {
     dict.set<float>("length", this->frame_length_);
     dict.set<float>("play_length", this->play_length_);

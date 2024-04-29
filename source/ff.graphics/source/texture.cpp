@@ -118,7 +118,7 @@ void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::tran
     draw.draw_sprite(this->sprite_data_, transform);
 }
 
-bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::texture::save_to_cache(ff::dict& dict) const
 {
     dict.set_enum<ff::dxgi::sprite_type>("sprite_type", this->dxgi_texture_->sprite_type());
 
@@ -133,7 +133,7 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
         }
 
         std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
-        dict.set<ff::data_base>("data", blob_data, ff::saved_data_type::zlib_compressed);
+        dict.set<ff::data_base>("data", blob_data, ff::saved_data_type::none);
     }
     else
     {
@@ -150,7 +150,7 @@ bool ff::texture::save_to_cache(ff::dict& dict, bool& allow_compress) const
         }
 
         std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
-        dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::zlib_compressed);
+        dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::none);
     }
 
     return true;

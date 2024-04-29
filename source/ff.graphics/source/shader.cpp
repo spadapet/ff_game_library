@@ -170,7 +170,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
 }
 
 ff::shader::shader(std::shared_ptr<ff::saved_data_base> saved_data)
-    : resource_file(saved_data, ".shader", true)
+    : resource_file(saved_data, ".shader")
 {}
 
 std::shared_ptr<ff::resource_object_base> ff::internal::shader_factory::load_from_source(const ff::dict& dict, resource_load_context& context) const

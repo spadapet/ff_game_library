@@ -44,7 +44,7 @@ namespace ff
         virtual std::vector<std::shared_ptr<resource>> resource_get_dependencies() const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         const std::vector<std::pair<ff::animation_base*, float>>& pick_sprites() const;

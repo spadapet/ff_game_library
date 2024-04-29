@@ -31,7 +31,7 @@ std::string ff::resource_values::get_string_resource_value(std::string_view name
     return this->get_resource_value(name)->convert_or_default<std::string>()->get<std::string>();
 }
 
-bool ff::resource_values::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_values::save_to_cache(ff::dict& dict) const
 {
     dict.set(this->original_dict, false);
     return true;

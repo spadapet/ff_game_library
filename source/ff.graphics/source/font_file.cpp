@@ -3,7 +3,7 @@
 #include "graphics.h"
 
 ff::font_file::font_file(std::shared_ptr<ff::data_base> data, size_t index, bool bold, bool italic)
-    : ff::resource_file(std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none), ".ttf", true)
+    : ff::resource_file(std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none), ".ttf")
     , index_(index)
     , bold_(bold)
     , italic_(italic)
@@ -53,9 +53,9 @@ IDWriteFontFace5* ff::font_file::font_face()
     return this->font_face_.Get();
 }
 
-bool ff::font_file::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::font_file::save_to_cache(ff::dict& dict) const
 {
-    if (ff::resource_file::save_to_cache(dict, allow_compress))
+    if (ff::resource_file::save_to_cache(dict))
     {
         dict.set<size_t>("index", this->index_);
         dict.set<bool>("bold", this->bold_);

@@ -722,15 +722,14 @@ protected:
         if (value && value->is_type<ff::resource_object_base>())
         {
             ff::dict dict;
-            bool allow_compress = true;
             auto res = value->get<ff::resource_object_base>();
-            if (!res || !ff::resource_object_base::save_to_cache_typed(*res, dict, allow_compress))
+            if (!res || !ff::resource_object_base::save_to_cache_typed(*res, dict))
             {
                 this->add_error("Failed to save resource");
                 return nullptr;
             }
 
-            value = ff::value::create<ff::dict>(std::move(dict), allow_compress && this->path_depth() == 1);
+            value = ff::value::create<ff::dict>(std::move(dict));
             if (!value)
             {
                 this->add_error("Failed to save resource");

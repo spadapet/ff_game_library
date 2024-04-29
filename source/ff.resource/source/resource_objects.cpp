@@ -23,15 +23,54 @@ ff::resource_objects::resource_objects(const ff::dict& dict)
     this->add_resources(dict);
 }
 
-ff::resource_objects::resource_objects(std::shared_ptr<ff::data_base> data)
+ff::resource_objects::resource_objects(ff::reader_base& reader)
     : resource_objects()
 {
-    this->add_resources(data);
+    this->add_resources(reader);
 }
 
 ff::resource_objects::~resource_objects()
 {
     this->flush_all_resources();
+}
+
+bool ff::resource_objects::save(ff::writer_base& writer)
+{
+    std::scoped_lock lock(this->resource_object_info_mutex);
+
+    std::vector<ff::dict::location_t> locations;
+    std::vector<std::shared_ptr<ff::saved_data_base>> saved_datas;
+    locations.reserve(this->resource_object_infos.size());
+    saved_datas.reserve(this->resource_object_infos.size());
+
+    size_t offset = 0;
+
+    for (auto& [name, info] : this->resource_object_infos)
+    {
+        ff::dict::location_t location{ name };
+        auto saved_data = info.saved_value;
+
+        if (!saved_data && info.dict_value)
+        {
+            auto data_vector = std::make_shared<std::vector<uint8_t>>();
+            ff::data_writer data_writer(data_vector);
+            assert_ret_val(info.dict_value->save_typed(data_writer), false);
+
+            auto data = std::make_shared<ff::data_vector>(data_vector);
+            saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+        }
+
+        assert_ret_val(saved_data, false);
+
+        saved_datas.push_back(saved_data);
+        location.offset = offset;
+        location.size = info.saved_value->saved_size();
+        offset += location.size;
+    }
+
+    // Write everything
+
+    return true;
 }
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
@@ -118,7 +157,7 @@ ff::co_task<> ff::resource_objects::flush_all_resources_async()
     co_await this->done_loading_event;
 }
 
-bool ff::resource_objects::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::resource_objects::save_to_cache(ff::dict& dict) const
 {
     std::scoped_lock lock(this->resource_object_info_mutex);
 
@@ -150,12 +189,9 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
     }
 }
 
-void ff::resource_objects::add_resources(std::shared_ptr<ff::data_base> data)
+void ff::resource_objects::add_resources(ff::reader_base& reader)
 {
-    ff::dict dict;
-    ff::data_reader reader(data);
-    assert_ret(ff::dict::load(reader, dict));
-    this->add_resources(dict);
+    // TODO
 }
 
 void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value)

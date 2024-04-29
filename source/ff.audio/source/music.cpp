@@ -84,7 +84,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::music::resource_get_dependencies(
     };
 }
 
-bool ff::music::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::music::save_to_cache(ff::dict& dict) const
 {
     dict.set<ff::resource>("file", this->file.resource());
     dict.set<float>("volume", this->volume);

@@ -34,11 +34,8 @@ DXGI_FORMAT ff::texture_metadata::format() const
     return this->format_;
 }
 
-bool ff::texture_metadata::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::texture_metadata::save_to_cache(ff::dict& dict) const
 {
-    // The idea is to get to this metadata as fast as possible, no compression
-    allow_compress = false;
-
     dict.set<ff::point_size>("size", this->size_);
     dict.set<size_t>("mip_count", this->mip_count_);
     dict.set<size_t>("array_size", this->array_size_);

@@ -58,7 +58,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::sprite_resource::resource_get_dep
     };
 }
 
-bool ff::sprite_resource::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::sprite_resource::save_to_cache(ff::dict& dict) const
 {
     dict.set<ff::resource>("source", this->source.resource());
     dict.set<std::string>("name", this->name_);

@@ -10,7 +10,7 @@ namespace ff
     public:
         resource_file(std::string_view file_extension, HINSTANCE instance, const wchar_t* rc_type, const wchar_t* rc_name);
         resource_file(const std::filesystem::path& path);
-        resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension, bool compress);
+        resource_file(std::shared_ptr<ff::saved_data_base> saved_data, std::string_view file_extension);
 
         std::shared_ptr<ff::data_base> loaded_data() const;
         const std::shared_ptr<ff::saved_data_base>& saved_data() const;
@@ -19,12 +19,11 @@ namespace ff
         virtual bool resource_save_to_file(const std::filesystem::path& directory_path, std::string_view name) const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         std::shared_ptr<ff::saved_data_base> saved_data_;
         std::string file_extension_;
-        bool compress;
     };
 }
 

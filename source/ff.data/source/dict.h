@@ -34,9 +34,16 @@ namespace ff
         value_ptr get(std::string_view name) const;
         bool get_bytes(std::string_view name, void* data, size_t size) const;
 
+        struct location_t
+        {
+            std::string_view name;
+            size_t offset;
+            size_t size;
+        };
+
         std::vector<std::string_view> child_names(bool sorted = false) const;
-        bool save(writer_base& writer) const;
-        static bool load(reader_base& reader, dict& data);
+        bool save(ff::writer_base& writer, ff::push_base<ff::dict::location_t>* saved_locations = nullptr) const;
+        static bool load(ff::reader_base& reader, ff::dict& data);
         bool load_child_dicts();
 
         iterator begin();

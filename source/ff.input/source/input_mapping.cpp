@@ -288,7 +288,7 @@ const std::vector<ff::input_value_def>& ff::input_mapping::values() const
     return this->values_;
 }
 
-bool ff::input_mapping::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::input_mapping::save_to_cache(ff::dict& dict) const
 {
     dict.set<size_t>("events_size", this->events_.size());
     dict.set_bytes("events", this->events_.data(), ff::vector_byte_size(this->events_));

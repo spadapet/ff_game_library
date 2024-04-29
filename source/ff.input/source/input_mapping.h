@@ -83,7 +83,7 @@ namespace ff
         virtual const std::vector<input_value_def>& values() const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         std::vector<input_event_def> events_;

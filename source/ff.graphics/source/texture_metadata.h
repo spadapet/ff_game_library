@@ -16,7 +16,7 @@ namespace ff
         virtual DXGI_FORMAT format() const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         ff::point_size size_;

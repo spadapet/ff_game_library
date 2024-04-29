@@ -41,7 +41,7 @@ namespace ff
         virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const override;
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         void assign(const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture);

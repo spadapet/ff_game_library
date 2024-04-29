@@ -5,6 +5,7 @@ namespace res
 {
     void register_xaml()
     {
-        ff::global_resources::add(::assets::xaml::data());
+        // TODO: RESOURCE_INIT
+        // ff::global_resources::add(::assets::xaml::data());
     }
 }

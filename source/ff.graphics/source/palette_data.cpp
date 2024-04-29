@@ -84,7 +84,7 @@ size_t ff::palette_data::index_remap_hash() const
     return 0;
 }
 
-bool ff::palette_data::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::palette_data::save_to_cache(ff::dict& dict) const
 {
     ff::dict remaps;
     remaps.reserve(this->name_to_remap.size());

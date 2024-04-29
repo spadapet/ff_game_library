@@ -143,7 +143,7 @@ const std::vector<std::pair<ff::animation_base*, float>>& ff::random_sprite::pic
     return this->picked;
 }
 
-bool ff::random_sprite::save_to_cache(ff::dict& dict, bool& allow_compress) const
+bool ff::random_sprite::save_to_cache(ff::dict& dict) const
 {
     std::vector<int> repeat_counts;
     std::vector<int> sprite_counts;

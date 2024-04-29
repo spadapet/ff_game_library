@@ -19,7 +19,7 @@ namespace ff
         IDWriteFontFace5* font_face();
 
     protected:
-        virtual bool save_to_cache(ff::dict& dict, bool& allow_compress) const override;
+        virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
         Microsoft::WRL::ComPtr<IDWriteFontFace5> font_face_;
