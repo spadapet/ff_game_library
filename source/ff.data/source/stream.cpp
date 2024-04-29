@@ -320,6 +320,11 @@ size_t ff::data_writer::write(const void* data, size_t size)
     return copy_size + size;
 }
 
+void ff::data_writer::reserve(size_t size)
+{
+    this->data->reserve(this->pos() + size);
+}
+
 size_t ff::data_writer::size() const
 {
     return this->data->size();
@@ -366,6 +371,9 @@ size_t ff::file_writer::write(const void* data, size_t size)
 {
     return this->file.write(data, size);
 }
+
+void ff::file_writer::reserve(size_t size)
+{}
 
 size_t ff::file_writer::size() const
 {

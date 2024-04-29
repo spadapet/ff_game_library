@@ -11,7 +11,7 @@
 
 using namespace std::string_view_literals;
 
-static const size_t DICT_PERSIST_COOKIE = ff::stable_hash_func("ff::dict"sv);
+static const size_t DICT_PERSIST_COOKIE = ff::stable_hash_func("ff::dict@0"sv);
 
 static const std::string& get_cached_string(std::string_view str)
 {

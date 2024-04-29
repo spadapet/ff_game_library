@@ -8,7 +8,10 @@
 #include "resource_v.h"
 #include "resource_value_provider.h"
 
+using namespace std::string_view_literals;
+
 std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
+static const size_t RESOURCE_PERSIST_COOKIE = ff::stable_hash_func("ff::resource_objects@0"sv);
 
 ff::resource_objects::resource_objects()
     : loading_count(0)
@@ -36,39 +39,58 @@ ff::resource_objects::~resource_objects()
 
 bool ff::resource_objects::save(ff::writer_base& writer)
 {
-    std::scoped_lock lock(this->resource_object_info_mutex);
-
-    std::vector<ff::dict::location_t> locations;
-    std::vector<std::shared_ptr<ff::saved_data_base>> saved_datas;
-    locations.reserve(this->resource_object_infos.size());
-    saved_datas.reserve(this->resource_object_infos.size());
-
-    size_t offset = 0;
-
-    for (auto& [name, info] : this->resource_object_infos)
+    // Collect the memory for each resource
+    std::vector<std::tuple<std::string_view, std::shared_ptr<ff::saved_data_base>>> resource_datas;
+    size_t full_size_guess = 0;
     {
-        ff::dict::location_t location{ name };
-        auto saved_data = info.saved_value;
+        std::scoped_lock lock(this->resource_object_info_mutex);
+        resource_datas.reserve(this->resource_object_infos.size());
 
-        if (!saved_data && info.dict_value)
+        for (auto& [name, info] : this->resource_object_infos)
         {
-            auto data_vector = std::make_shared<std::vector<uint8_t>>();
-            ff::data_writer data_writer(data_vector);
-            assert_ret_val(info.dict_value->save_typed(data_writer), false);
+            auto saved_data = info.saved_value;
+            if (!saved_data && info.dict_value)
+            {
+                auto data_vector = std::make_shared<std::vector<uint8_t>>();
+                ff::data_writer data_writer(data_vector);
+                assert_ret_val(info.dict_value->save_typed(data_writer), false);
 
-            auto data = std::make_shared<ff::data_vector>(data_vector);
-            saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+                auto data = std::make_shared<ff::data_vector>(data_vector);
+                saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+            }
+
+            assert_ret_val(saved_data, false);
+            resource_datas.push_back(std::make_tuple(name, saved_data));
+
+            full_size_guess += name.size();
         }
-
-        assert_ret_val(saved_data, false);
-
-        saved_datas.push_back(saved_data);
-        location.offset = offset;
-        location.size = info.saved_value->saved_size();
-        offset += location.size;
     }
 
-    // Write everything
+    full_size_guess += sizeof(size_t) * 2; // cookie and size
+    full_size_guess += resource_datas.size() * sizeof(size_t) * 4; // size, offset, name length
+    writer.reserve(full_size_guess);
+
+    // Write header
+    {
+        const size_t size = resource_datas.size();
+        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_COOKIE) && ff::save(writer, size), false);
+
+        size_t data_offset = 0;
+        for (auto& [name, saved_data] : resource_datas)
+        {
+            const size_t data_size = saved_data->saved_size();
+            assert_ret_val(ff::save(writer, name) && ff::save(writer, data_offset) && ff::save(writer, data_size), false);
+            data_offset += saved_data->saved_size();
+        }
+    }
+
+    // Write data
+    for (auto& [name, saved_data] : resource_datas)
+    {
+        auto data = saved_data->saved_data();
+        assert_ret_val(data && ff::save(writer, name), false);
+        assert_ret_val(ff::save_bytes(writer, *data), false);
+    }
 
     return true;
 }

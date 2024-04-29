@@ -36,7 +36,7 @@ bool ff::resource_object_base::save_to_cache_typed(const resource_object_base& v
         if (!dict.get(ff::internal::RES_TYPE))
         {
             const resource_object_factory_base* factory = resource_object_base::get_factory(typeid(value));
-            assert_ret(factory, false);
+            assert_ret_val(factory, false);
             dict.set<std::string>(ff::internal::RES_TYPE, std::string(factory->name()));
         }
 

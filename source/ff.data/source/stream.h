@@ -29,6 +29,7 @@ namespace ff
     {
     public:
         virtual size_t write(const void* data, size_t size) = 0;
+        virtual void reserve(size_t size) = 0;
     };
 
     class data_reader : public reader_base
@@ -87,6 +88,7 @@ namespace ff
         data_writer& operator=(const data_writer& other) = delete;
 
         virtual size_t write(const void* data, size_t size) override;
+        virtual void reserve(size_t size) override;
         virtual size_t size() const override;
         virtual size_t pos() const override;
         virtual size_t pos(size_t new_pos) override;
@@ -111,6 +113,7 @@ namespace ff
         bool operator!() const;
 
         virtual size_t write(const void* data, size_t size) override;
+        virtual void reserve(size_t size) override;
         virtual size_t size() const override;
         virtual size_t pos() const override;
         virtual size_t pos(size_t new_pos) override;
