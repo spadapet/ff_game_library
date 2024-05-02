@@ -9,11 +9,6 @@ namespace ff
     class resource_value_provider;
 }
 
-namespace ff::internal
-{
-    extern std::string_view RES_FACTORY_NAME;
-}
-
 namespace ff
 {
     class resource_objects
@@ -31,7 +26,8 @@ namespace ff
         resource_objects& operator=(resource_objects&& other) noexcept = delete;
         resource_objects& operator=(const resource_objects& other) = delete;
 
-        bool save(ff::writer_base& writer);
+        bool save(ff::writer_base& writer) const;
+        bool save(ff::dict& dict) const;
 
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
@@ -62,7 +58,6 @@ namespace ff
 
         struct resource_object_info
         {
-            ff::value_ptr dict_value;
             std::shared_ptr<ff::saved_data_base> saved_value;
             std::weak_ptr<ff::resource> weak_value;
             std::weak_ptr<resource_object_loading_info> weak_loading_info;

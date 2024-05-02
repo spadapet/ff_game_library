@@ -10,8 +10,19 @@
 
 using namespace std::string_view_literals;
 
-std::string_view ff::internal::RES_FACTORY_NAME("resource_objects");
 static const size_t RESOURCE_PERSIST_COOKIE = ff::stable_hash_func("ff::resource_objects@0"sv);
+static const size_t RESOURCE_PERSIST_SOURCES = ff::stable_hash_func("ff::resource_objects::sources@0"sv);
+static const size_t RESOURCE_PERSIST_DATA = ff::stable_hash_func("ff::resource_objects::data@0"sv);
+
+static ff::value_ptr create_dict_value(std::shared_ptr<ff::saved_data_base> saved_data)
+{
+    assert_ret_val(saved_data, nullptr);
+
+    auto reader = saved_data->loaded_reader();
+    assert_ret_val(reader, nullptr);
+
+    return ff::value::load_typed(*reader);
+}
 
 ff::resource_objects::resource_objects()
     : loading_count(0)
@@ -35,64 +46,6 @@ ff::resource_objects::resource_objects(ff::reader_base& reader)
 ff::resource_objects::~resource_objects()
 {
     this->flush_all_resources();
-}
-
-bool ff::resource_objects::save(ff::writer_base& writer)
-{
-    // Collect the memory for each resource
-    std::vector<std::tuple<std::string_view, std::shared_ptr<ff::saved_data_base>>> resource_datas;
-    size_t full_size_guess = 0;
-    {
-        std::scoped_lock lock(this->resource_object_info_mutex);
-        resource_datas.reserve(this->resource_object_infos.size());
-
-        for (auto& [name, info] : this->resource_object_infos)
-        {
-            auto saved_data = info.saved_value;
-            if (!saved_data && info.dict_value)
-            {
-                auto data_vector = std::make_shared<std::vector<uint8_t>>();
-                ff::data_writer data_writer(data_vector);
-                assert_ret_val(info.dict_value->save_typed(data_writer), false);
-
-                auto data = std::make_shared<ff::data_vector>(data_vector);
-                saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
-            }
-
-            assert_ret_val(saved_data, false);
-            resource_datas.push_back(std::make_tuple(name, saved_data));
-
-            full_size_guess += name.size();
-        }
-    }
-
-    full_size_guess += sizeof(size_t) * 2; // cookie and size
-    full_size_guess += resource_datas.size() * sizeof(size_t) * 4; // size, offset, name length
-    writer.reserve(full_size_guess);
-
-    // Write header
-    {
-        const size_t size = resource_datas.size();
-        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_COOKIE) && ff::save(writer, size), false);
-
-        size_t data_offset = 0;
-        for (auto& [name, saved_data] : resource_datas)
-        {
-            const size_t data_size = saved_data->saved_size();
-            assert_ret_val(ff::save(writer, name) && ff::save(writer, data_offset) && ff::save(writer, data_size), false);
-            data_offset += saved_data->saved_size();
-        }
-    }
-
-    // Write data
-    for (auto& [name, saved_data] : resource_datas)
-    {
-        auto data = saved_data->saved_data();
-        assert_ret_val(data && ff::save(writer, name), false);
-        assert_ret_val(ff::save_bytes(writer, *data), false);
-    }
-
-    return true;
 }
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
@@ -133,10 +86,10 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
 
             auto loading_info = std::make_shared<resource_object_loading_info>();
             loading_info->loading_resource = resource_result;
-            loading_info->blocked_count = 1;
             loading_info->name = name;
             loading_info->owner = &info;
             loading_info->start_time = ff::timer::current_raw_time();
+            loading_info->blocked_count = 1;
 
             info.weak_value = resource_result;
             info.weak_loading_info = loading_info;
@@ -145,7 +98,8 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
 
             ff::thread_pool::add_task([this, loading_info]()
             {
-                ff::value_ptr new_value = this->create_resource_objects(loading_info, loading_info->owner->dict_value);
+                ff::value_ptr dict_value = ::create_dict_value(loading_info->owner->saved_value);
+                ff::value_ptr new_value = this->create_resource_objects(loading_info, dict_value);
                 this->update_resource_object_info(loading_info, new_value);
                 // no code here since the destructor may be running
             });
@@ -179,15 +133,95 @@ ff::co_task<> ff::resource_objects::flush_all_resources_async()
     co_await this->done_loading_event;
 }
 
-bool ff::resource_objects::save_to_cache(ff::dict& dict) const
+bool ff::resource_objects::save(ff::writer_base& writer) const
+{
+    // Collect the memory for each resource
+    std::vector<std::tuple<std::string_view, std::shared_ptr<ff::saved_data_base>>> resource_datas;
+    std::unordered_set<std::filesystem::path> source_files;
+    size_t full_size_guess = sizeof(size_t) * 8; // cookies and sizes
+    {
+        std::scoped_lock lock(this->resource_object_info_mutex);
+        resource_datas.reserve(this->resource_object_infos.size());
+        source_files = this->rebuild_source_files;
+
+        for (auto& [name, info] : this->resource_object_infos)
+        {
+            resource_datas.push_back(std::make_tuple(name, info.saved_value));
+            full_size_guess += name.size() + info.saved_value->saved_size();
+        }
+    }
+
+    full_size_guess += source_files.size() * 128; // source files
+    full_size_guess += resource_datas.size() * sizeof(size_t) * 4; // size, offset, name length
+    writer.reserve(full_size_guess);
+
+    // Write header
+    {
+        const size_t size = resource_datas.size();
+        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_COOKIE) && ff::save(writer, size), false);
+
+        size_t data_offset = 0;
+        for (auto& [name, saved_data] : resource_datas)
+        {
+            const size_t data_size = saved_data->saved_size();
+            assert_ret_val(ff::save(writer, name) && ff::save(writer, data_offset) && ff::save(writer, data_size), false);
+            data_offset += saved_data->saved_size();
+        }
+    }
+
+    // Write source files
+    {
+        const size_t size = source_files.size();
+        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_SOURCES) && ff::save(writer, size), false);
+
+        for (auto& path : source_files)
+        {
+            std::string path_string = ff::filesystem::to_string(path);
+            assert_ret_val(ff::save(writer, path_string), false);
+        }
+    }
+
+    // Write data
+    {
+        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_DATA), false);
+
+        for (auto& [name, saved_data] : resource_datas)
+        {
+            auto data = saved_data->saved_data();
+            assert_ret_val(data && ff::save(writer, name), false);
+            assert_ret_val(ff::save_bytes(writer, *data), false);
+        }
+    }
+
+    return true;
+}
+
+bool ff::resource_objects::save(ff::dict& dict) const
 {
     std::scoped_lock lock(this->resource_object_info_mutex);
 
-    for (auto& i : this->resource_object_infos)
+    for (auto& [name, info] : this->resource_object_infos)
     {
-        dict.set(i.first, i.second.dict_value);
+        ff::value_ptr dict_value = ::create_dict_value(info.saved_value);
+        dict.set(name, dict_value);
     }
 
+    return true;
+}
+
+bool ff::resource_objects::save_to_cache(ff::dict& dict) const
+{
+    std::shared_ptr<ff::saved_data_base> saved_data;
+    {
+        auto data_vector = std::make_shared<std::vector<uint8_t>>();
+        ff::data_writer writer(data_vector);
+        assert_ret_val(this->save(writer), false);
+
+        auto data = std::make_shared<ff::data_vector>(data_vector);
+        saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+    }
+
+    dict.set<ff::saved_data_base>("resources", std::move(saved_data));
     return true;
 }
 
@@ -199,9 +233,17 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
     {
         if (!ff::string::starts_with(name, ff::internal::RES_PREFIX))
         {
-            resource_object_info info;
-            info.dict_value = dict.get(name);
-            this->resource_object_infos.try_emplace(name, std::move(info));
+            auto data_vector = std::make_shared<std::vector<uint8_t>>();
+            auto data = std::make_shared<ff::data_vector>(data_vector);
+            ff::data_writer data_writer(data_vector);
+
+            ff::value_ptr dict_value = dict.get(name);
+            if (dict_value->save_typed(data_writer))
+            {
+                resource_object_info info;
+                info.saved_value = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+                this->resource_object_infos.try_emplace(name, std::move(info));
+            }
         }
         else if (ff::constants::profile_build && name == ff::internal::RES_SOURCE)
         {
@@ -213,7 +255,51 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
 
 void ff::resource_objects::add_resources(ff::reader_base& reader)
 {
-    // TODO
+    size_t cookie, size;
+    std::vector<std::tuple<std::string, size_t, size_t>> resource_datas;
+    std::vector<std::string> source_files;
+
+    // Read header
+    {
+        assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE && ff::load(reader, size));
+
+        for (size_t i = 0; i < size; i++)
+        {
+            std::string name;
+            size_t data_offset, data_size;
+            assert_ret(ff::load(reader, name) && ff::load(reader, data_offset) && ff::load(reader, data_size));
+            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_size));
+        }
+    }
+
+    // Read sources
+    {
+        assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_SOURCES && ff::load(reader, size));
+
+        for (size_t i = 0; i < size; i++)
+        {
+            std::string name;
+            assert_ret(ff::load(reader, name));
+            source_files.push_back(std::move(name));
+        }
+    }
+
+    assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_DATA);
+    const size_t data_start = reader.pos();
+
+    std::scoped_lock lock(this->resource_object_info_mutex);
+
+    for (auto& name : source_files)
+    {
+        this->rebuild_source_files.emplace(ff::filesystem::to_path(name));
+    }
+
+    for (auto& [name, data_offset, data_size] : resource_datas)
+    {
+        resource_object_info info;
+        info.saved_value = reader.saved_data(data_start + data_offset, data_size, data_size, ff::saved_data_type::none);
+        this->resource_object_infos.try_emplace(name, std::move(info));
+    }
 }
 
 void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value)
@@ -284,19 +370,15 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
         ff::dict dict = dict_value->get<ff::dict>();
         std::string type = dict.get<std::string>(ff::internal::RES_TYPE);
         const ff::resource_object_factory_base* factory = ff::resource_object_base::get_factory(type);
-        bool is_nested_resources = (type == ff::internal::RES_FACTORY_NAME);
 
-        if (!is_nested_resources)
+        std::vector<std::string_view> names = dict.child_names();
+        for (std::string_view name : names)
         {
-            std::vector<std::string_view> names = dict.child_names();
-            for (std::string_view name : names)
-            {
-                ff::value_ptr new_value = this->create_resource_objects(loading_info, dict.get(name));
-                dict.set(name, new_value);
-            }
+            ff::value_ptr new_value = this->create_resource_objects(loading_info, dict.get(name));
+            dict.set(name, new_value);
         }
 
-        if (!is_nested_resources && factory)
+        if (factory)
         {
             std::shared_ptr<ff::resource_object_base> obj = factory->load_from_cache(dict);
             value = ff::value::create<ff::resource_object_base>(obj);
@@ -431,10 +513,16 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory
         }
     }
 
-    return result.status ? this->load_from_cache(result.dict) : nullptr;
+    return result.status ? std::make_shared<ff::resource_objects>(result.dict) : nullptr;
 }
 
 std::shared_ptr<ff::resource_object_base> ff::internal::resource_objects_factory::load_from_cache(const ff::dict& dict) const
 {
-    return std::make_shared<ff::resource_objects>(dict);
+    std::shared_ptr<ff::saved_data_base> saved_data = dict.get<ff::saved_data_base>("resources");
+    assert_ret_val(saved_data, nullptr);
+
+    auto reader = saved_data->loaded_reader();
+    assert_ret_val(reader, nullptr);
+
+    return std::make_shared<ff::resource_objects>(*reader);
 }

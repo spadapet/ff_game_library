@@ -122,40 +122,28 @@ static bool compile_resource_pack(
     }
 
     auto data = std::make_shared<std::vector<uint8_t>>();
-    data->reserve(1 << 22); // 4MB buffer
     {
+        ff::resource_objects resource_objects(result.dict);
         ff::data_writer data_writer(data);
-        if (!result.dict.save(data_writer))
-        {
-            debug_fail_ret_val(false);
-        }
+        assert_ret_val(resource_objects.save(data_writer), false);
     }
 
     if (!output_file.empty())
     {
         ff::file_writer writer(output_file);
-        if (!writer || writer.write(data->data(), data->size()) != data->size())
-        {
-            debug_fail_ret_val(false);
-        }
+        assert_ret_val(writer && writer.write(data->data(), data->size()) == data->size(), false);
     }
 
     if (!header_file.empty())
     {
         std::ofstream header_stream(header_file);
-        if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
-        {
-            debug_fail_ret_val(false);
-        }
+        assert_ret_val(header_stream && ::write_header(*data, header_stream, result.namespace_), false);
     }
 
     if (!symbol_header_file.empty())
     {
         std::ofstream symbol_header_stream(symbol_header_file);
-        if (!symbol_header_stream || !::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_))
-        {
-            debug_fail_ret_val(false);
-        }
+        assert_ret_val(symbol_header_stream && ::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_), false);
     }
 
     if (!pdb_output.empty())
@@ -163,10 +151,7 @@ static bool compile_resource_pack(
         for (const auto& [name, data] : result.output_files)
         {
             std::filesystem::path path = pdb_output / name;
-            if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
-            {
-                debug_fail_ret_val(false);
-            }
+            assert_ret_val(ff::filesystem::write_binary_file(path, data->data(), data->size()), false);
         }
     }
 
@@ -239,7 +224,8 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
     }
 
     ff::dict dict;
-    if (!ff::dict::load(reader, dict) || !dict.load_child_dicts())
+    ff::resource_objects resources(reader);
+    if (!resources.save(dict) || !dict.load_child_dicts())
     {
         std::cerr << "Can't load file: " << dump_source_file << std::endl;
         return 3;

@@ -48,7 +48,7 @@ namespace ff::test::resource
             Assert::IsTrue(loaded_dict.get(ff::internal::RES_FILES) != nullptr);
             Assert::IsTrue(loaded_dict.get(ff::internal::RES_SOURCE) != nullptr);
 
-            const ff::resource_object_factory_base* factory = ff::resource_objects::get_factory(ff::internal::RES_FACTORY_NAME);
+            const ff::resource_object_factory_base* factory = ff::resource_objects::get_factory("resource_objects");
             Assert::IsNotNull(factory);
 
             std::shared_ptr<ff::resource_object_base> obj_base = factory->load_from_cache(loaded_dict);
