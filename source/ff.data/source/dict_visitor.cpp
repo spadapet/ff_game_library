@@ -60,6 +60,18 @@ std::string ff::dict_visitor_base::path() const
     return str.str();
 }
 
+std::string ff::dict_visitor_base::path_root_name() const
+{
+    std::string path = this->path();
+    size_t slash_pos = path.find('/');
+    if (slash_pos != std::string::npos)
+    {
+        path = path.substr(0, slash_pos);
+    }
+
+    return path;
+}
+
 size_t ff::dict_visitor_base::path_depth() const
 {
     std::scoped_lock lock(this->mutex);

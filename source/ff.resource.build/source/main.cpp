@@ -10,8 +10,9 @@ static void show_usage()
 {
     std::cerr << "Command line options:" << std::endl;
     std::cerr << "  1) ff.resource.build.exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
-    std::cerr << "  2) ff.resource.build.exe -dump \"pack file\"" << std::endl;
-    std::cerr << "  3) ff.resource.build.exe -dumpbin \"pack file\"" << std::endl;
+    std::cerr << "  2) ff.resource.build.exe -combine \"pack file\" -out \"output file\"" << std::endl;
+    std::cerr << "  3) ff.resource.build.exe -dump \"pack file\"" << std::endl;
+    std::cerr << "  4) ff.resource.build.exe -dumpbin \"pack file\"" << std::endl;
     std::cerr << std::endl;
     std::cerr << "NOTES:" << std::endl;
     std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'." << std::endl;
@@ -39,8 +40,7 @@ static bool test_load_resources(const ff::dict& dict)
             if (value->value()->is_type<nullptr_t>())
             {
                 std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
-                assert(false);
-                return false;
+                debug_fail_ret_val(false);
             }
         }
     }
@@ -113,19 +113,116 @@ static bool compile_resource_pack(
     ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
     if (!result.status || !::test_load_resources(result.dict))
     {
+        std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << std::endl;
+
         for (auto& error : result.errors)
         {
             std::cerr << error << std::endl;
         }
 
-        debug_fail_ret_val(false);
+        return false;
     }
 
     auto data = std::make_shared<std::vector<uint8_t>>();
     {
         ff::resource_objects resource_objects(result.dict);
         ff::data_writer data_writer(data);
-        assert_ret_val(resource_objects.save(data_writer), false);
+        if (!resource_objects.save(data_writer))
+        {
+            std::cerr << "Failed to save resources: " << ff::filesystem::to_string(output_file) << std::endl;
+            return false;
+        }
+    }
+
+    if (!output_file.empty())
+    {
+        ff::file_writer writer(output_file);
+        if (!writer || writer.write(data->data(), data->size()) != data->size())
+        {
+            std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << std::endl;
+            return false;
+        }
+    }
+
+    if (!header_file.empty())
+    {
+        std::ofstream header_stream(header_file);
+        if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
+        {
+            std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << std::endl;
+            return false;
+        }
+    }
+
+    if (!symbol_header_file.empty())
+    {
+        std::ofstream symbol_header_stream(symbol_header_file);
+        if (!symbol_header_stream || !::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_))
+        {
+            std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << std::endl;
+            return false;
+        }
+    }
+
+    if (!pdb_output.empty())
+    {
+        for (const auto& [name, data] : result.output_files)
+        {
+            std::filesystem::path path = pdb_output / name;
+            if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
+            {
+                std::cerr << "Failed to write output file: " << ff::filesystem::to_string(path) << std::endl;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool combine_resource_packs(const std::vector<std::filesystem::path>& combine_files, const std::filesystem::path& output_file)
+{
+    ff::resource_objects resource_objects;
+    ff::load_resources_result result{};
+
+    for (const std::filesystem::path& file : combine_files)
+    {
+        ff::file_reader reader(file);
+        if (!reader)
+        {
+            std::cerr << "Failed to open file: " << ff::filesystem::to_string(file) << std::endl;
+            return false;
+        }
+
+        if (!resource_objects.add_resources(reader))
+        {
+            std::cerr << "Invalid binary pack file: " << ff::filesystem::to_string(file) << std::endl;
+            return false;
+        }
+    }
+
+    if (!input_file.empty())
+    {
+        result = ff::load_resources_from_file(input_file, false, debug);
+        if (!result.status || !::test_load_resources(result.dict))
+        {
+            for (auto& error : result.errors)
+            {
+                std::cerr << error << std::endl;
+            }
+
+            return false;
+        }
+    }
+
+    auto data = std::make_shared<std::vector<uint8_t>>();
+    {
+        ff::data_writer data_writer(data);
+        if (!resource_objects.save(data_writer))
+        {
+            std::cerr << "Failed to save resource data." << std::endl;
+            return false;
+        }
     }
 
     if (!output_file.empty())
@@ -134,19 +231,19 @@ static bool compile_resource_pack(
         assert_ret_val(writer && writer.write(data->data(), data->size()) == data->size(), false);
     }
 
-    if (!header_file.empty())
+    if (result.status && !header_file.empty())
     {
         std::ofstream header_stream(header_file);
         assert_ret_val(header_stream && ::write_header(*data, header_stream, result.namespace_), false);
     }
 
-    if (!symbol_header_file.empty())
+    if (result.status && !symbol_header_file.empty())
     {
         std::ofstream symbol_header_stream(symbol_header_file);
         assert_ret_val(symbol_header_stream && ::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_), false);
     }
 
-    if (!pdb_output.empty())
+    if (result.status && !pdb_output.empty())
     {
         for (const auto& [name, data] : result.output_files)
         {
@@ -270,6 +367,7 @@ int main()
     }
 
     std::vector<std::filesystem::path> refs;
+    std::vector<std::filesystem::path> combine_files;
     std::filesystem::path input_file;
     std::filesystem::path output_file;
     std::filesystem::path pdb_output;
@@ -289,6 +387,10 @@ int main()
         if (arg == "-in" && i + 1 < args.size())
         {
             input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+        }
+        else if (arg == "-combine" && i + 1 < args.size())
+        {
+            combine_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
         }
         else if (arg == "-out" && i + 1 < args.size())
         {
@@ -337,7 +439,7 @@ int main()
 
     if (!dump_source_file.empty())
     {
-        if (!input_file.empty() || !output_file.empty())
+        if (!input_file.empty() || !output_file.empty() || !combine_files.empty())
         {
             ::show_usage();
             return 1;
@@ -346,7 +448,7 @@ int main()
         return ::dump_file(dump_source_file, dump_bin);
     }
 
-    if (input_file.empty())
+    if (input_file.empty() == combine_files.empty())
     {
         ::show_usage();
         return 1;
@@ -354,14 +456,36 @@ int main()
 
     if (output_file.empty())
     {
+        if (input_file.empty())
+        {
+            ::show_usage();
+            return 1;
+        }
+
         output_file = input_file;
         output_file.replace_extension(".pack");
     }
 
-    if (!ff::filesystem::exists(input_file))
+    if (!input_file.empty() && !ff::filesystem::exists(input_file))
     {
         std::cerr << "ff.resource.build: File doesn't exist: " << input_file << std::endl;
         return 2;
+    }
+
+    for (auto& file : combine_files)
+    {
+        if (!ff::filesystem::exists(file))
+        {
+            std::cerr << "ff.resource.build: File doesn't exist: " << file << std::endl;
+            return 2;
+        }
+
+        std::cout << "Combine: " << ff::filesystem::to_string(file) << std::endl;
+    }
+
+    if (!combine_files.empty())
+    {
+        force = true;
     }
 
     bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
@@ -408,7 +532,7 @@ int main()
             }
         }
 
-        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
+        if (!::compile_resource_pack(combine_files, input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
         {
             std::cerr << "ff.resource.build: Compile failed" << std::endl;
             return 6;

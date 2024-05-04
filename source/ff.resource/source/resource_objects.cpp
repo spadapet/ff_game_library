@@ -31,16 +31,16 @@ ff::resource_objects::resource_objects()
     this->done_loading_event.set();
 }
 
-ff::resource_objects::resource_objects(const ff::dict& dict)
+ff::resource_objects::resource_objects(const ff::dict& dict, bool debug)
     : resource_objects()
 {
-    this->add_resources(dict);
+    this->add_resources(dict, debug);
 }
 
-ff::resource_objects::resource_objects(ff::reader_base& reader)
+ff::resource_objects::resource_objects(ff::reader_base& reader, bool debug)
     : resource_objects()
 {
-    this->add_resources(reader);
+    this->add_resources(reader, debug);
 }
 
 ff::resource_objects::~resource_objects()
@@ -133,6 +133,90 @@ ff::co_task<> ff::resource_objects::flush_all_resources_async()
     co_await this->done_loading_event;
 }
 
+bool ff::resource_objects::add_resources(const ff::dict& dict, bool debug)
+{
+    std::scoped_lock lock(this->resource_object_info_mutex);
+
+    for (std::string_view name : dict.child_names())
+    {
+        if (!ff::string::starts_with(name, ff::internal::RES_PREFIX))
+        {
+            auto data_vector = std::make_shared<std::vector<uint8_t>>();
+            auto data = std::make_shared<ff::data_vector>(data_vector);
+            ff::data_writer data_writer(data_vector);
+
+            ff::value_ptr dict_value = dict.get(name);
+            if (dict_value->save_typed(data_writer))
+            {
+                resource_object_info info;
+                info.saved_value = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+                this->resource_object_infos.try_emplace(name, std::move(info));
+            }
+        }
+        else if (debug && name == ff::internal::RES_SOURCE)
+        {
+            std::string source_string = dict.get<std::string>(ff::internal::RES_SOURCE);
+            this->rebuild_source_files.emplace(ff::filesystem::to_path(source_string));
+
+            std::vector<std::string> input_files = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
+            // TODO: ...
+        }
+    }
+
+    return true;
+}
+
+bool ff::resource_objects::add_resources(ff::reader_base& reader, bool debug)
+{
+    size_t cookie, size;
+    std::vector<std::tuple<std::string, size_t, size_t>> resource_datas;
+    std::vector<std::string> source_files;
+
+    // Read header
+    {
+        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE && ff::load(reader, size), false);
+
+        for (size_t i = 0; i < size; i++)
+        {
+            std::string name;
+            size_t data_offset, data_size;
+            assert_ret_val(ff::load(reader, name) && ff::load(reader, data_offset) && ff::load(reader, data_size), false);
+            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_size));
+        }
+    }
+
+    // Read sources
+    {
+        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_SOURCES && ff::load(reader, size), false);
+
+        for (size_t i = 0; i < size; i++)
+        {
+            std::string name;
+            assert_ret_val(ff::load(reader, name), false);
+            source_files.push_back(std::move(name));
+        }
+    }
+
+    assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_DATA, false);
+    const size_t data_start = reader.pos();
+
+    std::scoped_lock lock(this->resource_object_info_mutex);
+
+    for (auto& name : source_files)
+    {
+        this->rebuild_source_files.emplace(ff::filesystem::to_path(name));
+    }
+
+    for (auto& [name, data_offset, data_size] : resource_datas)
+    {
+        resource_object_info info;
+        info.saved_value = reader.saved_data(data_start + data_offset, data_size, data_size, ff::saved_data_type::none);
+        this->resource_object_infos.try_emplace(name, std::move(info));
+    }
+
+    return true;
+}
+
 bool ff::resource_objects::save(ff::writer_base& writer) const
 {
     // Collect the memory for each resource
@@ -223,83 +307,6 @@ bool ff::resource_objects::save_to_cache(ff::dict& dict) const
 
     dict.set<ff::saved_data_base>("resources", std::move(saved_data));
     return true;
-}
-
-void ff::resource_objects::add_resources(const ff::dict& dict)
-{
-    std::scoped_lock lock(this->resource_object_info_mutex);
-
-    for (std::string_view name : dict.child_names())
-    {
-        if (!ff::string::starts_with(name, ff::internal::RES_PREFIX))
-        {
-            auto data_vector = std::make_shared<std::vector<uint8_t>>();
-            auto data = std::make_shared<ff::data_vector>(data_vector);
-            ff::data_writer data_writer(data_vector);
-
-            ff::value_ptr dict_value = dict.get(name);
-            if (dict_value->save_typed(data_writer))
-            {
-                resource_object_info info;
-                info.saved_value = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
-                this->resource_object_infos.try_emplace(name, std::move(info));
-            }
-        }
-        else if (ff::constants::profile_build && name == ff::internal::RES_SOURCE)
-        {
-            std::string source_string = dict.get<std::string>(ff::internal::RES_SOURCE);
-            this->rebuild_source_files.emplace(ff::filesystem::to_path(source_string));
-        }
-    }
-}
-
-void ff::resource_objects::add_resources(ff::reader_base& reader)
-{
-    size_t cookie, size;
-    std::vector<std::tuple<std::string, size_t, size_t>> resource_datas;
-    std::vector<std::string> source_files;
-
-    // Read header
-    {
-        assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE && ff::load(reader, size));
-
-        for (size_t i = 0; i < size; i++)
-        {
-            std::string name;
-            size_t data_offset, data_size;
-            assert_ret(ff::load(reader, name) && ff::load(reader, data_offset) && ff::load(reader, data_size));
-            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_size));
-        }
-    }
-
-    // Read sources
-    {
-        assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_SOURCES && ff::load(reader, size));
-
-        for (size_t i = 0; i < size; i++)
-        {
-            std::string name;
-            assert_ret(ff::load(reader, name));
-            source_files.push_back(std::move(name));
-        }
-    }
-
-    assert_ret(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_DATA);
-    const size_t data_start = reader.pos();
-
-    std::scoped_lock lock(this->resource_object_info_mutex);
-
-    for (auto& name : source_files)
-    {
-        this->rebuild_source_files.emplace(ff::filesystem::to_path(name));
-    }
-
-    for (auto& [name, data_offset, data_size] : resource_datas)
-    {
-        resource_object_info info;
-        info.saved_value = reader.saved_data(data_start + data_offset, data_size, data_size, ff::saved_data_type::none);
-        this->resource_object_infos.try_emplace(name, std::move(info));
-    }
 }
 
 void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value)

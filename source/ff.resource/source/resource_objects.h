@@ -17,8 +17,8 @@ namespace ff
     {
     public:
         resource_objects();
-        resource_objects(const ff::dict& dict);
-        resource_objects(ff::reader_base& reader);
+        resource_objects(const ff::dict& dict, bool debug = ff::constants::profile_build);
+        resource_objects(ff::reader_base& reader, bool debug = ff::constants::profile_build);
         resource_objects(resource_objects&& other) noexcept = delete;
         resource_objects(const resource_objects& other) = delete;
         ~resource_objects();
@@ -26,6 +26,8 @@ namespace ff
         resource_objects& operator=(resource_objects&& other) noexcept = delete;
         resource_objects& operator=(const resource_objects& other) = delete;
 
+        bool add_resources(const ff::dict& dict, bool debug = ff::constants::profile_build);
+        bool add_resources(ff::reader_base& reader, bool debug = ff::constants::profile_build);
         bool save(ff::writer_base& writer) const;
         bool save(ff::dict& dict) const;
 
@@ -38,7 +40,6 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
-        friend void ff::global_resources::add(ff::reader_base& reader);
         void rebuild(ff::push_base<ff::co_task<>>& tasks);
         ff::co_task<> rebuild_async();
 
@@ -63,8 +64,6 @@ namespace ff
             std::weak_ptr<resource_object_loading_info> weak_loading_info;
         };
 
-        void add_resources(const ff::dict& dict);
-        void add_resources(ff::reader_base& reader);
         void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);

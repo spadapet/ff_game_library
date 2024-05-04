@@ -171,11 +171,23 @@ public:
         }
     }
 
-    void add_file(const std::filesystem::path& path)
+    void add_file(std::string_view resource_name, const std::filesystem::path& path)
     {
         std::filesystem::path path_canon = std::filesystem::weakly_canonical(path);
         std::scoped_lock lock(this->mutex);
-        this->paths_.insert(std::move(path_canon));
+        this->paths_.insert(path_canon);
+
+        if (!resource_name.empty())
+        {
+            std::string resource_name_str(resource_name);
+            auto i = this->name_to_paths.find(resource_name_str);
+            if (i == this->name_to_paths.cend())
+            {
+                i = this->name_to_paths.try_emplace(resource_name_str).first;
+            }
+
+            i->second.insert(path_canon);
+        }
     }
 
     std::vector<std::filesystem::path> paths() const
@@ -188,6 +200,24 @@ public:
         for (const std::filesystem::path& path : this->paths_)
         {
             paths.push_back(path);
+        }
+
+        return paths;
+    }
+
+    std::vector<std::filesystem::path> paths(std::string_view name) const
+    {
+        std::vector<std::filesystem::path> paths;
+        std::string name_str(name);
+        std::scoped_lock lock(this->mutex);
+
+        auto i = this->name_to_paths.find(name_str);
+        if (i != this->name_to_paths.cend())
+        {
+            for (const std::filesystem::path& path : i->second)
+            {
+                paths.push_back(path);
+            }
         }
 
         return paths;
@@ -237,6 +267,7 @@ private:
     ff::load_resources_result::output_files_t output_files_;
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
+    std::unordered_map<std::string, std::unordered_set<std::filesystem::path>> name_to_paths;
     std::unordered_set<std::filesystem::path, ff::stable_hash<std::filesystem::path>> paths_;
     std::unordered_map<std::string, std::string> id_to_name_;
     bool debug_;
@@ -285,7 +316,8 @@ protected:
 
                 if (ff::filesystem::exists(full_path))
                 {
-                    this->context().add_file(full_path);
+                    std::string name = this->path_root_name();
+                    this->context().add_file(name, full_path);
                 }
                 else
                 {
@@ -777,18 +809,44 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
         dict = new_dict_value->get<ff::dict>();
     }
 
-    std::vector<std::filesystem::path> paths = context.paths();
-    if (!paths.empty())
+    if (debug)
     {
-        std::vector<std::string> path_strings;
-        path_strings.reserve(paths.size());
-
-        for (const std::filesystem::path& path : paths)
+        std::vector<std::filesystem::path> paths = context.paths();
+        if (!paths.empty())
         {
-            path_strings.push_back(ff::filesystem::to_string(path));
+            std::vector<std::string> path_strings;
+            path_strings.reserve(paths.size());
+
+            for (const std::filesystem::path& path : paths)
+            {
+                path_strings.push_back(ff::filesystem::to_string(path));
+            }
+
+            dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(path_strings));
         }
 
-        dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(path_strings));
+        for (std::string_view name : dict.child_names())
+        {
+            ff::value_ptr value = dict.get(name);
+            if (value->is_type<ff::dict>())
+            {
+                std::vector<std::filesystem::path> child_paths = context.paths(name);
+                if (!child_paths.empty())
+                {
+                    std::vector<std::string> child_path_strings;
+                    child_path_strings.reserve(child_paths.size());
+
+                    for (const std::filesystem::path& path : child_paths)
+                    {
+                        child_path_strings.push_back(ff::filesystem::to_string(path));
+                    }
+
+                    ff::dict child_dict = value->get<ff::dict>();
+                    child_dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(child_path_strings));
+                    dict.set<ff::dict>(name, std::move(child_dict));
+                }
+            }
+        }
     }
 
     ff::load_resources_result result{};
