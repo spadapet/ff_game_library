@@ -17,20 +17,23 @@ namespace ff
     {
     public:
         resource_objects();
-        resource_objects(const ff::dict& dict, bool debug = ff::constants::profile_build);
-        resource_objects(ff::reader_base& reader, bool debug = ff::constants::profile_build);
-        resource_objects(resource_objects&& other) noexcept = delete;
-        resource_objects(const resource_objects& other) = delete;
+        resource_objects(const ff::dict& dict);
+        resource_objects(ff::reader_base& reader);
+        resource_objects(const ff::resource_objects& other);
+        resource_objects(ff::resource_objects&& other) noexcept = delete;
         ~resource_objects();
 
-        resource_objects& operator=(resource_objects&& other) noexcept = delete;
-        resource_objects& operator=(const resource_objects& other) = delete;
+        ff::resource_objects& operator=(const ff::resource_objects& other) = delete;
+        ff::resource_objects& operator=(ff::resource_objects&& other) noexcept = delete;
 
-        bool add_resources(const ff::dict& dict, bool debug = ff::constants::profile_build);
-        bool add_resources(ff::reader_base& reader, bool debug = ff::constants::profile_build);
+        void add_resources(const ff::dict& dict);
+        void add_resources(const ff::resource_objects& other);
+        bool add_resources(ff::reader_base& reader);
         bool save(ff::writer_base& writer) const;
         bool save(ff::dict& dict) const;
+        std::vector<std::string> input_files() const;
 
+        // ff::resource_object_loader
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
         virtual std::vector<std::string_view> resource_object_names() const override;
         virtual void flush_all_resources() override;
@@ -40,6 +43,7 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
+        void add_resources(const ff::dict& dict, bool only_metadata);
         void rebuild(ff::push_base<ff::co_task<>>& tasks);
         ff::co_task<> rebuild_async();
 
@@ -68,14 +72,13 @@ namespace ff
         ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);
 
-        mutable std::recursive_mutex resource_object_info_mutex;
-        std::unordered_map<std::string_view, resource_object_info> resource_object_infos;
-        ff::win_event done_loading_event;
-        std::atomic<int> loading_count;
+        mutable std::recursive_mutex resource_mutex;
+        std::unordered_map<std::string_view, resource_object_info> resource_infos;
+        ff::dict resource_metadata;
 
-        // hot reload
+        std::atomic<int> loading_count;
+        ff::win_event done_loading_event;
         ff::signal_connection rebuild_connection;
-        std::unordered_set<std::filesystem::path> rebuild_source_files;
     };
 }
 

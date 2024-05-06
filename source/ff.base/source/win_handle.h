@@ -61,6 +61,7 @@ namespace ff
     {
     public:
         win_event();
+        win_event(bool set);
         win_event(win_event&& other) noexcept = default;
         win_event(const win_event& other) = default;
 

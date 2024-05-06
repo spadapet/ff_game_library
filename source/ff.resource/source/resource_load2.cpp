@@ -223,9 +223,12 @@ public:
         return paths;
     }
 
-    ff::load_resources_result::output_files_t output_files() const
+    using output_files_t = typename std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>>;
+    using id_to_name_t = typename std::vector<std::pair<std::string, std::string>>;
+
+    output_files_t output_files() const
     {
-        ff::load_resources_result::output_files_t output_files_copy;
+        output_files_t output_files_copy;
         {
             std::scoped_lock lock(this->mutex);
             output_files_copy = this->output_files_;
@@ -240,9 +243,9 @@ public:
         this->id_to_name_.try_emplace(std::string(id), std::string(name));
     }
 
-    ff::load_resources_result::id_to_name_t id_to_name()
+    id_to_name_t id_to_name()
     {
-        ff::load_resources_result::id_to_name_t id_to_name_copy;
+        id_to_name_t id_to_name_copy;
         {
             std::scoped_lock lock(this->mutex);
             for (const auto& i : this->id_to_name_)
@@ -264,7 +267,7 @@ private:
     mutable std::recursive_mutex mutex;
     std::filesystem::path base_path_;
     std::vector<std::string> errors_;
-    ff::load_resources_result::output_files_t output_files_;
+    output_files_t output_files_;
     std::unordered_map<DWORD, std::vector<ff::dict>> thread_to_values;
     std::unordered_map<std::string, std::shared_ptr<ff::resource>> name_to_resource;
     std::unordered_map<std::string, std::unordered_set<std::filesystem::path>> name_to_paths;
@@ -793,68 +796,84 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
         if (!new_dict_value || !errors.empty() || !context.errors().empty())
         {
-            ff::load_resources_result result{};
-            result.status = false;
-            result.errors = std::move(errors);
+            ff::load_resources_result result{ nullptr, std::move(errors)};
+            std::copy(context.errors().cbegin(), context.errors().cend(), std::back_inserter(result.errors));
 
             for (const std::string& error : result.errors)
             {
                 ff::log::write(ff::log::type::resource_load, "Load resource error: ", error, "\r\n");
             }
 
-            std::copy(context.errors().cbegin(), context.errors().cend(), std::back_inserter(result.errors));
             return result;
         }
 
         dict = new_dict_value->get<ff::dict>();
     }
 
+    // All input files for every single resource
     if (debug)
     {
-        std::vector<std::filesystem::path> paths = context.paths();
-        if (!paths.empty())
+        std::vector<std::string> path_strings;
+        for (const std::filesystem::path& path : context.paths())
         {
-            std::vector<std::string> path_strings;
-            path_strings.reserve(paths.size());
-
-            for (const std::filesystem::path& path : paths)
-            {
-                path_strings.push_back(ff::filesystem::to_string(path));
-            }
-
-            dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(path_strings));
+            path_strings.push_back(ff::filesystem::to_string(path));
         }
 
+        dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(path_strings));
+    }
+
+    // Per-resource input files
+    if (debug)
+    {
         for (std::string_view name : dict.child_names())
         {
-            ff::value_ptr value = dict.get(name);
-            if (value->is_type<ff::dict>())
+            ff::value_ptr child_value = dict.get(name);
+            if (child_value->is_type<ff::dict>())
             {
-                std::vector<std::filesystem::path> child_paths = context.paths(name);
-                if (!child_paths.empty())
+                std::vector<std::string> child_path_strings;
+
+                for (const std::filesystem::path& path : context.paths(name))
                 {
-                    std::vector<std::string> child_path_strings;
-                    child_path_strings.reserve(child_paths.size());
-
-                    for (const std::filesystem::path& path : child_paths)
-                    {
-                        child_path_strings.push_back(ff::filesystem::to_string(path));
-                    }
-
-                    ff::dict child_dict = value->get<ff::dict>();
-                    child_dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(child_path_strings));
-                    dict.set<ff::dict>(name, std::move(child_dict));
+                    child_path_strings.push_back(ff::filesystem::to_string(path));
                 }
+
+                ff::dict child_dict = child_value->get<ff::dict>();
+                child_dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(child_path_strings));
+                dict.set<ff::dict>(name, std::move(child_dict));
             }
         }
     }
 
-    ff::load_resources_result result{};
-    result.status = true;
-    result.namespace_ = json_dict.get<std::string>(ff::internal::RES_NAMESPACE, "assets");
-    result.dict = std::move(dict);
-    result.output_files = context.output_files();
-    result.id_to_name = context.id_to_name();
+    // Output files (usually PDBs from shader compilation)
+    if (debug)
+    {
+        ff::dict output_files_dict;
 
-    return result;
+        for (auto& i : context.output_files())
+        {
+            output_files_dict.set<ff::data_base>(i.first, i.second);
+        }
+
+        dict.set<ff::dict>(ff::internal::RES_OUTPUT_FILES, std::move(output_files_dict));
+    }
+
+    // C++ header namespace
+    if (!dict.get(ff::internal::RES_NAMESPACE))
+    {
+        dict.set<std::string>(ff::internal::RES_NAMESPACE, "assets");
+    }
+
+    // C++ IDs
+    {
+        ff::dict id_dict;
+
+        for (auto& i : context.id_to_name())
+        {
+            id_dict.set<std::string>(i.first, i.second);
+        }
+
+        dict.set<ff::dict>(ff::internal::RES_ID_SYMBOLS, std::move(id_dict));
+    }
+
+    return ff::load_resources_result{ std::make_shared<ff::resource_objects>(dict) };
 }

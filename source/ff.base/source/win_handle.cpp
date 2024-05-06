@@ -146,6 +146,15 @@ ff::win_event::win_event()
     : data(::event_stash().get_obj())
 {}
 
+ff::win_event::win_event(bool set)
+    : win_event()
+{
+    if (set)
+    {
+        this->set();
+    }
+}
+
 ff::internal::co_event_awaiter ff::win_event::operator co_await()
 {
     return ff::task::wait_handle(*this);

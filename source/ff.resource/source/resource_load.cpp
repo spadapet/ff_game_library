@@ -1,11 +1,15 @@
 #include "pch.h"
 #include "resource_load.h"
+#include "resource_objects.h"
 
 std::string_view ff::internal::RES_FILES("res:files");
+std::string_view ff::internal::RES_ID_SYMBOLS("res:id_symbols");
 std::string_view ff::internal::RES_IMPORT("res:import");
+std::string_view ff::internal::RES_OUTPUT_FILES("res:output_files");
 std::string_view ff::internal::RES_NAMESPACE("res:namespace");
 std::string_view ff::internal::RES_SYMBOL("res:symbol");
 std::string_view ff::internal::RES_SOURCE("res:source");
+std::string_view ff::internal::RES_SOURCES("res:sources");
 std::string_view ff::internal::RES_TEMPLATE("res:template");
 std::string_view ff::internal::RES_TYPE("res:type");
 std::string_view ff::internal::RES_VALUES("res:values");
@@ -27,46 +31,47 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
     return (cache_path /= "ff.cache") /= str.str();
 }
 
-static bool load_cached_resources(const std::filesystem::path& path, ff::dict& dict)
+static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::filesystem::path& path)
 {
     if (!ff::filesystem::exists(path))
     {
-        return false;
+        return {};
     }
 
     std::filesystem::file_time_type time = ff::filesystem::last_write_time(path);
     if (time == std::filesystem::file_time_type::min())
     {
-        return false;
+        return {};
     }
 
     // Read the whole file into memory so that the cache file isn't locked
     auto data = ff::filesystem::read_binary_file(path);
     ff::data_reader reader(data);
-    if (!data || !ff::dict::load(reader, dict))
+    auto resource_objects = std::make_shared<ff::resource_objects>();
+    if (!data || !resource_objects->add_resources(reader))
     {
-        return false;
+        return {};
     }
 
-    std::vector<std::string> file_refs = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
+    std::vector<std::string> file_refs = resource_objects->input_files();
     for (const std::string& file_ref : file_refs)
     {
         std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
         if (!ff::filesystem::exists(path_ref))
         {
             // cache is out of data
-            return false;
+            return {};
         }
 
         std::filesystem::file_time_type file_ref_time = ff::filesystem::last_write_time(path_ref);
         if (file_ref_time == std::filesystem::file_time_type::min() || time < file_ref_time)
         {
             // cache is out of data
-            return false;
+            return {};
         }
     }
 
-    return true;
+    return resource_objects;
 }
 
 ff::load_resources_result ff::load_resources_from_file(const std::filesystem::path& path, bool use_cache, bool debug)
@@ -74,9 +79,14 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
     ff::load_resources_result result{};
     std::filesystem::path cache_path = use_cache ? ::get_cache_path(path, debug) : std::filesystem::path();
 
-    if (use_cache && ::load_cached_resources(cache_path, result.dict))
+    if (use_cache)
     {
-        result.status = true;
+        auto resource_objects = ::load_cached_resources(cache_path);
+        if (resource_objects)
+        {
+            result.resources = resource_objects;
+        }
+
         return result;
     }
 
@@ -85,21 +95,22 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
     {
         std::filesystem::path base_path = path.parent_path();
         result = ff::load_resources_from_json(text, base_path, debug);
-        if (result.status)
+        if (result.resources && debug)
         {
-            // Remember the source
-            result.dict.set<std::string>(ff::internal::RES_SOURCE, ff::filesystem::to_string(path));
+            ff::dict resource_metadata;
 
-            // Add the text file to the list of input files
-            std::vector<std::string> files = result.dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
+            // Remember the source
+            std::vector<std::string> files;
             files.push_back(ff::filesystem::to_string(path));
-            result.dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(files));
+            resource_metadata.set<std::string>(ff::internal::RES_SOURCES, files);
+            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, files);
+            result.resources->add_resources(resource_metadata);
 
             if (use_cache)
             {
                 // Ignore failures saving the cache, just delete the cache instead
                 ff::file_writer writer(cache_path);
-                if (writer && !result.dict.save(writer))
+                if (writer && !result.resources->save(writer))
                 {
                     ff::filesystem::remove(cache_path);
                 }
