@@ -31,17 +31,16 @@ namespace ff::test::resource
             ff::filesystem::write_text_file(source_path, json_source);
 
             ff::load_resources_result result = ff::load_resources_from_file(source_path, false, false);
-            Assert::IsTrue(result.status);
+            Assert::IsNotNull(result.resources.get());
             Assert::IsTrue(result.errors.empty());
 
             ff::file_writer writer(pack_path);
-            result.status = result.dict.save(writer);
-            Assert::IsTrue(result.status);
+            Assert::IsTrue(result.resources->save(writer));
 
             ff::dict loaded_dict;
             ff::file_reader reader(pack_path);
-            result.status = ff::dict::load(reader, loaded_dict);
-            Assert::IsTrue(result.status);
+            ff::resource_objects loaded_resources;
+            Assert::IsTrue(loaded_resources.add_resources(reader));
             Assert::AreEqual<size_t>(4, loaded_dict.size());
             Assert::IsTrue(loaded_dict.get("test_file1") != nullptr);
             Assert::IsTrue(loaded_dict.get("test_file2") != nullptr);

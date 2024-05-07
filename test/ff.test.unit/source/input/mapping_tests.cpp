@@ -56,8 +56,7 @@ namespace ff::test::input
             const size_t print_id = ff::stable_hash_func("print"sv);
 
             ff::load_resources_result result = ff::load_resources_from_json(json_source, "", false);
-            ff::resource_objects res(result.dict);
-            ff::auto_resource<ff::input_mapping> mapping = res.get_resource_object("test_input");
+            ff::auto_resource<ff::input_mapping> mapping = result.resources->get_resource_object("test_input");
             Assert::IsNotNull(mapping.object().get());
 
             test_vk_device device;

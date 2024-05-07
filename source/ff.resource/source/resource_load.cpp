@@ -97,13 +97,13 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
         result = ff::load_resources_from_json(text, base_path, debug);
         if (result.resources && debug)
         {
-            ff::dict resource_metadata;
-
             // Remember the source
             std::vector<std::string> files;
             files.push_back(ff::filesystem::to_string(path));
-            resource_metadata.set<std::string>(ff::internal::RES_SOURCES, files);
-            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, files);
+
+            ff::dict resource_metadata;
+            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::vector<std::string>(files));
+            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, std::vector<std::string>(files));
             result.resources->add_resources(resource_metadata);
 
             if (use_cache)
@@ -141,8 +141,8 @@ ff::load_resources_result ff::load_resources_from_json(std::string_view json_tex
 
 bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path)
 {
-    ff::dict dict;
-    if (::load_cached_resources(cache_path, dict))
+    auto cached_resources = ::load_cached_resources(cache_path);
+    if (cached_resources)
     {
         std::filesystem::file_time_type input_time = std::filesystem::last_write_time(input_path);
         std::filesystem::file_time_type cache_time = std::filesystem::last_write_time(cache_path);
@@ -152,7 +152,7 @@ bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, cons
             cache_time != std::filesystem::file_time_type::min() &&
             cache_time >= input_time)
         {
-            std::vector<std::string> files = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
+            std::vector<std::string> files = cached_resources->input_files();
             for (const std::string& file : files)
             {
                 if (ff::filesystem::equivalent(input_path, std::filesystem::path(file)))

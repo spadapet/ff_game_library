@@ -20,11 +20,14 @@ namespace ff::test::resource
             std::replace(json_source.begin(), json_source.end(), '\'', '\"');
 
             ff::load_resources_result result = ff::load_resources_from_json(json_source, "", false);
-            Assert::IsTrue(result.status);
+            Assert::IsNotNull(result.resources.get());
             Assert::IsTrue(result.errors.empty());
 
+            ff::dict cache_dict;
+            Assert::IsTrue(ff::resource_object_base::save_to_cache_typed(*result.resources, cache_dict));
+
             const ff::resource_object_factory_base* factory = ff::resource_objects::get_factory("resource_objects");
-            auto res = std::dynamic_pointer_cast<ff::resource_objects>(factory->load_from_cache(result.dict));
+            auto res = std::dynamic_pointer_cast<ff::resource_objects>(factory->load_from_cache(cache_dict));
             Assert::IsNotNull(res.get());
 
             ff::auto_resource<ff::resource_values> values = res->get_resource_object("values");

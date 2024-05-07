@@ -14,7 +14,6 @@ namespace ff
 
         // type of data
         dict = 0x0100,
-        resource_objects =  0x0200,
     };
 
     class saved_data_base

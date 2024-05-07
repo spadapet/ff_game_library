@@ -6,6 +6,7 @@
 #include "resource_object_base.h"
 #include "resource_object_factory_base.h"
 #include "resource_object_v.h"
+#include "resource_objects.h"
 
 static std::string make_symbol_from_name(std::string_view name)
 {
@@ -851,7 +852,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
         for (auto& i : context.output_files())
         {
-            output_files_dict.set<ff::data_base>(i.first, i.second);
+            output_files_dict.set<ff::data_base>(i.first, i.second, ff::saved_data_type::none);
         }
 
         dict.set<ff::dict>(ff::internal::RES_OUTPUT_FILES, std::move(output_files_dict));
