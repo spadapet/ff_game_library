@@ -101,7 +101,10 @@ void ff::resource_objects::add_resources(const ff::dict& dict, bool only_metadat
                 }
             }
 
-            this->resource_metadata.set<ff::dict>(child_name, std::move(metadata_dict));
+            if (!metadata_dict.empty())
+            {
+                this->resource_metadata.set<ff::dict>(child_name, std::move(metadata_dict));
+            }
         }
         else if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES)
         {
@@ -147,7 +150,7 @@ void ff::resource_objects::add_resources(const ff::resource_objects& other)
 
 bool ff::resource_objects::add_resources(ff::reader_base& reader)
 {
-    std::vector<std::tuple<std::string, size_t, size_t>> resource_datas;
+    std::vector<std::tuple<std::string, size_t, size_t, size_t, size_t>> resource_datas;
 
     size_t cookie, size;
     assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE, false);
@@ -159,9 +162,14 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
         for (size_t i = 0; i < size; i++)
         {
             std::string name;
-            size_t data_offset, data_size;
-            assert_ret_val(ff::load(reader, name) && ff::load(reader, data_offset) && ff::load(reader, data_size), false);
-            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_size));
+            size_t data_offset, data_saved_size, data_loaded_size, data_flags;
+            assert_ret_val(
+                ff::load(reader, name) &&
+                ff::load(reader, data_offset) &&
+                ff::load(reader, data_saved_size) &&
+                ff::load(reader, data_loaded_size) &&
+                ff::load(reader, data_flags), false);
+            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_saved_size, data_loaded_size, data_flags));
         }
     }
 
@@ -181,10 +189,11 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
 
         std::scoped_lock lock(this->resource_mutex);
 
-        for (auto& [name, data_offset, data_size] : resource_datas)
+        for (auto& [name, data_offset, data_saved_size, data_loaded_size, data_flags] : resource_datas)
         {
             resource_object_info info;
-            info.saved_value = reader.saved_data(data_start + data_offset, data_size, data_size, ff::saved_data_type::none);
+            ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
+            info.saved_value = reader.saved_data(data_start + data_offset, data_saved_size, data_loaded_size, data_type);
             this->resource_infos.try_emplace(name, std::move(info));
         }
     }
@@ -210,7 +219,7 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
         for (auto& [name, info] : this->resource_infos)
         {
             resource_datas.push_back(std::make_tuple(name, info.saved_value));
-            full_size_guess += name.size() + info.saved_value->saved_size() + sizeof(size_t) * 4;
+            full_size_guess += name.size() + info.saved_value->saved_size() + sizeof(size_t) * 6;
         }
     }
 
@@ -225,9 +234,16 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
         size_t data_offset = 0;
         for (auto& [name, saved_data] : resource_datas)
         {
-            const size_t data_size = saved_data->saved_size();
-            assert_ret_val(ff::save(writer, name) && ff::save(writer, data_offset) && ff::save(writer, data_size), false);
-            data_offset += saved_data->saved_size();
+            const size_t saved_size = saved_data->saved_size();
+            const size_t loaded_size = saved_data->loaded_size();
+            const size_t saved_type = static_cast<size_t>(saved_data->type());
+            assert_ret_val(
+                ff::save(writer, name) &&
+                ff::save(writer, data_offset) &&
+                ff::save(writer, saved_size) &&
+                ff::save(writer, loaded_size) &&
+                ff::save(writer, saved_type), false);
+            data_offset += saved_size + ff::save_padding_size(saved_size);
         }
     }
 
@@ -245,8 +261,7 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
         for (auto& [name, saved_data] : resource_datas)
         {
             auto data = saved_data->saved_data();
-            assert_ret_val(data && ff::save(writer, name), false);
-            assert_ret_val(ff::save_bytes(writer, *data), false);
+            assert_ret_val(data && ff::save_bytes(writer, *data), false);
         }
     }
 

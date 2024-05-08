@@ -45,6 +45,11 @@ bool ff::save_bytes(writer_base& writer, const data_base& data)
 bool ff::save_padding(writer_base& writer, size_t size_written)
 {
     static const std::array<uint8_t, 4> padding = { 0, 0, 0, 0 };
-    size_t padding_size = ff::math::round_up<size_t>(size_written, 4) - size_written;
+    const size_t padding_size = ff::save_padding_size(size_written);
     return writer.write(padding.data(), padding_size) == padding_size;
+}
+
+size_t ff::save_padding_size(size_t size_written)
+{
+    return ff::math::round_up<size_t>(size_written, 4) - size_written;
 }

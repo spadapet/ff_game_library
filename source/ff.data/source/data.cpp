@@ -89,7 +89,7 @@ std::shared_ptr<ff::data_base> ff::data_mem_mapped::subdata(size_t offset, size_
 }
 
 ff::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8_t>>& vector)
-    : data_vector(vector, 0, vector->size())
+    : data_vector(vector, 0, ff::constants::invalid_size)
 {}
 
 ff::data_vector::data_vector(const std::shared_ptr<const std::vector<uint8_t>>& vector, size_t offset, size_t size)
@@ -118,7 +118,9 @@ size_t ff::data_vector::offset() const
 
 size_t ff::data_vector::size() const
 {
-    return this->size_;
+    return (this->size_ == ff::constants::invalid_size)
+        ? this->vector_->size() - this->offset_
+        : this->size_;
 }
 
 const uint8_t* ff::data_vector::data() const
@@ -128,6 +130,6 @@ const uint8_t* ff::data_vector::data() const
 
 std::shared_ptr<ff::data_base> ff::data_vector::subdata(size_t offset, size_t size) const
 {
-    assert(this->offset_ + offset + size <= this->vector_->size());
+    assert(this->offset_ + offset + size <= this->size());
     return std::make_shared<data_vector>(this->vector_, this->offset_ + offset, size);
 }
