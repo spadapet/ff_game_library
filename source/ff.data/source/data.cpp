@@ -119,17 +119,17 @@ size_t ff::data_vector::offset() const
 size_t ff::data_vector::size() const
 {
     return (this->size_ == ff::constants::invalid_size)
-        ? this->vector_->size() - this->offset_
+        ? this->vector_->size() - this->offset()
         : this->size_;
 }
 
 const uint8_t* ff::data_vector::data() const
 {
-    return this->vector_->data() + this->offset_;
+    return this->vector_->data() + this->offset();
 }
 
 std::shared_ptr<ff::data_base> ff::data_vector::subdata(size_t offset, size_t size) const
 {
-    assert(this->offset_ + offset + size <= this->size());
-    return std::make_shared<data_vector>(this->vector_, this->offset_ + offset, size);
+    assert(this->offset() + offset + size <= this->offset() + this->size());
+    return std::make_shared<data_vector>(this->vector_, this->offset() + offset, size);
 }

@@ -32,6 +32,7 @@ namespace ff
         bool save(ff::writer_base& writer) const;
         bool save(ff::dict& dict) const;
         std::vector<std::string> input_files() const;
+        std::vector<std::string> source_files() const;
 
         // ff::resource_object_loader
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
@@ -44,6 +45,7 @@ namespace ff
 
     private:
         void add_resources(const ff::dict& dict, bool only_metadata);
+        bool try_add_resource(std::string_view name, std::shared_ptr<ff::saved_data_base> data);
         void rebuild(ff::push_base<ff::co_task<>>& tasks);
         ff::co_task<> rebuild_async();
 
@@ -54,26 +56,27 @@ namespace ff
             std::recursive_mutex mutex;
             std::shared_ptr<ff::resource> loading_resource;
             ff::value_ptr final_value;
-            std::vector<std::shared_ptr<resource_object_loading_info>> parent_loading_infos;
+            std::vector<std::shared_ptr<ff::resource_objects::resource_object_loading_info>> parent_loading_infos;
             std::string name;
-            resource_object_info* owner;
+            ff::resource_objects::resource_object_info* owner;
             int64_t start_time;
             int blocked_count;
         };
 
         struct resource_object_info
         {
+            std::unique_ptr<std::string> name;
             std::shared_ptr<ff::saved_data_base> saved_value;
             std::weak_ptr<ff::resource> weak_value;
-            std::weak_ptr<resource_object_loading_info> weak_loading_info;
+            std::weak_ptr<ff::resource_objects::resource_object_loading_info> weak_loading_info;
         };
 
-        void update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value);
-        ff::value_ptr create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value);
+        void update_resource_object_info(std::shared_ptr<ff::resource_objects::resource_object_loading_info> loading_info, ff::value_ptr new_value);
+        ff::value_ptr create_resource_objects(std::shared_ptr<ff::resource_objects::resource_object_loading_info> loading_info, ff::value_ptr value);
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);
 
         mutable std::recursive_mutex resource_mutex;
-        std::unordered_map<std::string_view, resource_object_info> resource_infos;
+        std::unordered_map<std::string_view, ff::resource_objects::resource_object_info> resource_infos;
         ff::dict resource_metadata;
 
         std::atomic<int> loading_count;

@@ -94,10 +94,9 @@ void ff::resource_objects::add_resources(const ff::dict& dict, bool only_metadat
 
                 if (child_value->save_typed(data_writer))
                 {
-                    resource_object_info info;
                     auto data = std::make_shared<ff::data_vector>(data_vector);
-                    info.saved_value = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
-                    this->resource_infos.try_emplace(child_name, std::move(info));
+                    auto saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+                    this->try_add_resource(child_name, saved_data);
                 }
             }
 
@@ -134,6 +133,19 @@ void ff::resource_objects::add_resources(const ff::dict& dict, bool only_metadat
     }
 }
 
+// Caller must own the this->resource_object_info_mutex lock
+bool ff::resource_objects::try_add_resource(std::string_view name, std::shared_ptr<ff::saved_data_base> data)
+{
+    ff::resource_objects::resource_object_info info{ std::make_unique<std::string>(name), std::move(data) };
+    if (!this->resource_infos.try_emplace(*info.name, std::move(info)).second)
+    {
+        ff::log::write(ff::log::type::resource_load, "Duplicate resource: ", name);
+        return false;
+    }
+
+    return true;
+}
+
 void ff::resource_objects::add_resources(const ff::resource_objects& other)
 {
     std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
@@ -142,9 +154,7 @@ void ff::resource_objects::add_resources(const ff::resource_objects& other)
 
     for (auto& [name, other_info] : other.resource_infos)
     {
-        resource_object_info info;
-        info.saved_value = other_info.saved_value;
-        this->resource_infos.try_emplace(name, std::move(info));
+        this->try_add_resource(name, other_info.saved_value);
     }
 }
 
@@ -191,10 +201,10 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
 
         for (auto& [name, data_offset, data_saved_size, data_loaded_size, data_flags] : resource_datas)
         {
-            resource_object_info info;
             ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
-            info.saved_value = reader.saved_data(data_start + data_offset, data_saved_size, data_loaded_size, data_type);
-            this->resource_infos.try_emplace(name, std::move(info));
+
+            auto data = reader.saved_data(data_start + data_offset, data_saved_size, data_loaded_size, data_type);
+            this->try_add_resource(name, data);
         }
     }
 
@@ -291,6 +301,12 @@ std::vector<std::string> ff::resource_objects::input_files() const
     return this->resource_metadata.get<std::vector<std::string>>(ff::internal::RES_FILES);
 }
 
+std::vector<std::string> ff::resource_objects::source_files() const
+{
+    std::scoped_lock lock(this->resource_mutex);
+    return this->resource_metadata.get<std::vector<std::string>>(ff::internal::RES_SOURCES);
+}
+
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
 {
     std::shared_ptr<ff::resource> value;
@@ -315,7 +331,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
     auto iter = this->resource_infos.find(name);
     if (iter != this->resource_infos.cend())
     {
-        resource_object_info& info = iter->second;
+        ff::resource_objects::resource_object_info& info = iter->second;
         resource_result = info.weak_value.lock();
 
         if (!resource_result)
@@ -327,7 +343,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
 
             resource_result = std::make_shared<ff::resource>(name);
 
-            auto loading_info = std::make_shared<resource_object_loading_info>();
+            auto loading_info = std::make_shared<ff::resource_objects::resource_object_loading_info>();
             loading_info->loading_resource = resource_result;
             loading_info->name = name;
             loading_info->owner = &info;
@@ -376,7 +392,7 @@ ff::co_task<> ff::resource_objects::flush_all_resources_async()
     co_await this->done_loading_event;
 }
 
-void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr new_value)
+void ff::resource_objects::update_resource_object_info(std::shared_ptr<ff::resource_objects::resource_object_loading_info> loading_info, ff::value_ptr new_value)
 {
     std::unique_lock loading_lock(loading_info->mutex);
 
@@ -430,7 +446,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<resource_
     }
 }
 
-ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<resource_object_loading_info> loading_info, ff::value_ptr value)
+ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<ff::resource_objects::resource_object_loading_info> loading_info, ff::value_ptr value)
 {
     if (!value)
     {
@@ -483,7 +499,7 @@ ff::value_ptr ff::resource_objects::create_resource_objects(std::shared_ptr<reso
             std::string_view ref_name = str.substr(ff::internal::REF_PREFIX.size());
             std::shared_ptr<ff::resource> ref_value = this->get_resource_object(ref_name);
             {
-                std::shared_ptr<resource_object_loading_info> ref_loading_info;
+                std::shared_ptr<ff::resource_objects::resource_object_loading_info> ref_loading_info;
                 {
                     std::scoped_lock lock(this->resource_mutex);
                     auto i = this->resource_infos.find(ref_name);
@@ -558,8 +574,7 @@ ff::co_task<> ff::resource_objects::rebuild_async()
 
     this->resource_infos.clear();
 
-    std::vector<std::string> source_paths = this->resource_metadata.get<std::vector<std::string>>(ff::internal::RES_SOURCES);
-    for (const std::filesystem::path& source_path : source_paths)
+    for (const std::filesystem::path& source_path : this->source_files())
     {
         ff::load_resources_result result = ff::load_resources_from_file(source_path, true, ff::constants::profile_build);
         if (result.resources)

@@ -30,26 +30,23 @@ namespace ff::test::resource
             ff::filesystem::write_text_file(test_path2, test_string2);
             ff::filesystem::write_text_file(source_path, json_source);
 
-            ff::load_resources_result result = ff::load_resources_from_file(source_path, false, false);
+            ff::load_resources_result result = ff::load_resources_from_file(source_path, false, true);
             Assert::IsNotNull(result.resources.get());
             Assert::IsTrue(result.errors.empty());
 
             ff::file_writer writer(pack_path);
             Assert::IsTrue(result.resources->save(writer));
 
-            ff::dict loaded_dict;
             ff::file_reader reader(pack_path);
-            ff::resource_objects loaded_resources;
-            Assert::IsTrue(loaded_resources.add_resources(reader));
-            Assert::AreEqual<size_t>(4, loaded_dict.size());
-            Assert::IsTrue(loaded_dict.get("test_file1") != nullptr);
-            Assert::IsTrue(loaded_dict.get("test_file2") != nullptr);
-            Assert::IsTrue(loaded_dict.get(ff::internal::RES_FILES) != nullptr);
-            Assert::IsTrue(loaded_dict.get(ff::internal::RES_SOURCE) != nullptr);
+            ff::resource_objects loaded_resources(reader);
+            Assert::AreEqual<size_t>(2, loaded_resources.resource_object_names().size());
+            Assert::AreEqual<size_t>(3, loaded_resources.input_files().size());
 
             const ff::resource_object_factory_base* factory = ff::resource_objects::get_factory("resource_objects");
             Assert::IsNotNull(factory);
 
+            ff::dict loaded_dict;
+            Assert::IsTrue(ff::resource_object_base::save_to_cache_typed(loaded_resources, loaded_dict));
             std::shared_ptr<ff::resource_object_base> obj_base = factory->load_from_cache(loaded_dict);
             Assert::IsNotNull(obj_base.get());
 
