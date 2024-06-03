@@ -15,7 +15,7 @@ static const size_t RESOURCE_PERSIST_HEADER = ff::stable_hash_func("ff::resource
 static const size_t RESOURCE_PERSIST_METADATA = ff::stable_hash_func("ff::resource_objects::metadata@0"sv);
 static const size_t RESOURCE_PERSIST_DATA = ff::stable_hash_func("ff::resource_objects::data@0"sv);
 
-static ff::value_ptr create_dict_value(std::shared_ptr<ff::saved_data_base> saved_data)
+static ff::value_ptr load_typed_value(std::shared_ptr<ff::saved_data_base> saved_data)
 {
     assert_ret_val(saved_data, nullptr);
 
@@ -32,6 +32,8 @@ ff::resource_objects::resource_objects()
     : loading_count(0)
     , done_loading_event(true)
     , rebuild_connection(ff::global_resources::rebuild_resources_sink().connect(std::bind(&ff::resource_objects::rebuild, this, std::placeholders::_1)))
+    , resource_metadata_saved(std::make_unique<std::vector<std::shared_ptr<ff::saved_data_base>>>())
+    , resource_metadata_dict(std::make_unique<ff::dict>())
 {}
 
 ff::resource_objects::resource_objects(const ff::dict& dict)
@@ -59,56 +61,41 @@ ff::resource_objects::~resource_objects()
 
 void ff::resource_objects::add_resources(const ff::dict& dict)
 {
-    this->add_resources(dict, false);
+    this->add_resources_only(dict);
+    this->add_metadata_only(dict);
 }
 
-void ff::resource_objects::add_resources(const ff::dict& dict, bool only_metadata)
+void ff::resource_objects::add_resources_only(const ff::dict& dict)
 {
     std::scoped_lock lock(this->resource_mutex);
 
     for (auto& [child_name, child_value] : dict)
     {
-        if (this->resource_infos.contains(child_name))
+        if (!child_name.starts_with(ff::internal::RES_PREFIX) && !this->resource_infos.contains(child_name))
         {
-            // already exists, ignore dupes
-        }
-        else if (!child_name.starts_with(ff::internal::RES_PREFIX))
-        {
-            ff::dict metadata_dict;
+            auto data_vector = std::make_shared<std::vector<uint8_t>>();
+            ff::data_writer data_writer(data_vector);
 
-            // Extract source files
+            if (child_value->save_typed(data_writer))
             {
-                ff::value_ptr child_dict_value = ff::type::try_get_dict_from_data(child_value);
-                if (child_dict_value)
-                {
-                    const ff::dict& child_dict = child_dict_value->get<ff::dict>();
-                    metadata_dict.set(child_name, child_dict.get(ff::internal::RES_FILES));
-                }
-            }
-
-            // Convert to bytes
-            if (!only_metadata)
-            {
-                auto data_vector = std::make_shared<std::vector<uint8_t>>();
-                ff::data_writer data_writer(data_vector);
-
-                if (child_value->save_typed(data_writer))
-                {
-                    auto data = std::make_shared<ff::data_vector>(data_vector);
-                    auto saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
-                    this->try_add_resource(child_name, saved_data);
-                }
-            }
-
-            if (!metadata_dict.empty())
-            {
-                this->resource_metadata.set<ff::dict>(child_name, std::move(metadata_dict));
+                auto data = std::make_shared<ff::data_vector>(data_vector);
+                auto saved_data = std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none);
+                this->try_add_resource(child_name, saved_data);
             }
         }
-        else if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES)
+    }
+}
+
+void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
+{
+    std::scoped_lock lock(this->resource_mutex);
+
+    for (auto& [child_name, child_value] : dict)
+    {
+        if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES)
         {
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
-            std::vector<std::string> old_strings = this->resource_metadata.get<std::vector<std::string>>(child_name);
+            std::vector<std::string> old_strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
 
             std::unordered_set<std::string> new_strings;
             new_strings.reserve(add_strings.size() + old_strings.size());
@@ -116,19 +103,18 @@ void ff::resource_objects::add_resources(const ff::dict& dict, bool only_metadat
             new_strings.insert(add_strings.cbegin(), add_strings.cend());
 
             std::vector<std::string> new_strings_vector(new_strings.cbegin(), new_strings.cend());
-            this->resource_metadata.set<std::vector<std::string>>(child_name, std::move(new_strings_vector));
+            this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(new_strings_vector));
         }
         else if (child_name == ff::internal::RES_SOURCE)
         {
             std::string add_string = child_value->get<std::string>();
-            std::vector<std::string> strings = this->resource_metadata.get<std::vector<std::string>>(child_name);
+            std::vector<std::string> strings = this->source_files();
 
             if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
             {
                 strings.push_back(std::move(add_string));
+                this->resource_metadata().set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::move(strings));
             }
-
-            this->resource_metadata.set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::move(strings));
         }
     }
 }
@@ -146,11 +132,31 @@ bool ff::resource_objects::try_add_resource(std::string_view name, std::shared_p
     return true;
 }
 
+// Caller must own the this->resource_object_info_mutex lock
+ff::dict& ff::resource_objects::resource_metadata() const
+{
+    if (!this->resource_metadata_saved->empty())
+    {
+        for (auto& saved_data : *this->resource_metadata_saved)
+        {
+            ff::value_ptr value = ::load_typed_value(saved_data);
+            if (value->is_type<ff::dict>())
+            {
+                this->add_metadata_only(value->get<ff::dict>());
+            }
+        }
+
+        this->resource_metadata_saved->clear();
+    }
+
+    return *this->resource_metadata_dict;
+}
+
 void ff::resource_objects::add_resources(const ff::resource_objects& other)
 {
     std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
 
-    this->add_resources(other.resource_metadata, true);
+    this->add_metadata_only(other.resource_metadata());
 
     for (auto& [name, other_info] : other.resource_infos)
     {
@@ -189,7 +195,7 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
 
         ff::dict resource_metadata;
         assert_ret_val(ff::dict::load(reader, resource_metadata), false);
-        this->add_resources(resource_metadata, true);
+        this->add_metadata_only(resource_metadata);
     }
 
     // Read data
@@ -223,7 +229,7 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
         resource_datas.reserve(this->resource_infos.size());
 
         ff::data_writer metadata_writer(metadata_vector);
-        assert_ret_val(this->resource_metadata.save(metadata_writer), false);
+        assert_ret_val(this->resource_metadata().save(metadata_writer), false);
         full_size_guess += metadata_data->size();
 
         for (auto& [name, info] : this->resource_infos)
@@ -284,13 +290,13 @@ bool ff::resource_objects::save(ff::dict& dict) const
 
     for (auto& [name, info] : this->resource_infos)
     {
-        ff::value_ptr dict_value = ::create_dict_value(info.saved_value);
+        ff::value_ptr dict_value = ::load_typed_value(info.saved_value);
         assert_ret_val(dict_value, false);
         dict.set(name, dict_value);
     }
 
-    dict.set(ff::internal::RES_SOURCES, this->resource_metadata.get(ff::internal::RES_SOURCES));
-    dict.set(ff::internal::RES_FILES, this->resource_metadata.get(ff::internal::RES_FILES));
+    dict.set(ff::internal::RES_SOURCES, this->resource_metadata().get(ff::internal::RES_SOURCES));
+    dict.set(ff::internal::RES_FILES, this->resource_metadata().get(ff::internal::RES_FILES));
 
     return true;
 }
@@ -298,13 +304,28 @@ bool ff::resource_objects::save(ff::dict& dict) const
 std::vector<std::string> ff::resource_objects::input_files() const
 {
     std::scoped_lock lock(this->resource_mutex);
-    return this->resource_metadata.get<std::vector<std::string>>(ff::internal::RES_FILES);
+    return this->resource_metadata().get<std::vector<std::string>>(ff::internal::RES_FILES);
 }
 
 std::vector<std::string> ff::resource_objects::source_files() const
 {
     std::scoped_lock lock(this->resource_mutex);
-    return this->resource_metadata.get<std::vector<std::string>>(ff::internal::RES_SOURCES);
+    return this->resource_metadata().get<std::vector<std::string>>(ff::internal::RES_SOURCES);
+}
+
+std::vector<std::string> ff::resource_objects::source_namespaces() const
+{
+    return std::vector<std::string>();
+}
+
+std::vector<std::pair<std::string, std::string>> ff::resource_objects::id_to_names() const
+{
+    return std::vector<std::pair<std::string, std::string>>();
+}
+
+std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> ff::resource_objects::output_files() const
+{
+    return std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>>();
 }
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
@@ -357,7 +378,7 @@ std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object_here(std
 
             ff::thread_pool::add_task([this, loading_info]()
             {
-                ff::value_ptr dict_value = ::create_dict_value(loading_info->owner->saved_value);
+                ff::value_ptr dict_value = ::load_typed_value(loading_info->owner->saved_value);
                 ff::value_ptr new_value = this->create_resource_objects(loading_info, dict_value);
                 this->update_resource_object_info(loading_info, new_value);
                 // no code here since the destructor may be running

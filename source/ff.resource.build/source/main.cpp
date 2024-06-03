@@ -19,21 +19,23 @@ static void show_usage()
     std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it." << std::endl;
 }
 
-static bool test_load_resources(const ff::dict& dict)
+static bool test_load_resources(const ff::resource_objects& resources)
 {
     if constexpr (ff::constants::debug_build)
     {
+        ff::dict dict;
+        assert_ret_val(resources.save(dict), false);
         dict.debug_print();
 
-        ff::resource_objects resources(dict);
+        ff::resource_objects resources_copy(resources);
         std::forward_list<ff::auto_resource_value> values;
 
-        for (std::string_view name : resources.resource_object_names())
+        for (std::string_view name : resources_copy.resource_object_names())
         {
-            values.emplace_front(resources.get_resource_object(name));
+            values.emplace_front(resources_copy.get_resource_object(name));
         }
 
-        resources.flush_all_resources();
+        resources_copy.flush_all_resources();
 
         for (auto& value : values)
         {
@@ -88,7 +90,7 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
     return true;
 }
 
-static bool write_symbol_header(const ff::load_resources_result::id_to_name_t& id_to_name, std::ostream& output, std::string_view cpp_namespace)
+static bool write_symbol_header(const ff::dict& id_to_name, std::ostream& output, std::string_view cpp_namespace)
 {
     output << "namespace " << cpp_namespace << std::endl << "{" << std::endl;
 
@@ -111,7 +113,7 @@ static bool compile_resource_pack(
     bool debug)
 {
     ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
-    if (!result.status || !::test_load_resources(result.dict))
+    if (!result.errors.empty() || !result.resources)
     {
         std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << std::endl;
 
@@ -123,11 +125,12 @@ static bool compile_resource_pack(
         return false;
     }
 
+    verify(::test_load_resources(*result.resources));
+
     auto data = std::make_shared<std::vector<uint8_t>>();
     {
-        ff::resource_objects resource_objects(result.dict);
         ff::data_writer data_writer(data);
-        if (!resource_objects.save(data_writer))
+        if (!result.resources->save(data_writer))
         {
             std::cerr << "Failed to save resources: " << ff::filesystem::to_string(output_file) << std::endl;
             return false;

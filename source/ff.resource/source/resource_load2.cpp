@@ -832,15 +832,17 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
             if (child_value->is_type<ff::dict>())
             {
                 std::vector<std::string> child_path_strings;
-
                 for (const std::filesystem::path& path : context.paths(name))
                 {
                     child_path_strings.push_back(ff::filesystem::to_string(path));
                 }
 
-                ff::dict child_dict = child_value->get<ff::dict>();
-                child_dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(child_path_strings));
-                dict.set<ff::dict>(name, std::move(child_dict));
+                if (!child_path_strings.empty())
+                {
+                    ff::dict child_dict = child_value->get<ff::dict>();
+                    child_dict.set<std::vector<std::string>>(ff::internal::RES_FILES, std::move(child_path_strings));
+                    dict.set<ff::dict>(name, std::move(child_dict));
+                }
             }
         }
     }

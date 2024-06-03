@@ -2,23 +2,6 @@
 #include "resource_load.h"
 #include "resource_objects.h"
 
-std::string_view ff::internal::RES_FILES("res:files");
-std::string_view ff::internal::RES_ID_SYMBOLS("res:id_symbols");
-std::string_view ff::internal::RES_IMPORT("res:import");
-std::string_view ff::internal::RES_OUTPUT_FILES("res:output_files");
-std::string_view ff::internal::RES_NAMESPACE("res:namespace");
-std::string_view ff::internal::RES_SYMBOL("res:symbol");
-std::string_view ff::internal::RES_SOURCE("res:source");
-std::string_view ff::internal::RES_SOURCES("res:sources");
-std::string_view ff::internal::RES_TEMPLATE("res:template");
-std::string_view ff::internal::RES_TYPE("res:type");
-std::string_view ff::internal::RES_VALUES("res:values");
-
-std::string_view ff::internal::FILE_PREFIX("file:");
-std::string_view ff::internal::LOC_PREFIX("loc:");
-std::string_view ff::internal::REF_PREFIX("ref:");
-std::string_view ff::internal::RES_PREFIX("res:");
-
 static std::filesystem::path get_cache_path(const std::filesystem::path& source_path, bool debug)
 {
     std::filesystem::path path_canon = ff::filesystem::weakly_canonical(source_path);

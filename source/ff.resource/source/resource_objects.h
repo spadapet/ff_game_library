@@ -26,13 +26,19 @@ namespace ff
         ff::resource_objects& operator=(const ff::resource_objects& other) = delete;
         ff::resource_objects& operator=(ff::resource_objects&& other) noexcept = delete;
 
+        // Load/Save
         void add_resources(const ff::dict& dict);
         void add_resources(const ff::resource_objects& other);
         bool add_resources(ff::reader_base& reader);
         bool save(ff::writer_base& writer) const;
         bool save(ff::dict& dict) const;
+
+        // Metadata
         std::vector<std::string> input_files() const;
         std::vector<std::string> source_files() const;
+        std::vector<std::string> source_namespaces() const;
+        std::vector<std::pair<std::string, std::string>> id_to_names() const;
+        std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> output_files() const;
 
         // ff::resource_object_loader
         virtual std::shared_ptr<ff::resource> get_resource_object(std::string_view name) override;
@@ -44,8 +50,10 @@ namespace ff
         virtual bool save_to_cache(ff::dict& dict) const override;
 
     private:
-        void add_resources(const ff::dict& dict, bool only_metadata);
+        void add_resources_only(const ff::dict& dict);
+        void add_metadata_only(const ff::dict& dict) const;
         bool try_add_resource(std::string_view name, std::shared_ptr<ff::saved_data_base> data);
+        ff::dict& resource_metadata() const; // must be holding resource_mutex
         void rebuild(ff::push_base<ff::co_task<>>& tasks);
         ff::co_task<> rebuild_async();
 
@@ -76,8 +84,9 @@ namespace ff
         std::shared_ptr<ff::resource> get_resource_object_here(std::string_view name);
 
         mutable std::recursive_mutex resource_mutex;
+        std::unique_ptr<std::vector<std::shared_ptr<ff::saved_data_base>>> resource_metadata_saved;
+        std::unique_ptr<ff::dict> resource_metadata_dict;
         std::unordered_map<std::string_view, ff::resource_objects::resource_object_info> resource_infos;
-        ff::dict resource_metadata;
 
         std::atomic<int> loading_count;
         ff::win_event done_loading_event;
