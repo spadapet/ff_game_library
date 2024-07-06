@@ -12,7 +12,7 @@ namespace ff::type
         dict_v(ff::dict&& value);
 
         const ff::dict& get() const;
-        static ff::value* get_static_value(ff::dict&& value);
+        static ff::value* get_static_value(const ff::dict& value);
         static ff::value* get_static_default_value();
 
     private:

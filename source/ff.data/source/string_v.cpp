@@ -27,11 +27,6 @@ const std::string& ff::type::string_v::get() const
     return this->value;
 }
 
-ff::value* ff::type::string_v::get_static_value(std::string&& value)
-{
-    return string_v::get_static_value(value);
-}
-
 ff::value* ff::type::string_v::get_static_value(const std::string& value)
 {
     if (value.empty())
@@ -134,7 +129,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::point_int_v))
     {
-        ff::point_int point;
+        ff::point_int point{};
         if (::_snscanf_s(start, src.size(), "[ %d, %d ]%n", &point.x, &point.y, &chars_read) == 2 && chars_read == src.size())
         {
             return ff::value::create<ff::point_int>(point);
@@ -143,7 +138,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::point_float_v))
     {
-        ff::point_float point;
+        ff::point_float point{};
         if (::_snscanf_s(start, src.size(), "[ %g, %g ]%n", &point.x, &point.y, &chars_read) == 2 && chars_read == src.size())
         {
             return ff::value::create<ff::point_float>(point);
@@ -152,7 +147,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::point_double_v))
     {
-        ff::point_double point;
+        ff::point_double point{};
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg ]%n", &point.x, &point.y, &chars_read) == 2 && chars_read == src.size())
         {
             return ff::value::create<ff::point_double>(point);
@@ -161,7 +156,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::point_fixed_v))
     {
-        ff::point_double point;
+        ff::point_double point{};
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg ]%n", &point.x, &point.y, &chars_read) == 2 && chars_read == src.size())
         {
             return ff::value::create<ff::point_fixed>(point.cast<ff::fixed_int>());
@@ -170,7 +165,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::rect_int_v))
     {
-        ff::rect_int rect;
+        ff::rect_int rect{};
         if (::_snscanf_s(start, src.size(), "[ %d, %d, %d, %d ]%n", &rect.left, &rect.top, &rect.right, &rect.bottom, &chars_read) == 4 && chars_read == src.size())
         {
             return ff::value::create<ff::rect_int>(rect);
@@ -179,7 +174,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::rect_float_v))
     {
-        ff::rect_float rect;
+        ff::rect_float rect{};
         if (::_snscanf_s(start, src.size(), "[ %g, %g, %g, %g ]%n", &rect.left, &rect.top, &rect.right, &rect.bottom, &chars_read) == 4 && chars_read == src.size())
         {
             return ff::value::create<ff::rect_float>(rect);
@@ -188,7 +183,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::rect_double_v))
     {
-        ff::rect_double rect;
+        ff::rect_double rect{};
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg, %lg, %lg ]%n", &rect.left, &rect.top, &rect.right, &rect.bottom, &chars_read) == 4 && chars_read == src.size())
         {
             return ff::value::create<ff::rect_double>(rect);
@@ -197,7 +192,7 @@ ff::value_ptr ff::type::string_type::try_convert_to(const value* val, std::type_
 
     if (type == typeid(ff::type::rect_fixed_v))
     {
-        ff::rect_double rect;
+        ff::rect_double rect{};
         if (::_snscanf_s(start, src.size(), "[ %lg, %lg, %lg, %lg ]%n", &rect.left, &rect.top, &rect.right, &rect.bottom, &chars_read) == 4 && chars_read == src.size())
         {
             return ff::value::create<ff::rect_fixed>(rect.cast<ff::fixed_int>());

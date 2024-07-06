@@ -16,7 +16,7 @@ const ff::dict& ff::type::dict_v::get() const
     return this->value;
 }
 
-ff::value* ff::type::dict_v::get_static_value(ff::dict&& value)
+ff::value* ff::type::dict_v::get_static_value(const ff::dict& value)
 {
     return value.empty() ? dict_v::get_static_default_value() : nullptr;
 }

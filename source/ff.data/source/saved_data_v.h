@@ -17,7 +17,6 @@ namespace ff::type
         saved_data_v(const std::shared_ptr<ff::saved_data_base>& value);
 
         const std::shared_ptr<ff::saved_data_base>& get() const;
-        static ff::value* get_static_value(std::shared_ptr<ff::saved_data_base>&& value);
         static ff::value* get_static_value(const std::shared_ptr<ff::saved_data_base>& value);
         static ff::value* get_static_default_value();
 

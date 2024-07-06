@@ -19,11 +19,6 @@ const std::shared_ptr<ff::saved_data_base>& ff::type::saved_data_v::get() const
     return this->value;
 }
 
-ff::value* ff::type::saved_data_v::get_static_value(std::shared_ptr<ff::saved_data_base>&& value)
-{
-    return !value ? saved_data_v::get_static_default_value() : nullptr;
-}
-
 ff::value* ff::type::saved_data_v::get_static_value(const std::shared_ptr<ff::saved_data_base>& value)
 {
     return !value ? saved_data_v::get_static_default_value() : nullptr;
@@ -75,7 +70,7 @@ ff::value_ptr ff::type::saved_data_type::load(reader_base& reader) const
 
 bool ff::type::saved_data_type::save(const value* val, writer_base& writer) const
 {
-    auto saved_data = val->get<ff::saved_data_base>();
+    std::shared_ptr<ff::saved_data_base> saved_data = val->get<ff::saved_data_base>();
     size_t saved_size = saved_data ? saved_data->saved_size() : 0;
     size_t loaded_size = saved_data ? saved_data->loaded_size() : 0;
     ff::saved_data_type type = saved_data ? saved_data->type() : ff::saved_data_type::none;
@@ -103,7 +98,7 @@ bool ff::type::saved_data_type::save(const value* val, writer_base& writer) cons
 
 void ff::type::saved_data_type::print(const value* val, std::ostream& output) const
 {
-    auto saved_data = val->get<ff::saved_data_base>();
+    std::shared_ptr<ff::saved_data_base> saved_data = val->get<ff::saved_data_base>();
     size_t saved_size = saved_data ? saved_data->saved_size() : 0;
     size_t loaded_size = saved_data ? saved_data->loaded_size() : 0;
 

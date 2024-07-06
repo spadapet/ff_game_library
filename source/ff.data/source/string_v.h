@@ -13,7 +13,6 @@ namespace ff::type
         ~string_v();
 
         const std::string& get() const;
-        static ff::value* get_static_value(std::string&& value);
         static ff::value* get_static_value(const std::string& value);
         static ff::value* get_static_default_value();
 

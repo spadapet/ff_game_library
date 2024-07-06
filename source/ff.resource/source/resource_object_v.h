@@ -14,7 +14,6 @@ namespace ff::type
         resource_object_v(const std::shared_ptr<ff::resource_object_base>& value);
 
         const std::shared_ptr<ff::resource_object_base>& get() const;
-        static ff::value* get_static_value(std::shared_ptr<ff::resource_object_base>&& value);
         static ff::value* get_static_value(const std::shared_ptr<ff::resource_object_base>& value);
         static ff::value* get_static_default_value();
 

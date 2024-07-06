@@ -16,11 +16,6 @@ const std::shared_ptr<ff::resource_object_base>& ff::type::resource_object_v::ge
     return this->value;
 }
 
-ff::value* ff::type::resource_object_v::get_static_value(std::shared_ptr<ff::resource_object_base>&& value)
-{
-    return !value ? resource_object_v::get_static_default_value() : nullptr;
-}
-
 ff::value* ff::type::resource_object_v::get_static_value(const std::shared_ptr<ff::resource_object_base>& value)
 {
     return !value ? resource_object_v::get_static_default_value() : nullptr;
