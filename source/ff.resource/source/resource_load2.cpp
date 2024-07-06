@@ -249,17 +249,8 @@ public:
         id_to_name_t id_to_name_copy;
         {
             std::scoped_lock lock(this->mutex);
-            for (const auto& i : this->id_to_name_)
-            {
-                id_to_name_copy.push_back(i);
-            }
+            std::copy(this->id_to_name_.cbegin(), this->id_to_name_.cend(), std::back_inserter(id_to_name_copy));
         }
-
-        std::sort(id_to_name_copy.begin(), id_to_name_copy.end(),
-            [](const auto& l, const auto& r)
-            {
-                return l.first < r.first;
-            });
 
         return id_to_name_copy;
     }

@@ -90,11 +90,11 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
     return true;
 }
 
-static bool write_symbol_header(const ff::dict& id_to_name, std::ostream& output, std::string_view cpp_namespace)
+static bool write_symbol_header(const std::vector<std::pair<std::string, std::string>>& id_to_names, std::ostream& output, std::string_view cpp_namespace)
 {
     output << "namespace " << cpp_namespace << std::endl << "{" << std::endl;
 
-    for (const auto& [id, name] : id_to_name)
+    for (const auto& [id, name] : id_to_names)
     {
         output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";" << std::endl;
     }
@@ -147,29 +147,33 @@ static bool compile_resource_pack(
         }
     }
 
-    if (!header_file.empty())
+    auto source_namespaces = result.resources->source_namespaces();
+    auto source_id_to_names = result.resources->id_to_names();
+    auto source_output_files = result.resources->output_files();
+
+    if (!header_file.empty() && source_namespaces.size())
     {
         std::ofstream header_stream(header_file);
-        if (!header_stream || !::write_header(*data, header_stream, result.namespace_))
+        if (!header_stream || !::write_header(*data, header_stream, source_namespaces.front()))
         {
             std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << std::endl;
             return false;
         }
     }
 
-    if (!symbol_header_file.empty())
+    if (!symbol_header_file.empty() && source_id_to_names.size() && source_namespaces.size())
     {
         std::ofstream symbol_header_stream(symbol_header_file);
-        if (!symbol_header_stream || !::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_))
+        if (!symbol_header_stream || !::write_symbol_header(source_id_to_names, symbol_header_stream, source_namespaces.front()))
         {
             std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << std::endl;
             return false;
         }
     }
 
-    if (!pdb_output.empty())
+    if (!pdb_output.empty() && source_output_files.size())
     {
-        for (const auto& [name, data] : result.output_files)
+        for (const auto& [name, data] : source_output_files)
         {
             std::filesystem::path path = pdb_output / name;
             if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
@@ -186,7 +190,6 @@ static bool compile_resource_pack(
 static bool combine_resource_packs(const std::vector<std::filesystem::path>& combine_files, const std::filesystem::path& output_file)
 {
     ff::resource_objects resource_objects;
-    ff::load_resources_result result{};
 
     for (const std::filesystem::path& file : combine_files)
     {
@@ -200,20 +203,6 @@ static bool combine_resource_packs(const std::vector<std::filesystem::path>& com
         if (!resource_objects.add_resources(reader))
         {
             std::cerr << "Invalid binary pack file: " << ff::filesystem::to_string(file) << std::endl;
-            return false;
-        }
-    }
-
-    if (!input_file.empty())
-    {
-        result = ff::load_resources_from_file(input_file, false, debug);
-        if (!result.status || !::test_load_resources(result.dict))
-        {
-            for (auto& error : result.errors)
-            {
-                std::cerr << error << std::endl;
-            }
-
             return false;
         }
     }
@@ -232,27 +221,6 @@ static bool combine_resource_packs(const std::vector<std::filesystem::path>& com
     {
         ff::file_writer writer(output_file);
         assert_ret_val(writer && writer.write(data->data(), data->size()) == data->size(), false);
-    }
-
-    if (result.status && !header_file.empty())
-    {
-        std::ofstream header_stream(header_file);
-        assert_ret_val(header_stream && ::write_header(*data, header_stream, result.namespace_), false);
-    }
-
-    if (result.status && !symbol_header_file.empty())
-    {
-        std::ofstream symbol_header_stream(symbol_header_file);
-        assert_ret_val(symbol_header_stream && ::write_symbol_header(result.id_to_name, symbol_header_stream, result.namespace_), false);
-    }
-
-    if (result.status && !pdb_output.empty())
-    {
-        for (const auto& [name, data] : result.output_files)
-        {
-            std::filesystem::path path = pdb_output / name;
-            assert_ret_val(ff::filesystem::write_binary_file(path, data->data(), data->size()), false);
-        }
     }
 
     return true;
@@ -535,7 +503,7 @@ int main()
             }
         }
 
-        if (!::compile_resource_pack(combine_files, input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
+        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
         {
             std::cerr << "ff.resource.build: Compile failed" << std::endl;
             return 6;

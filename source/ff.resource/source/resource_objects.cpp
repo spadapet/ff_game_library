@@ -61,14 +61,77 @@ ff::resource_objects::~resource_objects()
 
 void ff::resource_objects::add_resources(const ff::dict& dict)
 {
+    std::scoped_lock lock(this->resource_mutex);
     this->add_resources_only(dict);
     this->add_metadata_only(dict);
 }
 
+void ff::resource_objects::add_resources(const ff::resource_objects& other)
+{
+    std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
+    std::copy(other.resource_metadata_saved->cbegin(), other.resource_metadata_saved->cend(), std::back_inserter(*this->resource_metadata_saved));
+
+    for (auto& [name, other_info] : other.resource_infos)
+    {
+        this->try_add_resource(name, other_info.saved_value);
+    }
+}
+
+bool ff::resource_objects::add_resources(ff::reader_base& reader)
+{
+    std::vector<std::tuple<std::string, size_t, size_t, size_t, size_t>> resource_datas;
+    std::shared_ptr<ff::saved_data_base> metadata_saved;
+
+    size_t cookie;
+    assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE, false);
+
+    // Read header and metadata
+    {
+        size_t size, data_offset, data_saved_size, data_loaded_size, data_flags;
+        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_HEADER && ff::load(reader, size), false);
+        resource_datas.reserve(size);
+
+        for (size_t i = 0; i < size; i++)
+        {
+            std::string name;
+            assert_ret_val(
+                ff::load(reader, name) &&
+                ff::load(reader, data_offset) &&
+                ff::load(reader, data_saved_size) &&
+                ff::load(reader, data_loaded_size) &&
+                ff::load(reader, data_flags), false);
+            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_saved_size, data_loaded_size, data_flags));
+        }
+
+        assert_ret_val(
+            ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_METADATA &&
+            ff::load(reader, data_saved_size) &&
+            ff::load(reader, data_loaded_size) &&
+            ff::load(reader, data_flags), false);
+
+        ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
+        metadata_saved = reader.saved_data(reader.pos(), data_saved_size, data_loaded_size, data_type);
+    }
+
+    std::scoped_lock lock(this->resource_mutex);
+    this->resource_metadata_saved->push_back(metadata_saved);
+
+    assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_DATA, false);
+    const size_t data_start = reader.pos();
+
+    for (auto& [name, data_offset, data_saved_size, data_loaded_size, data_flags] : resource_datas)
+    {
+        ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
+        auto data = reader.saved_data(data_start + data_offset, data_saved_size, data_loaded_size, data_type);
+        this->try_add_resource(name, data);
+    }
+
+    return true;
+}
+
+// caller must own resource_mutex
 void ff::resource_objects::add_resources_only(const ff::dict& dict)
 {
-    std::scoped_lock lock(this->resource_mutex);
-
     for (auto& [child_name, child_value] : dict)
     {
         if (!child_name.starts_with(ff::internal::RES_PREFIX) && !this->resource_infos.contains(child_name))
@@ -86,40 +149,51 @@ void ff::resource_objects::add_resources_only(const ff::dict& dict)
     }
 }
 
+// caller must own resource_mutex
 void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
 {
-    std::scoped_lock lock(this->resource_mutex);
-
     for (auto& [child_name, child_value] : dict)
     {
-        if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES)
+        if (child_name == ff::internal::RES_FILES ||
+            child_name == ff::internal::RES_SOURCES ||
+            child_name == ff::internal::RES_NAMESPACES)
         {
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
-            std::vector<std::string> old_strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
+            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
 
-            std::unordered_set<std::string> new_strings;
-            new_strings.reserve(add_strings.size() + old_strings.size());
-            new_strings.insert(old_strings.cbegin(), old_strings.cend());
-            new_strings.insert(add_strings.cbegin(), add_strings.cend());
+            for (const std::string& add_string : add_strings)
+            {
+                if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
+                {
+                    strings.push_back(add_string);
+                }
+            }
 
-            std::vector<std::string> new_strings_vector(new_strings.cbegin(), new_strings.cend());
-            this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(new_strings_vector));
+            std::sort(strings.begin(), strings.end());
+            this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(strings));
         }
-        else if (child_name == ff::internal::RES_SOURCE)
+        else if (child_name == ff::internal::RES_SOURCE || child_name == ff::internal::RES_NAMESPACE)
         {
             std::string add_string = child_value->get<std::string>();
-            std::vector<std::string> strings = this->source_files();
+            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
 
             if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
             {
                 strings.push_back(std::move(add_string));
-                this->resource_metadata().set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::move(strings));
+                this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(strings));
             }
+        }
+        else if (child_name == ff::internal::RES_ID_SYMBOLS || child_name == ff::internal::RES_OUTPUT_FILES)
+        {
+            ff::dict add_dict = child_value->get<ff::dict>();
+            ff::dict old_dict = this->resource_metadata().get<ff::dict>(child_name);
+            old_dict.set(add_dict, false);
+            this->resource_metadata().set<ff::dict>(child_name, std::move(old_dict));
         }
     }
 }
 
-// Caller must own the this->resource_object_info_mutex lock
+// caller must own resource_mutex
 bool ff::resource_objects::try_add_resource(std::string_view name, std::shared_ptr<ff::saved_data_base> data)
 {
     ff::resource_objects::resource_object_info info{ std::make_unique<std::string>(name), std::move(data) };
@@ -132,7 +206,7 @@ bool ff::resource_objects::try_add_resource(std::string_view name, std::shared_p
     return true;
 }
 
-// Caller must own the this->resource_object_info_mutex lock
+// caller must own resource_mutex
 ff::dict& ff::resource_objects::resource_metadata() const
 {
     if (!this->resource_metadata_saved->empty())
@@ -150,71 +224,6 @@ ff::dict& ff::resource_objects::resource_metadata() const
     }
 
     return *this->resource_metadata_dict;
-}
-
-void ff::resource_objects::add_resources(const ff::resource_objects& other)
-{
-    std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
-
-    this->add_metadata_only(other.resource_metadata());
-
-    for (auto& [name, other_info] : other.resource_infos)
-    {
-        this->try_add_resource(name, other_info.saved_value);
-    }
-}
-
-bool ff::resource_objects::add_resources(ff::reader_base& reader)
-{
-    std::vector<std::tuple<std::string, size_t, size_t, size_t, size_t>> resource_datas;
-
-    size_t cookie, size;
-    assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_COOKIE, false);
-
-    // Read header
-    {
-        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_HEADER && ff::load(reader, size), false);
-
-        for (size_t i = 0; i < size; i++)
-        {
-            std::string name;
-            size_t data_offset, data_saved_size, data_loaded_size, data_flags;
-            assert_ret_val(
-                ff::load(reader, name) &&
-                ff::load(reader, data_offset) &&
-                ff::load(reader, data_saved_size) &&
-                ff::load(reader, data_loaded_size) &&
-                ff::load(reader, data_flags), false);
-            resource_datas.push_back(std::make_tuple(std::move(name), data_offset, data_saved_size, data_loaded_size, data_flags));
-        }
-    }
-
-    // Read metadata
-    {
-        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_METADATA && ff::load(reader, size), false);
-
-        ff::dict resource_metadata;
-        assert_ret_val(ff::dict::load(reader, resource_metadata), false);
-        this->add_metadata_only(resource_metadata);
-    }
-
-    // Read data
-    {
-        assert_ret_val(ff::load(reader, cookie) && cookie == ::RESOURCE_PERSIST_DATA, false);
-        const size_t data_start = reader.pos();
-
-        std::scoped_lock lock(this->resource_mutex);
-
-        for (auto& [name, data_offset, data_saved_size, data_loaded_size, data_flags] : resource_datas)
-        {
-            ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
-
-            auto data = reader.saved_data(data_start + data_offset, data_saved_size, data_loaded_size, data_type);
-            this->try_add_resource(name, data);
-        }
-    }
-
-    return true;
 }
 
 bool ff::resource_objects::save(ff::writer_base& writer) const
@@ -265,8 +274,11 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
 
     // Write metadata
     {
-        const size_t size = metadata_data->size();
-        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_METADATA) && ff::save(writer, size), false);
+        const size_t size = metadata_data->size(), data_flags = 0;
+        assert_ret_val(ff::save(writer, ::RESOURCE_PERSIST_METADATA) &&
+            ff::save(writer, size) &&
+            ff::save(writer, size) &&
+            ff::save(writer, data_flags), false);
         assert_ret_val(ff::save_bytes(writer, *metadata_data), false);
     }
 
@@ -287,6 +299,7 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
 bool ff::resource_objects::save(ff::dict& dict) const
 {
     std::scoped_lock lock(this->resource_mutex);
+    dict.set(this->resource_metadata(), false);
 
     for (auto& [name, info] : this->resource_infos)
     {
@@ -294,9 +307,6 @@ bool ff::resource_objects::save(ff::dict& dict) const
         assert_ret_val(dict_value, false);
         dict.set(name, dict_value);
     }
-
-    dict.set(ff::internal::RES_SOURCES, this->resource_metadata().get(ff::internal::RES_SOURCES));
-    dict.set(ff::internal::RES_FILES, this->resource_metadata().get(ff::internal::RES_FILES));
 
     return true;
 }
@@ -315,17 +325,42 @@ std::vector<std::string> ff::resource_objects::source_files() const
 
 std::vector<std::string> ff::resource_objects::source_namespaces() const
 {
-    return std::vector<std::string>();
+    std::scoped_lock lock(this->resource_mutex);
+    return this->resource_metadata().get<std::vector<std::string>>(ff::internal::RES_NAMESPACES);
 }
 
 std::vector<std::pair<std::string, std::string>> ff::resource_objects::id_to_names() const
 {
-    return std::vector<std::pair<std::string, std::string>>();
+    std::scoped_lock lock(this->resource_mutex);
+    std::vector<std::pair<std::string, std::string>> result;
+    const ff::dict& dict = this->resource_metadata().get<ff::dict>(ff::internal::RES_ID_SYMBOLS);
+
+    for (auto& [id, name] : dict)
+    {
+        result.push_back(std::make_pair(std::string(id), name->get<std::string>()));
+    }
+
+    std::sort(result.begin(), result.end(),
+        [](const auto& l, const auto& r)
+        {
+            return l.first < r.first;
+        });
+
+    return result;
 }
 
 std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> ff::resource_objects::output_files() const
 {
-    return std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>>();
+    std::scoped_lock lock(this->resource_mutex);
+    std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> result;
+    const ff::dict& dict = this->resource_metadata().get<ff::dict>(ff::internal::RES_ID_SYMBOLS);
+
+    for (auto& [id, data] : dict)
+    {
+        result.push_back(std::make_pair(std::string(id), data->get<ff::data_base>()));
+    }
+
+    return result;
 }
 
 std::shared_ptr<ff::resource> ff::resource_objects::get_resource_object(std::string_view name)
@@ -455,15 +490,9 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<ff::resou
 
     loading_lock.unlock();
 
-    if (loading_done)
+    if (loading_done && this->loading_count.fetch_sub(1) == 1)
     {
-        int old_loading_count = this->loading_count.fetch_sub(1);
-        assert(old_loading_count >= 1);
-
-        if (old_loading_count == 1)
-        {
-            this->done_loading_event.set();
-        }
+        this->done_loading_event.set();
     }
 }
 

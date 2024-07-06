@@ -66,9 +66,9 @@ namespace ff
             ff::value_ptr final_value;
             std::vector<std::shared_ptr<ff::resource_objects::resource_object_loading_info>> parent_loading_infos;
             std::string name;
-            ff::resource_objects::resource_object_info* owner;
-            int64_t start_time;
-            int blocked_count;
+            ff::resource_objects::resource_object_info* owner{};
+            int64_t start_time{};
+            int blocked_count{};
         };
 
         struct resource_object_info
