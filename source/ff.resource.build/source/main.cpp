@@ -337,129 +337,158 @@ int main()
         return 5;
     }
 
-    std::vector<std::filesystem::path> refs;
+    enum class command_t
+    {
+        none,
+        compile,
+        combine,
+        dump_text,
+        dump_binary,
+    } command = command_t::compile;
+
+    enum class command_flags_t
+    {
+        none = 0x00,
+        debug = 0x01,
+        force = 0x02,
+        verbose = 0x04,
+    } command_flags = command_flags_t::none;
+
+    std::vector<std::filesystem::path> reference_files;
     std::vector<std::filesystem::path> combine_files;
     std::filesystem::path input_file;
     std::filesystem::path output_file;
     std::filesystem::path pdb_output;
     std::filesystem::path header_file;
     std::filesystem::path symbol_header_file;
-    std::filesystem::path dump_source_file;
-    bool debug = false;
-    bool force = false;
-    bool verbose = false;
-    bool dump_bin = false;
 
-    std::vector<std::string> args = ff::string::split_command_line();
-    for (size_t i = 1; i < args.size(); i++)
+    // Parse command line
     {
-        std::string_view arg = args[i];
+        std::vector<std::string> args = ff::string::split_command_line();
+        for (size_t i = 1; i < args.size(); i++)
+        {
+            std::string_view arg = args[i];
 
-        if (arg == "-in" && i + 1 < args.size())
-        {
-            input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-combine" && i + 1 < args.size())
-        {
-            combine_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
-        }
-        else if (arg == "-out" && i + 1 < args.size())
-        {
-            output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-pdb" && i + 1 < args.size())
-        {
-            pdb_output = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-header" && i + 1 < args.size())
-        {
-            header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-symbol_header" && i + 1 < args.size())
-        {
-            symbol_header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-ref" && i + 1 < args.size())
-        {
-            std::filesystem::path file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-            refs.push_back(file);
-        }
-        else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.size())
-        {
-            dump_bin = (arg == "-dumpbin");
-            dump_source_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-        }
-        else if (arg == "-debug")
-        {
-            debug = true;
-        }
-        else if (arg == "-force")
-        {
-            force = true;
-        }
-        else if (arg == "-verbose")
-        {
-            verbose = true;
-        }
-        else
-        {
-            ::show_usage();
-            return 1;
+            if (arg == "-in" && i + 1 < args.size())
+            {
+                input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-combine" && i + 1 < args.size())
+            {
+                command = command_t::combine;
+                command_flags = ff::flags::combine(command_flags, command_flags_t::force);
+                combine_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
+            }
+            else if (arg == "-out" && i + 1 < args.size())
+            {
+                output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-pdb" && i + 1 < args.size())
+            {
+                pdb_output = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-header" && i + 1 < args.size())
+            {
+                header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-symbol_header" && i + 1 < args.size())
+            {
+                symbol_header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-ref" && i + 1 < args.size())
+            {
+                std::filesystem::path file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+                reference_files.push_back(file);
+            }
+            else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.size())
+            {
+                command = (arg == "-dumpbin") ? command_t::dump_binary : command_t::dump_text;
+                input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+            }
+            else if (arg == "-debug")
+            {
+                command_flags = ff::flags::combine(command_flags, command_flags_t::debug);
+            }
+            else if (arg == "-force")
+            {
+                command_flags = ff::flags::combine(command_flags, command_flags_t::force);
+            }
+            else if (arg == "-verbose")
+            {
+                command_flags = ff::flags::combine(command_flags, command_flags_t::verbose);
+            }
+            else
+            {
+                ::show_usage();
+                return 1;
+            }
         }
     }
 
-    if (!dump_source_file.empty())
+    // Check if args are valid for command
     {
-        if (!input_file.empty() || !output_file.empty() || !combine_files.empty())
+        switch (command)
         {
-            ::show_usage();
-            return 1;
-        }
+            case command_t::compile:
+                if (!ff::filesystem::exists(input_file))
+                {
+                    std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(input_file) << std::endl;
+                    return 1;
+                }
 
-        return ::dump_file(dump_source_file, dump_bin);
+                if (!combine_files.empty())
+                {
+                    ::show_usage();
+                    return 1;
+                }
+
+                if (output_file.empty())
+                {
+                    output_file = input_file;
+                    output_file.replace_extension(".pack");
+                }
+                break;
+
+            case command_t::combine:
+                if (output_file.empty() || combine_files.empty() || !input_file.empty())
+                {
+                    ::show_usage();
+                    return 1;
+                }
+
+                for (const std::filesystem::path& file : combine_files)
+                {
+                    if (!ff::filesystem::exists(file))
+                    {
+                        std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(file) << std::endl;
+                        return 1;
+                    }
+
+                    std::cout << "Combine: " << ff::filesystem::to_string(file) << std::endl;
+                }
+                break;
+
+            case command_t::dump_text:
+            case command_t::dump_binary:
+                if (!ff::filesystem::exists(input_file))
+                {
+                    std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(input_file) << std::endl;
+                    return 1;
+                }
+
+                if (!combine_files.empty())
+                {
+                    ::show_usage();
+                    return 1;
+                }
+                break;
+
+            default:
+                ::show_usage();
+                return 1;
     }
 
-    if (input_file.empty() == combine_files.empty())
-    {
-        ::show_usage();
-        return 1;
-    }
-
-    if (output_file.empty())
-    {
-        if (input_file.empty())
-        {
-            ::show_usage();
-            return 1;
-        }
-
-        output_file = input_file;
-        output_file.replace_extension(".pack");
-    }
-
-    if (!input_file.empty() && !ff::filesystem::exists(input_file))
-    {
-        std::cerr << "ff.resource.build: File doesn't exist: " << input_file << std::endl;
-        return 2;
-    }
-
-    for (auto& file : combine_files)
-    {
-        if (!ff::filesystem::exists(file))
-        {
-            std::cerr << "ff.resource.build: File doesn't exist: " << file << std::endl;
-            return 2;
-        }
-
-        std::cout << "Combine: " << ff::filesystem::to_string(file) << std::endl;
-    }
-
-    if (!combine_files.empty())
-    {
-        force = true;
-    }
-
-    bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
+    bool skipped = !ff::flags::has(command_flags, command_flags_t::force) && ff::is_resource_cache_updated(input_file, output_file);
     std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
 
     if (!skipped)
@@ -475,7 +504,7 @@ int main()
         }
 
         // Load referenced DLLs
-        for (auto& ref : refs)
+        for (auto& ref : reference_files)
         {
             HMODULE mod = ::LoadLibrary(ref.c_str());
             if (mod)
