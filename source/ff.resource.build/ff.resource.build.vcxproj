@@ -22,6 +22,9 @@
     <ProjectReference Include="..\ff.audio\ff.audio.vcxproj">
       <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\ff.dx12\ff.dx12.vcxproj">
+      <Project>{8670e093-edd1-451e-868e-acffb7258759}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ff.graphics\ff.graphics.vcxproj">
       <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
     </ProjectReference>

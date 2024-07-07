@@ -477,7 +477,7 @@ void ff::resource_objects::update_resource_object_info(std::shared_ptr<ff::resou
             loading_info->owner->weak_loading_info.reset();
         }
 
-        for (auto parent_loading_info : loading_info->parent_loading_infos)
+        for (auto& parent_loading_info : loading_info->parent_loading_infos)
         {
             ff::log::write(ff::log::type::resource_load, "Unblocking: '", parent_loading_info->name, "' unblocked by '", loading_info->name, "'");
 

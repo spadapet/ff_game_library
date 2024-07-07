@@ -1,53 +1,32 @@
 ﻿#include "pch.h"
 
-static std::vector<std::string> get_command_line()
-{
-    std::wstring_view command_line(::GetCommandLine());
-    return ff::string::split_command_line(ff::string::to_string(command_line));
-}
+constexpr int EXIT_CODE_SUCCESS = 0;
+constexpr int EXIT_CODE_BAD_COMMAND_LINE = 1;
+constexpr int EXIT_CODE_BAD_INPUT = 2;
+constexpr int EXIT_CODE_NOT_IMPLEMENTED = 3;
+constexpr int EXIT_CODE_BAD_REFERENCE = 4;
+constexpr int EXIT_CODE_INIT_FAILED = 5;
+constexpr int EXIT_CODE_COMPILE_FAILED = 6;
+constexpr int EXIT_CODE_OPEN_FILE_FAILED = 7;
+constexpr int EXIT_CODE_READ_FILE_FAILED = 8;
+constexpr int EXIT_CODE_SAVE_DICT_FAILED = 9;
+constexpr int EXIT_CODE_VISIT_DICT_FAILED = 10;
+constexpr std::string_view PROGRAM_NAME = "ff.resource.build";
 
-static void show_usage()
+static int show_usage()
 {
     std::cerr << "Command line options:" << std::endl;
-    std::cerr << "  1) ff.resource.build.exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
-    std::cerr << "  2) ff.resource.build.exe -combine \"pack file\" -out \"output file\"" << std::endl;
-    std::cerr << "  3) ff.resource.build.exe -dump \"pack file\"" << std::endl;
-    std::cerr << "  4) ff.resource.build.exe -dumpbin \"pack file\"" << std::endl;
+    std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
+    std::cerr << "  2) " << ::PROGRAM_NAME << ".exe -combine \"pack file\" [-combine ...] -out \"output file\"" << std::endl;
+    std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"" << std::endl;
+    std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"" << std::endl;
     std::cerr << std::endl;
     std::cerr << "NOTES:" << std::endl;
+    std::cerr << "  -verbose can be added to any command for extra log output." << std::endl;
     std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'." << std::endl;
     std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it." << std::endl;
-}
 
-static bool test_load_resources(const ff::resource_objects& resources)
-{
-    if constexpr (ff::constants::debug_build)
-    {
-        ff::dict dict;
-        assert_ret_val(resources.save(dict), false);
-        dict.debug_print();
-
-        ff::resource_objects resources_copy(resources);
-        std::forward_list<ff::auto_resource_value> values;
-
-        for (std::string_view name : resources_copy.resource_object_names())
-        {
-            values.emplace_front(resources_copy.get_resource_object(name));
-        }
-
-        resources_copy.flush_all_resources();
-
-        for (auto& value : values)
-        {
-            if (value->value()->is_type<nullptr_t>())
-            {
-                std::cerr << "Failed to create resource object: " << value.resource()->name() << std::endl;
-                debug_fail_ret_val(false);
-            }
-        }
-    }
-
-    return true;
+    return ::EXIT_CODE_BAD_COMMAND_LINE;
 }
 
 static bool write_header(const std::vector<uint8_t>& data, std::ostream& output, std::string_view cpp_namespace)
@@ -100,6 +79,37 @@ static bool write_symbol_header(const std::vector<std::pair<std::string, std::st
     }
 
     output << "}" << std::endl;
+
+    return true;
+}
+
+static bool test_load_resources(const ff::resource_objects& resources)
+{
+    if constexpr (ff::constants::debug_build)
+    {
+        ff::dict dict;
+        assert_ret_val(resources.save(dict), false);
+        dict.debug_print();
+
+        ff::resource_objects resources_copy(resources);
+        std::forward_list<ff::auto_resource_value> values;
+
+        for (std::string_view name : resources_copy.resource_object_names())
+        {
+            values.emplace_front(resources_copy.get_resource_object(name));
+        }
+
+        resources_copy.flush_all_resources();
+
+        for (auto& value : values)
+        {
+            if (value->value()->is_type<nullptr_t>())
+            {
+                std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << std::endl;
+                debug_fail_ret_val(false);
+            }
+        }
+    }
 
     return true;
 }
@@ -272,31 +282,117 @@ private:
     std::filesystem::path root_path;
 };
 
-static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bin)
+static bool load_reference_files(const std::vector<std::filesystem::path>& reference_files, bool verbose)
+{
+    for (auto& ref : reference_files)
+    {
+        HMODULE mod = ::LoadLibrary(ref.c_str());
+        if (mod)
+        {
+            typedef void (*ff_init_t)();
+            ff_init_t init_func = reinterpret_cast<ff_init_t>(::GetProcAddress(mod, "ff_init"));
+
+            if (verbose)
+            {
+                std::cout << ::PROGRAM_NAME << ": Loaded reference: " << ref << std::endl;
+            }
+
+            if (!init_func)
+            {
+                std::cerr << ::PROGRAM_NAME << ": Reference doesn't contain 'ff_init' export: " << ref << std::endl;
+                return false;
+            }
+
+            init_func();
+        }
+        else
+        {
+            std::cerr << ::PROGRAM_NAME << ": Failed to load reference: " << ref << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static int do_compile(
+    const std::filesystem::path& input_file,
+    const std::filesystem::path& output_file,
+    const std::vector<std::filesystem::path>& reference_files,
+    const std::filesystem::path& pdb_output,
+    const std::filesystem::path& header_file,
+    const std::filesystem::path& symbol_header_file,
+    const bool force,
+    const bool debug,
+    const bool verbose)
+{
+    bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
+    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
+
+    if (!skipped)
+    {
+        ff::init_input init_input;
+        ff::init_audio init_audio;
+        ff::init_graphics init_graphics;
+
+        if (!init_graphics || !init_audio || !init_input)
+        {
+            std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+            return ::EXIT_CODE_INIT_FAILED;
+        }
+
+        if (!::load_reference_files(reference_files, verbose))
+        {
+            return ::EXIT_CODE_BAD_REFERENCE;
+        }
+
+        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
+        {
+            std::cerr << ::PROGRAM_NAME << ": Compile failed" << std::endl;
+            return ::EXIT_CODE_COMPILE_FAILED;
+        }
+    }
+
+    return 0;
+}
+
+static int do_combine(const std::vector<std::filesystem::path>& input_files, const std::filesystem::path& output_file, bool debug, bool verbose)
+{
+    std::cerr << ::PROGRAM_NAME << ": Combine is not implemented.";
+    return ::EXIT_CODE_NOT_IMPLEMENTED;
+}
+
+static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 {
     ff::init_input init_input;
     ff::init_audio init_audio;
     ff::init_graphics init_graphics;
 
-    if (!ff::filesystem::exists(dump_source_file))
+    if (!init_graphics || !init_audio || !init_input)
     {
-        std::cerr << "File doesn't exist: " << dump_source_file << std::endl;
-        return 1;
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+        return ::EXIT_CODE_INIT_FAILED;
     }
 
-    ff::file_reader reader(dump_source_file);
+    ff::file_reader reader(input_file);
     if (!reader)
     {
-        std::cerr << "Can't read file: " << dump_source_file << std::endl;
-        return 2;
+        std::cerr << "Can't open file: " << input_file << std::endl;
+        return ::EXIT_CODE_OPEN_FILE_FAILED;
+    }
+
+    ff::resource_objects resources;
+    if (!resources.add_resources(reader))
+    {
+        std::cerr << "Can't load file: " << input_file << std::endl;
+        return ::EXIT_CODE_READ_FILE_FAILED;
     }
 
     ff::dict dict;
-    ff::resource_objects resources(reader);
     if (!resources.save(dict) || !dict.load_child_dicts())
     {
-        std::cerr << "Can't load file: " << dump_source_file << std::endl;
-        return 3;
+        std::cerr << "Can't load resources: " << input_file << std::endl;
+        return ::EXIT_CODE_SAVE_DICT_FAILED;
     }
 
     // console print
@@ -316,10 +412,10 @@ static int dump_file(const std::filesystem::path& dump_source_file, bool dump_bi
         {
             for (auto& error : errors)
             {
-                std::cerr << error << std::endl;
+                std::cerr << ::PROGRAM_NAME << ": " << error << std::endl;
             }
 
-            return 4;
+            return ::EXIT_CODE_VISIT_DICT_FAILED;
         }
     }
 
@@ -333,8 +429,8 @@ int main()
 
     if (!init_resource)
     {
-        std::cerr << "ff.resource.build: Failed to initialize" << std::endl;
-        return 5;
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+        return ::EXIT_CODE_INIT_FAILED;
     }
 
     enum class command_t
@@ -344,7 +440,7 @@ int main()
         combine,
         dump_text,
         dump_binary,
-    } command = command_t::compile;
+    } command = command_t::none;
 
     enum class command_flags_t
     {
@@ -355,55 +451,101 @@ int main()
     } command_flags = command_flags_t::none;
 
     std::vector<std::filesystem::path> reference_files;
-    std::vector<std::filesystem::path> combine_files;
-    std::filesystem::path input_file;
+    std::vector<std::filesystem::path> input_files;
     std::filesystem::path output_file;
     std::filesystem::path pdb_output;
     std::filesystem::path header_file;
     std::filesystem::path symbol_header_file;
 
+    auto at_exit = ff::scope_exit([&timer, &command_flags]()
+    {
+        if (ff::flags::has(command_flags, command_flags_t::verbose))
+        {
+            std::cout << ::PROGRAM_NAME << ": Time: " << std::fixed << std::setprecision(3) << timer.tick() << "s" << std::endl;
+        }
+    });
+
     // Parse command line
     {
-        std::vector<std::string> args = ff::string::split_command_line();
+        const std::vector<std::string> args = ff::string::split_command_line();
         for (size_t i = 1; i < args.size(); i++)
         {
             std::string_view arg = args[i];
 
             if (arg == "-in" && i + 1 < args.size())
             {
-                input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+                if (command != command_t::none || !input_files.empty())
+                {
+                    return ::show_usage();
+                }
+
+                command = command_t::compile;
+                input_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
             }
             else if (arg == "-combine" && i + 1 < args.size())
             {
+                if (command != command_t::none)
+                {
+                    return ::show_usage();
+                }
+
                 command = command_t::combine;
-                command_flags = ff::flags::combine(command_flags, command_flags_t::force);
-                combine_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
+                input_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
             }
             else if (arg == "-out" && i + 1 < args.size())
             {
+                if (command != command_t::compile)
+                {
+                    return ::show_usage();
+                }
+
                 output_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
             }
             else if (arg == "-pdb" && i + 1 < args.size())
             {
+                if (command != command_t::compile)
+                {
+                    return ::show_usage();
+                }
+
                 pdb_output = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
             }
             else if (arg == "-header" && i + 1 < args.size())
             {
+                if (command != command_t::compile)
+                {
+                    return ::show_usage();
+                }
+
                 header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
             }
             else if (arg == "-symbol_header" && i + 1 < args.size())
             {
+                if (command != command_t::compile)
+                {
+                    return ::show_usage();
+                }
+
                 symbol_header_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
             }
             else if (arg == "-ref" && i + 1 < args.size())
             {
-                std::filesystem::path file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
-                reference_files.push_back(file);
+                if (command != command_t::compile)
+                {
+                    return ::show_usage();
+                }
+
+                reference_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
             }
             else if ((arg == "-dump" || arg == "-dumpbin") && i + 1 < args.size())
             {
+                if (command != command_t::none || !input_files.empty())
+                {
+                    return ::show_usage();
+                }
+
                 command = (arg == "-dumpbin") ? command_t::dump_binary : command_t::dump_text;
-                input_file = std::filesystem::current_path() / ff::filesystem::to_path(args[++i]);
+                input_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
             }
             else if (arg == "-debug")
             {
@@ -419,136 +561,57 @@ int main()
             }
             else
             {
-                ::show_usage();
-                return 1;
+                return ::show_usage();
             }
         }
     }
 
-    // Check if args are valid for command
+    const bool force = ff::flags::has(command_flags, command_flags_t::force);
+    const bool debug = ff::flags::has(command_flags, command_flags_t::debug);
+    const bool verbose = ff::flags::has(command_flags, command_flags_t::verbose);
+
+    // Validate args
+    for (const std::filesystem::path& file : input_files)
     {
-        switch (command)
+        if (!ff::filesystem::exists(file))
         {
-            case command_t::compile:
-                if (!ff::filesystem::exists(input_file))
-                {
-                    std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(input_file) << std::endl;
-                    return 1;
-                }
-
-                if (!combine_files.empty())
-                {
-                    ::show_usage();
-                    return 1;
-                }
-
-                if (output_file.empty())
-                {
-                    output_file = input_file;
-                    output_file.replace_extension(".pack");
-                }
-                break;
-
-            case command_t::combine:
-                if (output_file.empty() || combine_files.empty() || !input_file.empty())
-                {
-                    ::show_usage();
-                    return 1;
-                }
-
-                for (const std::filesystem::path& file : combine_files)
-                {
-                    if (!ff::filesystem::exists(file))
-                    {
-                        std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(file) << std::endl;
-                        return 1;
-                    }
-
-                    std::cout << "Combine: " << ff::filesystem::to_string(file) << std::endl;
-                }
-                break;
-
-            case command_t::dump_text:
-            case command_t::dump_binary:
-                if (!ff::filesystem::exists(input_file))
-                {
-                    std::cerr << "ff.resource.build: Input file doesn't exist: " << ff::filesystem::to_string(input_file) << std::endl;
-                    return 1;
-                }
-
-                if (!combine_files.empty())
-                {
-                    ::show_usage();
-                    return 1;
-                }
-                break;
-
-            default:
-                ::show_usage();
-                return 1;
-    }
-
-    bool skipped = !ff::flags::has(command_flags, command_flags_t::force) && ff::is_resource_cache_updated(input_file, output_file);
-    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
-
-    if (!skipped)
-    {
-        ff::init_input init_input;
-        ff::init_audio init_audio;
-        ff::init_graphics init_graphics;
-
-        if (!init_graphics || !init_audio || !init_input)
-        {
-            std::cerr << "ff.resource.build: Failed to initialize" << std::endl;
-            return 5;
+            std::cerr << ::PROGRAM_NAME << ": Input file doesn't exist: " << ff::filesystem::to_string(file) << std::endl;
+            return ::EXIT_CODE_BAD_INPUT;
         }
 
-        // Load referenced DLLs
-        for (auto& ref : reference_files)
+        if (verbose)
         {
-            HMODULE mod = ::LoadLibrary(ref.c_str());
-            if (mod)
-            {
-                typedef void (*ff_init_t)();
-                ff_init_t init_func = reinterpret_cast<ff_init_t>(::GetProcAddress(mod, "ff_init"));
-
-                if (verbose)
-                {
-                    std::cout << "ff.resource.build: Loaded: " << ref << std::endl;
-                }
-
-                if (!init_func)
-                {
-                    std::cerr << "ff.resource.build: Reference doesn't contain 'ff_init' export: " << ref << std::endl;
-                    return 3;
-                }
-
-                init_func();
-            }
-            else
-            {
-                std::cerr << "ff.resource.build: Failed to load reference: " << ref << std::endl;
-                return 4;
-            }
+            std::cout << "Input file: " << ff::filesystem::to_string(file) << std::endl;
         }
 
-        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
+        if (output_file.empty())
         {
-            std::cerr << "ff.resource.build: Compile failed" << std::endl;
-            return 6;
+            output_file = file;
+            output_file.replace_extension(".pack");
         }
     }
 
-    if (verbose)
+    if (verbose && !output_file.empty())
     {
-        std::cout <<
-            "ff.resource.build: Time: " <<
-            std::fixed <<
-            std::setprecision(3) <<
-            timer.tick() <<
-            "s (" << input_file << ")" <<
-            std::endl;
+        std::cout << "Output file: " << ff::filesystem::to_string(output_file) << std::endl;
     }
 
-    return 0;
+    // Run command
+    switch (command)
+    {
+        case command_t::compile:
+            return ::do_compile(input_files[0], output_file, reference_files, pdb_output, header_file, symbol_header_file, force, debug, verbose);
+
+        case command_t::combine:
+            return ::do_combine(input_files, output_file, debug, verbose);
+
+        case command_t::dump_text:
+            return ::do_dump(input_files[0], false);
+
+        case command_t::dump_binary:
+            return ::load_reference_files(reference_files, verbose) ? ::do_dump(input_files[0], true) : ::EXIT_CODE_BAD_REFERENCE;
+
+        default:
+            return ::show_usage();
+    }
 }
