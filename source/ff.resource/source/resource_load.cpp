@@ -14,7 +14,8 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
     return (cache_path /= "ff.cache") /= str.str();
 }
 
-static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::filesystem::path& path)
+// mem-mapping the file will lock it on disk, not allowing the cache to be updated
+static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::filesystem::path& path, bool mem_map_file)
 {
     if (!ff::filesystem::exists(path))
     {
@@ -27,8 +28,7 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
         return {};
     }
 
-    // Read the whole file into memory so that the cache file isn't locked
-    auto data = ff::filesystem::read_binary_file(path);
+    auto data = mem_map_file ? ff::filesystem::map_binary_file(path) : ff::filesystem::read_binary_file(path);
     ff::data_reader reader(data);
     auto resource_objects = std::make_shared<ff::resource_objects>();
     if (!data || !resource_objects->add_resources(reader))
@@ -37,6 +37,8 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     }
 
     std::vector<std::string> file_refs = resource_objects->input_files();
+    assert_ret_val(file_refs.size(), std::shared_ptr<ff::resource_objects>());
+
     for (const std::string& file_ref : file_refs)
     {
         std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
@@ -64,7 +66,7 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
 
     if (use_cache)
     {
-        auto resource_objects = ::load_cached_resources(cache_path);
+        auto resource_objects = ::load_cached_resources(cache_path, false);
         if (resource_objects)
         {
             result.resources = resource_objects;
@@ -124,7 +126,7 @@ ff::load_resources_result ff::load_resources_from_json(std::string_view json_tex
 
 bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path)
 {
-    auto cached_resources = ::load_cached_resources(cache_path);
+    auto cached_resources = ::load_cached_resources(cache_path, true);
     if (cached_resources)
     {
         std::filesystem::file_time_type input_time = std::filesystem::last_write_time(input_path);

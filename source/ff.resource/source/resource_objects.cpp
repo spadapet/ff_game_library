@@ -69,7 +69,7 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
 void ff::resource_objects::add_resources(const ff::resource_objects& other)
 {
     std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
-    std::copy(other.resource_metadata_saved->cbegin(), other.resource_metadata_saved->cend(), std::back_inserter(*this->resource_metadata_saved));
+    this->add_resources(other.resource_metadata());
 
     for (auto& [name, other_info] : other.resource_infos)
     {
@@ -111,6 +111,9 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
 
         ff::saved_data_type data_type = static_cast<ff::saved_data_type>(data_flags & 0xFF);
         metadata_saved = reader.saved_data(reader.pos(), data_saved_size, data_loaded_size, data_type);
+
+        const size_t data_cookie_pos = reader.pos() + data_saved_size + ff::save_padding_size(data_saved_size);
+        reader.pos(data_cookie_pos);
     }
 
     std::scoped_lock lock(this->resource_mutex);
@@ -154,9 +157,7 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
 {
     for (auto& [child_name, child_value] : dict)
     {
-        if (child_name == ff::internal::RES_FILES ||
-            child_name == ff::internal::RES_SOURCES ||
-            child_name == ff::internal::RES_NAMESPACES)
+        if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES || child_name == ff::internal::RES_NAMESPACES)
         {
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
             std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
@@ -174,13 +175,14 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
         }
         else if (child_name == ff::internal::RES_SOURCE || child_name == ff::internal::RES_NAMESPACE)
         {
+            std::string_view multi_child_name = (child_name == ff::internal::RES_SOURCE) ? ff::internal::RES_SOURCES : ff::internal::RES_NAMESPACES;
             std::string add_string = child_value->get<std::string>();
-            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
+            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(multi_child_name);
 
             if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
             {
                 strings.push_back(std::move(add_string));
-                this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(strings));
+                this->resource_metadata().set<std::vector<std::string>>(multi_child_name, std::move(strings));
             }
         }
         else if (child_name == ff::internal::RES_ID_SYMBOLS || child_name == ff::internal::RES_OUTPUT_FILES)
@@ -238,7 +240,8 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
         resource_datas.reserve(this->resource_infos.size());
 
         ff::data_writer metadata_writer(metadata_vector);
-        assert_ret_val(this->resource_metadata().save(metadata_writer), false);
+        ff::value_ptr dict_value = ff::value::create<ff::dict>(ff::dict(this->resource_metadata()));
+        assert_ret_val(dict_value->save_typed(metadata_writer), false);
         full_size_guess += metadata_data->size();
 
         for (auto& [name, info] : this->resource_infos)
@@ -353,7 +356,7 @@ std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> ff::resource
 {
     std::scoped_lock lock(this->resource_mutex);
     std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> result;
-    const ff::dict& dict = this->resource_metadata().get<ff::dict>(ff::internal::RES_ID_SYMBOLS);
+    const ff::dict& dict = this->resource_metadata().get<ff::dict>(ff::internal::RES_OUTPUT_FILES);
 
     for (auto& [id, data] : dict)
     {

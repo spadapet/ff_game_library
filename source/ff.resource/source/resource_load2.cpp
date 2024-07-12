@@ -709,7 +709,7 @@ protected:
                     ff::value_ptr object_value = output_dict.get(name);
                     if (object_value->is_type<ff::resource_object_base>())
                     {
-                        auto res = object_value->get<ff::resource_object_base>();
+                        std::shared_ptr<ff::resource_object_base> res = object_value->get<ff::resource_object_base>();
                         if (res)
                         {
                             std::shared_ptr<ff::resource> res_value = std::make_shared<ff::resource>(name, object_value);
@@ -749,7 +749,7 @@ protected:
         if (value && value->is_type<ff::resource_object_base>())
         {
             ff::dict dict;
-            auto res = value->get<ff::resource_object_base>();
+            std::shared_ptr<ff::resource_object_base> res = value->get<ff::resource_object_base>();
             if (!res || !ff::resource_object_base::save_to_cache_typed(*res, dict))
             {
                 this->add_error("Failed to save resource");
