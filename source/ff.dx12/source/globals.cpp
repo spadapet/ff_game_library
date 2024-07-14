@@ -260,8 +260,8 @@ static bool init_d3d(bool for_reset)
     // Shader resources
     if (!for_reset)
     {
-        // TODO: RESOURCE_INIT
-        ::shader_resources = std::make_unique<ff::resource_objects>(); // ::assets::dx12::data());
+        ff::data_reader assets_reader(::assets::dx12::data());
+        ::shader_resources = std::make_unique<ff::resource_objects>(assets_reader);
     }
 
     if (!for_reset)

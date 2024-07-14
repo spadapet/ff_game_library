@@ -160,7 +160,7 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
         if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES || child_name == ff::internal::RES_NAMESPACES)
         {
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
-            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(child_name);
+            std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(child_name);
 
             for (const std::string& add_string : add_strings)
             {
@@ -171,26 +171,26 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
             }
 
             std::sort(strings.begin(), strings.end());
-            this->resource_metadata().set<std::vector<std::string>>(child_name, std::move(strings));
+            this->resource_metadata_dict->set<std::vector<std::string>>(child_name, std::move(strings));
         }
         else if (child_name == ff::internal::RES_SOURCE || child_name == ff::internal::RES_NAMESPACE)
         {
             std::string_view multi_child_name = (child_name == ff::internal::RES_SOURCE) ? ff::internal::RES_SOURCES : ff::internal::RES_NAMESPACES;
             std::string add_string = child_value->get<std::string>();
-            std::vector<std::string> strings = this->resource_metadata().get<std::vector<std::string>>(multi_child_name);
+            std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(multi_child_name);
 
             if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
             {
                 strings.push_back(std::move(add_string));
-                this->resource_metadata().set<std::vector<std::string>>(multi_child_name, std::move(strings));
+                this->resource_metadata_dict->set<std::vector<std::string>>(multi_child_name, std::move(strings));
             }
         }
         else if (child_name == ff::internal::RES_ID_SYMBOLS || child_name == ff::internal::RES_OUTPUT_FILES)
         {
             ff::dict add_dict = child_value->get<ff::dict>();
-            ff::dict old_dict = this->resource_metadata().get<ff::dict>(child_name);
+            ff::dict old_dict = this->resource_metadata_dict->get<ff::dict>(child_name);
             old_dict.set(add_dict, false);
-            this->resource_metadata().set<ff::dict>(child_name, std::move(old_dict));
+            this->resource_metadata_dict->set<ff::dict>(child_name, std::move(old_dict));
         }
     }
 }
@@ -215,7 +215,7 @@ ff::dict& ff::resource_objects::resource_metadata() const
     {
         for (auto& saved_data : *this->resource_metadata_saved)
         {
-            ff::value_ptr value = ::load_typed_value(saved_data);
+            ff::value_ptr value = ::load_typed_value(saved_data)->try_convert<ff::dict>();
             if (value->is_type<ff::dict>())
             {
                 this->add_metadata_only(value->get<ff::dict>());

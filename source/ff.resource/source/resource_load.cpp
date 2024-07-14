@@ -17,11 +17,6 @@ static std::filesystem::path get_cache_path(const std::filesystem::path& source_
 // mem-mapping the file will lock it on disk, not allowing the cache to be updated
 static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::filesystem::path& path, bool mem_map_file)
 {
-    if (!ff::filesystem::exists(path))
-    {
-        return {};
-    }
-
     std::filesystem::file_time_type time = ff::filesystem::last_write_time(path);
     if (time == std::filesystem::file_time_type::min())
     {
@@ -29,12 +24,11 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     }
 
     auto data = mem_map_file ? ff::filesystem::map_binary_file(path) : ff::filesystem::read_binary_file(path);
+    assert_ret_val(data, std::shared_ptr<ff::resource_objects>());
+
     ff::data_reader reader(data);
     auto resource_objects = std::make_shared<ff::resource_objects>();
-    if (!data || !resource_objects->add_resources(reader))
-    {
-        return {};
-    }
+    assert_ret_val(resource_objects->add_resources(reader), std::shared_ptr<ff::resource_objects>());
 
     std::vector<std::string> file_refs = resource_objects->input_files();
     assert_ret_val(file_refs.size(), std::shared_ptr<ff::resource_objects>());
@@ -42,12 +36,6 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     for (const std::string& file_ref : file_refs)
     {
         std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
-        if (!ff::filesystem::exists(path_ref))
-        {
-            // cache is out of data
-            return {};
-        }
-
         std::filesystem::file_time_type file_ref_time = ff::filesystem::last_write_time(path_ref);
         if (file_ref_time == std::filesystem::file_time_type::min() || time < file_ref_time)
         {

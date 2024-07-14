@@ -614,8 +614,9 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
-    // TODO: RESOURCE_INIT
-    ::app_resources = std::make_shared<ff::resource_objects>(); // ::assets::app::data());
+
+    ff::data_reader assets_reader(::assets::app::data());
+    ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
 
     ff::internal::app::load_settings();
     ff::thread_dispatch::get_main()->post(::init_window);

@@ -391,8 +391,8 @@ static void destroy_noesis()
 bool ff::internal::ui::init(const ff::init_ui_params& params)
 {
     ::ui_params = params;
-    // TODO: RESOURCE_INIT
-    ::shader_resources = std::make_unique<ff::resource_objects>(); // ::assets::ui::data());
+    ff::data_reader assets_reader(::assets::ui::data());
+    ::shader_resources = std::make_unique<ff::resource_objects>(assets_reader);
     ::device_events_connection = ff::input::combined_devices().event_sink().connect([](const ff::input_device_event& event)
         {
             std::scoped_lock lock(::device_events_mutex);
