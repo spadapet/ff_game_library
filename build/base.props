@@ -7,7 +7,7 @@
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
     <!-- Also update Noesis version in /vendor/packages.ff.vendor.noesis_interactivity.config -->
-    <NoesisVersion>3.2.3</NoesisVersion>
+    <NoesisVersion>3.2.4</NoesisVersion>
     <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
     <WinPixVersion>1.0.240308001</WinPixVersion>
     <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
