@@ -266,7 +266,7 @@ static bool init_d3d(bool for_reset)
 
     if (!for_reset)
     {
-        const uint64_t one_meg = 1024 * 1024;
+        const uint64_t one_meg = static_cast<uint64_t>(1024) * static_cast<uint64_t>(1024);
 
         ::upload_allocator = std::make_unique<ff::dx12::mem_allocator_ring>(one_meg, ff::dx12::heap::usage_t::upload);
         ::readback_allocator = std::make_unique<ff::dx12::mem_allocator_ring>(one_meg, ff::dx12::heap::usage_t::readback);
