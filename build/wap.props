@@ -4,6 +4,8 @@
     <SharedWapPropsImported>true</SharedWapPropsImported>
 
     <!-- Output paths -->
+    <LayoutDir Condition="'$(LayoutDir)'==''">$(ProjectOutRoot)appx</LayoutDir>
     <MSBuildProjectExtensionsPath>$(IntDir)</MSBuildProjectExtensionsPath>
+    <GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>
   </PropertyGroup>
 </Project>
