@@ -36,12 +36,14 @@ void ff::internal::app::load_settings()
     {
         auto data = ff::filesystem::read_binary_file(settings_path);
         ff::data_reader reader(data);
-        if (!data || !ff::dict::load(reader, ::named_settings))
+        if (data && ff::dict::load(reader, ::named_settings))
         {
-            assert(false);
+            ff::log::write(ff::log::type::application, "Load settings: ", ff::filesystem::to_string(settings_path), "\r\n", ::named_settings);
         }
-
-        ff::log::write(ff::log::type::application, "Load settings: ", ff::filesystem::to_string(settings_path), "\r\n", ::named_settings);
+        else
+        {
+            ff::log::write(ff::log::type::application, "Invalid settings: ", ff::filesystem::to_string(settings_path));
+        }
     }
     else
     {
