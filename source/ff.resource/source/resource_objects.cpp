@@ -137,7 +137,7 @@ void ff::resource_objects::add_resources_only(const ff::dict& dict)
 {
     for (auto& [child_name, child_value] : dict)
     {
-        if (!child_name.starts_with(ff::internal::RES_PREFIX) && !this->resource_infos.contains(child_name))
+        if (!child_name.starts_with(ff::internal::RES_PREFIX))
         {
             auto data_vector = std::make_shared<std::vector<uint8_t>>();
             ff::data_writer data_writer(data_vector);

@@ -15,21 +15,20 @@ constexpr std::string_view PROGRAM_NAME = "ff.resource.build";
 
 static int show_usage()
 {
-    std::cerr << "Command line options:" << std::endl;
-    std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]" << std::endl;
-    std::cerr << "  2) " << ::PROGRAM_NAME << ".exe -combine \"pack file\" [-combine ...] -out \"output file\"" << std::endl;
-    std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"" << std::endl;
-    std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"" << std::endl;
-    std::cerr << std::endl;
-    std::cerr << "NOTES:" << std::endl;
-    std::cerr << "  -verbose can be added to any command for extra log output." << std::endl;
-    std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'." << std::endl;
-    std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it." << std::endl;
+    std::cerr << "Command line options:\r\n";
+    std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]\r\n";
+    std::cerr << "  2) " << ::PROGRAM_NAME << ".exe -combine \"pack file\" [-combine ...] -out \"output file\"\r\n";
+    std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"\r\n";
+    std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"\r\n\r\n";
+    std::cerr << "NOTES:\r\n";
+    std::cerr << "  -verbose can be added to any command for extra log output.\r\n";
+    std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'.\r\n";
+    std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it.\r\n";
 
     return ::EXIT_CODE_BAD_COMMAND_LINE;
 }
 
-static bool write_header(const std::vector<uint8_t>& data, std::ostream& output, std::string_view cpp_namespace)
+static bool write_header(const std::vector<uint8_t>& data, std::ostream& output, std::string_view cpp_namespace, bool stub_header)
 {
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -42,16 +41,19 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
         {
         )";
 
-    for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
+    if (!stub_header)
     {
-        output << "    ";
-
-        for (size_t i = 0, count = std::min<size_t>(bytes_per_line, end - cur); i < count; i++)
+        for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
         {
-            output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
-        }
+            output << "    ";
 
-        output << std::endl << "        ";
+            for (size_t i = 0, count = std::min<size_t>(bytes_per_line, end - cur); i < count; i++)
+            {
+                output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
+            }
+
+            output << "\r\n        ";
+        }
     }
 
     output << R"(};
@@ -71,14 +73,14 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
 
 static bool write_symbol_header(const std::vector<std::pair<std::string, std::string>>& id_to_names, std::ostream& output, std::string_view cpp_namespace)
 {
-    output << "namespace " << cpp_namespace << std::endl << "{" << std::endl;
+    output << "namespace " << cpp_namespace << "\r\n{\r\n";
 
     for (const auto& [id, name] : id_to_names)
     {
-        output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";" << std::endl;
+        output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";\r\n";
     }
 
-    output << "}" << std::endl;
+    output << "}r\n";
 
     return true;
 }
@@ -105,7 +107,7 @@ static bool test_load_resources(const ff::resource_objects& resources)
         {
             if (value->value()->is_type<nullptr_t>())
             {
-                std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << std::endl;
+                std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << "\r\n";
                 debug_fail_ret_val(false);
             }
         }
@@ -120,16 +122,17 @@ static bool compile_resource_pack(
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     const std::filesystem::path& symbol_header_file,
-    bool debug)
+    const bool stub_header,
+    const bool debug)
 {
     ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
     if (!result.errors.empty() || !result.resources)
     {
-        std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << std::endl;
+        std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << "\r\n";
 
         for (auto& error : result.errors)
         {
-            std::cerr << error << std::endl;
+            std::cerr << error << "\r\n";
         }
 
         return false;
@@ -142,7 +145,7 @@ static bool compile_resource_pack(
         ff::data_writer data_writer(data);
         if (!result.resources->save(data_writer))
         {
-            std::cerr << "Failed to save resources: " << ff::filesystem::to_string(output_file) << std::endl;
+            std::cerr << "Failed to save resources: " << ff::filesystem::to_string(output_file) << "\r\n";
             return false;
         }
     }
@@ -152,7 +155,7 @@ static bool compile_resource_pack(
         ff::file_writer writer(output_file);
         if (!writer || writer.write(data->data(), data->size()) != data->size())
         {
-            std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << std::endl;
+            std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << "\r\n";
             return false;
         }
     }
@@ -164,9 +167,9 @@ static bool compile_resource_pack(
     if (!header_file.empty() && source_namespaces.size())
     {
         std::ofstream header_stream(header_file);
-        if (!header_stream || !::write_header(*data, header_stream, source_namespaces.front()))
+        if (!header_stream || !::write_header(*data, header_stream, source_namespaces.front(), stub_header))
         {
-            std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << std::endl;
+            std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << "\r\n";
             return false;
         }
     }
@@ -176,7 +179,7 @@ static bool compile_resource_pack(
         std::ofstream symbol_header_stream(symbol_header_file);
         if (!symbol_header_stream || !::write_symbol_header(source_id_to_names, symbol_header_stream, source_namespaces.front()))
         {
-            std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << std::endl;
+            std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
             return false;
         }
     }
@@ -188,7 +191,7 @@ static bool compile_resource_pack(
             std::filesystem::path path = pdb_output / name;
             if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
             {
-                std::cerr << "Failed to write output file: " << ff::filesystem::to_string(path) << std::endl;
+                std::cerr << "Failed to write output file: " << ff::filesystem::to_string(path) << "\r\n";
                 return false;
             }
         }
@@ -206,13 +209,13 @@ static bool combine_resource_packs(const std::vector<std::filesystem::path>& com
         ff::file_reader reader(file);
         if (!reader)
         {
-            std::cerr << "Failed to open file: " << ff::filesystem::to_string(file) << std::endl;
+            std::cerr << "Failed to open file: " << ff::filesystem::to_string(file) << "\r\n";
             return false;
         }
 
         if (!resource_objects.add_resources(reader))
         {
-            std::cerr << "Invalid binary pack file: " << ff::filesystem::to_string(file) << std::endl;
+            std::cerr << "Invalid binary pack file: " << ff::filesystem::to_string(file) << "\r\n";
             return false;
         }
     }
@@ -222,7 +225,7 @@ static bool combine_resource_packs(const std::vector<std::filesystem::path>& com
         ff::data_writer data_writer(data);
         if (!resource_objects.save(data_writer))
         {
-            std::cerr << "Failed to save resource data." << std::endl;
+            std::cerr << "Failed to save resource data.\r\n";
             return false;
         }
     }
@@ -294,12 +297,12 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
 
             if (verbose)
             {
-                std::cout << ::PROGRAM_NAME << ": Loaded reference: " << ref << std::endl;
+                std::cout << ::PROGRAM_NAME << ": Loaded reference: " << ref << "\r\n";
             }
 
             if (!init_func)
             {
-                std::cerr << ::PROGRAM_NAME << ": Reference doesn't contain 'ff_init' export: " << ref << std::endl;
+                std::cerr << ::PROGRAM_NAME << ": Reference doesn't contain 'ff_init' export: " << ref << "\r\n";
                 return false;
             }
 
@@ -307,7 +310,7 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
         }
         else
         {
-            std::cerr << ::PROGRAM_NAME << ": Failed to load reference: " << ref << std::endl;
+            std::cerr << ::PROGRAM_NAME << ": Failed to load reference: " << ref << "\r\n";
             return false;
         }
     }
@@ -322,12 +325,13 @@ static int do_compile(
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     const std::filesystem::path& symbol_header_file,
+    const bool stub_header,
     const bool force,
     const bool debug,
     const bool verbose)
 {
     bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
-    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << std::endl;
+    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << "\r\n";
 
     if (!skipped)
     {
@@ -337,7 +341,7 @@ static int do_compile(
 
         if (!init_graphics || !init_audio || !init_input)
         {
-            std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+            std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
             return ::EXIT_CODE_INIT_FAILED;
         }
 
@@ -346,9 +350,9 @@ static int do_compile(
             return ::EXIT_CODE_BAD_REFERENCE;
         }
 
-        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, debug))
+        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, stub_header, debug))
         {
-            std::cerr << ::PROGRAM_NAME << ": Compile failed" << std::endl;
+            std::cerr << ::PROGRAM_NAME << ": Compile failed\r\n";
             return ::EXIT_CODE_COMPILE_FAILED;
         }
     }
@@ -370,28 +374,28 @@ static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 
     if (!init_graphics || !init_audio || !init_input)
     {
-        std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
         return ::EXIT_CODE_INIT_FAILED;
     }
 
     ff::file_reader reader(input_file);
     if (!reader)
     {
-        std::cerr << "Can't open file: " << input_file << std::endl;
+        std::cerr << "Can't open file: " << input_file << "\r\n";
         return ::EXIT_CODE_OPEN_FILE_FAILED;
     }
 
     ff::resource_objects resources;
     if (!resources.add_resources(reader))
     {
-        std::cerr << "Can't load file: " << input_file << std::endl;
+        std::cerr << "Can't load file: " << input_file << "\r\n";
         return ::EXIT_CODE_READ_FILE_FAILED;
     }
 
     ff::dict dict;
     if (!resources.save(dict) || !dict.load_child_dicts())
     {
-        std::cerr << "Can't load resources: " << input_file << std::endl;
+        std::cerr << "Can't load resources: " << input_file << "\r\n";
         return ::EXIT_CODE_SAVE_DICT_FAILED;
     }
 
@@ -412,7 +416,7 @@ static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
         {
             for (auto& error : errors)
             {
-                std::cerr << ::PROGRAM_NAME << ": " << error << std::endl;
+                std::cerr << ::PROGRAM_NAME << ": " << error << "\r\n";
             }
 
             return ::EXIT_CODE_VISIT_DICT_FAILED;
@@ -429,7 +433,7 @@ int main()
 
     if (!init_resource)
     {
-        std::cerr << ::PROGRAM_NAME << ": Failed to initialize" << std::endl;
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
         return ::EXIT_CODE_INIT_FAILED;
     }
 
@@ -448,6 +452,7 @@ int main()
         debug = 0x01,
         force = 0x02,
         verbose = 0x04,
+        stub_header = 0x08,
     } command_flags = command_flags_t::none;
 
     std::vector<std::filesystem::path> reference_files;
@@ -461,7 +466,7 @@ int main()
     {
         if (ff::flags::has(command_flags, command_flags_t::verbose))
         {
-            std::cout << ::PROGRAM_NAME << ": Time: " << std::fixed << std::setprecision(3) << timer.tick() << "s" << std::endl;
+            std::cout << ::PROGRAM_NAME << ": Time: " << std::fixed << std::setprecision(3) << timer.tick() << "s\r\n";
         }
     });
 
@@ -484,7 +489,7 @@ int main()
             }
             else if (arg == "-combine" && i + 1 < args.size())
             {
-                if (command != command_t::none)
+                if (command != command_t::none && command != command_t::combine)
                 {
                     return ::show_usage();
                 }
@@ -494,7 +499,7 @@ int main()
             }
             else if (arg == "-out" && i + 1 < args.size())
             {
-                if (command != command_t::compile)
+                if (command != command_t::compile && command != command_t::combine)
                 {
                     return ::show_usage();
                 }
@@ -559,6 +564,18 @@ int main()
             {
                 command_flags = ff::flags::combine(command_flags, command_flags_t::verbose);
             }
+            else if (arg == "-stub_header" && i + 1 < args.size())
+            {
+                std::string stub_header_arg = ff::string::to_lower(args[++i]);
+                if (stub_header_arg == "true")
+                {
+                    command_flags = ff::flags::combine(command_flags, command_flags_t::stub_header);
+                }
+                else
+                {
+                    command_flags = ff::flags::clear(command_flags, command_flags_t::stub_header);
+                }
+            }
             else
             {
                 return ::show_usage();
@@ -569,19 +586,20 @@ int main()
     const bool force = ff::flags::has(command_flags, command_flags_t::force);
     const bool debug = ff::flags::has(command_flags, command_flags_t::debug);
     const bool verbose = ff::flags::has(command_flags, command_flags_t::verbose);
+    const bool stub_header = ff::flags::has(command_flags, command_flags_t::stub_header);
 
     // Validate args
     for (const std::filesystem::path& file : input_files)
     {
         if (!ff::filesystem::exists(file))
         {
-            std::cerr << ::PROGRAM_NAME << ": Input file doesn't exist: " << ff::filesystem::to_string(file) << std::endl;
+            std::cerr << ::PROGRAM_NAME << ": Input file doesn't exist: " << ff::filesystem::to_string(file) << "\r\n";
             return ::EXIT_CODE_BAD_INPUT;
         }
 
         if (verbose)
         {
-            std::cout << "Input file: " << ff::filesystem::to_string(file) << std::endl;
+            std::cout << "Input file: " << ff::filesystem::to_string(file) << "\r\n";
         }
 
         if (output_file.empty())
@@ -593,14 +611,14 @@ int main()
 
     if (verbose && !output_file.empty())
     {
-        std::cout << "Output file: " << ff::filesystem::to_string(output_file) << std::endl;
+        std::cout << "Output file: " << ff::filesystem::to_string(output_file) << "\r\n";
     }
 
     // Run command
     switch (command)
     {
         case command_t::compile:
-            return ::do_compile(input_files[0], output_file, reference_files, pdb_output, header_file, symbol_header_file, force, debug, verbose);
+            return ::do_compile(input_files[0], output_file, reference_files, pdb_output, header_file, symbol_header_file, stub_header, force, debug, verbose);
 
         case command_t::combine:
             return ::do_combine(input_files, output_file, debug, verbose);
