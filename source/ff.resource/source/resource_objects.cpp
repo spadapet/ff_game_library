@@ -69,7 +69,13 @@ void ff::resource_objects::add_resources(const ff::dict& dict)
 void ff::resource_objects::add_resources(const ff::resource_objects& other)
 {
     std::scoped_lock lock(this->resource_mutex, other.resource_mutex);
-    this->add_resources(other.resource_metadata());
+
+    this->add_metadata_only(*other.resource_metadata_dict);
+
+    for (auto& metadata_saved : *other.resource_metadata_saved)
+    {
+        this->resource_metadata_saved->push_back(metadata_saved);
+    }
 
     for (auto& [name, other_info] : other.resource_infos)
     {
@@ -152,27 +158,22 @@ void ff::resource_objects::add_resources_only(const ff::dict& dict)
     }
 }
 
-static bool contains(const std::vector<std::string>& strings, const std::string& find_string, bool is_path)
+static bool contains(const std::vector<std::string>& strings, const std::string& find_string, size_t old_string_size, bool is_path)
 {
-    if (std::find(strings.cbegin(), strings.cend(), find_string) != strings.cend())
-    {
-        return true;
-    }
+    const auto end_iter = strings.cbegin() + old_string_size;
 
     if (is_path)
     {
-        std::filesystem::path find_path = ff::filesystem::to_path(find_string);
-        for (const std::string& cur_string : strings)
-        {
-            std::filesystem::path path = ff::filesystem::to_path(cur_string);
-            if (ff::filesystem::equivalent(path, find_path))
+        return std::find_if(strings.cbegin(), end_iter,
+            [&find_string](const std::string& cur_string)
             {
-                return true;
-            }
-        }
+                return ff::string::equals_ignore_case(find_string, cur_string);
+            }) != end_iter;
     }
-
-    return false;
+    else
+    {
+        return std::find(strings.cbegin(), end_iter, find_string) != end_iter;
+    }
 }
 
 // caller must own resource_mutex
@@ -185,10 +186,11 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
             const bool is_path = (child_name != ff::internal::RES_NAMESPACES);
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
             std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(child_name);
+            const size_t old_size = strings.size();
 
             for (const std::string& add_string : add_strings)
             {
-                if (!::contains(strings, add_string, is_path))
+                if (!::contains(strings, add_string, old_size, is_path))
                 {
                     strings.push_back(add_string);
                 }
@@ -202,8 +204,9 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
             std::string_view multi_child_name = (child_name == ff::internal::RES_SOURCE) ? ff::internal::RES_SOURCES : ff::internal::RES_NAMESPACES;
             std::string add_string = child_value->get<std::string>();
             std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(multi_child_name);
+            const size_t old_size = strings.size();
 
-            if (!::contains(strings, add_string, is_path))
+            if (!::contains(strings, add_string, old_size, is_path))
             {
                 strings.push_back(std::move(add_string));
                 this->resource_metadata_dict->set<std::vector<std::string>>(multi_child_name, std::move(strings));
@@ -256,16 +259,27 @@ bool ff::resource_objects::save(ff::writer_base& writer) const
 {
     // Collect the memory for each resource
     std::vector<std::tuple<std::string_view, std::shared_ptr<ff::saved_data_base>>> resource_datas;
-    auto metadata_vector = std::make_shared<std::vector<uint8_t>>();
-    auto metadata_data = std::make_shared<ff::data_vector>(metadata_vector);
+    std::shared_ptr<ff::data_base> metadata_data;
     size_t full_size_guess = sizeof(size_t) * 8; // cookies and sizes
     {
         std::scoped_lock lock(this->resource_mutex);
         resource_datas.reserve(this->resource_infos.size());
 
-        ff::data_writer metadata_writer(metadata_vector);
-        ff::value_ptr dict_value = ff::value::create<ff::dict>(ff::dict(this->resource_metadata()));
-        assert_ret_val(dict_value->save_typed(metadata_writer), false);
+        // Save metadata, and reuse old saved metadata if possible
+        if (this->resource_metadata_dict->empty() && this->resource_metadata_saved->size() == 1)
+        {
+            metadata_data = this->resource_metadata_saved->front()->loaded_data();
+        }
+        else
+        {
+            auto metadata_vector = std::make_shared<std::vector<uint8_t>>();
+            metadata_data = std::make_shared<ff::data_vector>(metadata_vector);
+            ff::data_writer metadata_writer(metadata_vector);
+            ff::dict resource_metadata = this->resource_metadata();
+            ff::value_ptr dict_value = ff::value::create<ff::dict>(std::move(resource_metadata));
+            assert_ret_val(dict_value->save_typed(metadata_writer), false);
+        }
+
         full_size_guess += metadata_data->size();
 
         for (auto& [name, info] : this->resource_infos)

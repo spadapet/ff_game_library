@@ -805,7 +805,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     // All input files for every single resource
     if (debug)
     {
-        std::vector<std::string> path_strings;
+        std::vector<std::string> path_strings = dict.get<std::vector<std::string>>(ff::internal::RES_FILES);
         for (const std::filesystem::path& path : context.paths())
         {
             path_strings.push_back(ff::filesystem::to_string(path));
@@ -841,8 +841,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     // Output files (usually PDBs from shader compilation)
     if (debug)
     {
-        ff::dict output_files_dict;
-
+        ff::dict output_files_dict = dict.get<ff::dict>(ff::internal::RES_OUTPUT_FILES);
         for (auto& i : context.output_files())
         {
             output_files_dict.set<ff::data_base>(i.first, i.second, ff::saved_data_type::none);
@@ -859,7 +858,7 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
 
     // C++ IDs
     {
-        ff::dict id_dict;
+        ff::dict id_dict = dict.get<ff::dict>(ff::internal::RES_ID_SYMBOLS);
         for (auto& i : context.id_to_name())
         {
             id_dict.set<std::string>(i.first, i.second);

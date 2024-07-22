@@ -12,6 +12,7 @@ constexpr int EXIT_CODE_READ_FILE_FAILED = 8;
 constexpr int EXIT_CODE_SAVE_DICT_FAILED = 9;
 constexpr int EXIT_CODE_VISIT_DICT_FAILED = 10;
 constexpr std::string_view PROGRAM_NAME = "ff.resource.build";
+constexpr std::string_view ASSETS_COMBINED_NAMESPACE = "assets_combined";
 
 static int show_usage()
 {
@@ -116,6 +117,7 @@ static bool compile_resource_pack(
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     const std::filesystem::path& symbol_header_file,
+    const bool force,
     const bool debug)
 {
     assert_ret_val(!input_files.empty(), false);
@@ -125,7 +127,8 @@ static bool compile_resource_pack(
 
     for (const std::filesystem::path& input_file : input_files)
     {
-        ff::load_resources_result result = ff::load_resources_from_file(input_file, ff::resource_cache_t::use_cache_mem_mapped, debug);
+        const ff::resource_cache_t cache_type = force ? ff::resource_cache_t::rebuild_cache : ff::resource_cache_t::use_cache_mem_mapped;
+        ff::load_resources_result result = ff::load_resources_from_file(input_file, cache_type, debug);
         if (result.errors.empty() && result.resources)
         {
             load_results.push_back(std::move(result));
@@ -196,7 +199,8 @@ static bool compile_resource_pack(
     {
         std::ofstream header_stream(header_file);
         ff::data_mem_mapped output_data(output_file);
-        if (!header_stream || !output_data.valid() || !::write_header(output_data, header_stream, source_namespaces.front()))
+        std::string source_namespace = (source_namespaces.size() == 1) ? source_namespaces.front() : std::string(::ASSETS_COMBINED_NAMESPACE);
+        if (!header_stream || !output_data.valid() || !::write_header(output_data, header_stream, source_namespace))
         {
             std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << "\r\n";
             return false;
@@ -354,7 +358,7 @@ static int do_compile(
         return ::EXIT_CODE_BAD_REFERENCE;
     }
 
-    if (!::compile_resource_pack(input_files, output_file, pdb_output, header_file, symbol_header_file, debug))
+    if (!::compile_resource_pack(input_files, output_file, pdb_output, header_file, symbol_header_file, force, debug))
     {
         std::cerr << ::PROGRAM_NAME << ": Compile failed\r\n";
         return ::EXIT_CODE_COMPILE_FAILED;

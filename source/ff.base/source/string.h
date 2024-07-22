@@ -9,6 +9,7 @@ namespace ff::string
 
     bool starts_with(std::string_view str, std::string_view str_start);
     bool ends_with(std::string_view str, std::string_view str_end);
+    bool equals_ignore_case(std::string_view str1, std::string_view str2);
 
     std::string to_lower(std::string_view str);
     std::vector<std::string_view> split(std::string_view str, std::string_view delims);

@@ -65,6 +65,11 @@ bool ff::string::ends_with(std::string_view str, std::string_view str_end)
     return str.size() >= str_end.size() && !str.compare(str.size() - str_end.size(), str_end.size(), str_end);
 }
 
+bool ff::string::equals_ignore_case(std::string_view str1, std::string_view str2)
+{
+    return str1.size() == str2.size() && ::_strnicmp(str1.data(), str2.data(), str1.size()) == 0;
+}
+
 std::string ff::string::to_lower(std::string_view str)
 {
     std::string result(str);

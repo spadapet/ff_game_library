@@ -31,7 +31,7 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     assert_ret_val(resource_objects->add_resources(reader), std::shared_ptr<ff::resource_objects>());
 
     std::vector<std::string> input_files = resource_objects->input_files();
-    assert_ret_val(input_files.size(), std::shared_ptr<ff::resource_objects>());
+    check_ret_val(input_files.size(), std::shared_ptr<ff::resource_objects>());
 
     for (const std::string& file_ref : input_files)
     {
@@ -51,7 +51,7 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
 {
     ff::load_resources_result result{};
 
-    if (cache_type != ff::resource_cache_t::none)
+    if (cache_type != ff::resource_cache_t::none && cache_type != ff::resource_cache_t::rebuild_cache)
     {
         result.cache_path = ::get_cache_path(path, debug);
         result.resources = ::load_cached_resources(result.cache_path, cache_type == ff::resource_cache_t::use_cache_mem_mapped);
@@ -67,16 +67,19 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
     {
         std::filesystem::path base_path = path.parent_path();
         result = ff::load_resources_from_json(text, base_path, debug);
-        if (result.resources && debug)
+        if (result.resources)
         {
-            // Remember the source
-            std::vector<std::string> files;
-            files.push_back(ff::filesystem::to_string(path));
+            if (debug)
+            {
+                // Remember the source
+                std::vector<std::string> files;
+                files.push_back(ff::filesystem::to_string(path));
 
-            ff::dict resource_metadata;
-            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::vector<std::string>(files));
-            resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, std::vector<std::string>(files));
-            result.resources->add_resources(resource_metadata);
+                ff::dict resource_metadata;
+                resource_metadata.set<std::vector<std::string>>(ff::internal::RES_SOURCES, std::vector<std::string>(files));
+                resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, std::vector<std::string>(files));
+                result.resources->add_resources(resource_metadata);
+            }
 
             if (cache_type != ff::resource_cache_t::none)
             {

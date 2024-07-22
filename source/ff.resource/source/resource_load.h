@@ -39,6 +39,7 @@ namespace ff
         none,
         use_cache_in_memory,
         use_cache_mem_mapped,
+        rebuild_cache,
     };
 
     ff::load_resources_result load_resources_from_file(const std::filesystem::path& path, ff::resource_cache_t cache_type, bool debug);
