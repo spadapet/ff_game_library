@@ -37,7 +37,7 @@ namespace ff
         std::vector<std::string> input_files() const;
         std::vector<std::string> source_files() const;
         std::vector<std::string> source_namespaces() const;
-        std::vector<std::pair<std::string, std::string>> id_to_names() const;
+        std::vector<std::pair<std::string, std::string>> id_to_names(std::string_view source_namespace) const;
         std::vector<std::pair<std::string, std::shared_ptr<ff::data_base>>> output_files() const;
 
         // ff::resource_object_loader

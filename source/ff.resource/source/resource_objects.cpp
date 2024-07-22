@@ -152,6 +152,29 @@ void ff::resource_objects::add_resources_only(const ff::dict& dict)
     }
 }
 
+static bool contains(const std::vector<std::string>& strings, const std::string& find_string, bool is_path)
+{
+    if (std::find(strings.cbegin(), strings.cend(), find_string) != strings.cend())
+    {
+        return true;
+    }
+
+    if (is_path)
+    {
+        std::filesystem::path find_path = ff::filesystem::to_path(find_string);
+        for (const std::string& cur_string : strings)
+        {
+            std::filesystem::path path = ff::filesystem::to_path(cur_string);
+            if (ff::filesystem::equivalent(path, find_path))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 // caller must own resource_mutex
 void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
 {
@@ -159,27 +182,28 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
     {
         if (child_name == ff::internal::RES_FILES || child_name == ff::internal::RES_SOURCES || child_name == ff::internal::RES_NAMESPACES)
         {
+            const bool is_path = (child_name != ff::internal::RES_NAMESPACES);
             std::vector<std::string> add_strings = child_value->get<std::vector<std::string>>();
             std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(child_name);
 
             for (const std::string& add_string : add_strings)
             {
-                if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
+                if (!::contains(strings, add_string, is_path))
                 {
                     strings.push_back(add_string);
                 }
             }
 
-            std::sort(strings.begin(), strings.end());
             this->resource_metadata_dict->set<std::vector<std::string>>(child_name, std::move(strings));
         }
         else if (child_name == ff::internal::RES_SOURCE || child_name == ff::internal::RES_NAMESPACE)
         {
+            const bool is_path = (child_name != ff::internal::RES_NAMESPACE);
             std::string_view multi_child_name = (child_name == ff::internal::RES_SOURCE) ? ff::internal::RES_SOURCES : ff::internal::RES_NAMESPACES;
             std::string add_string = child_value->get<std::string>();
             std::vector<std::string> strings = this->resource_metadata_dict->get<std::vector<std::string>>(multi_child_name);
 
-            if (std::find(strings.cbegin(), strings.cend(), add_string) == strings.cend())
+            if (!::contains(strings, add_string, is_path))
             {
                 strings.push_back(std::move(add_string));
                 this->resource_metadata_dict->set<std::vector<std::string>>(multi_child_name, std::move(strings));
@@ -189,7 +213,7 @@ void ff::resource_objects::add_metadata_only(const ff::dict& dict) const
         {
             ff::dict add_dict = child_value->get<ff::dict>();
             ff::dict old_dict = this->resource_metadata_dict->get<ff::dict>(child_name);
-            old_dict.set(add_dict, false);
+            old_dict.set(add_dict, true);
             this->resource_metadata_dict->set<ff::dict>(child_name, std::move(old_dict));
         }
     }
@@ -332,13 +356,14 @@ std::vector<std::string> ff::resource_objects::source_namespaces() const
     return this->resource_metadata().get<std::vector<std::string>>(ff::internal::RES_NAMESPACES);
 }
 
-std::vector<std::pair<std::string, std::string>> ff::resource_objects::id_to_names() const
+std::vector<std::pair<std::string, std::string>> ff::resource_objects::id_to_names(std::string_view source_namespace) const
 {
     std::scoped_lock lock(this->resource_mutex);
     std::vector<std::pair<std::string, std::string>> result;
     const ff::dict& dict = this->resource_metadata().get<ff::dict>(ff::internal::RES_ID_SYMBOLS);
+    const ff::dict& namespace_dict = dict.get<ff::dict>(source_namespace);
 
-    for (auto& [id, name] : dict)
+    for (auto& [id, name] : namespace_dict)
     {
         result.push_back(std::make_pair(std::string(id), name->get<std::string>()));
     }
@@ -629,7 +654,7 @@ ff::co_task<> ff::resource_objects::rebuild_async()
 
     for (const std::filesystem::path& source_path : this->source_files())
     {
-        ff::load_resources_result result = ff::load_resources_from_file(source_path, true, ff::constants::profile_build);
+        ff::load_resources_result result = ff::load_resources_from_file(source_path, ff::resource_cache_t::use_cache_in_memory, ff::constants::profile_build);
         if (result.resources)
         {
             this->add_resources(*result.resources);

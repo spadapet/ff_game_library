@@ -30,10 +30,19 @@ namespace ff
     {
         std::shared_ptr<ff::resource_objects> resources;
         std::vector<std::string> errors;
+        std::filesystem::path cache_path;
+        bool loaded_from_cache{};
     };
 
-    ff::load_resources_result load_resources_from_file(const std::filesystem::path& path, bool use_cache, bool debug);
+    enum class resource_cache_t
+    {
+        none,
+        use_cache_in_memory,
+        use_cache_mem_mapped,
+    };
+
+    ff::load_resources_result load_resources_from_file(const std::filesystem::path& path, ff::resource_cache_t cache_type, bool debug);
     ff::load_resources_result load_resources_from_json(std::string_view json_text, const std::filesystem::path& base_path, bool debug);
     ff::load_resources_result load_resources_from_json(const ff::dict& json_dict, const std::filesystem::path& base_path, bool debug);
-    bool is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path);
+    bool is_resource_cache_updated(const std::vector<std::filesystem::path>& source_files, const std::filesystem::path& cache_path);
 }

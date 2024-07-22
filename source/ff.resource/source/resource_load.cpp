@@ -30,10 +30,10 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     auto resource_objects = std::make_shared<ff::resource_objects>();
     assert_ret_val(resource_objects->add_resources(reader), std::shared_ptr<ff::resource_objects>());
 
-    std::vector<std::string> file_refs = resource_objects->input_files();
-    assert_ret_val(file_refs.size(), std::shared_ptr<ff::resource_objects>());
+    std::vector<std::string> input_files = resource_objects->input_files();
+    assert_ret_val(input_files.size(), std::shared_ptr<ff::resource_objects>());
 
-    for (const std::string& file_ref : file_refs)
+    for (const std::string& file_ref : input_files)
     {
         std::filesystem::path path_ref = ff::filesystem::to_path(file_ref);
         std::filesystem::file_time_type file_ref_time = ff::filesystem::last_write_time(path_ref);
@@ -47,20 +47,19 @@ static std::shared_ptr<ff::resource_objects> load_cached_resources(const std::fi
     return resource_objects;
 }
 
-ff::load_resources_result ff::load_resources_from_file(const std::filesystem::path& path, bool use_cache, bool debug)
+ff::load_resources_result ff::load_resources_from_file(const std::filesystem::path& path, ff::resource_cache_t cache_type, bool debug)
 {
     ff::load_resources_result result{};
-    std::filesystem::path cache_path = use_cache ? ::get_cache_path(path, debug) : std::filesystem::path();
 
-    if (use_cache)
+    if (cache_type != ff::resource_cache_t::none)
     {
-        auto resource_objects = ::load_cached_resources(cache_path, false);
-        if (resource_objects)
+        result.cache_path = ::get_cache_path(path, debug);
+        result.resources = ::load_cached_resources(result.cache_path, cache_type == ff::resource_cache_t::use_cache_mem_mapped);
+        if (result.resources)
         {
-            result.resources = resource_objects;
+            result.loaded_from_cache = true;
+            return result;
         }
-
-        return result;
     }
 
     std::string text;
@@ -79,13 +78,16 @@ ff::load_resources_result ff::load_resources_from_file(const std::filesystem::pa
             resource_metadata.set<std::vector<std::string>>(ff::internal::RES_FILES, std::vector<std::string>(files));
             result.resources->add_resources(resource_metadata);
 
-            if (use_cache)
+            if (cache_type != ff::resource_cache_t::none)
             {
-                // Ignore failures saving the cache, just delete the cache instead
-                ff::file_writer writer(cache_path);
+                result.cache_path = ::get_cache_path(path, debug);
+
+                ff::file_writer writer(result.cache_path);
                 if (writer && !result.resources->save(writer))
                 {
-                    ff::filesystem::remove(cache_path);
+                    // Ignore failures saving the cache, just delete the cache instead
+                    ff::filesystem::remove(result.cache_path);
+                    result.cache_path.clear();
                 }
             }
         }
@@ -112,29 +114,33 @@ ff::load_resources_result ff::load_resources_from_json(std::string_view json_tex
     return ff::load_resources_from_json(dict, base_path, debug);
 }
 
-bool ff::is_resource_cache_updated(const std::filesystem::path& input_path, const std::filesystem::path& cache_path)
+bool ff::is_resource_cache_updated(const std::vector<std::filesystem::path>& source_files, const std::filesystem::path& cache_path)
 {
     auto cached_resources = ::load_cached_resources(cache_path, true);
-    if (cached_resources)
-    {
-        std::filesystem::file_time_type input_time = std::filesystem::last_write_time(input_path);
-        std::filesystem::file_time_type cache_time = std::filesystem::last_write_time(cache_path);
+    check_ret_val(cached_resources, false);
 
-        // We know all referenced files are still valid, but make sure the input file is actually referenced
-        if (input_time != std::filesystem::file_time_type::min() &&
-            cache_time != std::filesystem::file_time_type::min() &&
-            cache_time >= input_time)
-        {
-            std::vector<std::string> files = cached_resources->input_files();
-            for (const std::string& file : files)
+    // We know all referenced files are still valid, but make sure the source files match
+    std::vector<std::string> check_strings = cached_resources->source_files();
+    if (check_strings.size() != source_files.size())
+    {
+        return false;
+    }
+
+    for (auto& check_string : cached_resources->source_files())
+    {
+        std::filesystem::path check_file = ff::filesystem::to_path(check_string);
+
+        auto i = std::find_if(source_files.cbegin(), source_files.cend(),
+            [&check_file](const std::filesystem::path& source_file)
             {
-                if (ff::filesystem::equivalent(input_path, std::filesystem::path(file)))
-                {
-                    return true;
-                }
-            }
+                return std::filesystem::equivalent(source_file, check_file);
+            });
+
+        if (i == source_files.cend())
+        {
+            return false;
         }
     }
 
-    return false;
+    return true;
 }

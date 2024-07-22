@@ -860,13 +860,16 @@ ff::load_resources_result ff::load_resources_from_json(const ff::dict& json_dict
     // C++ IDs
     {
         ff::dict id_dict;
-
         for (auto& i : context.id_to_name())
         {
             id_dict.set<std::string>(i.first, i.second);
         }
 
-        dict.set<ff::dict>(ff::internal::RES_ID_SYMBOLS, std::move(id_dict));
+        ff::dict namespace_dict;
+        std::string asset_namespace = dict.get<std::string>(ff::internal::RES_NAMESPACE);
+        namespace_dict.set<ff::dict>(asset_namespace, std::move(id_dict));
+
+        dict.set<ff::dict>(ff::internal::RES_ID_SYMBOLS, std::move(namespace_dict));
     }
 
     return ff::load_resources_result{ std::make_shared<ff::resource_objects>(dict) };

@@ -30,7 +30,7 @@ namespace ff::test::resource
             ff::filesystem::write_text_file(test_path2, test_string2);
             ff::filesystem::write_text_file(source_path, json_source);
 
-            ff::load_resources_result result = ff::load_resources_from_file(source_path, false, true);
+            ff::load_resources_result result = ff::load_resources_from_file(source_path, ff::resource_cache_t::none, true);
             Assert::IsNotNull(result.resources.get());
             Assert::IsTrue(result.errors.empty());
 

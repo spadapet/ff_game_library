@@ -17,7 +17,6 @@ static int show_usage()
 {
     std::cerr << "Command line options:\r\n";
     std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]\r\n";
-    std::cerr << "  2) " << ::PROGRAM_NAME << ".exe -combine \"pack file\" [-combine ...] -out \"output file\"\r\n";
     std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"\r\n";
     std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"\r\n\r\n";
     std::cerr << "NOTES:\r\n";
@@ -28,7 +27,7 @@ static int show_usage()
     return ::EXIT_CODE_BAD_COMMAND_LINE;
 }
 
-static bool write_header(const std::vector<uint8_t>& data, std::ostream& output, std::string_view cpp_namespace, bool stub_header)
+static bool write_header(const ff::data_base& data, std::ostream& output, std::string_view cpp_namespace)
 {
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -41,19 +40,16 @@ static bool write_header(const std::vector<uint8_t>& data, std::ostream& output,
         {
         )";
 
-    if (!stub_header)
+    for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
     {
-        for (const uint8_t* cur = data.data(), *end = data.data() + data.size(); cur < end; cur += bytes_per_line)
+        output << "    ";
+
+        for (size_t i = 0, count = std::min<size_t>(bytes_per_line, end - cur); i < count; i++)
         {
-            output << "    ";
-
-            for (size_t i = 0, count = std::min<size_t>(bytes_per_line, end - cur); i < count; i++)
-            {
-                output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
-            }
-
-            output << "\r\n        ";
+            output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
         }
+
+        output << "\r\n        ";
     }
 
     output << R"(};
@@ -80,17 +76,17 @@ static bool write_symbol_header(const std::vector<std::pair<std::string, std::st
         output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";\r\n";
     }
 
-    output << "}r\n";
+    output << "}\r\n\r\n";
 
     return true;
 }
 
-static bool test_load_resources(const ff::resource_objects& resources)
+static void test_load_resources(const ff::resource_objects& resources)
 {
     if constexpr (ff::constants::debug_build)
     {
         ff::dict dict;
-        assert_ret_val(resources.save(dict), false);
+        assert_ret(resources.save(dict));
         dict.debug_print();
 
         ff::resource_objects resources_copy(resources);
@@ -108,79 +104,122 @@ static bool test_load_resources(const ff::resource_objects& resources)
             if (value->value()->is_type<nullptr_t>())
             {
                 std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << "\r\n";
-                debug_fail_ret_val(false);
+                debug_fail_ret();
             }
         }
     }
-
-    return true;
 }
 
 static bool compile_resource_pack(
-    const std::filesystem::path& input_file,
+    const std::vector<std::filesystem::path>& input_files,
     const std::filesystem::path& output_file,
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     const std::filesystem::path& symbol_header_file,
-    const bool stub_header,
     const bool debug)
 {
-    ff::load_resources_result result = ff::load_resources_from_file(input_file, false, debug);
-    if (!result.errors.empty() || !result.resources)
-    {
-        std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << "\r\n";
+    assert_ret_val(!input_files.empty(), false);
 
-        for (auto& error : result.errors)
+    std::vector<ff::load_resources_result> load_results;
+    load_results.reserve(input_files.size());
+
+    for (const std::filesystem::path& input_file : input_files)
+    {
+        ff::load_resources_result result = ff::load_resources_from_file(input_file, ff::resource_cache_t::use_cache_mem_mapped, debug);
+        if (result.errors.empty() && result.resources)
         {
-            std::cerr << error << "\r\n";
+            load_results.push_back(std::move(result));
         }
-
-        return false;
-    }
-
-    verify(::test_load_resources(*result.resources));
-
-    auto data = std::make_shared<std::vector<uint8_t>>();
-    {
-        ff::data_writer data_writer(data);
-        if (!result.resources->save(data_writer))
+        else
         {
-            std::cerr << "Failed to save resources: " << ff::filesystem::to_string(output_file) << "\r\n";
-            return false;
+            std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << "\r\n";
+
+            for (auto& error : result.errors)
+            {
+                std::cerr << error << "\r\n";
+            }
         }
     }
+
+    check_ret_val(load_results.size() == input_files.size(), false);
+
+    ff::resource_objects built_resources;
+    {
+        for (const ff::load_resources_result& result : load_results)
+        {
+            built_resources.add_resources(*result.resources);
+        }
+
+        ::test_load_resources(built_resources);
+    }
+
+    auto source_namespaces = built_resources.source_namespaces();
+    auto source_output_files = built_resources.output_files();
 
     if (!output_file.empty())
     {
-        ff::file_writer writer(output_file);
-        if (!writer || writer.write(data->data(), data->size()) != data->size())
+        bool written = false;
+        bool use_single_cache = load_results.size() == 1 && !load_results.front().cache_path.empty();
+
+        if (use_single_cache)
         {
-            std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << "\r\n";
-            return false;
+            std::error_code ec{};
+            written = std::filesystem::copy_file(load_results.front().cache_path, output_file,
+                std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::create_hard_links, ec);
+        }
+
+        if (use_single_cache && !written)
+        {
+            std::error_code ec{};
+            written = std::filesystem::copy_file(load_results.front().cache_path, output_file,
+                std::filesystem::copy_options::overwrite_existing, ec);
+        }
+
+        if (!written)
+        {
+            ff::file_writer writer(output_file);
+            if (!writer)
+            {
+                std::cerr << "Failed to create file: " << ff::filesystem::to_string(output_file) << "\r\n";
+                return false;
+            }
+
+            if (!built_resources.save(writer))
+            {
+                std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << "\r\n";
+                return false;
+            }
         }
     }
 
-    auto source_namespaces = result.resources->source_namespaces();
-    auto source_id_to_names = result.resources->id_to_names();
-    auto source_output_files = result.resources->output_files();
-
-    if (!header_file.empty() && source_namespaces.size())
+    if (!output_file.empty() && !header_file.empty() && source_namespaces.size())
     {
         std::ofstream header_stream(header_file);
-        if (!header_stream || !::write_header(*data, header_stream, source_namespaces.front(), stub_header))
+        ff::data_mem_mapped output_data(output_file);
+        if (!header_stream || !output_data.valid() || !::write_header(output_data, header_stream, source_namespaces.front()))
         {
             std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << "\r\n";
             return false;
         }
     }
 
-    if (!symbol_header_file.empty() && source_id_to_names.size() && source_namespaces.size())
+    if (!symbol_header_file.empty() && source_namespaces.size())
     {
         std::ofstream symbol_header_stream(symbol_header_file);
-        if (!symbol_header_stream || !::write_symbol_header(source_id_to_names, symbol_header_stream, source_namespaces.front()))
+        if (!symbol_header_stream)
         {
-            std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
+            std::cerr << "Failed to create symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
             return false;
+        }
+
+        for (const std::string& source_namespace : source_namespaces)
+        {
+            auto source_id_to_names = built_resources.id_to_names(source_namespace);
+            if (!source_id_to_names.empty() && !::write_symbol_header(source_id_to_names, symbol_header_stream, source_namespace))
+            {
+                std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
+                return false;
+            }
         }
     }
 
@@ -195,45 +234,6 @@ static bool compile_resource_pack(
                 return false;
             }
         }
-    }
-
-    return true;
-}
-
-static bool combine_resource_packs(const std::vector<std::filesystem::path>& combine_files, const std::filesystem::path& output_file)
-{
-    ff::resource_objects resource_objects;
-
-    for (const std::filesystem::path& file : combine_files)
-    {
-        ff::file_reader reader(file);
-        if (!reader)
-        {
-            std::cerr << "Failed to open file: " << ff::filesystem::to_string(file) << "\r\n";
-            return false;
-        }
-
-        if (!resource_objects.add_resources(reader))
-        {
-            std::cerr << "Invalid binary pack file: " << ff::filesystem::to_string(file) << "\r\n";
-            return false;
-        }
-    }
-
-    auto data = std::make_shared<std::vector<uint8_t>>();
-    {
-        ff::data_writer data_writer(data);
-        if (!resource_objects.save(data_writer))
-        {
-            std::cerr << "Failed to save resource data.\r\n";
-            return false;
-        }
-    }
-
-    if (!output_file.empty())
-    {
-        ff::file_writer writer(output_file);
-        assert_ret_val(writer && writer.write(data->data(), data->size()) == data->size(), false);
     }
 
     return true;
@@ -319,45 +319,48 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
 }
 
 static int do_compile(
-    const std::filesystem::path& input_file,
+    const std::vector<std::filesystem::path>& input_files,
     const std::filesystem::path& output_file,
     const std::vector<std::filesystem::path>& reference_files,
     const std::filesystem::path& pdb_output,
     const std::filesystem::path& header_file,
     const std::filesystem::path& symbol_header_file,
-    const bool stub_header,
     const bool force,
     const bool debug,
     const bool verbose)
 {
-    bool skipped = !force && ff::is_resource_cache_updated(input_file, output_file);
-    std::cout << ff::filesystem::to_string(input_file) << " -> " << ff::filesystem::to_string(output_file) << (skipped ? " (skipped)" : "") << "\r\n";
+    bool skipped = !force && ff::is_resource_cache_updated(input_files, output_file);
 
-    if (!skipped)
+    for (auto& input_file : input_files)
     {
-        ff::init_input init_input;
-        ff::init_audio init_audio;
-        ff::init_graphics init_graphics;
-
-        if (!init_graphics || !init_audio || !init_input)
-        {
-            std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
-            return ::EXIT_CODE_INIT_FAILED;
-        }
-
-        if (!::load_reference_files(reference_files, verbose))
-        {
-            return ::EXIT_CODE_BAD_REFERENCE;
-        }
-
-        if (!::compile_resource_pack(input_file, output_file, pdb_output, header_file, symbol_header_file, stub_header, debug))
-        {
-            std::cerr << ::PROGRAM_NAME << ": Compile failed\r\n";
-            return ::EXIT_CODE_COMPILE_FAILED;
-        }
+        std::cout << ff::filesystem::to_string(input_file) << "\r\n";
     }
 
-    return 0;
+    std::cout << "  -> " << (skipped ? "(skipped) " : "") << ff::filesystem::to_string(output_file) << "\r\n";
+    check_ret_val(!skipped, ::EXIT_CODE_SUCCESS);
+
+    ff::init_input init_input;
+    ff::init_audio init_audio;
+    ff::init_graphics init_graphics;
+
+    if (!init_graphics || !init_audio || !init_input)
+    {
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
+        return ::EXIT_CODE_INIT_FAILED;
+    }
+
+    if (!::load_reference_files(reference_files, verbose))
+    {
+        return ::EXIT_CODE_BAD_REFERENCE;
+    }
+
+    if (!::compile_resource_pack(input_files, output_file, pdb_output, header_file, symbol_header_file, debug))
+    {
+        std::cerr << ::PROGRAM_NAME << ": Compile failed\r\n";
+        return ::EXIT_CODE_COMPILE_FAILED;
+    }
+
+    return ::EXIT_CODE_SUCCESS;
 }
 
 static int do_combine(const std::vector<std::filesystem::path>& input_files, const std::filesystem::path& output_file, bool debug, bool verbose)
@@ -441,7 +444,6 @@ int main()
     {
         none,
         compile,
-        combine,
         dump_text,
         dump_binary,
     } command = command_t::none;
@@ -452,7 +454,6 @@ int main()
         debug = 0x01,
         force = 0x02,
         verbose = 0x04,
-        stub_header = 0x08,
     } command_flags = command_flags_t::none;
 
     std::vector<std::filesystem::path> reference_files;
@@ -479,7 +480,7 @@ int main()
 
             if (arg == "-in" && i + 1 < args.size())
             {
-                if (command != command_t::none || !input_files.empty())
+                if (command != command_t::none && command != command_t::compile)
                 {
                     return ::show_usage();
                 }
@@ -487,19 +488,9 @@ int main()
                 command = command_t::compile;
                 input_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
             }
-            else if (arg == "-combine" && i + 1 < args.size())
-            {
-                if (command != command_t::none && command != command_t::combine)
-                {
-                    return ::show_usage();
-                }
-
-                command = command_t::combine;
-                input_files.push_back(std::filesystem::current_path() / ff::filesystem::to_path(args[++i]));
-            }
             else if (arg == "-out" && i + 1 < args.size())
             {
-                if (command != command_t::compile && command != command_t::combine)
+                if (command != command_t::compile)
                 {
                     return ::show_usage();
                 }
@@ -564,18 +555,6 @@ int main()
             {
                 command_flags = ff::flags::combine(command_flags, command_flags_t::verbose);
             }
-            else if (arg == "-stub_header" && i + 1 < args.size())
-            {
-                std::string stub_header_arg = ff::string::to_lower(args[++i]);
-                if (stub_header_arg == "true")
-                {
-                    command_flags = ff::flags::combine(command_flags, command_flags_t::stub_header);
-                }
-                else
-                {
-                    command_flags = ff::flags::clear(command_flags, command_flags_t::stub_header);
-                }
-            }
             else
             {
                 return ::show_usage();
@@ -586,7 +565,6 @@ int main()
     const bool force = ff::flags::has(command_flags, command_flags_t::force);
     const bool debug = ff::flags::has(command_flags, command_flags_t::debug);
     const bool verbose = ff::flags::has(command_flags, command_flags_t::verbose);
-    const bool stub_header = ff::flags::has(command_flags, command_flags_t::stub_header);
 
     // Validate args
     for (const std::filesystem::path& file : input_files)
@@ -618,10 +596,7 @@ int main()
     switch (command)
     {
         case command_t::compile:
-            return ::do_compile(input_files[0], output_file, reference_files, pdb_output, header_file, symbol_header_file, stub_header, force, debug, verbose);
-
-        case command_t::combine:
-            return ::do_combine(input_files, output_file, debug, verbose);
+            return ::do_compile(input_files, output_file, reference_files, pdb_output, header_file, symbol_header_file, force, debug, verbose);
 
         case command_t::dump_text:
             return ::do_dump(input_files[0], false);
