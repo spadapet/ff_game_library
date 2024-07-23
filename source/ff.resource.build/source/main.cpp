@@ -16,14 +16,14 @@ constexpr std::string_view ASSETS_COMBINED_NAMESPACE = "assets_combined";
 
 static int show_usage()
 {
-    std::cerr << "Command line options:\r\n";
-    std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]\r\n";
-    std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"\r\n";
-    std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"\r\n\r\n";
-    std::cerr << "NOTES:\r\n";
-    std::cerr << "  -verbose can be added to any command for extra log output.\r\n";
-    std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'.\r\n";
-    std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it.\r\n";
+    std::cerr << "Command line options:\n";
+    std::cerr << "  1) " << ::PROGRAM_NAME << ".exe -in \"input file\" [-out \"output file\"] [-pdb \"output path\"] [-header \"output C++\"] [-ref \"types.dll\"] [-debug] [-force]\n";
+    std::cerr << "  3) " << ::PROGRAM_NAME << ".exe -dump \"pack file\"\n";
+    std::cerr << "  4) " << ::PROGRAM_NAME << ".exe -dumpbin \"pack file\"\n\n";
+    std::cerr << "NOTES:\n";
+    std::cerr << "  -verbose can be added to any command for extra log output.\n";
+    std::cerr << "  With -ref, the reference DLL must contain an exported C method: 'void ff_init()'.\n";
+    std::cerr << "  Using -dumpbin will save all binary resources to a temp folder and open it.\n";
 
     return ::EXIT_CODE_BAD_COMMAND_LINE;
 }
@@ -50,7 +50,7 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
             output << "0x" << hex_chars[cur[i] / 16] << hex_chars[cur[i] % 16] << ",";
         }
 
-        output << "\r\n        ";
+        output << "\n        ";
     }
 
     output << R"(};
@@ -70,14 +70,14 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
 
 static bool write_symbol_header(const std::vector<std::pair<std::string, std::string>>& id_to_names, std::ostream& output, std::string_view cpp_namespace)
 {
-    output << "namespace " << cpp_namespace << "\r\n{\r\n";
+    output << "namespace " << cpp_namespace << "\n{\n";
 
     for (const auto& [id, name] : id_to_names)
     {
-        output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";\r\n";
+        output << "    inline constexpr std::string_view " << id << " = \"" << name << "\";\n";
     }
 
-    output << "}\r\n\r\n";
+    output << "}\n\n";
 
     return true;
 }
@@ -104,7 +104,7 @@ static void test_load_resources(const ff::resource_objects& resources)
         {
             if (value->value()->is_type<nullptr_t>())
             {
-                std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << "\r\n";
+                std::cerr << ::PROGRAM_NAME << ": Failed to create resource object: " << value.resource()->name() << "\n";
                 debug_fail_ret();
             }
         }
@@ -135,11 +135,11 @@ static bool compile_resource_pack(
         }
         else
         {
-            std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << "\r\n";
+            std::cerr << "Failed to load resources: " << ff::filesystem::to_string(input_file) << "\n";
 
             for (auto& error : result.errors)
             {
-                std::cerr << error << "\r\n";
+                std::cerr << error << "\n";
             }
         }
     }
@@ -183,13 +183,13 @@ static bool compile_resource_pack(
             ff::file_writer writer(output_file);
             if (!writer)
             {
-                std::cerr << "Failed to create file: " << ff::filesystem::to_string(output_file) << "\r\n";
+                std::cerr << "Failed to create file: " << ff::filesystem::to_string(output_file) << "\n";
                 return false;
             }
 
             if (!built_resources.save(writer))
             {
-                std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << "\r\n";
+                std::cerr << "Failed to write file: " << ff::filesystem::to_string(output_file) << "\n";
                 return false;
             }
         }
@@ -202,7 +202,7 @@ static bool compile_resource_pack(
         std::string source_namespace = (source_namespaces.size() == 1) ? source_namespaces.front() : std::string(::ASSETS_COMBINED_NAMESPACE);
         if (!header_stream || !output_data.valid() || !::write_header(output_data, header_stream, source_namespace))
         {
-            std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << "\r\n";
+            std::cerr << "Failed to write header file: " << ff::filesystem::to_string(header_file) << "\n";
             return false;
         }
     }
@@ -212,7 +212,7 @@ static bool compile_resource_pack(
         std::ofstream symbol_header_stream(symbol_header_file);
         if (!symbol_header_stream)
         {
-            std::cerr << "Failed to create symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
+            std::cerr << "Failed to create symbol file: " << ff::filesystem::to_string(header_file) << "\n";
             return false;
         }
 
@@ -221,7 +221,7 @@ static bool compile_resource_pack(
             auto source_id_to_names = built_resources.id_to_names(source_namespace);
             if (!source_id_to_names.empty() && !::write_symbol_header(source_id_to_names, symbol_header_stream, source_namespace))
             {
-                std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << "\r\n";
+                std::cerr << "Failed to write symbol file: " << ff::filesystem::to_string(header_file) << "\n";
                 return false;
             }
         }
@@ -234,7 +234,7 @@ static bool compile_resource_pack(
             std::filesystem::path path = pdb_output / name;
             if (!ff::filesystem::write_binary_file(path, data->data(), data->size()))
             {
-                std::cerr << "Failed to write output file: " << ff::filesystem::to_string(path) << "\r\n";
+                std::cerr << "Failed to write output file: " << ff::filesystem::to_string(path) << "\n";
                 return false;
             }
         }
@@ -301,12 +301,12 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
 
             if (verbose)
             {
-                std::cout << ::PROGRAM_NAME << ": Loaded reference: " << ref << "\r\n";
+                std::cout << ::PROGRAM_NAME << ": Loaded reference: " << ref << "\n";
             }
 
             if (!init_func)
             {
-                std::cerr << ::PROGRAM_NAME << ": Reference doesn't contain 'ff_init' export: " << ref << "\r\n";
+                std::cerr << ::PROGRAM_NAME << ": Reference doesn't contain 'ff_init' export: " << ref << "\n";
                 return false;
             }
 
@@ -314,7 +314,7 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
         }
         else
         {
-            std::cerr << ::PROGRAM_NAME << ": Failed to load reference: " << ref << "\r\n";
+            std::cerr << ::PROGRAM_NAME << ": Failed to load reference: " << ref << "\n";
             return false;
         }
     }
@@ -337,10 +337,10 @@ static int do_compile(
 
     for (auto& input_file : input_files)
     {
-        std::cout << ff::filesystem::to_string(input_file) << "\r\n";
+        std::cout << ff::filesystem::to_string(input_file) << "\n";
     }
 
-    std::cout << "  -> " << (skipped ? "(skipped) " : "") << ff::filesystem::to_string(output_file) << "\r\n";
+    std::cout << "  -> " << (skipped ? "(skipped) " : "") << ff::filesystem::to_string(output_file) << "\n";
     check_ret_val(!skipped, ::EXIT_CODE_SUCCESS);
 
     ff::init_input init_input;
@@ -349,7 +349,7 @@ static int do_compile(
 
     if (!init_graphics || !init_audio || !init_input)
     {
-        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;
     }
 
@@ -360,7 +360,7 @@ static int do_compile(
 
     if (!::compile_resource_pack(input_files, output_file, pdb_output, header_file, symbol_header_file, force, debug))
     {
-        std::cerr << ::PROGRAM_NAME << ": Compile failed\r\n";
+        std::cerr << ::PROGRAM_NAME << ": Compile failed\n";
         return ::EXIT_CODE_COMPILE_FAILED;
     }
 
@@ -381,28 +381,28 @@ static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 
     if (!init_graphics || !init_audio || !init_input)
     {
-        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;
     }
 
     ff::file_reader reader(input_file);
     if (!reader)
     {
-        std::cerr << "Can't open file: " << input_file << "\r\n";
+        std::cerr << "Can't open file: " << input_file << "\n";
         return ::EXIT_CODE_OPEN_FILE_FAILED;
     }
 
     ff::resource_objects resources;
     if (!resources.add_resources(reader))
     {
-        std::cerr << "Can't load file: " << input_file << "\r\n";
+        std::cerr << "Can't load file: " << input_file << "\n";
         return ::EXIT_CODE_READ_FILE_FAILED;
     }
 
     ff::dict dict;
     if (!resources.save(dict) || !dict.load_child_dicts())
     {
-        std::cerr << "Can't load resources: " << input_file << "\r\n";
+        std::cerr << "Can't load resources: " << input_file << "\n";
         return ::EXIT_CODE_SAVE_DICT_FAILED;
     }
 
@@ -423,7 +423,7 @@ static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
         {
             for (auto& error : errors)
             {
-                std::cerr << ::PROGRAM_NAME << ": " << error << "\r\n";
+                std::cerr << ::PROGRAM_NAME << ": " << error << "\n";
             }
 
             return ::EXIT_CODE_VISIT_DICT_FAILED;
@@ -440,7 +440,7 @@ int main()
 
     if (!init_resource)
     {
-        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\r\n";
+        std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;
     }
 
@@ -471,7 +471,7 @@ int main()
     {
         if (ff::flags::has(command_flags, command_flags_t::verbose))
         {
-            std::cout << ::PROGRAM_NAME << ": Time: " << std::fixed << std::setprecision(3) << timer.tick() << "s\r\n";
+            std::cout << ::PROGRAM_NAME << ": Time: " << std::fixed << std::setprecision(3) << timer.tick() << "s\n";
         }
     });
 
@@ -575,13 +575,13 @@ int main()
     {
         if (!ff::filesystem::exists(file))
         {
-            std::cerr << ::PROGRAM_NAME << ": Input file doesn't exist: " << ff::filesystem::to_string(file) << "\r\n";
+            std::cerr << ::PROGRAM_NAME << ": Input file doesn't exist: " << ff::filesystem::to_string(file) << "\n";
             return ::EXIT_CODE_BAD_INPUT;
         }
 
         if (verbose)
         {
-            std::cout << "Input file: " << ff::filesystem::to_string(file) << "\r\n";
+            std::cout << "Input file: " << ff::filesystem::to_string(file) << "\n";
         }
 
         if (output_file.empty())
@@ -593,7 +593,7 @@ int main()
 
     if (verbose && !output_file.empty())
     {
-        std::cout << "Output file: " << ff::filesystem::to_string(output_file) << "\r\n";
+        std::cout << "Output file: " << ff::filesystem::to_string(output_file) << "\n";
     }
 
     // Run command
