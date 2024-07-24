@@ -2,35 +2,50 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <SharedCppTargetsImported>true</SharedCppTargetsImported>
+    <ResPackBuildExe>$(FFRoot)build\$(Platform)\ff.resource.build.exe</ResPackBuildExe>
+    <ResPackOutputIsContent Condition=" '$(ResPackOutputIsContent)' == '' ">false</ResPackOutputIsContent>
+    <ResPackSingleContentFile Condition=" '$(ResPackSingleContentFile)' == '' ">false</ResPackSingleContentFile>
+    <ResPackSingleFileName Condition=" '$(ResPackSingleFileName)' == '' ">$(ProjectName).assets.pack</ResPackSingleFileName>
+    <ResPackSingleFileNameId Condition=" '$(ResPackSingleFileNameId)' == '' ">$(ProjectName).assets.id.h</ResPackSingleFileNameId>
+    <ResPackDebugOption Condition=" '$(Configuration)' == 'Debug' ">-debug</ResPackDebugOption>
   </PropertyGroup>
 
   <Target Name="ResJsonPrepareForBuild" BeforeTargets="PrepareForBuild" Condition=" '@(ResJson)' != '' ">
-    <PropertyGroup>
-      <ResJsonDebugOption></ResJsonDebugOption>
-      <ResJsonDebugOption Condition=" '$(Configuration)' == 'Debug' ">-debug</ResJsonDebugOption>
-      <ResJsonRefOption></ResJsonRefOption>
-      <ResJsonRefOption Condition=" '@(ResJsonReference)' != '' ">@(ResJsonReference->'-ref &quot;%(FullPath)&quot;')</ResJsonRefOption>
-    </PropertyGroup>
-
     <ItemGroup>
       <ResJson>
-        <Command>&quot;$(FFRoot)build\$(Platform)\ff.resource.build.exe&quot; $(ResJsonDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; $(ResJsonRefOption) $(ResJsonAdditionalOptions)</Command>
+        <FileType>Document</FileType>
+      </ResJson>
+    </ItemGroup>
+    <ItemGroup Condition=" '$(ResPackSingleContentFile)' != 'true' ">
+      <ResJson>
+        <Command>&quot;$(ResPackBuildExe)&quot; $(ResPackDebugOption) -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -header &quot;$(GeneratedFilesDir)%(Filename).h&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; @(ResJsonReference->'-ref &quot;%(FullPath)&quot;') $(ResJsonAdditionalOptions)</Command>
         <Outputs>$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
         <ContentOutputs>$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
-        <TreatOutputAsContent>$(TreatResPackAsContent)</TreatOutputAsContent>
+        <TreatOutputAsContent>$(ResPackOutputIsContent)</TreatOutputAsContent>
         <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs)</AdditionalInputs>
       </ResJson>
     </ItemGroup>
   </Target>
 
-  <Target Name="ResJsonBuild" Condition=" '@(ResJson)' != '' " BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild">
+  <Target Name="ResJsonBuild" Condition=" '@(ResJson)' != '' And '$(ResPackSingleContentFile)' != 'true' " BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild">
     <CustomBuild Sources="@(ResJson)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
-    <ItemGroup>
-      <Content Include="@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'))">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
   </Target>
+
+  <Target Name="ResJsonBuildCombined" Condition=" '@(ResJson)' != '' And '$(ResPackSingleContentFile)' == 'true' " BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild" Inputs="@(ResJson);$(AdditionalResJsonInputs)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)">
+    <Exec Command="&quot;$(ResPackBuildExe)&quot; @(ResJson->'-in &quot;%(FullPath)&quot;', ' ') -out &quot;$(GeneratedFilesDir)$(ResPackSingleFileName)&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -symbol_header &quot;$(GeneratedFilesDir)$(ResPackSingleFileNameId)&quot; @(ResJsonReference->'-ref &quot;%(FullPath)&quot;') $(ResJsonAdditionalOptions)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)" />
+  </Target>
+
+  <ItemGroup Condition=" '@(ResJson)' != '' And '$(ResPackSingleContentFile)' != 'true' ">
+    <Content Include="@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'))">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '@(ResJson)' != '' And '$(ResPackSingleContentFile)' == 'true' ">
+    <Content Include="$(GeneratedFilesDir)$(ResPackSingleFileName)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemDefinitionGroup>
     <!-- Compiler options -->
