@@ -245,7 +245,9 @@ ff::dict& ff::resource_objects::resource_metadata() const
             ff::value_ptr value = ::load_typed_value(saved_data)->try_convert<ff::dict>();
             if (value->is_type<ff::dict>())
             {
-                this->add_metadata_only(value->get<ff::dict>());
+                ff::dict dict = value->get<ff::dict>();
+                dict.load_child_dicts();
+                this->add_metadata_only(dict);
             }
         }
 
