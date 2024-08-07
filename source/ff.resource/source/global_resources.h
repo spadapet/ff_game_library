@@ -9,6 +9,7 @@ namespace ff
 namespace ff::global_resources
 {
     void add(ff::reader_base& reader);
+    bool add_files(const std::filesystem::path& path);
     std::shared_ptr<ff::resource_objects> get();
     std::shared_ptr<ff::resource> get(std::string_view name);
     void destroy_game_thread();

@@ -138,6 +138,34 @@ bool ff::resource_objects::add_resources(ff::reader_base& reader)
     return true;
 }
 
+bool ff::resource_objects::add_files(const std::filesystem::path& path)
+{
+    std::vector<std::filesystem::path> files;
+    std::error_code ec{};
+
+    for (const auto& entry : std::filesystem::directory_iterator(path, ec))
+    {
+        if (entry.is_regular_file())
+        {
+            std::string file = ff::filesystem::to_string(ff::filesystem::to_lower(entry.path()));
+            if (file.ends_with(".res.pack"))
+            {
+                files.push_back(entry.path());
+            }
+        }
+    }
+
+    std::sort(files.begin(), files.end());
+
+    for (const auto& file : files)
+    {
+        ff::file_reader reader(file);
+        assert_ret_val(reader && this->add_resources(reader), false);
+    }
+
+    return true;
+}
+
 // caller must own resource_mutex
 void ff::resource_objects::add_resources_only(const ff::dict& dict)
 {

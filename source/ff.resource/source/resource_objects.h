@@ -30,6 +30,7 @@ namespace ff
         void add_resources(const ff::dict& dict);
         void add_resources(const ff::resource_objects& other);
         bool add_resources(ff::reader_base& reader);
+        bool add_files(const std::filesystem::path& path);
         bool save(ff::writer_base& writer) const;
         bool save(ff::dict& dict) const;
 

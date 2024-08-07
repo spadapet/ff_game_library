@@ -14,6 +14,11 @@ void ff::global_resources::add(ff::reader_base& reader)
     ::global_resources->add_resources(reader);
 }
 
+bool ff::global_resources::add_files(const std::filesystem::path& path)
+{
+    return ::global_resources->add_files(path);
+}
+
 std::shared_ptr<ff::resource_objects> ff::global_resources::get()
 {
     return ::global_resources;
