@@ -694,13 +694,16 @@ ff::co_task<> ff::resource_objects::rebuild_async()
         }
     }
 
-    this->resource_infos.clear();
-
     for (const std::filesystem::path& source_path : this->source_files())
     {
         ff::load_resources_result result = ff::load_resources_from_file(source_path, ff::resource_cache_t::use_cache_in_memory, ff::constants::profile_build);
         if (result.resources)
         {
+            for (auto& [name, other_info] : result.resources->resource_infos)
+            {
+                this->resource_infos.erase(name);
+            }
+
             this->add_resources(*result.resources);
         }
     }
@@ -708,7 +711,7 @@ ff::co_task<> ff::resource_objects::rebuild_async()
     for (auto& [name, old_resource] : old_resources)
     {
         std::shared_ptr<ff::resource> new_resource = this->get_resource_object_here(name);
-        if (new_resource)
+        if (new_resource && new_resource != old_resource)
         {
             old_resource->new_resource(new_resource);
         }

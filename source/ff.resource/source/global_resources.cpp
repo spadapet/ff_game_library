@@ -74,11 +74,14 @@ static ff::co_task<> rebuild_async_internal()
             co_await rebuild_task;
         }
 
+        // Consider this task done
+        {
+            std::scoped_lock lock(::global_rebuild_mutex);
+            ::global_rebuild_task.reset();
+        }
+
         co_await ff::task::resume_on_game();
         ::rebuild_end_signal.notify();
-
-        std::scoped_lock lock(::global_rebuild_mutex);
-        ::global_rebuild_task.reset();
     }
 }
 
