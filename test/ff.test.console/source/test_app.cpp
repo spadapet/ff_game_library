@@ -6,14 +6,14 @@ static void run_app()
 {
     ff::init_app_params app_params{};
     ff::init_ui_params ui_params{};
-    static DirectX::XMFLOAT4 clear_color(0, 0.125, 0, 1);
+    DirectX::XMFLOAT4 clear_color(0, 0.125, 0, 1);
 
     app_params.create_initial_state_func = []()
         {
             return std::make_shared<StateT>();
         };
 
-    app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
+    app_params.get_clear_color_func = [&clear_color](DirectX::XMFLOAT4& color)
         {
             clear_color.y = std::fmod(clear_color.y + 1.0f / 512.0f, 1.0f);
             color = clear_color;
@@ -21,10 +21,7 @@ static void run_app()
         };
 
     ff::init_app init_app(app_params, ui_params);
-    if (init_app)
-    {
-        ff::handle_messages_until_quit();
-    }
+    ff::handle_messages_until_quit();
 }
 
 static INT_PTR CALLBACK wait_dialog_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -114,7 +111,7 @@ void run_test_app()
     ::run_app<ff::state>();
 }
 
-void run_coroutine_app()
+void run_test_coroutine_app()
 {
     ::run_app<::coroutine_state>();
 }

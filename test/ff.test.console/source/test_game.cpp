@@ -73,7 +73,7 @@ namespace
     };
 }
 
-void run_game()
+void run_test_game_wrapper()
 {
     ff::game::init_params params{};
     params.create_initial_state = []()

@@ -2,7 +2,7 @@
 
 using namespace std::literals::chrono_literals;
 
-void run_input_device_events()
+void run_test_input_devices()
 {
     ff::init_main_window init_main_window(ff::init_main_window_params{ {}, "Test window", true });
     ff::init_input init_input;

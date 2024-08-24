@@ -1,25 +1,27 @@
 ﻿#include "pch.h"
 
-void run_input_device_events();
+void run_test_input_devices();
 void run_test_app();
-void run_coroutine_app();
-void run_game();
+void run_test_coroutine_app();
+void run_test_game_wrapper();
+void run_test_sprite_perf();
 
 int main()
 {
-    std::cout << "Choose:" << std::endl
-        << "1) Input device events" << std::endl
-        << "2) Test app" << std::endl
-        << "3) co_await in an app" << std::endl
-        << "4) Test game loop" << std::endl;
+    std::cout << "Choose:\n"
+        << "1) Test input devices\n"
+        << "2) Test blank app\n"
+        << "3) Test co_await in blank app\n"
+        << "4) Test ff::game::run with moving colors\n"
+        << "5) Test sprite perf\n";
 
-    int choice = 0;
+    int choice{};
     std::cin >> choice;
 
     switch (choice)
     {
         case 1:
-            ::run_input_device_events();
+            ::run_test_input_devices();
             break;
 
         case 2:
@@ -27,11 +29,15 @@ int main()
             break;
 
         case 3:
-            ::run_coroutine_app();
+            ::run_test_coroutine_app();
             break;
 
         case 4:
-            ::run_game();
+            ::run_test_game_wrapper();
+            break;
+
+        case 5:
+            ::run_test_sprite_perf();
             break;
     }
 
