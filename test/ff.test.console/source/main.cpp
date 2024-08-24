@@ -5,6 +5,7 @@ void run_test_app();
 void run_test_coroutine_app();
 void run_test_game_wrapper();
 void run_test_sprite_perf();
+void run_test_ui();
 
 int main()
 {
@@ -13,7 +14,8 @@ int main()
         << "2) Test blank app\n"
         << "3) Test co_await in blank app\n"
         << "4) Test ff::game::run with moving colors\n"
-        << "5) Test sprite perf\n";
+        << "5) Test sprite perf\n"
+        << "6) Test UI\n";
 
     int choice{};
     std::cin >> choice;
@@ -38,6 +40,10 @@ int main()
 
         case 5:
             ::run_test_sprite_perf();
+            break;
+
+        case 6:
+            ::run_test_ui();
             break;
     }
 

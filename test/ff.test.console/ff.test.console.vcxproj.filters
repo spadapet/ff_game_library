@@ -17,6 +17,9 @@
     <ClCompile Include="source\test_sprite_perf.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="source\test_ui.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,6 +45,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\assets.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
+    <ResJson Include="assets\assets.xaml.res.json">
       <Filter>assets</Filter>
     </ResJson>
   </ItemGroup>

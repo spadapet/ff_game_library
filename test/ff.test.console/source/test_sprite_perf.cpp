@@ -1,6 +1,4 @@
 ﻿#include "pch.h"
-#include "source/resource.h"
-
 #include "assets.res.h"
 #include "assets.res.id.h"
 
@@ -69,7 +67,7 @@ namespace
                 draw->draw_sprite(*rd.sprite, ff::dxgi::transform(pd.pos, rd.scale, rd.rotate, rd.color));
             }
 
-            std::string text = ff::string::concat("Entities:", this->pos_datas.size(), " (SPACE: More, DEL: Clear)");
+            std::string text = ff::string::concat("Count:", this->pos_datas.size(), ", SPACE:More, DEL:Clear");
             this->font->draw_text(draw, text, ff::dxgi::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::dxgi::color_white()), ff::dxgi::color_none());
         }
 

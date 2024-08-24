@@ -1,6 +1,7 @@
 <Grid
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:noesis="clr-namespace:NoesisGUIExtensions;assembly=Noesis.GUI.Extensions"
     x:Name="RootGrid">
     <Grid.Resources>
         <Storyboard x:Key="RotateAnim" RepeatBehavior="Forever">
@@ -25,6 +26,8 @@
         <TextBlock x:Name="Text" FontSize="32" Foreground="Yellow" Text="{StaticResource HelloWorld}" />
         <TextBox Text="Test4" FontSize="32" />
     </StackPanel>
+
+  <noesis:RiveControl Source="test_rive.riv" Width="500" Height="500" Margin="500,50,0,0" />
 
     <Menu VerticalAlignment="Top" HorizontalAlignment="Stretch" IsMainMenu="True" Focusable="True">
         <MenuItem Header="File">
