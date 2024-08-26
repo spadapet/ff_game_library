@@ -27,7 +27,7 @@
         <TextBox Text="Test4" FontSize="32" />
     </StackPanel>
 
-  <noesis:RiveControl Source="test_rive.riv" Width="500" Height="500" Margin="500,50,0,0" />
+    <!--<noesis:RiveControl Source="test_rive.riv" Width="500" Height="500" Margin="500,50,0,0" />-->
 
     <Menu VerticalAlignment="Top" HorizontalAlignment="Stretch" IsMainMenu="True" Focusable="True">
         <MenuItem Header="File">

@@ -102,9 +102,6 @@
     <ProjectReference Include="..\..\source\ff.ui\ff.ui.vcxproj">
       <Project>{8147a742-08ac-49fd-8c51-3956e1a65e16}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\vendor\ff.vendor.noesis_interactivity.vcxproj">
-      <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="source\resource.rc" />

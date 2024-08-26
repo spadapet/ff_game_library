@@ -18,6 +18,7 @@
     <NoesisRoot>$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir>$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
     <NoesisDll>$(NoesisRoot)bin\windows_x86_64\noesis.dll</NoesisDll>
+    <NoesisAppDll>$(NoesisRoot)bin\windows_x86_64\noesisapp.dll</NoesisAppDll>
 
     <!-- WinPix/D3D SDK -->
     <WinPixRoot>$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
@@ -30,12 +31,6 @@
     <AvailableItemName Include="ResJson">
       <Targets>ResJsonBuild;ResJsonBuildCombined</Targets>
     </AvailableItemName>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(ConfigurationType)' != 'StaticLibrary' ">
-    <Content Condition="Exists('$(NoesisDll)')" Include="$(NoesisDll)">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <!-- Debug-only properties, possibly used by Cpp.props -->
