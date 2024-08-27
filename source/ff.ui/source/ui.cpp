@@ -264,12 +264,12 @@ static void load_assembly_callback(void* user, const char* assembly)
     // Not implemented
 }
 
-extern "C" void NsInitPackageAppMediaElement();
+extern "C" void NsRegisterReflectionAppMediaElement();
 extern "C" void NsRegisterReflectionAppInteractivity();
 
 static void register_components(std::function<void()>&& register_extra_components)
 {
-    ::NsInitPackageAppMediaElement();
+    ::NsRegisterReflectionAppMediaElement();
     ::NsRegisterReflectionAppInteractivity();
 
     Noesis::RegisterComponent<ff::ui::bool_to_visible_converter>();
@@ -282,9 +282,10 @@ static void register_components(std::function<void()>&& register_extra_component
     Noesis::RegisterComponent<ff::ui::object_to_object_converter>();
     Noesis::RegisterComponent<ff::ui::set_panel_child_focus_action>();
 
-    if (register_extra_components)
+    auto register_extra_components_moved = std::move(register_extra_components);
+    if (register_extra_components_moved)
     {
-        register_extra_components();
+        register_extra_components_moved();
     }
 
     if (::ui_params.register_components_func)

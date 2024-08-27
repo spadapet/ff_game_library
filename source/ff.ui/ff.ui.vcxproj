@@ -50,14 +50,15 @@
     <ResJson Include="assets\ff.ui.res.json">
       <FileType>Document</FileType>
     </ResJson>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="assets\shader_ps.hlsl">
       <FileType>Document</FileType>
     </None>
     <None Include="assets\shader_vs.hlsl">
       <FileType>Document</FileType>
     </None>
+    <Content Include="$(NoesisRoot)bin\windows_x86_64\noesis.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.noesis_interactivity.vcxproj">
