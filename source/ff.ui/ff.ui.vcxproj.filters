@@ -41,9 +41,6 @@
     <ClCompile Include="source\delegate_command.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\set_panel_child_focus_action.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\converters.cpp">
       <Filter>source</Filter>
     </ClCompile>
@@ -90,9 +87,6 @@
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\delegate_command.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\set_panel_child_focus_action.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\converters.h">

@@ -5,7 +5,6 @@
 #include "key_map.h"
 #include "render_device.h"
 #include "resource_cache.h"
-#include "set_panel_child_focus_action.h"
 #include "texture_provider.h"
 #include "ui.h"
 #include "ui_view.h"
@@ -264,13 +263,17 @@ static void load_assembly_callback(void* user, const char* assembly)
     // Not implemented
 }
 
-extern "C" void NsRegisterReflectionAppMediaElement();
 extern "C" void NsRegisterReflectionAppInteractivity();
+extern "C" void NsRegisterReflectionAppMediaElement();
+extern "C" void NsRegisterReflectionAppRiveBase();
+extern "C" void NsRegisterReflectionAppRive();
 
 static void register_components(std::function<void()>&& register_extra_components)
 {
-    ::NsRegisterReflectionAppMediaElement();
     ::NsRegisterReflectionAppInteractivity();
+    ::NsRegisterReflectionAppMediaElement();
+    ::NsRegisterReflectionAppRiveBase();
+    ::NsRegisterReflectionAppRive();
 
     Noesis::RegisterComponent<ff::ui::bool_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::bool_to_collapsed_converter>();
@@ -280,7 +283,6 @@ static void register_components(std::function<void()>&& register_extra_component
     Noesis::RegisterComponent<ff::ui::object_to_visible_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_collapsed_converter>();
     Noesis::RegisterComponent<ff::ui::object_to_object_converter>();
-    Noesis::RegisterComponent<ff::ui::set_panel_child_focus_action>();
 
     auto register_extra_components_moved = std::move(register_extra_components);
     if (register_extra_components_moved)

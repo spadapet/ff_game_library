@@ -70,7 +70,7 @@
   <ItemDefinitionGroup>
     <!-- Compiler options -->
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc;$(NoesisRoot)Include;$(NoesisRoot)Src\Packages\App\Interactivity\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc;$(NoesisRoot)Include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>

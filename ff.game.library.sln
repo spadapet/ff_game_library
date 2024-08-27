@@ -53,7 +53,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.directxtex", "ven
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.libpng", "vendor\ff.vendor.libpng.vcxproj", "{7023AADB-413D-4C4E-B8A7-481484C943BA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.noesis_interactivity", "vendor\ff.vendor.noesis_interactivity.vcxproj", "{31F28E6F-10BC-4A6D-B992-01FD42EDB7DE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.noesis_app", "vendor\ff.vendor.noesis_app.vcxproj", "{31F28E6F-10BC-4A6D-B992-01FD42EDB7DE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.zlib", "vendor\ff.vendor.zlib.vcxproj", "{D9B0464D-0E8C-48F0-98C8-FBD8BEF12BDC}"
 EndProject

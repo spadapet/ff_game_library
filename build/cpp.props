@@ -17,6 +17,10 @@
     <!-- Noesis -->
     <NoesisRoot>$(PackagesRoot)ffui.$(NoesisVersion)\content\</NoesisRoot>
     <NoesisLibDir>$(NoesisRoot)lib\windows_x86_64\</NoesisLibDir>
+    <NoesisAppInteractivityRoot>$(NoesisRoot)Src\Packages\App\Interactivity\</NoesisAppInteractivityRoot>
+    <NoesisAppMediaElementRoot>$(NoesisRoot)Src\Packages\App\MediaElement\</NoesisAppMediaElementRoot>
+    <NoesisAppRiveRoot>$(NoesisRoot)Src\Packages\App\Rive\</NoesisAppRiveRoot>
+    <NoesisAppRiveBaseRoot>$(NoesisRoot)Src\Packages\App\RiveBase\</NoesisAppRiveBaseRoot>
 
     <!-- WinPix/D3D SDK -->
     <WinPixRoot>$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>

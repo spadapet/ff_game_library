@@ -53,5 +53,11 @@
   {
     "res:type": "file",
     "file": "file:Theme/PT Root UI_Bold.otf"
+  },
+
+  "test_rive.riv":
+  {
+    "res:type": "file",
+    "file": "file:test_rive.riv"
   }
 }

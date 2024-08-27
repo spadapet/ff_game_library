@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <!-- Defines are duplicated in ff.ui.vcxproj -->
+      <PreprocessorDefinitions>NS_APP_INTERACTIVITY_API=;NS_APP_MEDIAELEMENT_API=;NS_APP_RIVE_API=;NS_APP_RIVEBASE_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisAppInteractivityRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisAppMediaElementRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisAppRiveRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(NoesisAppRiveBaseRoot)Include;$(NoesisAppRiveBaseRoot)Src\rive\include;$(NoesisAppRiveBaseRoot)Src\SheenBidi\Headers</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\App.Interactivity.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\AttachableObject.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\BackgroundEffectBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\Behavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\BehaviorCollection.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ChangePropertyAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\CollectionFilterBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\CollectionSortBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ComparisonCondition.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ComparisonLogic.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ConditionalExpression.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ConditionBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\ControlStoryboardAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\DataBindingHelper.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\DataTrigger.Interactivity.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\EventTrigger.Interactivity.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\EventTriggerBase.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\FilterPredicate.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\GamepadTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\GoToStateAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\Interaction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\InvokeCommandAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\KeyTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\LaunchUriOrFileAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\LineDecorationBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\MouseDragElementBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\MoveFocusAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\PlaySoundAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\PropertyChangedTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\RemoveElementAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\SelectAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\SelectAllAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\SetFocusAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\SortComparer.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StoryboardAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StoryboardCompletedTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StoryboardTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StringFilterPredicate.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StringSortComparer.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\StyleInteraction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TargetedTriggerAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TimerTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TranslateZoomRotateBehavior.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TriggerAction.Interactivity.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TriggerActionCollection.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TriggerBase.Interactivity.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\TriggerCollection.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\DataEventTrigger.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\LoadContentAction.cpp" />
+    <ClCompile Include="$(NoesisAppInteractivityRoot)Src\MediaActions.cpp" />
+    <ClCompile Include="$(NoesisAppMediaElementRoot)Src\App.MediaElement.cpp" />
+    <ClCompile Include="$(NoesisAppMediaElementRoot)Src\MediaElement.cpp" />
+    <ClCompile Include="$(NoesisAppMediaElementRoot)Src\MediaPlayer.cpp" />
+    <ClCompile Include="$(NoesisAppRiveRoot)Src\App.Rive.cpp" />
+    <ClCompile Include="$(NoesisAppRiveRoot)Src\RiveTriggerAction.cpp" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveRun.cpp" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\SheenBidi.c" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\App.RiveBase.cpp" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.cpp" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.h" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveControl.cpp" />
+    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveInput.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(NoesisAppInteractivityRoot)Src\ComparisonLogic.h" />
+    <ClInclude Include="$(NoesisAppInteractivityRoot)Src\DataBindingHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.ff.vendor.noesis_app.config" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

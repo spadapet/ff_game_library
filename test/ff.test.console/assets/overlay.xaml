@@ -14,7 +14,7 @@
 
     <Border BorderThickness="4" BorderBrush="Green" />
 
-    <Button x:Name="button" BorderThickness="4" BorderBrush="Red" Background="Blue" Foreground="White" Width="200" Height="50" Margin="50" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5">
+    <Button x:Name="button" BorderThickness="4" BorderBrush="Red" Background="Blue" Foreground="White" Width="200" Height="50" Margin="50,100,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5">
         <Button.RenderTransform>
             <RotateTransform />
         </Button.RenderTransform>
@@ -27,7 +27,7 @@
         <TextBox Text="Test4" FontSize="32" />
     </StackPanel>
 
-  <noesis:RiveControl Source="test_rive.riv" Width="500" Height="500" Margin="500,50,0,0" />
+    <noesis:RiveControl Source="test_rive.riv" Width="128" Height="128" Margin="350,0,0,0" />
 
     <Menu VerticalAlignment="Top" HorizontalAlignment="Stretch" IsMainMenu="True" Focusable="True">
         <MenuItem Header="File">

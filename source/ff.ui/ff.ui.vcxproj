@@ -18,7 +18,6 @@
     <ClCompile Include="source\notify_property_changed_base.cpp" />
     <ClCompile Include="source\render_target.cpp" />
     <ClCompile Include="source\resource_cache.cpp" />
-    <ClCompile Include="source\set_panel_child_focus_action.cpp" />
     <ClCompile Include="source\stream.cpp" />
     <ClCompile Include="source\texture.cpp" />
     <ClCompile Include="source\texture_provider.cpp" />
@@ -37,7 +36,6 @@
     <ClInclude Include="source\notify_property_changed_base.h" />
     <ClInclude Include="source\render_target.h" />
     <ClInclude Include="source\resource_cache.h" />
-    <ClInclude Include="source\set_panel_child_focus_action.h" />
     <ClInclude Include="source\stream.h" />
     <ClInclude Include="source\texture.h" />
     <ClInclude Include="source\texture_provider.h" />
@@ -61,7 +59,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\vendor\ff.vendor.noesis_interactivity.vcxproj">
+    <ProjectReference Include="..\..\vendor\ff.vendor.noesis_app.vcxproj">
       <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
       <Private>false</Private>
     </ProjectReference>
