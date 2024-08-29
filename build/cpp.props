@@ -31,7 +31,7 @@
   <ItemGroup Label="PropertyPages">
     <PropertyPageSchema Include="$(MSBuildThisFileDirectory)cpp.xml" />
     <AvailableItemName Include="ResJson">
-      <Targets>ResJsonBuild;ResJsonBuildCombined</Targets>
+      <Targets>ResJsonPrepareForBuild;ResJsonBuild;ResJsonBuildCombined</Targets>
     </AvailableItemName>
   </ItemGroup>
 

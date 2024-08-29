@@ -26,4 +26,12 @@ namespace ff::game
     };
 
     int run(const ff::game::init_params& params);
+
+    template<class T>
+    int run(std::function<void()>&& register_global_resources_func)
+    {
+        ff::game::init_params_t<T> params{};
+        params.register_global_resources = std::move(register_global_resources_func);
+        return ff::game::run(params);
+    }
 }
