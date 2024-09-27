@@ -4,7 +4,8 @@
 
 ff::frame_allocator::frame_allocator(size_t size)
 {
-    this->buffer.end = this->buffer.pos + std::max<size_t>(1024, ff::math::nearest_power_of_two(size)) / 2;
+    size = std::max<size_t>(1024, ff::math::nearest_power_of_two(size));
+    this->buffer.end = this->buffer.pos + size;
 }
 
 void* ff::frame_allocator::alloc(size_t size, size_t align)

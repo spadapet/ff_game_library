@@ -19,7 +19,7 @@ namespace ff
     /// Implements push_base for any collection with a push_back() function
     /// </summary>
     template<class T>
-    class push_back_collection: public push_base<typename T::value_type>
+    class push_back_collection : public push_base<typename T::value_type>
     {
     public:
         using value_type = typename T::value_type;
