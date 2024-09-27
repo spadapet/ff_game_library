@@ -5,6 +5,7 @@
     <ResPackBuildExe>$(FFRoot)build\$(Platform)\ff.resource.build.exe</ResPackBuildExe>
     <ResPackSingleFileName Condition=" '$(ResPackSingleFileName)' == '' ">$(ProjectName).res.pack</ResPackSingleFileName>
     <ResPackSingleFileNameId Condition=" '$(ResPackSingleFileNameId)' == '' ">$(ProjectName).res.id.h</ResPackSingleFileNameId>
+    <ResJsonDebugCommandArgument Condition=" '$(Configuration)' == 'Debug' ">-debug</ResJsonDebugCommandArgument>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,39 +14,24 @@
       <!-- ConsumeMethod = Header | Content | CombinedContent -->
       <ConsumeMethod Condition=" '%(ConsumeMethod)' == '' ">Header</ConsumeMethod>
       <Outputs Condition=" '%(ConsumeMethod)' == 'Header' ">$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
-      <Outputs Condition=" '%(ConsumeMethod)' == 'Content' ">$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
+      <Outputs Condition=" '%(ConsumeMethod)' == 'Content' Or '%(ConsumeMethod)' == 'CombinedContent' ">$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
       <ContentOutputs Condition=" '%(ConsumeMethod)' == 'Content' ">$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
       <TreatOutputAsContent Condition=" '%(ConsumeMethod)' == 'Content' ">True</TreatOutputAsContent>
       <AdditionalInputs>%(RootDir)%(Directory)**\*;$(AdditionalResJsonInputs);%(AdditionalInputs)</AdditionalInputs>
+
+      <_Command>&quot;$(ResPackBuildExe)&quot; -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; @(ResJsonReference->'-ref &quot;%(FullPath)&quot;', ' ') $(ResJsonDebugCommandArgument)</_Command>
+      <Command Condition=" '%(ConsumeMethod)' == 'Header' ">%(_Command) -header &quot;$(GeneratedFilesDir)%(Filename).h&quot;</Command>
+      <Command Condition=" '%(ConsumeMethod)' == 'Content' Or '%(ConsumeMethod)' == 'CombinedContent' ">%(_Command)</Command>
     </ResJson>
   </ItemGroup>
 
   <Target Name="ResJsonPrepareForBuild" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ResJsonDebugCommandArgument Condition=" '$(Configuration)' == 'Debug' ">-debug</ResJsonDebugCommandArgument>
-    </PropertyGroup>
     <ItemGroup>
-      <ResJson Update="@(ResJson)">
-        <_Command></_Command>
-        <_Command Condition=" '%(ConsumeMethod)' == 'Header' Or '%(ConsumeMethod)' == 'Content' ">&quot;$(ResPackBuildExe)&quot; -in &quot;%(FullPath)&quot; -out &quot;$(GeneratedFilesDir)%(Filename).pack&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -symbol_header &quot;$(GeneratedFilesDir)%(Filename).id.h&quot; @(ResJsonReference->'-ref &quot;%(FullPath)&quot;', ' ') $(ResJsonDebugCommandArgument)</_Command>
-      </ResJson>
-      <ResJson Update="@(ResJson)">
-        <Command Condition=" '%(ConsumeMethod)' == 'Header' ">%(_Command) -header &quot;$(GeneratedFilesDir)%(Filename).h&quot;</Command>
-        <Command Condition=" '%(ConsumeMethod)' == 'Content' ">%(_Command)</Command>
-      </ResJson>
       <_ResJsonConsumeHeader Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'Header'))" />
       <_ResJsonConsumeContent Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'Content'))" />
+      <_ResJsonConsumeContent Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'CombinedContent'))" />
       <_ResJsonCombine Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'CombinedContent'))" />
     </ItemGroup>
-    <PropertyGroup Condition=" '@(_ResJsonCombine)' != '' ">
-      <_ResJsonCombineInputsProp>@(_ResJsonCombine->'%(FullPath)', ';');@(_ResJsonCombine->'%(RootDir)%(Directory)**\*', ';');$(AdditionalResJsonInputs)</_ResJsonCombineInputsProp>
-    </PropertyGroup>
-    <ItemGroup Condition=" '@(_ResJsonCombine)' != '' ">
-      <_ResJsonCombineInputsWithDupes Include="$(_ResJsonCombineInputsProp)" />
-    </ItemGroup>
-    <RemoveDuplicates Condition=" '@(_ResJsonCombineInputsWithDupes)' != '' " Inputs="@(_ResJsonCombineInputsWithDupes)">
-      <Output TaskParameter="Filtered" ItemName="_ResJsonCombineInputs" />
-    </RemoveDuplicates>
   </Target>
 
   <Target Name="ResJsonBuild" BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonPrepareForBuild">
@@ -54,15 +40,17 @@
     <CustomBuild Condition=" '@(_ResJsonConsumeContent)' != '' " Sources="@(_ResJsonConsumeContent)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
   </Target>
 
-  <Target Name="ResJsonBuildCombined" BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonBuild" Inputs="@(_ResJsonCombineInputs)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)">
+  <Target Name="ResJsonBuildCombined" BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonBuild" Inputs="@(_ResJsonCombine);@(_ResJsonCombine.Outputs)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)">
     <Exec Condition=" '@(_ResJsonCombine)' != '' " Command="&quot;$(ResPackBuildExe)&quot; @(_ResJsonCombine->'-in &quot;%(FullPath)&quot;', ' ') -out &quot;$(GeneratedFilesDir)$(ResPackSingleFileName)&quot; -pdb &quot;$(GeneratedFilesDir)&quot; -symbol_header &quot;$(GeneratedFilesDir)$(ResPackSingleFileNameId)&quot; @(ResJsonReference->'-ref &quot;%(FullPath)&quot;', ' ') $(ResJsonDebugCommandArgument)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)" />
+    <ItemGroup>
+      <Content Condition=" @(_ResJsonCombine) != '' " Include="$(GeneratedFilesDir)$(ResPackSingleFileName)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
   </Target>
 
   <ItemGroup>
     <Content Include="@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'))">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Condition=" @(ResJson->WithMetadataValue('ConsumeMethod', 'CombinedContent')) != '' " Include="$(GeneratedFilesDir)$(ResPackSingleFileName)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
