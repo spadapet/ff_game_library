@@ -13,6 +13,10 @@
       <FileType>Document</FileType>
       <!-- ConsumeMethod = Header | Content | CombinedContent -->
       <ConsumeMethod Condition=" '%(ConsumeMethod)' == '' ">Header</ConsumeMethod>
+      <CombineHeader></CombineHeader>
+      <CombineHeader Condition=" '%(ConsumeMethod)' == 'CombinedContent' And '$(Configuration)' != 'Release' ">True</CombineHeader>
+      <!-- Only need to combine all resources for the Release build -->
+      <ConsumeMethod Condition=" '%(ConsumeMethod)' == 'CombinedContent' And '$(Configuration)' != 'Release' ">Content</ConsumeMethod>
       <Outputs Condition=" '%(ConsumeMethod)' == 'Header' ">$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).h;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
       <Outputs Condition=" '%(ConsumeMethod)' == 'Content' Or '%(ConsumeMethod)' == 'CombinedContent' ">$(GeneratedFilesDir)%(Filename).pack;$(GeneratedFilesDir)%(Filename).id.h</Outputs>
       <ContentOutputs Condition=" '%(ConsumeMethod)' == 'Content' ">$(GeneratedFilesDir)%(Filename).pack</ContentOutputs>
@@ -31,6 +35,7 @@
       <_ResJsonConsumeContent Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'Content'))" />
       <_ResJsonConsumeContent Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'CombinedContent'))" />
       <_ResJsonCombine Include="@(ResJson->WithMetadataValue('ConsumeMethod', 'CombinedContent'))" />
+      <_ResJsonCombineHeader Include="@(ResJson->WithMetadataValue('CombineHeader', 'True'))" />
     </ItemGroup>
   </Target>
 
@@ -38,6 +43,10 @@
     <MakeDir Condition="!Exists('$(TLogLocation)')" Directories="$(TLogLocation)" />
     <CustomBuild Condition=" '@(_ResJsonConsumeHeader)' != '' " Sources="@(_ResJsonConsumeHeader)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
     <CustomBuild Condition=" '@(_ResJsonConsumeContent)' != '' " Sources="@(_ResJsonConsumeContent)" MinimalRebuildFromTracking="true" TrackFileAccess="true" TrackerLogDirectory="$(TLogLocation)" />
+
+    <WriteLinesToFile Condition=" '@(_ResJsonCombineHeader)' != '' " File="$(GeneratedFilesDir)$(ResPackSingleFileNameId)" Lines="" Overwrite="true" />
+    <WriteLinesToFile Condition=" '@(_ResJsonCombineHeader)' != '' " File="$(GeneratedFilesDir)$(ResPackSingleFileNameId)" Lines="#pragma once" Overwrite="true" />
+    <WriteLinesToFile Condition=" '@(_ResJsonCombineHeader)' != '' " File="$(GeneratedFilesDir)$(ResPackSingleFileNameId)" Lines="@( _ResJsonCombineHeader->'#include &quot;%(Filename).id.h&quot;' )" Overwrite="false" />
   </Target>
 
   <Target Name="ResJsonBuildCombined" BeforeTargets="BuildGenerateSources" DependsOnTargets="ResJsonBuild" Inputs="@(_ResJsonCombine);@(_ResJsonCombine.Outputs)" Outputs="$(GeneratedFilesDir)$(ResPackSingleFileName);$(GeneratedFilesDir)$(ResPackSingleFileNameId)">
@@ -85,7 +94,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Full</Optimization>
-      <PreprocessorDefinitions>NDEBUG;DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(ProjectName)' != 'ff.vendor.noesis_app' ">DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck></SDLCheck>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' == 'Debug' ">

@@ -77,7 +77,6 @@
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\SheenBidi.c" />
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\App.RiveBase.cpp" />
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.cpp" />
-    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.h" />
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveControl.cpp" />
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveInput.cpp" />
   </ItemGroup>

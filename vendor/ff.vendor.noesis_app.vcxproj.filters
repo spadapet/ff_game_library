@@ -10,9 +10,6 @@
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.cpp">
       <Filter>rive_base</Filter>
     </ClCompile>
-    <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\Rive.h">
-      <Filter>rive_base</Filter>
-    </ClCompile>
     <ClCompile Include="$(NoesisAppRiveBaseRoot)Src\RiveControl.cpp">
       <Filter>rive_base</Filter>
     </ClCompile>

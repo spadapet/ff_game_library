@@ -9,7 +9,7 @@
 #include <d3d12.h>
 
 // Vendor
-#include <directxtex/DirectXTex/d3dx12.h>
+#include <directxtex/Common/d3dx12.h>
 
 // FF
 #pragma pop_macro("assert")
