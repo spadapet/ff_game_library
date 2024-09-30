@@ -26,6 +26,8 @@
     <ProjectName Condition=" '$(ProjectName)' == '' ">$(MSBuildProjectName)</ProjectName>
     <MinimumVisualStudioVersion Condition=" '$(MinimumVisualStudioVersion)' == '' ">$(VsRelease).0</MinimumVisualStudioVersion>
     <DefaultLanguage Condition=" '$(DefaultLanguage)' == '' ">en-US</DefaultLanguage>
+    <!-- Required to be able to deploy app -->
+    <DebuggerFlavor Condition=" '$(DebuggerFlavor)' == '' And '$(MSBuildProjectExtension)' == '.wapproj' ">AppHostLocalDebugger</DebuggerFlavor>
 
     <!-- Output paths -->
     <ConfigOutRoot>$(OutRoot)$(Configuration.ToLowerInvariant())_$(Platform.ToLowerInvariant())\</ConfigOutRoot>

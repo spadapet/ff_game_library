@@ -62,6 +62,9 @@
     <Content Include="@(ResJson->WithMetadataValue('TreatOutputAsContent', 'true')->Metadata('ContentOutputs'))">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Condition=" Exists('$(GeneratedFilesDir)$(ResPackSingleFileName)') " Include="$(GeneratedFilesDir)$(ResPackSingleFileName)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemDefinitionGroup>

@@ -13,5 +13,6 @@
     <TargetPlatformMinVersion>10.0.$(WinSdkRelease10).0</TargetPlatformMinVersion>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <NoWarn>$(NoWarn);NU1702</NoWarn>
+
   </PropertyGroup>
 </Project>
