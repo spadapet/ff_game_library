@@ -148,7 +148,7 @@ bool ff::resource_objects::add_files(const std::filesystem::path& path)
         if (entry.is_regular_file())
         {
             std::string file = ff::filesystem::to_string(ff::filesystem::to_lower(entry.path()));
-            if (file.ends_with(".res.pack"))
+            if (file.ends_with(".res.pack") || file.ends_with(".resm.pack"))
             {
                 files.push_back(entry.path());
             }

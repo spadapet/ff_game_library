@@ -3,8 +3,8 @@
   <PropertyGroup>
     <SharedCppTargetsImported>true</SharedCppTargetsImported>
     <ResPackBuildExe>$(FFRoot)build\$(Platform)\ff.resource.build.exe</ResPackBuildExe>
-    <ResPackSingleFileName Condition=" '$(ResPackSingleFileName)' == '' ">$(ProjectName).res.pack</ResPackSingleFileName>
-    <ResPackSingleFileNameId Condition=" '$(ResPackSingleFileNameId)' == '' ">$(ProjectName).res.id.h</ResPackSingleFileNameId>
+    <ResPackSingleFileName Condition=" '$(ResPackSingleFileName)' == '' ">$(ProjectName).resm.pack</ResPackSingleFileName>
+    <ResPackSingleFileNameId Condition=" '$(ResPackSingleFileNameId)' == '' ">$(ProjectName).resm.id.h</ResPackSingleFileNameId>
     <ResJsonDebugCommandArgument Condition=" '$(Configuration)' == 'Debug' ">-debug</ResJsonDebugCommandArgument>
   </PropertyGroup>
 

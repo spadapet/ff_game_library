@@ -267,7 +267,7 @@ ff::value_ptr ff::animation_keys::interpolate(const key_frame& lhs, const key_fr
     if (value->is_type<std::string>())
     {
         const std::string& param_name = value->get<std::string>();
-        if (ff::string::starts_with(param_name, "param:"))
+        if (param_name.starts_with("param:"))
         {
             value = params->get(param_name.substr(6));
         }

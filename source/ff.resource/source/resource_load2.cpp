@@ -303,7 +303,7 @@ protected:
         if (value && value->is_type<std::string>())
         {
             std::string string_value = value->get<std::string>();
-            if (ff::string::starts_with(string_value, ff::internal::FILE_PREFIX))
+            if (string_value.starts_with(ff::internal::FILE_PREFIX))
             {
                 string_value = string_value.substr(ff::internal::FILE_PREFIX.size());
                 std::filesystem::path path_value = string_value;
@@ -429,7 +429,7 @@ protected:
         {
             std::string string_value = value->get<std::string>();
 
-            if (ff::string::starts_with(string_value, ff::internal::RES_PREFIX))
+            if (string_value.starts_with(ff::internal::RES_PREFIX))
             {
                 value = this->context().values().get(string_value.substr(ff::internal::RES_PREFIX.size()));
                 value = this->transform_value(value);
@@ -441,7 +441,7 @@ protected:
                     this->add_error(str.str());
                 }
             }
-            else if (ff::string::starts_with(string_value, ff::internal::REF_PREFIX))
+            else if (string_value.starts_with(ff::internal::REF_PREFIX))
             {
                 std::string res_name = string_value.substr(ff::internal::REF_PREFIX.size());
                 std::shared_ptr<ff::resource> res_val = this->context().set_reference(res_name);

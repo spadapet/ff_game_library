@@ -7,8 +7,6 @@ namespace ff::string
     std::string from_acp(std::string_view str);
     std::string_view indent_string(size_t spaces);
 
-    bool starts_with(std::string_view str, std::string_view str_start);
-    bool ends_with(std::string_view str, std::string_view str_end);
     bool equals_ignore_case(std::string_view str1, std::string_view str2);
 
     std::string to_lower(std::string_view str);

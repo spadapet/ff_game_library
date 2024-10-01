@@ -55,15 +55,15 @@ static std::shared_ptr<ff::data_base> compile_shader(
     }
 
     const char* level9 = "0";
-    if (ff::string::ends_with(target, "_level_9_1"))
+    if (target.ends_with("_level_9_1"))
     {
         level9 = "1";
     }
-    else if (ff::string::ends_with(target, "_level_9_2"))
+    else if (target.ends_with("_level_9_2"))
     {
         level9 = "2";
     }
-    else if (ff::string::ends_with(target, "_level_9_3"))
+    else if (target.ends_with("_level_9_3"))
     {
         level9 = "3";
     }

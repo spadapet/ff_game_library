@@ -10,7 +10,7 @@ ff::resource_file::resource_file(std::string_view file_extension, HINSTANCE inst
 }
 
 ff::resource_file::resource_file(const std::filesystem::path& path)
-    : file_extension_(ff::filesystem::to_string(ff::filesystem::to_lower(path.extension())))
+    : file_extension_(ff::filesystem::extension_lower_string(path))
 {
     size_t size = ff::filesystem::file_size(path);
     if (size == ff::constants::invalid_size)
@@ -86,7 +86,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::l
     size_t size = static_cast<size_t>(max_size);
     auto saved_data = std::make_shared<ff::saved_data_file>(path, 0, size, size, ff::saved_data_type::none);
 
-    std::string file_extension = ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
+    std::string file_extension = ff::filesystem::extension_lower_string(path);
     return std::make_shared<resource_file>(saved_data, file_extension);
 }
 

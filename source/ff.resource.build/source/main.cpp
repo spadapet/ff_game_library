@@ -33,6 +33,7 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
     const size_t bytes_per_line = 64;
     const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
+    output << "#pragma once\n";
     output << "namespace " << cpp_namespace << R"(
 {
     namespace internal
@@ -70,6 +71,7 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
 
 static bool write_symbol_header(const std::vector<std::pair<std::string, std::string>>& id_to_names, std::ostream& output, std::string_view cpp_namespace)
 {
+    output << "#pragma once\n";
     output << "namespace " << cpp_namespace << "\n{\n";
 
     for (const auto& [id, name] : id_to_names)
@@ -127,8 +129,25 @@ static bool compile_resource_pack(
 
     for (const std::filesystem::path& input_file : input_files)
     {
-        const ff::resource_cache_t cache_type = force ? ff::resource_cache_t::rebuild_cache : ff::resource_cache_t::use_cache_mem_mapped;
-        ff::load_resources_result result = ff::load_resources_from_file(input_file, cache_type, debug);
+        std::string file_extension = ff::filesystem::extension_lower_string(input_file);
+        ff::load_resources_result result;
+
+        if (file_extension == ".json")
+        {
+            const ff::resource_cache_t cache_type = force ? ff::resource_cache_t::rebuild_cache : ff::resource_cache_t::use_cache_mem_mapped;
+            result = ff::load_resources_from_file(input_file, cache_type, debug);
+        }
+        else if (file_extension == ".pack")
+        {
+            ff::file_reader reader(input_file);
+            result.resources = std::make_shared<ff::resource_objects>();
+
+            if (!reader || !result.resources->add_resources(reader))
+            {
+                result.resources.reset();
+            }
+        }
+
         if (result.errors.empty() && result.resources)
         {
             load_results.push_back(std::move(result));

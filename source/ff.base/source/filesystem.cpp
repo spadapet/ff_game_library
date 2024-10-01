@@ -90,6 +90,11 @@ std::string ff::filesystem::to_string(const std::filesystem::path& path)
     return ff::string::to_string(path.native());
 }
 
+std::string ff::filesystem::extension_lower_string(const std::filesystem::path& path)
+{
+    return ff::filesystem::to_string(ff::filesystem::to_lower(path.extension()));
+}
+
 std::filesystem::path ff::filesystem::to_path(std::string_view path)
 {
     return std::filesystem::path(ff::string::to_wstring(path));
