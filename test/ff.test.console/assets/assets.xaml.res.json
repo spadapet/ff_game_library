@@ -59,5 +59,11 @@
   {
     "res:type": "file",
     "file": "file:test_rive.riv"
+  },
+
+  "Inter-594377.ttf":
+  {
+    "res:type": "file",
+    "file": "file:Inter-594377.ttf"
   }
 }
