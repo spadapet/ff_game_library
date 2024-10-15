@@ -42,7 +42,7 @@ namespace ff
     public:
         input_event_provider(const input_mapping_def& mapping, std::vector<ff::input_vk const*>&& devices);
 
-        bool advance(double delta_time = ff::constants::seconds_per_advance);
+        bool advance(double delta_time = ff::constants::seconds_per_advance<double>());
 
         const std::vector<input_event>& events() const;
         float event_progress(size_t event_id) const; // 1=triggered once, 2=hold time hit twice, etc...

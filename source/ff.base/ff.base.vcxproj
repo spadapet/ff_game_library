@@ -15,7 +15,7 @@
     <ClCompile Include="source\co_task.cpp" />
     <ClCompile Include="source\perf_timer.cpp" />
     <ClCompile Include="source\scope_exit.cpp" />
-    <ClCompile Include="source\exceptions.cpp" />
+    <ClCompile Include="source\co_exceptions.cpp" />
     <ClCompile Include="source\filesystem.cpp" />
     <ClCompile Include="source\frame_allocator.cpp" />
     <ClCompile Include="source\stable_hash.cpp" />
@@ -42,7 +42,7 @@
     <ClInclude Include="source\perf_timer.h" />
     <ClInclude Include="source\stash.h" />
     <ClInclude Include="source\scope_exit.h" />
-    <ClInclude Include="source\exceptions.h" />
+    <ClInclude Include="source\co_exceptions.h" />
     <ClInclude Include="source\filesystem.h" />
     <ClInclude Include="source\frame_allocator.h" />
     <ClInclude Include="source\init.h" />

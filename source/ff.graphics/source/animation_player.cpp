@@ -16,7 +16,7 @@ bool ff::animation_player::advance_animation(ff::push_base<ff::animation_event>*
     bool first_advance = !this->advances;
     float begin_frame = this->frame;
     this->advances += 1.0f;
-    this->frame = this->start_frame + (this->advances * this->fps / ff::constants::advances_per_second_f);
+    this->frame = this->start_frame + (this->advances * this->fps / ff::constants::advances_per_second<float>());
 
     if (events)
     {

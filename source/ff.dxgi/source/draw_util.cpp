@@ -450,7 +450,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_filled_rectangle(const ff::rect
 void ff::dxgi::draw_util::draw_device_base::draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count)
 {
     ff::dxgi::vertex::triangle_geometry input;
-    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
+    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.depth = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::triangle_no_overlap : ff::dxgi::draw_util::last_depth_type::triangle);
 
     for (size_t i = 0; i < count; i++, points += 3, colors += 3)
@@ -522,7 +522,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_
 void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness)
 {
     ff::dxgi::vertex::circle_geometry input;
-    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
+    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.position.x = center.x;
     input.position.y = center.y;
     input.position.z = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::circle_no_overlap : ff::dxgi::draw_util::last_depth_type::circle);
@@ -644,7 +644,7 @@ void ff::dxgi::draw_util::draw_device_base::push_palette(ff::dxgi::palette_base*
     if (!this->target_requires_palette_)
     {
         this->palette_stack.push_back(palette);
-        this->palette_index = ff::constants::invalid_dword;
+        this->palette_index = ff::constants::invalid_unsigned<DWORD>();
     }
 
     this->push_palette_remap(palette->index_remap(), palette->index_remap_hash());
@@ -656,7 +656,7 @@ void ff::dxgi::draw_util::draw_device_base::pop_palette()
     {
         assert(this->palette_stack.size() > 1);
         this->palette_stack.pop_back();
-        this->palette_index = ff::constants::invalid_dword;
+        this->palette_index = ff::constants::invalid_unsigned<DWORD>();
     }
 
     this->pop_palette_remap();
@@ -667,14 +667,14 @@ void ff::dxgi::draw_util::draw_device_base::push_palette_remap(const uint8_t* re
     this->palette_remap_stack.push_back(std::make_pair(
         remap ? remap : ff::dxgi::draw_util::default_palette_remap().data(),
         remap ? (hash ? hash : ff::stable_hash_bytes(remap, ff::dxgi::palette_size)) : ff::dxgi::draw_util::default_palette_remap_hash()));
-    this->palette_remap_index = ff::constants::invalid_dword;
+    this->palette_remap_index = ff::constants::invalid_unsigned<DWORD>();
 }
 
 void ff::dxgi::draw_util::draw_device_base::pop_palette_remap()
 {
     assert(this->palette_remap_stack.size() > 1);
     this->palette_remap_stack.pop_back();
-    this->palette_remap_index = ff::constants::invalid_dword;
+    this->palette_remap_index = ff::constants::invalid_unsigned<DWORD>();
 }
 
 void ff::dxgi::draw_util::draw_device_base::push_no_overlap()
@@ -855,7 +855,7 @@ void ff::dxgi::draw_util::draw_device_base::destroy()
     this->view_matrix = ff::dxgi::matrix_identity_4x4();
     this->world_matrix_stack_.reset();
     this->world_matrix_to_index.clear();
-    this->world_matrix_index = ff::constants::invalid_dword;
+    this->world_matrix_index = ff::constants::invalid_unsigned<DWORD>();
 
     std::memset(this->textures.data(), 0, ff::array_byte_size(this->textures));
     std::memset(this->textures_using_palette.data(), 0, ff::array_byte_size(this->textures_using_palette));
@@ -866,13 +866,13 @@ void ff::dxgi::draw_util::draw_device_base::destroy()
     this->palette_stack.clear();
     this->palette_to_index.clear();
     this->palette_texture = nullptr;
-    this->palette_index = ff::constants::invalid_dword;
+    this->palette_index = ff::constants::invalid_unsigned<DWORD>();
 
     std::memset(this->palette_remap_texture_hashes.data(), 0, ff::array_byte_size(this->palette_remap_texture_hashes));
     this->palette_remap_stack.clear();
     this->palette_remap_to_index.clear();
     this->palette_remap_texture = nullptr;
-    this->palette_remap_index = ff::constants::invalid_dword;
+    this->palette_remap_index = ff::constants::invalid_unsigned<DWORD>();
 
     this->alpha_geometry.clear();
     this->last_depth_type = ff::dxgi::draw_util::last_depth_type::none;
@@ -915,12 +915,12 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
         // Reset draw data
 
         this->world_matrix_to_index.clear();
-        this->world_matrix_index = ff::constants::invalid_dword;
+        this->world_matrix_index = ff::constants::invalid_unsigned<DWORD>();
 
         this->palette_to_index.clear();
-        this->palette_index = ff::constants::invalid_dword;
+        this->palette_index = ff::constants::invalid_unsigned<DWORD>();
         this->palette_remap_to_index.clear();
-        this->palette_remap_index = ff::constants::invalid_dword;
+        this->palette_remap_index = ff::constants::invalid_unsigned<DWORD>();
 
         this->texture_count = 0;
         this->textures_using_palette_count = 0;
@@ -938,7 +938,7 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
 
 void ff::dxgi::draw_util::draw_device_base::matrix_changing(const ff::dxgi::matrix_stack& matrix_stack)
 {
-    this->world_matrix_index = ff::constants::invalid_dword;
+    this->world_matrix_index = ff::constants::invalid_unsigned<DWORD>();
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness)
@@ -947,7 +947,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
     thickness = pixel_thickness ? -std::abs(thickness) : std::abs(thickness);
 
     ff::dxgi::vertex::line_geometry input;
-    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index() : this->world_matrix_index;
+    input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.depth = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::line_no_overlap : ff::dxgi::draw_util::last_depth_type::line);
     input.color[0] = colors[0];
     input.color[1] = colors[0];
@@ -1134,7 +1134,7 @@ float ff::dxgi::draw_util::draw_device_base::nudge_depth(ff::dxgi::draw_util::la
 unsigned int ff::dxgi::draw_util::draw_device_base::get_world_matrix_index()
 {
     unsigned int index = this->get_world_matrix_index_no_flush();
-    if (index == ff::constants::invalid_dword)
+    if (index == ff::constants::invalid_unsigned<DWORD>())
     {
         this->flush();
         index = this->get_world_matrix_index_no_flush();
@@ -1145,7 +1145,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_world_matrix_index()
 
 unsigned int ff::dxgi::draw_util::draw_device_base::get_world_matrix_index_no_flush()
 {
-    if (this->world_matrix_index == ff::constants::invalid_dword)
+    if (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>())
     {
         DirectX::XMFLOAT4X4 wm;
         DirectX::XMStoreFloat4x4(&wm, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&this->world_matrix_stack_.matrix())));
@@ -1169,19 +1169,19 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
 {
     if (use_palette)
     {
-        unsigned int palette_index = (this->palette_index == ff::constants::invalid_dword) ? this->get_palette_index_no_flush() : this->palette_index;
-        if (palette_index == ff::constants::invalid_dword)
+        unsigned int palette_index = (this->palette_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_palette_index_no_flush() : this->palette_index;
+        if (palette_index == ff::constants::invalid_unsigned<DWORD>())
         {
-            return ff::constants::invalid_dword;
+            return ff::constants::invalid_unsigned<DWORD>();
         }
 
-        unsigned int palette_remap_index = (this->palette_remap_index == ff::constants::invalid_dword) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
-        if (palette_remap_index == ff::constants::invalid_dword)
+        unsigned int palette_remap_index = (this->palette_remap_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
+        if (palette_remap_index == ff::constants::invalid_unsigned<DWORD>())
         {
-            return ff::constants::invalid_dword;
+            return ff::constants::invalid_unsigned<DWORD>();
         }
 
-        unsigned int texture_index = ff::constants::invalid_dword;
+        unsigned int texture_index = ff::constants::invalid_unsigned<DWORD>();
 
         for (size_t i = this->textures_using_palette_count; i != 0; i--)
         {
@@ -1192,11 +1192,11 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
             }
         }
 
-        if (texture_index == ff::constants::invalid_dword)
+        if (texture_index == ff::constants::invalid_unsigned<DWORD>())
         {
             if (this->textures_using_palette_count == ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE)
             {
-                return ff::constants::invalid_dword;
+                return ff::constants::invalid_unsigned<DWORD>();
             }
 
             this->textures_using_palette[this->textures_using_palette_count] = &texture_view;
@@ -1210,14 +1210,14 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
         unsigned int palette_remap_index = 0;
         if (this->target_requires_palette_)
         {
-            palette_remap_index = (this->palette_remap_index == ff::constants::invalid_dword) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
-            if (palette_remap_index == ff::constants::invalid_dword)
+            palette_remap_index = (this->palette_remap_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
+            if (palette_remap_index == ff::constants::invalid_unsigned<DWORD>())
             {
-                return ff::constants::invalid_dword;
+                return ff::constants::invalid_unsigned<DWORD>();
             }
         }
 
-        unsigned int texture_index = ff::constants::invalid_dword;
+        unsigned int texture_index = ff::constants::invalid_unsigned<DWORD>();
         unsigned int sampler_index = static_cast<unsigned int>(this->linear_sampler());
 
         for (size_t i = this->texture_count; i != 0; i--)
@@ -1229,11 +1229,11 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
             }
         }
 
-        if (texture_index == ff::constants::invalid_dword)
+        if (texture_index == ff::constants::invalid_unsigned<DWORD>())
         {
             if (this->texture_count == ff::dxgi::draw_util::MAX_TEXTURES)
             {
-                return ff::constants::invalid_dword;
+                return ff::constants::invalid_unsigned<DWORD>();
             }
 
             this->textures[this->texture_count] = &texture_view;
@@ -1246,7 +1246,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_texture_index_no_flush(f
 
 unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_index_no_flush()
 {
-    if (this->palette_index == ff::constants::invalid_dword)
+    if (this->palette_index == ff::constants::invalid_unsigned<DWORD>())
     {
         if (this->target_requires_palette_)
         {
@@ -1276,7 +1276,7 @@ unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_index_no_flush()
 
 unsigned int ff::dxgi::draw_util::draw_device_base::get_palette_remap_index_no_flush()
 {
-    if (this->palette_remap_index == ff::constants::invalid_dword)
+    if (this->palette_remap_index == ff::constants::invalid_unsigned<DWORD>())
     {
         auto& remap_pair = this->palette_remap_stack[this->palette_remap_stack.size() - 1];
         auto iter = this->palette_remap_to_index.find(remap_pair.second);
@@ -1302,10 +1302,10 @@ int ff::dxgi::draw_util::draw_device_base::remap_palette_index(int color) const
 
 void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index)
 {
-    model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
+    model_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
     texture_index = this->get_texture_index_no_flush(texture_view, use_palette);
 
-    if (model_index == ff::constants::invalid_dword || texture_index == ff::constants::invalid_dword)
+    if (model_index == ff::constants::invalid_unsigned<DWORD>() || texture_index == ff::constants::invalid_unsigned<DWORD>())
     {
         this->flush();
         this->get_world_matrix_and_texture_index(texture_view, use_palette, model_index, texture_index);
@@ -1314,13 +1314,13 @@ void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(f
 
 void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_indexes(ff::dxgi::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
 {
-    model_index = (this->world_matrix_index == ff::constants::invalid_dword) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
-    bool flush = (model_index == ff::constants::invalid_dword);
+    model_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
+    bool flush = (model_index == ff::constants::invalid_unsigned<DWORD>());
 
     for (size_t i = 0; !flush && i < count; i++)
     {
         texture_indexes[i] = this->get_texture_index_no_flush(*texture_views[i], use_palette);
-        flush |= (texture_indexes[i] == ff::constants::invalid_dword);
+        flush |= (texture_indexes[i] == ff::constants::invalid_unsigned<DWORD>());
     }
 
     if (flush)

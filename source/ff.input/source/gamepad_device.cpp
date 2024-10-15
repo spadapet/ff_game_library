@@ -71,10 +71,8 @@ void ff::gamepad_device::advance()
     else if (this->connected_ || !this->check_connected)
     {
         this->connected_ = false;
-        this->check_connected =
-            ff::constants::advances_per_second_s +
-            static_cast<size_t>(ff::math::random_non_negative()) %
-            ff::constants::advances_per_second_s;
+        this->check_connected = ff::constants::advances_per_second<int>() +
+            (ff::math::random_non_negative() % ff::constants::advances_per_second<int>());
     }
     else
     {

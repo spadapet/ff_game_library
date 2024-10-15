@@ -13,7 +13,7 @@ ff::resource_file::resource_file(const std::filesystem::path& path)
     : file_extension_(ff::filesystem::extension_lower_string(path))
 {
     size_t size = ff::filesystem::file_size(path);
-    if (size == ff::constants::invalid_size)
+    if (size == ff::constants::invalid_unsigned<size_t>())
     {
         assert(false);
         size = 0;
@@ -75,7 +75,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::resource_file_factory::l
     }
 
     size_t max_size = std::filesystem::file_size(path);
-    if (max_size == ff::constants::invalid_size)
+    if (max_size == ff::constants::invalid_unsigned<size_t>())
     {
         std::ostringstream str;
         str << "Failed to get size of file: " << path;

@@ -54,7 +54,9 @@ size_t ff::filesystem::file_size(const std::filesystem::path& path)
 {
     std::error_code ec;
     uintmax_t size = std::filesystem::file_size(path, ec);
-    return (size != ff::constants::invalid_uintmax) ? static_cast<size_t>(size) : ff::constants::invalid_size;
+    return (size != ff::constants::invalid_unsigned<uintmax_t>())
+        ? static_cast<size_t>(size)
+        : ff::constants::invalid_unsigned<size_t>();
 }
 
 bool ff::filesystem::remove(const std::filesystem::path& path)
@@ -76,7 +78,7 @@ bool ff::filesystem::remove_all(const std::filesystem::path& path)
     }
 
     std::error_code ec;
-    return std::filesystem::remove_all(path, ec) != ff::constants::invalid_uintmax || !ec.value();
+    return std::filesystem::remove_all(path, ec) != ff::constants::invalid_unsigned<uintmax_t>() || !ec.value();
 }
 
 std::filesystem::path ff::filesystem::weakly_canonical(const std::filesystem::path& path)

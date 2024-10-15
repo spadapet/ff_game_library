@@ -19,7 +19,7 @@ ff::palette_cycle::operator bool() const
 void ff::palette_cycle::advance()
 {
     size_t size = this->data_->row_size();
-    this->current_row_ = static_cast<size_t>(++this->advances * this->cycles_per_second * size / ff::constants::advances_per_second) % size;
+    this->current_row_ = static_cast<size_t>(++this->advances * this->cycles_per_second * size / ff::constants::advances_per_second<double>()) % size;
 }
 
 size_t ff::palette_cycle::current_row() const

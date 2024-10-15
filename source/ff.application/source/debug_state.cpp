@@ -478,7 +478,7 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
     }
 
     float height_scale = results.delta_ticks
-        ? static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F / (2.0f * ff::constants::seconds_per_advance_f * results.delta_ticks)
+        ? static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F / (2.0f * ff::constants::seconds_per_advance<float>() * results.delta_ticks)
         : 0.0f;
 
     wait_points[0].y = ::CHART_HEIGHT_F;

@@ -14,10 +14,10 @@ namespace ff::internal
     class co_thread_awaiter
     {
     public:
-        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, std::stop_token stop = {});
+        co_thread_awaiter(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_unsigned<size_t>(), std::stop_token stop = {});
 
-        static bool ready(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size);
-        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_size, std::stop_token stop = {});
+        static bool ready(ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_unsigned<size_t>());
+        static void post(std::function<void()>&& func, ff::thread_dispatch_type thread_type, size_t delay_ms = ff::constants::invalid_unsigned<size_t>(), std::stop_token stop = {});
 
         bool await_ready() const;
         void await_suspend(std::coroutine_handle<> coroutine) const;
@@ -50,7 +50,7 @@ namespace ff::internal
     class co_handle_awaiter : public ff::internal::co_handle_awaiter_base
     {
     public:
-        co_handle_awaiter(ff::thread_dispatch_type thread_type, HANDLE handle, size_t timeout_ms = ff::constants::invalid_size);
+        co_handle_awaiter(ff::thread_dispatch_type thread_type, HANDLE handle, size_t timeout_ms = ff::constants::invalid_unsigned<size_t>());
 
     protected:
         virtual const ff::win_handle& handle() const override;
@@ -62,7 +62,7 @@ namespace ff::internal
     class co_event_awaiter : public ff::internal::co_handle_awaiter_base
     {
     public:
-        co_event_awaiter(ff::thread_dispatch_type thread_type, const ff::win_event& handle, size_t timeout_ms = ff::constants::invalid_size);
+        co_event_awaiter(ff::thread_dispatch_type thread_type, const ff::win_event& handle, size_t timeout_ms = ff::constants::invalid_unsigned<size_t>());
 
     protected:
         virtual const ff::win_handle& handle() const override;

@@ -66,7 +66,7 @@ static ff::state::advance_t frame_start_timer(ff::state::advance_t previous_adva
     ::app_time.frame_count += running;
     ::app_time.perf_clock_ticks = ff::perf_measures::now_ticks();
     const double delta_time = ::timer.tick() * ::app_time.time_scale;
-    ::app_time.unused_advance_seconds += was_running ? delta_time : (ff::constants::seconds_per_advance * ::app_time.time_scale);
+    ::app_time.unused_advance_seconds += was_running ? delta_time : (ff::constants::seconds_per_advance<double>() * ::app_time.time_scale);
     ::app_time.clock_seconds = ::timer.seconds();
 
     return advance_type;
@@ -93,7 +93,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
             break;
 
         case ff::state::advance_t::running:
-            if (::app_time.unused_advance_seconds < ff::constants::seconds_per_advance)
+            if (::app_time.unused_advance_seconds < ff::constants::seconds_per_advance<double>())
             {
                 return false;
             }
@@ -113,9 +113,9 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
         return false;
     }
 
-    ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance, 0.0);
+    ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance<double>(), 0.0);
     ::app_time.advance_count++;
-    ::app_time.advance_seconds = ::app_time.advance_count / ff::constants::advances_per_second;
+    ::app_time.advance_seconds = ::app_time.advance_count / ff::constants::advances_per_second<double>();
     advance_count++;
 
     return true;

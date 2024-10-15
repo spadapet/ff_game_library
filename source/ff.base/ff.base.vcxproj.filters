@@ -62,7 +62,7 @@
     <ClCompile Include="source\co_task.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\exceptions.cpp">
+    <ClCompile Include="source\co_exceptions.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="source\co_awaiters.cpp">
@@ -158,7 +158,7 @@
     <ClInclude Include="source\co_task.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="source\exceptions.h">
+    <ClInclude Include="source\co_exceptions.h">
       <Filter>source</Filter>
     </ClInclude>
     <ClInclude Include="source\co_awaiters.h">

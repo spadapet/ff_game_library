@@ -233,7 +233,7 @@ bool ff::ui_view::block_input_below() const
 
 void ff::ui_view::advance()
 {
-    double time = this->counter++ * ff::constants::seconds_per_advance;
+    double time = this->counter++ * ff::constants::seconds_per_advance<double>();
     this->update_render |= this->internal_view_->Update(time);
 }
 

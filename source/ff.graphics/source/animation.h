@@ -86,7 +86,7 @@ namespace ff
     class create_animation
     {
     public:
-        create_animation(float length, float frames_per_second = ff::constants::advances_per_second_f, ff::animation_keys::method_t method = ff::animation_keys::method_t::default_);
+        create_animation(float length, float frames_per_second = ff::constants::advances_per_second<float>(), ff::animation_keys::method_t method = ff::animation_keys::method_t::default_);
         create_animation(create_animation&& other) noexcept = default;
         create_animation(const create_animation& other) = default;
 

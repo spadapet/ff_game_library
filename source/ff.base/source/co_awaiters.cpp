@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "co_awaiters.h"
-#include "exceptions.h"
+#include "co_exceptions.h"
 #include "thread_dispatch.h"
 #include "thread_pool.h"
 
@@ -12,7 +12,7 @@ ff::internal::co_thread_awaiter::co_thread_awaiter(ff::thread_dispatch_type thre
 
 bool ff::internal::co_thread_awaiter::ready(ff::thread_dispatch_type thread_type, size_t delay_ms)
 {
-    if (delay_ms != ff::constants::invalid_size)
+    if (delay_ms != ff::constants::invalid_unsigned<size_t>())
     {
         return false;
     }
@@ -43,7 +43,7 @@ void ff::internal::co_thread_awaiter::post(std::function<void()>&& func, ff::thr
         return;
     }
 
-    delay_ms = (delay_ms != ff::constants::invalid_size) ? delay_ms : 0;
+    delay_ms = (delay_ms != ff::constants::invalid_unsigned<size_t>()) ? delay_ms : 0;
 
     if (thread_type == ff::thread_dispatch_type::main ||
         thread_type == ff::thread_dispatch_type::game ||

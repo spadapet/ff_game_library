@@ -20,7 +20,7 @@ namespace
             , source_rect(sprite->sprite_data().texture_rect().offset(0.5f, 0.5f).cast<int>())
             , dest_rect{}
             , sprite_index(sprite_index)
-            , dest_texture(ff::constants::invalid_size)
+            , dest_texture(ff::constants::invalid_unsigned<size_t>())
         {}
 
         optimized_sprite_info(optimized_sprite_info&& other) noexcept = default;
@@ -278,7 +278,7 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
         }
         else
         {
-            if (sprite.dest_texture == ff::constants::invalid_size)
+            if (sprite.dest_texture == ff::constants::invalid_unsigned<size_t>())
             {
                 if (sprite.source_rect.width() > ::TEXTURE_SIZE_MAX ||
                     sprite.source_rect.height() > ::TEXTURE_SIZE_MAX)
@@ -297,7 +297,7 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
                 }
             }
 
-            if (sprite.dest_texture == ff::constants::invalid_size)
+            if (sprite.dest_texture == ff::constants::invalid_unsigned<size_t>())
             {
                 // Look for empty space in an existing texture
                 for (size_t h = start_texture; h < texture_infos.size(); h++)
@@ -321,7 +321,7 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
             }
         }
 
-        if (sprite.dest_texture != ff::constants::invalid_size)
+        if (sprite.dest_texture != ff::constants::invalid_unsigned<size_t>())
         {
             sprites_done++;
         }
@@ -407,11 +407,11 @@ static bool compute_optimized_sprites(std::vector<::optimized_sprite_info>& spri
 
                 for (::optimized_sprite_info& sprite : sprites)
                 {
-                    if (sprite.dest_texture != ff::constants::invalid_size)
+                    if (sprite.dest_texture != ff::constants::invalid_unsigned<size_t>())
                     {
                         if (sprite.dest_texture == texture_info)
                         {
-                            sprite.dest_texture = ff::constants::invalid_size;
+                            sprite.dest_texture = ff::constants::invalid_unsigned<size_t>();
                             sprite.dest_rect = ff::rect_int{};
                         }
                         else if (sprite.dest_texture > texture_info)
