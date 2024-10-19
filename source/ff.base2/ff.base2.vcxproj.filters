@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Natvis Include="base.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="types\frame_allocator.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\uuid.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="windows\win_msg.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="windows\win_handle.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="windows\window.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="types\signal.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\thread_dispatch.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\thread_pool.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="init.cpp" />
+    <ClCompile Include="types\scope_exit.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="base\assert.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\filesystem.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\log.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\math.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\memory.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\stable_hash.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="types\perf_timer.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\timer.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\co_awaiters.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\co_exceptions.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="thread\co_task.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="types\fixed.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\flags.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\point.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\push_back.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\rect.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\frame_allocator.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\intrusive_ptr.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\uuid.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\win_msg.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="types\stack_vector.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\stash.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\win_handle.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\window.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="types\pool_allocator.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\signal.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\thread_dispatch.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\thread_pool.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="init.h" />
+    <ClInclude Include="types\scope_exit.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="base\assert.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\constants.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\filesystem.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\log.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\math.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\memory.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\stable_hash.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="types\perf_timer.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\timer.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\co_awaiters.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\co_exceptions.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+    <ClInclude Include="thread\co_task.h">
+      <Filter>thread</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="types">
+      <UniqueIdentifier>{96aa1f27-942e-4c71-925d-bfcef7c9bc4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{225ebac2-06eb-4379-807e-e971d90be7e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thread">
+      <UniqueIdentifier>{0975f246-33c7-4e32-a8d1-756deff11187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{094e5843-d9ba-4235-884f-6afd08318ee4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -38,6 +38,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.application.h = include\ff.application.h
 		include\ff.audio.h = include\ff.audio.h
 		include\ff.base.h = include\ff.base.h
+		include\ff.base2.h = include\ff.base2.h
 		include\ff.data.h = include\ff.data.h
 		include\ff.dx12.h = include\ff.dx12.h
 		include\ff.dxgi.h = include\ff.dxgi.h
@@ -86,6 +87,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ff.application.xaml", "source\ff.application\xaml\ff.application.xaml.csproj", "{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blend", "blend", "{1BA4998A-A497-43C4-913A-39AE19B4A776}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base2", "source\ff.base2\ff.base2.vcxproj", "{F89161F3-74E5-4B6B-9A53-6B97B83D1700}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -214,6 +217,12 @@ Global
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Profile|x64.Build.0 = Debug|Any CPU
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Release|x64.ActiveCfg = Release|Any CPU
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Release|x64.Build.0 = Release|Any CPU
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Debug|x64.ActiveCfg = Debug|x64
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Debug|x64.Build.0 = Debug|x64
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Profile|x64.ActiveCfg = Profile|x64
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Profile|x64.Build.0 = Profile|x64
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Release|x64.ActiveCfg = Release|x64
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -239,6 +248,7 @@ Global
 		{F31D4233-5404-456A-A09E-44FDAA2F818E} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7} = {1BA4998A-A497-43C4-913A-39AE19B4A776}
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555} = {1BA4998A-A497-43C4-913A-39AE19B4A776}
+		{F89161F3-74E5-4B6B-9A53-6B97B83D1700} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9E65BE6F-B921-4190-995D-5E5CA6AA77DB}
