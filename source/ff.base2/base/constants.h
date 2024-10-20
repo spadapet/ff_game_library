@@ -9,6 +9,12 @@ namespace ff::constants
     constexpr bool profile_build = static_cast<bool>(PROFILE_APP);
     constexpr size_t bits_build = sizeof(size_t) * 8;
 
+#ifdef TRACK_MEMORY_ALLOCATIONS
+    constexpr bool track_memory = true;
+#else
+    constexpr bool track_memory = false;
+#endif
+
     template<class T, class = std::enable_if_t<std::is_unsigned_v<T>>>
     constexpr T invalid_unsigned()
     {

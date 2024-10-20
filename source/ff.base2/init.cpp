@@ -29,7 +29,7 @@ namespace
 {
     struct one_time_init_base
     {
-        one_time_init_base()
+        one_time_init_base(const ff::init_main_window_params* window_params)
             : thread_dispatch(ff::thread_dispatch_type::main)
         {
             if (!::IsMouseInPointerEnabled())
@@ -37,120 +37,61 @@ namespace
                 ::EnableMouseInPointer(TRUE);
             }
 
-#ifdef TRACK_MEMORY_ALLOCATIONS
-            ff::memory::start_tracking_allocations();
-#endif
+            if constexpr (ff::constants::track_memory)
+            {
+                ff::memory::start_tracking_allocations();
+            }
 
             ff::internal::thread_pool::init();
+
+            if (window_params && window_params->window_class.empty())
+            {
+                this->main_window = std::make_unique<ff::window>(
+                    ff::window::create_blank(ff::window_type::main, window_params->title, nullptr,
+                        WS_OVERLAPPEDWINDOW | (window_params->visible ? WS_VISIBLE : 0), 0,
+                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
+            }
+            else if (window_params)
+            {
+                this->main_window = std::make_unique<ff::window>(
+                    ff::window::create(ff::window_type::main, window_params->window_class, window_params->title, nullptr,
+                        WS_OVERLAPPEDWINDOW | (window_params->visible ? WS_VISIBLE : 0), 0,
+                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
+            }
+
+            this->init_value_types();
+
+            ff::internal::global_resources::init();
+
+            this->init_resource_factories();
         }
 
         ~one_time_init_base()
         {
+            ff::internal::global_resources::destroy();
+            ff::thread_pool::flush();
+            this->thread_dispatch.flush();
+            this->main_window.reset();
             ff::internal::thread_pool::destroy();
 
-#ifdef TRACK_MEMORY_ALLOCATIONS
-            ff::memory::stop_tracking_allocations();
-#endif
-        }
-
-    private:
-        ff::thread_dispatch thread_dispatch;
-    };
-
-    struct one_time_init_main_window
-    {
-        one_time_init_main_window(const ff::init_main_window_params& params)
-            : main_window(one_time_init_main_window::create_window(params))
-        {}
-
-        ~one_time_init_main_window()
-        {
-            // in case any background work depends on the main window
-            ff::thread_pool::flush();
-            ff::thread_dispatch::get_main()->flush();
-        }
-
-        static ff::window create_window(const ff::init_main_window_params& params)
-        {
-            if (params.window_class.empty())
+            if constexpr (ff::constants::track_memory)
             {
-                return ff::window::create_blank(ff::window_type::main, params.title, nullptr,
-                    WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
-                    CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT);
+                ff::memory::stop_tracking_allocations();
+            }
+        }
+
+        bool valid() const
+        {
+            if (this->main_window && !this->main_window->operator bool())
+            {
+                return false;
             }
 
-            return ff::window::create(ff::window_type::main, params.window_class, params.title, nullptr,
-                WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
-                CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT);
+            return true;
         }
 
     private:
-        ff::window main_window;
-    };
-}
-
-static int init_base_refs;
-static int init_main_window_refs;
-static std::unique_ptr<one_time_init_base> init_base_data;
-static std::unique_ptr<one_time_init_main_window> init_main_window_data;
-static std::mutex init_base_mutex;
-static std::mutex init_main_window_mutex;
-
-ff::init_base::init_base()
-{
-    std::scoped_lock lock(::init_base_mutex);
-
-    if (::init_base_refs++ == 0)
-    {
-        ::init_base_data = std::make_unique<one_time_init_base>();
-    }
-}
-
-ff::init_base::~init_base()
-{
-    std::scoped_lock lock(::init_base_mutex);
-
-    if (::init_base_refs-- == 1)
-    {
-        ::init_base_data.reset();
-    }
-}
-
-ff::init_base::operator bool() const
-{
-    return true;
-}
-
-ff::init_main_window::init_main_window(const ff::init_main_window_params& params)
-{
-    std::scoped_lock lock(::init_main_window_mutex);
-
-    if (::init_main_window_refs++ == 0)
-    {
-        ::init_main_window_data = std::make_unique<one_time_init_main_window>(params);
-    }
-}
-
-ff::init_main_window::~init_main_window()
-{
-    std::scoped_lock lock(::init_main_window_mutex);
-
-    if (::init_main_window_refs-- == 1)
-    {
-        ::init_main_window_data.reset();
-    }
-}
-
-ff::init_main_window::operator bool() const
-{
-    return this->init_base && ff::window::main() && ff::window::main()->operator bool();
-}
-
-ff::init_data::init_data()
-{
-    static struct one_time_init
-    {
-        one_time_init()
+        void init_value_types()
         {
             ff::value::register_type<ff::type::bool_type>("bool");
             ff::value::register_type<ff::type::dict_type>("dict");
@@ -174,6 +115,8 @@ ff::init_data::init_data()
             ff::value::register_type<ff::type::rect_float_type>("rect_float");
             ff::value::register_type<ff::type::rect_int_type>("rect_int");
             ff::value::register_type<ff::type::rect_size_type>("rect_size");
+            ff::value::register_type<ff::type::resource_type>("resource");
+            ff::value::register_type<ff::type::resource_object_type>("resource_object");
             ff::value::register_type<ff::type::saved_data_type>("saved_data");
             ff::value::register_type<ff::type::size_type>("size");
             ff::value::register_type<ff::type::size_vector_type>("size_vector");
@@ -182,40 +125,44 @@ ff::init_data::init_data()
             ff::value::register_type<ff::type::uuid_type>("uuid");
             ff::value::register_type<ff::type::value_vector_type>("value_vector");
         }
-    } init;
-}
 
-ff::init_data::operator bool() const
-{
-    return this->init_base;
-}
-
-ff::init_resource::init_resource()
-{
-    static struct one_time_init
-    {
-        one_time_init()
+        void init_resource_factories()
         {
-            ff::internal::global_resources::init();
-
-            // Values
-            ff::value::register_type<ff::type::resource_type>("resource");
-            ff::value::register_type<ff::type::resource_object_type>("resource_object");
-
-            // Resource objects
             ff::resource_object_base::register_factory<ff::internal::resource_file_factory>("file");
             ff::resource_object_base::register_factory<ff::internal::resource_objects_factory>("resource_objects");
             ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
         }
-    } init;
+
+        ff::thread_dispatch thread_dispatch;
+        std::unique_ptr<ff::window> main_window;
+    };
 }
 
-ff::init_resource::~init_resource()
+static int init_base_refs;
+static std::unique_ptr<one_time_init_base> init_base_data;
+static std::mutex init_base_mutex;
+
+ff::init_base::init_base(const ff::init_main_window_params* window_params)
 {
-    ff::internal::global_resources::destroy();
+    std::scoped_lock lock(::init_base_mutex);
+
+    if (::init_base_refs++ == 0)
+    {
+        ::init_base_data = std::make_unique<one_time_init_base>(window_params);
+    }
 }
 
-ff::init_resource::operator bool() const
+ff::init_base::~init_base()
 {
-    return this->init_data;
+    std::scoped_lock lock(::init_base_mutex);
+
+    if (::init_base_refs-- == 1)
+    {
+        ::init_base_data.reset();
+    }
+}
+
+ff::init_base::operator bool() const
+{
+    return ::init_base_data && ::init_base_data->valid();
 }
