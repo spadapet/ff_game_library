@@ -1,7 +1,7 @@
 #pragma once
 
-#include "constants.h"
-#include "string.h"
+#include "../base/constants.h"
+#include "../base/string.h"
 
 namespace ff::internal::log
 {

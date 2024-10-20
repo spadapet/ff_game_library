@@ -36,9 +36,6 @@
     <ClCompile Include="base\assert.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\filesystem.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="base\log.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -68,6 +65,87 @@
     </ClCompile>
     <ClCompile Include="thread\co_task.cpp">
       <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\bool_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\data_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\dict_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\double_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\fixed_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\float_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\int_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\null_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\saved_data_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\size_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\string_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\uuid_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\value.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\value_allocator.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\value_type.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\value_vector_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\compression.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\data.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\dict.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\dict_visitor.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\file.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\filesystem.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\json_persist.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\json_tokenizer.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\persist.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\stream.cpp">
+      <Filter>data_persist</Filter>
+    </ClCompile>
+    <ClCompile Include="data_persist\saved_data.cpp">
+      <Filter>data_persist</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -133,9 +211,6 @@
     <ClInclude Include="base\constants.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\filesystem.h">
-      <Filter>base</Filter>
-    </ClInclude>
     <ClInclude Include="base\log.h">
       <Filter>base</Filter>
     </ClInclude>
@@ -166,6 +241,105 @@
     <ClInclude Include="thread\co_task.h">
       <Filter>thread</Filter>
     </ClInclude>
+    <ClInclude Include="data_value\bool_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\data_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\dict_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\double_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\fixed_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\float_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\int_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\null_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\point_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\rect_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\saved_data_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\size_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\string_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\uuid_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_allocator.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_ptr.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_traits.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_type.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_type_base.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_vector_base.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\value_vector_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\compression.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\data.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\dict.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\dict_visitor.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\file.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\filesystem.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\json_persist.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\json_tokenizer.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\persist.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\stream.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
+    <ClInclude Include="data_persist\saved_data.h">
+      <Filter>data_persist</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="types">
@@ -179,6 +353,12 @@
     </Filter>
     <Filter Include="base">
       <UniqueIdentifier>{094e5843-d9ba-4235-884f-6afd08318ee4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="data_value">
+      <UniqueIdentifier>{14b48fcb-42ac-40f7-b056-4d9ce78f633e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="data_persist">
+      <UniqueIdentifier>{63b1caac-a102-48a7-b666-8af6c2047770}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

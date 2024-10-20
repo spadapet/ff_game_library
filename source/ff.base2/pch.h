@@ -4,6 +4,7 @@
 // C++
 #include <array>
 #include <atomic>
+#include <charconv>
 #include <coroutine>
 #include <cmath>
 #include <cstdarg>
@@ -17,7 +18,9 @@
 #include <memory>
 #include <mutex>
 #include <numbers>
+#include <ostream>
 #include <random>
+#include <shared_mutex>
 #include <sstream>
 #include <stop_token>
 #include <string>
@@ -25,11 +28,14 @@
 #include <thread>
 #include <type_traits>
 #include <typeindex>
+#include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 // Windows
 #include <Windows.h>
 #include <ShlObj.h>
+#include <wrl.h>
 
 #pragma pop_macro("assert")
