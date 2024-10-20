@@ -10,12 +10,17 @@
 #include "data_value/null_v.h"
 #include "data_value/point_v.h"
 #include "data_value/rect_v.h"
+#include "data_value/resource_object_v.h"
+#include "data_value/resource_v.h"
 #include "data_value/saved_data_v.h"
 #include "data_value/size_v.h"
 #include "data_value/string_v.h"
 #include "data_value/uuid_v.h"
 #include "data_value/value_vector_v.h"
 #include "init.h"
+#include "resource/resource_file.h"
+#include "resource/resource_objects.h"
+#include "resource/resource_values.h"
 #include "thread/thread_dispatch.h"
 #include "thread/thread_pool.h"
 #include "windows/window.h"
@@ -183,4 +188,34 @@ ff::init_data::init_data()
 ff::init_data::operator bool() const
 {
     return this->init_base;
+}
+
+ff::init_resource::init_resource()
+{
+    static struct one_time_init
+    {
+        one_time_init()
+        {
+            ff::internal::global_resources::init();
+
+            // Values
+            ff::value::register_type<ff::type::resource_type>("resource");
+            ff::value::register_type<ff::type::resource_object_type>("resource_object");
+
+            // Resource objects
+            ff::resource_object_base::register_factory<ff::internal::resource_file_factory>("file");
+            ff::resource_object_base::register_factory<ff::internal::resource_objects_factory>("resource_objects");
+            ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
+        }
+    } init;
+}
+
+ff::init_resource::~init_resource()
+{
+    ff::internal::global_resources::destroy();
+}
+
+ff::init_resource::operator bool() const
+{
+    return this->init_data;
 }

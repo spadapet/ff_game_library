@@ -40,4 +40,16 @@ namespace ff
     private:
         ff::init_base init_base;
     };
+
+    class init_resource
+    {
+    public:
+        init_resource();
+        ~init_resource();
+
+        operator bool() const;
+
+    private:
+        ff::init_data init_data;
+    };
 }

@@ -147,6 +147,45 @@
     <ClCompile Include="data_persist\saved_data.cpp">
       <Filter>data_persist</Filter>
     </ClCompile>
+    <ClCompile Include="resource\auto_resource.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\global_resources.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_file.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_load.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_load_context.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_load2.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_object_base.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_object_factory_base.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_objects.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="resource\resource_values.cpp">
+      <Filter>resource</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\resource_object_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
+    <ClCompile Include="data_value\resource_v.cpp">
+      <Filter>data_value</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -340,6 +379,48 @@
     <ClInclude Include="data_persist\saved_data.h">
       <Filter>data_persist</Filter>
     </ClInclude>
+    <ClInclude Include="resource\auto_resource.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\global_resources.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_file.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_load.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_load_context.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_object_base.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_object_factory_base.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_object_provider.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_objects.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_value_provider.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource\resource_values.h">
+      <Filter>resource</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\resource_object_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="data_value\resource_v.h">
+      <Filter>data_value</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="types">
@@ -359,6 +440,9 @@
     </Filter>
     <Filter Include="data_persist">
       <UniqueIdentifier>{63b1caac-a102-48a7-b666-8af6c2047770}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resource">
+      <UniqueIdentifier>{1ede68d4-9cb1-40e9-8722-f095dfe2f7a1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
