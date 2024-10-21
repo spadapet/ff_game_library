@@ -29,7 +29,7 @@ namespace
 {
     struct one_time_init_base
     {
-        one_time_init_base(const ff::init_main_window_params* window_params)
+        one_time_init_base()
             : thread_dispatch(ff::thread_dispatch_type::main)
         {
             if (!::IsMouseInPointerEnabled())
@@ -43,21 +43,6 @@ namespace
             }
 
             ff::internal::thread_pool::init();
-
-            if (window_params && window_params->window_class.empty())
-            {
-                this->main_window = std::make_unique<ff::window>(
-                    ff::window::create_blank(ff::window_type::main, window_params->title, nullptr,
-                        WS_OVERLAPPEDWINDOW | (window_params->visible ? WS_VISIBLE : 0), 0,
-                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
-            }
-            else if (window_params)
-            {
-                this->main_window = std::make_unique<ff::window>(
-                    ff::window::create(ff::window_type::main, window_params->window_class, window_params->title, nullptr,
-                        WS_OVERLAPPEDWINDOW | (window_params->visible ? WS_VISIBLE : 0), 0,
-                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
-            }
 
             this->init_value_types();
 
@@ -88,6 +73,27 @@ namespace
             }
 
             return true;
+        }
+
+        void init_main_window(const ff::init_main_window_params& params)
+        {
+            if (!this->main_window)
+            {
+                if (params.window_class.empty())
+                {
+                    this->main_window = std::make_unique<ff::window>(
+                        ff::window::create_blank(ff::window_type::main, params.title, nullptr,
+                            WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
+                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
+                }
+                else
+                {
+                    this->main_window = std::make_unique<ff::window>(
+                        ff::window::create(ff::window_type::main, params.window_class, params.title, nullptr,
+                            WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
+                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
+                }
+            }
         }
 
     private:
@@ -148,7 +154,12 @@ ff::init_base::init_base(const ff::init_main_window_params* window_params)
 
     if (::init_base_refs++ == 0)
     {
-        ::init_base_data = std::make_unique<one_time_init_base>(window_params);
+        ::init_base_data = std::make_unique<one_time_init_base>();
+    }
+
+    if (window_params)
+    {
+        ::init_base_data->init_main_window(*window_params);
     }
 }
 
