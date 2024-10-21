@@ -11,7 +11,7 @@ namespace ff
         operator bool() const;
 
     private:
-        ff::init_resource init_resource;
+        ff::init_base init_base;
         ff::dx12::init init_dx12;
     };
 }

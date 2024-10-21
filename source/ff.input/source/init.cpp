@@ -28,13 +28,14 @@ namespace
 static int init_input_refs;
 static std::unique_ptr<one_time_init_input> init_input_data;
 static std::mutex init_input_mutex;
+static ff::init_main_window_params empty_window_params;
 
 ff::init_input::init_input()
-    : init_main_window(ff::init_main_window_params{})
+    : init_base(&::empty_window_params)
 {
     std::scoped_lock lock(::init_input_mutex);
 
-    if (::init_input_refs++ == 0 && this->init_resource && this->init_main_window)
+    if (::init_input_refs++ == 0 && this->init_base)
     {
         ::init_input_data = std::make_unique<one_time_init_input>();
     }
@@ -52,5 +53,5 @@ ff::init_input::~init_input()
 
 ff::init_input::operator bool() const
 {
-    return this->init_resource && this->init_main_window && ::init_input_status;
+    return this->init_base && ::init_input_status;
 }

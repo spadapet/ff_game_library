@@ -76,7 +76,8 @@ static ff::init_main_window_params get_window_params()
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
-    ff::init_main_window init_window(::get_window_params());
+    ff::init_main_window_params window_params = ::get_window_params();
+    ff::init_base init_base(&window_params);
     ff::init_app init_app(::get_app_params(), ::get_ui_params());
     return ff::handle_messages_until_quit();
 }

@@ -10,4 +10,4 @@
 
 // FF
 #pragma pop_macro("assert")
-#include <ff.resource.h>
+#include <ff.base2.h>

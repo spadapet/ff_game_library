@@ -44,7 +44,7 @@
 #include "../source/ff.base2/data_value/value_ptr.h"
 #include "../source/ff.base2/data_value/value_traits.h"
 #include "../source/ff.base2/data_value/value_type.h"
-#include "../source/ff.base2/data_value/value_vector.h"
+#include "../source/ff.base2/data_value/value_vector_v.h"
 #include "../source/ff.base2/data_value/value_vector_base.h"
 
 #include "../source/ff.base2/resource/auto_resource.h"

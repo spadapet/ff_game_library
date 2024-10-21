@@ -11,4 +11,3 @@
 // FF
 #pragma pop_macro("assert")
 #include <ff.dx12.h>
-#include <ff.resource.h>

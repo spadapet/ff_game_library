@@ -34,9 +34,8 @@
     <ClInclude Include="source\wav_file.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ff.resource\ff.resource.vcxproj">
-      <Project>{e684fb9b-d6e4-41c4-90c8-414abf1e6006}</Project>
-      <Private>false</Private>
+    <ProjectReference Include="..\ff.base2\ff.base2.vcxproj">
+      <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

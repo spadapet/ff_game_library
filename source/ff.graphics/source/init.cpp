@@ -68,7 +68,7 @@ ff::init_graphics::init_graphics()
 {
     std::scoped_lock lock(::init_graphics_mutex);
 
-    if (::init_graphics_refs++ == 0 && this->init_resource && this->init_dx12)
+    if (::init_graphics_refs++ == 0 && this->init_base && this->init_dx12)
     {
         ::init_graphics_data = std::make_unique<one_time_init_graphics>(init_dx12.client_functions());
     }
@@ -86,5 +86,5 @@ ff::init_graphics::~init_graphics()
 
 ff::init_graphics::operator bool() const
 {
-    return this->init_resource && this->init_dx12 && ::init_graphics_status;
+    return this->init_base && this->init_dx12 && ::init_graphics_status;
 }

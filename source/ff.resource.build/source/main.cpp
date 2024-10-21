@@ -455,9 +455,9 @@ static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 int main()
 {
     ff::timer timer;
-    ff::init_resource init_resource;
+    ff::init_base init_base;
 
-    if (!init_resource)
+    if (!init_base)
     {
         std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;

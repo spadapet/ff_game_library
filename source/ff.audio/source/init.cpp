@@ -35,7 +35,7 @@ ff::init_audio::init_audio()
 {
     std::scoped_lock lock(::init_audio_mutex);
 
-    if (::init_audio_refs++ == 0 && this->init_resource)
+    if (::init_audio_refs++ == 0 && this->init_base)
     {
         ::init_audio_data = std::make_unique<one_time_init_audio>();
     }
@@ -53,5 +53,5 @@ ff::init_audio::~init_audio()
 
 ff::init_audio::operator bool() const
 {
-    return this->init_resource && ::init_audio_status;
+    return this->init_base && ::init_audio_status;
 }

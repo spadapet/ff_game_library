@@ -1,7 +1,7 @@
 #pragma once
 
 // FF
-#include <ff.resource.h>
+#include <ff.base2.h>
 
 // Windows
 #include <windowsx.h>
