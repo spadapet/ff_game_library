@@ -67,17 +67,17 @@ static ff::init_ui_params get_ui_params()
     return params;
 }
 
-static ff::init_main_window_params get_window_params()
+static ff::init_window_params get_window_params()
 {
     const std::string_view class_name = "main_window_class";
     ff::window::create_class(class_name, CS_DBLCLKS, ff::get_hinstance(), ::LoadCursor(nullptr, IDC_ARROW), reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1), 0, 1);
-    return ff::init_main_window_params{ std::string(class_name) };
+    return ff::init_window_params{ std::string(class_name) };
 }
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
-    ff::init_main_window_params window_params = ::get_window_params();
-    ff::init_base init_base(&window_params);
+    ff::init_base init_base;
+    init_base.init_main_window(::get_window_params());
     ff::init_app init_app(::get_app_params(), ::get_ui_params());
     return ff::handle_messages_until_quit();
 }

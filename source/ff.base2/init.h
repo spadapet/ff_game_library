@@ -2,19 +2,23 @@
 
 namespace ff
 {
-    struct init_main_window_params
+    class window;
+
+    struct init_window_params
     {
         std::string window_class;
         std::string title;
-        bool visible;
+        bool visible{};
     };
 
     class init_base
     {
     public:
-        init_base(const ff::init_main_window_params* window_params = nullptr);
+        init_base();
         ~init_base();
 
         operator bool() const;
+
+        ff::window* init_main_window(const ff::init_window_params& window_params);
     };
 }

@@ -28,11 +28,12 @@ namespace
 static int init_input_refs;
 static std::unique_ptr<one_time_init_input> init_input_data;
 static std::mutex init_input_mutex;
-static ff::init_main_window_params empty_window_params;
 
 ff::init_input::init_input()
-    : init_base(&::empty_window_params)
 {
+    ff::init_window_params window_params;
+    this->init_base.init_main_window(window_params);
+
     std::scoped_lock lock(::init_input_mutex);
 
     if (::init_input_refs++ == 0 && this->init_base)

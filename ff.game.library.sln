@@ -39,12 +39,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.audio.h = include\ff.audio.h
 		include\ff.base.h = include\ff.base.h
 		include\ff.base2.h = include\ff.base2.h
-		include\ff.data.h = include\ff.data.h
 		include\ff.dx12.h = include\ff.dx12.h
 		include\ff.dxgi.h = include\ff.dxgi.h
 		include\ff.graphics.h = include\ff.graphics.h
 		include\ff.input.h = include\ff.input.h
-		include\ff.resource.h = include\ff.resource.h
 		include\ff.ui.h = include\ff.ui.h
 	EndProjectSection
 EndProject

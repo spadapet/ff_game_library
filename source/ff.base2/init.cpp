@@ -42,13 +42,11 @@ namespace
                 ff::memory::start_tracking_allocations();
             }
 
-            ff::internal::thread_pool::init();
-
             this->init_value_types();
-
-            ff::internal::global_resources::init();
-
             this->init_resource_factories();
+
+            ff::internal::thread_pool::init();
+            ff::internal::global_resources::init();
         }
 
         ~one_time_init_base()
@@ -75,7 +73,7 @@ namespace
             return true;
         }
 
-        void init_main_window(const ff::init_main_window_params& params)
+        ff::window* init_main_window(const ff::init_window_params& params)
         {
             if (!this->main_window)
             {
@@ -94,6 +92,8 @@ namespace
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
                 }
             }
+
+            return this->main_window.get();
         }
 
     private:
@@ -148,18 +148,13 @@ static int init_base_refs;
 static std::unique_ptr<one_time_init_base> init_base_data;
 static std::mutex init_base_mutex;
 
-ff::init_base::init_base(const ff::init_main_window_params* window_params)
+ff::init_base::init_base()
 {
     std::scoped_lock lock(::init_base_mutex);
 
     if (::init_base_refs++ == 0)
     {
         ::init_base_data = std::make_unique<one_time_init_base>();
-    }
-
-    if (window_params)
-    {
-        ::init_base_data->init_main_window(*window_params);
     }
 }
 
@@ -176,4 +171,10 @@ ff::init_base::~init_base()
 ff::init_base::operator bool() const
 {
     return ::init_base_data && ::init_base_data->valid();
+}
+
+ff::window* ff::init_base::init_main_window(const ff::init_window_params& window_params)
+{
+    std::scoped_lock lock(::init_base_mutex);
+    return ::init_base_data->init_main_window(window_params);
 }

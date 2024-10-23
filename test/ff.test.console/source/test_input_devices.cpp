@@ -4,8 +4,9 @@ using namespace std::literals::chrono_literals;
 
 void run_test_input_devices()
 {
-    ff::init_main_window_params window_params{ {}, "Test window", true };
-    ff::init_base init_main_window(&window_params);
+    ff::init_base init_base;
+    ff::init_window_params window_params{ {}, "Test window", true };
+    init_base.init_main_window(window_params);
     ff::init_input init_input;
 
     std::mutex mutex;
