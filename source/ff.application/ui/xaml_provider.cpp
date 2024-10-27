@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "stream.h"
-#include "xaml_provider.h"
+#include "ui/stream.h"
+#include "ui/xaml_provider.h"
 
 ff::internal::ui::xaml_provider::xaml_provider(std::shared_ptr<ff::resource_object_provider> resources)
     : resources(resources)

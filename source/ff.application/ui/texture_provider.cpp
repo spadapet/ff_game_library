@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "texture.h"
-#include "texture_provider.h"
+#include "ui/texture.h"
+#include "ui/texture_provider.h"
 
 ff::internal::ui::texture_provider::texture_provider(std::shared_ptr<ff::resource_object_provider> resources)
     : placeholder_texture(std::make_shared<ff::texture>(ff::dxgi_client().create_render_texture(ff::point_size(1, 1), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, nullptr)))

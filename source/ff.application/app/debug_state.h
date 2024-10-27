@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../app/state.h"
+#include "../ui/notify_property_changed_base.h"
 
 namespace ff::internal
 {

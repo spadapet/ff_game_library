@@ -93,9 +93,6 @@
     <ProjectReference Include="..\..\source\ff.input\ff.input.vcxproj">
       <Project>{475230fd-c110-4b27-9c6a-8ef1c11b5a2e}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.ui\ff.ui.vcxproj">
-      <Project>{8147a742-08ac-49fd-8c51-3956e1a65e16}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\vendor\ff.vendor.noesis_app.vcxproj">
       <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
     </ProjectReference>

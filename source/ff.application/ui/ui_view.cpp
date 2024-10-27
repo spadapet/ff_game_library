@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "render_device.h"
-#include "ui.h"
-#include "ui_view.h"
+#include "ui/render_device.h"
+#include "ui/ui.h"
+#include "ui/ui_view.h"
 
 ff::ui_view::ui_view(std::string_view xaml_file, ff::ui_view_options options)
     : ui_view(Noesis::GUI::LoadXaml<Noesis::FrameworkElement>(std::string(xaml_file).c_str()), options)

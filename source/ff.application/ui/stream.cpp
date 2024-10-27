@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "stream.h"
+#include "ui/stream.h"
 
 ff::internal::ui::stream::stream(ff::auto_resource_value&& resource)
     : resource(std::move(resource))

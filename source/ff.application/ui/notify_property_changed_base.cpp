@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "notify_property_changed_base.h"
+#include "ui/notify_property_changed_base.h"
 
 NS_IMPLEMENT_REFLECTION(ff::ui::notify_property_changed_base)
 {

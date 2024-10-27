@@ -2,6 +2,8 @@
 #include "app/app.h"
 #include "app/debug_state.h"
 #include "ff.app.res.id.h"
+#include "ui/delegate_command.h"
+#include "ui/ui_view.h"
 #include "ui/ui_view_state.h"
 
 using namespace std::string_view_literals;

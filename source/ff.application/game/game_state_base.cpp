@@ -4,6 +4,8 @@
 #include "app/settings.h"
 #include "ff.app.res.id.h"
 #include "game/game_state_base.h"
+#include "ui/ui.h"
+#include "ui/ui_view.h"
 
 using namespace std::string_view_literals;
 

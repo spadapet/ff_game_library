@@ -37,13 +37,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.all.h = include\ff.all.h
 		include\ff.application.h = include\ff.application.h
 		include\ff.audio.h = include\ff.audio.h
-		include\ff.base.h = include\ff.base.h
 		include\ff.base2.h = include\ff.base2.h
 		include\ff.dx12.h = include\ff.dx12.h
 		include\ff.dxgi.h = include\ff.dxgi.h
 		include\ff.graphics.h = include\ff.graphics.h
 		include\ff.input.h = include\ff.input.h
-		include\ff.ui.h = include\ff.ui.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "source", "source", "{FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}"
@@ -61,8 +59,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.input", "source\ff.input\ff.input.vcxproj", "{475230FD-C110-4B27-9C6A-8EF1C11B5A2E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.graphics", "source\ff.graphics\ff.graphics.vcxproj", "{2464CDE6-763F-48FC-A587-4BB84B4B5D64}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.ui", "source\ff.ui\ff.ui.vcxproj", "{8147A742-08AC-49FD-8C51-3956E1A65E16}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.application", "source\ff.application\ff.application.vcxproj", "{376073E9-EA4D-4513-941C-906CA968C6C3}"
 EndProject
@@ -143,12 +139,6 @@ Global
 		{2464CDE6-763F-48FC-A587-4BB84B4B5D64}.Profile|x64.Build.0 = Profile|x64
 		{2464CDE6-763F-48FC-A587-4BB84B4B5D64}.Release|x64.ActiveCfg = Release|x64
 		{2464CDE6-763F-48FC-A587-4BB84B4B5D64}.Release|x64.Build.0 = Release|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Debug|x64.ActiveCfg = Debug|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Debug|x64.Build.0 = Debug|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Profile|x64.ActiveCfg = Profile|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Profile|x64.Build.0 = Profile|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Release|x64.ActiveCfg = Release|x64
-		{8147A742-08AC-49FD-8C51-3956E1A65E16}.Release|x64.Build.0 = Release|x64
 		{376073E9-EA4D-4513-941C-906CA968C6C3}.Debug|x64.ActiveCfg = Debug|x64
 		{376073E9-EA4D-4513-941C-906CA968C6C3}.Debug|x64.Build.0 = Debug|x64
 		{376073E9-EA4D-4513-941C-906CA968C6C3}.Profile|x64.ActiveCfg = Profile|x64
@@ -211,7 +201,6 @@ Global
 		{7B04EB5D-8AC9-47CC-80CB-5192CB41057A} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{475230FD-C110-4B27-9C6A-8EF1C11B5A2E} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{2464CDE6-763F-48FC-A587-4BB84B4B5D64} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
-		{8147A742-08AC-49FD-8C51-3956E1A65E16} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{376073E9-EA4D-4513-941C-906CA968C6C3} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{8670E093-EDD1-451E-868E-ACFFB7258759} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{CBABF708-3DCA-4933-8D94-188536AF1EC2} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}

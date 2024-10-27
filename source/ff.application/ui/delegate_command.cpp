@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "delegate_command.h"
+#include "ui/delegate_command.h"
 
 NS_IMPLEMENT_REFLECTION(ff::ui::delegate_command)
 {}

@@ -4,6 +4,8 @@
 
 namespace ff
 {
+    class ui_view;
+
     class ui_view_state : public ff::state
     {
     public:

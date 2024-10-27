@@ -4,6 +4,7 @@
 #include "app/settings.h"
 #include "ff.app.res.h"
 #include "init.h"
+#include "ui/ui.h"
 
 namespace
 {

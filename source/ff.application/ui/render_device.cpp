@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "ff.ui.res.id.h"
-#include "render_device.h"
-#include "render_target.h"
-#include "texture.h"
-#include "ui.h"
+#include "ui/render_device.h"
+#include "ui/render_target.h"
+#include "ui/texture.h"
+#include "ui/ui.h"
 
 static void set_filter(Noesis::MinMagFilter::Enum minmag, Noesis::MipFilter::Enum mip, D3D12_SAMPLER_DESC& desc)
 {

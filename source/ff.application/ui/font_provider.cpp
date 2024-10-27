@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "font_provider.h"
-#include "stream.h"
+#include "ui/font_provider.h"
+#include "ui/stream.h"
 
 ff::internal::ui::font_provider::font_provider(std::shared_ptr<ff::resource_object_provider> resources)
     : resources(resources)

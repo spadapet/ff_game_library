@@ -1,16 +1,15 @@
 #include "pch.h"
-#include "converters.h"
-#include "font_provider.h"
-#include "init.h"
-#include "key_map.h"
-#include "render_device.h"
-#include "resource_cache.h"
-#include "texture_provider.h"
-#include "ui.h"
-#include "ui_view.h"
-#include "xaml_provider.h"
-
 #include "ff.ui.res.h"
+#include "init.h"
+#include "ui/converters.h"
+#include "ui/font_provider.h"
+#include "ui/key_map.h"
+#include "ui/render_device.h"
+#include "ui/resource_cache.h"
+#include "ui/texture_provider.h"
+#include "ui/ui.h"
+#include "ui/ui_view.h"
+#include "ui/xaml_provider.h"
 
 namespace
 {
