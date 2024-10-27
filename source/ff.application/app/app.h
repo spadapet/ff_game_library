@@ -19,6 +19,10 @@ namespace ff
     const std::string& app_internal_name();
     const ff::app_time_t& app_time();
 
+    std::filesystem::path app_roaming_path();
+    std::filesystem::path app_local_path();
+    std::filesystem::path app_temp_path();
+
     ff::dxgi::target_window_base& app_render_target();
 }
 

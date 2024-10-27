@@ -1,7 +1,6 @@
 #include "pch.h"
-#include "app.h"
-#include "filesystem.h"
-#include "settings.h"
+#include "app/app.h"
+#include "app/settings.h"
 
 static std::recursive_mutex mutex;
 static ff::dict named_settings;
@@ -12,7 +11,7 @@ static std::filesystem::path settings_path()
 {
     std::ostringstream name;
     name << "settings_" << ff::constants::bits_build << ".bin";
-    return ff::filesystem::app_roaming_path() / name.str();
+    return ff::app_roaming_path() / name.str();
 }
 
 void ff::internal::app::clear_settings()

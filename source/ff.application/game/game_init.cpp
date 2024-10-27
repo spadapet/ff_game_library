@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "app.h"
-#include "game_state_base.h"
-#include "game_init.h"
+#include "app/app.h"
+#include "game/game_state_base.h"
+#include "game/game_init.h"
 #include "init.h"
 
 static const ff::game::init_params* init_params{};

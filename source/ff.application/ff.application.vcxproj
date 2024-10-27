@@ -14,27 +14,25 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="source\app.cpp" />
-    <ClCompile Include="source\debug_state.cpp" />
-    <ClCompile Include="source\filesystem.cpp" />
-    <ClCompile Include="source\game_init.cpp" />
-    <ClCompile Include="source\game_state_base.cpp" />
-    <ClCompile Include="source\init.cpp" />
-    <ClCompile Include="source\settings.cpp" />
-    <ClCompile Include="source\state.cpp" />
-    <ClCompile Include="source\ui_view_state.cpp" />
+    <ClCompile Include="app\app.cpp" />
+    <ClCompile Include="app\debug_state.cpp" />
+    <ClCompile Include="app\settings.cpp" />
+    <ClCompile Include="app\state.cpp" />
+    <ClCompile Include="game\game_init.cpp" />
+    <ClCompile Include="game\game_state_base.cpp" />
+    <ClCompile Include="init.cpp" />
+    <ClCompile Include="ui\ui_view_state.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\app.h" />
-    <ClInclude Include="source\debug_state.h" />
-    <ClInclude Include="source\filesystem.h" />
-    <ClInclude Include="source\game_init.h" />
-    <ClInclude Include="source\game_state_base.h" />
-    <ClInclude Include="source\init.h" />
-    <ClInclude Include="source\settings.h" />
-    <ClInclude Include="source\state.h" />
-    <ClInclude Include="source\ui_view_state.h" />
+    <ClInclude Include="app\app.h" />
+    <ClInclude Include="app\debug_state.h" />
+    <ClInclude Include="app\settings.h" />
+    <ClInclude Include="app\state.h" />
+    <ClInclude Include="game\game_init.h" />
+    <ClInclude Include="game\game_state_base.h" />
+    <ClInclude Include="init.h" />
+    <ClInclude Include="ui\ui_view_state.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ff.audio\ff.audio.vcxproj">

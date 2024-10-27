@@ -2,70 +2,72 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="source\init.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="init.cpp" />
+    <ClCompile Include="app\app.cpp">
+      <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="source\app.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="app\debug_state.cpp">
+      <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="source\settings.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="app\filesystem.cpp">
+      <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="source\state.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="game\game_init.cpp">
+      <Filter>game</Filter>
     </ClCompile>
-    <ClCompile Include="source\ui_view_state.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="game\game_state_base.cpp">
+      <Filter>game</Filter>
     </ClCompile>
-    <ClCompile Include="source\debug_state.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="app\settings.cpp">
+      <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="source\filesystem.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="app\state.cpp">
+      <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="source\game_init.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="source\game_state_base.cpp">
-      <Filter>source</Filter>
+    <ClCompile Include="ui\ui_view_state.cpp">
+      <Filter>ui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="source\init.h">
-      <Filter>source</Filter>
+    <ClInclude Include="init.h" />
+    <ClInclude Include="app\app.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="source\app.h">
-      <Filter>source</Filter>
+    <ClInclude Include="app\debug_state.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="source\settings.h">
-      <Filter>source</Filter>
+    <ClInclude Include="app\filesystem.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="source\state.h">
-      <Filter>source</Filter>
+    <ClInclude Include="game\game_init.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="source\ui_view_state.h">
-      <Filter>source</Filter>
+    <ClInclude Include="game\game_state_base.h">
+      <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="source\debug_state.h">
-      <Filter>source</Filter>
+    <ClInclude Include="app\settings.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="source\filesystem.h">
-      <Filter>source</Filter>
+    <ClInclude Include="app\state.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="source\game_init.h">
-      <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="source\game_state_base.h">
-      <Filter>source</Filter>
+    <ClInclude Include="ui\ui_view_state.h">
+      <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="source">
-      <UniqueIdentifier>{56a1b1c6-71a1-45ce-8243-fe161f61597e}</UniqueIdentifier>
+    <Filter Include="app">
+      <UniqueIdentifier>{f56895ca-ca6e-4be1-aa91-abdf70c16bbe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game">
+      <UniqueIdentifier>{8f6b6eac-4462-441f-a595-0a0b605433f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ui">
+      <UniqueIdentifier>{299de93f-56a7-4402-a8a0-901ff0442730}</UniqueIdentifier>
     </Filter>
     <Filter Include="assets">
-      <UniqueIdentifier>{e9f01554-4350-4cd7-9927-2ae902df0fc2}</UniqueIdentifier>
+      <UniqueIdentifier>{9593420c-cec8-45d4-81a9-af6a4ed036c3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

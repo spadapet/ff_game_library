@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "app.h"
+#include "app/app.h"
+#include "app/debug_state.h"
 #include "ff.app.res.id.h"
-#include "debug_state.h"
-#include "ui_view_state.h"
+#include "ui/ui_view_state.h"
 
 using namespace std::string_view_literals;
 

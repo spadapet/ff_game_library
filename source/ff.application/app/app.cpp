@@ -1,11 +1,9 @@
 #include "pch.h"
-#include "app.h"
-#include "debug_state.h"
-#include "filesystem.h"
-#include "init.h"
-#include "settings.h"
-
+#include "app/app.h"
+#include "app/debug_state.h"
+#include "app/settings.h"
 #include "ff.app.res.h"
+#include "init.h"
 
 namespace
 {
@@ -493,7 +491,7 @@ static std::filesystem::path log_file_path()
 {
     std::ostringstream name;
     name << "log_" << ff::constants::bits_build << ".txt";
-    return ff::filesystem::app_local_path() / name.str();
+    return ff::app_local_path() / name.str();
 }
 
 static void init_app_name()
@@ -655,6 +653,27 @@ const std::string& ff::app_internal_name()
 const ff::app_time_t& ff::app_time()
 {
     return ::app_time;
+}
+
+std::filesystem::path ff::app_roaming_path()
+{
+    std::filesystem::path path = ff::filesystem::user_roaming_path() / ff::filesystem::clean_file_name(ff::app_internal_name());
+    ff::filesystem::create_directories(path);
+    return path;
+}
+
+std::filesystem::path ff::app_local_path()
+{
+    std::filesystem::path path = ff::filesystem::user_local_path() / ff::filesystem::clean_file_name(ff::app_internal_name());
+    ff::filesystem::create_directories(path);
+    return path;
+}
+
+std::filesystem::path ff::app_temp_path()
+{
+    std::filesystem::path path = ff::filesystem::temp_directory_path() / "ff" / ff::filesystem::clean_file_name(ff::app_internal_name());
+    ff::filesystem::create_directories(path);
+    return path;
 }
 
 ff::dxgi::target_window_base& ff::app_render_target()

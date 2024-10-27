@@ -1,9 +1,9 @@
 #include "pch.h"
-#include "app.h"
-#include "debug_state.h"
+#include "app/app.h"
+#include "app/debug_state.h"
+#include "app/settings.h"
 #include "ff.app.res.id.h"
-#include "game_state_base.h"
-#include "settings.h"
+#include "game/game_state_base.h"
 
 using namespace std::string_view_literals;
 
