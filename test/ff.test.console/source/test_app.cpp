@@ -20,7 +20,8 @@ static void run_app()
             return true;
         };
 
-    ff::init_app init_app(app_params, ui_params);
+    ff::init_app init_app(app_params);
+    assert_ret(init_app && init_app.init_ui(ui_params));
     ff::handle_messages_until_quit();
 }
 

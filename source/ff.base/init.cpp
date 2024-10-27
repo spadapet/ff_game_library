@@ -27,8 +27,9 @@
 
 namespace
 {
-    struct one_time_init_base
+    class one_time_init_base
     {
+    public:
         one_time_init_base()
             : thread_dispatch(ff::thread_dispatch_type::main)
         {

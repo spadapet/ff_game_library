@@ -170,7 +170,8 @@ static void handle_window_message(ff::window_message& msg)
 int ff::game::run(const ff::game::init_params& params)
 {
     ::init_params = &params;
-    ff::init_app init_app(::get_app_params(), ::get_ui_params());
+    ff::init_app init_app(::get_app_params());
+    assert_ret_val(init_app && init_app.init_ui(::get_ui_params()), 1);
     ff::signal_connection message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     return ff::handle_messages_until_quit();
 }

@@ -78,6 +78,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
     ff::init_base init_base;
     init_base.init_main_window(::get_window_params());
-    ff::init_app init_app(::get_app_params(), ::get_ui_params());
+    ff::init_app init_app(::get_app_params());
+    assert_ret_val(init_app && init_app.init_ui(::get_ui_params()), 1);
     return ff::handle_messages_until_quit();
 }
