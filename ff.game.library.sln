@@ -37,7 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.all.h = include\ff.all.h
 		include\ff.application.h = include\ff.application.h
 		include\ff.audio.h = include\ff.audio.h
-		include\ff.base2.h = include\ff.base2.h
+		include\ff.base.h = include\ff.base.h
 		include\ff.dx12.h = include\ff.dx12.h
 		include\ff.dxgi.h = include\ff.dxgi.h
 		include\ff.graphics.h = include\ff.graphics.h
@@ -76,7 +76,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ff.application.xaml", "sour
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blend", "blend", "{1BA4998A-A497-43C4-913A-39AE19B4A776}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base2", "source\ff.base2\ff.base2.vcxproj", "{F89161F3-74E5-4B6B-9A53-6B97B83D1700}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "source\ff.base\ff.base.vcxproj", "{F89161F3-74E5-4B6B-9A53-6B97B83D1700}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

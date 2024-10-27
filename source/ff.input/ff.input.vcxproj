@@ -32,7 +32,7 @@
     <ClInclude Include="source\pointer_device.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ff.base2\ff.base2.vcxproj">
+    <ProjectReference Include="..\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
   </ItemGroup>

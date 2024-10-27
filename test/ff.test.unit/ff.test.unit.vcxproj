@@ -78,7 +78,7 @@
     <ProjectReference Include="..\..\source\ff.audio\ff.audio.vcxproj">
       <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.base2\ff.base2.vcxproj">
+    <ProjectReference Include="..\..\source\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\source\ff.dx12\ff.dx12.vcxproj">
