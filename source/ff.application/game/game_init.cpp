@@ -52,12 +52,7 @@ static ff::init_app_params get_app_params()
     params.get_advance_type_func = ::get_advance_type;
     params.get_clear_color_func = ::get_clear_color;
 
-    return params;
-}
-
-static ff::init_ui_params get_ui_params()
-{
-    ff::init_ui_params params{};
+    // UI
     params.application_resources_name = ::init_params->noesis_application_resources_name;
     params.noesis_license_name = ::init_params->noesis_license_name;
     params.noesis_license_key = ::init_params->noesis_license_key;
@@ -171,7 +166,7 @@ int ff::game::run(const ff::game::init_params& params)
 {
     ::init_params = &params;
     ff::init_app init_app(::get_app_params());
-    assert_ret_val(init_app && init_app.init_ui(::get_ui_params()), 1);
+    assert_ret_val(init_app, 1);
     ff::signal_connection message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     return ff::handle_messages_until_quit();
 }

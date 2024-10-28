@@ -6,13 +6,13 @@ namespace ff
 
     struct app_time_t
     {
-        size_t frame_count;
-        size_t advance_count;
-        int64_t perf_clock_ticks;
-        double clock_seconds;
-        double advance_seconds;
-        double unused_advance_seconds;
-        double time_scale;
+        size_t frame_count{};
+        size_t advance_count{};
+        int64_t perf_clock_ticks{};
+        double clock_seconds{};
+        double advance_seconds{};
+        double unused_advance_seconds{};
+        double time_scale{ 1.0 };
     };
 
     const std::string& app_product_name();

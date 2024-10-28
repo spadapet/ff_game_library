@@ -129,9 +129,8 @@ namespace
 void run_test_sprite_perf()
 {
     ff::init_app_params app_params{};
-    ff::init_ui_params ui_params{};
 
-    ui_params.register_components_func = []()
+    app_params.register_components_func = []()
         {
             ff::data_reader assets_reader(::assets::test::data());
             ff::global_resources::add(assets_reader);
@@ -149,6 +148,5 @@ void run_test_sprite_perf()
         };
 
     ff::init_app init_app(app_params);
-    init_app.init_ui(ui_params);
     ff::handle_messages_until_quit();
 }

@@ -21,7 +21,7 @@ static void run_app()
         };
 
     ff::init_app init_app(app_params);
-    assert_ret(init_app && init_app.init_ui(ui_params));
+    assert_ret(init_app);
     ff::handle_messages_until_quit();
 }
 

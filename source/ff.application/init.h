@@ -4,7 +4,17 @@
 
 namespace ff
 {
-    struct init_app_params
+    struct init_ui_params
+    {
+        std::function<const ff::dxgi::palette_base* ()> palette_func;
+        std::function<void()> register_components_func;
+
+        std::string noesis_license_name;
+        std::string noesis_license_key;
+        std::string application_resources_name;
+    };
+
+    struct init_app_params : public ff::init_ui_params
     {
         std::function<void()> game_thread_started_func;
         std::function<void()> game_thread_finished_func;
@@ -20,16 +30,6 @@ namespace ff
         bool allow_full_screen = true;
     };
 
-    struct init_ui_params
-    {
-        std::function<const ff::dxgi::palette_base* ()> palette_func;
-        std::function<void()> register_components_func;
-
-        std::string noesis_license_name;
-        std::string noesis_license_key;
-        std::string application_resources_name;
-    };
-
     class init_app
     {
     public:
@@ -37,7 +37,5 @@ namespace ff
         ~init_app();
 
         operator bool() const;
-
-        bool init_ui(const ff::init_ui_params& ui_params);
     };
 }

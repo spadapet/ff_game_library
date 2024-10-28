@@ -42,7 +42,8 @@ static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
 static std::shared_ptr<ff::resource_object_provider> app_resources;
-static std::atomic<const wchar_t*> window_cursor;
+static const wchar_t* window_cursor_game_thread{};
+static const wchar_t* window_cursor_main_thread{};
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
@@ -170,18 +171,20 @@ static void frame_update_cursor()
     const wchar_t* cursor = ff::ui::cursor_resource();
     cursor = cursor ? cursor : IDC_ARROW;
 
-    if (cursor != ::window_cursor.load())
+    if (cursor != ::window_cursor_game_thread)
     {
-        ::window_cursor = cursor;
+        ::window_cursor_game_thread = cursor;
 
-        ff::thread_dispatch::get_main()->post([]()
+        ff::thread_dispatch::get_main()->post([cursor]()
         {
+            ::window_cursor_main_thread = cursor;
+
             POINT pos;
             if (::GetCursorPos(&pos) &&
                 ::WindowFromPoint(pos) == *ff::window::main() &&
                 ::SendMessage(*ff::window::main(), WM_NCHITTEST, 0, MAKELPARAM(pos.x, pos.y)) == HTCLIENT)
             {
-                ::SetCursor(::LoadCursor(nullptr, ::window_cursor.load()));
+                ::SetCursor(::LoadCursor(nullptr, cursor));
             }
         });
     }
@@ -474,15 +477,11 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_SETCURSOR:
-            if (LOWORD(message.lp) == HTCLIENT)
+            if (LOWORD(message.lp) == HTCLIENT && ::window_cursor_main_thread)
             {
-                const wchar_t* cursor = ::window_cursor.load();
-                if (cursor)
-                {
-                    ::SetCursor(::LoadCursor(nullptr, cursor));
-                    message.result = 1;
-                    message.handled = true;
-                }
+                ::SetCursor(::LoadCursor(nullptr, ::window_cursor_main_thread));
+                message.result = 1;
+                message.handled = true;
             }
             break;
     }
@@ -609,7 +608,6 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::init_app_name();
     ::init_log();
     ::app_time = ff::app_time_t{};
-    ::app_time.time_scale = 1.0;
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
