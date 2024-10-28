@@ -38,6 +38,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.application.h = include\ff.application.h
 		include\ff.audio.h = include\ff.audio.h
 		include\ff.base.h = include\ff.base.h
+		include\ff.dx.h = include\ff.dx.h
 		include\ff.dx12.h = include\ff.dx12.h
 		include\ff.dxgi.h = include\ff.dxgi.h
 		include\ff.graphics.h = include\ff.graphics.h
@@ -68,15 +69,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource.build", "source
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.dxgi", "source\ff.dxgi\ff.dxgi.vcxproj", "{A4EA1E4F-874E-4D9A-8CE1-5483C5C8C33E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.resource.editor", "source\ff.resource.editor\ff.resource.editor.vcxproj", "{F31D4233-5404-456A-A09E-44FDAA2F818E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ff.resource.editor.xaml", "source\ff.resource.editor\xaml\ff.resource.editor.xaml.csproj", "{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ff.application.xaml", "source\ff.application\xaml\ff.application.xaml.csproj", "{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blend", "blend", "{1BA4998A-A497-43C4-913A-39AE19B4A776}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "source\ff.base\ff.base.vcxproj", "{F89161F3-74E5-4B6B-9A53-6B97B83D1700}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.dx", "source\ff.dx\ff.dx.vcxproj", "{0580ED07-BB8F-472A-94FC-E0EE4A79421D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,18 +162,6 @@ Global
 		{A4EA1E4F-874E-4D9A-8CE1-5483C5C8C33E}.Profile|x64.Build.0 = Profile|x64
 		{A4EA1E4F-874E-4D9A-8CE1-5483C5C8C33E}.Release|x64.ActiveCfg = Release|x64
 		{A4EA1E4F-874E-4D9A-8CE1-5483C5C8C33E}.Release|x64.Build.0 = Release|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Debug|x64.ActiveCfg = Debug|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Debug|x64.Build.0 = Debug|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Profile|x64.ActiveCfg = Profile|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Profile|x64.Build.0 = Profile|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Release|x64.ActiveCfg = Release|x64
-		{F31D4233-5404-456A-A09E-44FDAA2F818E}.Release|x64.Build.0 = Release|x64
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Debug|x64.Build.0 = Debug|Any CPU
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Profile|x64.ActiveCfg = Debug|Any CPU
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Profile|x64.Build.0 = Debug|Any CPU
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Release|x64.ActiveCfg = Release|Any CPU
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7}.Release|x64.Build.0 = Release|Any CPU
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Debug|x64.Build.0 = Debug|Any CPU
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555}.Profile|x64.ActiveCfg = Debug|Any CPU
@@ -187,6 +174,12 @@ Global
 		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Profile|x64.Build.0 = Profile|x64
 		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Release|x64.ActiveCfg = Release|x64
 		{F89161F3-74E5-4B6B-9A53-6B97B83D1700}.Release|x64.Build.0 = Release|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Debug|x64.ActiveCfg = Debug|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Debug|x64.Build.0 = Debug|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Profile|x64.ActiveCfg = Profile|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Profile|x64.Build.0 = Profile|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Release|x64.ActiveCfg = Release|x64
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -205,10 +198,9 @@ Global
 		{8670E093-EDD1-451E-868E-ACFFB7258759} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{CBABF708-3DCA-4933-8D94-188536AF1EC2} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{A4EA1E4F-874E-4D9A-8CE1-5483C5C8C33E} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
-		{F31D4233-5404-456A-A09E-44FDAA2F818E} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
-		{9DE37EFD-3DEA-4A46-9EE3-4B367BEDE6D7} = {1BA4998A-A497-43C4-913A-39AE19B4A776}
 		{B88CD2EA-E09E-4A9D-AFEE-7C927A436555} = {1BA4998A-A497-43C4-913A-39AE19B4A776}
 		{F89161F3-74E5-4B6B-9A53-6B97B83D1700} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
+		{0580ED07-BB8F-472A-94FC-E0EE4A79421D} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9E65BE6F-B921-4190-995D-5E5CA6AA77DB}

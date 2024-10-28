@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="init.cpp" />
+    <ClCompile Include="audio\audio.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\audio_effect.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\audio_effect_playing.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\destroy_voice.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\music.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\music_playing.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+    <ClCompile Include="input\gamepad_device.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\input.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\input_device_event.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\input_mapping.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\input_vk.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\keyboard_device.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="input\pointer_device.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="audio\wav_file.cpp">
+      <Filter>audio</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="init.h" />
+    <ClInclude Include="audio\audio.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\audio_child_base.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\audio_effect.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\audio_effect_base.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\audio_effect_playing.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\audio_playing_base.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\destroy_voice.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\music.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\music_playing.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+    <ClInclude Include="input\gamepad_device.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\input.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\input_device_base.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\input_device_event.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\input_mapping.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\input_vk.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\keyboard_device.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="input\pointer_device.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="audio\wav_file.h">
+      <Filter>audio</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="audio">
+      <UniqueIdentifier>{780a9217-fc95-4745-84e6-97166b86f278}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input">
+      <UniqueIdentifier>{255a4cdb-fd9e-4e3a-a3bb-b0476d874e7f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
