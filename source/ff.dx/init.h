@@ -2,27 +2,12 @@
 
 namespace ff
 {
-    class init_audio
+    class init_dx
     {
     public:
-        init_audio();
-        ~init_audio();
+        init_dx();
+        ~init_dx();
 
         operator bool() const;
-
-    private:
-        ff::init_base init_base;
-    };
-
-    class init_input
-    {
-    public:
-        init_input();
-        ~init_input();
-
-        operator bool() const;
-
-    private:
-        ff::init_base init_base;
     };
 }

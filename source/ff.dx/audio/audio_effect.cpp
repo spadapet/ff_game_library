@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "audio.h"
-#include "audio_effect.h"
-#include "audio_effect_playing.h"
-#include "wav_file.h"
+#include "audio/audio.h"
+#include "audio/audio_effect.h"
+#include "audio/audio_effect_playing.h"
+#include "audio/wav_file.h"
 
 static ff::pool_allocator<ff::internal::audio_effect_playing>& audio_effect_pool()
 {

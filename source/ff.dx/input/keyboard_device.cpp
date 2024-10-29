@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "input.h"
-#include "input_device_event.h"
-#include "keyboard_device.h"
+#include "input/input.h"
+#include "input/input_device_event.h"
+#include "input/keyboard_device.h"
 
 ff::keyboard_device::keyboard_device()
 {

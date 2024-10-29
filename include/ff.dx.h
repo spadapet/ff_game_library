@@ -13,7 +13,6 @@
 #include "../source/ff.dx/audio/wav_file.h"
 #include "../source/ff.dx/init.h"
 #include "../source/ff.dx/input/gamepad_device.h"
-#include "../source/ff.dx/input/init.h"
 #include "../source/ff.dx/input/input.h"
 #include "../source/ff.dx/input/input_device_base.h"
 #include "../source/ff.dx/input/input_device_event.h"

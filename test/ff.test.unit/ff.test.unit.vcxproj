@@ -75,9 +75,6 @@
     <ProjectReference Include="..\..\source\ff.application\ff.application.vcxproj">
       <Project>{376073e9-ea4d-4513-941c-906ca968c6c3}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.audio\ff.audio.vcxproj">
-      <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\source\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
@@ -87,11 +84,11 @@
     <ProjectReference Include="..\..\source\ff.dxgi\ff.dxgi.vcxproj">
       <Project>{a4ea1e4f-874e-4d9a-8ce1-5483c5c8c33e}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\source\ff.dx\ff.dx.vcxproj">
+      <Project>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\source\ff.graphics\ff.graphics.vcxproj">
       <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\source\ff.input\ff.input.vcxproj">
-      <Project>{475230fd-c110-4b27-9c6a-8ef1c11b5a2e}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\vendor\ff.vendor.noesis_app.vcxproj">
       <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>

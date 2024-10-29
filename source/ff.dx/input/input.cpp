@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "gamepad_device.h"
-#include "input.h"
-#include "input_device_base.h"
-#include "input_device_event.h"
-#include "keyboard_device.h"
-#include "pointer_device.h"
+#include "input/gamepad_device.h"
+#include "input/input.h"
+#include "input/input_device_base.h"
+#include "input/input_device_event.h"
+#include "input/keyboard_device.h"
+#include "input/pointer_device.h"
 
 static std::unordered_map<ff::input_device_base*, ff::signal_connection> all_devices;
 

@@ -7,7 +7,7 @@ void run_test_input_devices()
     ff::init_base init_base;
     ff::init_window_params window_params{ {}, "Test window", true };
     init_base.init_main_window(window_params);
-    ff::init_input init_input;
+    ff::init_dx init_dx;
 
     std::mutex mutex;
     ff::input_device_event last_event{};

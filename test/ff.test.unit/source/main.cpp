@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 
-static std::unique_ptr<ff::init_audio> init_audio;
-static std::unique_ptr<ff::init_input> init_input;
+static std::unique_ptr<ff::init_dx> init_dx;
 
 TEST_MODULE_INITIALIZE(module_init)
 {
@@ -20,15 +19,12 @@ TEST_MODULE_INITIALIZE(module_init)
         return true;
     });
 
-    ::init_audio = std::make_unique<ff::init_audio>();
-    ::init_input = std::make_unique<ff::init_input>();
+    ::init_dx = std::make_unique<ff::init_dx>();
 
-    Assert::IsTrue(*::init_audio);
-    Assert::IsTrue(*::init_input);
+    Assert::IsTrue(*::init_dx);
 }
 
 TEST_MODULE_CLEANUP(module_cleanup)
 {
-    ::init_input.reset();
-    ::init_audio.reset();
+    ::init_dx.reset();
 }

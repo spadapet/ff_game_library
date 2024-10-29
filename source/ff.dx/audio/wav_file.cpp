@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "wav_file.h"
+#include "audio/wav_file.h"
 
 static constexpr DWORD make_four_cc(char ch0, char ch1, char ch2, char ch3)
 {

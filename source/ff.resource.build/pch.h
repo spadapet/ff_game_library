@@ -9,6 +9,5 @@
 
 // FF
 #pragma pop_macro("assert")
-#include <ff.audio.h>
+#include <ff.dx.h>
 #include <ff.graphics.h>
-#include <ff.input.h>

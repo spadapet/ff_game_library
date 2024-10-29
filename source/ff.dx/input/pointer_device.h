@@ -1,7 +1,7 @@
 #pragma once
 
-#include "input_device_base.h"
-#include "input_device_event.h"
+#include "../input/input_device_base.h"
+#include "../input/input_device_event.h"
 
 namespace ff
 {

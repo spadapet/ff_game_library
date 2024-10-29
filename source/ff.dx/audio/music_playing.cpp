@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "audio.h"
-#include "music.h"
-#include "music_playing.h"
-#include "destroy_voice.h"
+#include "audio/audio.h"
+#include "audio/music.h"
+#include "audio/music_playing.h"
+#include "audio/destroy_voice.h"
 
 constexpr size_t MAX_BUFFERS = 2;
 

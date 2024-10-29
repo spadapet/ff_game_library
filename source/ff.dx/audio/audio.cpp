@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "audio.h"
-#include "audio_child_base.h"
-#include "audio_playing_base.h"
+#include "audio/audio.h"
+#include "audio/audio_child_base.h"
+#include "audio/audio_playing_base.h"
 
 static Microsoft::WRL::ComPtr<IXAudio2> xaudio2;
 static IXAudio2MasteringVoice* master_voice = nullptr;

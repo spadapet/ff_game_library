@@ -1,8 +1,8 @@
 #include "pch.h"
-#include "audio.h"
-#include "audio_effect.h"
-#include "audio_effect_playing.h"
-#include "destroy_voice.h"
+#include "audio/audio.h"
+#include "audio/audio_effect.h"
+#include "audio/audio_effect_playing.h"
+#include "audio/destroy_voice.h"
 
 ff::internal::audio_effect_playing::audio_effect_playing(audio_effect* owner)
     : owner(owner)

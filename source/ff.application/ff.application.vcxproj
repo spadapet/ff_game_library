@@ -84,16 +84,11 @@
       <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
       <Private>false</Private>
     </ProjectReference>
-    <ProjectReference Include="..\ff.audio\ff.audio.vcxproj">
-      <Project>{7b04eb5d-8ac9-47cc-80cb-5192cb41057a}</Project>
-      <Private>false</Private>
+    <ProjectReference Include="..\ff.dx\ff.dx.vcxproj">
+      <Project>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.graphics\ff.graphics.vcxproj">
       <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
-      <Private>false</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.input\ff.input.vcxproj">
-      <Project>{475230fd-c110-4b27-9c6a-8ef1c11b5a2e}</Project>
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

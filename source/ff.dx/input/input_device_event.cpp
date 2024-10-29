@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "input_device_event.h"
+#include "input/input_device_event.h"
 
 ff::input_device_event::input_device_event()
     : input_device_event(input_device_event_type::none)

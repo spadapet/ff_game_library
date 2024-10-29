@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "audio.h"
-#include "music.h"
-#include "music_playing.h"
+#include "audio/audio.h"
+#include "audio/music.h"
+#include "audio/music_playing.h"
 
 ff::music::music(const std::shared_ptr<ff::resource>& file_resource, float volume, float speed, bool loop)
     : file(file_resource)

@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "input.h"
-#include "input_device_event.h"
-#include "pointer_device.h"
+#include "input/input.h"
+#include "input/input_device_event.h"
+#include "input/pointer_device.h"
 
 static bool releasing_capture = false;
 

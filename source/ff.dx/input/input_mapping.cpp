@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "input_mapping.h"
-#include "input_vk.h"
+#include "input/input_mapping.h"
+#include "input/input_vk.h"
 
 bool ff::input_event::started() const
 {

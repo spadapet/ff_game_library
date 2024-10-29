@@ -25,7 +25,7 @@ namespace
 
         bool valid() const
         {
-            if (!this->app_status || !this->ui_status || !this->init_audio || !this->init_input || !this->init_graphics)
+            if (!this->app_status || !this->ui_status || !this->init_dx || !this->init_graphics)
             {
                 return false;
             }
@@ -37,8 +37,7 @@ namespace
         bool app_status{};
         bool ui_status{};
 
-        ff::init_audio init_audio;
-        ff::init_input init_input;
+        ff::init_dx init_dx;
         ff::init_graphics init_graphics;
     };
 }

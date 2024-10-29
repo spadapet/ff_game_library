@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "audio.h"
-#include "audio_child_base.h"
-#include "destroy_voice.h"
+#include "audio/audio.h"
+#include "audio/audio_child_base.h"
+#include "audio/destroy_voice.h"
 
 namespace
 {

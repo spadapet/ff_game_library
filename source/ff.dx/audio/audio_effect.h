@@ -1,6 +1,6 @@
 #pragma once
-#include "audio_child_base.h"
-#include "audio_effect_base.h"
+
+#include "../audio/audio_effect_base.h"
 
 namespace ff::internal
 {

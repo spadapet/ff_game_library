@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "gamepad_device.h"
-#include "input.h"
-#include "input_device_event.h"
+#include "input/gamepad_device.h"
+#include "input/input.h"
+#include "input/input_device_event.h"
 
 static const float PRESS_VALUE = 0.5625f;
 static const float RELEASE_VALUE = 0.5f;
