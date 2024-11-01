@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../source/ff.dx/pch.h"
+#include "../source/ff.dx/init.h"
+
 #include "../source/ff.dx/audio/audio.h"
 #include "../source/ff.dx/audio/audio_child_base.h"
 #include "../source/ff.dx/audio/audio_effect.h"
@@ -11,7 +13,7 @@
 #include "../source/ff.dx/audio/music.h"
 #include "../source/ff.dx/audio/music_playing.h"
 #include "../source/ff.dx/audio/wav_file.h"
-#include "../source/ff.dx/init.h"
+
 #include "../source/ff.dx/input/gamepad_device.h"
 #include "../source/ff.dx/input/input.h"
 #include "../source/ff.dx/input/input_device_base.h"
@@ -53,7 +55,43 @@
 #include "../source/ff.dx/dxgi/utility.h"
 #include "../source/ff.dx/dxgi/vertex.h"
 
+#include "../source/ff.dx/dx12/access.h"
+#include "../source/ff.dx/dx12/buffer.h"
+#include "../source/ff.dx/dx12/commands.h"
+#include "../source/ff.dx/dx12/depth.h"
+#include "../source/ff.dx/dx12/descriptor_allocator.h"
+#include "../source/ff.dx/dx12/descriptor_range.h"
+#include "../source/ff.dx/dx12/device_reset_priority.h"
+#include "../source/ff.dx/dx12/draw_device.h"
+#include "../source/ff.dx/dx12/fence.h"
+#include "../source/ff.dx/dx12/fence_value.h"
+#include "../source/ff.dx/dx12/fence_values.h"
+#include "../source/ff.dx/dx12/globals.h"
+#include "../source/ff.dx/dx12/gpu_event.h"
+#include "../source/ff.dx/dx12/heap.h"
+#include "../source/ff.dx/dx12/mem_allocator.h"
+#include "../source/ff.dx/dx12/mem_range.h"
+#include "../source/ff.dx/dx12/object_cache.h"
+#include "../source/ff.dx/dx12/queue.h"
+#include "../source/ff.dx/dx12/queues.h"
+#include "../source/ff.dx/dx12/residency.h"
+#include "../source/ff.dx/dx12/resource.h"
+#include "../source/ff.dx/dx12/resource_state.h"
+#include "../source/ff.dx/dx12/resource_tracker.h"
+#include "../source/ff.dx/dx12/target_access.h"
+#include "../source/ff.dx/dx12/target_texture.h"
+#include "../source/ff.dx/dx12/target_window.h"
+#include "../source/ff.dx/dx12/texture.h"
+#include "../source/ff.dx/dx12/texture_util12.h"
+#include "../source/ff.dx/dx12/texture_view.h"
+#include "../source/ff.dx/dx12/texture_view_access.h"
+
+#pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "Mfplat.lib")
 #pragma comment(lib, "Mfreadwrite.lib")
 #pragma comment(lib, "Mfuuid.lib")
 #pragma comment(lib, "Xinput.lib")
+
+#if defined(_WIN64) && PROFILE_APP
+#pragma comment(lib, "WinPixEventRuntime.lib")
+#endif

@@ -93,6 +93,102 @@
     <ClCompile Include="dxgi\utility.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\access.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\buffer.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\commands.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\depth.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\descriptor_allocator.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\descriptor_range.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\draw_device.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\draw_device_gs.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\draw_device_ms.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\fence.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\fence_value.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\fence_values.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\globals.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\gpu_event.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\heap.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\mem_allocator.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\mem_range.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\object_cache.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\queue.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\queues.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\residency.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\resource.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\resource_state.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\resource_tracker.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\target_access.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\target_texture.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\target_window.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\texture.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\texture_util12.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\texture_view.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\texture_view_access.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\vertex.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -244,6 +340,99 @@
     <ClInclude Include="dxgi\vertex.h">
       <Filter>dxgi</Filter>
     </ClInclude>
+    <ClInclude Include="dx12\access.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\buffer.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\commands.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\depth.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\descriptor_allocator.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\descriptor_range.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\device_reset_priority.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\draw_device.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\fence.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\fence_value.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\fence_values.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\globals.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\gpu_event.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\heap.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\mem_allocator.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\mem_range.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\object_cache.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\queue.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\queues.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\residency.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\resource.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\resource_state.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\resource_tracker.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\target_access.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\target_texture.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\target_window.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\texture.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\texture_util12.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\texture_view.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\texture_view_access.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\vertex.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="audio">
@@ -257,6 +446,9 @@
     </Filter>
     <Filter Include="assets">
       <UniqueIdentifier>{3dbe90e4-ff97-4761-a5ea-7df072b60d36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12">
+      <UniqueIdentifier>{b00ee1f2-d0a7-472a-b54e-0df2a8978acf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
