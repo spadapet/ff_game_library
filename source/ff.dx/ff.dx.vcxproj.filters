@@ -45,6 +45,54 @@
     <ClCompile Include="audio\wav_file.cpp">
       <Filter>audio</Filter>
     </ClCompile>
+    <ClCompile Include="dxgi\buffer_base.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\color.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\data_blob.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\device_child_base.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\draw_base.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\draw_device_base.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\draw_ptr.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\draw_util.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\format_util.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\interop.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\matrix.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\matrix_stack.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\sprite_data.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\texture_util.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\transform.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="dxgi\utility.cpp">
+      <Filter>dxgi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -103,6 +151,99 @@
     <ClInclude Include="audio\wav_file.h">
       <Filter>audio</Filter>
     </ClInclude>
+    <ClInclude Include="dxgi\buffer_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\color.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\command_context_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\data_blob.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\depth_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\device_child_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\draw_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\draw_device_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\draw_ptr.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\draw_util.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\format_util.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\interop.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\intrusive_list.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\matrix.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\matrix_stack.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\operators.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\palette_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\palette_data_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\sprite_data.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\sprite_type.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\target_access_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\target_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\target_window_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\texture_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\texture_metadata_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\texture_util.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\texture_view_access_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\texture_view_base.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\transform.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\utility.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="dxgi\vertex.h">
+      <Filter>dxgi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="audio">
@@ -111,5 +252,22 @@
     <Filter Include="input">
       <UniqueIdentifier>{255a4cdb-fd9e-4e3a-a3bb-b0476d874e7f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dxgi">
+      <UniqueIdentifier>{38664c5b-c675-46a7-aef1-a6e330715c31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{3dbe90e4-ff97-4761-a5ea-7df072b60d36}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.ff.dx12.config" />
+    <None Include="assets\shaders.hlsl">
+      <Filter>assets</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResJson Include="assets\ff.dx12.res.json">
+      <Filter>assets</Filter>
+    </ResJson>
   </ItemGroup>
 </Project>

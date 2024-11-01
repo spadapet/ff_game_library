@@ -6,7 +6,24 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup>
+    <ClCompile Include="dxgi\buffer_base.cpp" />
+    <ClCompile Include="dxgi\color.cpp" />
+    <ClCompile Include="dxgi\data_blob.cpp" />
+    <ClCompile Include="dxgi\device_child_base.cpp" />
+    <ClCompile Include="dxgi\draw_base.cpp" />
+    <ClCompile Include="dxgi\draw_device_base.cpp" />
+    <ClCompile Include="dxgi\draw_ptr.cpp" />
+    <ClCompile Include="dxgi\draw_util.cpp" />
+    <ClCompile Include="dxgi\format_util.cpp" />
+    <ClCompile Include="dxgi\interop.cpp" />
+    <ClCompile Include="dxgi\matrix.cpp" />
+    <ClCompile Include="dxgi\matrix_stack.cpp" />
+    <ClCompile Include="dxgi\sprite_data.cpp" />
+    <ClCompile Include="dxgi\texture_util.cpp" />
+    <ClCompile Include="dxgi\transform.cpp" />
+    <ClCompile Include="dxgi\utility.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -27,6 +44,37 @@
     <ClCompile Include="input\pointer_device.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dxgi\buffer_base.h" />
+    <ClInclude Include="dxgi\color.h" />
+    <ClInclude Include="dxgi\command_context_base.h" />
+    <ClInclude Include="dxgi\data_blob.h" />
+    <ClInclude Include="dxgi\depth_base.h" />
+    <ClInclude Include="dxgi\device_child_base.h" />
+    <ClInclude Include="dxgi\draw_base.h" />
+    <ClInclude Include="dxgi\draw_device_base.h" />
+    <ClInclude Include="dxgi\draw_ptr.h" />
+    <ClInclude Include="dxgi\draw_util.h" />
+    <ClInclude Include="dxgi\format_util.h" />
+    <ClInclude Include="dxgi\interop.h" />
+    <ClInclude Include="dxgi\intrusive_list.h" />
+    <ClInclude Include="dxgi\matrix.h" />
+    <ClInclude Include="dxgi\matrix_stack.h" />
+    <ClInclude Include="dxgi\operators.h" />
+    <ClInclude Include="dxgi\palette_base.h" />
+    <ClInclude Include="dxgi\palette_data_base.h" />
+    <ClInclude Include="dxgi\sprite_data.h" />
+    <ClInclude Include="dxgi\sprite_type.h" />
+    <ClInclude Include="dxgi\target_access_base.h" />
+    <ClInclude Include="dxgi\target_base.h" />
+    <ClInclude Include="dxgi\target_window_base.h" />
+    <ClInclude Include="dxgi\texture_base.h" />
+    <ClInclude Include="dxgi\texture_metadata_base.h" />
+    <ClInclude Include="dxgi\texture_util.h" />
+    <ClInclude Include="dxgi\texture_view_access_base.h" />
+    <ClInclude Include="dxgi\texture_view_base.h" />
+    <ClInclude Include="dxgi\transform.h" />
+    <ClInclude Include="dxgi\utility.h" />
+    <ClInclude Include="dxgi\vertex.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="audio\audio.h" />
     <ClInclude Include="audio\audio_child_base.h" />
@@ -49,9 +97,31 @@
     <ClInclude Include="input\pointer_device.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.ff.dx12.config" />
+    <None Include="assets\shaders.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <ResJson Include="assets\ff.dx12.res.json">
+      <FileType>Document</FileType>
+    </ResJson>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">
+      <Project>{5f0b3fd1-44d5-4524-8f61-e22098986a43}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(WinPixRoot)\build\WinPixEventRuntime.targets'))" />
+    <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props'))" />
+    <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets'))" />
+  </Target>
 </Project>
