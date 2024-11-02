@@ -56,6 +56,28 @@
     <ClCompile Include="dxgi\texture_util.cpp" />
     <ClCompile Include="dxgi\transform.cpp" />
     <ClCompile Include="dxgi\utility.cpp" />
+    <ClCompile Include="graphics\animation.cpp" />
+    <ClCompile Include="graphics\animation_base.cpp" />
+    <ClCompile Include="graphics\animation_keys.cpp" />
+    <ClCompile Include="graphics\animation_player.cpp" />
+    <ClCompile Include="graphics\animation_player_base.cpp" />
+    <ClCompile Include="graphics\font_file.cpp" />
+    <ClCompile Include="graphics\graphics.cpp" />
+    <ClCompile Include="graphics\palette_cycle.cpp" />
+    <ClCompile Include="graphics\palette_data.cpp" />
+    <ClCompile Include="graphics\png_image.cpp" />
+    <ClCompile Include="graphics\random_sprite.cpp" />
+    <ClCompile Include="graphics\render_targets.cpp" />
+    <ClCompile Include="graphics\shader.cpp" />
+    <ClCompile Include="graphics\sprite.cpp" />
+    <ClCompile Include="graphics\sprite_font.cpp" />
+    <ClCompile Include="graphics\sprite_list.cpp" />
+    <ClCompile Include="graphics\sprite_optimizer.cpp" />
+    <ClCompile Include="graphics\sprite_resource.cpp" />
+    <ClCompile Include="graphics\texture.cpp" />
+    <ClCompile Include="graphics\texture_metadata.cpp" />
+    <ClCompile Include="graphics\texture_util.cpp" />
+    <ClCompile Include="graphics\viewport.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -138,6 +160,29 @@
     <ClInclude Include="dxgi\transform.h" />
     <ClInclude Include="dxgi\utility.h" />
     <ClInclude Include="dxgi\vertex.h" />
+    <ClInclude Include="graphics\animation.h" />
+    <ClInclude Include="graphics\animation_base.h" />
+    <ClInclude Include="graphics\animation_keys.h" />
+    <ClInclude Include="graphics\animation_player.h" />
+    <ClInclude Include="graphics\animation_player_base.h" />
+    <ClInclude Include="graphics\font_file.h" />
+    <ClInclude Include="graphics\graphics.h" />
+    <ClInclude Include="graphics\palette_cycle.h" />
+    <ClInclude Include="graphics\palette_data.h" />
+    <ClInclude Include="graphics\png_image.h" />
+    <ClInclude Include="graphics\random_sprite.h" />
+    <ClInclude Include="graphics\render_targets.h" />
+    <ClInclude Include="graphics\shader.h" />
+    <ClInclude Include="graphics\sprite.h" />
+    <ClInclude Include="graphics\sprite_base.h" />
+    <ClInclude Include="graphics\sprite_font.h" />
+    <ClInclude Include="graphics\sprite_list.h" />
+    <ClInclude Include="graphics\sprite_optimizer.h" />
+    <ClInclude Include="graphics\sprite_resource.h" />
+    <ClInclude Include="graphics\texture.h" />
+    <ClInclude Include="graphics\texture_metadata.h" />
+    <ClInclude Include="graphics\texture_util.h" />
+    <ClInclude Include="graphics\viewport.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="audio\audio.h" />
     <ClInclude Include="audio\audio_child_base.h" />
@@ -171,6 +216,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.directxtex.vcxproj">
       <Project>{5f0b3fd1-44d5-4524-8f61-e22098986a43}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vendor\ff.vendor.libpng.vcxproj">
+      <Project>{7023aadb-413d-4c4e-b8a7-481484c943ba}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>

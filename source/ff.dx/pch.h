@@ -8,6 +8,8 @@
 // Windows
 #include <DirectXMath.h>
 #include <d3d12.h>
+#include <d3dcompiler.h>
+#include <dwrite_3.h>
 #include <dxgi1_6.h>
 #include <mfapi.h>
 #include <Mferror.h>
@@ -20,6 +22,7 @@
 // Vendor
 #include <directxtex/Common/d3dx12.h>
 #include <directxtex/DirectXTex/DirectXTex.h>
+#include <libpng/png.h>
 
 // FF
 #pragma pop_macro("assert")

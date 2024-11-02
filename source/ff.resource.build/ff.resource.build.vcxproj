@@ -19,14 +19,8 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ff.dx12\ff.dx12.vcxproj">
-      <Project>{8670e093-edd1-451e-868e-acffb7258759}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\ff.dx\ff.dx.vcxproj">
       <Project>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\ff.graphics\ff.graphics.vcxproj">
-      <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

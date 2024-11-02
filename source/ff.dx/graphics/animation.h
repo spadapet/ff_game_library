@@ -1,7 +1,7 @@
 #pragma once
 
-#include "animation_base.h"
-#include "animation_keys.h"
+#include "../graphics/animation_base.h"
+#include "../graphics/animation_keys.h"
 
 namespace ff::internal
 {

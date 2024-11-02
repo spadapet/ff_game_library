@@ -1,5 +1,7 @@
 #include "pch.h"
-#include "animation.h"
+#include "dxgi/draw_base.h"
+#include "dxgi/transform.h"
+#include "graphics/animation.h"
 
 ff::animation::animation()
     : play_length_(0)

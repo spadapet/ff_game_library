@@ -87,10 +87,6 @@
     <ProjectReference Include="..\ff.dx\ff.dx.vcxproj">
       <Project>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\ff.graphics\ff.graphics.vcxproj">
-      <Project>{2464cde6-763f-48fc-a587-4bb84b4b5d64}</Project>
-      <Private>false</Private>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
