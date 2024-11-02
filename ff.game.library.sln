@@ -38,9 +38,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{1E7D
 		include\ff.application.h = include\ff.application.h
 		include\ff.base.h = include\ff.base.h
 		include\ff.dx.h = include\ff.dx.h
-		include\ff.dx12.h = include\ff.dx12.h
-		include\ff.dxgi.h = include\ff.dxgi.h
-		include\ff.graphics.h = include\ff.graphics.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "source", "source", "{FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}"

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../dxgi/palette_base.h"
+
 namespace ff
 {
     class palette_data;

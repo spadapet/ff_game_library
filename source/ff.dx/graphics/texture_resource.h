@@ -1,8 +1,10 @@
 #pragma once
 
-#include "animation_base.h"
-#include "animation_player_base.h"
-#include "sprite_base.h"
+#include "../dxgi/sprite_data.h"
+#include "../dxgi/texture_base.h"
+#include "../graphics/animation_base.h"
+#include "../graphics/animation_player_base.h"
+#include "../graphics/sprite_base.h"
 
 namespace ff
 {

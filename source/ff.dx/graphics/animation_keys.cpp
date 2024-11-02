@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "animation_keys.h"
+#include "graphics/animation_keys.h"
 
 bool ff::animation_keys::key_frame::operator<(const key_frame& other) const
 {

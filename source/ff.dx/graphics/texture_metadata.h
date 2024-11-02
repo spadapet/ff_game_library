@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../dxgi/texture_metadata_base.h"
+
 namespace ff
 {
     class texture_metadata

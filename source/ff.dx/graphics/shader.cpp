@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "shader.h"
+#include "dxgi/data_blob.h"
+#include "graphics/shader.h"
 
 namespace
 {

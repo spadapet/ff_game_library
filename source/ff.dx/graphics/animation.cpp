@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "dxgi/draw_base.h"
+#include "dxgi/matrix_stack.h"
 #include "dxgi/transform.h"
 #include "graphics/animation.h"
 

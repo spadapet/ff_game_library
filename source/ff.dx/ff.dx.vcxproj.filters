@@ -243,13 +243,13 @@
     <ClCompile Include="graphics\sprite_resource.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\texture.cpp">
+    <ClCompile Include="graphics\texture_resource.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\texture_metadata.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\texture_util.cpp">
+    <ClCompile Include="graphics\texture_data.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\viewport.cpp">
@@ -556,13 +556,13 @@
     <ClInclude Include="graphics\sprite_resource.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\texture.h">
+    <ClInclude Include="graphics\texture_resource.h">
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\texture_metadata.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\texture_util.h">
+    <ClInclude Include="graphics\texture_data.h">
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\viewport.h">

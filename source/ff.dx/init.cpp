@@ -19,7 +19,7 @@
 #include "graphics/sprite_font.h"
 #include "graphics/sprite_list.h"
 #include "graphics/sprite_resource.h"
-#include "graphics/texture.h"
+#include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
 #include "init.h"
 #include "input/input.h"

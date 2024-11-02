@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "palette_cycle.h"
-#include "palette_data.h"
+#include "graphics/palette_cycle.h"
+#include "graphics/palette_data.h"
 
 ff::palette_cycle::palette_cycle(const std::shared_ptr<ff::palette_data>& data, std::string_view remap_name, float cycles_per_second)
     : data_(data)

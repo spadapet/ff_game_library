@@ -1,5 +1,10 @@
 #pragma once
 
+namespace ff::dxgi
+{
+    class sprite_data;
+}
+
 namespace ff
 {
     class sprite_base

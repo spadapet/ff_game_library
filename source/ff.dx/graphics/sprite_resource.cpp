@@ -1,6 +1,7 @@
 #include "pch.h"
-#include "sprite_list.h"
-#include "sprite_resource.h"
+#include "dxgi/draw_base.h"
+#include "graphics/sprite_list.h"
+#include "graphics/sprite_resource.h"
 
 static ff::dxgi::sprite_data empty_sprite_data{};
 

@@ -25,7 +25,7 @@ namespace
 
         bool valid() const
         {
-            if (!this->app_status || !this->ui_status || !this->init_dx || !this->init_graphics)
+            if (!this->app_status || !this->ui_status || !this->init_dx)
             {
                 return false;
             }
@@ -38,7 +38,6 @@ namespace
         bool ui_status{};
 
         ff::init_dx init_dx;
-        ff::init_graphics init_graphics;
     };
 }
 

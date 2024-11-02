@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "sprite.h"
+#include "dxgi/draw_util.h"
+#include "graphics/sprite.h"
 
 ff::sprite::sprite(std::string&& name, const std::shared_ptr<ff::texture>& texture, const ff::dxgi::sprite_data& sprite_data)
     : name_(std::move(name))

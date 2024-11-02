@@ -1,7 +1,14 @@
 #include "pch.h"
-#include "graphics.h"
-#include "render_targets.h"
-#include "texture.h"
+#include "dxgi/color.h"
+#include "dxgi/draw_base.h"
+#include "dxgi/draw_device_base.h"
+#include "dxgi/draw_ptr.h"
+#include "dxgi/interop.h"
+#include "dxgi/palette_base.h"
+#include "dxgi/transform.h"
+#include "graphics/graphics.h"
+#include "graphics/render_targets.h"
+#include "graphics/texture_resource.h"
 
 static std::weak_ptr<ff::dxgi::texture_base> weak_texture_1080;
 static std::weak_ptr<ff::dxgi::target_base> weak_target_1080;

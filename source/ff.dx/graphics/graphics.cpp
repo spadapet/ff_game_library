@@ -1,5 +1,7 @@
 #include "pch.h"
-#include "graphics.h"
+#include "dxgi/interop.h"
+#include "dxgi/target_window_base.h"
+#include "graphics/graphics.h"
 
 namespace
 {

@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "animation_base.h"
-#include "animation_player.h"
+#include "graphics/animation_base.h"
+#include "graphics/animation_player.h"
 
 ff::animation_player::animation_player(const std::shared_ptr<ff::animation_base>& animation, float start_frame, float speed, const ff::dict* params)
     : params(params ? *params : ff::dict())

@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "font_file.h"
-#include "graphics.h"
+#include "graphics/font_file.h"
+#include "graphics/graphics.h"
 
 ff::font_file::font_file(std::shared_ptr<ff::data_base> data, size_t index, bool bold, bool italic)
     : ff::resource_file(std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none), ".ttf")

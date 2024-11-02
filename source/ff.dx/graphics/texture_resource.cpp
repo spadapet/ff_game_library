@@ -1,9 +1,15 @@
 #include "pch.h"
-#include "graphics.h"
-#include "png_image.h"
-#include "texture.h"
-#include "texture_metadata.h"
-#include "texture_util.h"
+#include "dxgi/data_blob.h"
+#include "dxgi/draw_base.h"
+#include "dxgi/format_util.h"
+#include "dxgi/interop.h"
+#include "dxgi/sprite_type.h"
+#include "dxgi/texture_util.h"
+#include "graphics/graphics.h"
+#include "graphics/png_image.h"
+#include "graphics/texture_data.h"
+#include "graphics/texture_resource.h"
+#include "graphics/texture_metadata.h"
 
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {

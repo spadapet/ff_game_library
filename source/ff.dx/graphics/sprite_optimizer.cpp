@@ -1,9 +1,13 @@
 #include "pch.h"
-#include "graphics.h"
-#include "palette_data.h"
-#include "sprite_optimizer.h"
-#include "texture.h"
-#include "texture_util.h"
+#include "dxgi/format_util.h"
+#include "dxgi/interop.h"
+#include "dxgi/sprite_type.h"
+#include "dxgi/texture_util.h"
+#include "graphics/graphics.h"
+#include "graphics/palette_data.h"
+#include "graphics/sprite_optimizer.h"
+#include "graphics/texture_data.h"
+#include "graphics/texture_resource.h"
 
 static const int TEXTURE_SIZE_MAX = 1024;
 static const int TEXTURE_SIZE_MIN = 128;

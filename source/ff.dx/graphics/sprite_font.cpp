@@ -1,11 +1,15 @@
 #include "pch.h"
-#include "font_file.h"
-#include "graphics.h"
-#include "sprite.h"
-#include "sprite_font.h"
-#include "sprite_list.h"
-#include "sprite_optimizer.h"
-#include "texture.h"
+#include "dxgi/draw_util.h"
+#include "dxgi/interop.h"
+#include "dxgi/transform.h"
+#include "dxgi/sprite_type.h"
+#include "graphics/font_file.h"
+#include "graphics/graphics.h"
+#include "graphics/sprite.h"
+#include "graphics/sprite_font.h"
+#include "graphics/sprite_list.h"
+#include "graphics/sprite_optimizer.h"
+#include "graphics/texture_resource.h"
 
 static bool text_contains_outline_control(std::wstring_view text)
 {

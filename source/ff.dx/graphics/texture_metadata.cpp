@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "texture_metadata.h"
+#include "dxgi/format_util.h"
+#include "graphics/texture_metadata.h"
 
 ff::texture_metadata::texture_metadata(ff::point_size size, size_t mip_count, size_t array_size, size_t sample_count, DXGI_FORMAT format)
     : size_(size)

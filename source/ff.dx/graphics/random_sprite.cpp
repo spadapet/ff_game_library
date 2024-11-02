@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "random_sprite.h"
+#include "graphics/random_sprite.h"
 
 static size_t advance_count = 0;
 

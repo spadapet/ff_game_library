@@ -86,7 +86,33 @@
 #include "../source/ff.dx/dx12/texture_view.h"
 #include "../source/ff.dx/dx12/texture_view_access.h"
 
+#include "../source/ff.dx/graphics/animation.h"
+#include "../source/ff.dx/graphics/animation_base.h"
+#include "../source/ff.dx/graphics/animation_keys.h"
+#include "../source/ff.dx/graphics/animation_player.h"
+#include "../source/ff.dx/graphics/animation_player_base.h"
+#include "../source/ff.dx/graphics/font_file.h"
+#include "../source/ff.dx/graphics/graphics.h"
+#include "../source/ff.dx/graphics/palette_cycle.h"
+#include "../source/ff.dx/graphics/palette_data.h"
+#include "../source/ff.dx/graphics/png_image.h"
+#include "../source/ff.dx/graphics/random_sprite.h"
+#include "../source/ff.dx/graphics/render_targets.h"
+#include "../source/ff.dx/graphics/shader.h"
+#include "../source/ff.dx/graphics/sprite.h"
+#include "../source/ff.dx/graphics/sprite_base.h"
+#include "../source/ff.dx/graphics/sprite_font.h"
+#include "../source/ff.dx/graphics/sprite_list.h"
+#include "../source/ff.dx/graphics/sprite_optimizer.h"
+#include "../source/ff.dx/graphics/sprite_resource.h"
+#include "../source/ff.dx/graphics/texture_data.h"
+#include "../source/ff.dx/graphics/texture_metadata.h"
+#include "../source/ff.dx/graphics/texture_resource.h"
+#include "../source/ff.dx/graphics/viewport.h"
+
 #pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "Mfplat.lib")
 #pragma comment(lib, "Mfreadwrite.lib")
 #pragma comment(lib, "Mfuuid.lib")

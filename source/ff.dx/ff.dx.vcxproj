@@ -74,9 +74,9 @@
     <ClCompile Include="graphics\sprite_list.cpp" />
     <ClCompile Include="graphics\sprite_optimizer.cpp" />
     <ClCompile Include="graphics\sprite_resource.cpp" />
-    <ClCompile Include="graphics\texture.cpp" />
+    <ClCompile Include="graphics\texture_resource.cpp" />
     <ClCompile Include="graphics\texture_metadata.cpp" />
-    <ClCompile Include="graphics\texture_util.cpp" />
+    <ClCompile Include="graphics\texture_data.cpp" />
     <ClCompile Include="graphics\viewport.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -179,9 +179,9 @@
     <ClInclude Include="graphics\sprite_list.h" />
     <ClInclude Include="graphics\sprite_optimizer.h" />
     <ClInclude Include="graphics\sprite_resource.h" />
-    <ClInclude Include="graphics\texture.h" />
+    <ClInclude Include="graphics\texture_resource.h" />
     <ClInclude Include="graphics\texture_metadata.h" />
-    <ClInclude Include="graphics\texture_util.h" />
+    <ClInclude Include="graphics\texture_data.h" />
     <ClInclude Include="graphics\viewport.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="audio\audio.h" />

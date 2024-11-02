@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../dxgi/palette_data_base.h"
+
 namespace ff
 {
     class texture;

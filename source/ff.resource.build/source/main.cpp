@@ -363,9 +363,7 @@ static int do_compile(
     check_ret_val(!skipped, ::EXIT_CODE_SUCCESS);
 
     ff::init_dx init_dx;
-    ff::init_graphics init_graphics;
-
-    if (!init_graphics || !init_dx)
+    if (!init_dx)
     {
         std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;
@@ -394,9 +392,7 @@ static int do_combine(const std::vector<std::filesystem::path>& input_files, con
 static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 {
     ff::init_dx init_dx;
-    ff::init_graphics init_graphics;
-
-    if (!init_graphics || !init_dx)
+    if (!init_dx)
     {
         std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
         return ::EXIT_CODE_INIT_FAILED;

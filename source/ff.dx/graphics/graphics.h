@@ -1,5 +1,12 @@
 #pragma once
 
+namespace ff::dxgi
+{
+    class client_functions;
+    class command_context_base;
+    class target_window_base;
+}
+
 namespace ff
 {
     const ff::dxgi::client_functions& dxgi_client();

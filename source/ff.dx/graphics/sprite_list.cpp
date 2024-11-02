@@ -1,9 +1,11 @@
 #include "pch.h"
-#include "sprite_base.h"
-#include "sprite_list.h"
-#include "sprite_optimizer.h"
-#include "sprite_resource.h"
-#include "texture.h"
+#include "dxgi/sprite_type.h"
+#include "dxgi/format_util.h"
+#include "graphics/sprite_base.h"
+#include "graphics/sprite_list.h"
+#include "graphics/sprite_optimizer.h"
+#include "graphics/sprite_resource.h"
+#include "graphics/texture_resource.h"
 
 ff::sprite_list::sprite_list(std::vector<ff::sprite>&& sprites)
     : sprites(std::move(sprites))

@@ -1,8 +1,10 @@
 #include "pch.h"
-#include "graphics.h"
-#include "palette_data.h"
-#include "texture.h"
-#include "texture_util.h"
+#include "dxgi/interop.h"
+#include "dxgi/sprite_type.h"
+#include "graphics/graphics.h"
+#include "graphics/palette_data.h"
+#include "graphics/texture_data.h"
+#include "graphics/texture_resource.h"
 
 ff::palette_data::palette_data(DirectX::ScratchImage&& scratch)
     : palette_data(std::move(scratch), std::unordered_map<std::string, std::shared_ptr<ff::data_base>>())

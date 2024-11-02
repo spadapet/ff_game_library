@@ -1,7 +1,8 @@
 #include "pch.h"
-#include "palette_data.h"
-#include "png_image.h"
-#include "texture_util.h"
+#include "dxgi/format_util.h"
+#include "graphics/palette_data.h"
+#include "graphics/png_image.h"
+#include "graphics/texture_data.h"
 
 static DirectX::ScratchImage load_texture_png(
     const ff::resource_file& resource_file,
