@@ -137,7 +137,7 @@ namespace
             this->init_audio_status = ff::internal::audio::init();
             this->init_input_status = ff::internal::input::init();
             this->init_dx12_status = ff::dx12::init_globals(::get_dxgi_host_functions(), D3D_FEATURE_LEVEL_11_0);
-            this->init_graphics_status = ff::internal::graphics::init(client_functions);
+            this->init_graphics_status = ff::internal::graphics::init(::get_dxgi_client_functions());
         }
 
         ~one_time_init_dx()
@@ -170,7 +170,6 @@ namespace
         bool init_dx12_status{};
         bool init_graphics_status{};
         ff::init_base init_base;
-        ff::dxgi::client_functions client_functions;
     };
 }
 
