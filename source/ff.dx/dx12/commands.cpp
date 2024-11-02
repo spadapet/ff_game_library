@@ -17,9 +17,7 @@
 #include "dx12/target_access.h"
 #include "dxgi/target_base.h"
 
-#ifdef _WIN64
 #include <pix3.h>
-#endif
 
 static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
 
@@ -77,16 +75,18 @@ ff::dx12::fence_value ff::dx12::commands::next_fence_value()
 
 void ff::dx12::commands::begin_event(ff::dx12::gpu_event type)
 {
-#if defined(_WIN64) && PROFILE_APP
-    ::PIXBeginEvent(this->list(false), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
-#endif
+    if constexpr (ff::constants::profile_build)
+    {
+        ::PIXBeginEvent(this->list(false), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+    }
 }
 
 void ff::dx12::commands::end_event()
 {
-#if defined(_WIN64) && PROFILE_APP
-    ::PIXEndEvent(this->list(false));
-#endif
+    if constexpr (ff::constants::profile_build)
+    {
+        ::PIXEndEvent(this->list(false));
+    }
 }
 
 void ff::dx12::commands::close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute)

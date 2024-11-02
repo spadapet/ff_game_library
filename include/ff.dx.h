@@ -113,11 +113,12 @@
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dwrite.lib")
+#pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "Mfplat.lib")
 #pragma comment(lib, "Mfreadwrite.lib")
 #pragma comment(lib, "Mfuuid.lib")
 #pragma comment(lib, "Xinput.lib")
 
-#if defined(_WIN64) && PROFILE_APP
+#if PROFILE_APP
 #pragma comment(lib, "WinPixEventRuntime.lib")
 #endif

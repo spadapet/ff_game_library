@@ -8,9 +8,7 @@
 #include "dx12/resource_tracker.h"
 #include "dx12/queue.h"
 
-#ifdef _WIN64
 #include <pix3.h>
-#endif
 
 static ff::perf_counter perf_execute("Execute", ff::perf_color::green);
 
@@ -47,16 +45,18 @@ void ff::dx12::queue::wait_for_idle()
 
 void ff::dx12::queue::begin_event(ff::dx12::gpu_event type)
 {
-#ifdef _WIN64
-    ::PIXBeginEvent(this->command_queue.Get(), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
-#endif
+    if constexpr (ff::constants::profile_build)
+    {
+        ::PIXBeginEvent(this->command_queue.Get(), ff::dx12::gpu_event_color(type), ff::dx12::gpu_event_name(type));
+    }
 }
 
 void ff::dx12::queue::end_event()
 {
-#ifdef _WIN64
-    ::PIXEndEvent(this->command_queue.Get());
-#endif
+    if constexpr (ff::constants::profile_build)
+    {
+        ::PIXEndEvent(this->command_queue.Get());
+    }
 }
 
 std::unique_ptr<ff::dx12::commands> ff::dx12::queue::new_commands()
