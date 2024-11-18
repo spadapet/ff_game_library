@@ -4,7 +4,6 @@
 #include "app/settings.h"
 #include "ff.app.res.h"
 #include "init.h"
-#include "ui/ui.h"
 
 namespace
 {
@@ -168,8 +167,7 @@ static void frame_render(ff::state::advance_t advance_type)
 
 static void frame_update_cursor()
 {
-    const wchar_t* cursor = ff::ui::cursor_resource();
-    cursor = cursor ? cursor : IDC_ARROW;
+    const wchar_t* cursor = IDC_ARROW;
 
     if (cursor != ::window_cursor_game_thread)
     {
@@ -207,50 +205,6 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
     return advance_type;
 }
 
-static void register_components()
-{
-    if constexpr (ff::constants::profile_build)
-    {
-        ff::ui::add_assembly_resources("ff.application.xaml", ::app_resources);
-
-        Noesis::RegisterComponent<ff::internal::debug_page_model>();
-        Noesis::RegisterComponent<ff::internal::debug_timer_model>();
-        Noesis::RegisterComponent<ff::internal::debug_view_model>();
-        Noesis::RegisterComponent<ff::internal::debug_view>();
-        Noesis::RegisterComponent<ff::internal::stopped_view>();
-    }
-}
-
-static std::shared_ptr<ff::state> create_ui_state()
-{
-    class ui_state : public ff::state
-    {
-    public:
-        virtual std::shared_ptr<ff::state> advance_time() override
-        {
-            ff::ui::state_advance_time();
-            return nullptr;
-        }
-
-        virtual void advance_input() override
-        {
-            ff::ui::state_advance_input();
-        }
-
-        virtual void frame_rendering(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
-        {
-            ff::ui::state_rendering();
-        }
-
-        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override
-        {
-            ff::ui::state_rendered();
-        }
-    };
-
-    return std::make_shared<ui_state>();
-}
-
 static void init_game_thread()
 {
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
@@ -267,16 +221,10 @@ static void init_game_thread()
         return;
     }
 
-    Noesis::Ptr<ff::internal::debug_view_model> debug_view_model;
-    ff::internal::ui::init_game_thread([&debug_view_model]()
-        {
-            ::register_components();
-
-            if constexpr (ff::constants::profile_build)
-            {
-                debug_view_model = Noesis::MakePtr<ff::internal::debug_view_model>();
-            }
-        });
+    if (::app_params.register_resources_func)
+    {
+        ::app_params.register_resources_func();
+    }
 
     if (::app_params.game_thread_started_func)
     {
@@ -284,7 +232,6 @@ static void init_game_thread()
     }
 
     std::vector<std::shared_ptr<ff::state>> states;
-    states.push_back(::create_ui_state());
 
     if (::app_params.create_initial_state_func)
     {
@@ -297,8 +244,7 @@ static void init_game_thread()
 
     if constexpr (ff::constants::profile_build)
     {
-        assert(debug_view_model);
-        states.push_back(std::make_shared<ff::internal::debug_state>(debug_view_model, ::perf_results));
+        states.push_back(std::make_shared<ff::internal::debug_state>(::perf_results));
     }
 
     ::game_state = std::make_shared<ff::state_list>(std::move(states));
@@ -316,7 +262,6 @@ static void destroy_game_thread()
     }
 
     ff::global_resources::destroy_game_thread();
-    ff::internal::ui::destroy_game_thread();
     ff::thread_pool::flush();
     ::frame_thread_dispatch.reset();
     ::game_thread_dispatch.reset();

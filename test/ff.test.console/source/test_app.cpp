@@ -5,7 +5,6 @@ template<class StateT>
 static void run_app()
 {
     ff::init_app_params app_params{};
-    ff::init_ui_params ui_params{};
     DirectX::XMFLOAT4 clear_color(0, 0.125, 0, 1);
 
     app_params.create_initial_state_func = []()

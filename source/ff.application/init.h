@@ -4,18 +4,9 @@
 
 namespace ff
 {
-    struct init_ui_params
+    struct init_app_params
     {
-        std::function<const ff::dxgi::palette_base* ()> palette_func;
-        std::function<void()> register_components_func;
-
-        std::string noesis_license_name;
-        std::string noesis_license_key;
-        std::string application_resources_name;
-    };
-
-    struct init_app_params : public ff::init_ui_params
-    {
+        std::function<void()> register_resources_func;
         std::function<void()> game_thread_started_func;
         std::function<void()> game_thread_finished_func;
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func;

@@ -130,7 +130,7 @@ void run_test_sprite_perf()
 {
     ff::init_app_params app_params{};
 
-    app_params.register_components_func = []()
+    app_params.register_resources_func = []()
         {
             ff::data_reader assets_reader(::assets::test::data());
             ff::global_resources::add(assets_reader);

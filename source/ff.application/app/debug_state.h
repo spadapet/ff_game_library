@@ -1,11 +1,10 @@
 #pragma once
 
 #include "../app/state.h"
-#include "../ui/notify_property_changed_base.h"
 
 namespace ff::internal
 {
-    class debug_page_model : public ff::ui::notify_property_changed_base
+    class debug_page_model
     {
     public:
         debug_page_model();
@@ -17,14 +16,12 @@ namespace ff::internal
         bool is_none() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_page_model, ff::ui::notify_property_changed_base);
-
         std::string name_;
         std::function<std::shared_ptr<ff::state>()> factory;
         std::shared_ptr<ff::state> state_;
     };
 
-    class debug_timer_model : public ff::ui::notify_property_changed_base
+    class debug_timer_model
     {
     public:
         debug_timer_model() = default;
@@ -33,7 +30,7 @@ namespace ff::internal
         void info(const ff::perf_results& results, const ff::perf_results::counter_info& info);
 
         const char* name_cstr() const;
-        Noesis::Brush* name_brush() const;
+        DirectX::XMFLOAT4 color() const;
         double time_ms() const;
         int level() const;
         int hit_total() const;
@@ -41,17 +38,15 @@ namespace ff::internal
         int hit_per_second() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_timer_model, ff::ui::notify_property_changed_base);
-
         ff::perf_results::counter_info info_{};
         double time_ms_{};
     };
 
-    class debug_view_model : public ff::ui::notify_property_changed_base
+    class debug_view_model
     {
     public:
         debug_view_model();
-        ~debug_view_model() override;
+        ~debug_view_model();
 
         static ff::internal::debug_view_model* get();
 
@@ -95,35 +90,29 @@ namespace ff::internal
 
         bool has_pages() const;
         bool page_visible() const;
-        Noesis::ObservableCollection<ff::internal::debug_page_model>* pages() const;
-        ff::internal::debug_page_model* selected_page() const;
-        void selected_page(ff::internal::debug_page_model* value);
+        size_t page_count() const;
+        ff::internal::debug_page_model* page(size_t index) const;
+        size_t selected_page() const;
+        void selected_page(size_t index);
+        void add_page(ff::internal::debug_page_model&& page);
+        void remove_page(size_t index);
 
-        Noesis::ObservableCollection<ff::internal::debug_timer_model>* timers() const;
-        void timers(const ff::perf_results& results) const;
-        ff::internal::debug_timer_model* selected_timer() const;
-        void selected_timer(ff::internal::debug_timer_model* value);
+        size_t timer_count() const;
+        ff::internal::debug_timer_model* timer(size_t index) const;
+        void timers(const ff::perf_results& results);
+        size_t selected_timer() const;
+        void selected_timer(size_t index);
 
         void update_chart(const ff::perf_results& results);
-        Noesis::Geometry* geometry_total() const;
-        Noesis::Geometry* geometry_render() const;
-        Noesis::Geometry* geometry_wait() const;
 
     private:
-        NS_DECLARE_REFLECTION(ff::internal::debug_view_model, ff::ui::notify_property_changed_base);
-
-        void on_resources_rebuild_begin();
-        void on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args);
-        void close_command(Noesis::BaseComponent*);
-        void build_resources_command(Noesis::BaseComponent*);
-        bool build_resources_can_execute(Noesis::BaseComponent*) const;
-        void select_page_command(Noesis::BaseComponent* param);
-
         double game_seconds_{};
         size_t frames_per_second_{};
         size_t frame_count_{};
         size_t timer_update_speed_{ 16 };
         size_t frame_start_counter_{};
+        size_t selected_page_{};
+        size_t selected_timer_{};
         bool dock_right_{};
         bool debug_visible_{};
         bool page_picker_visible_{};
@@ -131,52 +120,14 @@ namespace ff::internal
         bool timers_updating_{ true };
         bool chart_visible_{};
         bool stopped_visible_{};
-        Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_timer_model>> timers_;
-        Noesis::Ptr<Noesis::ObservableCollection<ff::internal::debug_page_model>> pages_;
-        Noesis::Ptr<ff::internal::debug_page_model> selected_page_;
-        Noesis::Ptr<ff::internal::debug_timer_model> selected_timer_;
-        Noesis::Ptr<Noesis::BaseCommand> close_command_;
-        Noesis::Ptr<Noesis::BaseCommand> build_resources_command_;
-        Noesis::Ptr<Noesis::BaseCommand> select_page_command_;
-        Noesis::Ptr<Noesis::MeshGeometry> geometry_total_;
-        Noesis::Ptr<Noesis::MeshGeometry> geometry_render_;
-        Noesis::Ptr<Noesis::MeshGeometry> geometry_wait_;
-        ff::signal_connection resource_rebuild_begin_connection;
-        ff::signal_connection resource_rebuild_end_connection;
-    };
-
-    class debug_view : public Noesis::UserControl
-    {
-    public:
-        debug_view();
-        debug_view(ff::internal::debug_view_model* view_model);
-
-        ff::internal::debug_view_model* view_model() const;
-
-    private:
-        Noesis::Ptr<ff::internal::debug_view_model> view_model_;
-
-        NS_DECLARE_REFLECTION(ff::internal::debug_view, Noesis::UserControl);
-    };
-
-    class stopped_view : public Noesis::UserControl
-    {
-    public:
-        stopped_view();
-        stopped_view(ff::internal::debug_view_model* view_model);
-
-        ff::internal::debug_view_model* view_model() const;
-
-    private:
-        Noesis::Ptr<ff::internal::debug_view_model> view_model_;
-
-        NS_DECLARE_REFLECTION(ff::internal::stopped_view, Noesis::UserControl);
+        std::vector<ff::internal::debug_timer_model> timers_;
+        std::vector<ff::internal::debug_page_model> pages_;
     };
 
     class debug_state : public ff::state
     {
     public:
-        debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results);
+        debug_state(const ff::perf_results& perf_results);
 
         virtual void advance_input() override;
         virtual void frame_started(ff::state::advance_t type) override;
@@ -184,14 +135,10 @@ namespace ff::internal
         virtual ff::state* child_state(size_t index) override;
 
     private:
-        void init_resources();
-        void on_resources_rebuild_end();
-
         const ff::perf_results& perf_results;
-        ff::signal_connection resource_rebuild_end_connection;
+        ff::internal::debug_view_model view_model;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
-        Noesis::Ptr<ff::internal::debug_view_model> view_model;
         std::shared_ptr<ff::state> debug_view_state;
         std::shared_ptr<ff::state> stopped_view_state;
     };

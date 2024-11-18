@@ -57,7 +57,7 @@
   <ItemDefinitionGroup>
     <!-- Compiler options -->
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc;$(NoesisRoot)Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)include;$(FFRoot)vendor;$(FFRoot)vendor\libpng_inc</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(GeneratedFilesDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 /bigobj /Wv:18 %(AdditionalOptions)</AdditionalOptions>
@@ -84,8 +84,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Full</Optimization>
-      <PreprocessorDefinitions Condition=" '$(ProjectName)' != 'ff.vendor.noesis_app' ">DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG=0;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck></SDLCheck>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' == 'Debug' ">
@@ -113,7 +112,7 @@
     </ResourceCompile>
     <!-- Linker options -->
     <Link>
-      <AdditionalLibraryDirectories>$(NoesisLibDir);$(WinPixRoot)bin\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WinPixRoot)bin\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>

@@ -15,7 +15,6 @@
     <ClCompile Include="source\test_app.cpp" />
     <ClCompile Include="source\test_game.cpp" />
     <ClCompile Include="source\test_sprite_perf.cpp" />
-    <ClCompile Include="source\test_ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -37,9 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\assets.res.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResJson Include="assets\assets.xaml.res.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemDefinitionGroup>

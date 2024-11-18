@@ -20,12 +20,6 @@ static std::shared_ptr<ff::state> create_app_state()
     return app_state;
 }
 
-static const ff::dxgi::palette_base* get_noesis_palette()
-{
-    auto app_state = ::app_state.lock();
-    return app_state ? app_state->palette(0) : nullptr;
-}
-
 static double get_time_scale()
 {
     auto app_state = ::app_state.lock();
@@ -51,13 +45,6 @@ static ff::init_app_params get_app_params()
     params.get_time_scale_func = ::get_time_scale;
     params.get_advance_type_func = ::get_advance_type;
     params.get_clear_color_func = ::get_clear_color;
-
-    // UI
-    params.application_resources_name = ::init_params->noesis_application_resources_name;
-    params.noesis_license_name = ::init_params->noesis_license_name;
-    params.noesis_license_key = ::init_params->noesis_license_key;
-    params.palette_func = ::get_noesis_palette;
-    params.register_components_func = ::init_params->register_global_resources;
 
     return params;
 }

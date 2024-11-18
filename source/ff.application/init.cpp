@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "app/app.h"
 #include "init.h"
-#include "ui/ui.h"
 
 namespace
 {
@@ -11,21 +10,17 @@ namespace
         one_time_init_app(const ff::init_app_params& params)
         {
             this->app_status = ff::internal::app::init(params);
-            this->ui_status = ff::internal::ui::init(params);
         }
 
         ~one_time_init_app()
         {
-            ff::internal::ui::destroy();
-            this->ui_status = false;
-
             ff::internal::app::destroy();
             this->app_status = false;
         }
 
         bool valid() const
         {
-            if (!this->app_status || !this->ui_status || !this->init_dx)
+            if (!this->app_status || !this->init_dx)
             {
                 return false;
             }
@@ -35,7 +30,6 @@ namespace
 
     private:
         bool app_status{};
-        bool ui_status{};
 
         ff::init_dx init_dx;
     };

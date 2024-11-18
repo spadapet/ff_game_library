@@ -13,7 +13,7 @@ namespace ff
     {
         palette,
         rgba,
-        rgba_pma, // pre-multiplied alpha for noesis
+        rgba_pma,
 
         count
     };

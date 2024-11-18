@@ -21,21 +21,6 @@
     <ClCompile Include="game\game_init.cpp" />
     <ClCompile Include="game\game_state_base.cpp" />
     <ClCompile Include="init.cpp" />
-    <ClCompile Include="ui\converters.cpp" />
-    <ClCompile Include="ui\delegate_command.cpp" />
-    <ClCompile Include="ui\font_provider.cpp" />
-    <ClCompile Include="ui\key_map.cpp" />
-    <ClCompile Include="ui\notify_property_changed_base.cpp" />
-    <ClCompile Include="ui\render_device.cpp" />
-    <ClCompile Include="ui\render_target.cpp" />
-    <ClCompile Include="ui\resource_cache.cpp" />
-    <ClCompile Include="ui\stream.cpp" />
-    <ClCompile Include="ui\texture.cpp" />
-    <ClCompile Include="ui\texture_provider.cpp" />
-    <ClCompile Include="ui\ui.cpp" />
-    <ClCompile Include="ui\ui_view.cpp" />
-    <ClCompile Include="ui\ui_view_state.cpp" />
-    <ClCompile Include="ui\xaml_provider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -46,44 +31,13 @@
     <ClInclude Include="game\game_init.h" />
     <ClInclude Include="game\game_state_base.h" />
     <ClInclude Include="init.h" />
-    <ClInclude Include="ui\converters.h" />
-    <ClInclude Include="ui\delegate_command.h" />
-    <ClInclude Include="ui\font_provider.h" />
-    <ClInclude Include="ui\key_map.h" />
-    <ClInclude Include="ui\notify_property_changed_base.h" />
-    <ClInclude Include="ui\render_device.h" />
-    <ClInclude Include="ui\render_target.h" />
-    <ClInclude Include="ui\resource_cache.h" />
-    <ClInclude Include="ui\stream.h" />
-    <ClInclude Include="ui\texture.h" />
-    <ClInclude Include="ui\texture_provider.h" />
-    <ClInclude Include="ui\ui.h" />
-    <ClInclude Include="ui\ui_view.h" />
-    <ClInclude Include="ui\ui_view_state.h" />
-    <ClInclude Include="ui\xaml_provider.h" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\ff.app.res.json">
       <FileType>Document</FileType>
     </ResJson>
-    <ResJson Include="assets\ff.ui.res.json">
-      <FileType>Document</FileType>
-    </ResJson>
-    <None Include="assets\shader_ps.hlsl">
-      <FileType>Document</FileType>
-    </None>
-    <None Include="assets\shader_vs.hlsl">
-      <FileType>Document</FileType>
-    </None>
-    <Content Include="$(NoesisRoot)bin\windows_x86_64\noesis.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\vendor\ff.vendor.noesis_app.vcxproj">
-      <Project>{31f28e6f-10bc-4a6d-b992-01fd42edb7de}</Project>
-      <Private>false</Private>
-    </ProjectReference>
     <ProjectReference Include="..\ff.dx\ff.dx.vcxproj">
       <Project>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</Project>
     </ProjectReference>

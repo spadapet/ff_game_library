@@ -21,51 +21,6 @@
     <ClCompile Include="app\state.cpp">
       <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="ui\ui_view_state.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\converters.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\delegate_command.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\font_provider.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\key_map.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\notify_property_changed_base.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\render_device.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\render_target.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\resource_cache.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\stream.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\texture.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\texture_provider.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\ui.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\ui_view.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
-    <ClCompile Include="ui\xaml_provider.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -88,51 +43,6 @@
     <ClInclude Include="app\state.h">
       <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="ui\ui_view_state.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\converters.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\delegate_command.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\font_provider.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\key_map.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\notify_property_changed_base.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\render_device.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\render_target.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\resource_cache.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\stream.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\texture.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\texture_provider.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\ui.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\ui_view.h">
-      <Filter>ui</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\xaml_provider.h">
-      <Filter>ui</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="app">
@@ -140,9 +50,6 @@
     </Filter>
     <Filter Include="game">
       <UniqueIdentifier>{8f6b6eac-4462-441f-a595-0a0b605433f8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ui">
-      <UniqueIdentifier>{299de93f-56a7-4402-a8a0-901ff0442730}</UniqueIdentifier>
     </Filter>
     <Filter Include="assets">
       <UniqueIdentifier>{9593420c-cec8-45d4-81a9-af6a4ed036c3}</UniqueIdentifier>
@@ -152,16 +59,5 @@
     <ResJson Include="assets\ff.app.res.json">
       <Filter>assets</Filter>
     </ResJson>
-    <ResJson Include="assets\ff.ui.res.json">
-      <Filter>assets</Filter>
-    </ResJson>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="assets\shader_ps.hlsl">
-      <Filter>assets</Filter>
-    </None>
-    <None Include="assets\shader_vs.hlsl">
-      <Filter>assets</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -11,8 +11,6 @@ const char* ff::dx12::gpu_event_name(ff::dx12::gpu_event type)
         case ff::dx12::gpu_event::draw_batch: return "draw_batch";
         case ff::dx12::gpu_event::render_frame: return "render_frame";
         case ff::dx12::gpu_event::update_palette: return "update_palette";
-        case ff::dx12::gpu_event::noesis_offscreen: return "noesis_offscreen";
-        case ff::dx12::gpu_event::noesis_view: return "noesis_view";
         default: debug_fail_ret_val("");
     }
 }

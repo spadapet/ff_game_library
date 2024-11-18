@@ -4,8 +4,6 @@
 #include "app/settings.h"
 #include "ff.app.res.id.h"
 #include "game/game_state_base.h"
-#include "ui/ui.h"
-#include "ui/ui_view.h"
 
 using namespace std::string_view_literals;
 
@@ -231,8 +229,6 @@ void ff::game::app_state_base::advance_input()
 
 void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
-    size_t old_ui_view_count = ff::ui::rendered_views().size();
-
     if (this->render_target)
     {
         targets.push(*this->render_target);
@@ -242,12 +238,7 @@ void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, f
 
     if (this->render_target)
     {
-        ff::rect_float target_rect = targets.pop(context, nullptr, this->palette(0));
-
-        for (auto i = ff::ui::rendered_views().cbegin() + old_ui_view_count; i != ff::ui::rendered_views().cend(); i++)
-        {
-            (*i)->viewport(target_rect);
-        }
+        targets.pop(context, nullptr, this->palette(0));
     }
 }
 

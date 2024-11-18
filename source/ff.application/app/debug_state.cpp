@@ -2,9 +2,6 @@
 #include "app/app.h"
 #include "app/debug_state.h"
 #include "ff.app.res.id.h"
-#include "ui/delegate_command.h"
-#include "ui/ui_view.h"
-#include "ui/ui_view_state.h"
 
 using namespace std::string_view_literals;
 
@@ -18,49 +15,6 @@ static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
 static std::string_view NONE_NAME = "None"sv;
 static ff::internal::debug_view_model* global_debug_view_model{};
 static ff::signal<> custom_debug_signal;
-
-static Noesis::Ptr<Noesis::MeshGeometry> CreateChartGeometry()
-{
-    auto geometry = Noesis::MakePtr<Noesis::MeshGeometry>();
-    geometry->SetBounds(Noesis::Rect(0, 0, ::CHART_WIDTH_F, ::CHART_HEIGHT_F));
-    geometry->SetNumVertices(::CHART_WIDTH_U * 2 + 2);
-    geometry->SetNumIndices(::CHART_WIDTH_U * 6);
-
-    // Vertices
-    {
-        Noesis::Point* points = geometry->GetVertices();
-        for (size_t i = 0; i < ::CHART_WIDTH * 2 + 2; i++, points++)
-        {
-            points->x = (::CHART_WIDTH_F - i / 2) * 2.0f;
-            points->y = ::CHART_HEIGHT_F;
-        }
-    }
-
-    // Indices
-    {
-        uint16_t* indices = geometry->GetIndices();
-        for (uint16_t i = 0; i < ::CHART_WIDTH_U16; i++)
-        {
-            const uint16_t start = i * 2;
-            *indices++ = start + 0;
-            *indices++ = start + 2;
-            *indices++ = start + 1;
-            *indices++ = start + 1;
-            *indices++ = start + 2;
-            *indices++ = start + 3;
-        }
-    }
-
-    geometry->Update();
-
-    return geometry;
-}
-
-NS_IMPLEMENT_REFLECTION(ff::internal::debug_page_model, "ff.debug_page_model")
-{
-    NsProp("name", &ff::internal::debug_page_model::name_cstr);
-    NsProp("is_none", &ff::internal::debug_page_model::is_none);
-}
 
 ff::internal::debug_page_model::debug_page_model()
     : ff::internal::debug_page_model(""sv, []() { return std::make_shared<ff::state>(); })
@@ -97,17 +51,6 @@ bool ff::internal::debug_page_model::is_none() const
     return this->name_.empty();
 }
 
-NS_IMPLEMENT_REFLECTION(ff::internal::debug_timer_model, "ff.debug_timer_model")
-{
-    NsProp("name", &ff::internal::debug_timer_model::name_cstr);
-    NsProp("name_brush", &ff::internal::debug_timer_model::name_brush);
-    NsProp("time_ms", &ff::internal::debug_timer_model::time_ms);
-    NsProp("level", &ff::internal::debug_timer_model::level);
-    NsProp("hit_total", &ff::internal::debug_timer_model::hit_total);
-    NsProp("hit_last_frame", &ff::internal::debug_timer_model::hit_last_frame);
-    NsProp("hit_per_second", &ff::internal::debug_timer_model::hit_per_second);
-}
-
 ff::internal::debug_timer_model::debug_timer_model(const ff::perf_results& results, const ff::perf_results::counter_info& info)
     : ff::internal::debug_timer_model::debug_timer_model()
 {
@@ -118,12 +61,8 @@ void ff::internal::debug_timer_model::info(const ff::perf_results& results, cons
 {
     const double time_ms = results.delta_ticks ? (info.ticks * results.delta_seconds * 1000.0 / results.delta_ticks) : 0.0;
 
-    this->set_property(this->info_.counter, info.counter, "name", "name_brush");
-    this->set_property(this->time_ms_, time_ms, "time_ms");
-    this->set_property(this->info_.level, info.level, "level");
-    this->set_property(this->info_.hit_total, info.hit_total, "hit_total");
-    this->set_property(this->info_.hit_last_frame, info.hit_last_frame, "hit_last_frame");
-    this->set_property(this->info_.hit_per_second, info.hit_per_second, "hit_per_second");
+    this->info_ = info;
+    this->time_ms_ = time_ms;
 }
 
 const char* ff::internal::debug_timer_model::name_cstr() const
@@ -131,30 +70,30 @@ const char* ff::internal::debug_timer_model::name_cstr() const
     return this->info_.counter ? this->info_.counter->name.c_str() : "";
 }
 
-Noesis::Brush* ff::internal::debug_timer_model::name_brush() const
+DirectX::XMFLOAT4 ff::internal::debug_timer_model::color() const
 {
     switch (this->info_.counter ? this->info_.counter->color : ff::perf_color::white)
     {
         case ff::perf_color::blue:
-            return Noesis::Brushes::Blue();
+            return ff::dxgi::color_blue();
 
         case ff::perf_color::cyan:
-            return Noesis::Brushes::Cyan();
+            return ff::dxgi::color_cyan();
 
         case ff::perf_color::green:
-            return Noesis::Brushes::LawnGreen();
+            return ff::dxgi::color_green();
 
         case ff::perf_color::magenta:
-            return Noesis::Brushes::Magenta();
+            return ff::dxgi::color_magenta();
 
         case ff::perf_color::red:
-            return Noesis::Brushes::Red();
+            return ff::dxgi::color_red();
 
         case ff::perf_color::yellow:
-            return Noesis::Brushes::Yellow();
+            return ff::dxgi::color_yellow();
 
         default:
-            return Noesis::Brushes::White();
+            return ff::dxgi::color_white();
     }
 }
 
@@ -183,63 +122,15 @@ int ff::internal::debug_timer_model::hit_per_second() const
     return static_cast<int>(this->info_.hit_per_second);
 }
 
-NS_IMPLEMENT_REFLECTION(ff::internal::debug_view_model, "ff.debug_view_model")
-{
-    NsProp("close_command", &ff::internal::debug_view_model::close_command_);
-    NsProp("build_resources_command", &ff::internal::debug_view_model::build_resources_command_);
-    NsProp("select_page_command", &ff::internal::debug_view_model::select_page_command_);
-
-    NsProp("dock_right", &ff::internal::debug_view_model::dock_right, &ff::internal::debug_view_model::dock_right);
-    NsProp("advance_seconds", &ff::internal::debug_view_model::advance_seconds, &ff::internal::debug_view_model::advance_seconds);
-    NsProp("frames_per_second", &ff::internal::debug_view_model::frames_per_second, &ff::internal::debug_view_model::frames_per_second);
-    NsProp("frame_count", &ff::internal::debug_view_model::frame_count, &ff::internal::debug_view_model::frame_count);
-    NsProp("frame_start_counter", &ff::internal::debug_view_model::frame_start_counter, &ff::internal::debug_view_model::frame_start_counter);
-    NsProp("debug_visible", &ff::internal::debug_view_model::debug_visible, &ff::internal::debug_view_model::debug_visible);
-    NsProp("timers_visible", &ff::internal::debug_view_model::timers_visible, &ff::internal::debug_view_model::timers_visible);
-    NsProp("timers_updating", &ff::internal::debug_view_model::timers_updating, &ff::internal::debug_view_model::timers_updating);
-    NsProp("timer_update_speed", &ff::internal::debug_view_model::timer_update_speed, &ff::internal::debug_view_model::timer_update_speed);
-    NsProp("chart_visible", &ff::internal::debug_view_model::chart_visible, &ff::internal::debug_view_model::chart_visible);
-    NsProp("stopped_visible", &ff::internal::debug_view_model::stopped_visible, &ff::internal::debug_view_model::stopped_visible);
-    NsProp("building_resources", &ff::internal::debug_view_model::building_resources);
-    NsProp("has_pages", &ff::internal::debug_view_model::has_pages);
-    NsProp("page_visible", &ff::internal::debug_view_model::page_visible);
-    NsProp("page_picker_visible", &ff::internal::debug_view_model::page_picker_visible, &ff::internal::debug_view_model::page_picker_visible);
-    NsProp("pages", &ff::internal::debug_view_model::pages);
-    NsProp("timers", &ff::internal::debug_view_model::timers);
-    NsProp("selected_page", &ff::internal::debug_view_model::selected_page, &ff::internal::debug_view_model::selected_page);
-    NsProp("selected_timer", &ff::internal::debug_view_model::selected_timer, &ff::internal::debug_view_model::selected_timer);
-    NsProp("geometry_total", &ff::internal::debug_view_model::geometry_total);
-    NsProp("geometry_total", &ff::internal::debug_view_model::geometry_total);
-    NsProp("geometry_render", &ff::internal::debug_view_model::geometry_render);
-    NsProp("geometry_wait", &ff::internal::debug_view_model::geometry_wait);
-}
-
 ff::internal::debug_view_model::debug_view_model()
-    : timers_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_timer_model>>())
-    , pages_(Noesis::MakePtr<Noesis::ObservableCollection<ff::internal::debug_page_model>>())
-    , selected_page_(Noesis::MakePtr<ff::internal::debug_page_model>())
-    , close_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::close_command)))
-    , build_resources_command_(Noesis::MakePtr<ff::ui::delegate_command>(
-        Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_command),
-        Noesis::MakeDelegate(this, &ff::internal::debug_view_model::build_resources_can_execute)))
-    , select_page_command_(Noesis::MakePtr<ff::ui::delegate_command>(Noesis::MakeDelegate(this, &ff::internal::debug_view_model::select_page_command)))
-    , geometry_total_(::CreateChartGeometry())
-    , geometry_render_(::CreateChartGeometry())
-    , geometry_wait_(::CreateChartGeometry())
-    , resource_rebuild_begin_connection(ff::global_resources::rebuild_begin_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
-    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_view_model::on_resources_rebuild_begin, this)))
+    : pages_(1) // the "none" page
 {
-    this->pages_->Add(this->selected_page_);
-    this->pages()->CollectionChanged() += Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
-
     assert(!::global_debug_view_model);
     ::global_debug_view_model = this;
 }
 
 ff::internal::debug_view_model::~debug_view_model()
 {
-    this->pages()->CollectionChanged() -= Noesis::MakeDelegate(this, &ff::internal::debug_view_model::on_pages_changed);
-
     assert(::global_debug_view_model == this);
     ::global_debug_view_model = nullptr;
 }
@@ -257,7 +148,7 @@ bool ff::internal::debug_view_model::dock_right() const
 
 void ff::internal::debug_view_model::dock_right(bool value)
 {
-    this->set_property(this->dock_right_, value, "dock_right");
+    this->dock_right_ = value;
 }
 
 double ff::internal::debug_view_model::advance_seconds() const
@@ -267,7 +158,7 @@ double ff::internal::debug_view_model::advance_seconds() const
 
 void ff::internal::debug_view_model::advance_seconds(double value)
 {
-    this->set_property(this->game_seconds_, value, "advance_seconds");
+    this->game_seconds_ = value;
 }
 
 size_t ff::internal::debug_view_model::frames_per_second() const
@@ -277,7 +168,7 @@ size_t ff::internal::debug_view_model::frames_per_second() const
 
 void ff::internal::debug_view_model::frames_per_second(size_t value)
 {
-    this->set_property(this->frames_per_second_, value, "frames_per_second");
+    this->frames_per_second_ = value;
 }
 
 size_t ff::internal::debug_view_model::frame_count() const
@@ -287,7 +178,7 @@ size_t ff::internal::debug_view_model::frame_count() const
 
 void ff::internal::debug_view_model::frame_count(size_t value)
 {
-    this->set_property(this->frame_count_, value, "frame_count");
+    this->frame_count_ = value;
 }
 
 size_t ff::internal::debug_view_model::frame_start_counter() const
@@ -297,7 +188,7 @@ size_t ff::internal::debug_view_model::frame_start_counter() const
 
 void ff::internal::debug_view_model::frame_start_counter(size_t value)
 {
-    this->set_property(this->frame_start_counter_, value, "frame_start_counter");
+    this->frame_start_counter_ = value;
 }
 
 bool ff::internal::debug_view_model::debug_visible() const
@@ -307,7 +198,7 @@ bool ff::internal::debug_view_model::debug_visible() const
 
 void ff::internal::debug_view_model::debug_visible(bool value)
 {
-    this->set_property(this->debug_visible_, value, "debug_visible");
+    this->debug_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::page_picker_visible() const
@@ -317,7 +208,7 @@ bool ff::internal::debug_view_model::page_picker_visible() const
 
 void ff::internal::debug_view_model::page_picker_visible(bool value)
 {
-    this->set_property(this->page_picker_visible_, value, "page_picker_visible");
+    this->page_picker_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::timers_visible() const
@@ -327,7 +218,7 @@ bool ff::internal::debug_view_model::timers_visible() const
 
 void ff::internal::debug_view_model::timers_visible(bool value)
 {
-    this->set_property(this->timers_visible_, value, "timers_visible");
+    this->timers_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::timers_updating() const
@@ -337,7 +228,7 @@ bool ff::internal::debug_view_model::timers_updating() const
 
 void ff::internal::debug_view_model::timers_updating(bool value)
 {
-    this->set_property(this->timers_updating_, value, "timers_updating");
+    this->timers_updating_ = value;
 }
 
 size_t ff::internal::debug_view_model::timer_update_speed() const
@@ -348,7 +239,7 @@ size_t ff::internal::debug_view_model::timer_update_speed() const
 void ff::internal::debug_view_model::timer_update_speed(size_t value)
 {
     value = ff::math::clamp<size_t>(value, 1, 60);
-    this->set_property(this->timer_update_speed_, value, "timer_update_speed");
+    this->timer_update_speed_ = value;
 }
 
 bool ff::internal::debug_view_model::chart_visible() const
@@ -358,7 +249,7 @@ bool ff::internal::debug_view_model::chart_visible() const
 
 void ff::internal::debug_view_model::chart_visible(bool value)
 {
-    this->set_property(this->chart_visible_, value, "chart_visible");
+    this->chart_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::stopped_visible() const
@@ -368,7 +259,7 @@ bool ff::internal::debug_view_model::stopped_visible() const
 
 void ff::internal::debug_view_model::stopped_visible(bool value)
 {
-    this->set_property(this->stopped_visible_, value, "stopped_visible");
+    this->stopped_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::building_resources() const
@@ -378,70 +269,96 @@ bool ff::internal::debug_view_model::building_resources() const
 
 bool ff::internal::debug_view_model::has_pages() const
 {
-    return this->pages()->Count() > 1;
+    return !this->pages_.empty();
 }
 
 bool ff::internal::debug_view_model::page_visible() const
 {
-    ff::internal::debug_page_model* page = this->selected_page();
-    return !page->is_none() && page->state();
+    ff::internal::debug_page_model* page = this->page(this->selected_page());
+    return page && !page->is_none() && page->state();
 }
 
-Noesis::ObservableCollection<ff::internal::debug_page_model>* ff::internal::debug_view_model::pages() const
+size_t ff::internal::debug_view_model::page_count() const
 {
-    return this->pages_;
+    return this->pages_.size();
 }
 
-ff::internal::debug_page_model* ff::internal::debug_view_model::selected_page() const
+ff::internal::debug_page_model* ff::internal::debug_view_model::page(size_t index) const
+{
+    return index < this->pages_.size() ? const_cast<ff::internal::debug_page_model*>(&this->pages_[index]) : nullptr;
+}
+
+size_t ff::internal::debug_view_model::selected_page() const
 {
     return this->selected_page_;
 }
 
-void ff::internal::debug_view_model::selected_page(ff::internal::debug_page_model* value)
+void ff::internal::debug_view_model::selected_page(size_t index)
 {
-    value = value ? value : this->pages()->Get(0);
-    if (this->set_property(this->selected_page_, Noesis::Ptr(value), "selected_page", "page_visible") && !this->selected_page_->is_none())
+    index = index >= this->pages_.size() ? 0 : index;
+    this->selected_page_ = index;
+
+    if (this->page(this->selected_page())->is_none())
     {
-        this->debug_visible(true);
+        this->debug_visible(false);
     }
 }
 
-Noesis::ObservableCollection<ff::internal::debug_timer_model>* ff::internal::debug_view_model::timers() const
+void ff::internal::debug_view_model::add_page(ff::internal::debug_page_model&& page)
 {
-    return this->timers_;
+    this->pages_.emplace_back(std::move(page));
 }
 
-void ff::internal::debug_view_model::timers(const ff::perf_results& results) const
+void ff::internal::debug_view_model::remove_page(size_t index)
+{
+    if (index < this->pages_.size())
+    {
+        this->pages_.erase(this->pages_.begin() + index);
+    }
+}
+
+size_t ff::internal::debug_view_model::timer_count() const
+{
+    return this->timers_.size();
+}
+
+ff::internal::debug_timer_model* ff::internal::debug_view_model::timer(size_t index) const
+{
+    return index < this->timers_.size() ? const_cast<ff::internal::debug_timer_model*>(&this->timers_[index]) : nullptr;
+}
+
+void ff::internal::debug_view_model::timers(const ff::perf_results& results)
 {
     uint32_t i = 0;
-    uint32_t timers_count = static_cast<uint32_t>(this->timers_->Count());
+    uint32_t timers_count = static_cast<uint32_t>(this->timers_.size());
     for (; i < results.counter_infos.size(); i++)
     {
         if (i < timers_count)
         {
-            this->timers_->Get(i)->info(results, results.counter_infos[i]);
+            this->timers_[i].info(results, results.counter_infos[i]);
         }
         else
         {
-            this->timers_->Add(Noesis::MakePtr<ff::internal::debug_timer_model>(results, results.counter_infos[i]));
+            this->timers_.emplace_back(results, results.counter_infos[i]);
             timers_count++;
         }
     }
 
-    while (timers_count > i)
+    for (; timers_count > i; --timers_count)
     {
-        this->timers_->RemoveAt(--timers_count);
+        this->timers_.pop_back();
     }
 }
 
-ff::internal::debug_timer_model* ff::internal::debug_view_model::selected_timer() const
+size_t ff::internal::debug_view_model::selected_timer() const
 {
     return this->selected_timer_;
 }
 
-void ff::internal::debug_view_model::selected_timer(ff::internal::debug_timer_model* value)
+void ff::internal::debug_view_model::selected_timer(size_t index)
 {
-    this->set_property(this->selected_timer_, Noesis::Ptr(value), "selected_timer");
+    index = index >= this->timers_.size() ? 0 : index;
+    this->selected_timer_ = index;
 }
 
 void ff::internal::debug_view_model::update_chart(const ff::perf_results& results)
@@ -468,6 +385,7 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
         }
     }
 
+#if 0
     Noesis::Point* total_points = this->geometry_total_->GetVertices();
     Noesis::Point* render_points = this->geometry_render_->GetVertices();
     Noesis::Point* wait_points = this->geometry_wait_->GetVertices();
@@ -495,121 +413,14 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
     this->geometry_total_->Update();
     this->geometry_render_->Update();
     this->geometry_wait_->Update();
+#endif
 }
 
-Noesis::Geometry* ff::internal::debug_view_model::geometry_total() const
-{
-    return this->geometry_total_;
-}
-
-Noesis::Geometry* ff::internal::debug_view_model::geometry_render() const
-{
-    return this->geometry_render_;
-}
-
-Noesis::Geometry* ff::internal::debug_view_model::geometry_wait() const
-{
-    return this->geometry_wait_;
-}
-
-void ff::internal::debug_view_model::on_resources_rebuild_begin()
-{
-    this->property_changed("building_resources");
-    this->build_resources_command_->RaiseCanExecuteChanged();
-}
-
-void ff::internal::debug_view_model::on_pages_changed(Noesis::BaseComponent*, const Noesis::NotifyCollectionChangedEventArgs& args)
-{
-    if (this->pages()->IndexOf(this->selected_page()) < 0)
-    {
-        assert(this->selected_page() != this->pages()->Get(0) && this->pages()->Get(0)->is_none());
-        this->selected_page(this->pages()->Get(0));
-    }
-
-    this->property_changed("has_pages");
-}
-
-void ff::internal::debug_view_model::close_command(Noesis::BaseComponent*)
-{
-    this->debug_visible(false);
-}
-
-void ff::internal::debug_view_model::build_resources_command(Noesis::BaseComponent*)
-{
-    ff::global_resources::rebuild_async();
-}
-
-bool ff::internal::debug_view_model::build_resources_can_execute(Noesis::BaseComponent*) const
-{
-    return !this->building_resources();
-}
-
-void ff::internal::debug_view_model::select_page_command(Noesis::BaseComponent* param)
-{
-    auto page = Noesis::DynamicPtrCast<ff::internal::debug_page_model>(Noesis::Ptr(param));
-    if (page)
-    {
-        this->selected_page(page);
-    }
-}
-
-NS_IMPLEMENT_REFLECTION(ff::internal::debug_view, "ff.debug_view")
-{
-    NsProp("view_model", &ff::internal::debug_view::view_model);
-}
-
-ff::internal::debug_view::debug_view()
-    : view_model_(*new ff::internal::debug_view_model())
-{}
-
-ff::internal::debug_view::debug_view(ff::internal::debug_view_model* view_model)
-    : view_model_(view_model)
-{
-    Noesis::GUI::LoadComponent(this, ff::string::concat(ff::internal::app::xaml_pack_uri, assets::app::FF_DEBUG_VIEW_XAML).c_str());
-}
-
-ff::internal::debug_view_model* ff::internal::debug_view::view_model() const
-{
-    return this->view_model_;
-}
-
-NS_IMPLEMENT_REFLECTION(ff::internal::stopped_view, "ff.stopped_view")
-{
-    NsProp("view_model", &ff::internal::stopped_view::view_model);
-}
-
-ff::internal::stopped_view::stopped_view()
-    : view_model_(*new ff::internal::debug_view_model())
-{}
-
-ff::internal::stopped_view::stopped_view(ff::internal::debug_view_model* view_model)
-    : view_model_(view_model)
-{
-    Noesis::GUI::LoadComponent(this, ff::string::concat(ff::internal::app::xaml_pack_uri, assets::app::FF_STOPPED_VIEW_XAML).c_str());
-}
-
-ff::internal::debug_view_model* ff::internal::stopped_view::view_model() const
-{
-    return this->view_model_;
-}
-
-template<class T>
-static std::shared_ptr<ff::ui_view_state> create_view_state(ff::internal::debug_view_model* view_model)
-{
-    auto noesis_view = Noesis::MakePtr<T>(view_model);
-    auto ui_view = std::make_shared<ff::ui_view>(noesis_view, ff::ui_view_options::unfocusable);
-    return std::make_shared<ff::ui_view_state>(ui_view, ff::ui_view_state::advance_when_t::frame_started);
-}
-
-ff::internal::debug_state::debug_state(ff::internal::debug_view_model* view_model, const ff::perf_results& perf_results)
+ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
-    , resource_rebuild_end_connection(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::internal::debug_state::on_resources_rebuild_end, this)))
     , input_mapping(ff::internal::app::app_resources().get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
-    , view_model(view_model)
-{
-    this->init_resources();
-}
+{}
 
 void ff::internal::debug_state::advance_input()
 {
@@ -621,7 +432,7 @@ void ff::internal::debug_state::advance_input()
         }
         else if (this->input_events->event_hit(::EVENT_TOGGLE_DEBUG))
         {
-            this->view_model->debug_visible(!this->view_model->debug_visible());
+            this->view_model.debug_visible(!this->view_model.debug_visible());
         }
     }
 
@@ -630,7 +441,7 @@ void ff::internal::debug_state::advance_input()
 
 void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 {
-    ff::internal::debug_view_model* vm = this->view_model;
+    ff::internal::debug_view_model* vm = &this->view_model;
     const ff::perf_results& pr = this->perf_results;
 
     vm->stopped_visible(type == ff::state::advance_t::stopped);
@@ -668,9 +479,9 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 size_t ff::internal::debug_state::child_state_count()
 {
     return
-        static_cast<size_t>(this->view_model->debug_visible()) +
-        static_cast<size_t>(this->view_model->stopped_visible()) +
-        static_cast<size_t>(this->view_model->page_visible());
+        static_cast<size_t>(this->view_model.debug_visible() && this->debug_view_state.get()) +
+        static_cast<size_t>(this->view_model.stopped_visible() && this->stopped_view_state.get()) +
+        static_cast<size_t>(this->view_model.page_visible() && this->view_model.page(this->view_model.selected_page())->state());
 }
 
 ff::state* ff::internal::debug_state::child_state(size_t index)
@@ -678,37 +489,26 @@ ff::state* ff::internal::debug_state::child_state(size_t index)
     switch (index)
     {
         case 1:
-            if (this->view_model->stopped_visible() && this->view_model->page_visible())
+            if (this->view_model.stopped_visible() && this->view_model.page_visible())
             {
-                return this->view_model->selected_page()->state();
+                return this->view_model.page(this->view_model.selected_page())->state();
             }
             break;
 
         case 0:
-            if (this->view_model->stopped_visible())
+            if (this->view_model.stopped_visible())
             {
                 return this->stopped_view_state.get();
             }
 
-            if (this->view_model->page_visible())
+            if (this->view_model.page_visible())
             {
-                this->view_model->selected_page()->state();
+                return this->view_model.page(this->view_model.selected_page())->state();
             }
             break;
     }
 
     return this->debug_view_state.get();
-}
-
-void ff::internal::debug_state::init_resources()
-{
-    this->debug_view_state = ::create_view_state<ff::internal::debug_view>(view_model);
-    this->stopped_view_state = ::create_view_state<ff::internal::stopped_view>(view_model);
-}
-
-void ff::internal::debug_state::on_resources_rebuild_end()
-{
-    this->init_resources();
 }
 
 void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
@@ -718,12 +518,12 @@ void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff:
         ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
         assert_ret(vm && name.size() && name != ::NONE_NAME);
 
-        for (uint32_t i = 0; i < static_cast<uint32_t>(vm->pages()->Count()); i++)
+        for (size_t i = 0; i < vm->page_count(); i++)
         {
-            assert_msg_ret(vm->pages()->Get(i)->name() != name, "Debug page already added");
+            assert_msg_ret(vm->page(i)->name() != name, "Debug page already added");
         }
 
-        vm->pages()->Add(Noesis::MakePtr<ff::internal::debug_page_model>(name, std::move(factory)));
+        vm->add_page(ff::internal::debug_page_model(name, std::move(factory)));
     }
 }
 
@@ -734,11 +534,11 @@ void ff::remove_debug_page(std::string_view name)
         ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
         assert_ret(vm && name.size() && name != ::NONE_NAME);
 
-        for (uint32_t i = 0; i < static_cast<uint32_t>(vm->pages()->Count()); i++)
+        for (size_t i = 0; i < vm->page_count(); i++)
         {
-            if (vm->pages()->Get(i)->name() == name)
+            if (vm->page(i)->name() == name)
             {
-                vm->pages()->RemoveAt(i);
+                vm->remove_page(i);
                 break;
             }
         }
@@ -754,11 +554,11 @@ void ff::show_debug_page(std::string_view name)
         ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
         assert_ret(vm);
 
-        for (uint32_t i = 0; i < static_cast<uint32_t>(vm->pages()->Count()); i++)
+        for (size_t i = 0; i < vm->page_count(); i++)
         {
-            if (vm->pages()->Get(i)->name() == name)
+            if (vm->page(i)->name() == name)
             {
-                vm->selected_page(vm->pages()->Get(i));
+                vm->selected_page(i);
                 break;
             }
         }
