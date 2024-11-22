@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "base/assert.h"
 #include "base/string.h"
+#include "thread/thread_dispatch.h"
 #include "types/flags.h"
 #include "windows/win_handle.h"
 #include "windows/window.h"
@@ -225,14 +226,23 @@ void ff::window::notify_message(ff::window_message& message)
                 message.handled = true;
             }
             break;
+
+        case WM_GETMINMAXINFO:
+            {
+                RECT rect{ 0, 0, 240, 135 };
+                const DWORD style = static_cast<DWORD>(::GetWindowLong(message.hwnd, GWL_STYLE));
+                const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(message.hwnd, GWL_EXSTYLE));
+                if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(message.hwnd)))
+                {
+                    MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(message.lp);
+                    mm.ptMinTrackSize.x = rect.right - rect.left;
+                    mm.ptMinTrackSize.y = rect.bottom - rect.top;
+                }
+            }
+            break;
     }
 
     this->message_signal.notify(message);
-}
-
-bool ff::window::key_down(int vk) const
-{
-    return ::GetKeyState(vk) < 0;
 }
 
 ff::window_size ff::window::size()
@@ -259,6 +269,36 @@ ff::window_size ff::window::size()
     }
 
     return size;
+}
+
+void ff::window::size(ff::point_size size)
+{
+    RECT rect{ 0, 0, static_cast<int>(size.x), static_cast<int>(size.y) };
+
+    ff::thread_dispatch::get_main()->post([hwnd = this->hwnd, rect]()
+    {
+        const DWORD style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_STYLE));
+        const DWORD exStyle = static_cast<DWORD>(GetWindowLong(hwnd, GWL_EXSTYLE));
+
+        RECT adjusted_rect = rect, window_rect{};
+        HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi{};
+        mi.cbSize = sizeof(mi);
+
+        if (monitor &&
+            ::AdjustWindowRectExForDpi(&adjusted_rect, style, FALSE, exStyle, ::GetDpiForWindow(hwnd)) &&
+            ::GetMonitorInfo(monitor, &mi) &&
+            ::GetWindowRect(hwnd, &window_rect))
+        {
+            ff::rect_int monitor_rect(mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom);
+            ff::rect_int new_window_rect(window_rect.left, window_rect.top, window_rect.left + adjusted_rect.right - adjusted_rect.left, window_rect.top + adjusted_rect.bottom - adjusted_rect.top);
+
+            new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
+
+            ::SetWindowPos(hwnd, nullptr, new_window_rect.left, new_window_rect.top, new_window_rect.width(), new_window_rect.height(),
+                SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+        }
+    });
 }
 
 double ff::window::dpi_scale()

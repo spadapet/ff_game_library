@@ -56,6 +56,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.base", "source\ff.base\f
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.dx", "source\ff.dx\ff.dx.vcxproj", "{0580ED07-BB8F-472A-94FC-E0EE4A79421D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ff.vendor.imgui", "vendor\ff.vendor.imgui.vcxproj", "{B89FF916-A65C-48BB-B134-B68FFB38C3A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -117,6 +119,12 @@ Global
 		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Profile|x64.Build.0 = Profile|x64
 		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Release|x64.ActiveCfg = Release|x64
 		{0580ED07-BB8F-472A-94FC-E0EE4A79421D}.Release|x64.Build.0 = Release|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Debug|x64.ActiveCfg = Debug|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Debug|x64.Build.0 = Debug|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Profile|x64.ActiveCfg = Profile|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Profile|x64.Build.0 = Profile|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Release|x64.ActiveCfg = Release|x64
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -131,6 +139,7 @@ Global
 		{CBABF708-3DCA-4933-8D94-188536AF1EC2} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{F89161F3-74E5-4B6B-9A53-6B97B83D1700} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
 		{0580ED07-BB8F-472A-94FC-E0EE4A79421D} = {FF476E96-A4C8-4ADE-B4A4-8583CF2080AE}
+		{B89FF916-A65C-48BB-B134-B68FFB38C3A6} = {52A574D0-F4AE-4047-8541-6A966540969A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9E65BE6F-B921-4190-995D-5E5CA6AA77DB}

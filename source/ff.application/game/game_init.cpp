@@ -4,12 +4,11 @@
 #include "game/game_init.h"
 #include "init.h"
 
-static const ff::game::init_params* init_params{};
 static std::weak_ptr<ff::game::app_state_base> app_state;
 
-static std::shared_ptr<ff::state> create_app_state()
+static std::shared_ptr<ff::state> create_app_state(const ff::game::init_params& init_params)
 {
-    auto app_state = ::init_params->create_initial_state();
+    auto app_state = init_params.create_initial_state_func();
     ::app_state = app_state;
 
     if (app_state)
@@ -38,10 +37,11 @@ static bool get_clear_color(DirectX::XMFLOAT4& color)
     return app_state ? app_state->clear_color(color) : false;
 }
 
-static ff::init_app_params get_app_params()
+static ff::init_app_params get_app_params(const ff::game::init_params& init_params)
 {
     ff::init_app_params params{};
-    params.create_initial_state_func = ::create_app_state;
+    params.register_resources_func = init_params.register_resources_func;
+    params.create_initial_state_func = [&init_params]() { return ::create_app_state(init_params); };
     params.get_time_scale_func = ::get_time_scale;
     params.get_advance_type_func = ::get_advance_type;
     params.get_clear_color_func = ::get_clear_color;
@@ -49,111 +49,9 @@ static ff::init_app_params get_app_params()
     return params;
 }
 
-static void set_window_client_size(HWND hwnd, const ff::point_int& new_size)
-{
-    RECT rect{ 0, 0, new_size.x, new_size.y }, rect2;
-    const DWORD style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_STYLE));
-    const DWORD exStyle = static_cast<DWORD>(GetWindowLong(hwnd, GWL_EXSTYLE));
-
-    HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-    MONITORINFO mi{};
-    mi.cbSize = sizeof(mi);
-
-    if (monitor &&
-        ::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(hwnd)) &&
-        ::GetMonitorInfo(monitor, &mi) &&
-        ::GetWindowRect(hwnd, &rect2))
-    {
-        ff::rect_int monitor_rect(mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom);
-        ff::rect_int window_rect(rect2.left, rect2.top, rect2.left + rect.right - rect.left, rect2.top + rect.bottom - rect.top);
-
-        window_rect = window_rect.move_inside(monitor_rect).crop(monitor_rect);
-
-        ::SetWindowPos(hwnd, nullptr, window_rect.left, window_rect.top, window_rect.width(), window_rect.height(),
-            SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-    }
-}
-
-static void handle_window_message(ff::window_message& msg)
-{
-    switch (msg.msg)
-    {
-        case WM_GETMINMAXINFO:
-            {
-                RECT rect{ 0, 0, 240, 135 };
-                const DWORD style = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_STYLE));
-                const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_EXSTYLE));
-                if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(msg.hwnd)))
-                {
-                    MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(msg.lp);
-                    mm.ptMinTrackSize.x = rect.right - rect.left;
-                    mm.ptMinTrackSize.y = rect.bottom - rect.top;
-                }
-            }
-            break;
-
-        case WM_SYSKEYDOWN:
-            if (ff::constants::profile_build &&
-                (msg.wp == VK_DELETE || msg.wp == VK_PRIOR || msg.wp == VK_NEXT) &&
-                ::GetKeyState(VK_SHIFT) < 0 &&
-                !ff::app_render_target().full_screen())
-            {
-                // Shift-Alt-Del: Force 1080p client area
-                // Shift-Alt-PgUp|PgDown: Force multiples of 1080p client area
-
-                RECT rect;
-                if (::GetClientRect(msg.hwnd, &rect))
-                {
-                    const std::array<ff::point_int, 5> sizes
-                    {
-                        ff::point_int(240, 135),
-                        ff::point_int(480, 270),
-                        ff::point_int(960, 540),
-                        ff::point_int(1920, 1080),
-                        ff::point_int(3840, 2160),
-                    };
-
-                    const ff::point_int old_size(rect.right, rect.bottom);
-                    ff::point_int new_size = (msg.wp == VK_DELETE) ? sizes[2] : old_size;
-
-                    if (msg.wp == VK_PRIOR)
-                    {
-                        for (auto i = sizes.crbegin(); i != sizes.crend(); i++)
-                        {
-                            if (i->x < new_size.x)
-                            {
-                                new_size = *i;
-                                break;
-                            }
-                        }
-                    }
-                    else if (msg.wp == VK_NEXT)
-                    {
-                        for (auto i = sizes.cbegin(); i != sizes.cend(); i++)
-                        {
-                            if (i->x > new_size.x)
-                            {
-                                new_size = *i;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (new_size != old_size)
-                    {
-                        ::set_window_client_size(msg.hwnd, new_size);
-                    }
-                }
-            }
-            break;
-    }
-}
-
 int ff::game::run(const ff::game::init_params& params)
 {
-    ::init_params = &params;
-    ff::init_app init_app(::get_app_params());
+    ff::init_app init_app(::get_app_params(params));
     assert_ret_val(init_app, 1);
-    ff::signal_connection message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
     return ff::handle_messages_until_quit();
 }

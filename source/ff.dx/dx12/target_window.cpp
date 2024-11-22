@@ -472,7 +472,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             {
                 if constexpr (ff::constants::profile_build)
                 {
-                    if (this->window->key_down(VK_SHIFT))
+                    if (::GetKeyState(VK_SHIFT) < 0)
                     {
                         ff::thread_dispatch::get_game()->post([]()
                         {

@@ -129,10 +129,9 @@ namespace ff
 
         static window* main();
         ff::signal_sink<ff::window_message&>& message_sink();
-        void notify_message(ff::window_message& message);
-        bool key_down(int vk) const;
 
-        window_size size();
+        ff::window_size size();
+        void size(ff::point_size size);
         double dpi_scale();
         bool active();
         bool visible();
@@ -143,6 +142,7 @@ namespace ff
     private:
         void reset(HWND hwnd);
         void destroy();
+        void notify_message(ff::window_message& message);
 
         static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 

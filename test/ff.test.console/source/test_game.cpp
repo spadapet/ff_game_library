@@ -75,12 +75,5 @@ namespace
 
 void run_test_game_wrapper()
 {
-    ff::game::init_params params{};
-    params.create_initial_state = []()
-        {
-            std::shared_ptr<ff::game::app_state_base> result = std::make_shared<::app_state>();
-            return result;
-        };
-
-    ff::game::run(params);
+    ff::game::run<::app_state>();
 }
