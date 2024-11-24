@@ -25,12 +25,11 @@ namespace ff::graphics::defer
     void resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size);
     void reset_device(bool force);
     void full_screen(bool value);
+    void flush_commands();
 }
 
 namespace ff::internal::graphics
 {
     bool init(const ff::dxgi::client_functions& client_functions);
     void destroy();
-    void on_frame_started(ff::dxgi::command_context_base&);
-    void on_frame_complete();
 }

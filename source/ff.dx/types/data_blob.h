@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::dxgi
+namespace ff
 {
     class data_blob_dx : public ff::data_base
     {

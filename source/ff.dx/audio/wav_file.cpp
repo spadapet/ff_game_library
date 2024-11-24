@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "audio/wav_file.h"
 
-static constexpr DWORD make_four_cc(char ch0, char ch1, char ch2, char ch3)
+constexpr DWORD make_four_cc(char ch0, char ch1, char ch2, char ch3)
 {
     return
         static_cast<DWORD>(ch0) |

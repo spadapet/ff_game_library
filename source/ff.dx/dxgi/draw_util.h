@@ -3,9 +3,9 @@
 #include "../dxgi/device_child_base.h"
 #include "../dxgi/draw_base.h"
 #include "../dxgi/draw_ptr.h"
-#include "../dxgi/operators.h"
-#include "../dxgi/matrix_stack.h"
 #include "../dxgi/palette_base.h"
+#include "../types/operators.h"
+#include "../types/matrix_stack.h"
 
 namespace ff::dxgi
 {
@@ -148,7 +148,7 @@ namespace ff::dxgi::draw_util
         draw_device_base& operator=(const draw_device_base& other) = delete;
 
         virtual void end_draw() override;
-        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform) override;
+        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform) override;
         virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness) override;
         virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
         virtual void draw_line(const ff::point_float& start, const ff::point_float& end, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
@@ -173,8 +173,7 @@ namespace ff::dxgi::draw_util
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness) override;
         virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness) override;
 
-        virtual ff::dxgi::matrix_stack& world_matrix_stack() override;
-        virtual void nudge_depth() override;
+        virtual ff::matrix_stack& world_matrix_stack() override;
         virtual void push_palette(ff::dxgi::palette_base* palette) override;
         virtual void pop_palette() override;
         virtual void push_palette_remap(const uint8_t* remap, size_t hash) override;
@@ -242,7 +241,7 @@ namespace ff::dxgi::draw_util
         void destroy();
         void flush(bool end_draw = false);
 
-        void matrix_changing(const ff::dxgi::matrix_stack& matrix_stack);
+        void matrix_changing(const ff::matrix_stack& matrix_stack);
         void draw_line_strip(const ff::point_float* points, size_t point_count, const DirectX::XMFLOAT4* colors, size_t color_count, float thickness, bool pixel_thickness);
         void init_geometry_constant_buffer_0(ff::dxgi::target_base& target, const ff::rect_float& view_rect, const ff::rect_float& world_rect);
         void update_geometry_constant_buffer_0();
@@ -286,7 +285,7 @@ namespace ff::dxgi::draw_util
 
         // Matrixes
         DirectX::XMFLOAT4X4 view_matrix{};
-        ff::dxgi::matrix_stack world_matrix_stack_;
+        ff::matrix_stack world_matrix_stack_;
         ff::signal_connection world_matrix_stack_changing_connection;
         std::unordered_map<DirectX::XMFLOAT4X4, unsigned int, ff::stable_hash<DirectX::XMFLOAT4X4>> world_matrix_to_index;
         unsigned int world_matrix_index{};

@@ -46,7 +46,6 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(FFRoot)vendor\imgui</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>BUILDING_FF_APPLICATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

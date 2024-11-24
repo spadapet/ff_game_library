@@ -48,12 +48,6 @@
     <ClCompile Include="dxgi\buffer_base.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
-    <ClCompile Include="dxgi\color.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\data_blob.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
     <ClCompile Include="dxgi\device_child_base.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
@@ -75,22 +69,7 @@
     <ClCompile Include="dxgi\interop.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
-    <ClCompile Include="dxgi\matrix.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\matrix_stack.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
     <ClCompile Include="dxgi\sprite_data.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\texture_util.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\transform.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\utility.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
     <ClCompile Include="dx12\access.cpp">
@@ -177,16 +156,13 @@
     <ClCompile Include="dx12\texture.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\texture_util12.cpp">
+    <ClCompile Include="dx12\texture_util.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\texture_view.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\texture_view_access.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\vertex.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="graphics\animation.cpp">
@@ -214,9 +190,6 @@
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\palette_data.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\png_image.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\random_sprite.cpp">
@@ -252,8 +225,29 @@
     <ClCompile Include="graphics\texture_data.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\viewport.cpp">
-      <Filter>graphics</Filter>
+    <ClCompile Include="types\color.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\data_blob.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\matrix.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\matrix_stack.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\png_image.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\transform.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\vertex.cpp">
+      <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="types\viewport.cpp">
+      <Filter>types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -316,13 +310,7 @@
     <ClInclude Include="dxgi\buffer_base.h">
       <Filter>dxgi</Filter>
     </ClInclude>
-    <ClInclude Include="dxgi\color.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
     <ClInclude Include="dxgi\command_context_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\data_blob.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\depth_base.h">
@@ -349,18 +337,6 @@
     <ClInclude Include="dxgi\interop.h">
       <Filter>dxgi</Filter>
     </ClInclude>
-    <ClInclude Include="dxgi\intrusive_list.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\matrix.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\matrix_stack.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\operators.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
     <ClInclude Include="dxgi\palette_base.h">
       <Filter>dxgi</Filter>
     </ClInclude>
@@ -368,9 +344,6 @@
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\sprite_data.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\sprite_type.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\target_access_base.h">
@@ -388,22 +361,10 @@
     <ClInclude Include="dxgi\texture_metadata_base.h">
       <Filter>dxgi</Filter>
     </ClInclude>
-    <ClInclude Include="dxgi\texture_util.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
     <ClInclude Include="dxgi\texture_view_access_base.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\texture_view_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\transform.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\utility.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\vertex.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dx12\access.h">
@@ -487,16 +448,13 @@
     <ClInclude Include="dx12\texture.h">
       <Filter>dx12</Filter>
     </ClInclude>
-    <ClInclude Include="dx12\texture_util12.h">
+    <ClInclude Include="dx12\texture_util.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\texture_view.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\texture_view_access.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\vertex.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="graphics\animation.h">
@@ -524,9 +482,6 @@
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\palette_data.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\png_image.h">
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\random_sprite.h">
@@ -565,8 +520,35 @@
     <ClInclude Include="graphics\texture_data.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\viewport.h">
-      <Filter>graphics</Filter>
+    <ClInclude Include="types\color.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\data_blob.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\intrusive_list.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\matrix.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\matrix_stack.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\operators.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\png_image.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\transform.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\vertex.h">
+      <Filter>types</Filter>
+    </ClInclude>
+    <ClInclude Include="types\viewport.h">
+      <Filter>types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -587,6 +569,9 @@
     </Filter>
     <Filter Include="graphics">
       <UniqueIdentifier>{0b9a9f4a-d253-4c38-9b03-1b0045cd1c06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="types">
+      <UniqueIdentifier>{fad42053-11c4-4029-b5ea-ba3e57bd288e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

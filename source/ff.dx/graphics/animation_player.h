@@ -16,7 +16,7 @@ namespace ff
 
         // animation_player_base
         virtual bool advance_animation(ff::push_base<ff::animation_event>* events) override;
-        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const override;
+        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const override;
 
     private:
         ff::dict params;

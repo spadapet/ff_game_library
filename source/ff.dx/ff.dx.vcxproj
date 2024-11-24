@@ -36,13 +36,10 @@
     <ClCompile Include="dx12\target_texture.cpp" />
     <ClCompile Include="dx12\target_window.cpp" />
     <ClCompile Include="dx12\texture.cpp" />
-    <ClCompile Include="dx12\texture_util12.cpp" />
+    <ClCompile Include="dx12\texture_util.cpp" />
     <ClCompile Include="dx12\texture_view.cpp" />
     <ClCompile Include="dx12\texture_view_access.cpp" />
-    <ClCompile Include="dx12\vertex.cpp" />
     <ClCompile Include="dxgi\buffer_base.cpp" />
-    <ClCompile Include="dxgi\color.cpp" />
-    <ClCompile Include="dxgi\data_blob.cpp" />
     <ClCompile Include="dxgi\device_child_base.cpp" />
     <ClCompile Include="dxgi\draw_base.cpp" />
     <ClCompile Include="dxgi\draw_device_base.cpp" />
@@ -50,12 +47,7 @@
     <ClCompile Include="dxgi\draw_util.cpp" />
     <ClCompile Include="dxgi\format_util.cpp" />
     <ClCompile Include="dxgi\interop.cpp" />
-    <ClCompile Include="dxgi\matrix.cpp" />
-    <ClCompile Include="dxgi\matrix_stack.cpp" />
     <ClCompile Include="dxgi\sprite_data.cpp" />
-    <ClCompile Include="dxgi\texture_util.cpp" />
-    <ClCompile Include="dxgi\transform.cpp" />
-    <ClCompile Include="dxgi\utility.cpp" />
     <ClCompile Include="graphics\animation.cpp" />
     <ClCompile Include="graphics\animation_base.cpp" />
     <ClCompile Include="graphics\animation_keys.cpp" />
@@ -65,7 +57,6 @@
     <ClCompile Include="graphics\graphics.cpp" />
     <ClCompile Include="graphics\palette_cycle.cpp" />
     <ClCompile Include="graphics\palette_data.cpp" />
-    <ClCompile Include="graphics\png_image.cpp" />
     <ClCompile Include="graphics\random_sprite.cpp" />
     <ClCompile Include="graphics\render_targets.cpp" />
     <ClCompile Include="graphics\shader.cpp" />
@@ -77,7 +68,6 @@
     <ClCompile Include="graphics\texture_resource.cpp" />
     <ClCompile Include="graphics\texture_metadata.cpp" />
     <ClCompile Include="graphics\texture_data.cpp" />
-    <ClCompile Include="graphics\viewport.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -96,6 +86,14 @@
     <ClCompile Include="input\input_vk.cpp" />
     <ClCompile Include="input\keyboard_device.cpp" />
     <ClCompile Include="input\pointer_device.cpp" />
+    <ClCompile Include="types\color.cpp" />
+    <ClCompile Include="types\data_blob.cpp" />
+    <ClCompile Include="types\matrix.cpp" />
+    <ClCompile Include="types\matrix_stack.cpp" />
+    <ClCompile Include="types\png_image.cpp" />
+    <ClCompile Include="types\transform.cpp" />
+    <ClCompile Include="types\vertex.cpp" />
+    <ClCompile Include="types\viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dx12\access.h" />
@@ -125,14 +123,11 @@
     <ClInclude Include="dx12\target_texture.h" />
     <ClInclude Include="dx12\target_window.h" />
     <ClInclude Include="dx12\texture.h" />
-    <ClInclude Include="dx12\texture_util12.h" />
+    <ClInclude Include="dx12\texture_util.h" />
     <ClInclude Include="dx12\texture_view.h" />
     <ClInclude Include="dx12\texture_view_access.h" />
-    <ClInclude Include="dx12\vertex.h" />
     <ClInclude Include="dxgi\buffer_base.h" />
-    <ClInclude Include="dxgi\color.h" />
     <ClInclude Include="dxgi\command_context_base.h" />
-    <ClInclude Include="dxgi\data_blob.h" />
     <ClInclude Include="dxgi\depth_base.h" />
     <ClInclude Include="dxgi\device_child_base.h" />
     <ClInclude Include="dxgi\draw_base.h" />
@@ -141,25 +136,16 @@
     <ClInclude Include="dxgi\draw_util.h" />
     <ClInclude Include="dxgi\format_util.h" />
     <ClInclude Include="dxgi\interop.h" />
-    <ClInclude Include="dxgi\intrusive_list.h" />
-    <ClInclude Include="dxgi\matrix.h" />
-    <ClInclude Include="dxgi\matrix_stack.h" />
-    <ClInclude Include="dxgi\operators.h" />
     <ClInclude Include="dxgi\palette_base.h" />
     <ClInclude Include="dxgi\palette_data_base.h" />
     <ClInclude Include="dxgi\sprite_data.h" />
-    <ClInclude Include="dxgi\sprite_type.h" />
     <ClInclude Include="dxgi\target_access_base.h" />
     <ClInclude Include="dxgi\target_base.h" />
     <ClInclude Include="dxgi\target_window_base.h" />
     <ClInclude Include="dxgi\texture_base.h" />
     <ClInclude Include="dxgi\texture_metadata_base.h" />
-    <ClInclude Include="dxgi\texture_util.h" />
     <ClInclude Include="dxgi\texture_view_access_base.h" />
     <ClInclude Include="dxgi\texture_view_base.h" />
-    <ClInclude Include="dxgi\transform.h" />
-    <ClInclude Include="dxgi\utility.h" />
-    <ClInclude Include="dxgi\vertex.h" />
     <ClInclude Include="graphics\animation.h" />
     <ClInclude Include="graphics\animation_base.h" />
     <ClInclude Include="graphics\animation_keys.h" />
@@ -169,7 +155,6 @@
     <ClInclude Include="graphics\graphics.h" />
     <ClInclude Include="graphics\palette_cycle.h" />
     <ClInclude Include="graphics\palette_data.h" />
-    <ClInclude Include="graphics\png_image.h" />
     <ClInclude Include="graphics\random_sprite.h" />
     <ClInclude Include="graphics\render_targets.h" />
     <ClInclude Include="graphics\shader.h" />
@@ -182,7 +167,6 @@
     <ClInclude Include="graphics\texture_resource.h" />
     <ClInclude Include="graphics\texture_metadata.h" />
     <ClInclude Include="graphics\texture_data.h" />
-    <ClInclude Include="graphics\viewport.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="audio\audio.h" />
     <ClInclude Include="audio\audio_child_base.h" />
@@ -203,6 +187,16 @@
     <ClInclude Include="input\input_vk.h" />
     <ClInclude Include="input\keyboard_device.h" />
     <ClInclude Include="input\pointer_device.h" />
+    <ClInclude Include="types\color.h" />
+    <ClInclude Include="types\data_blob.h" />
+    <ClInclude Include="types\intrusive_list.h" />
+    <ClInclude Include="types\matrix.h" />
+    <ClInclude Include="types\matrix_stack.h" />
+    <ClInclude Include="types\operators.h" />
+    <ClInclude Include="types\png_image.h" />
+    <ClInclude Include="types\transform.h" />
+    <ClInclude Include="types\vertex.h" />
+    <ClInclude Include="types\viewport.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.ff.dx12.config" />
@@ -227,6 +221,11 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
   <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>BUILDING_FF_DX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

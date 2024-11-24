@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::dxgi
+namespace ff
 {
     class matrix_stack
     {

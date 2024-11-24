@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "dxgi/sprite_type.h"
+#include "dxgi/sprite_data.h"
 #include "dxgi/format_util.h"
 #include "graphics/sprite_base.h"
 #include "graphics/sprite_list.h"

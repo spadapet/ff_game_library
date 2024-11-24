@@ -28,10 +28,10 @@ namespace ff
         virtual const ff::dxgi::sprite_data& sprite_data() const override;
 
         // animation_base
-        virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params = nullptr) override;
+        virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params = nullptr) override;
 
         // animation_player_base
-        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const override;
+        virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const override;
 
     private:
         std::string name_;

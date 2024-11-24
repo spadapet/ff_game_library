@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sprite_type.h"
+#include "../dxgi/sprite_data.h"
 
 namespace ff::dxgi
 {
@@ -14,8 +14,7 @@ namespace ff::dxgi
     class host_functions
     {
     public:
-        void on_frame_started(ff::dxgi::command_context_base& context) const;
-        void on_frame_complete() const;
+        void flush_commands() const;
         void full_screen_target(ff::dxgi::target_window_base* target) const;
         void remove_target(ff::dxgi::target_window_base* target) const;
         void defer_resize(ff::dxgi::target_window_base* target, const ff::window_size& size) const;
@@ -23,8 +22,7 @@ namespace ff::dxgi
         void defer_reset_device(bool force) const;
 
         // Data
-        std::function<void(ff::dxgi::command_context_base&)> on_frame_started_;
-        std::function<void()> on_frame_complete_;
+        std::function<void()> flush_commands_;
         std::function<void(ff::dxgi::target_window_base*)> full_screen_target_;
         std::function<void(ff::dxgi::target_window_base*)> remove_target_;
         std::function<void(ff::dxgi::target_window_base*, const ff::window_size&)> defer_resize_;
@@ -40,7 +38,6 @@ namespace ff::dxgi
         void wait_for_idle() const;
         ff::dxgi::command_context_base& frame_started() const;
         void frame_complete() const;
-        ff::dxgi::command_context_base& frame_context() const;
         ff::dxgi::draw_device_base& global_draw_device() const;
 
         std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const DirectX::XMFLOAT4* optimized_clear_color = nullptr) const;
@@ -56,7 +53,6 @@ namespace ff::dxgi
         std::function<void()> wait_for_idle_;
         std::function<ff::dxgi::command_context_base&()> frame_started_;
         std::function<void()> frame_complete_;
-        std::function<ff::dxgi::command_context_base&()> frame_context_;
         std::function<ff::dxgi::draw_device_base&()> global_draw_device_;
 
         std::function<std::shared_ptr<ff::dxgi::texture_base>(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)> create_render_texture_;

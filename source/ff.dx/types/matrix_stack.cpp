@@ -3,22 +3,22 @@
 #include "matrix_stack.h"
 #include "operators.h"
 
-ff::dxgi::matrix_stack::matrix_stack()
-    : stack{ ff::dxgi::matrix_identity_4x4() }
+ff::matrix_stack::matrix_stack()
+    : stack{ ff::matrix_identity_4x4() }
 {}
 
-const DirectX::XMFLOAT4X4& ff::dxgi::matrix_stack::matrix() const
+const DirectX::XMFLOAT4X4& ff::matrix_stack::matrix() const
 {
     return this->stack[this->stack.size() - 1];
 }
 
-void ff::dxgi::matrix_stack::push()
+void ff::matrix_stack::push()
 {
     DirectX::XMFLOAT4X4 matrix = this->matrix();
     this->stack.push_back(matrix);
 }
 
-void ff::dxgi::matrix_stack::pop()
+void ff::matrix_stack::pop()
 {
     if (this->stack.size() <= 1)
     {
@@ -40,7 +40,7 @@ void ff::dxgi::matrix_stack::pop()
     }
 }
 
-void ff::dxgi::matrix_stack::reset(const DirectX::XMFLOAT4X4* default_matrix)
+void ff::matrix_stack::reset(const DirectX::XMFLOAT4X4* default_matrix)
 {
     this->stack.resize(1);
 
@@ -50,7 +50,7 @@ void ff::dxgi::matrix_stack::reset(const DirectX::XMFLOAT4X4* default_matrix)
     }
 }
 
-void ff::dxgi::matrix_stack::set(const DirectX::XMFLOAT4X4& matrix)
+void ff::matrix_stack::set(const DirectX::XMFLOAT4X4& matrix)
 {
     if (matrix != this->matrix())
     {
@@ -67,9 +67,9 @@ void ff::dxgi::matrix_stack::set(const DirectX::XMFLOAT4X4& matrix)
     }
 }
 
-void ff::dxgi::matrix_stack::transform(const DirectX::XMFLOAT4X4& matrix)
+void ff::matrix_stack::transform(const DirectX::XMFLOAT4X4& matrix)
 {
-    if (matrix != ff::dxgi::matrix_identity_4x4())
+    if (matrix != ff::matrix_identity_4x4())
     {
         this->matrix_changing_.notify(*this);
 
@@ -85,12 +85,12 @@ void ff::dxgi::matrix_stack::transform(const DirectX::XMFLOAT4X4& matrix)
     }
 }
 
-ff::signal_sink<const ff::dxgi::matrix_stack&>& ff::dxgi::matrix_stack::matrix_changing()
+ff::signal_sink<const ff::matrix_stack&>& ff::matrix_stack::matrix_changing()
 {
     return this->matrix_changing_;
 }
 
-ff::signal_sink<const ff::dxgi::matrix_stack&>& ff::dxgi::matrix_stack::matrix_changed()
+ff::signal_sink<const ff::matrix_stack&>& ff::matrix_stack::matrix_changed()
 {
     return this->matrix_changed_;
 }

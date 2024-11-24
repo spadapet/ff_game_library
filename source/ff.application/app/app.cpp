@@ -5,6 +5,9 @@
 #include "ff.app.res.h"
 #include "init.h"
 
+#include <imgui/backends/imgui_impl_dx12.h>
+#include <imgui/backends/imgui_impl_win32.h>
+
 namespace
 {
     enum class game_thread_state_t
@@ -17,9 +20,9 @@ namespace
     };
 }
 
-static const size_t MAX_ADVANCES_PER_FRAME = 4;
-static const size_t MAX_ADVANCES_PER_FRAME_DEBUGGER = 4;
-static const size_t MAX_ADVANCE_MULTIPLIER = 4;
+constexpr size_t MAX_ADVANCES_PER_FRAME = 4;
+constexpr size_t MAX_ADVANCES_PER_FRAME_DEBUGGER = 4;
+constexpr size_t MAX_ADVANCE_MULTIPLIER = 4;
 
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;

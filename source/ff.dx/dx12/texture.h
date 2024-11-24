@@ -3,7 +3,7 @@
 #include "../dx12/descriptor_range.h"
 #include "../dx12/texture_view_access.h"
 #include "../dxgi/device_child_base.h"
-#include "../dxgi/sprite_type.h"
+#include "../dxgi/sprite_data.h"
 #include "../dxgi/texture_base.h"
 
 namespace ff::dx12

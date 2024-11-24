@@ -33,12 +33,12 @@ void ff::random_sprite::advance_time()
     ::advance_count++;
 }
 
-void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
+void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
 
-void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
+void ff::random_sprite::draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const
 {
     for (const auto& i : this->pick_sprites())
     {

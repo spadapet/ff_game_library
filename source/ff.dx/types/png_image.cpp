@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "graphics/png_image.h"
+#include "types/png_image.h"
 
 ff::png_image_reader::png_image_reader(const uint8_t* bytes, size_t size)
 {

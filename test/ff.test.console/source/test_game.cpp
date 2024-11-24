@@ -7,7 +7,7 @@ namespace
     public:
         virtual bool clear_color(DirectX::XMFLOAT4& color) override
         {
-            color = ff::dxgi::color_black();
+            color = ff::color_black();
             return true;
         }
 

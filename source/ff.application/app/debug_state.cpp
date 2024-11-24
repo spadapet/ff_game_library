@@ -75,25 +75,25 @@ DirectX::XMFLOAT4 ff::internal::debug_timer_model::color() const
     switch (this->info_.counter ? this->info_.counter->color : ff::perf_color::white)
     {
         case ff::perf_color::blue:
-            return ff::dxgi::color_blue();
+            return ff::color_blue();
 
         case ff::perf_color::cyan:
-            return ff::dxgi::color_cyan();
+            return ff::color_cyan();
 
         case ff::perf_color::green:
-            return ff::dxgi::color_green();
+            return ff::color_green();
 
         case ff::perf_color::magenta:
-            return ff::dxgi::color_magenta();
+            return ff::color_magenta();
 
         case ff::perf_color::red:
-            return ff::dxgi::color_red();
+            return ff::color_red();
 
         case ff::perf_color::yellow:
-            return ff::dxgi::color_yellow();
+            return ff::color_yellow();
 
         default:
-            return ff::dxgi::color_white();
+            return ff::color_white();
     }
 }
 

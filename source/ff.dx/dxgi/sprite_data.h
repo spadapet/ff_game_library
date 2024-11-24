@@ -3,7 +3,16 @@
 namespace ff::dxgi
 {
     class texture_view_base;
-    enum class sprite_type;
+
+    enum class sprite_type
+    {
+        unknown = 0x00,
+        opaque = 0x01,
+        transparent = 0x02,
+        palette = 0x10,
+
+        opaque_palette = opaque | palette,
+    };
 
     class sprite_data
     {
@@ -42,4 +51,6 @@ namespace ff::dxgi
         ff::rect_float world_;
         ff::dxgi::sprite_type type_;
     };
+
+    ff::dxgi::sprite_type get_sprite_type(const DirectX::ScratchImage& scratch, const ff::rect_size* rect = nullptr);
 }

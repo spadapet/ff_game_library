@@ -2,7 +2,39 @@
 #include "dx12/access.h"
 #include "dx12/globals.h"
 #include "dx12/resource.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
+
+static D3D12_SRV_DIMENSION default_shader_dimension(const D3D12_RESOURCE_DESC& desc)
+{
+    if (desc.DepthOrArraySize > 1)
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY
+            : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+    }
+    else
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D12_SRV_DIMENSION_TEXTURE2DMS
+            : D3D12_SRV_DIMENSION_TEXTURE2D;
+    }
+}
+
+static D3D12_RTV_DIMENSION default_target_dimension(const D3D12_RESOURCE_DESC& desc)
+{
+    if (desc.DepthOrArraySize > 1)
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY
+            : D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+    }
+    else
+    {
+        return desc.SampleDesc.Count > 1
+            ? D3D12_RTV_DIMENSION_TEXTURE2DMS
+            : D3D12_RTV_DIMENSION_TEXTURE2D;
+    }
+}
 
 size_t ff::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
 {
@@ -22,44 +54,12 @@ size_t ff::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
     return std::max<size_t>(fixed_sample_count, 1);
 }
 
-D3D12_SRV_DIMENSION ff::dx12::default_shader_dimension(const D3D12_RESOURCE_DESC& desc)
-{
-    if (desc.DepthOrArraySize > 1)
-    {
-        return desc.SampleDesc.Count > 1
-            ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY
-            : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-    }
-    else
-    {
-        return desc.SampleDesc.Count > 1
-            ? D3D12_SRV_DIMENSION_TEXTURE2DMS
-            : D3D12_SRV_DIMENSION_TEXTURE2D;
-    }
-}
-
-D3D12_RTV_DIMENSION ff::dx12::default_target_dimension(const D3D12_RESOURCE_DESC& desc)
-{
-    if (desc.DepthOrArraySize > 1)
-    {
-        return desc.SampleDesc.Count > 1
-            ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY
-            : D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-    }
-    else
-    {
-        return desc.SampleDesc.Count > 1
-            ? D3D12_RTV_DIMENSION_TEXTURE2DMS
-            : D3D12_RTV_DIMENSION_TEXTURE2D;
-    }
-}
-
 void ff::dx12::create_shader_view(const ff::dx12::resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view, size_t array_start, size_t array_count, size_t mip_start, size_t mip_count)
 {
     const D3D12_RESOURCE_DESC& texture_desc = resource->desc();
     D3D12_SHADER_RESOURCE_VIEW_DESC view_desc{};
     view_desc.Format = texture_desc.Format;
-    view_desc.ViewDimension = ff::dx12::default_shader_dimension(texture_desc);
+    view_desc.ViewDimension = ::default_shader_dimension(texture_desc);
     view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
     switch (view_desc.ViewDimension)
@@ -90,7 +90,7 @@ void ff::dx12::create_target_view(const ff::dx12::resource* resource, D3D12_CPU_
     const D3D12_RESOURCE_DESC& texture_desc = resource->desc();
     D3D12_RENDER_TARGET_VIEW_DESC view_desc{};
     view_desc.Format = texture_desc.Format;
-    view_desc.ViewDimension = ff::dx12::default_target_dimension(texture_desc);
+    view_desc.ViewDimension = ::default_target_dimension(texture_desc);
 
     switch (view_desc.ViewDimension)
     {

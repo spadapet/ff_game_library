@@ -8,8 +8,6 @@
 #include "dx12/resource_tracker.h"
 #include "dx12/queue.h"
 
-#include <pix3.h>
-
 static ff::perf_counter perf_execute("Execute", ff::perf_color::green);
 
 ff::dx12::queue::queue(std::string_view name, D3D12_COMMAND_LIST_TYPE type)

@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "dxgi/data_blob.h"
 #include "graphics/shader.h"
+#include "types/data_blob.h"
 
 namespace
 {
@@ -139,7 +139,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
 
         const shader_debug_name_t* debug_name_data = reinterpret_cast<const shader_debug_name_t*>(pdb_name_blob->GetBufferPointer());
         std::string_view name(reinterpret_cast<const char*>(debug_name_data + 1), static_cast<size_t>(debug_name_data->name_length));
-        auto pdb_data = std::make_shared<ff::dxgi::data_blob_dx>(pdb_blob.Get());
+        auto pdb_data = std::make_shared<ff::data_blob_dx>(pdb_blob.Get());
         context.add_output_file(name, pdb_data);
     }
 
@@ -150,7 +150,7 @@ static std::shared_ptr<ff::data_base> compile_shader(
     }
 #endif
 
-    return std::make_shared<ff::dxgi::data_blob_dx>(shader_blob.Get());
+    return std::make_shared<ff::data_blob_dx>(shader_blob.Get());
 }
 
 static std::shared_ptr<ff::data_base> compile_shader(

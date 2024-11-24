@@ -3,7 +3,6 @@
 
 // C++
 #include <algorithm>
-#include <unordered_set>
 
 // Windows
 #include <DirectXMath.h>
@@ -23,6 +22,10 @@
 #include <directxtex/Common/d3dx12.h>
 #include <directxtex/DirectXTex/DirectXTex.h>
 #include <libpng/png.h>
+
+#ifdef BUILDING_FF_DX
+#include <pix3.h>
+#endif
 
 // FF
 #pragma pop_macro("assert")

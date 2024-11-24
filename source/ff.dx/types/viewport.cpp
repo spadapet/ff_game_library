@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "graphics/viewport.h"
+#include "types/viewport.h"
 
 ff::viewport::viewport(ff::point_size aspect, ff::rect_size padding)
     : aspect(aspect.cast<float>().abs())

@@ -3,7 +3,7 @@
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
 #include "dx12/texture_view.h"
 
 ff::dx12::texture_view::texture_view(

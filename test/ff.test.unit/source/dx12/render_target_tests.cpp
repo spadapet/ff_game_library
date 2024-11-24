@@ -26,18 +26,24 @@ namespace ff::test::graphics
             Assert::IsTrue(target.allow_full_screen());
             Assert::IsFalse(target.full_screen());
 
-            ff::dx12::frame_started();
-            Assert::IsTrue(target.begin_render(ff::dxgi_client().frame_context(), &ff::dxgi::color_magenta()));
-            Assert::IsTrue(target.end_render(ff::dxgi_client().frame_context()));
-            ff::dx12::frame_complete();
+            // Context 1
+            {
+                ff::dxgi::command_context_base& context = ff::dx12::frame_started();
+                Assert::IsTrue(target.begin_render(context, &ff::color_magenta()));
+                Assert::IsTrue(target.end_render(context));
+                ff::dx12::frame_complete();
+            }
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::IsTrue(target.dx12_target_texture());
 
-            ff::dx12::frame_started();
-            Assert::IsTrue(target.begin_render(ff::dxgi_client().frame_context(), &ff::dxgi::color_yellow()));
-            Assert::IsTrue(target.end_render(ff::dxgi_client().frame_context()));
-            ff::dx12::frame_complete();
+            // Context 2
+            {
+                ff::dxgi::command_context_base& context = ff::dx12::frame_started();
+                Assert::IsTrue(target.begin_render(context, &ff::color_yellow()));
+                Assert::IsTrue(target.end_render(context));
+                ff::dx12::frame_complete();
+            }
         }
     };
 }

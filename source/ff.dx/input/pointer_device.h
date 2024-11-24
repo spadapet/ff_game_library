@@ -46,7 +46,7 @@ namespace ff
     private:
         struct mouse_info
         {
-            static const size_t BUTTON_COUNT = 7;
+            static constexpr size_t BUTTON_COUNT = 7;
 
             ff::point_double pos;
             ff::point_double pos_relative;

@@ -9,7 +9,6 @@
 #include "dx12/queue.h"
 #include "dx12/queues.h"
 #include "dx12/resource.h"
-#include "dxgi/utility.h"
 #include "ff.dx12.res.h"
 
 extern "C"
@@ -106,11 +105,39 @@ static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
     return nullptr;
 }
 
+static DXGI_QUERY_VIDEO_MEMORY_INFO get_video_memory_info(IDXGIAdapter* adapter)
+{
+    DXGI_QUERY_VIDEO_MEMORY_INFO info{};
+    Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter3;
+
+    if (adapter && SUCCEEDED(adapter->QueryInterface(IID_PPV_ARGS(&adapter3))))
+    {
+        DXGI_QUERY_VIDEO_MEMORY_INFO info1;
+        if (SUCCEEDED(adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &info1)))
+        {
+            info.AvailableForReservation += info1.AvailableForReservation;
+            info.Budget += info1.Budget;
+            info.CurrentReservation += info1.CurrentReservation;
+            info.CurrentUsage += info1.CurrentUsage;
+        }
+
+        if (SUCCEEDED(adapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &info1)))
+        {
+            info.AvailableForReservation += info1.AvailableForReservation;
+            info.Budget += info1.Budget;
+            info.CurrentReservation += info1.CurrentReservation;
+            info.CurrentUsage += info1.CurrentUsage;
+        }
+    }
+
+    return info;
+}
+
 static void update_video_memory_info()
 {
     if (!::video_memory_change_event || ::video_memory_change_event->is_set())
     {
-        ::video_memory_info = ff::dxgi::get_video_memory_info(ff::dx12::adapter());
+        ::video_memory_info = ::get_video_memory_info(ff::dx12::adapter());
 
         if (::video_memory_change_event)
         {
@@ -163,13 +190,70 @@ static bool supports_mesh_shaders()
         options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
 }
 
+static size_t get_adapters_hash(IDXGIFactory* factory)
+{
+    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
+    ff::stable_hash_data_t hash;
+    UINT i = 0;
+
+    for (; SUCCEEDED(factory->EnumAdapters(i, &adapter)); i++, adapter.Reset())
+    {
+        DXGI_ADAPTER_DESC desc;
+        if (SUCCEEDED(adapter->GetDesc(&desc)))
+        {
+            hash.hash(&desc.AdapterLuid, sizeof(desc.AdapterLuid));
+        }
+    }
+
+    return i ? hash.hash() : 0;
+}
+
+static Microsoft::WRL::ComPtr<IDXGIAdapter> fix_adapter(IDXGIFactory* dxgi, Microsoft::WRL::ComPtr<IDXGIAdapter> adapter)
+{
+    DXGI_ADAPTER_DESC desc;
+    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter2;
+    Microsoft::WRL::ComPtr<IDXGIFactory4> factory4;
+
+    return SUCCEEDED(dxgi->QueryInterface(IID_PPV_ARGS(&factory4))) &&
+        SUCCEEDED(adapter->GetDesc(&desc)) &&
+        SUCCEEDED(factory4->EnumAdapterByLuid(desc.AdapterLuid, IID_PPV_ARGS(&adapter2))) ? adapter2 : adapter;
+}
+
+static size_t get_outputs_hash(IDXGIFactory* factory, IDXGIAdapter* adapter)
+{
+    Microsoft::WRL::ComPtr<IDXGIAdapter> adapter2 = ::fix_adapter(factory, adapter);
+    Microsoft::WRL::ComPtr<IDXGIOutput> output;
+    ff::stable_hash_data_t hash;
+    UINT i = 0;
+
+    for (; SUCCEEDED(adapter2->EnumOutputs(i++, &output)); output.Reset())
+    {
+        DXGI_OUTPUT_DESC desc;
+        if (SUCCEEDED(output->GetDesc(&desc)))
+        {
+            ff::log::write(ff::log::type::dxgi, "Adapter Output[", i - 1, "] = ", ff::string::to_string(std::wstring_view(&desc.DeviceName[0])));
+            hash.hash(&desc.Monitor, sizeof(desc.Monitor));
+        }
+    }
+
+    return i ? hash.hash() : 0;
+}
+
+static Microsoft::WRL::ComPtr<IDXGIFactory4> create_factory()
+{
+    const UINT flags = (ff::constants::debug_build && ::IsDebuggerPresent()) ? DXGI_CREATE_FACTORY_DEBUG : 0;
+
+    Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
+    return SUCCEEDED(::CreateDXGIFactory2(flags, IID_PPV_ARGS(&factory))) ? factory : nullptr;
+}
+
 static bool init_dxgi()
 {
     ::DXGIDeclareAdapterRemovalSupport();
 
-    ::factory = ff::dxgi::create_factory();
+    ::factory = ::create_factory();
     assert_ret_val(::factory, false);
-    ::adapters_hash = ff::dxgi::get_adapters_hash(::factory.Get());
+    ::adapters_hash = ::get_adapters_hash(::factory.Get());
 
     return true;
 }
@@ -241,7 +325,7 @@ static bool init_d3d(bool for_reset)
         assert(!::adapter);
         LUID luid = ::device->GetAdapterLuid();
         assert_hr_ret_val(::factory->EnumAdapterByLuid(luid, IID_PPV_ARGS(&::adapter)), false);
-        ::outputs_hash = ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get());
+        ::outputs_hash = ::get_outputs_hash(::factory.Get(), ::adapter.Get());
 
         ff::log::write(ff::log::type::dx12, "Final adapter: ", ::adapter_name(::adapter.Get()));
     }
@@ -385,13 +469,13 @@ bool ff::dx12::reset_device(bool force)
 {
     if (!::factory->IsCurrent())
     {
-        ::factory = ff::dxgi::create_factory();
+        ::factory = ::create_factory();
         assert_ret_val(::factory, false);
 
         if (!force)
         {
-            if (::adapters_hash != ff::dxgi::get_adapters_hash(::factory.Get()) ||
-                ::outputs_hash != ff::dxgi::get_outputs_hash(::factory.Get(), ::adapter.Get()))
+            if (::adapters_hash != ::get_adapters_hash(::factory.Get()) ||
+                ::outputs_hash != ::get_outputs_hash(::factory.Get(), ::adapter.Get()))
             {
                 ff::log::write(ff::log::type::dx12, "DXGI adapters or outputs changed");
                 force = true;
@@ -586,8 +670,6 @@ ff::dxgi::command_context_base& ff::dx12::frame_started()
     ff::dx12::direct_queue().begin_event(ff::dx12::gpu_event::render_frame);
 
     ::frame_commands = ff::dx12::direct_queue().new_commands();
-    ff::dxgi_host().on_frame_started(*::frame_commands);
-
     return *::frame_commands;
 }
 
@@ -599,7 +681,7 @@ void ff::dx12::frame_complete()
     ::frame_complete_signal.notify(++::frame_count);
     ff::dx12::direct_queue().end_event();
 
-    ff::dxgi_host().on_frame_complete();
+    ff::dxgi_host().flush_commands();
 
     if (!ff::dx12::device_valid())
     {

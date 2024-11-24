@@ -2,7 +2,7 @@
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
 #include "dx12/object_cache.h"
-#include "dxgi/data_blob.h"
+#include "types/data_blob.h"
 
 template<class T, class = std::enable_if_t<std::is_arithmetic_v<T> || std::is_enum_v<T>>>
 static ff::stable_hash_data_t stable_hash(ff::stable_hash_data_t& hash, const T& data)
@@ -362,7 +362,7 @@ void ff::dx12::object_cache::save()
             Microsoft::WRL::ComPtr<ID3DBlob> cache_blob;
             if (!this->cache_pack->get<ff::data_base>(name) && SUCCEEDED(state->GetCachedBlob(&cache_blob)))
             {
-                std::shared_ptr<ff::data_base> cache_value = std::make_shared<ff::dxgi::data_blob_dx>(cache_blob.Get());
+                std::shared_ptr<ff::data_base> cache_value = std::make_shared<ff::data_blob_dx>(cache_blob.Get());
                 this->cache_pack->set<ff::data_base>(name, cache_value, ff::saved_data_type::none);
                 changed = true;
             }

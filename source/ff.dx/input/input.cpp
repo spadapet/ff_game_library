@@ -102,7 +102,7 @@ static std::unique_ptr<ff::keyboard_device> keyboard;
 static std::unique_ptr<ff::pointer_device> pointer;
 static std::vector<std::unique_ptr<ff::gamepad_device>> gamepads;
 static std::vector<ff::signal_connection> main_window_connections;
-static const size_t MIN_GAMEPADS = 4;
+constexpr size_t MIN_GAMEPADS = 4;
 
 bool ff::internal::input::init()
 {

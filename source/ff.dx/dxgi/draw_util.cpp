@@ -4,16 +4,15 @@
 #include "dxgi/draw_device_base.h"
 #include "dxgi/draw_util.h"
 #include "dxgi/format_util.h"
-#include "dxgi/matrix.h"
-#include "dxgi/operators.h"
 #include "dxgi/palette_data_base.h"
 #include "dxgi/sprite_data.h"
-#include "dxgi/sprite_type.h"
 #include "dxgi/target_base.h"
 #include "dxgi/texture_base.h"
 #include "dxgi/texture_view_base.h"
-#include "dxgi/transform.h"
-#include "dxgi/vertex.h"
+#include "types/matrix.h"
+#include "types/operators.h"
+#include "types/transform.h"
+#include "types/vertex.h"
 
 namespace
 {
@@ -318,16 +317,16 @@ ff::dxgi::draw_util::draw_device_base::draw_device_base()
     : world_matrix_stack_changing_connection(this->world_matrix_stack_.matrix_changing().connect(std::bind(&draw_device_base::matrix_changing, this, std::placeholders::_1)))
     , geometry_buckets
 {
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::line_geometry, ff::dxgi::draw_util::geometry_bucket_type::lines>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::circle_geometry, ff::dxgi::draw_util::geometry_bucket_type::circles>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::triangle_geometry, ff::dxgi::draw_util::geometry_bucket_type::triangles>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::sprites>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::palette_sprites>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::line_geometry, ff::dxgi::draw_util::geometry_bucket_type::lines>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::circle_geometry, ff::dxgi::draw_util::geometry_bucket_type::circles>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::triangle_geometry, ff::dxgi::draw_util::geometry_bucket_type::triangles>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::sprites>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::palette_sprites>(),
 
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::line_geometry, ff::dxgi::draw_util::geometry_bucket_type::lines_alpha>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::circle_geometry, ff::dxgi::draw_util::geometry_bucket_type::circles_alpha>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::triangle_geometry, ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha>(),
-    ff::dxgi::draw_util::geometry_bucket::create<ff::dxgi::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::line_geometry, ff::dxgi::draw_util::geometry_bucket_type::lines_alpha>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::circle_geometry, ff::dxgi::draw_util::geometry_bucket_type::circles_alpha>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::triangle_geometry, ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha>(),
+    ff::dxgi::draw_util::geometry_bucket::create<ff::vertex::sprite_geometry, ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha>(),
 }
 {}
 
@@ -356,7 +355,7 @@ void ff::dxgi::draw_util::draw_device_base::end_draw()
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform)
+void ff::dxgi::draw_util::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform)
 {
     ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
     if (alpha_type != ::alpha_type::invisible && sprite.view())
@@ -367,7 +366,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_sprite(const ff::dxgi::sprite_d
             : (use_palette ? ff::dxgi::draw_util::geometry_bucket_type::palette_sprites : ff::dxgi::draw_util::geometry_bucket_type::sprites);
 
         float depth = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::sprite_no_overlap : ff::dxgi::draw_util::last_depth_type::sprite);
-        ff::dxgi::vertex::sprite_geometry& input = *reinterpret_cast<ff::dxgi::vertex::sprite_geometry*>(this->add_geometry(nullptr, bucket_type, depth));
+        ff::vertex::sprite_geometry& input = *reinterpret_cast<ff::vertex::sprite_geometry*>(this->add_geometry(nullptr, bucket_type, depth));
 
         this->get_world_matrix_and_texture_index(*sprite.view(), use_palette, input.matrix_index, input.texture_index);
         input.position.x = transform.position.x;
@@ -449,7 +448,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_filled_rectangle(const ff::rect
 
 void ff::dxgi::draw_util::draw_device_base::draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count)
 {
-    ff::dxgi::vertex::triangle_geometry input;
+    ff::vertex::triangle_geometry input;
     input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.depth = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::triangle_no_overlap : ff::dxgi::draw_util::last_depth_type::triangle);
 
@@ -521,7 +520,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_
 
 void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness)
 {
-    ff::dxgi::vertex::circle_geometry input;
+    ff::vertex::circle_geometry input;
     input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.position.x = center.x;
     input.position.y = center.y;
@@ -546,7 +545,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::po
 
     for (size_t i = 0; i != colors2.size(); i++)
     {
-        ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
     }
 
     this->draw_line_strip(points, count, colors2.data(), count, thickness, pixel_thickness);
@@ -554,13 +553,13 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::po
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_line_strip(points, count, &color2, 1, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_line(start, end, color2, thickness, pixel_thickness);
 }
 
@@ -570,7 +569,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const 
 
     for (size_t i = 0; i != colors2.size(); i++)
     {
-        ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
     }
 
     this->draw_filled_rectangle(rect, colors2.data());
@@ -578,7 +577,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const 
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const ff::rect_float& rect, int color)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_filled_rectangle(rect, color2);
 }
 
@@ -589,7 +588,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_triangles(const 
 
     for (size_t i = 0; i != colors2.size(); i++)
     {
-        ff::dxgi::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
+        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
     }
 
     this->draw_filled_triangles(points, colors2.data(), count);
@@ -597,44 +596,39 @@ void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_triangles(const 
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int color)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_filled_circle(center, radius, color2);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color)
 {
-    const DirectX::XMFLOAT4 inside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color));
-    const DirectX::XMFLOAT4 outside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color));
+    const DirectX::XMFLOAT4 inside_color2 = ff::palette_index_to_color(this->remap_palette_index(inside_color));
+    const DirectX::XMFLOAT4 outside_color2 = ff::palette_index_to_color(this->remap_palette_index(outside_color));
     this->draw_filled_circle(center, radius, inside_color2, outside_color2);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_outline_rectangle(rect, color2, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness)
 {
-    const DirectX::XMFLOAT4 color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(color));
+    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
     this->draw_outline_circle(center, radius, color2, thickness, pixel_thickness);
 }
 
 void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness)
 {
-    const DirectX::XMFLOAT4 inside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(inside_color));
-    const DirectX::XMFLOAT4 outside_color2 = ff::dxgi::palette_index_to_color(this->remap_palette_index(outside_color));
+    const DirectX::XMFLOAT4 inside_color2 = ff::palette_index_to_color(this->remap_palette_index(inside_color));
+    const DirectX::XMFLOAT4 outside_color2 = ff::palette_index_to_color(this->remap_palette_index(outside_color));
     this->draw_outline_circle(center, radius, inside_color2, outside_color2, thickness, pixel_thickness);
 }
 
-ff::dxgi::matrix_stack& ff::dxgi::draw_util::draw_device_base::world_matrix_stack()
+ff::matrix_stack& ff::dxgi::draw_util::draw_device_base::world_matrix_stack()
 {
     return this->world_matrix_stack_;
-}
-
-void ff::dxgi::draw_util::draw_device_base::nudge_depth()
-{
-    this->last_depth_type = ff::dxgi::draw_util::last_depth_type::nudged;
 }
 
 void ff::dxgi::draw_util::draw_device_base::push_palette(ff::dxgi::palette_base* palette)
@@ -688,7 +682,7 @@ void ff::dxgi::draw_util::draw_device_base::pop_no_overlap()
 
     if (!--this->force_no_overlap)
     {
-        this->nudge_depth();
+        this->last_depth_type = ff::dxgi::draw_util::last_depth_type::nudged;
     }
 }
 
@@ -852,7 +846,7 @@ void ff::dxgi::draw_util::draw_device_base::destroy()
     this->sampler_stack.clear();
     this->custom_context_stack.clear();
 
-    this->view_matrix = ff::dxgi::matrix_identity_4x4();
+    this->view_matrix = ff::matrix_identity_4x4();
     this->world_matrix_stack_.reset();
     this->world_matrix_to_index.clear();
     this->world_matrix_index = ff::constants::invalid_unsigned<DWORD>();
@@ -936,7 +930,7 @@ void ff::dxgi::draw_util::draw_device_base::flush(bool end_draw)
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::matrix_changing(const ff::dxgi::matrix_stack& matrix_stack)
+void ff::dxgi::draw_util::draw_device_base::matrix_changing(const ff::matrix_stack& matrix_stack)
 {
     this->world_matrix_index = ff::constants::invalid_unsigned<DWORD>();
 }
@@ -946,7 +940,7 @@ void ff::dxgi::draw_util::draw_device_base::draw_line_strip(const ff::point_floa
     assert(color_count == 1 || color_count == point_count);
     thickness = pixel_thickness ? -std::abs(thickness) : std::abs(thickness);
 
-    ff::dxgi::vertex::line_geometry input;
+    ff::vertex::line_geometry input;
     input.matrix_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index() : this->world_matrix_index;
     input.depth = this->nudge_depth(this->force_no_overlap ? ff::dxgi::draw_util::last_depth_type::line_no_overlap : ff::dxgi::draw_util::last_depth_type::line);
     input.color[0] = colors[0];

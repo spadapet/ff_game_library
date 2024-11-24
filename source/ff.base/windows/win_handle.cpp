@@ -12,7 +12,7 @@ static ff::stash<ff::internal::win_event_data>& event_stash()
     return stash;
 }
 
-static constexpr bool is_valid_handle(HANDLE handle)
+constexpr bool is_valid_handle(HANDLE handle)
 {
     return handle && handle != INVALID_HANDLE_VALUE;
 }

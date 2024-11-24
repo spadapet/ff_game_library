@@ -21,12 +21,12 @@ const ff::dxgi::sprite_data& ff::sprite_resource::sprite_data() const
     return *this->sprite_data_;
 }
 
-void ff::sprite_resource::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
+void ff::sprite_resource::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
 
-void ff::sprite_resource::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
+void ff::sprite_resource::draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data(), transform);
 }

@@ -1,13 +1,17 @@
 #pragma once
 
+namespace ff
+{
+    class matrix_stack;
+    struct pixel_transform;
+    struct transform;
+}
+
 namespace ff::dxgi
 {
     class command_context_base;
-    class matrix_stack;
     class palette_base;
     class sprite_data;
-    struct pixel_transform;
-    struct transform;
 
     class draw_base
     {
@@ -18,8 +22,8 @@ namespace ff::dxgi
 
         virtual void end_draw() = 0;
 
-        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::transform& transform) = 0;
-        void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::pixel_transform& transform);
+        virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform) = 0;
+        void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::pixel_transform& transform);
 
         virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness = false) = 0;
         virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
@@ -59,8 +63,7 @@ namespace ff::dxgi
         void draw_palette_outline_rectangle(const ff::rect_fixed& rect, int color, ff::fixed_int thickness);
         void draw_palette_outline_circle(const ff::point_fixed& center, ff::fixed_int radius, int color, ff::fixed_int thickness);
 
-        virtual ff::dxgi::matrix_stack& world_matrix_stack() = 0;
-        virtual void nudge_depth() = 0;
+        virtual ff::matrix_stack& world_matrix_stack() = 0;
 
         virtual void push_palette(ff::dxgi::palette_base* palette) = 0;
         virtual void pop_palette() = 0;

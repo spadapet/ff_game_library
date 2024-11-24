@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "dx12/vertex.h"
+#include "types/vertex.h"
 
 const std::array<D3D12_INPUT_ELEMENT_DESC, 10>& ff::dx12::vertex::line_geometry::layout()
 {

@@ -2,14 +2,9 @@
 #include "dxgi/draw_device_base.h"
 #include "dxgi/interop.h"
 
-void ff::dxgi::host_functions::on_frame_started(ff::dxgi::command_context_base& context) const
+void ff::dxgi::host_functions::flush_commands() const
 {
-    this->on_frame_started_(context);
-}
-
-void ff::dxgi::host_functions::on_frame_complete() const
-{
-    this->on_frame_complete_();
+    this->flush_commands_();
 }
 
 void ff::dxgi::host_functions::full_screen_target(ff::dxgi::target_window_base* target) const
@@ -60,11 +55,6 @@ ff::dxgi::command_context_base& ff::dxgi::client_functions::frame_started() cons
 void ff::dxgi::client_functions::frame_complete() const
 {
     this->frame_complete_();
-}
-
-ff::dxgi::command_context_base& ff::dxgi::client_functions::frame_context() const
-{
-    return this->frame_context_();
 }
 
 ff::dxgi::draw_device_base& ff::dxgi::client_functions::global_draw_device() const

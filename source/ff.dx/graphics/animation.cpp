@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "dxgi/draw_base.h"
-#include "dxgi/matrix_stack.h"
-#include "dxgi/transform.h"
 #include "graphics/animation.h"
+#include "types/matrix_stack.h"
+#include "types/transform.h"
 
 ff::animation::animation()
     : play_length_(0)
@@ -56,7 +56,7 @@ void ff::animation::frame_events(float start, float end, bool include_start, ff:
     }
 }
 
-void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
+void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     if (!ff::animation_keys::adjust_frame(frame, 0.0f, this->frame_length_, this->method))
     {
@@ -64,7 +64,7 @@ void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transf
     }
 
     bool push_transform = (transform.rotation != 0);
-    const ff::dxgi::transform& draw_transform = push_transform ? ff::dxgi::transform::identity() : transform;
+    const ff::transform& draw_transform = push_transform ? ff::transform::identity() : transform;
 
     if (push_transform)
     {
@@ -89,7 +89,7 @@ void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transf
             continue;
         }
 
-        ff::dxgi::transform visual_transform = draw_transform;
+        ff::transform visual_transform = draw_transform;
 
         if (info.position_keys)
         {
@@ -133,7 +133,7 @@ void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transf
             }
             else if (int_value)
             {
-                ff::dxgi::palette_index_to_color(int_value->get<int>(), visual_transform.color);
+                ff::palette_index_to_color(int_value->get<int>(), visual_transform.color);
             }
         }
 

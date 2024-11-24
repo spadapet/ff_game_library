@@ -73,4 +73,3 @@ ff::dxgi::draw_base* ff::dxgi::draw_ptr::operator->() const
 {
     return this->draw;
 }
-

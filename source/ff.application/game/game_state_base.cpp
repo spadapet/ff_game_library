@@ -146,7 +146,7 @@ bool ff::game::app_state_base::allow_debug_commands()
 
 bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4& color)
 {
-    color = ff::dxgi::color_black();
+    color = ff::color_black();
     return true;
 }
 

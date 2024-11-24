@@ -96,6 +96,6 @@ namespace ff::dx12
         ff::dx12::fence_values global_reads_;
         ff::dx12::fence_value global_write_;
         ff::dx12::resource_state global_state_;
-        ff::dx12::resource_tracker* tracker_;
+        ff::dx12::resource_tracker* tracker_{};
     };
 }

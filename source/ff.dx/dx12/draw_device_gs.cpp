@@ -12,9 +12,10 @@
 #include "dx12/texture_view.h"
 #include "dx12/queue.h"
 #include "dx12/resource.h"
-#include "dx12/vertex.h"
 #include "dxgi/draw_util.h"
 #include "dxgi/palette_data_base.h"
+#include "types/vertex.h"
+
 #include "ff.dx12.res.id.h"
 
 static void get_alpha_blend_desc(D3D12_RENDER_TARGET_BLEND_DESC& desc)

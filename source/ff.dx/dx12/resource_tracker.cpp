@@ -87,7 +87,7 @@ static bool allow_decay(
     return false;
 }
 
-static constexpr bool needs_transition(D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
+constexpr bool needs_transition(D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
     return (state_after == D3D12_RESOURCE_STATE_COMMON)
         ? (state_before != D3D12_RESOURCE_STATE_COMMON)

@@ -28,7 +28,7 @@ namespace ff
         virtual float frame_length() const override;
         virtual float frames_per_second() const override;
         virtual void frame_events(float start, float end, bool include_start, ff::push_base<ff::animation_event>& events) override;
-        virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params = nullptr) override;
+        virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params = nullptr) override;
         virtual ff::value_ptr frame_value(size_t value_id, float frame, const ff::dict* params = nullptr) override;
 
     protected:

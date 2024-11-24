@@ -5,7 +5,7 @@
 #include "dx12/globals.h"
 #include "dx12/target_texture.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
 #include "dx12/queue.h"
 
 ff::dx12::target_texture::target_texture(

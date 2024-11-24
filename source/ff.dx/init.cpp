@@ -25,11 +25,6 @@
 #include "input/input.h"
 #include "input/input_mapping.h"
 
-static ff::dxgi::command_context_base& frame_context()
-{
-    return ff::dx12::frame_commands();
-}
-
 static ff::dxgi::draw_device_base& global_draw_device()
 {
     return ff::dx12::get_draw_device();
@@ -74,8 +69,7 @@ static const ff::dxgi::host_functions& get_dxgi_host_functions()
 {
     static ff::dxgi::host_functions host_functions
     {
-        ff::internal::graphics::on_frame_started,
-        ff::internal::graphics::on_frame_complete,
+        ff::graphics::defer::flush_commands,
         ff::graphics::defer::set_full_screen_target,
         ff::graphics::defer::remove_target,
         ff::graphics::defer::resize_target,
@@ -95,7 +89,6 @@ static const ff::dxgi::client_functions& get_dxgi_client_functions()
         ff::dx12::wait_for_idle,
         ff::dx12::frame_started,
         ff::dx12::frame_complete,
-        ::frame_context,
         ::global_draw_device,
         ::create_render_texture,
         ::create_static_texture,

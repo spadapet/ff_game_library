@@ -9,7 +9,7 @@ static ff::byte_pool_allocator<std::array<size_t, SizeCount>>& get_byte_pool()
     return pool;
 }
 
-static constexpr size_t get_pool_size_count(size_t byte_size)
+constexpr size_t get_pool_size_count(size_t byte_size)
 {
     return (byte_size + sizeof(size_t) - 1) / sizeof(size_t);
 }

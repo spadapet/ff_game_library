@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ff::dxgi
+namespace ff
 {
     const DirectX::XMFLOAT4& color_none();
     const DirectX::XMFLOAT4& color_white();
@@ -19,7 +19,7 @@ namespace ff::dxgi
 
     constexpr void palette_index_to_color(int index, DirectX::XMFLOAT4& color, float alpha = 1.0f)
     {
-        color = ff::dxgi::palette_index_to_color(index, alpha);
+        color = ff::palette_index_to_color(index, alpha);
     }
 
     void palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count, float alpha = 1.0f);

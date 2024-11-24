@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "dxgi/draw_base.h"
-#include "dxgi/transform.h"
+#include "types/transform.h"
 
 static ff::point_float floor_float(const ff::point_fixed& value)
 {
@@ -12,9 +12,9 @@ static ff::rect_float floor_float(const ff::rect_fixed& value)
     return std::floor(value).cast<float>();
 }
 
-void ff::dxgi::draw_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::dxgi::pixel_transform& transform)
+void ff::dxgi::draw_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::pixel_transform& transform)
 {
-    ff::dxgi::transform transform2(::floor_float(transform.position), transform.scale.cast<float>(), static_cast<float>(transform.rotation), transform.color);
+    ff::transform transform2(::floor_float(transform.position), transform.scale.cast<float>(), static_cast<float>(transform.rotation), transform.color);
     this->draw_sprite(sprite, transform2);
 }
 

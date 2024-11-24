@@ -5,7 +5,6 @@
 #include "dx12/depth.h"
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
-#include "dx12/device_reset_priority.h"
 #include "dx12/fence.h"
 #include "dx12/globals.h"
 #include "dx12/gpu_event.h"
@@ -16,8 +15,6 @@
 #include "dx12/resource_tracker.h"
 #include "dx12/target_access.h"
 #include "dxgi/target_base.h"
-
-#include <pix3.h>
 
 static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
 

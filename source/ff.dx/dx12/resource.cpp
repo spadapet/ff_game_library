@@ -60,7 +60,6 @@ ff::dx12::resource::resource(std::string_view name, ID3D12Resource* swap_chain_r
     , resource_(swap_chain_resource)
     , external_resource(true)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
-    , tracker_(nullptr)
 {
     verify(this->reset());
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
@@ -79,7 +78,6 @@ ff::dx12::resource::resource(
     , mem_range_(mem_range)
     , external_resource(false)
     , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
-    , tracker_(nullptr)
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && desc.MipLevels * desc.DepthOrArraySize > 0);
 
@@ -109,7 +107,6 @@ ff::dx12::resource::resource(std::string_view name, resource& other, ff::dx12::c
 }
 
 ff::dx12::resource::resource(resource&& other) noexcept
-    : tracker_(nullptr)
 {
     *this = std::move(other);
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);

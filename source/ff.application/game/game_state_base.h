@@ -6,7 +6,7 @@ namespace ff::game
 {
     struct system_options
     {
-        static const uint8_t CURRENT_VERSION = 2;
+        static constexpr uint8_t CURRENT_VERSION = 2;
 
         uint8_t version{ ff::game::system_options::CURRENT_VERSION };
         bool full_screen{};

@@ -6,7 +6,7 @@
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
 #include "dx12/resource.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
 
 static CD3DX12_RESOURCE_DESC depth_desc(const ff::point_size& size, size_t sample_count)
 {

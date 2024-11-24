@@ -24,7 +24,7 @@ namespace ff
         virtual void notify_main_window_message(ff::window_message& message) override;
 
     private:
-        static const size_t KEY_COUNT = 256;
+        static constexpr size_t KEY_COUNT = 256;
 
         struct key_state
         {

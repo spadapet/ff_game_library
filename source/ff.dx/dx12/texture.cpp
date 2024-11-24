@@ -5,9 +5,8 @@
 #include "dx12/globals.h"
 #include "dx12/resource.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
 #include "dxgi/format_util.h"
-#include "dxgi/texture_util.h"
 
 static std::atomic_int dynamic_texture_counter;
 static std::atomic_int static_texture_counter;

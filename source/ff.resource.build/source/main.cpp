@@ -38,7 +38,7 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
 {
     namespace internal
     {
-        static constexpr uint8_t bytes[] =
+        constexpr uint8_t bytes[] =
         {
         )";
 
@@ -56,7 +56,7 @@ static bool write_header(const ff::data_base& data, std::ostream& output, std::s
 
     output << R"(};
 
-        static constexpr size_t byte_size = sizeof(bytes);
+        constexpr size_t byte_size = sizeof(bytes);
     }
 
     static std::shared_ptr<::ff::data_base> data()

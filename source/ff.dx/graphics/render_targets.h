@@ -2,7 +2,7 @@
 
 #include "../dxgi/depth_base.h"
 #include "../dxgi/target_base.h"
-#include "../graphics/viewport.h"
+#include "../types/viewport.h"
 
 namespace ff
 {

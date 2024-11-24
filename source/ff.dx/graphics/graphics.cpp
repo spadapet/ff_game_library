@@ -82,54 +82,6 @@ IDWriteInMemoryFontFileLoader* ff::graphics::write_font_loader()
     return ::write_font_loader.Get();
 }
 
-static void flush_graphics_commands()
-{
-    while (::defer_flags != ::defer_flags_t::none)
-    {
-        std::unique_lock lock(::graphics_mutex);
-
-        if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
-        {
-            bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::dxgi::target_window_base* target = ::defer_full_screen_target;
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
-            lock.unlock();
-
-            if (target && target->allow_full_screen())
-            {
-                target->full_screen(full_screen);
-            }
-        }
-        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
-        {
-            bool force = ff::flags::has(::defer_flags, ::defer_flags_t::reset_force);
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::reset_bits);
-            lock.unlock();
-
-            ff::dxgi_client().reset_device(force);
-        }
-        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
-        {
-            std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
-            lock.unlock();
-
-            for (const auto& i : defer_sizes)
-            {
-                i.first->size(i.second);
-            }
-        }
-    }
-}
-
-void ff::internal::graphics::on_frame_started(ff::dxgi::command_context_base&)
-{}
-
-void ff::internal::graphics::on_frame_complete()
-{
-    ::flush_graphics_commands();
-}
-
 void ff::graphics::defer::set_full_screen_target(ff::dxgi::target_window_base* target)
 {
     std::scoped_lock lock(::graphics_mutex);
@@ -202,4 +154,44 @@ void ff::graphics::defer::full_screen(bool value)
     ::defer_flags = ff::flags::set(
         ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
         value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
+}
+
+void ff::graphics::defer::flush_commands()
+{
+    while (::defer_flags != ::defer_flags_t::none)
+    {
+        std::unique_lock lock(::graphics_mutex);
+
+        if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
+        {
+            bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
+            ff::dxgi::target_window_base* target = ::defer_full_screen_target;
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
+            lock.unlock();
+
+            if (target && target->allow_full_screen())
+            {
+                target->full_screen(full_screen);
+            }
+        }
+        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
+        {
+            bool force = ff::flags::has(::defer_flags, ::defer_flags_t::reset_force);
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::reset_bits);
+            lock.unlock();
+
+            ff::dxgi_client().reset_device(force);
+        }
+        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
+        {
+            std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
+            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
+            lock.unlock();
+
+            for (const auto& i : defer_sizes)
+            {
+                i.first->size(i.second);
+            }
+        }
+    }
 }

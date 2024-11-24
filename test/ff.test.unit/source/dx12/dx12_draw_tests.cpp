@@ -14,8 +14,8 @@ namespace ff::test::dx12
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(32, 32)));
             ff::dx12::depth depth;
 
-            ff::dx12::frame_started();
-            ff::dxgi::draw_ptr draw = dd->begin_draw(ff::dxgi_client().frame_context(), target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
+            ff::dxgi::command_context_base& context = ff::dx12::frame_started();
+            ff::dxgi::draw_ptr draw = dd->begin_draw(context, target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
             Assert::IsTrue(draw);
 
             draw.reset();
@@ -34,14 +34,14 @@ namespace ff::test::dx12
             const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color));
 
-            ff::dx12::frame_started();
-            target.begin_render(ff::dxgi_client().frame_context(), &clear_color);
+            ff::dxgi::command_context_base& context = ff::dx12::frame_started();
+            target.begin_render(context, &clear_color);
 
             // Draw
             {
                 ff::dx12::depth depth;
                 std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi_client().create_draw_device();
-                ff::dxgi::draw_ptr draw = draw_device->begin_draw(ff::dxgi_client().frame_context(), target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
+                ff::dxgi::draw_ptr draw = draw_device->begin_draw(context, target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
 
                 std::array<DirectX::XMFLOAT4, 4> rectangle_colors
                 {
@@ -54,13 +54,13 @@ namespace ff::test::dx12
                 ff::dxgi::sprite_data test_sprite(test_texture.get(), ff::rect_float(0, 0, 32, 32), ff::point_float(16, 16), ff::point_float(1, 1), ff::dxgi::sprite_type::opaque);
 
                 draw->draw_filled_rectangle(ff::rect_float(32, 32, 224, 224), rectangle_colors.data());
-                draw->draw_sprite(test_sprite, ff::dxgi::pixel_transform(ff::point_fixed(40, 40)));
-                draw->draw_sprite(test_sprite, ff::dxgi::pixel_transform(ff::point_fixed(216, 216), ff::point_fixed(1, 1), 30));
-                draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::dxgi::color_yellow(), 4);
-                draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::dxgi::color_red(), 3);
+                draw->draw_sprite(test_sprite, ff::pixel_transform(ff::point_fixed(40, 40)));
+                draw->draw_sprite(test_sprite, ff::pixel_transform(ff::point_fixed(216, 216), ff::point_fixed(1, 1), 30));
+                draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::color_yellow(), 4);
+                draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::color_red(), 3);
             }
 
-            target.end_render(ff::dxgi_client().frame_context());
+            target.end_render(context);
             ff::dx12::frame_complete();
             ff::dx12::wait_for_idle();
 

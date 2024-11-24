@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "dx12/gpu_event.h"
 
-#include <pix3.h>
-
 const char* ff::dx12::gpu_event_name(ff::dx12::gpu_event type)
 {
     switch (type)

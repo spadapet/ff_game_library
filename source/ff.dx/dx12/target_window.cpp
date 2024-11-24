@@ -4,9 +4,8 @@
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
 #include "dx12/target_window.h"
-#include "dx12/texture_util12.h"
+#include "dx12/texture_util.h"
 #include "dx12/queue.h"
-#include "dxgi/utility.h"
 
 static const size_t MIN_BUFFER_COUNT = 2;
 static const size_t MAX_BUFFER_COUNT = 4;
@@ -22,6 +21,24 @@ static size_t fix_buffer_count(size_t value)
 static size_t fix_frame_latency(size_t value, size_t buffer_count)
 {
     return ff::math::clamp<size_t>(value, 0, ::fix_buffer_count(buffer_count));
+}
+
+static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
+{
+    switch (dmod)
+    {
+        default:
+            return DXGI_MODE_ROTATION_IDENTITY;
+
+        case DMDO_90:
+            return ccw ? DXGI_MODE_ROTATION_ROTATE270 : DXGI_MODE_ROTATION_ROTATE90;
+
+        case DMDO_180:
+            return DXGI_MODE_ROTATION_ROTATE180;
+
+        case DMDO_270:
+            return ccw ? DXGI_MODE_ROTATION_ROTATE90 : DXGI_MODE_ROTATION_ROTATE270;
+    }
 }
 
 ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, size_t frame_latency, bool vsync, bool allow_full_screen)
@@ -294,7 +311,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         return false;
     }
 
-    if (FAILED(this->swap_chain->SetRotation(ff::dxgi::get_dxgi_rotation(size.rotation, true))))
+    if (FAILED(this->swap_chain->SetRotation(::get_dxgi_rotation(size.rotation, true))))
     {
         ff::dx12::device_fatal_error("Swap chain set rotation failed");
         return false;

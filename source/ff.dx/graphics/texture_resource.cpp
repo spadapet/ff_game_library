@@ -1,15 +1,128 @@
 #include "pch.h"
-#include "dxgi/data_blob.h"
 #include "dxgi/draw_base.h"
 #include "dxgi/format_util.h"
 #include "dxgi/interop.h"
-#include "dxgi/sprite_type.h"
-#include "dxgi/texture_util.h"
+#include "dxgi/sprite_data.h"
 #include "graphics/graphics.h"
-#include "graphics/png_image.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
+#include "types/data_blob.h"
+#include "types/png_image.h"
+
+static std::shared_ptr<DirectX::ScratchImage> convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count)
+{
+    if (!data || !data->GetImageCount())
+    {
+        return nullptr;
+    }
+
+    new_format = ff::dxgi::fix_format(new_format, data->GetMetadata().width, data->GetMetadata().height, new_mip_count);
+
+    if (data->GetMetadata().format == new_format && data->GetMetadata().mipLevels == new_mip_count)
+    {
+        return data;
+    }
+
+    DirectX::ScratchImage scratch_final;
+    if (FAILED(scratch_final.InitializeFromImage(*data->GetImages())))
+    {
+        assert(false);
+        return nullptr;
+    }
+
+    if (ff::dxgi::compressed_format(scratch_final.GetMetadata().format))
+    {
+        DirectX::ScratchImage scratch_rgb;
+        if (FAILED(DirectX::Decompress(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            scratch_rgb)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_rgb);
+    }
+    else if (scratch_final.GetMetadata().format != DXGI_FORMAT_R8G8B8A8_UNORM)
+    {
+        DirectX::ScratchImage scratch_rgb;
+        if (FAILED(DirectX::Convert(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DXGI_FORMAT_R8G8B8A8_UNORM,
+            DirectX::TEX_FILTER_DEFAULT,
+            0, // threshold
+            scratch_rgb)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_rgb);
+    }
+
+    if (new_mip_count != 1)
+    {
+        DirectX::ScratchImage scratch_mips;
+        if (FAILED(DirectX::GenerateMipMaps(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            DirectX::TEX_FILTER_DEFAULT,
+            new_mip_count,
+            scratch_mips)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_mips);
+    }
+
+    if (ff::dxgi::compressed_format(new_format))
+    {
+        DirectX::ScratchImage scratch_new;
+        if (FAILED(DirectX::Compress(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            new_format,
+            DirectX::TEX_COMPRESS_DEFAULT,
+            0, // alpharef
+            scratch_new)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_new);
+    }
+    else if (new_format != scratch_final.GetMetadata().format)
+    {
+        DirectX::ScratchImage scratch_new;
+        if (FAILED(DirectX::Convert(
+            scratch_final.GetImages(),
+            scratch_final.GetImageCount(),
+            scratch_final.GetMetadata(),
+            new_format,
+            DirectX::TEX_FILTER_DEFAULT,
+            0, // threshold
+            scratch_new)))
+        {
+            assert(false);
+            return nullptr;
+        }
+
+        scratch_final = std::move(scratch_new);
+    }
+
+    return scratch_final.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(scratch_final)) : nullptr;
+}
 
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
@@ -31,7 +144,7 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
     std::shared_ptr<DirectX::ScratchImage> new_data;
     if (other_data)
     {
-        new_data = ff::dxgi::convert_texture_data(other_data, new_format, new_mip_count);
+        new_data = ::convert_texture_data(other_data, new_format, new_mip_count);
         if (new_data)
         {
             sprite_type = (new_data == other_data) ? other.dxgi_texture_->sprite_type() : ff::dxgi::get_sprite_type(*new_data);
@@ -85,7 +198,7 @@ bool ff::texture::resource_save_to_file(const std::filesystem::path& directory_p
     {
         if (!ff::dxgi::palette_format(data->GetMetadata().format))
         {
-            data = ff::dxgi::convert_texture_data(data, DXGI_FORMAT_R8G8B8A8_UNORM, this->dxgi_texture_->mip_count());
+            data = ::convert_texture_data(data, DXGI_FORMAT_R8G8B8A8_UNORM, this->dxgi_texture_->mip_count());
         }
 
         for (size_t i = 0; i < data->GetImageCount(); i++)
@@ -114,12 +227,12 @@ const ff::dxgi::sprite_data& ff::texture::sprite_data() const
     return this->sprite_data_;
 }
 
-void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform, float frame, const ff::dict* params)
+void ff::texture::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
 {
     this->draw_animation(draw, transform);
 }
 
-void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::dxgi::transform& transform) const
+void ff::texture::draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const
 {
     draw.draw_sprite(this->sprite_data_, transform);
 }
@@ -138,7 +251,7 @@ bool ff::texture::save_to_cache(ff::dict& dict) const
             return false;
         }
 
-        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
+        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::data_blob_dxtex>(std::move(blob));
         dict.set<ff::data_base>("data", blob_data, ff::saved_data_type::none);
     }
     else
@@ -155,7 +268,7 @@ bool ff::texture::save_to_cache(ff::dict& dict) const
             return false;
         }
 
-        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::dxgi::data_blob_dxtex>(std::move(blob));
+        std::shared_ptr<ff::data_base> blob_data = std::make_shared<ff::data_blob_dxtex>(std::move(blob));
         dict.set<ff::data_base>("palette", blob_data, ff::saved_data_type::none);
     }
 

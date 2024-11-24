@@ -64,11 +64,11 @@ namespace
             {
                 const pos_data& pd = this->pos_datas[i];
                 const render_data& rd = this->render_datas[i];
-                draw->draw_sprite(*rd.sprite, ff::dxgi::transform(pd.pos, rd.scale, rd.rotate, rd.color));
+                draw->draw_sprite(*rd.sprite, ff::transform(pd.pos, rd.scale, rd.rotate, rd.color));
             }
 
             std::string text = ff::string::concat("Count:", this->pos_datas.size(), ", SPACE:More, DEL:Clear");
-            this->font->draw_text(draw, text, ff::dxgi::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::dxgi::color_white()), ff::dxgi::color_none());
+            this->font->draw_text(draw, text, ff::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::color_white()), ff::color_none());
         }
 
     private:
@@ -106,7 +106,7 @@ namespace
                 pd.pos = ff::point_float((float)(std::rand() % 1920), (float)(std::rand() % 1080));
                 pd.vel = ff::point_float((std::rand() % 21 - 10) / 2.0f, (std::rand() % 21 - 10) / 2.0f);
                 rd.scale = use_palette ? ff::point_float(2, 2) : ff::point_float((std::rand() % 16) / 10.0f + 0.5f, (std::rand() % 16) / 10.0f + 0.5f);
-                rd.color = use_palette ? ff::dxgi::color_white() : DirectX::XMFLOAT4((std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, 1.0f);
+                rd.color = use_palette ? ff::color_white() : DirectX::XMFLOAT4((std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, 1.0f);
                 rd.rotate = ff::math::random_range(0.0f, 360.0f);
                 rd.sprite = use_palette ? &palette_sprites->get(sprite)->sprite_data() : &color_sprite->sprite_data();
 
@@ -143,7 +143,7 @@ void run_test_sprite_perf()
 
     app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
         {
-            color = ff::dxgi::color_black();
+            color = ff::color_black();
             return true;
         };
 

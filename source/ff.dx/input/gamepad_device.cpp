@@ -3,8 +3,8 @@
 #include "input/input.h"
 #include "input/input_device_event.h"
 
-static const float PRESS_VALUE = 0.5625f;
-static const float RELEASE_VALUE = 0.5f;
+constexpr float PRESS_VALUE = 0.5625f;
+constexpr float RELEASE_VALUE = 0.5f;
 
 static size_t vk_to_index(int vk)
 {

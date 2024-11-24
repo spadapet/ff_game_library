@@ -1,14 +1,14 @@
 #include "pch.h"
-#include "dxgi/color.h"
 #include "dxgi/draw_base.h"
 #include "dxgi/draw_device_base.h"
 #include "dxgi/draw_ptr.h"
 #include "dxgi/interop.h"
 #include "dxgi/palette_base.h"
-#include "dxgi/transform.h"
 #include "graphics/graphics.h"
 #include "graphics/render_targets.h"
 #include "graphics/texture_resource.h"
+#include "types/color.h"
+#include "types/transform.h"
 
 static std::weak_ptr<ff::dxgi::texture_base> weak_texture_1080;
 static std::weak_ptr<ff::dxgi::target_base> weak_target_1080;
@@ -18,7 +18,7 @@ static std::shared_ptr<ff::dxgi::texture_base> get_texture_1080()
     std::shared_ptr<ff::dxgi::texture_base> texture = ::weak_texture_1080.lock();
     if (!texture)
     {
-        texture = ff::dxgi_client().create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, &ff::dxgi::color_none());
+        texture = ff::dxgi_client().create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, &ff::color_none());
         ::weak_texture_1080 = texture;
     }
 
@@ -40,7 +40,7 @@ static std::shared_ptr<ff::dxgi::target_base> get_target_1080()
 ff::render_target::render_target(ff::point_size size, const DirectX::XMFLOAT4* clear_color, int palette_clear_color)
     : size(size)
     , viewport(size)
-    , clear_color(clear_color ? *clear_color : ff::dxgi::color_none())
+    , clear_color(clear_color ? *clear_color : ff::color_none())
     , palette_clear_color(static_cast<float>(palette_clear_color), 0, 0, 1)
     , used_targets{}
 {}
@@ -83,7 +83,7 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
             this->target_1080 = ::get_target_1080();
         }
 
-        this->target_1080->clear(context, ff::dxgi::color_none());
+        this->target_1080->clear(context, ff::color_none());
     }
 
     ff::rect_float target_rect({}, direct_to_target ? target_logical_size.cast<float>() : ff::point_float(1920, 1080));
@@ -103,20 +103,20 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
             if (palette)
             {
                 draw->push_palette(palette);
-                draw->draw_sprite(entry.textures[index_palette]->sprite_data(), ff::dxgi::transform::identity());
+                draw->draw_sprite(entry.textures[index_palette]->sprite_data(), ff::transform::identity());
                 draw->pop_palette();
             }
         }
 
         if (entry.used_targets[index_rgba])
         {
-            draw->draw_sprite(entry.textures[index_rgba]->sprite_data(), ff::dxgi::transform::identity());
+            draw->draw_sprite(entry.textures[index_rgba]->sprite_data(), ff::transform::identity());
         }
 
         if (entry.used_targets[index_rgba_pma])
         {
             draw->push_pre_multiplied_alpha();
-            draw->draw_sprite(entry.textures[index_rgba_pma]->sprite_data(), ff::dxgi::transform::identity());
+            draw->draw_sprite(entry.textures[index_rgba_pma]->sprite_data(), ff::transform::identity());
             draw->pop_pre_multiplied_alpha();
         }
     }
@@ -128,7 +128,7 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
         if (draw)
         {
             draw->push_sampler_linear_filter(true);
-            draw->draw_sprite(this->texture_1080->sprite_data(), ff::dxgi::transform::identity());
+            draw->draw_sprite(this->texture_1080->sprite_data(), ff::transform::identity());
             draw->pop_sampler_linear_filter();
         }
     }
@@ -148,7 +148,7 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
             const bool palette = (type == ff::render_target_type::palette);
             const DirectX::XMFLOAT4& clear_color = palette
                 ? entry.palette_clear_color
-                : (type == ff::render_target_type::rgba_pma ? ff::dxgi::color_none() : entry.clear_color);
+                : (type == ff::render_target_type::rgba_pma ? ff::color_none() : entry.clear_color);
 
             if (!entry.textures[index])
             {
