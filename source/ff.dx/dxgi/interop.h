@@ -19,11 +19,10 @@ namespace ff::dxgi
 
 namespace ff::dxgi
 {
-    void set_full_screen_target(ff::dxgi::target_window_base* target);
     void remove_target(ff::dxgi::target_window_base* target);
     void defer_resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size);
+    void defer_full_screen(ff::dxgi::target_window_base* target, bool value);
     void defer_reset_device(bool force);
-    void defer_full_screen(bool value);
     void flush_commands();
 
     // Must be implemented in specific graphics implementation (like DX12)

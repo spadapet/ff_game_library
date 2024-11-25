@@ -53,11 +53,6 @@ ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, 
     this->internal_size(this->window->size(), ::fix_buffer_count(buffer_count), ::fix_frame_latency(frame_latency, buffer_count));
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
-
-    if (this->allow_full_screen_)
-    {
-        ff::dxgi::set_full_screen_target(this);
-    }
 }
 
 ff::dx12::target_window::~target_window()
@@ -482,7 +477,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_SYSKEYDOWN:
             if (this->allow_full_screen_ && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::dxgi::defer_full_screen(!this->full_screen());
+                ff::dxgi::defer_full_screen(this, !this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }

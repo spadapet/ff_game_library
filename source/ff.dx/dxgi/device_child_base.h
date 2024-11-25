@@ -8,12 +8,12 @@ namespace ff::dxgi
     {
     public:
         device_child_base() = default;
-        device_child_base(device_child_base && other) noexcept = default;
-        device_child_base(const device_child_base & other) = delete;
+        device_child_base(device_child_base&& other) noexcept = default;
+        device_child_base(const device_child_base& other) = delete;
         virtual ~device_child_base() = default;
 
-        device_child_base& operator=(device_child_base && other) noexcept = default;
-        device_child_base& operator=(const device_child_base & other) = delete;
+        device_child_base& operator=(device_child_base&& other) noexcept = default;
+        device_child_base& operator=(const device_child_base& other) = delete;
 
         // In before_reset(), release any GPU objects and optionally use the ff::frame_allocator to remember how to recreate them during reset()
         virtual void before_reset();
