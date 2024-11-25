@@ -4,7 +4,6 @@
 #include "dxgi/draw_ptr.h"
 #include "dxgi/interop.h"
 #include "dxgi/palette_base.h"
-#include "graphics/graphics.h"
 #include "graphics/render_targets.h"
 #include "graphics/texture_resource.h"
 #include "types/color.h"
@@ -18,7 +17,7 @@ static std::shared_ptr<ff::dxgi::texture_base> get_texture_1080()
     std::shared_ptr<ff::dxgi::texture_base> texture = ::weak_texture_1080.lock();
     if (!texture)
     {
-        texture = ff::dxgi_client().create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, &ff::color_none());
+        texture = ff::dxgi::create_render_texture(ff::point_size(1920, 1080), DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1, 1, &ff::color_none());
         ::weak_texture_1080 = texture;
     }
 
@@ -30,7 +29,7 @@ static std::shared_ptr<ff::dxgi::target_base> get_target_1080()
     std::shared_ptr<ff::dxgi::target_base> target = ::weak_target_1080.lock();
     if (!target)
     {
-        target = ff::dxgi_client().create_target_for_texture(::get_texture_1080());
+        target = ff::dxgi::create_target_for_texture(::get_texture_1080());
         ::weak_target_1080 = target;
     }
 
@@ -89,8 +88,8 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
     ff::rect_float target_rect({}, direct_to_target ? target_logical_size.cast<float>() : ff::point_float(1920, 1080));
     const ff::rect_float world_rect({}, entry.size.cast<float>());
     ff::dxgi::draw_ptr draw = direct_to_target
-        ? ff::dxgi_client().global_draw_device().begin_draw(context, *target, nullptr, target_rect, world_rect)
-        : ff::dxgi_client().global_draw_device().begin_draw(context, *this->target_1080, nullptr, target_rect, world_rect);
+        ? ff::dxgi::global_draw_device().begin_draw(context, *target, nullptr, target_rect, world_rect)
+        : ff::dxgi::global_draw_device().begin_draw(context, *this->target_1080, nullptr, target_rect, world_rect);
     if (draw)
     {
         constexpr size_t index_palette = static_cast<size_t>(ff::render_target_type::palette);
@@ -124,7 +123,7 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
     if (!direct_to_target)
     {
         target_rect = entry.viewport.view(target_logical_size).cast<float>();
-        draw = ff::dxgi_client().global_draw_device().begin_draw(context, *target, nullptr, target_rect, ff::rect_float(0, 0, 1920, 1080));
+        draw = ff::dxgi::global_draw_device().begin_draw(context, *target, nullptr, target_rect, ff::rect_float(0, 0, 1920, 1080));
         if (draw)
         {
             draw->push_sampler_linear_filter(true);
@@ -153,13 +152,13 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
             if (!entry.textures[index])
             {
                 DXGI_FORMAT format = palette ? DXGI_FORMAT_R8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM;
-                auto dxgi_texture = ff::dxgi_client().create_render_texture(entry.size, format, 1, 1, 1, &clear_color);
+                auto dxgi_texture = ff::dxgi::create_render_texture(entry.size, format, 1, 1, 1, &clear_color);
                 entry.textures[index] = std::make_shared<ff::texture>(dxgi_texture);
             }
 
             if (!entry.targets[index])
             {
-                entry.targets[index] = ff::dxgi_client().create_target_for_texture(entry.textures[index]->dxgi_texture());
+                entry.targets[index] = ff::dxgi::create_target_for_texture(entry.textures[index]->dxgi_texture());
             }
 
             entry.targets[index]->clear(context, clear_color);
@@ -180,7 +179,7 @@ ff::dxgi::depth_base& ff::render_targets::depth(ff::dxgi::command_context_base& 
 
     if (!this->depth_)
     {
-        this->depth_ = ff::dxgi_client().create_depth(size);
+        this->depth_ = ff::dxgi::create_depth(size);
     }
     else
     {

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "graphics/font_file.h"
-#include "graphics/graphics.h"
+#include "write/write.h"
 
 ff::font_file::font_file(std::shared_ptr<ff::data_base> data, size_t index, bool bold, bool italic)
     : ff::resource_file(std::make_shared<ff::saved_data_static>(data, data->size(), ff::saved_data_type::none), ".ttf")
@@ -18,8 +18,8 @@ ff::font_file::font_file(std::shared_ptr<ff::data_base> data, size_t index, bool
         Microsoft::WRL::ComPtr<IDWriteFontFaceReference> font_face_ref;
         Microsoft::WRL::ComPtr<IDWriteFontFace3> font_face;
 
-        if (FAILED(ff::graphics::write_font_loader()->CreateInMemoryFontFileReference(ff::graphics::write_factory(), data->data(), static_cast<UINT32>(data->size()), nullptr, font_file.GetAddressOf())) ||
-            FAILED(ff::graphics::write_factory()->CreateFontFaceReference(font_file.Get(), static_cast<UINT32>(this->index_), font_flags, font_face_ref.GetAddressOf())) ||
+        if (FAILED(ff::write_font_loader()->CreateInMemoryFontFileReference(ff::write_factory(), data->data(), static_cast<UINT32>(data->size()), nullptr, font_file.GetAddressOf())) ||
+            FAILED(ff::write_factory()->CreateFontFaceReference(font_file.Get(), static_cast<UINT32>(this->index_), font_flags, font_face_ref.GetAddressOf())) ||
             FAILED(font_face_ref->CreateFontFace(font_face.GetAddressOf())) ||
             FAILED(font_face.As(&this->font_face_)))
         {

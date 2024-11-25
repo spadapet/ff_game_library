@@ -3,7 +3,6 @@
 #include "dxgi/format_util.h"
 #include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
-#include "graphics/graphics.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
@@ -127,7 +126,7 @@ static std::shared_ptr<DirectX::ScratchImage> convert_texture_data(const std::sh
 ff::texture::texture(const ff::resource_file& resource_file, DXGI_FORMAT new_format, size_t new_mip_count)
 {
     auto data = ff::internal::load_texture_data(resource_file, new_format, new_mip_count, this->palette_);
-    this->assign(ff::dxgi_client().create_static_texture(data, ff::dxgi::sprite_type::unknown));
+    this->assign(ff::dxgi::create_static_texture(data, ff::dxgi::sprite_type::unknown));
 }
 
 ff::texture::texture(const std::shared_ptr<ff::dxgi::texture_base>& dxgi_texture, const std::shared_ptr<DirectX::ScratchImage>& palette)
@@ -148,7 +147,7 @@ ff::texture::texture(const texture& other, DXGI_FORMAT new_format, size_t new_mi
         if (new_data)
         {
             sprite_type = (new_data == other_data) ? other.dxgi_texture_->sprite_type() : ff::dxgi::get_sprite_type(*new_data);
-            this->assign(ff::dxgi_client().create_static_texture(new_data, sprite_type));
+            this->assign(ff::dxgi::create_static_texture(new_data, sprite_type));
         }
     }
 
@@ -311,7 +310,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
             }
         }
 
-        auto dxgi_texture = ff::dxgi_client().create_static_texture(data, ff::dxgi::sprite_type::unknown);
+        auto dxgi_texture = ff::dxgi::create_static_texture(data, ff::dxgi::sprite_type::unknown);
         std::shared_ptr<ff::texture> texture = std::make_shared<ff::texture>(dxgi_texture, palette);
         return *texture ? texture : nullptr;
     }
@@ -342,7 +341,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::texture_factory::load_fr
         return {};
     }
 
-    auto dxgi_texture = ff::dxgi_client().create_static_texture(data_scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(data_scratch)) : nullptr, sprite_type);
+    auto dxgi_texture = ff::dxgi::create_static_texture(data_scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(data_scratch)) : nullptr, sprite_type);
     auto texture = std::make_shared<ff::texture>(dxgi_texture, palette_scratch.GetImageCount() ? std::make_shared<DirectX::ScratchImage>(std::move(palette_scratch)) : nullptr);
     return *texture ? texture : nullptr;
 }

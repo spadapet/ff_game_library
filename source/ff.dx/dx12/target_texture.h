@@ -4,6 +4,11 @@
 #include "../dx12/target_access.h"
 #include "../dxgi/target_base.h"
 
+namespace ff::dxgi
+{
+    class texture_base;
+}
+
 namespace ff::dx12
 {
     class texture;

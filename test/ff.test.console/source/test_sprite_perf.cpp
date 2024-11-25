@@ -55,7 +55,7 @@ namespace
         {
             ff::dxgi::target_base& target = targets.target(context);
             ff::rect_float view = this->viewport.view(target.size().physical_pixel_size()).cast<float>();
-            ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(context, target, &targets.depth(context), view, ::world_rect);
+            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &targets.depth(context), view, ::world_rect);
             assert_ret(draw);
 
             draw->push_palette(&this->palette_cycle);

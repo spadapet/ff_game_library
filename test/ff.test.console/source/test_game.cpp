@@ -27,7 +27,7 @@ namespace
             ff::dxgi::target_base& target = targets.target(context);
             const float target_height = target.size().logical_scaled_size<float>().y;
 
-            ff::dxgi::draw_ptr draw = ff::dxgi_client().global_draw_device().begin_draw(context, target, &depth);
+            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth);
             if (draw)
             {
                 for (const obj_t& obj : this->objs)

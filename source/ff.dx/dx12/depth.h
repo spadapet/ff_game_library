@@ -6,6 +6,7 @@
 
 namespace ff::dx12
 {
+    class commands;
     class resource;
 
     class depth : public ff::dxgi::depth_base, private ff::dxgi::device_child_base

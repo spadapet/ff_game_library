@@ -2,17 +2,9 @@
 #include "audio/audio.h"
 #include "audio/audio_effect.h"
 #include "audio/music.h"
-#include "dx12/commands.h"
-#include "dx12/depth.h"
-#include "dx12/draw_device.h"
-#include "dx12/globals.h"
-#include "dx12/target_texture.h"
-#include "dx12/target_window.h"
-#include "dx12/texture.h"
 #include "dxgi/interop.h"
 #include "graphics/animation.h"
 #include "graphics/font_file.h"
-#include "graphics/graphics.h"
 #include "graphics/palette_data.h"
 #include "graphics/random_sprite.h"
 #include "graphics/shader.h"
@@ -24,82 +16,7 @@
 #include "init.h"
 #include "input/input.h"
 #include "input/input_mapping.h"
-
-static ff::dxgi::draw_device_base& global_draw_device()
-{
-    return ff::dx12::get_draw_device();
-}
-
-static std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
-{
-    return std::make_shared<ff::dx12::texture>(size, format, mip_count, array_size, sample_count, optimized_clear_color);
-}
-
-static std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& data, ff::dxgi::sprite_type sprite_type)
-{
-    return std::make_shared<ff::dx12::texture>(data, sprite_type);
-}
-
-static std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count)
-{
-    return size
-        ? std::make_shared<ff::dx12::depth>(size, sample_count)
-        : std::make_shared<ff::dx12::depth>(sample_count);
-}
-
-static std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, size_t buffer_count, size_t frame_latency, bool vsync, bool allow_full_screen)
-{
-    window = !window ? ff::window::main() : window;
-    allow_full_screen = allow_full_screen && (window == ff::window::main());
-    return std::make_shared<ff::dx12::target_window>(window, buffer_count, frame_latency, vsync, allow_full_screen);
-}
-
-static std::shared_ptr<ff::dxgi::target_base> create_target_for_texture(
-    const std::shared_ptr<ff::dxgi::texture_base>& texture,
-    size_t array_start,
-    size_t array_count,
-    size_t mip_level,
-    int dmdo_rotate,
-    double dpi_scale)
-{
-    return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level, dmdo_rotate, dpi_scale);
-}
-
-static const ff::dxgi::host_functions& get_dxgi_host_functions()
-{
-    static ff::dxgi::host_functions host_functions
-    {
-        ff::graphics::defer::flush_commands,
-        ff::graphics::defer::set_full_screen_target,
-        ff::graphics::defer::remove_target,
-        ff::graphics::defer::resize_target,
-        ff::graphics::defer::full_screen,
-        ff::graphics::defer::reset_device,
-    };
-
-    return host_functions;
-}
-
-static const ff::dxgi::client_functions& get_dxgi_client_functions()
-{
-    static ff::dxgi::client_functions client_functions
-    {
-        ff::dx12::reset_device,
-        ff::dx12::trim_device,
-        ff::dx12::wait_for_idle,
-        ff::dx12::frame_started,
-        ff::dx12::frame_complete,
-        ::global_draw_device,
-        ::create_render_texture,
-        ::create_static_texture,
-        ::create_depth,
-        ::create_target_for_window,
-        ::create_target_for_texture,
-        ff::dx12::create_draw_device,
-    };
-
-    return client_functions;
-}
+#include "write/write.h"
 
 namespace
 {
@@ -129,17 +46,17 @@ namespace
 
             this->init_audio_status = ff::internal::audio::init();
             this->init_input_status = ff::internal::input::init();
-            this->init_dx12_status = ff::dx12::init_globals(::get_dxgi_host_functions(), D3D_FEATURE_LEVEL_11_0);
-            this->init_graphics_status = ff::internal::graphics::init(::get_dxgi_client_functions());
+            this->init_dxgi_status = ff::internal::dxgi::init();
+            this->init_write_status = ff::internal::write::init();
         }
 
         ~one_time_init_dx()
         {
-            ff::internal::graphics::destroy();
-            this->init_graphics_status = false;
+            ff::internal::write::destroy();
+            this->init_write_status = false;
 
-            ff::dx12::destroy_globals();
-            this->init_dx12_status = false;
+            ff::internal::dxgi::destroy();
+            this->init_dxgi_status = false;
 
             ff::internal::input::destroy();
             this->init_input_status = false;
@@ -153,15 +70,15 @@ namespace
             return this->init_base &&
                 this->init_audio_status &&
                 this->init_input_status &&
-                this->init_dx12_status &&
-                this->init_graphics_status;
+                this->init_dxgi_status &&
+                this->init_write_status;
         }
 
     private:
         bool init_audio_status{};
         bool init_input_status{};
-        bool init_dx12_status{};
-        bool init_graphics_status{};
+        bool init_dxgi_status{};
+        bool init_write_status{};
         ff::init_base init_base;
     };
 }

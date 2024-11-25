@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
-#include "graphics/graphics.h"
 #include "graphics/palette_data.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"
@@ -26,7 +25,7 @@ ff::palette_data::palette_data(DirectX::ScratchImage&& scratch, std::unordered_m
             }
 
             auto shared_scratch = std::make_shared<DirectX::ScratchImage>(std::move(scratch));
-            auto dxgi_texture = ff::dxgi_client().create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
+            auto dxgi_texture = ff::dxgi::create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
             this->texture_ = std::make_shared<ff::texture>(dxgi_texture);
         }
     }

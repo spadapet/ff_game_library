@@ -81,7 +81,6 @@
 #include "../source/ff.dx/graphics/animation_player.h"
 #include "../source/ff.dx/graphics/animation_player_base.h"
 #include "../source/ff.dx/graphics/font_file.h"
-#include "../source/ff.dx/graphics/graphics.h"
 #include "../source/ff.dx/graphics/palette_cycle.h"
 #include "../source/ff.dx/graphics/palette_data.h"
 #include "../source/ff.dx/graphics/random_sprite.h"
@@ -107,6 +106,8 @@
 #include "../source/ff.dx/types/transform.h"
 #include "../source/ff.dx/types/vertex.h"
 #include "../source/ff.dx/types/viewport.h"
+
+#include "../source/ff.dx/write/write.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "d3dcompiler.lib")

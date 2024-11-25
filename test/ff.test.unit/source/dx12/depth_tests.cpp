@@ -17,9 +17,9 @@ namespace ff::test::graphics
             Assert::IsNotNull(depth.resource());
             Assert::AreNotEqual<size_t>(0, depth.view().ptr);
 
-            ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
+            ff::dxgi::command_context_base& context = ff::dxgi::frame_started();
             depth.physical_size(context, ff::point_size(size.y, size.x));
-            ff::dxgi_client().frame_complete();
+            ff::dxgi::frame_complete();
 
             Assert::IsTrue(depth.physical_size() == size.swap());
         }

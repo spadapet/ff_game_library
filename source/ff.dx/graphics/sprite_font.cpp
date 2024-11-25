@@ -3,13 +3,13 @@
 #include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
 #include "graphics/font_file.h"
-#include "graphics/graphics.h"
 #include "graphics/sprite.h"
 #include "graphics/sprite_font.h"
 #include "graphics/sprite_list.h"
 #include "graphics/sprite_optimizer.h"
 #include "graphics/texture_resource.h"
 #include "types/transform.h"
+#include "write/write.h"
 
 static bool text_contains_outline_control(std::wstring_view text)
 {
@@ -240,7 +240,7 @@ bool ff::sprite_font::init_sprites()
         this->glyphs[i].glyph_width = gm.advanceWidth * design_unit_size;
 
         Microsoft::WRL::ComPtr<IDWriteGlyphRunAnalysis> gra;
-        if (FAILED(ff::graphics::write_factory()->CreateGlyphRunAnalysis(
+        if (FAILED(ff::write_factory()->CreateGlyphRunAnalysis(
             &gr,
             &identity_transform,
             this->anti_alias ? DWRITE_RENDERING_MODE1_NATURAL : DWRITE_RENDERING_MODE1_ALIASED,
@@ -353,7 +353,7 @@ bool ff::sprite_font::init_sprites()
     for (DirectX::ScratchImage& scratch : staging_scratches)
     {
         auto shared_scratch = std::make_shared<DirectX::ScratchImage>(std::move(scratch));
-        auto dxgi_texture = ff::dxgi_client().create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
+        auto dxgi_texture = ff::dxgi::create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
         textures.push_back(std::make_shared<ff::texture>(dxgi_texture));
     }
 

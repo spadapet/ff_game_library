@@ -2,7 +2,6 @@
 #include "dxgi/format_util.h"
 #include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
-#include "graphics/graphics.h"
 #include "graphics/palette_data.h"
 #include "graphics/sprite_optimizer.h"
 #include "graphics/texture_data.h"
@@ -491,7 +490,7 @@ static bool convert_final_textures(
     for (::optimized_texture_info& texure_info : texture_infos)
     {
         auto shared_scratch = std::make_shared<DirectX::ScratchImage>(std::move(texure_info.scratch_texture));
-        auto dxgi_texture = ff::dxgi_client().create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
+        auto dxgi_texture = ff::dxgi::create_static_texture(shared_scratch, ff::dxgi::sprite_type::unknown);
         std::shared_ptr<ff::texture> rgb_texture = std::make_shared<ff::texture>(dxgi_texture);
         texure_info.final_texture = std::make_shared<ff::texture>(*rgb_texture, format, mip_count);
 
@@ -654,7 +653,7 @@ static bool create_outline_sprites(
             }
         }
 
-        auto dxgi_texture = ff::dxgi_client().create_static_texture(std::make_shared<DirectX::ScratchImage>(std::move(outline_scratch)), ff::dxgi::sprite_type::unknown);
+        auto dxgi_texture = ff::dxgi::create_static_texture(std::make_shared<DirectX::ScratchImage>(std::move(outline_scratch)), ff::dxgi::sprite_type::unknown);
         auto outline_texture = std::make_shared<ff::texture>(dxgi_texture, palette_data);
         outline_textures.push_back(outline_texture);
 

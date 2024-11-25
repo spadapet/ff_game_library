@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../dxgi/device_child_base.h"
-#include "../dxgi/interop.h"
 
-namespace ff
+namespace ff::dxgi
 {
-    const ff::dxgi::host_functions& dxgi_host();
+    class command_context_base;
+    class draw_device_base;
 }
 
 namespace ff::dx12
@@ -65,14 +65,14 @@ namespace ff::dx12
     ff::dx12::mem_allocator& texture_allocator();
     ff::dx12::mem_allocator& target_allocator();
 
-    bool init_globals(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level);
-    void destroy_globals();
-
     void add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority);
     void remove_device_child(ff::dxgi::device_child_base* child);
 }
 
 namespace ff::internal::dx12
 {
+    bool init(D3D_FEATURE_LEVEL feature_level);
+    void destroy();
+
     ff::resource_object_provider& shader_resources();
 }

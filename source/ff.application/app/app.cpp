@@ -144,7 +144,7 @@ static void frame_advance(ff::state::advance_t advance_type)
 static void frame_render(ff::state::advance_t advance_type)
 {
     ff::perf_timer timer_render(::perf_render);
-    ff::dxgi::command_context_base& context = ff::dxgi_client().frame_started();
+    ff::dxgi::command_context_base& context = ff::dxgi::frame_started();
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
@@ -165,7 +165,7 @@ static void frame_render(ff::state::advance_t advance_type)
         ::target->end_render(context);
     }
 
-    ff::dxgi_client().frame_complete();
+    ff::dxgi::frame_complete();
 }
 
 static void frame_update_cursor()
@@ -256,7 +256,7 @@ static void init_game_thread()
 static void destroy_game_thread()
 {
     ff::internal::app::request_save_settings();
-    ff::dxgi_client().trim_device();
+    ff::dxgi::trim_device();
     ::game_state.reset();
 
     if (::app_params.game_thread_finished_func)
@@ -285,7 +285,7 @@ static void pause_game_state()
     {
         ::game_thread_state = ::game_thread_state_t::paused;
         ff::internal::app::request_save_settings();
-        ff::dxgi_client().trim_device();
+        ff::dxgi::trim_device();
     }
 
     ::game_thread_event.set();
@@ -557,7 +557,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
     ::init_log();
     ::app_time = ff::app_time_t{};
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
-    ::target = ff::dxgi_client().create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
+    ::target = ff::dxgi::create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     ff::data_reader assets_reader(::assets::app::data());

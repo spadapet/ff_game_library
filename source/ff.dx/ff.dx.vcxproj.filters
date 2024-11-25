@@ -183,9 +183,6 @@
     <ClCompile Include="graphics\font_file.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\graphics.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
     <ClCompile Include="graphics\palette_cycle.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
@@ -248,6 +245,9 @@
     </ClCompile>
     <ClCompile Include="types\viewport.cpp">
       <Filter>types</Filter>
+    </ClCompile>
+    <ClCompile Include="write\write.cpp">
+      <Filter>write</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -475,9 +475,6 @@
     <ClInclude Include="graphics\font_file.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\graphics.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\palette_cycle.h">
       <Filter>graphics</Filter>
     </ClInclude>
@@ -550,6 +547,9 @@
     <ClInclude Include="types\viewport.h">
       <Filter>types</Filter>
     </ClInclude>
+    <ClInclude Include="write\write.h">
+      <Filter>write</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="audio">
@@ -572,6 +572,9 @@
     </Filter>
     <Filter Include="types">
       <UniqueIdentifier>{fad42053-11c4-4029-b5ea-ba3e57bd288e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="write">
+      <UniqueIdentifier>{35f0ad7d-cd92-4e5d-879a-a8dc25f23115}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

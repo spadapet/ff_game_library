@@ -9,6 +9,7 @@
 #include "dx12/queue.h"
 #include "dx12/queues.h"
 #include "dx12/resource.h"
+#include "dxgi/interop.h"
 #include "ff.dx12.res.h"
 
 extern "C"
@@ -24,7 +25,6 @@ extern "C"
 static Microsoft::WRL::ComPtr<ID3D12Device1> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactory4> factory;
-static const ff::dxgi::host_functions* host_functions;
 static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
 static size_t outputs_hash;
@@ -421,9 +421,8 @@ static void destroy_d3d(bool for_reset)
     ::device.Reset();
 }
 
-bool ff::dx12::init_globals(const ff::dxgi::host_functions& host_functions, D3D_FEATURE_LEVEL feature_level)
+bool ff::internal::dx12::init(D3D_FEATURE_LEVEL feature_level)
 {
-    ::host_functions = &host_functions;
     ::feature_level = feature_level;
 
     assert_ret_val(::init_dxgi(), false);
@@ -432,13 +431,12 @@ bool ff::dx12::init_globals(const ff::dxgi::host_functions& host_functions, D3D_
     return true;
 }
 
-void ff::dx12::destroy_globals()
+void ff::internal::dx12::destroy()
 {
     ::destroy_d3d(false);
     ::destroy_dxgi();
 
     ::feature_level = {};
-    ::host_functions = {};
 }
 
 void ff::dx12::add_device_child(ff::dxgi::device_child_base* child, ff::dx12::device_reset_priority reset_priority)
@@ -458,11 +456,6 @@ void ff::dx12::remove_device_child(ff::dxgi::device_child_base* child)
     }
 
     ::removed_device_child_signal.notify(child);
-}
-
-const ff::dxgi::host_functions& ff::dxgi_host()
-{
-    return *::host_functions;
 }
 
 bool ff::dx12::reset_device(bool force)
@@ -681,7 +674,7 @@ void ff::dx12::frame_complete()
     ::frame_complete_signal.notify(++::frame_count);
     ff::dx12::direct_queue().end_event();
 
-    ff::dxgi_host().flush_commands();
+    ff::dxgi::flush_commands();
 
     if (!ff::dx12::device_valid())
     {

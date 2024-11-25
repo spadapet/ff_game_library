@@ -6,6 +6,7 @@
 #include "dx12/target_window.h"
 #include "dx12/texture_util.h"
 #include "dx12/queue.h"
+#include "dxgi/interop.h"
 
 static const size_t MIN_BUFFER_COUNT = 2;
 static const size_t MAX_BUFFER_COUNT = 4;
@@ -55,7 +56,7 @@ ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, 
 
     if (this->allow_full_screen_)
     {
-        ff::dxgi_host().full_screen_target(this);
+        ff::dxgi::set_full_screen_target(this);
     }
 }
 
@@ -68,7 +69,7 @@ ff::dx12::target_window::~target_window()
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
 
-    ff::dxgi_host().remove_target(this);
+    ff::dxgi::remove_target(this);
     ff::dx12::remove_device_child(this);
 }
 
@@ -459,7 +460,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_DPICHANGED:
             if (msg.msg != WM_SIZE || msg.wp != SIZE_MINIMIZED)
             {
-                ff::dxgi_host().defer_resize(this, this->window->size());
+                ff::dxgi::defer_resize_target(this, this->window->size());
             }
             break;
 
@@ -481,7 +482,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_SYSKEYDOWN:
             if (this->allow_full_screen_ && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::dxgi_host().defer_full_screen(!this->full_screen());
+                ff::dxgi::defer_full_screen(!this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }
@@ -498,7 +499,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                     }
                     else
                     {
-                        ff::dxgi_host().defer_reset_device(true);
+                        ff::dxgi::defer_reset_device(true);
                     }
                 }
             }
@@ -519,7 +520,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
                 {
-                    ff::dxgi_host().defer_resize(this, this->window->size());
+                    ff::dxgi::defer_resize_target(this, this->window->size());
                 }
             }
             break;

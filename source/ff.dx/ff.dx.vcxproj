@@ -54,7 +54,6 @@
     <ClCompile Include="graphics\animation_player.cpp" />
     <ClCompile Include="graphics\animation_player_base.cpp" />
     <ClCompile Include="graphics\font_file.cpp" />
-    <ClCompile Include="graphics\graphics.cpp" />
     <ClCompile Include="graphics\palette_cycle.cpp" />
     <ClCompile Include="graphics\palette_data.cpp" />
     <ClCompile Include="graphics\random_sprite.cpp" />
@@ -94,6 +93,7 @@
     <ClCompile Include="types\transform.cpp" />
     <ClCompile Include="types\vertex.cpp" />
     <ClCompile Include="types\viewport.cpp" />
+    <ClCompile Include="write\write.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dx12\access.h" />
@@ -152,7 +152,6 @@
     <ClInclude Include="graphics\animation_player.h" />
     <ClInclude Include="graphics\animation_player_base.h" />
     <ClInclude Include="graphics\font_file.h" />
-    <ClInclude Include="graphics\graphics.h" />
     <ClInclude Include="graphics\palette_cycle.h" />
     <ClInclude Include="graphics\palette_data.h" />
     <ClInclude Include="graphics\random_sprite.h" />
@@ -197,6 +196,7 @@
     <ClInclude Include="types\transform.h" />
     <ClInclude Include="types\vertex.h" />
     <ClInclude Include="types\viewport.h" />
+    <ClInclude Include="write\write.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.ff.dx12.config" />
