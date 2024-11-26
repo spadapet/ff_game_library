@@ -14,33 +14,29 @@ namespace
     {
         none = 0,
 
-        full_screen_false = 0x001,
-        full_screen_true = 0x002,
-        full_screen_bits = 0x00f,
+        reset_check = 0x01,
+        reset_force = 0x02,
+        reset_bits = 0x0f,
 
-        reset_check = 0x010,
-        reset_force = 0x020,
-        reset_bits = 0x0f0,
-
-        swap_chain_size = 0x100,
-        swap_chain_bits = 0xf00,
+        swap_chain_size = 0x10,
+        swap_chain_bits = 0xf0,
     };
 }
 
+constexpr int SPECIAL_DMOD_FULL_SCREEN = -1;
+constexpr int SPECIAL_DMOD_WINDOWED = -2;
+
+static ff::window_size special_full_screen_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_FULL_SCREEN };
+static ff::window_size special_windowed_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_WINDOWED };
+
 static std::mutex defer_mutex;
-static ff::dxgi::target_window_base* defer_full_screen_target;
-static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes; // TODO: Use special window_size for full screen or windowed so that defer_full_screen_target and full_screen_false|true isn't needed
+static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes;
 static ::defer_flags_t defer_flags;
 
 void ff::dxgi::remove_target(ff::dxgi::target_window_base* target)
 {
     std::scoped_lock lock(::defer_mutex);
     assert_ret(target);
-
-    if (::defer_full_screen_target == target)
-    {
-        ::defer_full_screen_target = nullptr;
-    }
 
     for (auto i = ::defer_sizes.cbegin(); i != ::defer_sizes.cend(); i++)
     {
@@ -67,7 +63,13 @@ void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const f
     {
         if (i.first == target)
         {
-            i.second = size;
+            // If full screen state is already changing, don't allow size to change
+            if ((i.second.rotation != ::SPECIAL_DMOD_FULL_SCREEN && i.second.rotation != ::SPECIAL_DMOD_WINDOWED) ||
+                (size.rotation == ::SPECIAL_DMOD_FULL_SCREEN || size.rotation == ::SPECIAL_DMOD_WINDOWED))
+            {
+                i.second = size;
+            }
+
             found_match = true;
             break;
         }
@@ -90,12 +92,7 @@ void ff::dxgi::defer_reset_device(bool force)
 
 void ff::dxgi::defer_full_screen(ff::dxgi::target_window_base* target, bool value)
 {
-    std::scoped_lock lock(::defer_mutex);
-
-    ::defer_full_screen_target = target;
-    ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits),
-        value ? ::defer_flags_t::full_screen_true : ::defer_flags_t::full_screen_false);
+    ff::dxgi::defer_resize_target(target, value ? ::special_full_screen_size : ::special_windowed_size);
 }
 
 void ff::dxgi::flush_commands()
@@ -104,20 +101,7 @@ void ff::dxgi::flush_commands()
     {
         std::unique_lock lock(::defer_mutex);
 
-        if (ff::flags::has_any(::defer_flags, ::defer_flags_t::full_screen_bits))
-        {
-            bool full_screen = ff::flags::has(::defer_flags, ::defer_flags_t::full_screen_true);
-            ff::dxgi::target_window_base* target = ::defer_full_screen_target;
-            ::defer_full_screen_target = nullptr;
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::full_screen_bits);
-            lock.unlock();
-
-            if (target && target->allow_full_screen())
-            {
-                target->full_screen(full_screen);
-            }
-        }
-        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
+        if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
         {
             bool force = ff::flags::has(::defer_flags, ::defer_flags_t::reset_force);
             ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::reset_bits);
@@ -133,7 +117,18 @@ void ff::dxgi::flush_commands()
 
             for (const auto& i : defer_sizes)
             {
-                i.first->size(i.second);
+                if (i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN ||
+                    i.second.rotation == ::SPECIAL_DMOD_WINDOWED)
+                {
+                    if (i.first->allow_full_screen())
+                    {
+                        i.first->full_screen(i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN);
+                    }
+                }
+                else
+                {
+                    i.first->size(i.second);
+                }
             }
         }
     }
