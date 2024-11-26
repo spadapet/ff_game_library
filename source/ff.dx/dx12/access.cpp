@@ -5,6 +5,8 @@
 #include "dx12/heap.h"
 #include "dx12/queue.h"
 #include "dx12/resource.h"
+#include "dxgi/target_base.h"
+#include "dxgi/texture_view_base.h"
 
 ID3D12CommandQueue* ff::dx12::get_command_queue(const ff::dx12::queue& obj)
 {
@@ -34,4 +36,14 @@ ID3D12Resource* ff::dx12::get_resource(const ff::dx12::heap& obj)
 ID3D12Resource* ff::dx12::get_resource(const ff::dx12::resource& obj)
 {
     return obj.resource_.Get();
+}
+
+ff::dx12::target_access& ff::dx12::target_access::get(ff::dxgi::target_base& obj)
+{
+    return static_cast<ff::dx12::target_access&>(obj.target_access());
+}
+
+ff::dx12::texture_view_access& ff::dx12::texture_view_access::get(ff::dxgi::texture_view_base& obj)
+{
+    return static_cast<ff::dx12::texture_view_access&>(obj.view_access());
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../dxgi/draw_ptr.h"
+#include "../dxgi/draw_base.h"
 
 namespace ff::dxgi
 {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../dxgi/device_child_base.h"
+
 namespace ff::dx12
 {
     class object_cache : private ff::dxgi::device_child_base

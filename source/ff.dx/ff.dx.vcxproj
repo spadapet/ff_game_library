@@ -15,8 +15,6 @@
     <ClCompile Include="dx12\descriptor_allocator.cpp" />
     <ClCompile Include="dx12\descriptor_range.cpp" />
     <ClCompile Include="dx12\draw_device.cpp" />
-    <ClCompile Include="dx12\draw_device_gs.cpp" />
-    <ClCompile Include="dx12\draw_device_ms.cpp" />
     <ClCompile Include="dx12\fence.cpp" />
     <ClCompile Include="dx12\fence_value.cpp" />
     <ClCompile Include="dx12\fence_values.cpp" />
@@ -32,18 +30,14 @@
     <ClCompile Include="dx12\resource.cpp" />
     <ClCompile Include="dx12\resource_state.cpp" />
     <ClCompile Include="dx12\resource_tracker.cpp" />
-    <ClCompile Include="dx12\target_access.cpp" />
     <ClCompile Include="dx12\target_texture.cpp" />
     <ClCompile Include="dx12\target_window.cpp" />
     <ClCompile Include="dx12\texture.cpp" />
-    <ClCompile Include="dx12\texture_util.cpp" />
     <ClCompile Include="dx12\texture_view.cpp" />
-    <ClCompile Include="dx12\texture_view_access.cpp" />
     <ClCompile Include="dxgi\buffer_base.cpp" />
     <ClCompile Include="dxgi\device_child_base.cpp" />
     <ClCompile Include="dxgi\draw_base.cpp" />
     <ClCompile Include="dxgi\draw_device_base.cpp" />
-    <ClCompile Include="dxgi\draw_ptr.cpp" />
     <ClCompile Include="dxgi\draw_util.cpp" />
     <ClCompile Include="dxgi\format_util.cpp" />
     <ClCompile Include="dxgi\interop.cpp" />
@@ -53,7 +47,6 @@
     <ClCompile Include="graphics\animation_keys.cpp" />
     <ClCompile Include="graphics\animation_player.cpp" />
     <ClCompile Include="graphics\animation_player_base.cpp" />
-    <ClCompile Include="graphics\font_file.cpp" />
     <ClCompile Include="graphics\palette_cycle.cpp" />
     <ClCompile Include="graphics\palette_data.cpp" />
     <ClCompile Include="graphics\random_sprite.cpp" />
@@ -93,6 +86,7 @@
     <ClCompile Include="types\transform.cpp" />
     <ClCompile Include="types\vertex.cpp" />
     <ClCompile Include="types\viewport.cpp" />
+    <ClCompile Include="write\font_file.cpp" />
     <ClCompile Include="write\write.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -119,20 +113,16 @@
     <ClInclude Include="dx12\resource.h" />
     <ClInclude Include="dx12\resource_state.h" />
     <ClInclude Include="dx12\resource_tracker.h" />
-    <ClInclude Include="dx12\target_access.h" />
     <ClInclude Include="dx12\target_texture.h" />
     <ClInclude Include="dx12\target_window.h" />
     <ClInclude Include="dx12\texture.h" />
-    <ClInclude Include="dx12\texture_util.h" />
     <ClInclude Include="dx12\texture_view.h" />
-    <ClInclude Include="dx12\texture_view_access.h" />
     <ClInclude Include="dxgi\buffer_base.h" />
     <ClInclude Include="dxgi\command_context_base.h" />
     <ClInclude Include="dxgi\depth_base.h" />
     <ClInclude Include="dxgi\device_child_base.h" />
     <ClInclude Include="dxgi\draw_base.h" />
     <ClInclude Include="dxgi\draw_device_base.h" />
-    <ClInclude Include="dxgi\draw_ptr.h" />
     <ClInclude Include="dxgi\draw_util.h" />
     <ClInclude Include="dxgi\format_util.h" />
     <ClInclude Include="dxgi\interop.h" />
@@ -151,7 +141,6 @@
     <ClInclude Include="graphics\animation_keys.h" />
     <ClInclude Include="graphics\animation_player.h" />
     <ClInclude Include="graphics\animation_player_base.h" />
-    <ClInclude Include="graphics\font_file.h" />
     <ClInclude Include="graphics\palette_cycle.h" />
     <ClInclude Include="graphics\palette_data.h" />
     <ClInclude Include="graphics\random_sprite.h" />
@@ -196,6 +185,7 @@
     <ClInclude Include="types\transform.h" />
     <ClInclude Include="types\vertex.h" />
     <ClInclude Include="types\viewport.h" />
+    <ClInclude Include="write\font_file.h" />
     <ClInclude Include="write\write.h" />
   </ItemGroup>
   <ItemGroup>

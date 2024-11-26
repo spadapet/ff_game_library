@@ -5,7 +5,6 @@
 #include "dx12/globals.h"
 #include "dx12/resource.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util.h"
 #include "dxgi/format_util.h"
 
 static std::atomic_int dynamic_texture_counter;
@@ -348,7 +347,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::texture::dx12_texture_view() const
     if (!this->view_)
     {
         this->view_ = ff::dx12::cpu_buffer_descriptors().alloc_range(1);
-        ff::dx12::create_shader_view(this->dx12_resource(), this->view_.cpu_handle(0));
+        this->dx12_resource()->create_shader_view(this->view_.cpu_handle(0));
     }
 
     return this->view_.cpu_handle(0);

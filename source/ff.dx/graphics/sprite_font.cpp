@@ -2,13 +2,13 @@
 #include "dxgi/draw_util.h"
 #include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
-#include "graphics/font_file.h"
 #include "graphics/sprite.h"
 #include "graphics/sprite_font.h"
 #include "graphics/sprite_list.h"
 #include "graphics/sprite_optimizer.h"
 #include "graphics/texture_resource.h"
 #include "types/transform.h"
+#include "write/font_file.h"
 #include "write/write.h"
 
 static bool text_contains_outline_control(std::wstring_view text)

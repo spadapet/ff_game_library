@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../dx12/access.h"
 #include "../dx12/descriptor_range.h"
-#include "../dx12/texture_view_access.h"
 
 namespace ff::dx12
 {

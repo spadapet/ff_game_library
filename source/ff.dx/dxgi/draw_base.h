@@ -80,4 +80,6 @@ namespace ff::dxgi
         virtual void push_sampler_linear_filter(bool linear_filter) = 0;
         virtual void pop_sampler_linear_filter() = 0;
     };
+
+    using draw_ptr = typename std::unique_ptr<ff::dxgi::draw_base, void(*)(ff::dxgi::draw_base*)>;
 }

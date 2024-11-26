@@ -16,7 +16,7 @@ namespace ff::test::dx12
 
             ff::dxgi::command_context_base& context = ff::dx12::frame_started();
             ff::dxgi::draw_ptr draw = dd->begin_draw(context, target, &depth, ff::rect_float(0, 0, 32, 32), ff::rect_float(0, 0, 32, 32));
-            Assert::IsTrue(draw);
+            Assert::IsTrue(draw.operator bool());
 
             draw.reset();
             ff::dx12::frame_complete();

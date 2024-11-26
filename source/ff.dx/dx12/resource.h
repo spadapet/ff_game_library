@@ -71,6 +71,10 @@ namespace ff::dx12
         readback_texture_data readback_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
         DirectX::ScratchImage capture_texture(ff::dx12::commands* commands, size_t sub_index, size_t sub_count, const ff::rect_size* source_rect);
 
+        // Views
+        void create_shader_view(D3D12_CPU_DESCRIPTOR_HANDLE view, size_t array_start = 0, size_t array_count = 0, size_t mip_start = 0, size_t mip_count = 0);
+        void create_target_view(D3D12_CPU_DESCRIPTOR_HANDLE view, size_t array_start = 0, size_t array_count = 1, size_t mip_level = 0);
+
         // ff::dx12::residency_access
         virtual ff::dx12::residency_data* residency_data() override;
 

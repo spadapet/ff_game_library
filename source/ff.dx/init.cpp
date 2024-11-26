@@ -4,7 +4,6 @@
 #include "audio/music.h"
 #include "dxgi/interop.h"
 #include "graphics/animation.h"
-#include "graphics/font_file.h"
 #include "graphics/palette_data.h"
 #include "graphics/random_sprite.h"
 #include "graphics/shader.h"
@@ -16,6 +15,7 @@
 #include "init.h"
 #include "input/input.h"
 #include "input/input_mapping.h"
+#include "write/font_file.h"
 #include "write/write.h"
 
 namespace

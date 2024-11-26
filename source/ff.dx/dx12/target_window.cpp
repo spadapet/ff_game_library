@@ -3,8 +3,8 @@
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
+#include "dx12/resource.h"
 #include "dx12/target_window.h"
-#include "dx12/texture_util.h"
 #include "dx12/queue.h"
 #include "dxgi/interop.h"
 
@@ -328,7 +328,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
 
         auto texture_resource = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
         this->target_textures.push_back(std::move(texture_resource));
-        ff::dx12::create_target_view(this->target_textures.back().get(), this->target_views.cpu_handle(i));
+        this->target_textures.back()->create_target_view(this->target_views.cpu_handle(i));
     }
 
     this->size_changed_.notify(size);

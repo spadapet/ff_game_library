@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../dx12/access.h"
 #include "../dx12/descriptor_range.h"
-#include "../dx12/target_access.h"
 #include "../dxgi/target_base.h"
 
 namespace ff::dxgi

@@ -2,8 +2,8 @@
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
+#include "dx12/resource.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util.h"
 #include "dx12/texture_view.h"
 
 ff::dx12::texture_view::texture_view(
@@ -98,7 +98,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::texture_view::dx12_texture_view() const
     if (!this->view_)
     {
         this->view_ = ff::dx12::cpu_buffer_descriptors().alloc_range(1);
-        ff::dx12::create_shader_view(this->texture_->dx12_resource(), this->view_.cpu_handle(0));
+        this->texture_->dx12_resource()->create_shader_view(this->view_.cpu_handle(0));
     }
 
     return this->view_.cpu_handle(0);

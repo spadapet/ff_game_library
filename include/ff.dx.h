@@ -29,7 +29,6 @@
 #include "../source/ff.dx/dxgi/device_child_base.h"
 #include "../source/ff.dx/dxgi/draw_base.h"
 #include "../source/ff.dx/dxgi/draw_device_base.h"
-#include "../source/ff.dx/dxgi/draw_ptr.h"
 #include "../source/ff.dx/dxgi/draw_util.h"
 #include "../source/ff.dx/dxgi/format_util.h"
 #include "../source/ff.dx/dxgi/interop.h"
@@ -67,20 +66,16 @@
 #include "../source/ff.dx/dx12/resource.h"
 #include "../source/ff.dx/dx12/resource_state.h"
 #include "../source/ff.dx/dx12/resource_tracker.h"
-#include "../source/ff.dx/dx12/target_access.h"
 #include "../source/ff.dx/dx12/target_texture.h"
 #include "../source/ff.dx/dx12/target_window.h"
 #include "../source/ff.dx/dx12/texture.h"
-#include "../source/ff.dx/dx12/texture_util.h"
 #include "../source/ff.dx/dx12/texture_view.h"
-#include "../source/ff.dx/dx12/texture_view_access.h"
 
 #include "../source/ff.dx/graphics/animation.h"
 #include "../source/ff.dx/graphics/animation_base.h"
 #include "../source/ff.dx/graphics/animation_keys.h"
 #include "../source/ff.dx/graphics/animation_player.h"
 #include "../source/ff.dx/graphics/animation_player_base.h"
-#include "../source/ff.dx/graphics/font_file.h"
 #include "../source/ff.dx/graphics/palette_cycle.h"
 #include "../source/ff.dx/graphics/palette_data.h"
 #include "../source/ff.dx/graphics/random_sprite.h"
@@ -107,6 +102,7 @@
 #include "../source/ff.dx/types/vertex.h"
 #include "../source/ff.dx/types/viewport.h"
 
+#include "../source/ff.dx/write/font_file.h"
 #include "../source/ff.dx/write/write.h"
 
 #pragma comment(lib, "d3d12.lib")

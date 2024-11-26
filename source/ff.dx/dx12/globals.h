@@ -1,10 +1,9 @@
 #pragma once
 
-#include "../dxgi/device_child_base.h"
-
 namespace ff::dxgi
 {
     class command_context_base;
+    class device_child_base;
     class draw_device_base;
 }
 
@@ -40,6 +39,7 @@ namespace ff::dx12
     bool supports_create_heap_not_resident();
     bool supports_mesh_shaders();
     void keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fence_values&& fence_values);
+    size_t fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 
     size_t frame_count();
     ff::dxgi::command_context_base& frame_started();

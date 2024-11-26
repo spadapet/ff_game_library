@@ -781,6 +781,11 @@ bool ff::dxgi::draw_util::draw_device_base::pre_multiplied_alpha() const
     return this->force_pre_multiplied_alpha > 0;
 }
 
+static void draw_ptr_deleter(ff::dxgi::draw_base* draw)
+{
+    draw->end_draw();
+}
+
 ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(
     ff::dxgi::command_context_base& context,
     ff::dxgi::target_base& target,
@@ -801,10 +806,10 @@ ff::dxgi::draw_ptr ff::dxgi::draw_util::draw_device_base::internal_begin_draw(
         this->force_pre_multiplied_alpha = ff::flags::has(options, ff::dxgi::draw_options::pre_multiplied_alpha) && ff::dxgi::supports_pre_multiplied_alpha(target.format()) ? 1 : 0;
         this->state = draw_device_base::state_t::drawing;
 
-        return this;
+        return {this, ::draw_ptr_deleter};
     }
 
-    return nullptr;
+    return {nullptr, ::draw_ptr_deleter};
 }
 
 bool ff::dxgi::draw_util::draw_device_base::reset()

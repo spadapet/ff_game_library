@@ -3,9 +3,9 @@
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
 #include "dx12/globals.h"
+#include "dx12/resource.h"
 #include "dx12/target_texture.h"
 #include "dx12/texture.h"
-#include "dx12/texture_util.h"
 #include "dx12/queue.h"
 
 ff::dx12::target_texture::target_texture(
@@ -132,6 +132,6 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_texture::dx12_target_view()
 
 bool ff::dx12::target_texture::reset()
 {
-    ff::dx12::create_target_view(&this->dx12_target_texture(), this->dx12_target_view(), this->array_start, this->array_count, this->mip_level);
+    this->dx12_target_texture().create_target_view(this->dx12_target_view(), this->array_start, this->array_count, this->mip_level);
     return *this;
 }

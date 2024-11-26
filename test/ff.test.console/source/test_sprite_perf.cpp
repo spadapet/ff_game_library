@@ -68,7 +68,7 @@ namespace
             }
 
             std::string text = ff::string::concat("Count:", this->pos_datas.size(), ", SPACE:More, DEL:Clear");
-            this->font->draw_text(draw, text, ff::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::color_white()), ff::color_none());
+            this->font->draw_text(draw.get(), text, ff::transform(ff::point_float(20, 1040), ff::point_float(1, 1), 0, ff::color_white()), ff::color_none());
         }
 
     private:

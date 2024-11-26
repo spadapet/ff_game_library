@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "dxgi/draw_base.h"
 #include "dxgi/draw_device_base.h"
-#include "dxgi/draw_ptr.h"
 #include "dxgi/interop.h"
 #include "dxgi/palette_base.h"
 #include "graphics/render_targets.h"

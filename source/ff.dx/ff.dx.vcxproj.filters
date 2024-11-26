@@ -57,9 +57,6 @@
     <ClCompile Include="dxgi\draw_device_base.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
-    <ClCompile Include="dxgi\draw_ptr.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
     <ClCompile Include="dxgi\draw_util.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
@@ -91,12 +88,6 @@
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\draw_device.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\draw_device_gs.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\draw_device_ms.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\fence.cpp">
@@ -144,9 +135,6 @@
     <ClCompile Include="dx12\resource_tracker.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\target_access.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
     <ClCompile Include="dx12\target_texture.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -156,13 +144,7 @@
     <ClCompile Include="dx12\texture.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\texture_util.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
     <ClCompile Include="dx12\texture_view.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\texture_view_access.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="graphics\animation.cpp">
@@ -178,9 +160,6 @@
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\animation_player_base.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\font_file.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
     <ClCompile Include="graphics\palette_cycle.cpp">
@@ -247,6 +226,9 @@
       <Filter>types</Filter>
     </ClCompile>
     <ClCompile Include="write\write.cpp">
+      <Filter>write</Filter>
+    </ClCompile>
+    <ClCompile Include="write\font_file.cpp">
       <Filter>write</Filter>
     </ClCompile>
   </ItemGroup>
@@ -323,9 +305,6 @@
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\draw_device_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\draw_ptr.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\draw_util.h">
@@ -436,9 +415,6 @@
     <ClInclude Include="dx12\resource_tracker.h">
       <Filter>dx12</Filter>
     </ClInclude>
-    <ClInclude Include="dx12\target_access.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
     <ClInclude Include="dx12\target_texture.h">
       <Filter>dx12</Filter>
     </ClInclude>
@@ -448,13 +424,7 @@
     <ClInclude Include="dx12\texture.h">
       <Filter>dx12</Filter>
     </ClInclude>
-    <ClInclude Include="dx12\texture_util.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
     <ClInclude Include="dx12\texture_view.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\texture_view_access.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="graphics\animation.h">
@@ -470,9 +440,6 @@
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\animation_player_base.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\font_file.h">
       <Filter>graphics</Filter>
     </ClInclude>
     <ClInclude Include="graphics\palette_cycle.h">
@@ -548,6 +515,9 @@
       <Filter>types</Filter>
     </ClInclude>
     <ClInclude Include="write\write.h">
+      <Filter>write</Filter>
+    </ClInclude>
+    <ClInclude Include="write\font_file.h">
       <Filter>write</Filter>
     </ClInclude>
   </ItemGroup>

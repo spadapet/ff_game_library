@@ -2,7 +2,6 @@
 
 #include "../dxgi/device_child_base.h"
 #include "../dxgi/draw_base.h"
-#include "../dxgi/draw_ptr.h"
 #include "../dxgi/palette_base.h"
 #include "../types/operators.h"
 #include "../types/matrix_stack.h"
