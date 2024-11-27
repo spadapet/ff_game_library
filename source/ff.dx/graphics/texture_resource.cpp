@@ -6,7 +6,7 @@
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
-#include "types/data_blob.h"
+#include "types/blob.h"
 #include "types/png_image.h"
 
 static std::shared_ptr<DirectX::ScratchImage> convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count)

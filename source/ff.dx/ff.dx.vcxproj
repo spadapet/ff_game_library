@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\Microsoft.Direct3D.D3D12.1.614.1\build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.614.1\build\native\Microsoft.Direct3D.D3D12.props')" />
   <PropertyGroup Label="Globals">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <ProjectGuid>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</ProjectGuid>
@@ -79,7 +80,7 @@
     <ClCompile Include="input\keyboard_device.cpp" />
     <ClCompile Include="input\pointer_device.cpp" />
     <ClCompile Include="types\color.cpp" />
-    <ClCompile Include="types\data_blob.cpp" />
+    <ClCompile Include="types\blob.cpp" />
     <ClCompile Include="types\matrix.cpp" />
     <ClCompile Include="types\matrix_stack.cpp" />
     <ClCompile Include="types\png_image.cpp" />
@@ -176,7 +177,7 @@
     <ClInclude Include="input\keyboard_device.h" />
     <ClInclude Include="input\pointer_device.h" />
     <ClInclude Include="types\color.h" />
-    <ClInclude Include="types\data_blob.h" />
+    <ClInclude Include="types\blob.h" />
     <ClInclude Include="types\intrusive_list.h" />
     <ClInclude Include="types\matrix.h" />
     <ClInclude Include="types\matrix_stack.h" />
@@ -189,10 +190,10 @@
     <ClInclude Include="write\write.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.ff.dx12.config" />
     <None Include="assets\shaders.hlsl">
       <FileType>Document</FileType>
     </None>
+    <None Include="packages.ff.dx.config" />
     <ResJson Include="assets\ff.dx12.res.json">
       <FileType>Document</FileType>
     </ResJson>

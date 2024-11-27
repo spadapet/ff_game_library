@@ -10,7 +10,7 @@
     <WinPixVersion>1.0.240308001</WinPixVersion>
     <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
     <D3D12AgilitySDK>614</D3D12AgilitySDK>
-    <D3D12AgilityVersion>1.$(D3D12AgilitySDK).0</D3D12AgilityVersion>
+    <D3D12AgilityVersion>1.$(D3D12AgilitySDK).1</D3D12AgilityVersion>
 
     <!-- Root dirs -->
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ".."))))</FFRoot>

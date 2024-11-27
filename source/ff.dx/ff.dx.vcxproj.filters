@@ -204,7 +204,7 @@
     <ClCompile Include="types\color.cpp">
       <Filter>types</Filter>
     </ClCompile>
-    <ClCompile Include="types\data_blob.cpp">
+    <ClCompile Include="types\blob.cpp">
       <Filter>types</Filter>
     </ClCompile>
     <ClCompile Include="types\matrix.cpp">
@@ -487,7 +487,7 @@
     <ClInclude Include="types\color.h">
       <Filter>types</Filter>
     </ClInclude>
-    <ClInclude Include="types\data_blob.h">
+    <ClInclude Include="types\blob.h">
       <Filter>types</Filter>
     </ClInclude>
     <ClInclude Include="types\intrusive_list.h">
@@ -548,10 +548,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.ff.dx12.config" />
     <None Include="assets\shaders.hlsl">
       <Filter>assets</Filter>
     </None>
+    <None Include="packages.ff.dx.config" />
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\ff.dx12.res.json">

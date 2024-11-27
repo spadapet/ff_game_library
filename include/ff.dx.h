@@ -91,8 +91,8 @@
 #include "../source/ff.dx/graphics/texture_metadata.h"
 #include "../source/ff.dx/graphics/texture_resource.h"
 
+#include "../source/ff.dx/types/blob.h"
 #include "../source/ff.dx/types/color.h"
-#include "../source/ff.dx/types/data_blob.h"
 #include "../source/ff.dx/types/intrusive_list.h"
 #include "../source/ff.dx/types/matrix.h"
 #include "../source/ff.dx/types/matrix_stack.h"
