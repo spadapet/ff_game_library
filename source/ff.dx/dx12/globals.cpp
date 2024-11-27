@@ -29,7 +29,6 @@ static D3D_FEATURE_LEVEL feature_level;
 static size_t adapters_hash;
 static size_t outputs_hash;
 static bool supports_create_heap_not_resident_;
-static bool supports_mesh_shaders_;
 static bool simulate_device_invalid;
 
 // Device children
@@ -183,13 +182,6 @@ static bool supports_create_heap_not_resident()
     return false;
 }
 
-static bool supports_mesh_shaders()
-{
-    D3D12_FEATURE_DATA_D3D12_OPTIONS7 options7{};
-    return SUCCEEDED(::device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &options7, sizeof(options7))) &&
-        options7.MeshShaderTier >= D3D12_MESH_SHADER_TIER_1;
-}
-
 static size_t get_adapters_hash(IDXGIFactory* factory)
 {
     Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
@@ -285,7 +277,6 @@ static bool init_d3d(bool for_reset)
     }
 
     ::supports_create_heap_not_resident_ = ::supports_create_heap_not_resident();
-    ::supports_mesh_shaders_ = ::supports_mesh_shaders();
 
     // Break on debug error
     if (ff::constants::debug_build && ::IsDebuggerPresent())
@@ -414,7 +405,6 @@ static void destroy_d3d(bool for_reset)
     }
 
     ::supports_create_heap_not_resident_ = false;
-    ::supports_mesh_shaders_ = false;
     ::simulate_device_invalid = false;
     ::outputs_hash = 0;
     ::adapter.Reset();
@@ -632,11 +622,6 @@ ff::dx12::fence& ff::dx12::residency_fence()
 bool ff::dx12::supports_create_heap_not_resident()
 {
     return supports_create_heap_not_resident_;
-}
-
-bool ff::dx12::supports_mesh_shaders()
-{
-    return supports_mesh_shaders_;
 }
 
 ff::dx12::object_cache& ff::dx12::get_object_cache()
