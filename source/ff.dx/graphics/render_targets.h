@@ -30,7 +30,7 @@ namespace ff
 
     private:
         friend class ff::render_targets;
-        static const size_t COUNT = static_cast<size_t>(ff::render_target_type::count);
+        static constexpr size_t COUNT = static_cast<size_t>(ff::render_target_type::count);
 
         ff::point_size size;
         ff::viewport viewport;
@@ -54,11 +54,13 @@ namespace ff
         void push(ff::render_target& entry);
         ff::rect_float pop(ff::dxgi::command_context_base& context, ff::dxgi::target_base* target, ff::dxgi::palette_base* palette = nullptr);
 
+        const std::shared_ptr<ff::dxgi::target_base>& default_target() const;
+        void default_target(const std::shared_ptr<ff::dxgi::target_base>& value);
         ff::dxgi::target_base& target(ff::dxgi::command_context_base& context, ff::render_target_type type = ff::render_target_type::rgba);
         ff::dxgi::depth_base& depth(ff::dxgi::command_context_base& context);
 
     private:
-        std::shared_ptr<ff::dxgi::target_base> default_target;
+        std::shared_ptr<ff::dxgi::target_base> default_target_;
         std::shared_ptr<ff::dxgi::depth_base> depth_;
         std::shared_ptr<ff::texture> texture_1080;
         std::shared_ptr<ff::dxgi::target_base> target_1080;

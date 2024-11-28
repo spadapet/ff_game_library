@@ -39,8 +39,6 @@ namespace ff
         // input_device_base
         virtual void advance() override;
         virtual void kill_pending() override;
-        virtual bool connected() const override;
-        virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override;
         virtual void notify_main_window_message(ff::window_message& message) override;
 
     private:
@@ -76,6 +74,5 @@ namespace ff
         mouse_info pending_mouse{};
         std::vector<internal_touch_info> touches;
         std::vector<internal_touch_info> pending_touches;
-        ff::signal<const ff::input_device_event&> device_event;
     };
 }

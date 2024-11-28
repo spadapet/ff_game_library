@@ -59,6 +59,14 @@ namespace
             }
         }
 
+        virtual void block_events(bool block) override
+        {
+            for (auto& pair : ::all_devices)
+            {
+                pair.first->block_events(block);
+            }
+        }
+
         virtual bool connected() const override
         {
             for (auto& pair : ::all_devices)

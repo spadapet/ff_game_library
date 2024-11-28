@@ -6,8 +6,12 @@ namespace ff::game
 
     struct init_params
     {
-        std::function<void()> register_resources_func;
-        std::function<std::shared_ptr<ff::game::app_state_base>()> create_initial_state_func;
+        std::function<void()> register_resources_func{ &ff::game::init_params::default_empty };
+        std::function<std::shared_ptr<ff::game::app_state_base>()> create_initial_state_func{ &ff::game::init_params::default_create_initial_state };
+
+    private:
+        static void default_empty();
+        static std::shared_ptr<ff::game::app_state_base> default_create_initial_state();
     };
 
     template<class T>
@@ -28,7 +32,11 @@ namespace ff::game
     int run(std::function<void()>&& register_resources_func = {})
     {
         ff::game::init_params_t<T> params;
-        params.register_resources_func = std::move(register_resources_func);
+        if (register_resources_func)
+        {
+            params.register_resources_func = std::move(register_resources_func);
+        }
+
         return ff::game::run(params);
     }
 }

@@ -55,3 +55,12 @@ int ff::game::run(const ff::game::init_params& params)
     assert_ret_val(init_app, 1);
     return ff::handle_messages_until_quit();
 }
+
+void ff::game::init_params::default_empty()
+{
+}
+
+std::shared_ptr<ff::game::app_state_base> ff::game::init_params::default_create_initial_state()
+{
+    return {};
+}

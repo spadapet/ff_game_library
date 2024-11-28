@@ -55,7 +55,7 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
 
 bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this)
+    if (*this && ff::dx12::device_valid())
     {
         if (clear_color)
         {
@@ -74,7 +74,7 @@ bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& cont
 
 bool ff::dx12::target_texture::end_render(ff::dxgi::command_context_base& context)
 {
-    ff::dx12::commands::get(context).resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
+    // ff::dx12::commands::get(context).resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
     return true;
 }
 

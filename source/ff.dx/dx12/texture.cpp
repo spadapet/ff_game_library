@@ -11,15 +11,11 @@ static std::atomic_int dynamic_texture_counter;
 static std::atomic_int static_texture_counter;
 
 ff::dx12::texture::texture()
-    : sprite_type_(ff::dxgi::sprite_type::unknown)
-    , upload_data_pending(false)
 {
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
 ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
-    : sprite_type_(ff::dxgi::sprite_type::unknown)
-    , upload_data_pending(false)
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 

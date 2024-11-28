@@ -61,16 +61,6 @@ void ff::keyboard_device::kill_pending()
     }
 }
 
-bool ff::keyboard_device::connected() const
-{
-    return true;
-}
-
-ff::signal_sink<const ff::input_device_event&>& ff::keyboard_device::event_sink()
-{
-    return this->device_event;
-}
-
 static unsigned int get_other_vk(const ff::window_message& message)
 {
     unsigned int other_vk = 0;
@@ -97,6 +87,11 @@ static unsigned int get_other_vk(const ff::window_message& message)
 
 void ff::keyboard_device::notify_main_window_message(ff::window_message& message)
 {
+    if (this->block_events())
+    {
+        return;
+    }
+
     switch (message.msg)
     {
         case WM_SYSKEYDOWN:

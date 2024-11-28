@@ -7,6 +7,7 @@
 #include "dx12/target_window.h"
 #include "dx12/queue.h"
 #include "dxgi/interop.h"
+#include "types/color.h"
 
 static const size_t MIN_BUFFER_COUNT = 2;
 static const size_t MAX_BUFFER_COUNT = 4;
@@ -42,15 +43,17 @@ static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
     }
 }
 
-ff::dx12::target_window::target_window(ff::window* window, size_t buffer_count, size_t frame_latency, bool vsync, bool allow_full_screen)
-    : window(window)
-    , main_window(ff::window::main() == window)
+ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
+    : window(window ? window : ff::window::main())
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
-    , vsync_(vsync)
-    , allow_full_screen_(main_window&& allow_full_screen)
+    , params(params)
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
-    this->internal_size(this->window->size(), ::fix_buffer_count(buffer_count), ::fix_frame_latency(frame_latency, buffer_count));
+    this->params.allow_full_screen = this->params.allow_full_screen && (window == ff::window::main());
+    this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
+    this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
+
+    this->internal_size(this->window->size());
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
 }
@@ -59,7 +62,7 @@ ff::dx12::target_window::~target_window()
 {
     ff::dx12::wait_for_idle();
 
-    if (this->allow_full_screen_ && this->swap_chain)
+    if (this->allow_full_screen() && this->swap_chain)
     {
         this->swap_chain->SetFullscreenState(FALSE, nullptr);
     }
@@ -88,11 +91,21 @@ ff::window_size ff::dx12::target_window::size() const
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
+    if (this->params.extra_render_target)
+    {
+        return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_texture();
+    }
+
     return *this->target_textures[this->back_buffer_index];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
+    if (this->params.extra_render_target)
+    {
+        return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_view();
+    }
+
     return this->target_views.cpu_handle(this->back_buffer_index);
 }
 
@@ -105,13 +118,14 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
 {
     if (*this && ff::dx12::device_valid())
     {
+        ff::dxgi::target_base& target = this->params.extra_render_target ? this->extra_render_target() : *this;
         if (clear_color)
         {
-            this->clear(context, *clear_color);
+            target.clear(context, *clear_color);
         }
         else
         {
-            ff::dx12::commands::get(context).discard(*this);
+            ff::dx12::commands::get(context).discard(target);
         }
 
         return true;
@@ -124,6 +138,27 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 {
     if (*this && ff::dx12::device_valid())
     {
+        std::unique_ptr<ff::dx12::commands> new_commands;
+
+        ff::dx12::commands& commands = ff::dx12::commands::get(context);
+        ff::dx12::queue& queue = commands.queue();
+        ff::dx12::commands* present_commands = &commands;
+        ff::dx12::resource& back_buffer_resource = *this->target_textures[this->back_buffer_index];
+
+        if (this->params.extra_render_target)
+        {
+            // Finish all rendering to extra render target
+            queue.execute(commands);
+
+            // Copy extra render target to back buffer
+            ff::dxgi::target_base& extra_target = this->extra_render_target();
+            ff::dx12::resource& extra_resource = ff::dx12::target_access::get(extra_target).dx12_target_texture();
+            new_commands = queue.new_commands();
+            present_commands = new_commands.get();
+            present_commands->discard_target(back_buffer_resource);
+            present_commands->copy_resource(back_buffer_resource, extra_resource);
+        }
+
         if (this->frame_latency_handle)
         {
             ff::perf_timer timer(::perf_render_wait);
@@ -131,11 +166,10 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
         }
 
         ff::perf_timer timer(::perf_render_present);
-        ff::dx12::commands& commands = ff::dx12::commands::get(context);
-        commands.resource_state(*this->target_textures[this->back_buffer_index], D3D12_RESOURCE_STATE_PRESENT);
-        commands.queue().execute(commands);
+        present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
+        queue.execute(*present_commands);
 
-        HRESULT hr = this->swap_chain->Present(this->vsync_ ? 1 : 0, 0);
+        HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {
             this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
@@ -152,12 +186,12 @@ void ff::dx12::target_window::before_resize()
     this->before_reset();
 }
 
-bool ff::dx12::target_window::internal_reset(size_t buffer_count, size_t frame_latency)
+bool ff::dx12::target_window::internal_reset()
 {
     assert_ret_val(this->window, false);
 
     BOOL full_screen{};
-    if (this->allow_full_screen_ && this->swap_chain)
+    if (this->allow_full_screen() && this->swap_chain)
     {
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
         this->swap_chain->GetFullscreenState(&full_screen, &output);
@@ -168,9 +202,9 @@ bool ff::dx12::target_window::internal_reset(size_t buffer_count, size_t frame_l
     this->swap_chain.Reset();
 
     ff::window_size size = this->window->size();
-    assert_ret_val(this->internal_size(size, buffer_count, frame_latency), false);
+    assert_ret_val(this->internal_size(size), false);
 
-    if (this->allow_full_screen_ && full_screen)
+    if (this->allow_full_screen() && full_screen)
     {
         this->swap_chain->SetFullscreenState(TRUE, nullptr);
     }
@@ -210,10 +244,10 @@ size_t ff::dx12::target_window::target_sample_count() const
 
 bool ff::dx12::target_window::size(const ff::window_size& size)
 {
-    return this->internal_size(size, this->buffer_count(), this->frame_latency());
+    return this->internal_size(size);
 }
 
-bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency)
+bool ff::dx12::target_window::internal_size(const ff::window_size& size)
 {
     if (!this->window || !this->window_message_connection)
     {
@@ -221,10 +255,10 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         return false;
     }
 
-    if (this->swap_chain && (this->frame_latency() == 0) != (frame_latency == 0)) // on game thread
+    if (this->swap_chain && (this->frame_latency() == 0) != (this->params.frame_latency == 0)) // on game thread
     {
         // Turn frame latency on/off requires recreating everything
-        if (!this->internal_reset(buffer_count, frame_latency))
+        if (!this->internal_reset())
         {
             ff::dx12::device_fatal_error("Swap chain failed to change frame latency");
             return false;
@@ -237,22 +271,22 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         "Swap chain set size.",
         " Size=", size.logical_pixel_size.x, ",", size.logical_pixel_size.y,
         " Rotate=", size.rotated_degrees(),
-        " Buffers=", buffer_count,
-        " Latency=", frame_latency,
-        " VSync=", this->vsync_);
+        " Buffers=", this->params.buffer_count,
+        " Latency=", this->params.frame_latency,
+        " VSync=", this->vsync());
 
     ff::window_size old_size = this->cached_size;
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
     this->cached_size = size;
     this->before_resize();
 
-    if (this->swap_chain && (old_size != size || this->buffer_count() != buffer_count)) // on game thread
+    if (this->swap_chain && (old_size != size || this->buffer_count() != this->params.buffer_count)) // on game thread
     {
         ff::log::write(ff::log::type::dx12_target, "- Resize existing buffers");
 
         DXGI_SWAP_CHAIN_DESC1 desc;
         if (FAILED(this->swap_chain->GetDesc1(&desc)) || FAILED(this->swap_chain->ResizeBuffers(
-            static_cast<UINT>(buffer_count), buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
+            static_cast<UINT>(this->params.buffer_count), buffer_size.x, buffer_size.y, desc.Format, desc.Flags)))
         {
             ff::dx12::device_fatal_error("Swap chain resize failed");
             return false;
@@ -267,12 +301,12 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         desc.Height = buffer_size.y;
         desc.Format = this->format();
         desc.SampleDesc.Count = 1;
-        desc.BufferCount = static_cast<UINT>(buffer_count);
+        desc.BufferCount = static_cast<UINT>(this->params.buffer_count);
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         desc.Scaling = DXGI_SCALING_NONE;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-        desc.Flags = frame_latency ? DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT : 0;
+        desc.Flags = this->params.frame_latency ? DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT : 0;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain1> new_swap_chain;
         Microsoft::WRL::ComPtr<IDXGIFactory2> factory = ff::dx12::factory();
@@ -301,7 +335,7 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         ff::log::write(ff::log::type::dx12_target, "- Size didn't change");
     }
 
-    if (frame_latency && FAILED(this->swap_chain->SetMaximumFrameLatency(static_cast<UINT>(frame_latency))))
+    if (this->params.frame_latency && FAILED(this->swap_chain->SetMaximumFrameLatency(static_cast<UINT>(this->params.frame_latency))))
     {
         ff::dx12::device_fatal_error("Swap chain failed to set frame latency");
         return false;
@@ -314,10 +348,10 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
     }
 
     this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
-    this->frame_latency_handle = ff::win_handle(frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
-    assert(this->target_textures.empty());
+    this->frame_latency_handle = ff::win_handle(this->params.frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
+    assert(this->target_textures.empty() && this->extra_render_targets.empty());
 
-    for (size_t i = 0; i < buffer_count; i++)
+    for (size_t i = 0; i < this->params.buffer_count; i++)
     {
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
         if (FAILED(this->swap_chain->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(&resource))))
@@ -329,11 +363,23 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size, size_t 
         auto texture_resource = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
         this->target_textures.push_back(std::move(texture_resource));
         this->target_textures.back()->create_target_view(this->target_views.cpu_handle(i));
+
+        if (this->params.extra_render_target)
+        {
+            auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
+            this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
+        }
     }
 
     this->size_changed_.notify(size);
 
     return true;
+}
+
+ff::dxgi::target_base& ff::dx12::target_window::extra_render_target()
+{
+    assert(this->params.extra_render_target);
+    return *this->extra_render_targets[this->back_buffer_index];
 }
 
 ff::signal_sink<ff::window_size>& ff::dx12::target_window::size_changed()
@@ -354,13 +400,15 @@ size_t ff::dx12::target_window::buffer_count() const
 
 void ff::dx12::target_window::buffer_count(size_t value)
 {
-    value = ::fix_buffer_count(value);
-    if (this->buffer_count() != value)
+    this->params.buffer_count = ::fix_buffer_count(value);
+    this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
+
+    if (this->buffer_count() != value || this->frame_latency() != this->params.frame_latency)
     {
         ff::log::write(ff::log::type::dx12_target, "Set swap chain buffer count: ", value);
 
         const ff::window_size size = this->size();
-        this->internal_size(size, value, ::fix_frame_latency(this->frame_latency(), value));
+        this->internal_size(size);
     }
 }
 
@@ -382,35 +430,35 @@ size_t ff::dx12::target_window::frame_latency() const
 
 void ff::dx12::target_window::frame_latency(size_t value)
 {
-    value = ::fix_frame_latency(value, this->buffer_count());
-    if (this->frame_latency() != value)
+    this->params.frame_latency = ::fix_frame_latency(value, this->buffer_count());
+    if (this->frame_latency() != this->params.frame_latency)
     {
-        ff::log::write(ff::log::type::dx12_target, "Set swap chain frame latency: ", value);
+        ff::log::write(ff::log::type::dx12_target, "Set swap chain frame latency: ", this->params.frame_latency);
 
         const ff::window_size size = this->size();
-        this->internal_size(size, this->buffer_count(), value);
+        this->internal_size(size);
     }
 }
 
 bool ff::dx12::target_window::vsync() const
 {
-    return this->vsync_;
+    return this->params.vsync;
 }
 
 void ff::dx12::target_window::vsync(bool value)
 {
     ff::log::write(ff::log::type::dx12_target, "Set swap chain vsync: ", value);
-    this->vsync_ = value;
+    this->params.vsync = value;
 }
 
 bool ff::dx12::target_window::allow_full_screen() const
 {
-    return this->allow_full_screen_;
+    return this->params.allow_full_screen;
 }
 
 bool ff::dx12::target_window::full_screen()
 {
-    if (this->allow_full_screen_ && *this)
+    if (this->allow_full_screen() && *this)
     {
         BOOL full_screen = FALSE;
         Microsoft::WRL::ComPtr<IDXGIOutput> output;
@@ -422,7 +470,7 @@ bool ff::dx12::target_window::full_screen()
 
 bool ff::dx12::target_window::full_screen(bool value)
 {
-    if (this->allow_full_screen_ && *this && !value != !this->full_screen())
+    if (this->allow_full_screen() && *this && !value != !this->full_screen())
     {
         ff::log::write(ff::log::type::dx12_target, "Set swap chain full screen: ", value);
 
@@ -439,11 +487,12 @@ void ff::dx12::target_window::before_reset()
 {
     this->frame_latency_handle.close();
     this->target_textures.clear();
+    this->extra_render_targets.clear();
 }
 
 bool ff::dx12::target_window::reset()
 {
-    return this->internal_reset(this->buffer_count(), this->frame_latency());
+    return this->internal_reset();
 }
 
 void ff::dx12::target_window::handle_message(ff::window_message& msg)
@@ -460,7 +509,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_CLOSE:
-            if (this->allow_full_screen_)
+            if (this->allow_full_screen())
             {
                 ff::thread_dispatch::get_game()->send([this]()
                     {
@@ -475,13 +524,13 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSKEYDOWN:
-            if (this->allow_full_screen_ && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
+            if (this->allow_full_screen() && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
                 ff::dxgi::defer_full_screen(this, !this->full_screen());
                 msg.result = 0;
                 msg.handled = true;
             }
-            else if (this->main_window && msg.wp == VK_BACK)
+            else if (msg.wp == VK_BACK)
             {
                 if constexpr (ff::constants::profile_build)
                 {
@@ -501,7 +550,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSCHAR:
-            if (this->allow_full_screen_ && msg.wp == VK_RETURN)
+            if (this->allow_full_screen() && msg.wp == VK_RETURN)
             {
                 // prevent a 'ding' sound when switching between modes
                 msg.result = 0;
@@ -510,7 +559,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_WINDOWPOSCHANGED:
-            if (this->allow_full_screen_)
+            if (this->allow_full_screen())
             {
                 const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
                 if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))

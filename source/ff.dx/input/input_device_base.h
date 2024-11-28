@@ -11,8 +11,17 @@ namespace ff
     public:
         virtual void advance() = 0;
         virtual void kill_pending() = 0;
-        virtual bool connected() const = 0;
-        virtual ff::signal_sink<const ff::input_device_event&>& event_sink() = 0;
-        virtual void notify_main_window_message(ff::window_message& message) = 0;
+        virtual void block_events(bool block); // not reference counted
+        virtual bool connected() const;
+        virtual ff::signal_sink<const ff::input_device_event&>& event_sink();
+        virtual void notify_main_window_message(ff::window_message& message);
+
+    protected:
+        bool block_events() const;
+
+        ff::signal<const ff::input_device_event&> device_event;
+
+    private:
+        bool block_events_{};
     };
 }

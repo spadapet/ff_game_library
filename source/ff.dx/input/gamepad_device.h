@@ -36,8 +36,6 @@ namespace ff
         virtual void advance() override;
         virtual void kill_pending() override;
         virtual bool connected() const override;
-        virtual ff::signal_sink<const ff::input_device_event&>& event_sink() override;
-        virtual void notify_main_window_message(ff::window_message& message) override;
 
     private:
         static const int VK_GAMEPAD_FIRST = VK_GAMEPAD_A;
@@ -60,11 +58,10 @@ namespace ff
         void update_press_count(size_t index);
 
         std::mutex mutex;
-        gamepad_type gamepad_;
-        ff::signal<const ff::input_device_event&> device_event;
-        state_t state;
-        state_t pending_state;
-        int check_connected;
-        bool connected_;
+        gamepad_type gamepad_{};
+        state_t state{};
+        state_t pending_state{};
+        int check_connected{};
+        bool connected_{ true };
     };
 }

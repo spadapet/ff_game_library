@@ -4,6 +4,15 @@
 
 namespace ff::dxgi
 {
+    struct target_window_params
+    {
+        size_t buffer_count{ 2 };
+        size_t frame_latency{ 1 };
+        bool vsync{ true };
+        bool allow_full_screen{ true };
+        bool extra_render_target{ true };
+    };
+
     class target_window_base : public ff::dxgi::target_base
     {
     public:

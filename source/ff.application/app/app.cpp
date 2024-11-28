@@ -216,33 +216,18 @@ static void init_game_thread()
 
     if (::game_state)
     {
-        if (::app_params.game_thread_started_func)
-        {
-            ::app_params.game_thread_started_func();
-        }
-
+        ::app_params.game_thread_started_func();
         return;
     }
 
-    if (::app_params.register_resources_func)
-    {
-        ::app_params.register_resources_func();
-    }
-
-    if (::app_params.game_thread_started_func)
-    {
-        ::app_params.game_thread_started_func();
-    }
+    ::app_params.register_resources_func();
+    ::app_params.game_thread_started_func();
 
     std::vector<std::shared_ptr<ff::state>> states;
-
-    if (::app_params.create_initial_state_func)
+    auto initial_state = ::app_params.create_initial_state_func();
+    if (initial_state)
     {
-        auto initial_state = ::app_params.create_initial_state_func();
-        if (initial_state)
-        {
-            states.push_back(initial_state);
-        }
+        states.push_back(initial_state);
     }
 
     if constexpr (ff::constants::profile_build)
@@ -258,11 +243,7 @@ static void destroy_game_thread()
     ff::internal::app::request_save_settings();
     ff::dxgi::trim_device();
     ::game_state.reset();
-
-    if (::app_params.game_thread_finished_func)
-    {
-        ::app_params.game_thread_finished_func();
-    }
+    ::app_params.game_thread_finished_func();
 
     ff::global_resources::destroy_game_thread();
     ff::thread_pool::flush();
@@ -435,13 +416,6 @@ static void handle_window_message(ff::window_message& message)
     }
 }
 
-static std::filesystem::path log_file_path()
-{
-    std::ostringstream name;
-    name << "log_" << ff::constants::bits_build << ".txt";
-    return ff::app_local_path() / name.str();
-}
-
 static void init_app_name()
 {
     if (::app_product_name.empty())
@@ -493,6 +467,13 @@ static void init_app_name()
     }
 }
 
+static std::filesystem::path log_file_path()
+{
+    std::ostringstream name;
+    name << "log_" << ff::constants::bits_build << ".txt";
+    return ff::app_local_path() / name.str();
+}
+
 static void init_log()
 {
     std::filesystem::path path = ::log_file_path();
@@ -538,26 +519,11 @@ static void init_window()
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
     ::app_params = params;
-    if (!::app_params.get_advance_type_func)
-    {
-        ::app_params.get_advance_type_func = []() { return ff::state::advance_t::running; };
-    }
-
-    if (!::app_params.get_clear_color_func)
-    {
-        ::app_params.get_clear_color_func = [](DirectX::XMFLOAT4&) { return false; };
-    }
-
-    if (!::app_params.get_time_scale_func)
-    {
-        ::app_params.get_time_scale_func = []() { return 1.0; };
-    }
-
     ::init_app_name();
     ::init_log();
     ::app_time = ff::app_time_t{};
     ::window_message_connection = ff::window::main()->message_sink().connect(::handle_window_message);
-    ::target = ff::dxgi::create_target_for_window(ff::window::main(), params.buffer_count, params.frame_latency, params.vsync, params.allow_full_screen);
+    ::target = ff::dxgi::create_target_for_window(ff::window::main(), params.target_window);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     ff::data_reader assets_reader(::assets::app::data());

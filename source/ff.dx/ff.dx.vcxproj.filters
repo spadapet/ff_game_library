@@ -231,6 +231,9 @@
     <ClCompile Include="write\font_file.cpp">
       <Filter>write</Filter>
     </ClCompile>
+    <ClCompile Include="input\input_device_base.cpp">
+      <Filter>input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -63,3 +63,28 @@ ff::init_app::operator bool() const
 {
     return ::init_app_data && ::init_app_data->valid();
 }
+
+void ff::init_app_params::default_empty()
+{
+    // yep, it's empty
+}
+
+std::shared_ptr<ff::state> ff::init_app_params::default_create_initial_state()
+{
+    return {};
+}
+
+double ff::init_app_params::default_get_time_scale()
+{
+    return 1.0;
+}
+
+ff::state::advance_t ff::init_app_params::default_get_advance_type()
+{
+    return ff::state::advance_t::running;
+}
+
+bool ff::init_app_params::default_get_clear_color(DirectX::XMFLOAT4&)
+{
+    return false;
+}

@@ -101,6 +101,7 @@ namespace ff::dx12
 
         void clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color);
         void discard(ff::dxgi::target_base& target);
+        void discard_target(ff::dx12::resource& resource);
 
         void update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, ff::dx12::mem_range& source);
         void readback_buffer(ff::dx12::mem_range& dest, ff::dx12::resource& source, uint64_t source_offset);

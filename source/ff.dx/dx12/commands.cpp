@@ -422,8 +422,13 @@ void ff::dx12::commands::clear(ff::dxgi::target_base& target, const DirectX::XMF
 void ff::dx12::commands::discard(ff::dxgi::target_base& target)
 {
     ff::dx12::target_access& access = ff::dx12::target_access::get(target);
-    this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    this->list()->DiscardResource(ff::dx12::get_resource(access.dx12_target_texture()), nullptr);
+    this->discard_target(access.dx12_target_texture());
+}
+
+void ff::dx12::commands::discard_target(ff::dx12::resource& resource)
+{
+    this->resource_state(resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    this->list()->DiscardResource(ff::dx12::get_resource(resource), nullptr);
 }
 
 void ff::dx12::commands::update_buffer(ff::dx12::resource& dest, uint64_t dest_offset, ff::dx12::mem_range& source)

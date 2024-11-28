@@ -44,7 +44,7 @@ ff::render_target::render_target(ff::point_size size, const DirectX::XMFLOAT4* c
 {}
 
 ff::render_targets::render_targets(const std::shared_ptr<ff::dxgi::target_base>& default_target)
-    : default_target(default_target)
+    : default_target_(default_target)
 {}
 
 void ff::render_targets::push(ff::render_target& entry)
@@ -134,6 +134,17 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
     return target_rect;
 }
 
+const std::shared_ptr<ff::dxgi::target_base>& ff::render_targets::default_target() const
+{
+    return this->default_target_;
+}
+
+void ff::render_targets::default_target(const std::shared_ptr<ff::dxgi::target_base>& value)
+{
+    assert(value);
+    this->default_target_ = value;
+}
+
 ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base& context, ff::render_target_type type)
 {
     if (!this->entry_stack.empty())
@@ -167,14 +178,14 @@ ff::dxgi::target_base& ff::render_targets::target(ff::dxgi::command_context_base
         return *entry.targets[index];
     }
 
-    return *this->default_target;
+    return *this->default_target_;
 }
 
 ff::dxgi::depth_base& ff::render_targets::depth(ff::dxgi::command_context_base& context)
 {
     ff::point_size size = !this->entry_stack.empty()
         ? this->entry_stack.back()->size
-        : this->default_target->size().physical_pixel_size();
+        : this->default_target_->size().physical_pixel_size();
 
     if (!this->depth_)
     {

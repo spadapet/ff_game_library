@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Microsoft.Direct3D.D3D12.1.614.1\build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('..\..\packages\Microsoft.Direct3D.D3D12.1.614.1\build\native\Microsoft.Direct3D.D3D12.props')" />
   <PropertyGroup Label="Globals">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <ProjectGuid>{0580ed07-bb8f-472a-94fc-e0ee4a79421d}</ProjectGuid>
@@ -61,6 +60,7 @@
     <ClCompile Include="graphics\texture_resource.cpp" />
     <ClCompile Include="graphics\texture_metadata.cpp" />
     <ClCompile Include="graphics\texture_data.cpp" />
+    <ClCompile Include="input\input_device_base.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

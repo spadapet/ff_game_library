@@ -64,7 +64,7 @@ namespace ff::dx12
         std::unique_ptr<ff::dx12::resource> resource_;
         mutable ff::dx12::descriptor_range view_;
         std::shared_ptr<DirectX::ScratchImage> data_;
-        ff::dxgi::sprite_type sprite_type_;
-        bool upload_data_pending;
+        ff::dxgi::sprite_type sprite_type_{ ff::dxgi::sprite_type::unknown };
+        bool upload_data_pending{};
     };
 }

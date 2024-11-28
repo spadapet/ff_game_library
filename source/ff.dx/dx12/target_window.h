@@ -11,7 +11,7 @@ namespace ff::dx12
     class target_window : public ff::dxgi::target_window_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {
     public:
-        target_window(ff::window* window, size_t buffer_count, size_t frame_latency, bool vsync, bool allow_full_screen);
+        target_window(ff::window* window, const ff::dxgi::target_window_params& params);
         target_window(target_window&& other) noexcept = delete;
         target_window(const target_window& other) = delete;
         virtual ~target_window() override;
@@ -57,8 +57,9 @@ namespace ff::dx12
 
         void handle_message(ff::window_message& msg);
         void before_resize();
-        bool internal_reset(size_t buffer_count, size_t frame_latency);
-        bool internal_size(const ff::window_size& size, size_t buffer_count, size_t frame_latency);
+        bool internal_reset();
+        bool internal_size(const ff::window_size& size);
+        ff::dxgi::target_base& extra_render_target();
 
         ff::window* window{};
         ff::window_size cached_size{};
@@ -69,12 +70,10 @@ namespace ff::dx12
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
 
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
+        std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;
+        ff::dxgi::target_window_params params;
         size_t back_buffer_index{};
-
-        bool main_window{};
-        bool allow_full_screen_{};
         bool was_full_screen_on_close{};
-        bool vsync_{ true };
     };
 }

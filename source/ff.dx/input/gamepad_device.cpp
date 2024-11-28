@@ -20,10 +20,6 @@ static float analog_short_to_float(int16_t value)
 
 ff::gamepad_device::gamepad_device(gamepad_type gamepad)
     : gamepad_(gamepad)
-    , state{}
-    , pending_state{}
-    , check_connected(0)
-    , connected_(true)
 {
     ff::internal::input::add_device(this);
 }
@@ -95,18 +91,15 @@ bool ff::gamepad_device::connected() const
     return this->connected_;
 }
 
-ff::signal_sink<const ff::input_device_event&>& ff::gamepad_device::event_sink()
-{
-    return this->device_event;
-}
-
-void ff::gamepad_device::notify_main_window_message(ff::window_message& message)
-{}
-
 bool ff::gamepad_device::poll(reading_t& reading)
 {
-    XINPUT_STATE gs;
+    if (this->block_events())
+    {
+        // pretend that there was an empty reading
+        return true;
+    }
 
+    XINPUT_STATE gs;
     DWORD status = ::XInputGetState(static_cast<DWORD>(this->gamepad_), &gs);
     if (status == ERROR_SUCCESS)
     {
