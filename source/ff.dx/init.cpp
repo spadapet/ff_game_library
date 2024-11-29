@@ -26,8 +26,7 @@ namespace
         one_time_init_dx()
         {
             const ff::init_window_params window_params{};
-            this->init_base.init_main_window(window_params);
-            assert_ret(this->init_base);
+            ff::window* window = this->init_base.init_main_window(window_params);
 
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::animation_factory>("animation");
@@ -45,7 +44,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
             this->init_audio_status = ff::internal::audio::init();
-            this->init_input_status = ff::internal::input::init();
+            this->init_input_status = ff::internal::input::init(window);
             this->init_dxgi_status = ff::internal::dxgi::init();
             this->init_write_status = ff::internal::write::init();
         }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "dx12/access.h"
+#include "dx12/commands.h"
 #include "dx12/descriptor_allocator.h"
 #include "dx12/fence.h"
 #include "dx12/heap.h"
@@ -7,6 +8,11 @@
 #include "dx12/resource.h"
 #include "dxgi/target_base.h"
 #include "dxgi/texture_view_base.h"
+
+ID3D12GraphicsCommandList* ff::dx12::get_command_list(const ff::dx12::commands& obj)
+{
+    return obj.list(false);
+}
 
 ID3D12CommandQueue* ff::dx12::get_command_queue(const ff::dx12::queue& obj)
 {

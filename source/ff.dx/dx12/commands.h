@@ -113,6 +113,8 @@ namespace ff::dx12
         void copy_texture(ff::dx12::resource& dest, size_t dest_sub_index, ff::point_size dest_pos, ff::dx12::resource& source, size_t source_sub_index, ff::rect_size source_rect);
 
     private:
+        friend ID3D12GraphicsCommandList* get_command_list(const ff::dx12::commands& obj);
+
         ID3D12GraphicsCommandList1* list(bool flush_resource_state = true) const;
         ff::dx12::resource_tracker* tracker() const;
         void keep_resident(ff::dx12::residency_access& access);

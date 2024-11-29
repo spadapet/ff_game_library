@@ -85,7 +85,7 @@ namespace
             return this->device_event;
         }
 
-        virtual void notify_main_window_message(ff::window_message& message) override
+        virtual void notify_window_message(ff::window_message& message) override
         {
             switch (message.msg)
             {
@@ -97,7 +97,7 @@ namespace
 
             for (auto& pair : ::all_devices)
             {
-                pair.first->notify_main_window_message(message);
+                pair.first->notify_window_message(message);
             }
         }
 
@@ -112,16 +112,16 @@ static std::vector<std::unique_ptr<ff::gamepad_device>> gamepads;
 static std::vector<ff::signal_connection> main_window_connections;
 constexpr size_t MIN_GAMEPADS = 4;
 
-bool ff::internal::input::init()
+bool ff::internal::input::init(ff::window* window)
 {
     ::combined_devices_ = std::make_unique<::combined_input_devices>();
     ::keyboard = std::make_unique<ff::keyboard_device>();
     ::pointer = std::make_unique<ff::pointer_device>();
-    ::main_window_connections.emplace_back(ff::window::main()->message_sink().connect(std::bind(&::combined_input_devices::notify_main_window_message, ::combined_devices_.get(), std::placeholders::_1)));
+    ::main_window_connections.emplace_back(window->message_sink().connect(std::bind(&::combined_input_devices::notify_window_message, ::combined_devices_.get(), std::placeholders::_1)));
 
     for (size_t i = 0; i < ::MIN_GAMEPADS; i++)
     {
-        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(i));
+        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(window, i));
     }
 
     return true;

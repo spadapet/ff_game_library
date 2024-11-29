@@ -143,7 +143,7 @@ ff::pointer_device::internal_touch_info::internal_touch_info()
     : info{}
 {}
 
-void ff::pointer_device::notify_main_window_message(ff::window_message& message)
+void ff::pointer_device::notify_window_message(ff::window_message& message)
 {
     if (this->block_events())
     {

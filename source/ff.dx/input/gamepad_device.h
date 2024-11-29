@@ -21,7 +21,7 @@ namespace ff
     {
     public:
         using gamepad_type = typename size_t;
-        gamepad_device(gamepad_type gamepad);
+        gamepad_device(ff::window* window, gamepad_type gamepad);
         virtual ~gamepad_device() override;
 
         gamepad_type gamepad() const;
@@ -36,6 +36,7 @@ namespace ff
         virtual void advance() override;
         virtual void kill_pending() override;
         virtual bool connected() const override;
+        virtual void notify_window_message(ff::window_message& message) override;
 
     private:
         static const int VK_GAMEPAD_FIRST = VK_GAMEPAD_A;
@@ -58,6 +59,7 @@ namespace ff
         void update_press_count(size_t index);
 
         std::mutex mutex;
+        ff::window* window{};
         gamepad_type gamepad_{};
         state_t state{};
         state_t pending_state{};

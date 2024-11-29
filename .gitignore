@@ -16,3 +16,4 @@ TestResults/
 *.suo
 *.user
 *.vspscc
+imgui.ini

@@ -44,12 +44,11 @@ static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
 }
 
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
-    : window(window ? window : ff::window::main())
+    : window(window)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , params(params)
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
-    this->params.allow_full_screen = this->params.allow_full_screen && (window == ff::window::main());
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
     this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
 
@@ -155,7 +154,6 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
             ff::dx12::resource& extra_resource = ff::dx12::target_access::get(extra_target).dx12_target_texture();
             new_commands = queue.new_commands();
             present_commands = new_commands.get();
-            present_commands->discard_target(back_buffer_resource);
             present_commands->copy_resource(back_buffer_resource, extra_resource);
         }
 
@@ -165,10 +163,10 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
             this->frame_latency_handle.wait(INFINITE, false);
         }
 
-        ff::perf_timer timer(::perf_render_present);
         present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
         queue.execute(*present_commands);
 
+        ff::perf_timer timer(::perf_render_present);
         HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
         if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
         {

@@ -18,8 +18,9 @@ static float analog_short_to_float(int16_t value)
     return value / ((value < 0) * 32768.0f + (value >= 0) * 32767.0f);
 }
 
-ff::gamepad_device::gamepad_device(gamepad_type gamepad)
-    : gamepad_(gamepad)
+ff::gamepad_device::gamepad_device(ff::window* window, gamepad_type gamepad)
+    : window(window)
+    , gamepad_(gamepad)
 {
     ff::internal::input::add_device(this);
 }
@@ -89,6 +90,16 @@ void ff::gamepad_device::kill_pending()
 bool ff::gamepad_device::connected() const
 {
     return this->connected_;
+}
+
+void ff::gamepad_device::notify_window_message(ff::window_message& message)
+{
+    switch (message.msg)
+    {
+        case WM_DESTROY:
+            this->window = nullptr;
+            break;
+    }
 }
 
 bool ff::gamepad_device::poll(reading_t& reading)
@@ -186,7 +197,7 @@ void ff::gamepad_device::update_press_count(size_t index)
         device_event = ff::input_device_event_key_press(vk, 0);
     }
 
-    if (device_event.type != ff::input_device_event_type::none && ff::window::main()->focused())
+    if (device_event.type != ff::input_device_event_type::none && this->window && this->window->focused())
     {
         this->device_event.notify(device_event);
 
