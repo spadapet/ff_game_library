@@ -5,51 +5,9 @@
 
 using namespace std::string_view_literals;
 
-constexpr size_t CHART_WIDTH = 125;
-constexpr uint32_t CHART_WIDTH_U = static_cast<uint32_t>(::CHART_WIDTH);
-constexpr uint16_t CHART_WIDTH_U16 = static_cast<uint16_t>(::CHART_WIDTH);
-constexpr float CHART_WIDTH_F = static_cast<float>(::CHART_WIDTH);
-constexpr float CHART_HEIGHT_F = 64.0f;
 static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
-static std::string_view NONE_NAME = "None"sv;
-static ff::internal::debug_view_model* global_debug_view_model{};
 static ff::signal<> custom_debug_signal;
-
-ff::internal::debug_page_model::debug_page_model()
-    : ff::internal::debug_page_model(""sv, []() { return std::make_shared<ff::state>(); })
-{}
-
-ff::internal::debug_page_model::debug_page_model(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
-    : name_(name)
-    , factory(std::move(factory))
-{}
-
-std::string_view ff::internal::debug_page_model::name() const
-{
-    return this->is_none() ? ::NONE_NAME : this->name_;
-}
-
-const char* ff::internal::debug_page_model::name_cstr() const
-{
-    return this->name_.c_str();
-}
-
-ff::state* ff::internal::debug_page_model::state()
-{
-    if (!this->state_ && this->factory)
-    {
-        std::function<std::shared_ptr<ff::state>()> factory = std::move(this->factory);
-        this->state_ = factory();
-    }
-
-    return this->state_.get();
-}
-
-bool ff::internal::debug_page_model::is_none() const
-{
-    return this->name_.empty();
-}
 
 ff::internal::debug_timer_model::debug_timer_model(const ff::perf_results& results, const ff::perf_results::counter_info& info)
     : ff::internal::debug_timer_model::debug_timer_model()
@@ -102,53 +60,24 @@ double ff::internal::debug_timer_model::time_ms() const
     return this->time_ms_;
 }
 
-int ff::internal::debug_timer_model::level() const
+size_t ff::internal::debug_timer_model::level() const
 {
-    return static_cast<int>(this->info_.level);
+    return this->info_.level;
 }
 
-int ff::internal::debug_timer_model::hit_total() const
+size_t ff::internal::debug_timer_model::hit_total() const
 {
-    return static_cast<int>(this->info_.hit_total);
+    return this->info_.hit_total;
 }
 
-int ff::internal::debug_timer_model::hit_last_frame() const
+size_t ff::internal::debug_timer_model::hit_last_frame() const
 {
-    return static_cast<int>(this->info_.hit_last_frame);
+    return this->info_.hit_last_frame;
 }
 
-int ff::internal::debug_timer_model::hit_per_second() const
+size_t ff::internal::debug_timer_model::hit_per_second() const
 {
-    return static_cast<int>(this->info_.hit_per_second);
-}
-
-ff::internal::debug_view_model::debug_view_model()
-    : pages_(1) // the "none" page
-{
-    assert(!::global_debug_view_model);
-    ::global_debug_view_model = this;
-}
-
-ff::internal::debug_view_model::~debug_view_model()
-{
-    assert(::global_debug_view_model == this);
-    ::global_debug_view_model = nullptr;
-}
-
-ff::internal::debug_view_model* ff::internal::debug_view_model::get()
-{
-    assert(::global_debug_view_model);
-    return ::global_debug_view_model;
-}
-
-bool ff::internal::debug_view_model::dock_right() const
-{
-    return this->dock_right_;
-}
-
-void ff::internal::debug_view_model::dock_right(bool value)
-{
-    this->dock_right_ = value;
+    return this->info_.hit_per_second;
 }
 
 double ff::internal::debug_view_model::advance_seconds() const
@@ -199,16 +128,6 @@ bool ff::internal::debug_view_model::debug_visible() const
 void ff::internal::debug_view_model::debug_visible(bool value)
 {
     this->debug_visible_ = value;
-}
-
-bool ff::internal::debug_view_model::page_picker_visible() const
-{
-    return this->page_picker_visible_;
-}
-
-void ff::internal::debug_view_model::page_picker_visible(bool value)
-{
-    this->page_picker_visible_ = value;
 }
 
 bool ff::internal::debug_view_model::timers_visible() const
@@ -265,56 +184,6 @@ void ff::internal::debug_view_model::stopped_visible(bool value)
 bool ff::internal::debug_view_model::building_resources() const
 {
     return ff::global_resources::is_rebuilding();
-}
-
-bool ff::internal::debug_view_model::has_pages() const
-{
-    return !this->pages_.empty();
-}
-
-bool ff::internal::debug_view_model::page_visible() const
-{
-    ff::internal::debug_page_model* page = this->page(this->selected_page());
-    return page && !page->is_none() && page->state();
-}
-
-size_t ff::internal::debug_view_model::page_count() const
-{
-    return this->pages_.size();
-}
-
-ff::internal::debug_page_model* ff::internal::debug_view_model::page(size_t index) const
-{
-    return index < this->pages_.size() ? const_cast<ff::internal::debug_page_model*>(&this->pages_[index]) : nullptr;
-}
-
-size_t ff::internal::debug_view_model::selected_page() const
-{
-    return this->selected_page_;
-}
-
-void ff::internal::debug_view_model::selected_page(size_t index)
-{
-    index = index >= this->pages_.size() ? 0 : index;
-    this->selected_page_ = index;
-
-    if (this->page(this->selected_page())->is_none())
-    {
-        this->debug_visible(false);
-    }
-}
-
-void ff::internal::debug_view_model::add_page(ff::internal::debug_page_model&& page)
-{
-    this->pages_.emplace_back(std::move(page));
-}
-
-void ff::internal::debug_view_model::remove_page(size_t index)
-{
-    if (index < this->pages_.size())
-    {
-        this->pages_.erase(this->pages_.begin() + index);
-    }
 }
 
 size_t ff::internal::debug_view_model::timer_count() const
@@ -416,6 +285,21 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
 #endif
 }
 
+const float* ff::internal::debug_view_model::chart_total() const
+{
+    return this->chart_total_.data();
+}
+
+const float* ff::internal::debug_view_model::chart_render() const
+{
+    return this->chart_render_.data();
+}
+
+const float* ff::internal::debug_view_model::chart_wait() const
+{
+    return this->chart_wait_.data();
+}
+
 ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping(ff::internal::app::app_resources().get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
@@ -476,103 +360,97 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
     vm->frame_start_counter(vm->frame_start_counter() + 1); // after UI updates
 }
 
-size_t ff::internal::debug_state::child_state_count()
+void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
-    return
-        static_cast<size_t>(this->view_model.debug_visible() && this->debug_view_state.get()) +
-        static_cast<size_t>(this->view_model.stopped_visible() && this->stopped_view_state.get()) +
-        static_cast<size_t>(this->view_model.page_visible() && this->view_model.page(this->view_model.selected_page())->state());
-}
-
-ff::state* ff::internal::debug_state::child_state(size_t index)
-{
-    switch (index)
+    bool debug_visible = this->view_model.debug_visible();
+    if (debug_visible)
     {
-        case 1:
-            if (this->view_model.stopped_visible() && this->view_model.page_visible())
-            {
-                return this->view_model.page(this->view_model.selected_page())->state();
-            }
-            break;
+        const float dpiScale = ImGui::GetIO().FontGlobalScale;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-        case 0:
-            if (this->view_model.stopped_visible())
-            {
-                return this->stopped_view_state.get();
-            }
-
-            if (this->view_model.page_visible())
-            {
-                return this->view_model.page(this->view_model.selected_page())->state();
-            }
-            break;
-    }
-
-    return this->debug_view_state.get();
-}
-
-void ff::add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory)
-{
-    if constexpr (ff::constants::profile_build)
-    {
-        ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
-        assert_ret(vm && name.size() && name != ::NONE_NAME);
-
-        for (size_t i = 0; i < vm->page_count(); i++)
+        std::string title = ff::string::concat(this->view_model.frames_per_second(), "hz #", this->view_model.frame_count(), " - Debug###Debug");
+        ImGui::SetNextWindowSize(ImVec2(200 * dpiScale, 0));
+        if (ImGui::Begin(title.c_str(), &debug_visible, ImGuiWindowFlags_NoFocusOnAppearing))
         {
-            assert_msg_ret(vm->page(i)->name() != name, "Debug page already added");
+            ImGui::SetNextItemOpen(this->view_model.chart_visible());
+            if (ImGui::CollapsingHeader("Chart"))
+            {
+                this->view_model.chart_visible(true);
+            }
+            else
+            {
+                this->view_model.chart_visible(false);
+            }
+
+            ImGui::SetNextItemOpen(this->view_model.timers_visible());
+            if (ImGui::CollapsingHeader("Counters"))
+            {
+                this->view_model.timers_visible(true);
+                int speed = static_cast<int>(this->view_model.timer_update_speed());
+
+                if (ImGui::Button(this->view_model.timers_updating() ? "Pause##CountersUpdating" : "Play ##CountersUpdating"))
+                {
+                    this->view_model.timers_updating(!this->view_model.timers_updating());
+                }
+
+                ImGui::SameLine();
+                if (ImGui::SliderInt("##CountersSpeed", &speed, 1, 60, "Skip:%d"))
+                {
+                    this->view_model.timer_update_speed(static_cast<size_t>(speed));
+                }
+
+                if (ImGui::BeginTable("##CountersTable", 3,
+                    ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_Borders |
+                    ImGuiTableFlags_Resizable))
+                {
+                    ImGui::TableSetupColumn("Counter", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("ms", ImGuiTableColumnFlags_WidthFixed, 45);
+                    ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30);
+                    ImGui::TableHeadersRow();
+
+                    for (size_t i = 0; i < this->view_model.timer_count(); i++)
+                    {
+                        ff::internal::debug_timer_model* timer = this->view_model.timer(i);
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+
+                        float indent = timer->level() * 4 * dpiScale;
+                        if (indent)
+                        {
+                            ImGui::Indent(indent);
+                        }
+
+                        const DirectX::XMFLOAT4 color = timer->color();
+                        ImGui::TextColored(*reinterpret_cast<const ImVec4*>(&color), "%s", timer->name_cstr());
+
+                        if (indent)
+                        {
+                            ImGui::Unindent(indent);
+                        }
+
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%.1f", timer->time_ms());
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%lu", timer->hit_last_frame());
+                    }
+
+                    ImGui::EndTable();
+                }
+            }
+            else
+            {
+                this->view_model.timers_visible(false);
+            }
         }
 
-        vm->add_page(ff::internal::debug_page_model(name, std::move(factory)));
+        ImGui::End();
+        ImGui::PopStyleVar();
+
+        this->view_model.debug_visible(debug_visible);
     }
-}
 
-void ff::remove_debug_page(std::string_view name)
-{
-    if constexpr (ff::constants::profile_build)
-    {
-        ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
-        assert_ret(vm && name.size() && name != ::NONE_NAME);
-
-        for (size_t i = 0; i < vm->page_count(); i++)
-        {
-            if (vm->page(i)->name() == name)
-            {
-                vm->remove_page(i);
-                break;
-            }
-        }
-    }
-}
-
-void ff::show_debug_page(std::string_view name)
-{
-    name = name.empty() ? ::NONE_NAME : name;
-
-    if constexpr (ff::constants::profile_build)
-    {
-        ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
-        assert_ret(vm);
-
-        for (size_t i = 0; i < vm->page_count(); i++)
-        {
-            if (vm->page(i)->name() == name)
-            {
-                vm->selected_page(i);
-                break;
-            }
-        }
-    }
-}
-
-void ff::debug_visible(bool value)
-{
-    if constexpr (ff::constants::profile_build)
-    {
-        ff::internal::debug_view_model* vm = ff::internal::debug_view_model::get();
-        assert_ret(vm);
-        vm->debug_visible(value);
-    }
+    ff::state::frame_rendered(type, context, targets);
 }
 
 ff::signal_sink<>& ff::custom_debug_sink()

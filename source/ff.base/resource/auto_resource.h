@@ -72,6 +72,11 @@ namespace ff
             return *this;
         }
 
+        void reset()
+        {
+            *this = ff::auto_resource_value();
+        }
+
         const std::shared_ptr<T>& object()
         {
             std::shared_ptr<ff::resource> resource = this->latest_resource();

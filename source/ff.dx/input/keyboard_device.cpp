@@ -32,9 +32,12 @@ void ff::keyboard_device::advance()
 {
     std::scoped_lock lock(this->mutex);
 
-    this->state.pressing = this->pending_state.pressing;
-    this->state.press_count = this->pending_state.press_count;
-    this->state.text = std::move(this->pending_state.text);
+    if (!this->block_events())
+    {
+        this->state.pressing = this->pending_state.pressing;
+        this->state.press_count = this->pending_state.press_count;
+        this->state.text = std::move(this->pending_state.text);
+    }
 
     std::memset(this->pending_state.press_count.data(), 0, this->pending_state.press_count.size());
 }

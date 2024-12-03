@@ -5,9 +5,6 @@
     <ClCompile Include="source\main.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="source\test_input_devices.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="source\test_app.cpp">
       <Filter>source</Filter>
     </ClCompile>

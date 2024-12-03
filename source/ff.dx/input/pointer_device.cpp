@@ -85,13 +85,16 @@ void ff::pointer_device::advance()
 {
     std::scoped_lock lock(this->mutex);
 
-    for (internal_touch_info& info : this->pending_touches)
+    if (!this->block_events())
     {
-        info.info.counter++;
-    }
+        for (internal_touch_info& info : this->pending_touches)
+        {
+            info.info.counter++;
+        }
 
-    this->mouse = this->pending_mouse;
-    this->touches = this->pending_touches;
+        this->mouse = this->pending_mouse;
+        this->touches = this->pending_touches;
+    }
 
     this->pending_mouse.pos_relative = ff::point_double{};
     this->pending_mouse.wheel_scroll = ff::point_double{};

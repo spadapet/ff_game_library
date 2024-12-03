@@ -77,14 +77,17 @@ const DirectX::Image& ff::dx12::resource::readback_texture_data::image(size_t in
     return this->mem_ranges[index].second;
 }
 
+// For placed resources
 ff::dx12::resource::resource(std::string_view name, std::shared_ptr<ff::dx12::mem_range> mem_range, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
     : resource(name, desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, mem_range, true)
 {}
 
+// For committed resources
 ff::dx12::resource::resource(std::string_view name, const D3D12_RESOURCE_DESC& desc, D3D12_CLEAR_VALUE optimized_clear_value)
     : resource(name, desc, D3D12_RESOURCE_STATE_COMMON, optimized_clear_value, {}, false)
 {}
 
+// For swap chain resources
 ff::dx12::resource::resource(std::string_view name, ID3D12Resource* swap_chain_resource)
     : name_(name)
     , desc_(swap_chain_resource->GetDesc())
@@ -97,6 +100,8 @@ ff::dx12::resource::resource(std::string_view name, ID3D12Resource* swap_chain_r
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::resource);
 }
 
+// Placed resource if allocate_mem_range is true. If so, then mem_range is used if it's large enough, otherwise a new one is allocated.
+// Committed resource if allocate_mem_range is false. If so, then mem_range is ignored.
 ff::dx12::resource::resource(
     std::string_view name,
     const D3D12_RESOURCE_DESC& desc,
@@ -113,18 +118,13 @@ ff::dx12::resource::resource(
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && desc.MipLevels * desc.DepthOrArraySize > 0);
 
-    bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
-    if (target && this->optimized_clear_value_.Format == DXGI_FORMAT_UNKNOWN)
-    {
-        this->optimized_clear_value_ = { desc.Format };
-    }
-
     if (allocate_mem_range)
     {
         D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &this->desc_);
         if (!mem_range || mem_range->size() < alloc_info.SizeInBytes)
         {
-            bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+            const bool buffer = (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER);
+            const bool target = (desc.Flags & (D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)) != 0;
             ff::dx12::mem_allocator& allocator = buffer ? ff::dx12::static_buffer_allocator() : (target ? ff::dx12::target_allocator() : ff::dx12::texture_allocator());
             this->mem_range_ = std::make_shared<ff::dx12::mem_range>(allocator.alloc_bytes(alloc_info.SizeInBytes, alloc_info.Alignment));
         }

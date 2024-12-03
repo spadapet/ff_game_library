@@ -8,6 +8,7 @@
 #include "dx12/queue.h"
 #include "dxgi/interop.h"
 #include "types/color.h"
+#include "types/operators.h"
 
 static const size_t MIN_BUFFER_COUNT = 2;
 static const size_t MAX_BUFFER_COUNT = 4;
@@ -120,6 +121,7 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
         ff::dxgi::target_base& target = this->params.extra_render_target ? this->extra_render_target() : *this;
         if (clear_color)
         {
+            assert_msg(*clear_color == ff::color_black(), "Swap chain render targets must be cleared to black");
             target.clear(context, *clear_color);
         }
         else

@@ -5,18 +5,9 @@ template<class StateT>
 static void run_app()
 {
     ff::init_app_params app_params{};
-    DirectX::XMFLOAT4 clear_color(0, 0.125, 0, 1);
-
     app_params.create_initial_state_func = []()
         {
             return std::make_shared<StateT>();
-        };
-
-    app_params.get_clear_color_func = [&clear_color](DirectX::XMFLOAT4& color)
-        {
-            clear_color.y = std::fmod(clear_color.y + 1.0f / 512.0f, 1.0f);
-            color = clear_color;
-            return true;
         };
 
     ff::init_app init_app(app_params);
@@ -61,6 +52,68 @@ static int show_wait_dialog()
 
 namespace
 {
+    class test_app_state : public ff::state
+    {
+    public:
+        test_app_state()
+        {
+            this->input_connection = ff::input::combined_devices().event_sink().connect([this](const ff::input_device_event& event)
+            {
+                std::scoped_lock lock(this->input_mutex);
+                bool ignore = (event.type == ff::input_device_event_type::mouse_move ||
+                    event.type == ff::input_device_event_type::touch_move) &&
+                    event.type == this->last_input_event.type;
+
+                if (!ignore)
+                {
+                    std::string_view name = "<invalid>";
+
+                    switch (event.type)
+                    {
+                        case ff::input_device_event_type::key_char: name = "key_char"; break;
+                        case ff::input_device_event_type::key_press: name = "key_press"; break;
+                        case ff::input_device_event_type::mouse_move: name = "mouse_move"; break;
+                        case ff::input_device_event_type::mouse_press: name = "mouse_press"; break;
+                        case ff::input_device_event_type::mouse_wheel_x: name = "mouse_wheel_x"; break;
+                        case ff::input_device_event_type::mouse_wheel_y: name = "mouse_wheel_y"; break;
+                        case ff::input_device_event_type::touch_move: name = "touch_move"; break;
+                        case ff::input_device_event_type::touch_press: name = "touch_press"; break;
+                        default: assert(false); break;
+                    }
+
+                    std::ostringstream str;
+                    str << name << ": id=" << event.id << ", pos=(" << event.pos.x << "," << event.pos.y << "), count=" << event.count << std::endl;
+                    std::cout << str.str();
+                }
+
+                this->last_input_event = event;
+            });
+        }
+
+        virtual std::shared_ptr<ff::state> advance_time() override
+        {
+            this->clear_color.y = std::fmod(clear_color.y + 1.0f / 512.0f, 1.0f);
+            return {};
+        }
+
+        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override
+        {
+            ff::dxgi::target_base& target = targets.target(context);
+            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target);
+            if (draw)
+            {
+                draw->draw_filled_rectangle(target.size().logical_pixel_rect<float>(), this->clear_color);
+            }
+        }
+
+    private:
+        DirectX::XMFLOAT4 clear_color{ 0, 0.125, 0, 1 };
+
+        std::mutex input_mutex;
+        ff::signal_connection input_connection{};
+        ff::input_device_event last_input_event{};
+    };
+
     class coroutine_state : public ff::state
     {
     public:
@@ -108,7 +161,7 @@ namespace
 
 void run_test_app()
 {
-    ::run_app<ff::state>();
+    ::run_app<::test_app_state>();
 }
 
 void run_test_coroutine_app()

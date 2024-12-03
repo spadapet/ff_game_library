@@ -4,23 +4,6 @@
 
 namespace ff::internal
 {
-    class debug_page_model
-    {
-    public:
-        debug_page_model();
-        debug_page_model(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory);
-
-        std::string_view name() const;
-        const char* name_cstr() const;
-        ff::state* state();
-        bool is_none() const;
-
-    private:
-        std::string name_;
-        std::function<std::shared_ptr<ff::state>()> factory;
-        std::shared_ptr<ff::state> state_;
-    };
-
     class debug_timer_model
     {
     public:
@@ -32,10 +15,10 @@ namespace ff::internal
         const char* name_cstr() const;
         DirectX::XMFLOAT4 color() const;
         double time_ms() const;
-        int level() const;
-        int hit_total() const;
-        int hit_last_frame() const;
-        int hit_per_second() const;
+        size_t level() const;
+        size_t hit_total() const;
+        size_t hit_last_frame() const;
+        size_t hit_per_second() const;
 
     private:
         ff::perf_results::counter_info info_{};
@@ -45,14 +28,6 @@ namespace ff::internal
     class debug_view_model
     {
     public:
-        debug_view_model();
-        ~debug_view_model();
-
-        static ff::internal::debug_view_model* get();
-
-        bool dock_right() const;
-        void dock_right(bool value);
-
         double advance_seconds() const;
         void advance_seconds(double value);
 
@@ -67,9 +42,6 @@ namespace ff::internal
 
         bool debug_visible() const;
         void debug_visible(bool value);
-
-        bool page_picker_visible() const;
-        void page_picker_visible(bool value);
 
         bool timers_visible() const;
         void timers_visible(bool value);
@@ -88,15 +60,6 @@ namespace ff::internal
 
         bool building_resources() const;
 
-        bool has_pages() const;
-        bool page_visible() const;
-        size_t page_count() const;
-        ff::internal::debug_page_model* page(size_t index) const;
-        size_t selected_page() const;
-        void selected_page(size_t index);
-        void add_page(ff::internal::debug_page_model&& page);
-        void remove_page(size_t index);
-
         size_t timer_count() const;
         ff::internal::debug_timer_model* timer(size_t index) const;
         void timers(const ff::perf_results& results);
@@ -104,6 +67,12 @@ namespace ff::internal
         void selected_timer(size_t index);
 
         void update_chart(const ff::perf_results& results);
+        const float* chart_total() const;
+        const float* chart_render() const;
+        const float* chart_wait() const;
+
+        static constexpr size_t CHART_WIDTH = 150;
+        static constexpr size_t CHART_HEIGHT = 64;
 
     private:
         double game_seconds_{};
@@ -113,15 +82,15 @@ namespace ff::internal
         size_t frame_start_counter_{};
         size_t selected_page_{};
         size_t selected_timer_{};
-        bool dock_right_{};
         bool debug_visible_{};
-        bool page_picker_visible_{};
         bool timers_visible_{};
         bool timers_updating_{ true };
         bool chart_visible_{};
         bool stopped_visible_{};
         std::vector<ff::internal::debug_timer_model> timers_;
-        std::vector<ff::internal::debug_page_model> pages_;
+        std::array<float, CHART_WIDTH> chart_total_{};
+        std::array<float, CHART_WIDTH> chart_render_{};
+        std::array<float, CHART_WIDTH> chart_wait_{};
     };
 
     class debug_state : public ff::state
@@ -131,24 +100,17 @@ namespace ff::internal
 
         virtual void advance_input() override;
         virtual void frame_started(ff::state::advance_t type) override;
-        virtual size_t child_state_count() override;
-        virtual ff::state* child_state(size_t index) override;
+        virtual void frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets) override;
 
     private:
         const ff::perf_results& perf_results;
         ff::internal::debug_view_model view_model;
         ff::auto_resource<ff::input_mapping> input_mapping;
         std::unique_ptr<ff::input_event_provider> input_events;
-        std::shared_ptr<ff::state> debug_view_state;
-        std::shared_ptr<ff::state> stopped_view_state;
     };
 }
 
 namespace ff
 {
-    void add_debug_page(std::string_view name, std::function<std::shared_ptr<ff::state>()>&& factory);
-    void remove_debug_page(std::string_view name);
-    void show_debug_page(std::string_view name);
-    void debug_visible(bool value);
     ff::signal_sink<>& custom_debug_sink(); // Shift-F8
 }

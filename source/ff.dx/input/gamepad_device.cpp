@@ -76,9 +76,12 @@ void ff::gamepad_device::advance()
         this->check_connected--;
     }
 
-    std::scoped_lock lock(this->mutex);
-    this->update_pending_state(reading);
-    this->state = this->pending_state;
+    if (!this->block_events())
+    {
+        std::scoped_lock lock(this->mutex);
+        this->update_pending_state(reading);
+        this->state = this->pending_state;
+    }
 }
 
 void ff::gamepad_device::kill_pending()
@@ -106,7 +109,6 @@ bool ff::gamepad_device::poll(reading_t& reading)
 {
     if (this->block_events())
     {
-        // pretend that there was an empty reading
         return true;
     }
 
