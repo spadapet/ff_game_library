@@ -9,6 +9,11 @@ static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
 static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
 static ff::signal<> custom_debug_signal;
 
+static const ImVec4& convert_color(const DirectX::XMFLOAT4& color)
+{
+    return *reinterpret_cast<const ImVec4*>(&color);
+}
+
 ff::internal::debug_timer_model::debug_timer_model(const ff::perf_results& results, const ff::perf_results::counter_info& info)
     : ff::internal::debug_timer_model::debug_timer_model()
 {
@@ -181,6 +186,26 @@ void ff::internal::debug_view_model::stopped_visible(bool value)
     this->stopped_visible_ = value;
 }
 
+bool ff::internal::debug_view_model::options_visible() const
+{
+    return this->options_visible_;
+}
+
+void ff::internal::debug_view_model::options_visible(bool value)
+{
+    this->options_visible_ = value;
+}
+
+bool ff::internal::debug_view_model::imgui_demo_visible() const
+{
+    return this->imgui_demo_visible_;
+}
+
+void ff::internal::debug_view_model::imgui_demo_visible(bool value)
+{
+    this->imgui_demo_visible_ = value;
+}
+
 bool ff::internal::debug_view_model::building_resources() const
 {
     return ff::global_resources::is_rebuilding();
@@ -254,35 +279,17 @@ void ff::internal::debug_view_model::update_chart(const ff::perf_results& result
         }
     }
 
-#if 0
-    Noesis::Point* total_points = this->geometry_total_->GetVertices();
-    Noesis::Point* render_points = this->geometry_render_->GetVertices();
-    Noesis::Point* wait_points = this->geometry_wait_->GetVertices();
+    const double height_scale = results.delta_ticks
+        ? results.delta_seconds / (ff::constants::seconds_per_advance<double>() * results.delta_ticks)
+        : 0.0;
 
-    for (size_t i = ::CHART_WIDTH * 2 + 1; i > 1; i--)
-    {
-        total_points[i].y = total_points[i - 2].y;
-        render_points[i].y = render_points[i - 2].y;
-        wait_points[i].y = wait_points[i - 2].y;
-    }
+    std::memmove(this->chart_total_.data(), this->chart_total_.data() + 1, sizeof(float) * (CHART_WIDTH - 1));
+    std::memmove(this->chart_render_.data(), this->chart_render_.data() + 1, sizeof(float) * (CHART_WIDTH - 1));
+    std::memmove(this->chart_wait_.data(), this->chart_wait_.data() + 1, sizeof(float) * (CHART_WIDTH - 1));
 
-    float height_scale = results.delta_ticks
-        ? static_cast<float>(results.delta_seconds) * ::CHART_HEIGHT_F / (2.0f * ff::constants::seconds_per_advance<float>() * results.delta_ticks)
-        : 0.0f;
-
-    wait_points[0].y = ::CHART_HEIGHT_F;
-    wait_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - wait_ticks * height_scale);
-
-    render_points[0].y = wait_points[1].y;
-    render_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - render_ticks * height_scale);
-
-    total_points[0].y = render_points[1].y;
-    total_points[1].y = std::max(0.0f, ::CHART_HEIGHT_F - total_ticks * height_scale);
-
-    this->geometry_total_->Update();
-    this->geometry_render_->Update();
-    this->geometry_wait_->Update();
-#endif
+    this->chart_total_.back() = static_cast<float>(total_ticks * height_scale);
+    this->chart_render_.back() = static_cast<float>(render_ticks * height_scale);
+    this->chart_wait_.back() = static_cast<float>(wait_ticks * height_scale);
 }
 
 const float* ff::internal::debug_view_model::chart_total() const
@@ -304,7 +311,8 @@ ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
     : perf_results(perf_results)
     , input_mapping(ff::internal::app::app_resources().get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
-{}
+{
+}
 
 void ff::internal::debug_state::advance_input()
 {
@@ -365,17 +373,40 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
     bool debug_visible = this->view_model.debug_visible();
     if (debug_visible)
     {
-        const float dpiScale = ImGui::GetIO().FontGlobalScale;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        const ImVec2 plot_size(ff::internal::debug_view_model::CHART_WIDTH * 2, ff::internal::debug_view_model::CHART_HEIGHT);
+        constexpr float window_content_width = 340.0f;
+        constexpr int chart_values_count = static_cast<int>(ff::internal::debug_view_model::CHART_WIDTH);
 
-        std::string title = ff::string::concat(this->view_model.frames_per_second(), "hz #", this->view_model.frame_count(), " - Debug###Debug");
-        ImGui::SetNextWindowSize(ImVec2(200 * dpiScale, 0));
-        if (ImGui::Begin(title.c_str(), &debug_visible, ImGuiWindowFlags_NoFocusOnAppearing))
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImVec2(window_content_width, 0));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(window_content_width, 0), ImVec2(window_content_width, 640));
+
+        const std::string window_title = ff::string::concat(this->view_model.frames_per_second(), "hz #", this->view_model.frame_count(), "###Debug");
+        if (ImGui::Begin(window_title.c_str(), &debug_visible, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::SetNextItemOpen(this->view_model.chart_visible());
             if (ImGui::CollapsingHeader("Chart"))
             {
                 this->view_model.chart_visible(true);
+
+                const ImVec2 plot_pos = ImGui::GetCursorScreenPos();
+
+                ImGui::PushStyleColor(ImGuiCol_PlotLines, ::convert_color(ff::color_white()));
+                ImGui::PlotLines("##Total", this->view_model.chart_total(), chart_values_count, 0, "", 0.0f, 2.0f, plot_size);
+                ImGui::PopStyleColor();
+
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, ::convert_color(ff::color_none()));
+                ImGui::PushStyleColor(ImGuiCol_Border, ::convert_color(ff::color_none()));
+
+                ImGui::SetCursorScreenPos(plot_pos);
+                ImGui::PushStyleColor(ImGuiCol_PlotLines, ::convert_color(ff::color_green()));
+                ImGui::PlotLines("##Render", this->view_model.chart_render(), chart_values_count, 0, "", 0.0f, 2.0f, plot_size);
+                ImGui::PopStyleColor();
+
+                ImGui::SetCursorScreenPos(plot_pos);
+                ImGui::PushStyleColor(ImGuiCol_PlotLines, ::convert_color(ff::color_magenta()));
+                ImGui::PlotLines("##Wait", this->view_model.chart_wait(), chart_values_count, 0, "", 0.0f, 2.0f, plot_size);
+                ImGui::PopStyleColor(3);
             }
             else
             {
@@ -386,27 +417,28 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
             if (ImGui::CollapsingHeader("Counters"))
             {
                 this->view_model.timers_visible(true);
-                int speed = static_cast<int>(this->view_model.timer_update_speed());
 
-                if (ImGui::Button(this->view_model.timers_updating() ? "Pause##CountersUpdating" : "Play ##CountersUpdating"))
+                if (ImGui::Button(this->view_model.timers_updating() ? "Pause###CountersUpdating" : "Play###CountersUpdating"))
                 {
                     this->view_model.timers_updating(!this->view_model.timers_updating());
                 }
 
                 ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+
+                int speed = static_cast<int>(this->view_model.timer_update_speed());
                 if (ImGui::SliderInt("##CountersSpeed", &speed, 1, 60, "Skip:%d"))
                 {
                     this->view_model.timer_update_speed(static_cast<size_t>(speed));
                 }
 
-                if (ImGui::BeginTable("##CountersTable", 3,
-                    ImGuiTableFlags_RowBg |
-                    ImGuiTableFlags_Borders |
-                    ImGuiTableFlags_Resizable))
+                ImGui::PopItemWidth();
+
+                if (ImGui::BeginTable("##CountersTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
                 {
                     ImGui::TableSetupColumn("Counter", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupColumn("ms", ImGuiTableColumnFlags_WidthFixed, 45);
-                    ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30);
+                    ImGui::TableSetupColumn("ms", ImGuiTableColumnFlags_WidthFixed, 60);
+                    ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 60);
                     ImGui::TableHeadersRow();
 
                     for (size_t i = 0; i < this->view_model.timer_count(); i++)
@@ -415,14 +447,14 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
-                        float indent = timer->level() * 4 * dpiScale;
+                        float indent = timer->level() * 4.0f;
                         if (indent)
                         {
                             ImGui::Indent(indent);
                         }
 
                         const DirectX::XMFLOAT4 color = timer->color();
-                        ImGui::TextColored(*reinterpret_cast<const ImVec4*>(&color), "%s", timer->name_cstr());
+                        ImGui::TextColored(::convert_color(color), "%s", timer->name_cstr());
 
                         if (indent)
                         {
@@ -442,12 +474,48 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
             {
                 this->view_model.timers_visible(false);
             }
+
+            ImGui::SetNextItemOpen(this->view_model.options_visible());
+            if (ImGui::CollapsingHeader("Options"))
+            {
+                this->view_model.options_visible(true);
+
+                bool imgui_demo_visible = this->view_model.imgui_demo_visible();
+                if (ImGui::Checkbox("ImGui Demo", &imgui_demo_visible))
+                {
+                    this->view_model.imgui_demo_visible(imgui_demo_visible);
+                }
+
+                if (this->view_model.building_resources())
+                {
+                    ImGui::Text("Updating resources...");
+                }
+                else
+                {
+                    if (ImGui::Button("Update resources"))
+                    {
+                        ff::global_resources::rebuild_async();
+                    }
+                }
+            }
+            else
+            {
+                this->view_model.options_visible(false);
+            }
         }
 
         ImGui::End();
         ImGui::PopStyleVar();
 
         this->view_model.debug_visible(debug_visible);
+        this->view_model.imgui_demo_visible(debug_visible && this->view_model.imgui_demo_visible());
+    }
+
+    bool imgui_demo_visible = this->view_model.imgui_demo_visible() && this->view_model.debug_visible();
+    if (imgui_demo_visible)
+    {
+        ImGui::ShowDemoWindow(&imgui_demo_visible);
+        this->view_model.imgui_demo_visible(imgui_demo_visible);
     }
 
     ff::state::frame_rendered(type, context, targets);

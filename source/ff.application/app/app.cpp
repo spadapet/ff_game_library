@@ -72,10 +72,10 @@ static void init_imgui_style()
 
         ImGuiIO& io = ImGui::GetIO();
         io.FontGlobalScale = static_cast<float>(::main_window->dpi_scale());
+        io.DisplayFramebufferScale = ImVec2(io.FontGlobalScale, io.FontGlobalScale);
 
         ImGuiStyle& style = ImGui::GetStyle();
         style = ImGuiStyle();
-        style.ScaleAllSizes(io.FontGlobalScale);
 
         if (!::debug_font_data)
         {
@@ -164,15 +164,6 @@ static void imgui_render(ff::dxgi::command_context_base& context)
 {
     if constexpr (::enable_imgui)
     {
-        if constexpr (ff::constants::debug_build)
-        {
-            static bool show_demo_window = true;
-            if (show_demo_window)
-            {
-                ImGui::ShowDemoWindow(&show_demo_window);
-            }
-        }
-
         ImGui::Render();
 
         ff::dx12::commands& commands = ff::dx12::commands::get(context);

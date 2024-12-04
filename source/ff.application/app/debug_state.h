@@ -58,6 +58,12 @@ namespace ff::internal
         bool stopped_visible() const;
         void stopped_visible(bool value);
 
+        bool options_visible() const;
+        void options_visible(bool value);
+
+        bool imgui_demo_visible() const;
+        void imgui_demo_visible(bool value);
+
         bool building_resources() const;
 
         size_t timer_count() const;
@@ -87,6 +93,8 @@ namespace ff::internal
         bool timers_updating_{ true };
         bool chart_visible_{};
         bool stopped_visible_{};
+        bool options_visible_{};
+        bool imgui_demo_visible_{};
         std::vector<ff::internal::debug_timer_model> timers_;
         std::array<float, CHART_WIDTH> chart_total_{};
         std::array<float, CHART_WIDTH> chart_render_{};
