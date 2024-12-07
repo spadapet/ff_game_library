@@ -58,8 +58,6 @@ static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
 static std::shared_ptr<ff::resource_object_provider> app_resources;
-static const wchar_t* window_cursor_game_thread{};
-static const wchar_t* window_cursor_main_thread{};
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
@@ -76,6 +74,7 @@ static void init_imgui_style()
 
         ImGuiStyle& style = ImGui::GetStyle();
         style = ImGuiStyle();
+        style.ScaleAllSizes(io.FontGlobalScale);
 
         if (!::debug_font_data)
         {
@@ -254,7 +253,7 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
 
     ::app_time.unused_advance_seconds = std::max(::app_time.unused_advance_seconds - ff::constants::seconds_per_advance<double>(), 0.0);
     ::app_time.advance_count++;
-    ::app_time.advance_seconds = ::app_time.advance_count / ff::constants::advances_per_second<double>();
+    ::app_time.advance_seconds = ::app_time.advance_count * ff::constants::seconds_per_advance<double>();
     advance_count++;
 
     return true;
@@ -262,6 +261,9 @@ static bool frame_advance_timer(ff::state::advance_t advance_type, size_t& advan
 
 static void frame_advance(ff::state::advance_t advance_type)
 {
+    ff::perf_timer::no_op(::perf_input);
+    ff::perf_timer::no_op(::perf_advance);
+
     ::game_state.frame_started(advance_type);
 
     size_t advance_count = 0;
@@ -285,11 +287,7 @@ static void frame_render(ff::state::advance_t advance_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
-        DirectX::XMFLOAT4 clear_color;
-        const DirectX::XMFLOAT4* clear_color2 = ::app_params.get_clear_color_func(clear_color) ? &clear_color : nullptr;
-        begin_render = ::target->begin_render(context, clear_color2);
-
-        if (begin_render)
+        if (begin_render = ::target->begin_render(context, ::app_params.get_clear_back_buffer() ? &ff::color_black() : nullptr))
         {
             ::imgui_rendering();
             ::game_state.frame_rendering(advance_type, context, *::render_targets);
@@ -308,30 +306,6 @@ static void frame_render(ff::state::advance_t advance_type)
     ff::dxgi::frame_complete();
 }
 
-static void frame_update_cursor()
-{
-    const wchar_t* cursor = IDC_ARROW;
-
-    if (cursor != ::window_cursor_game_thread)
-    {
-        ::window_cursor_game_thread = cursor;
-
-        ff::thread_dispatch::get_main()->post([cursor]()
-        {
-            ::window_cursor_main_thread = cursor;
-
-            POINT pos;
-            if (::main_window &&
-                ::GetCursorPos(&pos) &&
-                ::WindowFromPoint(pos) == *::main_window &&
-                ::SendMessage(*::main_window, WM_NCHITTEST, 0, MAKELPARAM(pos.x, pos.y)) == HTCLIENT)
-            {
-                ::SetCursor(::LoadCursor(nullptr, cursor));
-            }
-        });
-    }
-}
-
 static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previous_advance_type)
 {
     // Input is part of previous frame's perf measures. But it must be first, before the timer updates,
@@ -344,7 +318,6 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
 
     ::frame_advance(advance_type);
     ::frame_render(advance_type);
-    ::frame_update_cursor();
 
     return advance_type;
 }
@@ -558,15 +531,6 @@ static void handle_window_message(ff::window_message& message)
                     ff::log::write(ff::log::type::application, "Resuming");
                     ::start_game_thread();
                     break;
-            }
-            break;
-
-        case WM_SETCURSOR:
-            if (LOWORD(message.lp) == HTCLIENT && ::window_cursor_main_thread)
-            {
-                ::SetCursor(::LoadCursor(nullptr, ::window_cursor_main_thread));
-                message.result = 1;
-                message.handled = true;
             }
             break;
 

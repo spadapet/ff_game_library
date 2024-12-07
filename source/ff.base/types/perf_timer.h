@@ -75,6 +75,7 @@ namespace ff
         size_t create();
         void start(const ff::perf_counter& counter);
         void end(const ff::perf_counter& counter, int64_t ticks);
+        void no_op(const ff::perf_counter& counter);
         int64_t reset(double absolute_seconds, ff::perf_results* results = nullptr, bool get_timer_results = false, int64_t override_start_ticks = 0);
 
     private:
@@ -100,6 +101,8 @@ namespace ff
             size_t hit_per_second;
         };
 
+        ff::perf_measures::perf_counter_entry& add_entry(const ff::perf_counter& counter);
+
         std::array<ff::perf_measures::perf_counter_entry, ff::perf_counter::MAX_COUNT> entries{};
         std::array<ff::perf_measures::perf_counter_stats, ff::perf_counter::MAX_COUNT> stats{};
         const ff::perf_measures::perf_counter_entry* first_entry{};
@@ -119,6 +122,8 @@ namespace ff
         perf_timer(const ff::perf_counter& counter);
         perf_timer(const ff::perf_counter& counter, int64_t start_ticks);
         ~perf_timer();
+
+        static void no_op(const ff::perf_counter& counter);
 
     private:
         perf_timer() = delete;

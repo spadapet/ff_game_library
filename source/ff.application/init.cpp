@@ -83,7 +83,7 @@ ff::state::advance_t ff::init_app_params::default_get_advance_type()
     return ff::state::advance_t::running;
 }
 
-bool ff::init_app_params::default_get_clear_color(DirectX::XMFLOAT4&)
+bool ff::init_app_params::default_clear_back_buffer()
 {
     return false;
 }

@@ -46,7 +46,7 @@ namespace ff::game
         virtual double time_scale();
         virtual ff::state::advance_t advance_type();
         virtual ff::dxgi::palette_base* palette(size_t index);
-        virtual bool clear_color(DirectX::XMFLOAT4&);
+        virtual bool clear_back_buffer();
         virtual bool allow_debug_commands();
 
         // ff::state

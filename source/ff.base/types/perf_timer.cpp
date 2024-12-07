@@ -40,9 +40,26 @@ void ff::perf_measures::start(const ff::perf_counter& counter)
     stats.hit_floor_second++;
     stats.hit_round_second++;
 
-    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
-    entry.count++;
+    this->add_entry(counter).count++;
+    this->level++;
+}
 
+void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
+{
+    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
+    assert(entry.counter == &counter);
+    entry.ticks += ticks;
+    this->level--;
+}
+
+void ff::perf_measures::no_op(const ff::perf_counter& counter)
+{
+    this->add_entry(counter);
+}
+
+ff::perf_measures::perf_counter_entry& ff::perf_measures::add_entry(const ff::perf_counter& counter)
+{
+    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
     if (!entry.counter)
     {
         // First time a counter is hit
@@ -61,15 +78,7 @@ void ff::perf_measures::start(const ff::perf_counter& counter)
         this->last_entry = &entry;
     }
 
-    this->level++;
-}
-
-void ff::perf_measures::end(const ff::perf_counter& counter, int64_t ticks)
-{
-    ff::perf_measures::perf_counter_entry& entry = this->entries[counter.index];
-    assert(entry.counter == &counter);
-    entry.ticks += ticks;
-    this->level--;
+    return entry;
 }
 
 int64_t ff::perf_measures::reset(double absolute_seconds, ff::perf_results* results, bool get_timer_results, int64_t override_start_ticks)
@@ -165,10 +174,16 @@ ff::perf_timer::~perf_timer()
     this->counter.measures.end(this->counter, (end - this->start) * (end > this->start));
 }
 
+void ff::perf_timer::no_op(const ff::perf_counter& counter)
+{
+    counter.measures.no_op(counter);
+}
+
 #else
 
 ff::perf_timer::perf_timer(const ff::perf_counter& counter) {}
 ff::perf_timer::perf_timer(const ff::perf_counter& counter, int64_t ticks) {}
 ff::perf_timer::~perf_timer() {}
+void ff::perf_timer::no_op(const ff::perf_counter& counter) {}
 
 #endif

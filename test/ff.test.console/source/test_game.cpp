@@ -5,9 +5,8 @@ namespace
     class app_state : public ff::game::app_state_base
     {
     public:
-        virtual bool clear_color(DirectX::XMFLOAT4& color) override
+        virtual bool clear_back_buffer() override
         {
-            color = ff::color_black();
             return true;
         }
 

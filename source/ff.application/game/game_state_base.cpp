@@ -144,9 +144,8 @@ bool ff::game::app_state_base::allow_debug_commands()
     return ff::constants::profile_build;
 }
 
-bool ff::game::app_state_base::clear_color(DirectX::XMFLOAT4& color)
+bool ff::game::app_state_base::clear_back_buffer()
 {
-    color = ff::color_black();
     return true;
 }
 

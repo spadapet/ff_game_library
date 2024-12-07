@@ -31,10 +31,10 @@ static ff::state::advance_t get_advance_type()
     return app_state ? app_state->advance_type() : ff::state::advance_t::running;
 }
 
-static bool get_clear_color(DirectX::XMFLOAT4& color)
+static bool get_clear_back_buffer()
 {
     auto app_state = ::app_state.lock();
-    return app_state ? app_state->clear_color(color) : false;
+    return app_state ? app_state->clear_back_buffer() : false;
 }
 
 static ff::init_app_params get_app_params(const ff::game::init_params& init_params)
@@ -44,7 +44,7 @@ static ff::init_app_params get_app_params(const ff::game::init_params& init_para
     params.create_initial_state_func = [&init_params]() { return ::create_app_state(init_params); };
     params.get_time_scale_func = ::get_time_scale;
     params.get_advance_type_func = ::get_advance_type;
-    params.get_clear_color_func = ::get_clear_color;
+    params.get_clear_back_buffer = ::get_clear_back_buffer;
 
     return params;
 }

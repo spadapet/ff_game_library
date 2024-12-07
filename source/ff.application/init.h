@@ -12,7 +12,7 @@ namespace ff
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func{ &ff::init_app_params::default_create_initial_state };
         std::function<double()> get_time_scale_func{ &ff::init_app_params::default_get_time_scale };
         std::function<ff::state::advance_t()> get_advance_type_func{ &ff::init_app_params::default_get_advance_type };
-        std::function<bool(DirectX::XMFLOAT4&)> get_clear_color_func{ &ff::init_app_params::default_get_clear_color };
+        std::function<bool()> get_clear_back_buffer{ &ff::init_app_params::default_clear_back_buffer };
 
         ff::dxgi::target_window_params target_window{};
 
@@ -21,7 +21,7 @@ namespace ff
         static std::shared_ptr<ff::state> default_create_initial_state();
         static double default_get_time_scale();
         static ff::state::advance_t default_get_advance_type();
-        static bool default_get_clear_color(DirectX::XMFLOAT4&);
+        static bool default_clear_back_buffer();
     };
 
     class init_app

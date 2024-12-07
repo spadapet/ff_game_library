@@ -141,9 +141,8 @@ void run_test_sprite_perf()
             return std::make_shared<::app_state>();
         };
 
-    app_params.get_clear_color_func = [](DirectX::XMFLOAT4& color)
+    app_params.get_clear_back_buffer = []()
         {
-            color = ff::color_black();
             return true;
         };
 
