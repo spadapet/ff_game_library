@@ -520,7 +520,7 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_POWERBROADCAST:
-            switch (message.wp)
+            switch (message.wp) 
             {
                 case PBT_APMSUSPEND:
                     ff::log::write(ff::log::type::application, "Suspending");

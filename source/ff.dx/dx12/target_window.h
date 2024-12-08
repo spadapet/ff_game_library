@@ -2,7 +2,6 @@
 
 #include "../dx12/access.h"
 #include "../dx12/descriptor_range.h"
-#include "../dx12/fence_value.h"
 #include "../dx12/resource.h"
 #include "../dxgi/target_window_base.h"
 
@@ -58,22 +57,31 @@ namespace ff::dx12
         void handle_message(ff::window_message& msg);
         void before_resize();
         bool internal_reset();
-        bool internal_size(const ff::window_size& size);
         ff::dxgi::target_base& extra_render_target();
 
-        ff::window* window{};
-        ff::window_size cached_size{};
-        ff::signal<ff::window_size> size_changed_;
-        ff::signal_connection window_message_connection;
-        ff::win_handle frame_latency_handle;
-        ff::win_event target_ready_event;
-        Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
+        struct
+        {
+            bool resizing{};
+            bool size_valid{};
+            ff::window_size size{};
+        } resizing_data{}; // main thread
 
+        // Window
+        std::mutex window_mutex;
+        ff::window* window{}; // main thread, unless window_mutex is locked
+        ff::signal_connection window_message_connection; // main thread
+        ff::rect_int windowed_rect{}; // main thread
+        ff::signal<ff::window_size> size_changed_; // game thread
+        ff::window_size cached_size{}; // game thread
+        bool was_full_screen_on_close{}; // main thread, unless window_mutex is locked
+
+        // Swap chain (all on game thread)
+        Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
+        ff::win_handle frame_latency_handle;
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
         std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;
-        ff::dxgi::target_window_params params;
+        ff::dxgi::target_window_params params{};
         size_t back_buffer_index{};
-        bool was_full_screen_on_close{};
     };
 }

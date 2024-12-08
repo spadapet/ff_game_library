@@ -6,6 +6,8 @@
 
 namespace ff
 {
+    class thread_dispatch;
+
     struct window_message
     {
         const HWND hwnd;
@@ -128,6 +130,7 @@ namespace ff
         bool operator==(HWND handle) const;
 
         static window* main();
+        ff::thread_dispatch* dispatch() const;
         ff::signal_sink<ff::window_message&>& message_sink();
 
         ff::window_size size();

@@ -188,6 +188,12 @@ ff::window* ff::window::main()
     return ::main_window;
 }
 
+ff::thread_dispatch* ff::window::dispatch() const
+{
+    // Assume all HWNDs are on the main thread for now
+    return ff::thread_dispatch::get_main();
+}
+
 ff::signal_sink<ff::window_message&>& ff::window::message_sink()
 {
     return this->message_signal;
@@ -228,20 +234,6 @@ void ff::window::notify_message(ff::window_message& message)
                 message.handled = true;
             }
             break;
-
-        case WM_GETMINMAXINFO:
-            {
-                RECT rect{ 0, 0, 240, 135 };
-                const DWORD style = static_cast<DWORD>(::GetWindowLong(message.hwnd, GWL_STYLE));
-                const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(message.hwnd, GWL_EXSTYLE));
-                if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(message.hwnd)))
-                {
-                    MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(message.lp);
-                    mm.ptMinTrackSize.x = rect.right - rect.left;
-                    mm.ptMinTrackSize.y = rect.bottom - rect.top;
-                }
-            }
-            break;
     }
 
     this->message_signal.notify(message);
@@ -277,19 +269,18 @@ void ff::window::size(ff::point_size size)
 {
     RECT rect{ 0, 0, static_cast<int>(size.x), static_cast<int>(size.y) };
 
-    ff::thread_dispatch::get_main()->post([hwnd = this->hwnd, rect]()
+    this->dispatch()->post([hwnd = this->hwnd, rect]()
     {
         const DWORD style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_STYLE));
-        const DWORD exStyle = static_cast<DWORD>(GetWindowLong(hwnd, GWL_EXSTYLE));
+        const DWORD ex_style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_EXSTYLE));
 
         RECT adjusted_rect = rect, window_rect{};
         HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
         MONITORINFO mi{};
         mi.cbSize = sizeof(mi);
 
-        if (monitor &&
-            ::AdjustWindowRectExForDpi(&adjusted_rect, style, FALSE, exStyle, ::GetDpiForWindow(hwnd)) &&
-            ::GetMonitorInfo(monitor, &mi) &&
+        if (monitor && ::GetMonitorInfo(monitor, &mi) &&
+            ::AdjustWindowRectExForDpi(&adjusted_rect, style, FALSE, ex_style, ::GetDpiForWindow(hwnd)) &&
             ::GetWindowRect(hwnd, &window_rect))
         {
             ff::rect_int monitor_rect(mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom);

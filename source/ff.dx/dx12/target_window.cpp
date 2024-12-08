@@ -10,8 +10,8 @@
 #include "types/color.h"
 #include "types/operators.h"
 
-static const size_t MIN_BUFFER_COUNT = 2;
-static const size_t MAX_BUFFER_COUNT = 4;
+constexpr size_t MIN_BUFFER_COUNT = 2;
+constexpr size_t MAX_BUFFER_COUNT = 4;
 
 static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
@@ -44,6 +44,55 @@ static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
     }
 }
 
+static ff::rect_int convert_rect(const RECT& rect)
+{
+    return ff::rect_int(rect.left, rect.top, rect.right, rect.bottom);
+}
+
+static bool full_screen_style(HWND hwnd)
+{
+    LONG style = ::GetWindowLong(hwnd, GWL_STYLE);
+    return (style & WS_POPUP) != 0;
+}
+
+static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int* windowed_rect = nullptr)
+{
+    HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitor_info{ sizeof(monitor_info) };
+    assert_ret_val(monitor && ::GetMonitorInfo(monitor, &monitor_info), false);
+
+    RECT temp_rect;
+    const ff::rect_int old_window_rect = ::GetWindowRect(hwnd, &temp_rect) ? ::convert_rect(temp_rect) : ff::rect_int{};
+    const ff::rect_int monitor_rect = ::convert_rect(full_screen ? monitor_info.rcMonitor : monitor_info.rcWork);
+    ff::rect_int new_window_rect = (full_screen ? monitor_rect : (windowed_rect ? *windowed_rect : old_window_rect));
+
+    if (!full_screen && windowed_rect)
+    {
+        new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
+    }
+
+    const LONG old_style = ::GetWindowLong(hwnd, GWL_STYLE);
+    const LONG new_style = (full_screen ? WS_POPUP : WS_OVERLAPPEDWINDOW) | (old_style & WS_VISIBLE);
+    const LONG relevant_styles = WS_POPUP | WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    const bool style_changed = (old_style & relevant_styles) != (new_style & relevant_styles);
+
+    if (style_changed || old_window_rect != new_window_rect)
+    {
+        if (style_changed)
+        {
+            ::SetWindowLong(hwnd, GWL_STYLE, new_style);
+        }
+
+        ::SetWindowPos(hwnd, nullptr,
+            new_window_rect.left, new_window_rect.top, new_window_rect.width(), new_window_rect.height(),
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+        return true;
+    }
+
+    return false;
+}
+
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
     : window(window)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
@@ -53,20 +102,21 @@ ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::targe
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
     this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
 
-    this->internal_size(this->window->size());
+    RECT windowed_rect;
+    if (::GetWindowRect(*this->window, &windowed_rect))
+    {
+        this->windowed_rect = ::convert_rect(windowed_rect);
+    }
+
+    assert_msg(!::full_screen_style(*this->window), "Full screen must be set by target_window, not during creation");
+    this->size(this->window->size());
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
 }
 
 ff::dx12::target_window::~target_window()
 {
-    ff::dx12::wait_for_idle();
-
-    if (this->allow_full_screen() && this->swap_chain)
-    {
-        this->swap_chain->SetFullscreenState(FALSE, nullptr);
-    }
-
+    ff::dxgi::wait_for_idle();
     ff::dxgi::remove_target(this);
     ff::dx12::remove_device_child(this);
 }
@@ -74,7 +124,6 @@ ff::dx12::target_window::~target_window()
 ff::dx12::target_window::operator bool() const
 {
     return this->swap_chain &&
-        this->window &&
         this->target_textures.size() > this->back_buffer_index &&
         this->target_textures[this->back_buffer_index];
 }
@@ -190,24 +239,21 @@ bool ff::dx12::target_window::internal_reset()
 {
     assert_ret_val(this->window, false);
 
-    BOOL full_screen{};
-    if (this->allow_full_screen() && this->swap_chain)
-    {
-        Microsoft::WRL::ComPtr<IDXGIOutput> output;
-        this->swap_chain->GetFullscreenState(&full_screen, &output);
-        this->swap_chain->SetFullscreenState(FALSE, nullptr);
-    }
-
     this->before_resize();
     this->swap_chain.Reset();
 
-    ff::window_size size = this->window->size();
-    assert_ret_val(this->internal_size(size), false);
-
-    if (this->allow_full_screen() && full_screen)
+    bool has_window = false;
+    ff::window_size size;
+    ff::thread_dispatch::get_main()->send([this, &has_window, &size]()
     {
-        this->swap_chain->SetFullscreenState(TRUE, nullptr);
-    }
+        if (this->window)
+        {
+            has_window = true;
+            size = this->window->size();
+        }
+    });
+
+    assert_ret_val(has_window && this->size(size), false);
 
     return *this;
 }
@@ -242,22 +288,13 @@ size_t ff::dx12::target_window::target_sample_count() const
     return 1;
 }
 
-bool ff::dx12::target_window::size(const ff::window_size& size)
+bool ff::dx12::target_window::size(const ff::window_size& input_size)
 {
-    return this->internal_size(size);
-}
+    assert_ret_val(this->window, false);
 
-bool ff::dx12::target_window::internal_size(const ff::window_size& size)
-{
-    if (!this->window || !this->window_message_connection)
+    if (this->swap_chain && (this->frame_latency() == 0) != (this->params.frame_latency == 0))
     {
-        // Could be called while the window is being destroyed in full screen mode
-        return false;
-    }
-
-    if (this->swap_chain && (this->frame_latency() == 0) != (this->params.frame_latency == 0)) // on game thread
-    {
-        // Turn frame latency on/off requires recreating everything
+        // On game thread: Turning frame latency on/off requires recreating everything
         if (!this->internal_reset())
         {
             ff::dx12::device_fatal_error("Swap chain failed to change frame latency");
@@ -266,6 +303,12 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size)
 
         return true;
     }
+
+    // Fix up the input size, maybe the window has zero client area size
+    ff::window_size size = input_size;
+    size.logical_pixel_size.x = std::max<size_t>(size.logical_pixel_size.x, 1);
+    size.logical_pixel_size.y = std::max<size_t>(size.logical_pixel_size.y, 1);
+    size.dpi_scale = std::min<double>(size.dpi_scale, 1.0);
 
     ff::log::write(ff::log::type::dx12_target,
         "Swap chain set size.",
@@ -314,13 +357,11 @@ bool ff::dx12::target_window::internal_size(const ff::window_size& size)
 
         ff::thread_dispatch::get_main()->send([this, factory, command_queue, &new_swap_chain, &desc]()
         {
-            if (this->window && this->window_message_connection)
+            if (!this->window ||
+                FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
+                FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
             {
-                if (FAILED(factory->CreateSwapChainForHwnd(command_queue.Get(), *this->window, &desc, nullptr, nullptr, &new_swap_chain)) ||
-                    FAILED(factory->MakeWindowAssociation(*this->window, DXGI_MWA_NO_WINDOW_CHANGES)))
-                {
-                    debug_fail();
-                }
+                debug_fail();
             }
         });
 
@@ -406,9 +447,7 @@ void ff::dx12::target_window::buffer_count(size_t value)
     if (this->buffer_count() != value || this->frame_latency() != this->params.frame_latency)
     {
         ff::log::write(ff::log::type::dx12_target, "Set swap chain buffer count: ", value);
-
-        const ff::window_size size = this->size();
-        this->internal_size(size);
+        this->size(this->size());
     }
 }
 
@@ -434,9 +473,7 @@ void ff::dx12::target_window::frame_latency(size_t value)
     if (this->frame_latency() != this->params.frame_latency)
     {
         ff::log::write(ff::log::type::dx12_target, "Set swap chain frame latency: ", this->params.frame_latency);
-
-        const ff::window_size size = this->size();
-        this->internal_size(size);
+        this->size(this->size());
     }
 }
 
@@ -456,31 +493,38 @@ bool ff::dx12::target_window::allow_full_screen() const
     return this->params.allow_full_screen;
 }
 
+// Called on game or main thread
 bool ff::dx12::target_window::full_screen()
 {
-    if (this->allow_full_screen() && *this)
+    if (this->allow_full_screen())
     {
-        BOOL full_screen = FALSE;
-        Microsoft::WRL::ComPtr<IDXGIOutput> output;
-        return SUCCEEDED(this->swap_chain->GetFullscreenState(&full_screen, &output)) && full_screen;
+        std::scoped_lock lock(this->window_mutex);
+        return this->window ? ::full_screen_style(*this->window) : this->was_full_screen_on_close;
     }
 
-    return this->was_full_screen_on_close;
+    return false;
 }
 
 bool ff::dx12::target_window::full_screen(bool value)
 {
-    if (this->allow_full_screen() && *this && !value != !this->full_screen())
-    {
-        ff::log::write(ff::log::type::dx12_target, "Set swap chain full screen: ", value);
+    bool status = false;
 
-        if (SUCCEEDED(this->swap_chain->SetFullscreenState(value, nullptr)))
+    if (this->allow_full_screen())
+    {
+        ff::log::write(ff::log::type::dx12_target, "Set full screen: ", value);
+
+        std::scoped_lock lock(this->window_mutex);
+        if (this->window)
         {
-            return this->size(this->window->size());
+            status = true;
+            this->window->dispatch()->post([hwnd = this->window->handle(), windowed_rect = this->windowed_rect, value]()
+                {
+                    ::update_window_styles(hwnd, value, &windowed_rect);
+                });
         }
     }
 
-    return false;
+    return status;
 }
 
 void ff::dx12::target_window::before_reset()
@@ -499,34 +543,94 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
 {
     switch (msg.msg)
     {
+        case WM_ENTERSIZEMOVE:
+            this->resizing_data = { true };
+            break;
+
+        case WM_EXITSIZEMOVE:
+            if (this->resizing_data.resizing)
+            {
+                if (this->resizing_data.size_valid)
+                {
+                    ff::dxgi::defer_resize_target(this, this->resizing_data.size);
+                }
+
+                this->resizing_data = {};
+            }
+            break;
+
         case WM_SIZE:
+            if (msg.wp != SIZE_MINIMIZED)
+            {
+                if (::full_screen_style(msg.hwnd))
+                {
+                    ::update_window_styles(msg.hwnd, true);
+                }
+
+                ff::window_size size = this->window->size();
+                if (this->resizing_data.resizing)
+                {
+                    this->resizing_data.size_valid = true;
+                    this->resizing_data.size = size;
+                }
+                else
+                {
+                    ff::dxgi::defer_resize_target(this, size);
+                }
+            }
+            break;
+
         case WM_DISPLAYCHANGE:
-        case WM_DPICHANGED:
-            if (msg.msg != WM_SIZE || msg.wp != SIZE_MINIMIZED)
+            if (::full_screen_style(msg.hwnd))
             {
-                ff::dxgi::defer_resize_target(this, this->window->size());
+                ::update_window_styles(msg.hwnd, true);
             }
             break;
 
-        case WM_CLOSE:
-            if (this->allow_full_screen())
+        case WM_MOVE:
             {
-                ff::thread_dispatch::get_game()->send([this]()
-                    {
-                        this->was_full_screen_on_close = this->full_screen();
-                    }, 500);
+                RECT windowed_rect{};
+                if (!::full_screen_style(msg.hwnd) && ::GetWindowRect(msg.hwnd, &windowed_rect))
+                {
+                    this->windowed_rect = ::convert_rect(windowed_rect);
+                }
             }
             break;
 
-        case WM_NCDESTROY:
-            this->window_message_connection.disconnect();
-            this->window = nullptr;
+        case WM_GETMINMAXINFO:
+            {
+                RECT rect{ 0, 0, 240, 135 };
+                const DWORD style = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_STYLE));
+                const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_EXSTYLE));
+                if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(msg.hwnd)))
+                {
+                    MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(msg.lp);
+                    mm.ptMinTrackSize.x = rect.right - rect.left;
+                    mm.ptMinTrackSize.y = rect.bottom - rect.top;
+                }
+            }
+            break;
+
+        case WM_DESTROY:
+            {
+                std::scoped_lock lock(this->window_mutex);
+                this->was_full_screen_on_close = ::full_screen_style(msg.hwnd);
+                this->window_message_connection.disconnect();
+                this->window = nullptr;
+            }
+            break;
+
+        case WM_KEYDOWN:
+            if (msg.wp == VK_F11 && !(msg.lp & 0x40000000)) // wasn't already down
+            {
+                ff::dxgi::defer_full_screen(this, !::full_screen_style(msg.hwnd));
+            }
             break;
 
         case WM_SYSKEYDOWN:
             if (this->allow_full_screen() && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::dxgi::defer_full_screen(this, !this->full_screen());
+                ff::dxgi::defer_full_screen(this, !::full_screen_style(msg.hwnd));
                 msg.result = 0;
                 msg.handled = true;
             }
@@ -555,17 +659,6 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 // prevent a 'ding' sound when switching between modes
                 msg.result = 0;
                 msg.handled = true;
-            }
-            break;
-
-        case WM_WINDOWPOSCHANGED:
-            if (this->allow_full_screen())
-            {
-                const WINDOWPOS& wp = *reinterpret_cast<const WINDOWPOS*>(msg.lp);
-                if ((wp.flags & SWP_FRAMECHANGED) != 0 && !::IsIconic(msg.hwnd))
-                {
-                    ff::dxgi::defer_resize_target(this, this->window->size());
-                }
             }
             break;
     }
