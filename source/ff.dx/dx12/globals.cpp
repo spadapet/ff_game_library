@@ -78,30 +78,15 @@ static std::string adapter_name(IDXGIAdapter* adapter)
 
 static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 {
-    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter>> adapters;
-    for (UINT i = 0; adapters.size() == i; i++)
+    Microsoft::WRL::ComPtr<ID3D12Device1> device;
+    if (FAILED(::D3D12CreateDevice(/*adapters[i].Get()*/nullptr, ::feature_level, IID_PPV_ARGS(&device))))
     {
-        Microsoft::WRL::ComPtr<IDXGIAdapter> adapter;
-        if (SUCCEEDED(::factory->EnumAdapters(i, adapter.GetAddressOf())))
-        {
-            ff::log::write(ff::log::type::dx12, "Adapter[", adapters.size(), "] = ", ::adapter_name(adapter.Get()));
-            adapters.push_back(std::move(adapter));
-        }
+        ff::log::write_debug_fail(ff::log::type::dx12, "D3D12CreateDevice failed");
+        return nullptr;
     }
 
-    for (size_t i = 0; i < adapters.size(); i++)
-    {
-        Microsoft::WRL::ComPtr<ID3D12Device1> device;
-
-        if (SUCCEEDED(::D3D12CreateDevice(adapters[i].Get(), ::feature_level, IID_PPV_ARGS(&device))))
-        {
-            ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, adapter index=", i, ", node count=", device->GetNodeCount());
-            return device;
-        }
-    }
-
-    ff::log::write_debug_fail(ff::log::type::dx12, "D3D12CreateDevice failed");
-    return nullptr;
+    ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, node count=", device->GetNodeCount());
+    return device;
 }
 
 static DXGI_QUERY_VIDEO_MEMORY_INFO get_video_memory_info(IDXGIAdapter* adapter)
