@@ -82,6 +82,5 @@ namespace ff::dx12
         std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;
         ff::dxgi::target_window_params params{};
-        size_t back_buffer_index{};
     };
 }

@@ -315,8 +315,8 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                 if (ImGui::BeginTable("##CountersTable", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders))
                 {
                     ImGui::TableSetupColumn("Counter", ImGuiTableColumnFlags_WidthStretch);
-                    ImGui::TableSetupColumn("ms", ImGuiTableColumnFlags_WidthFixed, 60);
-                    ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 60);
+                    ImGui::TableSetupColumn("ms", ImGuiTableColumnFlags_WidthFixed, 30 * dpi_scale);
+                    ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30 * dpi_scale);
                     ImGui::TableHeadersRow();
 
                     for (::debug_timer_model& timer : ::timers_)

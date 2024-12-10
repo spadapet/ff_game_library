@@ -6,21 +6,6 @@
 #include "ff.app.res.id.h"
 #include "init.h"
 
-constexpr bool enable_imgui = ff::constants::profile_build;
-
-#if PROFILE_APP // For ImGui
-
-#include <imgui/backends/imgui_impl_dx12.h>
-#include <imgui/backends/imgui_impl_win32.h>
-
-static ff::dx12::descriptor_range imgui_descriptor_range;
-static std::shared_ptr<ff::data_base> debug_font_data;
-static std::string imgui_ini_path;
-
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-#endif
-
 namespace
 {
     enum class game_thread_state_t
@@ -61,127 +46,127 @@ static std::shared_ptr<ff::resource_object_provider> app_resources;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
+#define ENABLE_IMGUI PROFILE_APP
+#if ENABLE_IMGUI
+
+#include <imgui/backends/imgui_impl_dx12.h>
+#include <imgui/backends/imgui_impl_win32.h>
+
+static ff::dx12::descriptor_range imgui_descriptor_range;
+static std::shared_ptr<ff::data_base> debug_font_data;
+static std::string imgui_ini_path;
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 // Runs when game thread starts and when DPI changes on the game thread
 static void init_imgui_style()
 {
-    if constexpr (::enable_imgui)
+    ::ImGui_ImplDX12_InvalidateDeviceObjects();
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontGlobalScale = static_cast<float>(::main_window->dpi_scale());
+    io.DisplayFramebufferScale = ImVec2(io.FontGlobalScale, io.FontGlobalScale);
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    style = ImGuiStyle();
+    style.ScaleAllSizes(io.FontGlobalScale);
+
+    if (!::debug_font_data)
     {
-        ImGui_ImplDX12_InvalidateDeviceObjects();
-
-        ImGuiIO& io = ImGui::GetIO();
-        io.FontGlobalScale = static_cast<float>(::main_window->dpi_scale());
-        io.DisplayFramebufferScale = ImVec2(io.FontGlobalScale, io.FontGlobalScale);
-
-        ImGuiStyle& style = ImGui::GetStyle();
-        style = ImGuiStyle();
-        style.ScaleAllSizes(io.FontGlobalScale);
-
-        if (!::debug_font_data)
-        {
-            ff::auto_resource<ff::font_file> debug_font_file = ::app_resources->get_resource_object(assets::app::DEBUG_FONT_FILE);
-            ::debug_font_data = debug_font_file->loaded_data();
-        }
-
-        ImFontConfig fontConfig;
-        fontConfig.FontDataOwnedByAtlas = false;
-        fontConfig.RasterizerDensity = io.FontGlobalScale;
-
-        io.Fonts->Clear();
-        io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(::debug_font_data->data()), static_cast<int>(::debug_font_data->size()), 13, &fontConfig);
+        ff::auto_resource<ff::font_file> debug_font_file = ::app_resources->get_resource_object(assets::app::DEBUG_FONT_FILE);
+        ::debug_font_data = debug_font_file->loaded_data();
     }
+
+    ImFontConfig fontConfig;
+    fontConfig.FontDataOwnedByAtlas = false;
+    fontConfig.RasterizerDensity = io.FontGlobalScale;
+
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(::debug_font_data->data()), static_cast<int>(::debug_font_data->size()), 13, &fontConfig);
 }
 
 static void imgui_dpi_changed()
 {
-    if constexpr (::enable_imgui)
-    {
-        ff::dxgi::wait_for_idle();
-        ::init_imgui_style();
-    }
+    ff::dxgi::wait_for_idle();
+    ::init_imgui_style();
 }
 
 // runs when game thread starts
 static void init_imgui()
 {
-    if constexpr (::enable_imgui)
-    {
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-        std::filesystem::path path = ff::app_local_path() / "imgui.ini";
-        ::imgui_ini_path = ff::filesystem::to_string(path);
-        io.IniFilename = ::imgui_ini_path.c_str();
+    std::filesystem::path path = ff::app_local_path() / "imgui.ini";
+    ::imgui_ini_path = ff::filesystem::to_string(path);
+    io.IniFilename = ::imgui_ini_path.c_str();
 
-        ::imgui_descriptor_range = ff::dx12::gpu_view_descriptors().alloc_pinned_range(1);
-        ::init_imgui_style();
+    ::imgui_descriptor_range = ff::dx12::gpu_view_descriptors().alloc_pinned_range(1);
+    ::init_imgui_style();
 
-        ::ImGui_ImplWin32_Init(*::main_window);
-        ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::target->buffer_count()), ::target->format(),
-            ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
-            ::imgui_descriptor_range.cpu_handle(0),
-            ::imgui_descriptor_range.gpu_handle(0));
-    }
+    ::ImGui_ImplWin32_Init(*::main_window);
+    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::target->buffer_count()), ::target->format(),
+        ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
+        ::imgui_descriptor_range.cpu_handle(0),
+        ::imgui_descriptor_range.gpu_handle(0));
 }
 
 // runs when game thread is stopping, before ::main_window is gone
 static void destroy_imgui()
 {
-    if constexpr (::enable_imgui)
-    {
-        ::imgui_descriptor_range.free_range();
-        ::ImGui_ImplDX12_Shutdown();
-        ::ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
+    ::imgui_descriptor_range.free_range();
+    ::ImGui_ImplDX12_Shutdown();
+    ::ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
 
-        ::debug_font_data.reset();
-    }
+    ::debug_font_data.reset();
 }
 
 static void imgui_advance_input()
 {
-    if constexpr (::enable_imgui)
-    {
-        ImGuiIO& io = ImGui::GetIO();
-        ff::input::keyboard().block_events(io.WantCaptureKeyboard);
-        ff::input::pointer().block_events(io.WantCaptureMouse);
-    }
+    ImGuiIO& io = ImGui::GetIO();
+    ff::input::keyboard().block_events(io.WantCaptureKeyboard);
+    ff::input::pointer().block_events(io.WantCaptureMouse);
 }
 
 static void imgui_rendering()
 {
-    if constexpr (::enable_imgui)
-    {
-        ::ImGui_ImplDX12_NewFrame();
-        ::ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
-    }
+    ::ImGui_ImplDX12_NewFrame();
+    ::ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
 }
 
 static void imgui_render(ff::dxgi::command_context_base& context)
 {
-    if constexpr (::enable_imgui)
-    {
-        ImGui::Render();
-
-        ff::dx12::commands& commands = ff::dx12::commands::get(context);
-        ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
-    }
+    ImGui::Render();
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
+    ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
 }
 
 static void imgui_rendered()
 {
-    if constexpr (::enable_imgui)
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
     }
 }
+
+#else
+
+static void init_imgui_style() {}
+static void imgui_dpi_changed() {}
+static void init_imgui() {}
+static void destroy_imgui() {}
+static void imgui_advance_input() {}
+static void imgui_rendering() {}
+static void imgui_render(ff::dxgi::command_context_base& context) {}
+static void imgui_rendered() {}
+
+#endif
 
 static void frame_advance_input()
 {
@@ -496,12 +481,14 @@ static void handle_window_message(ff::window_message& message)
 {
     assert(::main_window && *::main_window == message.hwnd);
 
-    if (ImGui_ImplWin32_WndProcHandler(message.hwnd, message.msg, message.wp, message.lp))
+#if ENABLE_IMGUI
+    if (::ImGui_ImplWin32_WndProcHandler(message.hwnd, message.msg, message.wp, message.lp))
     {
         ::imgui_advance_input();
         message.handled = true;
         return;
     }
+#endif
 
     switch (message.msg)
     {
@@ -535,10 +522,7 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_DPICHANGED:
-            if constexpr (::enable_imgui)
-            {
-                ff::thread_dispatch::get_game()->post(::imgui_dpi_changed);
-            }
+            ff::thread_dispatch::get_game()->post(::imgui_dpi_changed);
             break;
     }
 }

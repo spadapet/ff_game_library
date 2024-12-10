@@ -95,8 +95,8 @@ static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int
 
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
     : window(window)
-    , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , params(params)
+    , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
@@ -123,9 +123,7 @@ ff::dx12::target_window::~target_window()
 
 ff::dx12::target_window::operator bool() const
 {
-    return this->swap_chain &&
-        this->target_textures.size() > this->back_buffer_index &&
-        this->target_textures[this->back_buffer_index];
+    return this->swap_chain && this->target_textures.size() && ff::dx12::device_valid();
 }
 
 DXGI_FORMAT ff::dx12::target_window::format() const
@@ -145,7 +143,7 @@ ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
         return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_texture();
     }
 
-    return *this->target_textures[this->back_buffer_index];
+    return *this->target_textures[this->swap_chain->GetCurrentBackBufferIndex()];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
@@ -155,7 +153,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
         return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_view();
     }
 
-    return this->target_views.cpu_handle(this->back_buffer_index);
+    return this->target_views.cpu_handle(this->swap_chain->GetCurrentBackBufferIndex());
 }
 
 void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
@@ -165,68 +163,58 @@ void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, con
 
 bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
 {
-    if (*this && ff::dx12::device_valid())
-    {
-        ff::dxgi::target_base& target = this->params.extra_render_target ? this->extra_render_target() : *this;
-        if (clear_color)
-        {
-            assert_msg(*clear_color == ff::color_black(), "Swap chain render targets must be cleared to black");
-            target.clear(context, *clear_color);
-        }
-        else
-        {
-            ff::dx12::commands::get(context).discard(target);
-        }
+    check_ret_val(*this, false);
 
-        return true;
+    ff::dxgi::target_base& target = this->params.extra_render_target ? this->extra_render_target() : *this;
+    if (clear_color)
+    {
+        assert_msg(*clear_color == ff::color_black(), "Swap chain render targets must be cleared to black");
+        target.clear(context, *clear_color);
+    }
+    else
+    {
+        ff::dx12::commands::get(context).discard(target);
     }
 
-    return false;
+    return true;
 }
 
 bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context)
 {
-    if (*this && ff::dx12::device_valid())
+    check_ret_val(*this, false);
+
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
+    ff::dx12::queue& queue = commands.queue();
+    ff::dx12::commands* present_commands = &commands;
+    ff::dx12::resource& back_buffer_resource = *this->target_textures[this->swap_chain->GetCurrentBackBufferIndex()];
+    std::unique_ptr<ff::dx12::commands> new_commands;
+
+    if (this->params.extra_render_target)
     {
-        std::unique_ptr<ff::dx12::commands> new_commands;
+        // Copy extra render target to back buffer
+        ff::dxgi::target_base& extra_target = this->extra_render_target();
+        ff::dx12::resource& extra_resource = ff::dx12::target_access::get(extra_target).dx12_target_texture();
+        new_commands = queue.new_commands();
+        present_commands = new_commands.get();
+        present_commands->copy_resource(back_buffer_resource, extra_resource);
 
-        ff::dx12::commands& commands = ff::dx12::commands::get(context);
-        ff::dx12::queue& queue = commands.queue();
-        ff::dx12::commands* present_commands = &commands;
-        ff::dx12::resource& back_buffer_resource = *this->target_textures[this->back_buffer_index];
-
-        if (this->params.extra_render_target)
-        {
-            // Finish all rendering to extra render target
-            queue.execute(commands);
-
-            // Copy extra render target to back buffer
-            ff::dxgi::target_base& extra_target = this->extra_render_target();
-            ff::dx12::resource& extra_resource = ff::dx12::target_access::get(extra_target).dx12_target_texture();
-            new_commands = queue.new_commands();
-            present_commands = new_commands.get();
-            present_commands->copy_resource(back_buffer_resource, extra_resource);
-        }
-
-        if (this->frame_latency_handle)
-        {
-            ff::perf_timer timer(::perf_render_wait);
-            this->frame_latency_handle.wait(INFINITE, false);
-        }
-
-        present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
-        queue.execute(*present_commands);
-
-        ff::perf_timer timer(::perf_render_present);
-        HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
-        if (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED)
-        {
-            this->back_buffer_index = static_cast<size_t>(this->swap_chain->GetCurrentBackBufferIndex());
-            return true;
-        }
+        // Finish all rendering to extra render target
+        queue.execute(commands);
     }
 
-    return false;
+    present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
+
+    if (this->frame_latency_handle)
+    {
+        ff::perf_timer timer(::perf_render_wait);
+        this->frame_latency_handle.wait(INFINITE, false);
+    }
+
+    queue.execute(*present_commands);
+
+    ff::perf_timer timer(::perf_render_present);
+    const HRESULT hr = this->swap_chain->Present(this->vsync() && !this->frame_latency_handle ? 1 : 0, 0);
+    return (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
 }
 
 void ff::dx12::target_window::before_resize()
@@ -388,7 +376,6 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
         return false;
     }
 
-    this->back_buffer_index = static_cast<UINT>(this->swap_chain->GetCurrentBackBufferIndex());
     this->frame_latency_handle = ff::win_handle(this->params.frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
     assert(this->target_textures.empty() && this->extra_render_targets.empty());
 
@@ -420,7 +407,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
 ff::dxgi::target_base& ff::dx12::target_window::extra_render_target()
 {
     assert(this->params.extra_render_target);
-    return *this->extra_render_targets[this->back_buffer_index];
+    return *this->extra_render_targets[this->swap_chain->GetCurrentBackBufferIndex()];
 }
 
 ff::signal_sink<ff::window_size>& ff::dx12::target_window::size_changed()
