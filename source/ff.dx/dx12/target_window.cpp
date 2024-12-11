@@ -182,6 +182,8 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 {
     check_ret_val(*this, false);
 
+    this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::before_execute);
+
     ff::dx12::commands& commands = ff::dx12::commands::get(context);
     ff::dx12::queue& queue = commands.queue();
     ff::dx12::commands* present_commands = &commands;
@@ -199,21 +201,39 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 
         // Finish all rendering to extra render target
         queue.execute(commands);
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
     }
 
     present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
-
-    if (this->frame_latency_handle)
-    {
-        ff::perf_timer timer(::perf_render_wait);
-        this->frame_latency_handle.wait(INFINITE, false);
-    }
-
     queue.execute(*present_commands);
 
-    ff::perf_timer timer(::perf_render_present);
-    const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
-    return (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
+    if (!this->params.extra_render_target)
+    {
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
+    }
+
+    bool success;
+    {
+        ff::perf_timer timer(::perf_render_present);
+        const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
+        success = (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
+    }
+
+    if (success)
+    {
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_present);
+    }
+
+    return success;
+}
+
+void ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy)
+{
+    if (latency_strategy == this->params.latency_strategy && this->frame_latency_handle)
+    {
+        ff::perf_timer timer(::perf_render_wait);
+        this->frame_latency_handle.block();
+    }
 }
 
 void ff::dx12::target_window::before_resize()
@@ -517,7 +537,7 @@ void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& 
             this->size(this->size());
         }
 
-        if (this->full_screen() && this->params.allow_full_screen)
+        if (this->full_screen() && !this->params.allow_full_screen)
         {
             this->full_screen(false);
         }

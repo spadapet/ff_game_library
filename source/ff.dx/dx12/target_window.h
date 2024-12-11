@@ -56,6 +56,7 @@ namespace ff::dx12
         void handle_message(ff::window_message& msg);
         void before_resize();
         bool internal_reset();
+        void handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy);
         ff::dxgi::target_base& extra_render_target();
 
         struct

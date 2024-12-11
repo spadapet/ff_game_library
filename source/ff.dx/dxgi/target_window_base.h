@@ -6,10 +6,20 @@ namespace ff::dxgi
 {
     struct target_window_params
     {
+        enum class latency_strategy_t
+        {
+            before_execute,
+            after_execute,
+            after_present,
+
+            count
+        };
+
         bool operator==(const target_window_params& other) const = default;
 
         size_t buffer_count{ 2 };
         size_t frame_latency{ 1 };
+        latency_strategy_t latency_strategy{ latency_strategy_t::after_execute };
         bool vsync{ true };
         bool allow_full_screen{ true };
         bool extra_render_target{ true };

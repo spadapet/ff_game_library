@@ -281,17 +281,27 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
 
                     int buffer_count = static_cast<int>(::target_params_.buffer_count);
                     int frame_latency = static_cast<int>(::target_params_.frame_latency);
+                    ImGui::PushItemWidth(::CHART_WIDTH * dpi_scale);
 
-                    if (ImGui::SliderInt("Buffers", &buffer_count, 2, 4, "Buffers:%d"))
+                    if (ImGui::SliderInt("##Buffers", &buffer_count, 2, 4, "Buffers:%d"))
                     {
                         ::target_params_.buffer_count = static_cast<size_t>(buffer_count);
                     }
 
-                    if (ImGui::SliderInt("Latency", &frame_latency, 0, 4, "Latency:%d"))
+                    if (ImGui::SliderInt("##Latency", &frame_latency, 0, 4, "Latency:%d"))
                     {
                         ::target_params_.frame_latency = static_cast<size_t>(frame_latency);
                     }
 
+                    const char* strategy_names[] = { "Wait before execute", "Wait after execute", "Wait after present" };
+                    int strategy_int = static_cast<int>(::target_params_.latency_strategy);
+                    const int strategy_count = static_cast<int>(ff::dxgi::target_window_params::latency_strategy_t::count);
+                    if (ImGui::SliderInt("##LatencyStrategy", &strategy_int, 0, strategy_count - 1, strategy_names[strategy_int]))
+                    {
+                        ::target_params_.latency_strategy = static_cast<ff::dxgi::target_window_params::latency_strategy_t>(strategy_int);
+                    }
+
+                    ImGui::PopItemWidth();
                     ImGui::Checkbox("VSync", &::target_params_.vsync);
                     ImGui::Checkbox("Allow Full Screen", &::target_params_.allow_full_screen);
                     ImGui::Checkbox("Extra Buffer", &::target_params_.extra_render_target);
@@ -300,6 +310,16 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                     if (ImGui::Button("Apply"))
                     {
                         ff::dxgi::defer_reset_target(&ff::app_render_target(), ::target_params_);
+                    }
+                    ImGui::EndDisabled();
+
+                    ImGui::SameLine();
+                    static const ff::dxgi::target_window_params default_params{};
+                    ImGui::BeginDisabled(default_params == ff::app_render_target().init_params());
+                    if (ImGui::Button("Default"))
+                    {
+                        ::target_params_ = default_params;
+                        ff::dxgi::defer_reset_target(&ff::app_render_target(), default_params);
                     }
                     ImGui::EndDisabled();
                 }
