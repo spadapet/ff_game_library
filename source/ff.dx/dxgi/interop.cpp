@@ -17,9 +17,6 @@ namespace
         reset_check = 0x01,
         reset_force = 0x02,
         reset_bits = 0x0f,
-
-        swap_chain_size = 0x10,
-        swap_chain_bits = 0xf0,
     };
 }
 
@@ -30,7 +27,8 @@ static ff::window_size special_full_screen_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_FUL
 static ff::window_size special_windowed_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_WINDOWED };
 
 static std::mutex defer_mutex;
-static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes;
+static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_target_size;
+static std::vector<std::pair<ff::dxgi::target_window_base*, ff::dxgi::target_window_params>> defer_target_reset;
 static ::defer_flags_t defer_flags;
 
 void ff::dxgi::remove_target(ff::dxgi::target_window_base* target)
@@ -38,14 +36,8 @@ void ff::dxgi::remove_target(ff::dxgi::target_window_base* target)
     std::scoped_lock lock(::defer_mutex);
     assert_ret(target);
 
-    for (auto i = ::defer_sizes.cbegin(); i != ::defer_sizes.cend(); i++)
-    {
-        if (i->first == target)
-        {
-            ::defer_sizes.erase(i);
-            break;
-        }
-    }
+    std::erase_if(::defer_target_size, [target](const auto& pair) { return pair.first == target; });
+    std::erase_if(::defer_target_reset, [target](const auto& pair) { return pair.first == target; });
 }
 
 void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size)
@@ -54,12 +46,7 @@ void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const f
 
     std::scoped_lock lock(::defer_mutex);
 
-    ::defer_flags = ff::flags::set(
-        ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits),
-        ::defer_flags_t::swap_chain_size);
-
-    bool found_match = false;
-    for (auto& i : ::defer_sizes)
+    for (auto& i : ::defer_target_size)
     {
         if (i.first == target)
         {
@@ -70,15 +57,29 @@ void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const f
                 i.second = size;
             }
 
-            found_match = true;
-            break;
+            return;
         }
     }
 
-    if (!found_match)
+    ::defer_target_size.push_back(std::make_pair(target, size));
+}
+
+void ff::dxgi::defer_reset_target(ff::dxgi::target_window_base* target, const ff::dxgi::target_window_params& params)
+{
+    assert_ret(target);
+
+    std::scoped_lock lock(::defer_mutex);
+
+    for (auto& i : ::defer_target_reset)
     {
-        ::defer_sizes.push_back(std::make_pair(target, size));
+        if (i.first == target)
+        {
+            i.second = params;
+            return;
+        }
     }
+
+    ::defer_target_reset.push_back(std::make_pair(target, params));
 }
 
 void ff::dxgi::defer_reset_device(bool force)
@@ -97,10 +98,12 @@ void ff::dxgi::defer_full_screen(ff::dxgi::target_window_base* target, bool valu
 
 void ff::dxgi::flush_commands()
 {
-    while (::defer_flags != ::defer_flags_t::none)
-    {
-        std::unique_lock lock(::defer_mutex);
+    std::unique_lock lock(::defer_mutex);
 
+    while (::defer_flags != ::defer_flags_t::none ||
+        !::defer_target_size.empty() ||
+        !::defer_target_reset.empty())
+    {
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
         {
             bool force = ff::flags::has(::defer_flags, ::defer_flags_t::reset_force);
@@ -108,11 +111,12 @@ void ff::dxgi::flush_commands()
             lock.unlock();
 
             ff::dxgi::reset_device(force);
+            lock.lock();
         }
-        else if (ff::flags::has_any(::defer_flags, ::defer_flags_t::swap_chain_bits))
+
+        if (!::defer_target_size.empty())
         {
-            std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_sizes = std::move(::defer_sizes);
-            ::defer_flags = ff::flags::clear(::defer_flags, ::defer_flags_t::swap_chain_bits);
+            const auto defer_sizes = std::move(::defer_target_size);
             lock.unlock();
 
             for (const auto& i : defer_sizes)
@@ -120,16 +124,28 @@ void ff::dxgi::flush_commands()
                 if (i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN ||
                     i.second.rotation == ::SPECIAL_DMOD_WINDOWED)
                 {
-                    if (i.first->allow_full_screen())
-                    {
-                        i.first->full_screen(i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN);
-                    }
+                    i.first->full_screen(i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN);
                 }
                 else
                 {
                     i.first->size(i.second);
                 }
             }
+
+            lock.lock();
+        }
+
+        if (!::defer_target_reset.empty())
+        {
+            const auto defer_reset = std::move(::defer_target_reset);
+            lock.unlock();
+
+            for (const auto& i : defer_reset)
+            {
+                i.first->init_params(i.second);
+            }
+
+            lock.lock();
         }
     }
 }

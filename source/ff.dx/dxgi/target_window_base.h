@@ -6,6 +6,8 @@ namespace ff::dxgi
 {
     struct target_window_params
     {
+        bool operator==(const target_window_params& other) const = default;
+
         size_t buffer_count{ 2 };
         size_t frame_latency{ 1 };
         bool vsync{ true };
@@ -22,14 +24,13 @@ namespace ff::dxgi
         virtual ff::signal_sink<ff::window_size>& size_changed() = 0;
 
         virtual size_t buffer_count() const = 0;
-        virtual void buffer_count(size_t value) = 0;
         virtual size_t frame_latency() const = 0;
-        virtual void frame_latency(size_t value) = 0;
         virtual bool vsync() const = 0;
-        virtual void vsync(bool value) = 0;
-
         virtual bool allow_full_screen() const = 0;
         virtual bool full_screen() = 0;
         virtual bool full_screen(bool value) = 0;
+
+        virtual const ff::dxgi::target_window_params& init_params() const = 0;
+        virtual void init_params(const ff::dxgi::target_window_params& params) = 0;
     };
 }

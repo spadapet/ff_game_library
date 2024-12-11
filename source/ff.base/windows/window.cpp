@@ -6,18 +6,6 @@
 #include "windows/win_handle.h"
 #include "windows/window.h"
 
-bool ff::window_size::operator==(const ff::window_size& other) const
-{
-    return this->logical_pixel_size == other.logical_pixel_size &&
-        this->dpi_scale == other.dpi_scale &&
-        this->rotation == other.rotation;
-}
-
-bool ff::window_size::operator!=(const ff::window_size& other) const
-{
-    return !(*this == other);
-}
-
 ff::point_size ff::window_size::physical_pixel_size() const
 {
     return this->logical_to_physical_size(this->logical_pixel_size);

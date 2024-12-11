@@ -95,12 +95,10 @@ static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int
 
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
     : window(window)
-    , params(params)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
 {
-    this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
-    this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
+    assert_msg(!::full_screen_style(*this->window), "Full screen must be set by target_window, not during creation");
 
     RECT windowed_rect;
     if (::GetWindowRect(*this->window, &windowed_rect))
@@ -108,8 +106,7 @@ ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::targe
         this->windowed_rect = ::convert_rect(windowed_rect);
     }
 
-    assert_msg(!::full_screen_style(*this->window), "Full screen must be set by target_window, not during creation");
-    this->size(this->window->size());
+    this->init_params(params);
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
 }
@@ -133,7 +130,9 @@ DXGI_FORMAT ff::dx12::target_window::format() const
 
 ff::window_size ff::dx12::target_window::size() const
 {
-    return this->cached_size;
+    return (ff::thread_dispatch::get_main()->current_thread() && this->window)
+        ? this->window->size()
+        : this->cached_size;
 }
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
@@ -213,7 +212,7 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
     queue.execute(*present_commands);
 
     ff::perf_timer timer(::perf_render_present);
-    const HRESULT hr = this->swap_chain->Present(this->vsync() && !this->frame_latency_handle ? 1 : 0, 0);
+    const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
     return (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
 }
 
@@ -307,6 +306,12 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
         " VSync=", this->vsync());
 
     ff::window_size old_size = this->cached_size;
+    std::vector<std::shared_ptr<ff::dxgi::target_base>> old_extra_render_targets;
+    if (this->params.extra_render_target && old_size == size)
+    {
+        old_extra_render_targets = std::move(this->extra_render_targets);
+    }
+
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
     this->cached_size = size;
     this->before_resize();
@@ -394,8 +399,15 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
 
         if (this->params.extra_render_target)
         {
-            auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
-            this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
+            if (i < old_extra_render_targets.size())
+            {
+                this->extra_render_targets.push_back(old_extra_render_targets[i]);
+            }
+            else
+            {
+                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
+                this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
+            }
         }
     }
 
@@ -426,18 +438,6 @@ size_t ff::dx12::target_window::buffer_count() const
     return 0;
 }
 
-void ff::dx12::target_window::buffer_count(size_t value)
-{
-    this->params.buffer_count = ::fix_buffer_count(value);
-    this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
-
-    if (this->buffer_count() != value || this->frame_latency() != this->params.frame_latency)
-    {
-        ff::log::write(ff::log::type::dx12_target, "Set swap chain buffer count: ", value);
-        this->size(this->size());
-    }
-}
-
 size_t ff::dx12::target_window::frame_latency() const
 {
     UINT value;
@@ -454,25 +454,9 @@ size_t ff::dx12::target_window::frame_latency() const
     return 0;
 }
 
-void ff::dx12::target_window::frame_latency(size_t value)
-{
-    this->params.frame_latency = ::fix_frame_latency(value, this->buffer_count());
-    if (this->frame_latency() != this->params.frame_latency)
-    {
-        ff::log::write(ff::log::type::dx12_target, "Set swap chain frame latency: ", this->params.frame_latency);
-        this->size(this->size());
-    }
-}
-
 bool ff::dx12::target_window::vsync() const
 {
     return this->params.vsync;
-}
-
-void ff::dx12::target_window::vsync(bool value)
-{
-    ff::log::write(ff::log::type::dx12_target, "Set swap chain vsync: ", value);
-    this->params.vsync = value;
 }
 
 bool ff::dx12::target_window::allow_full_screen() const
@@ -483,20 +467,15 @@ bool ff::dx12::target_window::allow_full_screen() const
 // Called on game or main thread
 bool ff::dx12::target_window::full_screen()
 {
-    if (this->allow_full_screen())
-    {
-        std::scoped_lock lock(this->window_mutex);
-        return this->window ? ::full_screen_style(*this->window) : this->was_full_screen_on_close;
-    }
-
-    return false;
+    std::scoped_lock lock(this->window_mutex);
+    return this->window ? ::full_screen_style(*this->window) : this->was_full_screen_on_close;
 }
 
 bool ff::dx12::target_window::full_screen(bool value)
 {
     bool status = false;
 
-    if (this->allow_full_screen())
+    if (!value || this->allow_full_screen())
     {
         ff::log::write(ff::log::type::dx12_target, "Set full screen: ", value);
 
@@ -512,6 +491,37 @@ bool ff::dx12::target_window::full_screen(bool value)
     }
 
     return status;
+}
+
+const ff::dxgi::target_window_params& ff::dx12::target_window::init_params() const
+{
+    return this->params;
+}
+
+void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& params)
+{
+    ff::dxgi::target_window_params old_params = this->params;
+    old_params.buffer_count = this->buffer_count();
+    old_params.frame_latency = this->frame_latency();
+
+    this->params = params;
+    this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
+    this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
+
+    if (old_params != this->params)
+    {
+        if (old_params.buffer_count != this->params.buffer_count ||
+            old_params.frame_latency != this->params.frame_latency ||
+            old_params.extra_render_target != this->params.extra_render_target)
+        {
+            this->size(this->size());
+        }
+
+        if (this->full_screen() && this->params.allow_full_screen)
+        {
+            this->full_screen(false);
+        }
+    }
 }
 
 void ff::dx12::target_window::before_reset()
@@ -610,16 +620,24 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
         case WM_KEYDOWN:
             if (msg.wp == VK_F11 && !(msg.lp & 0x40000000)) // wasn't already down
             {
-                ff::dxgi::defer_full_screen(this, !::full_screen_style(msg.hwnd));
+                bool full_screen = ::full_screen_style(msg.hwnd);
+                if (full_screen || this->allow_full_screen())
+                {
+                    ff::dxgi::defer_full_screen(this, !full_screen);
+                }
             }
             break;
 
         case WM_SYSKEYDOWN:
-            if (this->allow_full_screen() && msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
+            if (msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
             {
-                ff::dxgi::defer_full_screen(this, !::full_screen_style(msg.hwnd));
-                msg.result = 0;
-                msg.handled = true;
+                bool full_screen = ::full_screen_style(msg.hwnd);
+                if (full_screen || this->allow_full_screen())
+                {
+                    ff::dxgi::defer_full_screen(this, !full_screen);
+                    msg.result = 0;
+                    msg.handled = true;
+                }
             }
             else if (msg.wp == VK_BACK)
             {
@@ -641,7 +659,7 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_SYSCHAR:
-            if (this->allow_full_screen() && msg.wp == VK_RETURN)
+            if (msg.wp == VK_RETURN && this->allow_full_screen())
             {
                 // prevent a 'ding' sound when switching between modes
                 msg.result = 0;

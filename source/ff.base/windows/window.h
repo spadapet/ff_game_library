@@ -20,8 +20,7 @@ namespace ff
 
     struct window_size
     {
-        bool operator==(const ff::window_size& other) const;
-        bool operator!=(const ff::window_size& other) const;
+        bool operator==(const ff::window_size& other) const = default;
 
         ff::point_size physical_pixel_size() const; // as visible on screen
         int rotated_degrees(bool ccw = false) const;

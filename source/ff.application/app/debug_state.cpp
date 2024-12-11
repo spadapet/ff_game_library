@@ -96,22 +96,24 @@ namespace
     };
 }
 
-double advance_seconds_{};
-size_t frames_per_second_{};
-size_t frame_count_{};
-size_t timer_update_speed_{ 16 };
-size_t frame_start_counter_{};
-bool debug_visible_{};
-bool timers_visible_{};
-bool timers_updating_{ true };
-bool chart_visible_{};
-bool stopped_visible_{};
-bool options_visible_{};
-bool imgui_demo_visible_{};
-std::vector<::debug_timer_model> timers_;
-std::array<float, CHART_WIDTH> chart_total_{};
-std::array<float, CHART_WIDTH> chart_render_{};
-std::array<float, CHART_WIDTH> chart_wait_{};
+static double advance_seconds_{};
+static size_t frames_per_second_{};
+static size_t frame_count_{};
+static size_t timer_update_speed_{ 16 };
+static size_t frame_start_counter_{};
+static bool debug_visible_{};
+static bool timers_visible_{};
+static bool timers_updating_{ true };
+static bool chart_visible_{};
+static bool target_params_visible_{};
+static bool stopped_visible_{};
+static bool options_visible_{};
+static bool imgui_demo_visible_{};
+static std::vector<::debug_timer_model> timers_;
+static std::array<float, CHART_WIDTH> chart_total_{};
+static std::array<float, CHART_WIDTH> chart_render_{};
+static std::array<float, CHART_WIDTH> chart_wait_{};
+static ff::dxgi::target_window_params target_params_{};
 
 static const ImVec4& convert_color(const DirectX::XMFLOAT4& color)
 {
@@ -266,6 +268,40 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                 else if (ImGui::Button("Update resources"))
                 {
                     ff::global_resources::rebuild_async();
+                }
+
+                bool was_target_params_visible = ::target_params_visible_;
+                ImGui::SetNextItemOpen(::target_params_visible_);
+                if (::target_params_visible_ = ImGui::CollapsingHeader("Target Window"))
+                {
+                    if (!was_target_params_visible)
+                    {
+                        ::target_params_ = ff::app_render_target().init_params();
+                    }
+
+                    int buffer_count = static_cast<int>(::target_params_.buffer_count);
+                    int frame_latency = static_cast<int>(::target_params_.frame_latency);
+
+                    if (ImGui::SliderInt("Buffers", &buffer_count, 2, 4, "Buffers:%d"))
+                    {
+                        ::target_params_.buffer_count = static_cast<size_t>(buffer_count);
+                    }
+
+                    if (ImGui::SliderInt("Latency", &frame_latency, 0, 4, "Latency:%d"))
+                    {
+                        ::target_params_.frame_latency = static_cast<size_t>(frame_latency);
+                    }
+
+                    ImGui::Checkbox("VSync", &::target_params_.vsync);
+                    ImGui::Checkbox("Allow Full Screen", &::target_params_.allow_full_screen);
+                    ImGui::Checkbox("Extra Buffer", &::target_params_.extra_render_target);
+
+                    ImGui::BeginDisabled(::target_params_ == ff::app_render_target().init_params());
+                    if (ImGui::Button("Apply"))
+                    {
+                        ff::dxgi::defer_reset_target(&ff::app_render_target(), ::target_params_);
+                    }
+                    ImGui::EndDisabled();
                 }
             }
 

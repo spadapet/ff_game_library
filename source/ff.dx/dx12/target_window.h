@@ -40,14 +40,13 @@ namespace ff::dx12
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
         virtual size_t buffer_count() const override;
-        virtual void buffer_count(size_t value) override;
         virtual size_t frame_latency() const override;
-        virtual void frame_latency(size_t value) override;
         virtual bool vsync() const override;
-        virtual void vsync(bool value) override;
         virtual bool allow_full_screen() const override;
         virtual bool full_screen() override;
         virtual bool full_screen(bool value) override;
+        virtual const ff::dxgi::target_window_params& init_params() const override;
+        virtual void init_params(const ff::dxgi::target_window_params& params) override;
 
     private:
         // device_child_base
