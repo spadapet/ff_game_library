@@ -55,6 +55,7 @@ static bool window_visible;
 static ff::dx12::descriptor_range imgui_descriptor_range;
 static std::shared_ptr<ff::data_base> debug_font_data;
 static std::string imgui_ini_path;
+static size_t imgui_back_buffers{};
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -91,6 +92,27 @@ static void imgui_dpi_changed()
     ::init_imgui_style();
 }
 
+static void init_imgui_dx12()
+{
+    if (!::imgui_back_buffers)
+    {
+        ::imgui_descriptor_range = ff::dx12::gpu_view_descriptors().alloc_pinned_range(1);
+    }
+    else
+    {
+        ::ImGui_ImplDX12_Shutdown();
+        ::ImGui_ImplWin32_Shutdown();
+    }
+
+    ::imgui_back_buffers = ::target->buffer_count();
+
+    ::ImGui_ImplWin32_Init(*::main_window);
+    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::imgui_back_buffers), ::target->format(),
+        ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
+        ::imgui_descriptor_range.cpu_handle(0),
+        ::imgui_descriptor_range.gpu_handle(0));
+}
+
 // runs when game thread starts
 static void init_imgui()
 {
@@ -103,14 +125,8 @@ static void init_imgui()
     ::imgui_ini_path = ff::filesystem::to_string(path);
     io.IniFilename = ::imgui_ini_path.c_str();
 
-    ::imgui_descriptor_range = ff::dx12::gpu_view_descriptors().alloc_pinned_range(1);
     ::init_imgui_style();
-
-    ::ImGui_ImplWin32_Init(*::main_window);
-    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::target->buffer_count()), ::target->format(),
-        ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
-        ::imgui_descriptor_range.cpu_handle(0),
-        ::imgui_descriptor_range.gpu_handle(0));
+    ::init_imgui_dx12();
 }
 
 // runs when game thread is stopping, before ::main_window is gone
@@ -133,6 +149,11 @@ static void imgui_advance_input()
 
 static void imgui_rendering()
 {
+    if (::imgui_back_buffers != ::target->buffer_count())
+    {
+        ::init_imgui_dx12();
+    }
+
     ::ImGui_ImplDX12_NewFrame();
     ::ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
