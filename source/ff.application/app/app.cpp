@@ -142,7 +142,12 @@ static void imgui_render(ff::dxgi::command_context_base& context)
 {
     ImGui::Render();
     ff::dx12::commands& commands = ff::dx12::commands::get(context);
+
+    ff::dxgi::target_base* target = ::target.get();
+    commands.begin_event(ff::dx12::gpu_event::draw_imgui);
+    commands.targets(&target, 1, nullptr);
     ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
+    commands.end_event();
 }
 
 static void imgui_rendered()

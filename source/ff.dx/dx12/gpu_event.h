@@ -7,6 +7,7 @@ namespace ff::dx12
         render_frame,
         draw_2d,
         draw_batch,
+        draw_imgui,
         update_palette,
     };
 

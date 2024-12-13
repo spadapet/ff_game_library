@@ -7,6 +7,7 @@ const char* ff::dx12::gpu_event_name(ff::dx12::gpu_event type)
     {
         case ff::dx12::gpu_event::draw_2d: return "draw_2d";
         case ff::dx12::gpu_event::draw_batch: return "draw_batch";
+        case ff::dx12::gpu_event::draw_imgui: return "draw_imgui";
         case ff::dx12::gpu_event::render_frame: return "render_frame";
         case ff::dx12::gpu_event::update_palette: return "update_palette";
         default: debug_fail_ret_val("");
