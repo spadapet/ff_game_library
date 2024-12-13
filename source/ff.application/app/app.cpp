@@ -162,12 +162,23 @@ static void imgui_rendering()
 static void imgui_render(ff::dxgi::command_context_base& context)
 {
     ImGui::Render();
-    ff::dx12::commands& commands = ff::dx12::commands::get(context);
 
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
     ff::dxgi::target_base* target = ::target.get();
+    const ff::point_float size_float = target->size().physical_pixel_size().cast<float>();
+
+    D3D12_VIEWPORT viewport{};
+    viewport.Width = size_float.x;
+    viewport.Height = size_float.y;
+    viewport.MaxDepth = 1;
+
     commands.begin_event(ff::dx12::gpu_event::draw_imgui);
     commands.targets(&target, 1, nullptr);
+    commands.viewports(&viewport, 1);
+    commands.scissors(nullptr, 1);
+
     ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
+
     commands.end_event();
 }
 
