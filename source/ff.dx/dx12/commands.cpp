@@ -109,6 +109,12 @@ std::unique_ptr<ff::dx12::commands::data_cache_t> ff::dx12::commands::take_data(
     return std::move(this->data_cache);
 }
 
+void ff::dx12::commands::pipeline_state_unknown()
+{
+    this->pipeline_state_.Reset();
+    this->root_signature_.Reset();
+}
+
 void ff::dx12::commands::pipeline_state(ID3D12PipelineState* state)
 {
     if (this->pipeline_state_.Get() != state)

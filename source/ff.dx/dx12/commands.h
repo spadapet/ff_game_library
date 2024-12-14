@@ -72,6 +72,7 @@ namespace ff::dx12
         void close_command_lists(ff::dx12::commands* prev_commands, ff::dx12::commands* next_commands, ff::dx12::fence_values& wait_before_execute);
         std::unique_ptr<ff::dx12::commands::data_cache_t> take_data();
 
+        void pipeline_state_unknown();
         void pipeline_state(ID3D12PipelineState* state);
         void resource_state(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t array_start = 0, size_t array_size = 0, size_t mip_start = 0, size_t mip_size = 0);
         void resource_state_sub_index(ff::dx12::resource& resource, D3D12_RESOURCE_STATES state, size_t sub_index);

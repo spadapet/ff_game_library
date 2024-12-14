@@ -11,6 +11,8 @@
     <AdditionalResJsonInputs>$(DesignTimeProjectRoot)**\*.xaml;$(DesignTimeProjectRoot)**\*.ttf;$(DesignTimeProjectRoot)**\*.png</AdditionalResJsonInputs>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="app\imgui.cpp" />
+    <ClCompile Include="assets\ff.app.res.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -23,6 +25,7 @@
     <ClCompile Include="init.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\imgui.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="app\app.h" />
     <ClInclude Include="app\debug_state.h" />

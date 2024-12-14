@@ -21,6 +21,12 @@
     <ClCompile Include="app\state.cpp">
       <Filter>app</Filter>
     </ClCompile>
+    <ClCompile Include="assets\ff.app.res.cpp">
+      <Filter>assets</Filter>
+    </ClCompile>
+    <ClCompile Include="app\imgui.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -41,6 +47,9 @@
       <Filter>app</Filter>
     </ClInclude>
     <ClInclude Include="app\state.h">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="app\imgui.h">
       <Filter>app</Filter>
     </ClInclude>
   </ItemGroup>

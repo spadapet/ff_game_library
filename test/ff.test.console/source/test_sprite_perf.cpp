@@ -54,7 +54,7 @@ namespace
         virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
         {
             ff::dxgi::target_base& target = targets.target(context);
-            ff::rect_float view = this->viewport.view(target.size().physical_pixel_size()).cast<float>();
+            ff::rect_float view = this->viewport.view(target.size().logical_pixel_size).cast<float>();
             ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &targets.depth(context), view, ::world_rect);
             assert_ret(draw);
 

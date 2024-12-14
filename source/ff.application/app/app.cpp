@@ -1,10 +1,15 @@
 #include "pch.h"
 #include "app/app.h"
 #include "app/debug_state.h"
+#include "app/imgui.h"
 #include "app/settings.h"
-#include "ff.app.res.h"
 #include "ff.app.res.id.h"
 #include "init.h"
+
+namespace ff
+{
+    std::shared_ptr<::ff::data_base> assets_app_data();
+}
 
 namespace
 {
@@ -46,169 +51,10 @@ static std::shared_ptr<ff::resource_object_provider> app_resources;
 static ::game_thread_state_t game_thread_state;
 static bool window_visible;
 
-#define ENABLE_IMGUI PROFILE_APP
-#if ENABLE_IMGUI
-
-#include <imgui/backends/imgui_impl_dx12.h>
-#include <imgui/backends/imgui_impl_win32.h>
-
-static ff::dx12::descriptor_range imgui_descriptor_range;
-static std::shared_ptr<ff::data_base> debug_font_data;
-static std::string imgui_ini_path;
-static size_t imgui_back_buffers{};
-
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-// Runs when game thread starts and when DPI changes on the game thread
-static void init_imgui_style()
-{
-    ::ImGui_ImplDX12_InvalidateDeviceObjects();
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.FontGlobalScale = static_cast<float>(::main_window->dpi_scale());
-    io.DisplayFramebufferScale = ImVec2(io.FontGlobalScale, io.FontGlobalScale);
-
-    ImGuiStyle& style = ImGui::GetStyle();
-    style = ImGuiStyle();
-    style.ScaleAllSizes(io.FontGlobalScale);
-
-    if (!::debug_font_data)
-    {
-        ff::auto_resource<ff::font_file> debug_font_file = ::app_resources->get_resource_object(assets::app::DEBUG_FONT_FILE);
-        ::debug_font_data = debug_font_file->loaded_data();
-    }
-
-    ImFontConfig fontConfig;
-    fontConfig.FontDataOwnedByAtlas = false;
-    fontConfig.RasterizerDensity = io.FontGlobalScale;
-
-    io.Fonts->Clear();
-    io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(::debug_font_data->data()), static_cast<int>(::debug_font_data->size()), 13, &fontConfig);
-}
-
-static void imgui_dpi_changed()
-{
-    ff::dxgi::wait_for_idle();
-    ::init_imgui_style();
-}
-
-static void init_imgui_dx12()
-{
-    if (!::imgui_back_buffers)
-    {
-        ::imgui_descriptor_range = ff::dx12::gpu_view_descriptors().alloc_pinned_range(1);
-    }
-    else
-    {
-        ::ImGui_ImplDX12_Shutdown();
-        ::ImGui_ImplWin32_Shutdown();
-    }
-
-    ::imgui_back_buffers = ::target->buffer_count();
-
-    ::ImGui_ImplWin32_Init(*::main_window);
-    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::imgui_back_buffers), ::target->format(),
-        ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
-        ::imgui_descriptor_range.cpu_handle(0),
-        ::imgui_descriptor_range.gpu_handle(0));
-}
-
-// runs when game thread starts
-static void init_imgui()
-{
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
-    std::filesystem::path path = ff::app_local_path() / "imgui.ini";
-    ::imgui_ini_path = ff::filesystem::to_string(path);
-    io.IniFilename = ::imgui_ini_path.c_str();
-
-    ::init_imgui_style();
-    ::init_imgui_dx12();
-}
-
-// runs when game thread is stopping, before ::main_window is gone
-static void destroy_imgui()
-{
-    ::imgui_descriptor_range.free_range();
-    ::ImGui_ImplDX12_Shutdown();
-    ::ImGui_ImplWin32_Shutdown();
-    ImGui::DestroyContext();
-
-    ::debug_font_data.reset();
-}
-
-static void imgui_advance_input()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    ff::input::keyboard().block_events(io.WantCaptureKeyboard);
-    ff::input::pointer().block_events(io.WantCaptureMouse);
-}
-
-static void imgui_rendering()
-{
-    if (::imgui_back_buffers != ::target->buffer_count())
-    {
-        ::init_imgui_dx12();
-    }
-
-    ::ImGui_ImplDX12_NewFrame();
-    ::ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-}
-
-static void imgui_render(ff::dxgi::command_context_base& context)
-{
-    ImGui::Render();
-
-    ff::dx12::commands& commands = ff::dx12::commands::get(context);
-    ff::dxgi::target_base* target = ::target.get();
-    const ff::point_float size_float = target->size().physical_pixel_size().cast<float>();
-
-    D3D12_VIEWPORT viewport{};
-    viewport.Width = size_float.x;
-    viewport.Height = size_float.y;
-    viewport.MaxDepth = 1;
-
-    commands.begin_event(ff::dx12::gpu_event::draw_imgui);
-    commands.targets(&target, 1, nullptr);
-    commands.viewports(&viewport, 1);
-    commands.scissors(nullptr, 1);
-
-    ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
-
-    commands.end_event();
-}
-
-static void imgui_rendered()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-    }
-}
-
-#else
-
-static void init_imgui_style() {}
-static void imgui_dpi_changed() {}
-static void init_imgui() {}
-static void destroy_imgui() {}
-static void imgui_advance_input() {}
-static void imgui_rendering() {}
-static void imgui_render(ff::dxgi::command_context_base& context) {}
-static void imgui_rendered() {}
-
-#endif
-
 static void frame_advance_input()
 {
     ff::perf_timer timer(::perf_input);
-    ::imgui_advance_input();
+    ff::internal::imgui::advance_input();
 
     ff::thread_dispatch::get_game()->flush();
     ff::input::combined_devices().advance();
@@ -311,18 +157,18 @@ static void frame_render(ff::state::advance_t advance_type)
         ff::perf_timer timer(::perf_render_game_render);
         if (begin_render = ::target->begin_render(context, ::app_params.get_clear_back_buffer() ? &ff::color_black() : nullptr))
         {
-            ::imgui_rendering();
+            ff::internal::imgui::rendering();
             ::game_state.frame_rendering(advance_type, context, *::render_targets);
             ::game_state.render(context, *::render_targets);
             ::game_state.frame_rendered(advance_type, context, *::render_targets);
-            ::imgui_render(context);
+            ff::internal::imgui::render(context);
         }
     }
 
     if (begin_render)
     {
         ::target->end_render(context);
-        ::imgui_rendered();
+        ff::internal::imgui::rendered();
     }
 
     ff::dxgi::frame_complete();
@@ -372,7 +218,7 @@ static void init_game_thread()
     }
 
     ::game_state = std::make_shared<ff::state_list>(std::move(states));
-    ::init_imgui();
+    ff::internal::imgui::init(::main_window);
 }
 
 static void destroy_game_thread()
@@ -381,7 +227,7 @@ static void destroy_game_thread()
     ff::dxgi::trim_device();
     ::game_state.reset();
     ::app_params.game_thread_finished_func();
-    ::destroy_imgui();
+    ff::internal::imgui::destroy();
 
     ff::global_resources::destroy_game_thread();
     ff::thread_pool::flush();
@@ -490,26 +336,18 @@ static void stop_game_thread()
     }
 }
 
-static void update_window_visible(bool force)
+static void update_window_visible()
 {
-    static bool allowed = false;
-    if (allowed || force)
+    const bool visible = ::main_window && ::main_window->visible();
+    if (::window_visible != visible)
     {
-        allowed = true;
-        bool visible = ::main_window && ::main_window->visible();
-
-        if (::window_visible != visible)
+        if (::window_visible = visible)
         {
-            ::window_visible = visible;
-
-            if (visible)
-            {
-                ::start_game_thread();
-            }
-            else
-            {
-                ::pause_game_thread();
-            }
+            ::start_game_thread();
+        }
+        else
+        {
+            ::pause_game_thread();
         }
     }
 }
@@ -518,20 +356,16 @@ static void handle_window_message(ff::window_message& message)
 {
     assert(::main_window && *::main_window == message.hwnd);
 
-#if ENABLE_IMGUI
-    if (::ImGui_ImplWin32_WndProcHandler(message.hwnd, message.msg, message.wp, message.lp))
+    if (ff::internal::imgui::handle_window_message(message))
     {
-        ::imgui_advance_input();
-        message.handled = true;
         return;
     }
-#endif
 
     switch (message.msg)
     {
         case WM_SIZE:
         case WM_SHOWWINDOW:
-            ::update_window_visible(false);
+            ::main_window->dispatch()->post(::update_window_visible);
             break;
 
         case WM_DESTROY:
@@ -559,7 +393,7 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_DPICHANGED:
-            ff::thread_dispatch::get_game()->post(::imgui_dpi_changed);
+            ff::thread_dispatch::get_game()->post(ff::internal::imgui::dpi_changed);
             break;
     }
 }
@@ -654,7 +488,7 @@ static void init_window()
     }
 
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-    ::update_window_visible(true);
+    ::SetForegroundWindow(hwnd);
 }
 
 bool ff::internal::app::init(ff::window* window, const ff::init_app_params& params)
@@ -668,7 +502,7 @@ bool ff::internal::app::init(ff::window* window, const ff::init_app_params& para
     ::target = ff::dxgi::create_target_for_window(window, params.target_window);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 
-    ff::data_reader assets_reader(::assets::app::data());
+    ff::data_reader assets_reader(ff::assets_app_data());
     ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
 
     ff::internal::app::load_settings();
