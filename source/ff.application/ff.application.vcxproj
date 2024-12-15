@@ -21,7 +21,7 @@
     <ClCompile Include="app\settings.cpp" />
     <ClCompile Include="app\state.cpp" />
     <ClCompile Include="game\game_init.cpp" />
-    <ClCompile Include="game\game_state_base.cpp" />
+    <ClCompile Include="game\root_state_base.cpp" />
     <ClCompile Include="init.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -32,7 +32,7 @@
     <ClInclude Include="app\settings.h" />
     <ClInclude Include="app\state.h" />
     <ClInclude Include="game\game_init.h" />
-    <ClInclude Include="game\game_state_base.h" />
+    <ClInclude Include="game\root_state_base.h" />
     <ClInclude Include="init.h" />
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,7 @@
 
 namespace
 {
-    class app_state : public ff::game::app_state_base
+    class app_state : public ff::game::root_state_base
     {
     public:
         virtual bool clear_back_buffer() override
@@ -17,7 +17,7 @@ namespace
                 obj.advance();
             }
 
-            return ff::game::app_state_base::advance_time();
+            return ff::game::root_state_base::advance_time();
         }
 
         virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override
@@ -35,7 +35,7 @@ namespace
                 }
             }
 
-            ff::game::app_state_base::render(context, targets);
+            ff::game::root_state_base::render(context, targets);
         }
 
     private:

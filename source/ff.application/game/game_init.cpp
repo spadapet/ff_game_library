@@ -1,10 +1,19 @@
 #include "pch.h"
 #include "app/app.h"
-#include "game/game_state_base.h"
 #include "game/game_init.h"
+#include "game/root_state_base.h"
 #include "init.h"
 
-static std::weak_ptr<ff::game::app_state_base> app_state;
+static std::weak_ptr<ff::game::root_state_base> app_state;
+
+void ff::game::init_params::default_empty()
+{
+}
+
+std::shared_ptr<ff::game::root_state_base> ff::game::init_params::default_create_initial_state()
+{
+    return {};
+}
 
 static std::shared_ptr<ff::state> create_app_state(const ff::game::init_params& init_params)
 {
@@ -54,13 +63,4 @@ int ff::game::run(const ff::game::init_params& params)
     ff::init_app init_app(::get_app_params(params));
     assert_ret_val(init_app, 1);
     return ff::handle_messages_until_quit();
-}
-
-void ff::game::init_params::default_empty()
-{
-}
-
-std::shared_ptr<ff::game::app_state_base> ff::game::init_params::default_create_initial_state()
-{
-    return {};
 }

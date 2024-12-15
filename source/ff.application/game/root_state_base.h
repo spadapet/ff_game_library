@@ -16,7 +16,7 @@ namespace ff::game
         ff::fixed_int music_volume{ 1 };
     };
 
-    class app_state_base : public ff::state
+    class root_state_base : public ff::state
     {
     public:
         struct palette_t
@@ -26,11 +26,11 @@ namespace ff::game
             float cycles_per_second{};
         };
 
-        app_state_base();
-        app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources);
-        virtual ~app_state_base() override;
+        root_state_base();
+        root_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::root_state_base::palette_t> palette_resources);
+        virtual ~root_state_base() override;
 
-        static ff::game::app_state_base& get();
+        static ff::game::root_state_base& get();
 
         void internal_init();
         void debug_command(size_t command_id);
@@ -74,7 +74,7 @@ namespace ff::game
         // Data
         std::shared_ptr<ff::state> game_state_;
         std::forward_list<ff::signal_connection> connections;
-        std::vector<ff::game::app_state_base::palette_t> palette_resources;
+        std::vector<ff::game::root_state_base::palette_t> palette_resources;
         std::vector<std::shared_ptr<ff::palette_cycle>> palettes;
         ff::game::system_options system_options_{};
         std::unique_ptr<ff::render_target> render_target;

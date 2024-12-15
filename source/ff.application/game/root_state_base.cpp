@@ -3,7 +3,7 @@
 #include "app/debug_state.h"
 #include "app/settings.h"
 #include "ff.app.res.id.h"
-#include "game/game_state_base.h"
+#include "game/root_state_base.h"
 
 using namespace std::string_view_literals;
 
@@ -14,15 +14,15 @@ static const size_t ID_DEBUG_SPEED_FAST = ff::stable_hash_func("ff.game.speed_fa
 static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_custom_debug"sv);
 static const std::string_view ID_APP_STATE = "ff::game::ID_APP_STATE";
 static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
-static ff::game::app_state_base* global_app{};
+static ff::game::root_state_base* global_app{};
 
-ff::game::app_state_base::app_state_base()
+ff::game::root_state_base::root_state_base()
 {
     assert(!::global_app);
     ::global_app = this;
 }
 
-ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::app_state_base::palette_t> palette_resources)
+ff::game::root_state_base::root_state_base(ff::render_target&& render_target, std::initializer_list<ff::game::root_state_base::palette_t> palette_resources)
     : palette_resources(palette_resources)
     , render_target(std::make_unique<ff::render_target>(std::move(render_target)))
 {
@@ -30,31 +30,31 @@ ff::game::app_state_base::app_state_base(ff::render_target&& render_target, std:
     ::global_app = this;
 }
 
-ff::game::app_state_base::~app_state_base()
+ff::game::root_state_base::~root_state_base()
 {
     assert(::global_app == this);
     ::global_app = nullptr;
 }
 
-ff::game::app_state_base& ff::game::app_state_base::get()
+ff::game::root_state_base& ff::game::root_state_base::get()
 {
     assert(::global_app);
     return *::global_app;
 }
 
-void ff::game::app_state_base::internal_init()
+void ff::game::root_state_base::internal_init()
 {
     this->load_settings();
     this->init_resources();
     this->init_game_state();
     this->apply_system_options();
 
-    this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::app_state_base::on_save_settings, this)));
-    this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::app_state_base::on_custom_debug, this)));
-    this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::app_state_base::on_resources_rebuilt, this)));
+    this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::root_state_base::on_save_settings, this)));
+    this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::root_state_base::on_custom_debug, this)));
+    this->connections.emplace_front(ff::global_resources::rebuild_end_sink().connect(std::bind(&ff::game::root_state_base::on_resources_rebuilt, this)));
 }
 
-void ff::game::app_state_base::debug_command(size_t command_id)
+void ff::game::root_state_base::debug_command(size_t command_id)
 {
     if (this->allow_debug_commands() && !this->debug_command_override(command_id))
     {
@@ -75,23 +75,23 @@ void ff::game::app_state_base::debug_command(size_t command_id)
     }
 }
 
-const ff::game::system_options& ff::game::app_state_base::system_options() const
+const ff::game::system_options& ff::game::root_state_base::system_options() const
 {
     return this->system_options_;
 }
 
-void ff::game::app_state_base::system_options(const ff::game::system_options& options)
+void ff::game::root_state_base::system_options(const ff::game::system_options& options)
 {
     this->system_options_ = options;
     this->apply_system_options();
 }
 
-double ff::game::app_state_base::time_scale()
+double ff::game::root_state_base::time_scale()
 {
     return this->debug_time_scale;
 }
 
-ff::state::advance_t ff::game::app_state_base::advance_type()
+ff::state::advance_t ff::game::root_state_base::advance_type()
 {
     if (this->debug_step_one_frame)
     {
@@ -106,22 +106,22 @@ ff::state::advance_t ff::game::app_state_base::advance_type()
     return ff::state::advance_t::running;
 }
 
-ff::dxgi::palette_base* ff::game::app_state_base::palette(size_t index)
+ff::dxgi::palette_base* ff::game::root_state_base::palette(size_t index)
 {
     return (index < this->palettes.size()) ? this->palettes[index].get() : nullptr;
 }
 
-bool ff::game::app_state_base::allow_debug_commands()
+bool ff::game::root_state_base::allow_debug_commands()
 {
     return ff::constants::profile_build;
 }
 
-bool ff::game::app_state_base::clear_back_buffer()
+bool ff::game::root_state_base::clear_back_buffer()
 {
     return true;
 }
 
-std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
+std::shared_ptr<ff::state> ff::game::root_state_base::advance_time()
 {
     for (auto& i : this->palettes)
     {
@@ -131,7 +131,7 @@ std::shared_ptr<ff::state> ff::game::app_state_base::advance_time()
     return ff::state::advance_time();
 }
 
-void ff::game::app_state_base::advance_input()
+void ff::game::root_state_base::advance_input()
 {
     if (this->allow_debug_commands())
     {
@@ -192,7 +192,7 @@ void ff::game::app_state_base::advance_input()
     ff::state::advance_input();
 }
 
-void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
+void ff::game::root_state_base::render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     if (this->render_target)
     {
@@ -207,52 +207,52 @@ void ff::game::app_state_base::render(ff::dxgi::command_context_base& context, f
     }
 }
 
-void ff::game::app_state_base::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
+void ff::game::root_state_base::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
     this->debug_step_one_frame = false;
 
     ff::state::frame_rendered(type, context, targets);
 }
 
-size_t ff::game::app_state_base::child_state_count()
+size_t ff::game::root_state_base::child_state_count()
 {
     return this->child_state(0) ? 1 : 0;
 }
 
-ff::state* ff::game::app_state_base::child_state(size_t index)
+ff::state* ff::game::root_state_base::child_state(size_t index)
 {
     return this->game_state_.get();
 }
 
-std::shared_ptr<ff::state> ff::game::app_state_base::create_initial_game_state()
+std::shared_ptr<ff::state> ff::game::root_state_base::create_initial_game_state()
 {
     return {};
 }
 
-void ff::game::app_state_base::save_settings(ff::dict& dict)
+void ff::game::root_state_base::save_settings(ff::dict& dict)
 {}
 
-void ff::game::app_state_base::load_settings(const ff::dict& dict)
+void ff::game::root_state_base::load_settings(const ff::dict& dict)
 {}
 
-void ff::game::app_state_base::load_resources()
+void ff::game::root_state_base::load_resources()
 {}
 
-bool ff::game::app_state_base::debug_command_override(size_t command_id)
+bool ff::game::root_state_base::debug_command_override(size_t command_id)
 {
     return false;
 }
 
-void ff::game::app_state_base::show_custom_debug()
+void ff::game::root_state_base::show_custom_debug()
 {
 }
 
-const std::shared_ptr<ff::state>& ff::game::app_state_base::game_state() const
+const std::shared_ptr<ff::state>& ff::game::root_state_base::game_state() const
 {
     return this->game_state_;
 }
 
-void ff::game::app_state_base::load_settings()
+void ff::game::root_state_base::load_settings()
 {
     ff::dict dict = ff::settings(::ID_APP_STATE);
 
@@ -264,7 +264,7 @@ void ff::game::app_state_base::load_settings()
     this->load_settings(dict);
 }
 
-void ff::game::app_state_base::init_resources()
+void ff::game::root_state_base::init_resources()
 {
     this->debug_input_events[0].reset();
     this->debug_input_events[1].reset();
@@ -281,18 +281,18 @@ void ff::game::app_state_base::init_resources()
     this->load_resources();
 }
 
-void ff::game::app_state_base::init_game_state()
+void ff::game::root_state_base::init_game_state()
 {
     std::shared_ptr<ff::state> state = this->create_initial_game_state();
     this->game_state_ = state ? state->wrap() : nullptr;
 }
 
-void ff::game::app_state_base::apply_system_options()
+void ff::game::root_state_base::apply_system_options()
 {
     ff::app_render_target().full_screen(this->system_options_.full_screen);
 }
 
-void ff::game::app_state_base::on_save_settings()
+void ff::game::root_state_base::on_save_settings()
 {
     this->system_options_.full_screen = ff::app_render_target().full_screen();
 
@@ -303,12 +303,12 @@ void ff::game::app_state_base::on_save_settings()
     ff::settings(::ID_APP_STATE, dict);
 }
 
-void ff::game::app_state_base::on_custom_debug()
+void ff::game::root_state_base::on_custom_debug()
 {
     this->debug_command(::ID_SHOW_CUSTOM_DEBUG);
 }
 
-void ff::game::app_state_base::on_resources_rebuilt()
+void ff::game::root_state_base::on_resources_rebuilt()
 {
     this->init_resources();
 }

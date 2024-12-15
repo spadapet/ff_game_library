@@ -6,7 +6,7 @@
 #include "../source/ff.application/app/settings.h"
 #include "../source/ff.application/app/state.h"
 #include "../source/ff.application/game/game_init.h"
-#include "../source/ff.application/game/game_state_base.h"
+#include "../source/ff.application/game/root_state_base.h"
 #include "../source/ff.application/init.h"
 
 #pragma comment(lib, "version.lib")
