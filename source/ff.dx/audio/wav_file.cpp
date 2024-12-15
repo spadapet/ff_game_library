@@ -96,7 +96,8 @@ namespace
                     return this->wav_data != nullptr;
             }
 
-            return false;
+            // ignore unknown chunks
+            return true;
         }
     };
 }
