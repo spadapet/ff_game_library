@@ -31,18 +31,15 @@ ff::value* ff::type::resource_v::get_static_default_value()
 ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::type_index type) const
 {
     std::shared_ptr<ff::resource> src = val->get<ff::resource>();
-    if (src)
+    if (src && type == typeid(ff::type::string_v))
     {
-        if (type == typeid(ff::type::string_v))
-        {
-            std::string ref_str(ff::internal::REF_PREFIX);
-            ref_str += src->name();
-            return ff::value::create<std::string>(std::move(ref_str));
-        }
-
-        return src->value()->try_convert(type);
+        std::string ref_str(ff::internal::REF_PREFIX);
+        ref_str += src->name();
+        return ff::value::create<std::string>(std::move(ref_str));
     }
 
+    // Do not access src->value() because it may be loading forever during resource compilation
+    // (when the resource reference doesn't exist)
     return nullptr;
 }
 

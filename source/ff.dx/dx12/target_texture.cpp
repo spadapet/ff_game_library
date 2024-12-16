@@ -74,7 +74,7 @@ bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& cont
 
 bool ff::dx12::target_texture::end_render(ff::dxgi::command_context_base& context)
 {
-    // ff::dx12::commands::get(context).resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_PRESENT);
+    ff::dx12::commands::get(context).resource_state(*this->texture_->dx12_resource(), D3D12_RESOURCE_STATE_COMMON);
     return true;
 }
 
