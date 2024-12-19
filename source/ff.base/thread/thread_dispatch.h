@@ -53,7 +53,7 @@ namespace ff
         ff::win_event pending_event;
         DWORD thread_id;
         bool destroyed;
-        void handle_message(ff::window_message& msg);
+        void handle_message(ff::window* window, ff::window_message& msg);
 
         ff::window message_window;
         ff::signal_connection message_window_connection;

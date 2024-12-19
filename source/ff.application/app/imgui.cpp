@@ -15,16 +15,17 @@ static std::shared_ptr<ff::texture> rotated_texture;
 static std::shared_ptr<ff::dxgi::target_base> rotated_target;
 static size_t buffer_count{};
 static ff::window* window{};
+static bool dpi_changed{};
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Runs when game thread starts and when DPI changes on the game thread
-static void imgui_init_style()
+static void imgui_init_style(ff::window* window)
 {
     ::ImGui_ImplDX12_InvalidateDeviceObjects();
 
     ImGuiIO& io = ImGui::GetIO();
-    io.FontGlobalScale = static_cast<float>(::window->dpi_scale());
+    io.FontGlobalScale = static_cast<float>(window->dpi_scale());
     io.DisplayFramebufferScale = ImVec2(io.FontGlobalScale, io.FontGlobalScale);
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -45,16 +46,17 @@ static void imgui_init_style()
     io.Fonts->AddFontFromMemoryTTF(const_cast<uint8_t*>(::font_data->data()), static_cast<int>(::font_data->size()), 13, &fontConfig);
 }
 
-void ff::internal::imgui::dpi_changed()
+static void handle_dpi_change(ff::window* window)
 {
-    if (::window)
+    if (::dpi_changed)
     {
+        ::dpi_changed = false;
         ff::dxgi::wait_for_idle();
-        ::imgui_init_style();
+        ::imgui_init_style(window);
     }
 }
 
-static void imgui_init_dx12()
+static void imgui_init_dx12(ff::window* window)
 {
     if (!::buffer_count)
     {
@@ -68,7 +70,7 @@ static void imgui_init_dx12()
 
     ::buffer_count = ff::app_render_target().buffer_count();
 
-    ::ImGui_ImplWin32_Init(*::window);
+    ::ImGui_ImplWin32_Init(*window);
     ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::buffer_count), ff::app_render_target().format(),
         ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
         ::descriptor_range.cpu_handle(0),
@@ -87,8 +89,8 @@ void ff::internal::imgui::init(ff::window* window)
     io.IniFilename = ::ini_path.c_str();
 
     ::window = window;
-    ::imgui_init_style();
-    ::imgui_init_dx12();
+    ::imgui_init_style(window);
+    ::imgui_init_dx12(window);
 }
 
 void ff::internal::imgui::destroy()
@@ -114,9 +116,11 @@ void ff::internal::imgui::advance_input()
 
 void ff::internal::imgui::rendering()
 {
+    ::handle_dpi_change(::window);
+
     if (::buffer_count != ff::app_render_target().buffer_count())
     {
-        ::imgui_init_dx12();
+        ::imgui_init_dx12(::window);
     }
 
     ::ImGui_ImplDX12_NewFrame();
@@ -196,13 +200,20 @@ void ff::internal::imgui::rendered()
     }
 }
 
-bool ff::internal::imgui::handle_window_message(ff::window_message& message)
+bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_message& message)
 {
     if (!message.handled && ::ImGui_ImplWin32_WndProcHandler(message.hwnd, message.msg, message.wp, message.lp))
     {
         ff::internal::imgui::advance_input();
         message.handled = true;
         return true;
+    }
+
+    switch (message.msg)
+    {
+        case WM_DPICHANGED:
+            ::dpi_changed = true;
+            break;
     }
 
     return false;
@@ -212,11 +223,10 @@ bool ff::internal::imgui::handle_window_message(ff::window_message& message)
 
 void ff::internal::imgui::init(ff::window* window) {}
 void ff::internal::imgui::destroy() {}
-void ff::internal::imgui::dpi_changed() {}
 void ff::internal::imgui::advance_input() {}
 void ff::internal::imgui::rendering() {}
 void ff::internal::imgui::render(ff::dxgi::command_context_base& context) {}
 void ff::internal::imgui::rendered() {}
-bool ff::internal::imgui::handle_window_message(ff::window_message& message) { return false; }
+bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_message& message) { return false; }
 
 #endif

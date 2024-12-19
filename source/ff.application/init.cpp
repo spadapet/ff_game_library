@@ -10,9 +10,8 @@ namespace
         one_time_init_app(const ff::init_app_params& params)
         {
             const ff::init_window_params window_params{};
-            ff::window* window = this->init_base.init_main_window(window_params);
-
-            this->app_status = ff::internal::app::init(window, params);
+            this->window_ = this->init_base.init_main_window(window_params);
+            this->app_status = ff::internal::app::init(this->window_, params);
         }
 
         ~one_time_init_app()
@@ -26,11 +25,17 @@ namespace
             return this->init_base && this->init_dx && this->app_status;
         }
 
+        ff::window* window() const
+        {
+            return this->window_;
+        }
+
     private:
         bool app_status{};
 
         ff::init_base init_base;
         ff::init_dx init_dx;
+        ff::window* window_{};
     };
 }
 
@@ -61,6 +66,11 @@ ff::init_app::~init_app()
 ff::init_app::operator bool() const
 {
     return ::init_app_data && ::init_app_data->valid();
+}
+
+ff::window* ff::init_app::window() const
+{
+    return ::init_app_data ? ::init_app_data->window() : nullptr;
 }
 
 void ff::init_app_params::default_empty()

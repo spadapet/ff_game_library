@@ -18,7 +18,7 @@ ff::thread_dispatch::thread_dispatch(thread_dispatch_type type)
     : thread_id(::GetCurrentThreadId())
     , destroyed(false)
     , message_window(ff::window::create_message_window())
-    , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1)))
+    , message_window_connection(this->message_window.message_sink().connect(std::bind(&thread_dispatch::handle_message, this, std::placeholders::_1, std::placeholders::_2)))
 {
     this->flushed_event.set();
 
@@ -346,7 +346,7 @@ void ff::thread_dispatch::post_flush()
     ::PostMessage(this->message_window, WM_USER, 0, 0);
 }
 
-void ff::thread_dispatch::handle_message(ff::window_message& msg)
+void ff::thread_dispatch::handle_message(ff::window* window, ff::window_message& msg)
 {
     if (msg.msg == WM_USER || msg.msg == WM_DESTROY)
     {

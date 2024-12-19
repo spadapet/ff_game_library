@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "source/resource.h"
 
+static std::unique_ptr<ff::init_app> init_app;
+
 template<class StateT>
 static void run_app()
 {
@@ -10,8 +12,8 @@ static void run_app()
             return std::make_shared<StateT>();
         };
 
-    ff::init_app init_app(app_params);
-    assert_ret(init_app);
+    ::init_app = std::make_unique<ff::init_app>(app_params);
+    assert_ret(*init_app);
     ff::handle_messages_until_quit();
 }
 
@@ -46,7 +48,7 @@ static INT_PTR CALLBACK wait_dialog_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 static int show_wait_dialog()
 {
     assert(ff::thread_dispatch::get_main()->current_thread());
-    INT_PTR result = ::DialogBox(ff::get_hinstance(), MAKEINTRESOURCE(IDD_WAIT_DIALOG), ff::window::main()->handle(), ::wait_dialog_proc);
+    INT_PTR result = ::DialogBox(ff::get_hinstance(), MAKEINTRESOURCE(IDD_WAIT_DIALOG), ::init_app->window()->handle(), ::wait_dialog_proc);
     return static_cast<int>(result);
 }
 
@@ -127,7 +129,7 @@ namespace
             else if (this->task->done())
             {
                 this->task = {};
-                ff::window::main()->close();
+                ::init_app->window()->close();
                 return std::make_shared<ff::state>();
             }
 

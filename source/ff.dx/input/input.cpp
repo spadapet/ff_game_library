@@ -109,19 +109,17 @@ static std::unique_ptr<::combined_input_devices> combined_devices_;
 static std::unique_ptr<ff::keyboard_device> keyboard;
 static std::unique_ptr<ff::pointer_device> pointer;
 static std::vector<std::unique_ptr<ff::gamepad_device>> gamepads;
-static std::vector<ff::signal_connection> main_window_connections;
 constexpr size_t MIN_GAMEPADS = 4;
 
-bool ff::internal::input::init(ff::window* window)
+bool ff::internal::input::init()
 {
     ::combined_devices_ = std::make_unique<::combined_input_devices>();
     ::keyboard = std::make_unique<ff::keyboard_device>();
     ::pointer = std::make_unique<ff::pointer_device>();
-    ::main_window_connections.emplace_back(window->message_sink().connect(std::bind(&::combined_input_devices::notify_window_message, ::combined_devices_.get(), std::placeholders::_1)));
 
     for (size_t i = 0; i < ::MIN_GAMEPADS; i++)
     {
-        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(window, i));
+        ::gamepads.emplace_back(std::make_unique<ff::gamepad_device>(i));
     }
 
     return true;
@@ -129,7 +127,6 @@ bool ff::internal::input::init(ff::window* window)
 
 void ff::internal::input::destroy()
 {
-    ::main_window_connections.clear();
     ::gamepads.clear();
     ::pointer.reset();
     ::keyboard.reset();

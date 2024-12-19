@@ -98,16 +98,10 @@ namespace ff
         int rotation; // DMDO_DEFAULT|90|180|270
     };
 
-    enum class window_type
-    {
-        none,
-        main,
-    };
-
     class window
     {
     public:
-        window(window_type type);
+        window() = default;
         window(window&& other) noexcept;
         window(const window& other) = delete;
         ~window();
@@ -120,47 +114,27 @@ namespace ff
 
         static bool class_exists(std::string_view name, HINSTANCE instance);
         static bool create_class(std::string_view name, DWORD style, HINSTANCE instance, HCURSOR cursor = nullptr, HBRUSH brush = nullptr, UINT menu_id = 0, UINT icon_id = 0);
-        static window create(window_type type, std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance = nullptr, HMENU menu = nullptr);
-        static window create_blank(window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style = 0, int x = 0, int y = 0, int cx = 0, int cy = 0, HMENU menu = nullptr);
+        static window create(std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance = nullptr, HMENU menu = nullptr);
+        static window create_blank(std::string_view window_name, HWND parent, DWORD style, DWORD ex_style = 0, int x = 0, int y = 0, int cx = 0, int cy = 0, HMENU menu = nullptr);
         static window create_message_window();
 
         HWND handle() const;
         operator HWND() const;
         bool operator==(HWND handle) const;
 
-        static window* main();
         ff::thread_dispatch* dispatch() const;
-        ff::signal_sink<ff::window_message&>& message_sink();
-
+        ff::signal_sink<ff::window*, ff::window_message&>& message_sink();
         ff::window_size size();
-        void size(ff::point_size size);
         double dpi_scale();
-        bool active();
-        bool visible();
-        bool enabled();
-        bool focused();
         bool close();
 
     private:
         void reset(HWND hwnd);
-        void destroy();
         void notify_message(ff::window_message& message);
 
         static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
-        // cache state on main thread to access from game thread
-        enum class state_t
-        {
-            none = 0,
-            active = 0x01,
-            focused = 0x02,
-            iconic = 0x04,
-            visible = 0x08,
-            enabled = 0x10,
-        };
-
-        HWND hwnd;
-        state_t state;
-        ff::signal<window_message&> message_signal;
+        HWND hwnd{};
+        ff::signal<ff::window*, ff::window_message&> message_signal;
     };
 }

@@ -37,8 +37,8 @@ namespace ff::dxgi
         virtual size_t frame_latency() const = 0;
         virtual bool vsync() const = 0;
         virtual bool allow_full_screen() const = 0;
-        virtual bool full_screen() = 0;
-        virtual bool full_screen(bool value) = 0;
+        virtual bool full_screen(ff::rect_int* windowed_rect = nullptr) = 0;
+        virtual bool full_screen(bool value, const ff::rect_int* windowed_rect_override = nullptr) = 0;
 
         virtual const ff::dxgi::target_window_params& init_params() const = 0;
         virtual void init_params(const ff::dxgi::target_window_params& params) = 0;

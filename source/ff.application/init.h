@@ -31,5 +31,6 @@ namespace ff
         ~init_app();
 
         operator bool() const;
+        ff::window* window() const;
     };
 }

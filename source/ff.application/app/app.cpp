@@ -27,7 +27,6 @@ constexpr size_t MAX_ADVANCES_PER_FRAME = 4;
 constexpr size_t MAX_ADVANCES_PER_FRAME_DEBUGGER = 4;
 constexpr size_t MAX_ADVANCE_MULTIPLIER = 4;
 
-static ff::window* main_window{};
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::timer timer;
@@ -190,7 +189,7 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
     return advance_type;
 }
 
-static void init_game_thread()
+static void init_game_thread(ff::window* window)
 {
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
     ::frame_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::frame);
@@ -218,7 +217,7 @@ static void init_game_thread()
     }
 
     ::game_state = std::make_shared<ff::state_list>(std::move(states));
-    ff::internal::imgui::init(::main_window);
+    ff::internal::imgui::init(window);
 }
 
 static void destroy_game_thread()
@@ -235,114 +234,100 @@ static void destroy_game_thread()
     ::game_thread_event.set();
 }
 
-static void start_game_state()
+static void game_thread(ff::window* window)
 {
-    if (::game_thread_state != ::game_thread_state_t::stopped)
-    {
-        ::game_thread_state = ::game_thread_state_t::running;
-    }
-}
-
-static void pause_game_state()
-{
-    if (::game_thread_state != ::game_thread_state_t::stopped)
-    {
-        ::game_thread_state = ::game_thread_state_t::paused;
-        ff::internal::app::request_save_settings();
-        ff::dxgi::trim_device();
-    }
-
-    ::game_thread_event.set();
-}
-
-static void game_thread()
-{
-    ::init_game_thread();
+    ::init_game_thread(window);
 
     for (ff::state::advance_t advance_type = ff::state::advance_t::stopped; ::game_thread_state != ::game_thread_state_t::stopped;)
     {
-        if (::game_thread_state == ::game_thread_state_t::pausing)
+        switch (::game_thread_state)
         {
-            advance_type = ff::state::advance_t::stopped;
-            ::pause_game_state();
-        }
-        else if (::game_thread_state == ::game_thread_state_t::paused)
-        {
-            ::game_thread_dispatch->wait_for_dispatch();
-        }
-        else
-        {
-            ff::frame_dispatch_scope frame_dispatch(*::frame_thread_dispatch);
-            advance_type = ::frame_advance_and_render(advance_type);
+            case ::game_thread_state_t::pausing:
+                advance_type = ff::state::advance_t::stopped;
+                ::game_thread_state = ::game_thread_state_t::paused;
+                ::game_thread_event.set();
+                break;
+
+            case ::game_thread_state_t::paused:
+               ::game_thread_dispatch->wait_for_dispatch();
+               break;
+
+            default:
+                ff::frame_dispatch_scope frame_dispatch(*::frame_thread_dispatch);
+                advance_type = ::frame_advance_and_render(advance_type);
+                break;
         }
     }
 
     ::destroy_game_thread();
 }
 
-static void start_game_thread()
+static void start_game_thread(ff::window* window)
 {
     if (::game_thread_dispatch)
     {
         ff::log::write(ff::log::type::application, "Unpause game thread");
-        ::game_thread_dispatch->post(::start_game_state);
+        ::game_thread_dispatch->post([]()
+        {
+            if (::game_thread_state != ::game_thread_state_t::stopped)
+            {
+                ::game_thread_state = ::game_thread_state_t::running;
+            }
+        });
     }
     else if (::game_thread_state != ::game_thread_state_t::stopped)
     {
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
-        std::jthread(::game_thread).detach();
+        std::jthread(::game_thread, window).detach();
         ::game_thread_event.wait_and_reset();
     }
 }
 
 static void pause_game_thread()
 {
-    if (::game_thread_dispatch)
+    check_ret(::game_thread_dispatch);
+    ff::log::write(ff::log::type::application, "Pause game thread");
+
+    ::game_thread_dispatch->post([]()
     {
-        ::game_thread_dispatch->post([]()
-            {
-                if (::game_thread_state == ::game_thread_state_t::running)
-                {
-                    ff::log::write(ff::log::type::application, "Pause game thread");
-                    ::game_thread_state = ::game_thread_state_t::pausing;
-                }
-                else
-                {
-                    ::game_thread_event.set();
-                }
-            });
+        switch (::game_thread_state)
+        {
+            case ::game_thread_state_t::running:
+                ::game_thread_state = ::game_thread_state_t::pausing;
+                break;
 
-        ::game_thread_event.wait_and_reset();
-    }
+            default:
+                ::game_thread_event.set();
+                break;
+        }
+    });
 
-    // Just in case the app gets killed while paused
-    ff::internal::app::save_settings();
+    ::game_thread_event.wait_and_reset();
 }
 
 static void stop_game_thread()
 {
-    if (::game_thread_dispatch)
+    check_ret(::game_thread_dispatch);
+    ff::log::write(ff::log::type::application, "Stop game thread");
+
+    ::game_thread_dispatch->post([]()
     {
-        ff::log::write(ff::log::type::application, "Stop game thread");
+        ::game_thread_state = ::game_thread_state_t::stopped;
+    });
 
-        ::game_thread_dispatch->post([]()
-            {
-                ::game_thread_state = ::game_thread_state_t::stopped;
-            });
-
-        ::game_thread_event.wait_and_reset();
-    }
+    ::game_thread_event.wait_and_reset();
 }
 
-static void update_window_visible()
+// main thread
+static void update_window_visible(ff::window* window)
 {
-    const bool visible = ::main_window && ::main_window->visible();
+    const bool visible = ::IsWindowVisible(*window) && !::IsIconic(*window);
     if (::window_visible != visible)
     {
         if (::window_visible = visible)
         {
-            ::start_game_thread();
+            ::start_game_thread(window);
         }
         else
         {
@@ -351,20 +336,22 @@ static void update_window_visible()
     }
 }
 
-static void handle_window_message(ff::window_message& message)
+// main thread
+static void handle_window_message(ff::window* window, ff::window_message& message)
 {
-    assert(::main_window && *::main_window == message.hwnd);
-
-    if (ff::internal::imgui::handle_window_message(message))
+    if (ff::internal::imgui::handle_window_message(window, message))
     {
         return;
     }
+
+    ff::input::combined_devices().notify_window_message(message);
 
     switch (message.msg)
     {
         case WM_SIZE:
         case WM_SHOWWINDOW:
-            ::main_window->dispatch()->post(::update_window_visible);
+        case WM_WINDOWPOSCHANGED:
+            window->dispatch()->post(std::bind(::update_window_visible, window));
             break;
 
         case WM_DESTROY:
@@ -373,11 +360,11 @@ static void handle_window_message(ff::window_message& message)
             break;
 
         case WM_NCDESTROY:
-            ::main_window = nullptr;
+            ::PostQuitMessage(0);
             break;
 
         case WM_POWERBROADCAST:
-            switch (message.wp) 
+            switch (message.wp)
             {
                 case PBT_APMSUSPEND:
                     ff::log::write(ff::log::type::application, "Suspending");
@@ -386,13 +373,9 @@ static void handle_window_message(ff::window_message& message)
 
                 case PBT_APMRESUMEAUTOMATIC:
                     ff::log::write(ff::log::type::application, "Resuming");
-                    ::start_game_thread();
+                    ::start_game_thread(window);
                     break;
             }
-            break;
-
-        case WM_DPICHANGED:
-            ff::thread_dispatch::get_game()->post(ff::internal::imgui::dpi_changed);
             break;
     }
 }
@@ -464,9 +447,8 @@ static void destroy_log()
     ::log_file.reset();
 }
 
-static void init_window()
+static void init_window(HWND hwnd)
 {
-    HWND hwnd = *::main_window;
     LPCWSTR icon_name = MAKEINTRESOURCE(1);
 
     if (::FindResourceW(ff::get_hinstance(), icon_name, RT_ICON))
@@ -492,7 +474,6 @@ static void init_window()
 
 bool ff::internal::app::init(ff::window* window, const ff::init_app_params& params)
 {
-    ::main_window = window;
     ::app_params = params;
     ::init_app_name();
     ::init_log();
@@ -505,7 +486,7 @@ bool ff::internal::app::init(ff::window* window, const ff::init_app_params& para
     ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
 
     ff::internal::app::load_settings();
-    ff::thread_dispatch::get_main()->post(::init_window);
+    window->dispatch()->post(std::bind(::init_window, window->handle()));;
 
     return true;
 }

@@ -6,7 +6,7 @@ namespace ff::game
 {
     struct system_options
     {
-        static constexpr uint8_t CURRENT_VERSION = 2;
+        static constexpr uint8_t CURRENT_VERSION = 3;
 
         uint8_t version{ ff::game::system_options::CURRENT_VERSION };
         bool full_screen{};
@@ -14,6 +14,7 @@ namespace ff::game
         bool music{ true };
         ff::fixed_int sound_volume{ 1 };
         ff::fixed_int music_volume{ 1 };
+        ff::rect_int windowed_rect{};
     };
 
     class root_state_base : public ff::state

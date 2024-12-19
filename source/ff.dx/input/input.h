@@ -19,7 +19,7 @@ namespace ff::input
 
 namespace ff::internal::input
 {
-    bool init(ff::window* window);
+    bool init();
     void destroy();
 
     void add_device(ff::input_device_base* device);

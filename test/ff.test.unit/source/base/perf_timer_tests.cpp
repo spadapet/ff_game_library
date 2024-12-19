@@ -40,22 +40,25 @@ namespace ff::test::base
             }
 
             measures.reset(6.0, &results, true);
-
             Assert::AreEqual(5.0, results.delta_seconds);
-            Assert::AreEqual<size_t>(2, results.counter_infos.size());
 
-            for (const ff::perf_results::counter_info& info : results.counter_infos)
+            if constexpr (ff::constants::profile_build)
             {
-                ff::log::write(ff::log::type::test, ff::string::indent_string(info.level * 2),
-                    "Counter:", info.counter->name,
-                    ", Ticks:", info.ticks,
-                    ", Count:", info.hit_last_frame);
-            }
+                Assert::AreEqual<size_t>(2, results.counter_infos.size());
 
-            if (!::IsDebuggerPresent())
-            {
-                double percent = static_cast<double>(results.counter_infos[1].ticks) / results.counter_infos[0].ticks;
-                Assert::IsTrue(percent > 0.78 && percent < 0.82);
+                for (const ff::perf_results::counter_info& info : results.counter_infos)
+                {
+                    ff::log::write(ff::log::type::test, ff::string::indent_string(info.level * 2),
+                        "Counter:", info.counter->name,
+                        ", Ticks:", info.ticks,
+                        ", Count:", info.hit_last_frame);
+                }
+
+                if (!::IsDebuggerPresent())
+                {
+                    double percent = static_cast<double>(results.counter_infos[1].ticks) / results.counter_infos[0].ticks;
+                    Assert::IsTrue(percent > 0.78 && percent < 0.82);
+                }
             }
         }
     };

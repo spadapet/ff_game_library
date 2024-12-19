@@ -43,8 +43,8 @@ namespace ff::dx12
         virtual size_t frame_latency() const override;
         virtual bool vsync() const override;
         virtual bool allow_full_screen() const override;
-        virtual bool full_screen() override;
-        virtual bool full_screen(bool value) override;
+        virtual bool full_screen(ff::rect_int* windowed_rect = nullptr) override;
+        virtual bool full_screen(bool value, const ff::rect_int* windowed_rect_override = nullptr) override;
         virtual const ff::dxgi::target_window_params& init_params() const override;
         virtual void init_params(const ff::dxgi::target_window_params& params) override;
 
@@ -53,7 +53,7 @@ namespace ff::dx12
         virtual void before_reset() override;
         virtual bool reset() override;
 
-        void handle_message(ff::window_message& msg);
+        void handle_message(ff::window* window, ff::window_message& msg);
         void before_resize();
         bool internal_reset();
         void handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy);

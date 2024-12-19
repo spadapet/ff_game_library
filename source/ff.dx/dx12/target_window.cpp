@@ -16,6 +16,20 @@ constexpr size_t MAX_BUFFER_COUNT = 4;
 static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 
+ff::point_int get_minimum_window_size(HWND hwnd, const LONG* style_override = nullptr)
+{
+    const DWORD style = static_cast<DWORD>(style_override ? *style_override : ::GetWindowLong(hwnd, GWL_STYLE));
+    const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(hwnd, GWL_EXSTYLE));
+
+    RECT rect{ 0, 0, 240, 135 };
+    if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(hwnd)))
+    {
+        return ff::point_int(rect.right - rect.left, rect.bottom - rect.top);
+    }
+
+    return ff::point_int(320, 240);
+}
+
 static size_t fix_buffer_count(size_t value)
 {
     return ff::math::clamp<size_t>(value, MIN_BUFFER_COUNT, MAX_BUFFER_COUNT);
@@ -44,9 +58,16 @@ static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
     }
 }
 
+
 static ff::rect_int convert_rect(const RECT& rect)
 {
     return ff::rect_int(rect.left, rect.top, rect.right, rect.bottom);
+}
+
+static ff::rect_int get_window_rect(HWND hwnd)
+{
+    RECT rect;
+    return ::GetWindowRect(hwnd, &rect) ? ::convert_rect(rect) : ff::rect_int{};
 }
 
 static bool full_screen_style(HWND hwnd)
@@ -57,24 +78,28 @@ static bool full_screen_style(HWND hwnd)
 
 static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int* windowed_rect = nullptr)
 {
-    HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    HMONITOR monitor = (full_screen || !windowed_rect)
+        ? ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+        : ::MonitorFromRect(reinterpret_cast<LPCRECT>(windowed_rect), MONITOR_DEFAULTTONEAREST);
     MONITORINFO monitor_info{ sizeof(monitor_info) };
     assert_ret_val(monitor && ::GetMonitorInfo(monitor, &monitor_info), false);
 
-    RECT temp_rect;
-    const ff::rect_int old_window_rect = ::GetWindowRect(hwnd, &temp_rect) ? ::convert_rect(temp_rect) : ff::rect_int{};
+    const ff::rect_int old_window_rect = ::get_window_rect(hwnd);
     const ff::rect_int monitor_rect = ::convert_rect(full_screen ? monitor_info.rcMonitor : monitor_info.rcWork);
     ff::rect_int new_window_rect = (full_screen ? monitor_rect : (windowed_rect ? *windowed_rect : old_window_rect));
-
-    if (!full_screen && windowed_rect)
-    {
-        new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
-    }
 
     const LONG old_style = ::GetWindowLong(hwnd, GWL_STYLE);
     const LONG new_style = (full_screen ? WS_POPUP : WS_OVERLAPPEDWINDOW) | (old_style & WS_VISIBLE);
     const LONG relevant_styles = WS_POPUP | WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     const bool style_changed = (old_style & relevant_styles) != (new_style & relevant_styles);
+
+    if (!full_screen && windowed_rect)
+    {
+        const ff::point_int min_size = ::get_minimum_window_size(hwnd, &new_style);
+        new_window_rect.right = std::max(new_window_rect.right, new_window_rect.left + min_size.x);
+        new_window_rect.bottom = std::max(new_window_rect.bottom, new_window_rect.top + min_size.y);
+        new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
+    }
 
     if (style_changed || old_window_rect != new_window_rect)
     {
@@ -95,17 +120,11 @@ static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int
 
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
     : window(window)
-    , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1)))
+    , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1, std::placeholders::_2)))
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
+    , windowed_rect(::get_window_rect(*window))
 {
     assert_msg(!::full_screen_style(*this->window), "Full screen must be set by target_window, not during creation");
-
-    RECT windowed_rect;
-    if (::GetWindowRect(*this->window, &windowed_rect))
-    {
-        this->windowed_rect = ::convert_rect(windowed_rect);
-    }
-
     this->init_params(params);
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
@@ -485,13 +504,19 @@ bool ff::dx12::target_window::allow_full_screen() const
 }
 
 // Called on game or main thread
-bool ff::dx12::target_window::full_screen()
+bool ff::dx12::target_window::full_screen(ff::rect_int* windowed_rect)
 {
     std::scoped_lock lock(this->window_mutex);
+
+    if (windowed_rect)
+    {
+        *windowed_rect = this->windowed_rect;
+    }
+
     return this->window ? ::full_screen_style(*this->window) : this->was_full_screen_on_close;
 }
 
-bool ff::dx12::target_window::full_screen(bool value)
+bool ff::dx12::target_window::full_screen(bool value, const ff::rect_int* windowed_rect_override)
 {
     bool status = false;
 
@@ -500,6 +525,11 @@ bool ff::dx12::target_window::full_screen(bool value)
         ff::log::write(ff::log::type::dx12_target, "Set full screen: ", value);
 
         std::scoped_lock lock(this->window_mutex);
+        if (windowed_rect_override)
+        {
+            this->windowed_rect = *windowed_rect_override;
+        }
+
         if (this->window)
         {
             status = true;
@@ -556,7 +586,7 @@ bool ff::dx12::target_window::reset()
     return this->internal_reset();
 }
 
-void ff::dx12::target_window::handle_message(ff::window_message& msg)
+void ff::dx12::target_window::handle_message(ff::window* window, ff::window_message& msg)
 {
     switch (msg.msg)
     {
@@ -583,6 +613,11 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
                 {
                     ::update_window_styles(msg.hwnd, true);
                 }
+                else
+                {
+                    std::scoped_lock lock(this->window_mutex);
+                    this->windowed_rect = ::get_window_rect(msg.hwnd);
+                }
 
                 ff::window_size size = this->window->size();
                 if (this->resizing_data.resizing)
@@ -605,26 +640,20 @@ void ff::dx12::target_window::handle_message(ff::window_message& msg)
             break;
 
         case WM_MOVE:
+            if (!::full_screen_style(msg.hwnd))
             {
-                RECT windowed_rect{};
-                if (!::full_screen_style(msg.hwnd) && ::GetWindowRect(msg.hwnd, &windowed_rect))
-                {
-                    this->windowed_rect = ::convert_rect(windowed_rect);
-                }
+                std::scoped_lock lock(this->window_mutex);
+                this->windowed_rect = ::get_window_rect(msg.hwnd);
             }
             break;
 
         case WM_GETMINMAXINFO:
+            if (!::full_screen_style(msg.hwnd))
             {
-                RECT rect{ 0, 0, 240, 135 };
-                const DWORD style = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_STYLE));
-                const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(msg.hwnd, GWL_EXSTYLE));
-                if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(msg.hwnd)))
-                {
-                    MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(msg.lp);
-                    mm.ptMinTrackSize.x = rect.right - rect.left;
-                    mm.ptMinTrackSize.y = rect.bottom - rect.top;
-                }
+                const ff::point_int size = ::get_minimum_window_size(msg.hwnd);
+                MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(msg.lp);
+                mm.ptMinTrackSize.x = size.x;
+                mm.ptMinTrackSize.y = size.y;
             }
             break;
 

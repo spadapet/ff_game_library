@@ -16,32 +16,17 @@ int ff::window_size::rotated_degrees(bool ccw) const
     return ccw ? (360 - this->rotation * 90) % 360 : this->rotation * 90;
 }
 
-static ff::window* main_window = nullptr;
-
-ff::window::window(window_type type)
-    : hwnd(nullptr)
-    , state(state_t::none)
-{
-    if (type == window_type::main)
-    {
-        assert(!::main_window);
-        ::main_window = this;
-    }
-}
-
 ff::window::window(window&& other) noexcept
-    : hwnd(nullptr)
 {
     *this = std::move(other);
 }
 
 ff::window::~window()
 {
-    this->destroy();
-
-    if (this == ::main_window)
+    if (this->hwnd)
     {
-        ::main_window = nullptr;
+        ::DestroyWindow(this->hwnd);
+        assert(!this->hwnd);
     }
 }
 
@@ -49,16 +34,9 @@ ff::window& ff::window::operator=(window&& other) noexcept
 {
     if (this != &other)
     {
-        if (&other == ::main_window)
-        {
-            ::main_window = this;
-        }
-
         HWND hwnd = other.hwnd;
         other.reset(nullptr);
         this->reset(hwnd);
-        this->state = other.state;
-        other.state = state_t::none;
     }
 
     return *this;
@@ -111,12 +89,12 @@ bool ff::window::create_class(std::string_view name, DWORD style, HINSTANCE inst
     return ::RegisterClassEx(&new_class) != 0;
 }
 
-ff::window ff::window::create(window_type type, std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance, HMENU menu)
+ff::window ff::window::create(std::string_view class_name, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HINSTANCE instance, HMENU menu)
 {
     std::wstring wclass_name = ff::string::to_wstring(class_name);
     std::wstring wwindow_name = ff::string::to_wstring(window_name);
 
-    ff::window new_window(type);
+    ff::window new_window;
     HWND hwnd = ::CreateWindowEx(
         ex_style,
         wclass_name.c_str(),
@@ -129,17 +107,16 @@ ff::window ff::window::create(window_type type, std::string_view class_name, std
     return new_window;
 }
 
-ff::window ff::window::create_blank(ff::window_type type, std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
+ff::window ff::window::create_blank(std::string_view window_name, HWND parent, DWORD style, DWORD ex_style, int x, int y, int cx, int cy, HMENU menu)
 {
     std::string_view class_name = "ff::window::blank";
 
     if (ff::window::create_class(class_name, CS_DBLCLKS, ff::get_hinstance()))
     {
-        return ff::window::create(type, class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
+        return ff::window::create(class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);
     }
 
-    assert(false);
-    return ff::window(ff::window_type::none);
+    debug_fail_ret_val(ff::window());
 }
 
 ff::window ff::window::create_message_window()
@@ -148,11 +125,10 @@ ff::window ff::window::create_message_window()
 
     if (ff::window::create_class(class_name, 0, ff::get_hinstance()))
     {
-        return ff::window::create(ff::window_type::none, class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance());
+        return ff::window::create(class_name, class_name, HWND_MESSAGE, 0, 0, 0, 0, 0, 0, ff::get_hinstance());
     }
 
-    assert(false);
-    return ff::window(ff::window_type::none);
+    debug_fail_ret_val(ff::window());
 }
 
 HWND ff::window::handle() const
@@ -170,19 +146,13 @@ bool ff::window::operator==(HWND hwnd) const
     return this->hwnd == hwnd;
 }
 
-ff::window* ff::window::main()
-{
-    assert(::main_window);
-    return ::main_window;
-}
-
 ff::thread_dispatch* ff::window::dispatch() const
 {
     // Assume all HWNDs are on the main thread for now
     return ff::thread_dispatch::get_main();
 }
 
-ff::signal_sink<ff::window_message&>& ff::window::message_sink()
+ff::signal_sink<ff::window*, ff::window_message&>& ff::window::message_sink()
 {
     return this->message_signal;
 }
@@ -191,32 +161,11 @@ void ff::window::notify_message(ff::window_message& message)
 {
     switch (message.msg)
     {
-        case WM_ACTIVATE:
-            this->state = ff::flags::set(this->state, state_t::active, message.wp != 0);
-            break;
-
-        case WM_ENABLE:
-            this->state = ff::flags::set(this->state, state_t::enabled, message.wp != 0);
-            break;
-
-        case WM_SETFOCUS:
-        case WM_KILLFOCUS:
-            this->state = ff::flags::set(this->state, state_t::focused, message.msg == WM_SETFOCUS);
-            break;
-
-        case WM_SIZE:
-            this->state = ff::flags::set(this->state, state_t::iconic, message.wp == SIZE_MINIMIZED);
-            break;
-
-        case WM_SHOWWINDOW:
-            this->state = ff::flags::set(this->state, state_t::visible, message.wp != 0);
-            break;
-
         case WM_DPICHANGED:
             {
                 const RECT* rect = reinterpret_cast<const RECT*>(message.lp);
                 ::SetWindowPos(message.hwnd, nullptr, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
-                    SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+                    SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
 
                 message.result = 0;
                 message.handled = true;
@@ -224,7 +173,7 @@ void ff::window::notify_message(ff::window_message& message)
             break;
     }
 
-    this->message_signal.notify(message);
+    this->message_signal.notify(this, message);
 }
 
 ff::window_size ff::window::size()
@@ -253,58 +202,9 @@ ff::window_size ff::window::size()
     return size;
 }
 
-void ff::window::size(ff::point_size size)
-{
-    RECT rect{ 0, 0, static_cast<int>(size.x), static_cast<int>(size.y) };
-
-    this->dispatch()->post([hwnd = this->hwnd, rect]()
-    {
-        const DWORD style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_STYLE));
-        const DWORD ex_style = static_cast<DWORD>(GetWindowLong(hwnd, GWL_EXSTYLE));
-
-        RECT adjusted_rect = rect, window_rect{};
-        HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        MONITORINFO mi{};
-        mi.cbSize = sizeof(mi);
-
-        if (monitor && ::GetMonitorInfo(monitor, &mi) &&
-            ::AdjustWindowRectExForDpi(&adjusted_rect, style, FALSE, ex_style, ::GetDpiForWindow(hwnd)) &&
-            ::GetWindowRect(hwnd, &window_rect))
-        {
-            ff::rect_int monitor_rect(mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom);
-            ff::rect_int new_window_rect(window_rect.left, window_rect.top, window_rect.left + adjusted_rect.right - adjusted_rect.left, window_rect.top + adjusted_rect.bottom - adjusted_rect.top);
-
-            new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
-
-            ::SetWindowPos(hwnd, nullptr, new_window_rect.left, new_window_rect.top, new_window_rect.width(), new_window_rect.height(),
-                SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-        }
-    });
-}
-
 double ff::window::dpi_scale()
 {
     return (this->hwnd ? ::GetDpiForWindow(this->hwnd) : ::GetDpiForSystem()) / 96.0;
-}
-
-bool ff::window::active()
-{
-    return this->hwnd && ff::flags::has(this->state, state_t::active);
-}
-
-bool ff::window::visible()
-{
-    return this->hwnd && ff::flags::has(this->state, state_t::visible) && !ff::flags::has(this->state, state_t::iconic);
-}
-
-bool ff::window::enabled()
-{
-    return this->hwnd && ff::flags::has(this->state, state_t::enabled);
-}
-
-bool ff::window::focused()
-{
-    return this->hwnd && ff::flags::has(this->state, state_t::focused);
 }
 
 bool ff::window::close()
@@ -326,20 +226,10 @@ void ff::window::reset(HWND hwnd)
     }
 
     this->hwnd = hwnd;
-    this->state = ::IsWindowEnabled(this->hwnd) ? state_t::enabled : state_t::none;
 
     if (this->hwnd)
     {
         ::SetWindowLongPtr(this->hwnd, 0, reinterpret_cast<ULONG_PTR>(this));
-    }
-}
-
-void ff::window::destroy()
-{
-    if (this->hwnd)
-    {
-        ::DestroyWindow(this->hwnd);
-        assert(!this->hwnd);
     }
 }
 
@@ -361,11 +251,6 @@ LRESULT ff::window::window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         if (msg == WM_NCDESTROY)
         {
             self->reset(nullptr);
-
-            if (::main_window == self)
-            {
-                ::PostQuitMessage(0);
-            }
         }
 
         if (message.handled)

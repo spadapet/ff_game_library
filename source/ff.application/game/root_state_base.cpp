@@ -256,7 +256,8 @@ void ff::game::root_state_base::load_settings()
 {
     ff::dict dict = ff::settings(::ID_APP_STATE);
 
-    if (!dict.get_struct(::ID_SYSTEM_OPTIONS, this->system_options_) || this->system_options_.version != ff::game::system_options::CURRENT_VERSION)
+    if (!dict.get_struct(::ID_SYSTEM_OPTIONS, this->system_options_) ||
+        this->system_options_.version != ff::game::system_options::CURRENT_VERSION)
     {
         this->system_options_ = ff::game::system_options();
     }
@@ -289,12 +290,13 @@ void ff::game::root_state_base::init_game_state()
 
 void ff::game::root_state_base::apply_system_options()
 {
-    ff::app_render_target().full_screen(this->system_options_.full_screen);
+    ff::app_render_target().full_screen(this->system_options_.full_screen,
+        !this->system_options_.windowed_rect.empty() ? &this->system_options_.windowed_rect : nullptr);
 }
 
 void ff::game::root_state_base::on_save_settings()
 {
-    this->system_options_.full_screen = ff::app_render_target().full_screen();
+    this->system_options_.full_screen = ff::app_render_target().full_screen(&this->system_options_.windowed_rect);
 
     ff::dict dict = ff::settings(::ID_APP_STATE);
     dict.set_struct(::ID_SYSTEM_OPTIONS, this->system_options_);

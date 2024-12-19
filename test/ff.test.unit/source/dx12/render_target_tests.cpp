@@ -16,8 +16,9 @@ namespace ff::test::graphics
 
         TEST_METHOD(target_window)
         {
+            ff::window window = ff::window::create_blank("target_window", nullptr, WS_OVERLAPPEDWINDOW);
             ff::dxgi::target_window_params params{};
-            ff::dx12::target_window target(ff::window::main(), params);
+            ff::dx12::target_window target(&window, params);
 
             Assert::AreNotEqual<size_t>(0, target.dx12_target_view().ptr);
             Assert::AreEqual<size_t>(2, target.buffer_count());

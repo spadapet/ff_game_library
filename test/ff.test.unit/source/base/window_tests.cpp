@@ -12,7 +12,7 @@ namespace ff::test::base
 
             int count = 0;
 
-            ff::signal_connection connection = wnd.message_sink().connect([&count](ff::window_message& msg)
+            ff::signal_connection connection = wnd.message_sink().connect([&count](ff::window* window, ff::window_message& msg)
                 {
                     if (msg.msg == WM_APP)
                     {

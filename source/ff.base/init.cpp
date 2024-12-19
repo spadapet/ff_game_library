@@ -81,14 +81,14 @@ namespace
                 if (params.window_class.empty())
                 {
                     this->main_window = std::make_unique<ff::window>(
-                        ff::window::create_blank(ff::window_type::main, params.title, nullptr,
+                        ff::window::create_blank(params.title, nullptr,
                             WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
                 }
                 else
                 {
                     this->main_window = std::make_unique<ff::window>(
-                        ff::window::create(ff::window_type::main, params.window_class, params.title, nullptr,
+                        ff::window::create(params.window_class, params.title, nullptr,
                             WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
                             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
                 }
