@@ -39,7 +39,7 @@ ff::value_ptr ff::type::resource_type::try_convert_to(const value* val, std::typ
     }
 
     // Do not access src->value() because it may be loading forever during resource compilation
-    // (when the resource reference doesn't exist)
+    // (during "load from source" when the resource doesn't exist)
     return nullptr;
 }
 

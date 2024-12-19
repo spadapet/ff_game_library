@@ -348,8 +348,14 @@ const ff::animation::cached_visuals_t* ff::animation::get_cached_visuals(const f
     if (i == this->cached_visuals.cend())
     {
         ff::animation::cached_visuals_t visuals;
+        ff::value_ptr resource_value = value;
 
-        auto anim = std::dynamic_pointer_cast<ff::animation_base>(value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>());
+        if (value->is_type<ff::resource>())
+        {
+            resource_value = value->get<ff::resource>()->value();
+        }
+
+        auto anim = std::dynamic_pointer_cast<ff::animation_base>(resource_value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>());
         if (anim)
         {
             visuals.push_back(anim);

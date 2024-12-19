@@ -228,7 +228,6 @@ static void destroy_game_thread()
     ::game_state.reset();
     ::app_params.game_thread_finished_func();
     ff::internal::imgui::destroy();
-
     ff::global_resources::destroy_game_thread();
     ff::thread_pool::flush();
     ::frame_thread_dispatch.reset();

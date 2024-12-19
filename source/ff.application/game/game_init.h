@@ -7,11 +7,11 @@ namespace ff::game
     struct init_params
     {
         std::function<void()> register_resources_func{ &ff::game::init_params::default_empty };
-        std::function<std::shared_ptr<ff::game::root_state_base>()> create_initial_state_func{ &ff::game::init_params::default_create_initial_state };
+        std::function<std::shared_ptr<ff::game::root_state_base>()> create_root_state_func{ &ff::game::init_params::default_create_root_state };
 
     private:
         static void default_empty();
-        static std::shared_ptr<ff::game::root_state_base> default_create_initial_state();
+        static std::shared_ptr<ff::game::root_state_base> default_create_root_state();
     };
 
     template<class T>
@@ -19,7 +19,7 @@ namespace ff::game
     {
         init_params_t()
         {
-            this->create_initial_state_func = []() -> std::shared_ptr<ff::game::root_state_base>
+            this->create_root_state_func = []() -> std::shared_ptr<ff::game::root_state_base>
                 {
                     return std::make_shared<T>();
                 };

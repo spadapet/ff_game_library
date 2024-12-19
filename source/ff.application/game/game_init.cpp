@@ -4,63 +4,63 @@
 #include "game/root_state_base.h"
 #include "init.h"
 
-static std::weak_ptr<ff::game::root_state_base> app_state;
+static std::shared_ptr<ff::game::root_state_base> root_state;
 
 void ff::game::init_params::default_empty()
 {
 }
 
-std::shared_ptr<ff::game::root_state_base> ff::game::init_params::default_create_initial_state()
+std::shared_ptr<ff::game::root_state_base> ff::game::init_params::default_create_root_state()
 {
-    return {};
+    return std::make_shared<ff::game::root_state_base>();
 }
 
-static std::shared_ptr<ff::state> create_app_state(const ff::game::init_params& init_params)
+static void register_resources(const ff::game::init_params& params)
 {
-    auto app_state = init_params.create_initial_state_func();
-    ::app_state = app_state;
+    std::filesystem::path path = ff::filesystem::executable_path().parent_path();
+    verify(ff::global_resources::add_files(path));
+    params.register_resources_func();
+}
 
-    if (app_state)
-    {
-        app_state->internal_init();
-    }
+static std::shared_ptr<ff::state> create_root_state(const ff::game::init_params& params)
+{
+    ::root_state = params.create_root_state_func();
+    ::root_state->internal_init();
+    return ::root_state;
+}
 
-    return app_state;
+static void destroy_root_state()
+{
+    ::root_state.reset();
 }
 
 static double get_time_scale()
 {
-    auto app_state = ::app_state.lock();
-    return app_state ? app_state->time_scale() : 1;
+    return ::root_state->time_scale();
 }
 
 static ff::state::advance_t get_advance_type()
 {
-    auto app_state = ::app_state.lock();
-    return app_state ? app_state->advance_type() : ff::state::advance_t::running;
+    return ::root_state->advance_type();
 }
 
 static bool get_clear_back_buffer()
 {
-    auto app_state = ::app_state.lock();
-    return app_state ? app_state->clear_back_buffer() : false;
+    return ::root_state->clear_back_buffer();
 }
 
-static ff::init_app_params get_app_params(const ff::game::init_params& init_params)
+int ff::game::run(const ff::game::init_params& game_params)
 {
-    ff::init_app_params params{};
-    params.register_resources_func = init_params.register_resources_func;
-    params.create_initial_state_func = [&init_params]() { return ::create_app_state(init_params); };
-    params.get_time_scale_func = ::get_time_scale;
-    params.get_advance_type_func = ::get_advance_type;
-    params.get_clear_back_buffer = ::get_clear_back_buffer;
+    ff::init_app_params app_params{};
+    app_params.register_resources_func = [&game_params]() { ::register_resources(game_params); };
+    app_params.create_initial_state_func = [&game_params]() { return ::create_root_state(game_params); };
+    app_params.game_thread_finished_func = ::destroy_root_state;
+    app_params.get_time_scale_func = ::get_time_scale;
+    app_params.get_advance_type_func = ::get_advance_type;
+    app_params.get_clear_back_buffer = ::get_clear_back_buffer;
 
-    return params;
-}
-
-int ff::game::run(const ff::game::init_params& params)
-{
-    ff::init_app init_app(::get_app_params(params));
+    ff::init_app init_app(app_params);
     assert_ret_val(init_app, 1);
+
     return ff::handle_messages_until_quit();
 }
