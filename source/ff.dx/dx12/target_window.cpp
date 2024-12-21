@@ -16,20 +16,6 @@ constexpr size_t MAX_BUFFER_COUNT = 4;
 static ff::perf_counter perf_render_wait("Wait", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff::perf_chart_t::render_wait);
 
-ff::point_int get_minimum_window_size(HWND hwnd, const LONG* style_override = nullptr)
-{
-    const DWORD style = static_cast<DWORD>(style_override ? *style_override : ::GetWindowLong(hwnd, GWL_STYLE));
-    const DWORD exStyle = static_cast<DWORD>(::GetWindowLong(hwnd, GWL_EXSTYLE));
-
-    RECT rect{ 0, 0, 240, 135 };
-    if (::AdjustWindowRectExForDpi(&rect, style, FALSE, exStyle, ::GetDpiForWindow(hwnd)))
-    {
-        return ff::point_int(rect.right - rect.left, rect.bottom - rect.top);
-    }
-
-    return ff::point_int(320, 240);
-}
-
 static size_t fix_buffer_count(size_t value)
 {
     return ff::math::clamp<size_t>(value, MIN_BUFFER_COUNT, MAX_BUFFER_COUNT);
@@ -58,73 +44,11 @@ static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)
     }
 }
 
-
-static ff::rect_int convert_rect(const RECT& rect)
-{
-    return ff::rect_int(rect.left, rect.top, rect.right, rect.bottom);
-}
-
-static ff::rect_int get_window_rect(HWND hwnd)
-{
-    RECT rect;
-    return ::GetWindowRect(hwnd, &rect) ? ::convert_rect(rect) : ff::rect_int{};
-}
-
-static bool full_screen_style(HWND hwnd)
-{
-    LONG style = ::GetWindowLong(hwnd, GWL_STYLE);
-    return (style & WS_POPUP) != 0;
-}
-
-static bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int* windowed_rect = nullptr)
-{
-    HMONITOR monitor = (full_screen || !windowed_rect)
-        ? ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
-        : ::MonitorFromRect(reinterpret_cast<LPCRECT>(windowed_rect), MONITOR_DEFAULTTONEAREST);
-    MONITORINFO monitor_info{ sizeof(monitor_info) };
-    assert_ret_val(monitor && ::GetMonitorInfo(monitor, &monitor_info), false);
-
-    const ff::rect_int old_window_rect = ::get_window_rect(hwnd);
-    const ff::rect_int monitor_rect = ::convert_rect(full_screen ? monitor_info.rcMonitor : monitor_info.rcWork);
-    ff::rect_int new_window_rect = (full_screen ? monitor_rect : (windowed_rect ? *windowed_rect : old_window_rect));
-
-    const LONG old_style = ::GetWindowLong(hwnd, GWL_STYLE);
-    const LONG new_style = (full_screen ? WS_POPUP : WS_OVERLAPPEDWINDOW) | (old_style & WS_VISIBLE);
-    const LONG relevant_styles = WS_POPUP | WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    const bool style_changed = (old_style & relevant_styles) != (new_style & relevant_styles);
-
-    if (!full_screen && windowed_rect)
-    {
-        const ff::point_int min_size = ::get_minimum_window_size(hwnd, &new_style);
-        new_window_rect.right = std::max(new_window_rect.right, new_window_rect.left + min_size.x);
-        new_window_rect.bottom = std::max(new_window_rect.bottom, new_window_rect.top + min_size.y);
-        new_window_rect = new_window_rect.move_inside(monitor_rect).crop(monitor_rect);
-    }
-
-    if (style_changed || old_window_rect != new_window_rect)
-    {
-        if (style_changed)
-        {
-            ::SetWindowLong(hwnd, GWL_STYLE, new_style);
-        }
-
-        ::SetWindowPos(hwnd, nullptr,
-            new_window_rect.left, new_window_rect.top, new_window_rect.width(), new_window_rect.height(),
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
-
-        return true;
-    }
-
-    return false;
-}
-
 ff::dx12::target_window::target_window(ff::window* window, const ff::dxgi::target_window_params& params)
     : window(window)
     , window_message_connection(window->message_sink().connect(std::bind(&target_window::handle_message, this, std::placeholders::_1, std::placeholders::_2)))
     , target_views(ff::dx12::cpu_target_descriptors().alloc_range(MAX_BUFFER_COUNT))
-    , windowed_rect(::get_window_rect(*window))
 {
-    assert_msg(!::full_screen_style(*this->window), "Full screen must be set by target_window, not during creation");
     this->init_params(params);
 
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::target_window);
@@ -316,8 +240,6 @@ size_t ff::dx12::target_window::target_sample_count() const
 
 bool ff::dx12::target_window::size(const ff::window_size& input_size)
 {
-    assert_ret_val(this->window, false);
-
     if (this->swap_chain && (this->frame_latency() == 0) != (this->params.frame_latency == 0))
     {
         // On game thread: Turning frame latency on/off requires recreating everything
@@ -498,51 +420,6 @@ bool ff::dx12::target_window::vsync() const
     return this->params.vsync;
 }
 
-bool ff::dx12::target_window::allow_full_screen() const
-{
-    return this->params.allow_full_screen;
-}
-
-// Called on game or main thread
-bool ff::dx12::target_window::full_screen(ff::rect_int* windowed_rect)
-{
-    std::scoped_lock lock(this->window_mutex);
-
-    if (windowed_rect)
-    {
-        *windowed_rect = this->windowed_rect;
-    }
-
-    return this->window ? ::full_screen_style(*this->window) : this->was_full_screen_on_close;
-}
-
-bool ff::dx12::target_window::full_screen(bool value, const ff::rect_int* windowed_rect_override)
-{
-    bool status = false;
-
-    if (!value || this->allow_full_screen())
-    {
-        ff::log::write(ff::log::type::dx12_target, "Set full screen: ", value);
-
-        std::scoped_lock lock(this->window_mutex);
-        if (windowed_rect_override)
-        {
-            this->windowed_rect = *windowed_rect_override;
-        }
-
-        if (this->window)
-        {
-            status = true;
-            this->window->dispatch()->post([hwnd = this->window->handle(), windowed_rect = this->windowed_rect, value]()
-                {
-                    ::update_window_styles(hwnd, value, &windowed_rect);
-                });
-        }
-    }
-
-    return status;
-}
-
 const ff::dxgi::target_window_params& ff::dx12::target_window::init_params() const
 {
     return this->params;
@@ -558,19 +435,11 @@ void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& 
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
     this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
 
-    if (old_params != this->params)
+    if (old_params.buffer_count != this->params.buffer_count ||
+        old_params.frame_latency != this->params.frame_latency ||
+        old_params.extra_render_target != this->params.extra_render_target)
     {
-        if (old_params.buffer_count != this->params.buffer_count ||
-            old_params.frame_latency != this->params.frame_latency ||
-            old_params.extra_render_target != this->params.extra_render_target)
-        {
-            this->size(this->size());
-        }
-
-        if (this->full_screen() && !this->params.allow_full_screen)
-        {
-            this->full_screen(false);
-        }
+        this->size(this->size());
     }
 }
 
@@ -609,16 +478,6 @@ void ff::dx12::target_window::handle_message(ff::window* window, ff::window_mess
         case WM_SIZE:
             if (msg.wp != SIZE_MINIMIZED)
             {
-                if (::full_screen_style(msg.hwnd))
-                {
-                    ::update_window_styles(msg.hwnd, true);
-                }
-                else
-                {
-                    std::scoped_lock lock(this->window_mutex);
-                    this->windowed_rect = ::get_window_rect(msg.hwnd);
-                }
-
                 ff::window_size size = this->window->size();
                 if (this->resizing_data.resizing)
                 {
@@ -632,87 +491,27 @@ void ff::dx12::target_window::handle_message(ff::window* window, ff::window_mess
             }
             break;
 
-        case WM_DISPLAYCHANGE:
-            if (::full_screen_style(msg.hwnd))
-            {
-                ::update_window_styles(msg.hwnd, true);
-            }
-            break;
-
-        case WM_MOVE:
-            if (!::full_screen_style(msg.hwnd))
-            {
-                std::scoped_lock lock(this->window_mutex);
-                this->windowed_rect = ::get_window_rect(msg.hwnd);
-            }
-            break;
-
-        case WM_GETMINMAXINFO:
-            if (!::full_screen_style(msg.hwnd))
-            {
-                const ff::point_int size = ::get_minimum_window_size(msg.hwnd);
-                MINMAXINFO& mm = *reinterpret_cast<MINMAXINFO*>(msg.lp);
-                mm.ptMinTrackSize.x = size.x;
-                mm.ptMinTrackSize.y = size.y;
-            }
-            break;
-
         case WM_DESTROY:
             {
-                std::scoped_lock lock(this->window_mutex);
-                this->was_full_screen_on_close = ::full_screen_style(msg.hwnd);
                 this->window_message_connection.disconnect();
                 this->window = nullptr;
             }
             break;
 
-        case WM_KEYDOWN:
-            if (msg.wp == VK_F11 && !(msg.lp & 0x40000000)) // wasn't already down
-            {
-                bool full_screen = ::full_screen_style(msg.hwnd);
-                if (full_screen || this->allow_full_screen())
-                {
-                    ff::dxgi::defer_full_screen(this, !full_screen);
-                }
-            }
-            break;
-
         case WM_SYSKEYDOWN:
-            if (msg.wp == VK_RETURN) // ALT-ENTER to toggle full screen mode
+            if (msg.wp == VK_BACK && ff::constants::debug_build)
             {
-                bool full_screen = ::full_screen_style(msg.hwnd);
-                if (full_screen || this->allow_full_screen())
+                if (::GetKeyState(VK_SHIFT) < 0)
                 {
-                    ff::dxgi::defer_full_screen(this, !full_screen);
-                    msg.result = 0;
-                    msg.handled = true;
+                    ff::thread_dispatch::get_game()->post([]()
+                    {
+                        ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
+                    });
                 }
-            }
-            else if (msg.wp == VK_BACK)
-            {
-                if constexpr (ff::constants::profile_build)
+                else
                 {
-                    if (::GetKeyState(VK_SHIFT) < 0)
-                    {
-                        ff::thread_dispatch::get_game()->post([]()
-                        {
-                            ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
-                        });
-                    }
-                    else
-                    {
-                        ff::dxgi::defer_reset_device(true);
-                    }
+                    ff::dxgi::defer_reset_device(true);
                 }
-            }
-            break;
-
-        case WM_SYSCHAR:
-            if (msg.wp == VK_RETURN && this->allow_full_screen())
-            {
-                // prevent a 'ding' sound when switching between modes
-                msg.result = 0;
-                msg.handled = true;
             }
             break;
     }

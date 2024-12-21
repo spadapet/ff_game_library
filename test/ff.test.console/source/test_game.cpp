@@ -24,14 +24,20 @@ namespace
         {
             ff::dxgi::depth_base& depth = targets.depth(context);
             ff::dxgi::target_base& target = targets.target(context);
-            const float target_height = target.size().logical_scaled_size<float>().y;
+            const ff::point_float target_size = target.size().logical_scaled_size<float>();
 
-            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth);
-            if (draw)
+            if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth))
             {
-                for (const obj_t& obj : this->objs)
+                for (obj_t& obj : this->objs)
                 {
-                    draw->draw_filled_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_height), obj.color);
+                    if (obj.x >= target_size.x)
+                    {
+                        obj.dead = true;
+                    }
+                    else
+                    {
+                        draw->draw_filled_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_size.y), obj.color);
+                    }
                 }
             }
 
@@ -54,11 +60,13 @@ namespace
 
             void advance()
             {
-                this->x += this->speed;
-                float target_width = ff::app_render_target().size().logical_scaled_size<float>().x;
-                if (this->x >= target_width)
+                if (this->dead)
                 {
                     *this = obj_t();
+                }
+                else
+                {
+                    this->x += this->speed;
                 }
             }
 
@@ -66,6 +74,7 @@ namespace
             float x;
             float speed;
             DirectX::XMFLOAT4 color;
+            bool dead{};
         };
 
         std::array<obj_t, 16> objs;

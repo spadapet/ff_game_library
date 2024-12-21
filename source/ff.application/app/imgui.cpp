@@ -13,8 +13,9 @@ static std::shared_ptr<ff::data_base> font_data;
 static std::string ini_path;
 static std::shared_ptr<ff::texture> rotated_texture;
 static std::shared_ptr<ff::dxgi::target_base> rotated_target;
-static size_t buffer_count{};
+static std::shared_ptr<ff::dxgi::target_window_base> app_target;
 static ff::window* window{};
+static size_t buffer_count{};
 static bool dpi_changed{};
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -31,12 +32,6 @@ static void imgui_init_style(ff::window* window)
     ImGuiStyle& style = ImGui::GetStyle();
     style = ImGuiStyle();
     style.ScaleAllSizes(io.FontGlobalScale);
-
-    if (!::font_data)
-    {
-        ff::auto_resource<ff::font_file> debug_font_file = ff::internal::app::app_resources().get_resource_object(assets::app::DEBUG_FONT_FILE);
-        ::font_data = debug_font_file->loaded_data();
-    }
 
     ImFontConfig fontConfig;
     fontConfig.FontDataOwnedByAtlas = false;
@@ -68,16 +63,19 @@ static void imgui_init_dx12(ff::window* window)
         ::ImGui_ImplWin32_Shutdown();
     }
 
-    ::buffer_count = ff::app_render_target().buffer_count();
+    ::buffer_count = ::app_target->buffer_count();
 
     ::ImGui_ImplWin32_Init(*window);
-    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::buffer_count), ff::app_render_target().format(),
+    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::buffer_count), ::app_target->format(),
         ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
         ::descriptor_range.cpu_handle(0),
         ::descriptor_range.gpu_handle(0));
 }
 
-void ff::internal::imgui::init(ff::window* window)
+void ff::internal::imgui::init(
+    ff::window* window,
+    std::shared_ptr<ff::dxgi::target_window_base> app_target,
+    std::shared_ptr<ff::resource_object_provider> app_resources)
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -88,7 +86,11 @@ void ff::internal::imgui::init(ff::window* window)
     ::ini_path = ff::filesystem::to_string(path);
     io.IniFilename = ::ini_path.c_str();
 
+    ff::auto_resource<ff::font_file> debug_font_file = app_resources->get_resource_object(assets::app::DEBUG_FONT_FILE);
+    ::font_data = debug_font_file->loaded_data();
+
     ::window = window;
+    ::app_target = app_target;
     ::imgui_init_style(window);
     ::imgui_init_dx12(window);
 }
@@ -104,6 +106,7 @@ void ff::internal::imgui::destroy()
     ImGui::DestroyContext();
 
     ::font_data.reset();
+    ::app_target.reset();
     ::window = nullptr;
 }
 
@@ -118,7 +121,7 @@ void ff::internal::imgui::rendering()
 {
     ::handle_dpi_change(::window);
 
-    if (::buffer_count != ff::app_render_target().buffer_count())
+    if (::buffer_count != ::app_target->buffer_count())
     {
         ::imgui_init_dx12(::window);
     }
@@ -132,7 +135,7 @@ void ff::internal::imgui::render(ff::dxgi::command_context_base& context)
 {
     ImGui::Render();
 
-    ff::dxgi::target_base* target = &ff::app_render_target();
+    ff::dxgi::target_base* target = ::app_target.get();
     ff::window_size target_size = target->size();
     ff::point_float viewport_size = target_size.logical_pixel_size.cast<float>();
 
@@ -178,9 +181,9 @@ void ff::internal::imgui::render(ff::dxgi::command_context_base& context)
     ::ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), ff::dx12::get_command_list(commands));
     commands.pipeline_state_unknown();
 
-    if (&ff::app_render_target() != target)
+    if (::app_target.get() != target)
     {
-        ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, ff::app_render_target());
+        ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, *::app_target);
         if (draw)
         {
             draw->draw_sprite(::rotated_texture->sprite_data(), ff::pixel_transform::identity());

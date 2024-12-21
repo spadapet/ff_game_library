@@ -22,17 +22,12 @@ namespace ff
     std::filesystem::path app_roaming_path();
     std::filesystem::path app_local_path();
     std::filesystem::path app_temp_path();
-
-    ff::dxgi::target_window_base& app_render_target();
 }
 
 namespace ff::internal::app
 {
-    bool init(ff::window* window, const ff::init_app_params& params);
+    bool init(const ff::init_app_params& params);
     void destroy();
-    ff::resource_object_provider& app_resources();
 
-    using namespace std::string_view_literals;
-    constexpr std::string_view xaml_assembly_name = "ff.application.xaml"sv;
-    constexpr std::string_view xaml_pack_uri = "pack://application:,,,/ff.application.xaml;component/"sv;
+    ff::resource_object_provider& app_resources();
 }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/string.h"
+#include "data_persist/filesystem.h"
 
 std::wstring ff::string::to_wstring(std::string_view str)
 {
@@ -149,6 +150,60 @@ std::vector<std::string> ff::string::split_command_line(std::string_view str)
     }
 
     return tokens;
+}
+
+void ff::string::get_module_version_strings(HINSTANCE handle, std::string& out_product_name, std::string& out_internal_name)
+{
+    std::array<wchar_t, 2048> wpath;
+    DWORD size = static_cast<DWORD>(wpath.size());
+    if ((size = ::GetModuleFileName(handle, wpath.data(), size)) != 0)
+    {
+        std::wstring wstr(std::wstring_view(wpath.data(), static_cast<size_t>(size)));
+
+        DWORD handle, version_size;
+        if ((version_size = ::GetFileVersionInfoSize(wstr.c_str(), &handle)) != 0)
+        {
+            std::vector<uint8_t> version_bytes;
+            version_bytes.resize(static_cast<size_t>(version_size));
+
+            if (::GetFileVersionInfo(wstr.c_str(), 0, version_size, version_bytes.data()))
+            {
+                wchar_t* product_name = nullptr;
+                UINT product_name_size = 0;
+
+                wchar_t* internal_name = nullptr;
+                UINT internal_name_size = 0;
+
+                if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product_name), &product_name_size) && product_name_size > 1)
+                {
+                    out_product_name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
+                }
+
+                if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\InternalName", reinterpret_cast<void**>(&internal_name), &internal_name_size) && internal_name_size > 1)
+                {
+                    out_internal_name = ff::string::to_string(std::wstring_view(internal_name, static_cast<size_t>(internal_name_size) - 1));
+                }
+            }
+        }
+
+        if (out_product_name.empty())
+        {
+            std::filesystem::path path = ff::filesystem::to_path(ff::string::to_string(wstr));
+            out_product_name = ff::filesystem::to_string(path.stem());
+        }
+    }
+
+    // Fallbacks
+
+    if (out_product_name.empty())
+    {
+        out_product_name = "App";
+    }
+
+    if (out_internal_name.empty())
+    {
+        out_internal_name = out_product_name;
+    }
 }
 
 std::string ff::string::date()

@@ -2,7 +2,10 @@
 
 namespace ff::internal::imgui
 {
-    void init(ff::window* window);
+    void init(
+        ff::window* window,
+        std::shared_ptr<ff::dxgi::target_window_base> app_target,
+        std::shared_ptr<ff::resource_object_provider> app_resources);
     void destroy();
     void advance_input();
     void rendering();

@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "source/resource.h"
 
-static std::unique_ptr<ff::init_app> init_app;
+static ff::window* window{};
 
 template<class StateT>
 static void run_app()
@@ -12,8 +12,18 @@ static void run_app()
             return std::make_shared<StateT>();
         };
 
-    ::init_app = std::make_unique<ff::init_app>(app_params);
-    assert_ret(*init_app);
+    app_params.app_initialized_func = [](ff::window* window)
+        {
+            ::window = window;
+        };
+
+    app_params.app_destroying_func = []()
+        {
+            ::window = nullptr;
+        };
+
+    ff::init_app init_app(app_params);
+    assert_ret(init_app);
     ff::handle_messages_until_quit();
 }
 
@@ -48,7 +58,7 @@ static INT_PTR CALLBACK wait_dialog_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM 
 static int show_wait_dialog()
 {
     assert(ff::thread_dispatch::get_main()->current_thread());
-    INT_PTR result = ::DialogBox(ff::get_hinstance(), MAKEINTRESOURCE(IDD_WAIT_DIALOG), ::init_app->window()->handle(), ::wait_dialog_proc);
+    INT_PTR result = ::DialogBoxParam(ff::get_hinstance(), MAKEINTRESOURCE(IDD_WAIT_DIALOG), *::window, ::wait_dialog_proc, 0);
     return static_cast<int>(result);
 }
 
@@ -129,7 +139,7 @@ namespace
             else if (this->task->done())
             {
                 this->task = {};
-                ::init_app->window()->close();
+                ::window->close();
                 return std::make_shared<ff::state>();
             }
 

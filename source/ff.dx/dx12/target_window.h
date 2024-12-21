@@ -42,9 +42,6 @@ namespace ff::dx12
         virtual size_t buffer_count() const override;
         virtual size_t frame_latency() const override;
         virtual bool vsync() const override;
-        virtual bool allow_full_screen() const override;
-        virtual bool full_screen(ff::rect_int* windowed_rect = nullptr) override;
-        virtual bool full_screen(bool value, const ff::rect_int* windowed_rect_override = nullptr) override;
         virtual const ff::dxgi::target_window_params& init_params() const override;
         virtual void init_params(const ff::dxgi::target_window_params& params) override;
 
@@ -67,13 +64,10 @@ namespace ff::dx12
         } resizing_data{}; // main thread
 
         // Window
-        std::mutex window_mutex;
-        ff::window* window{}; // main thread, unless window_mutex is locked
+        ff::window* window{}; // main thread
         ff::signal_connection window_message_connection; // main thread
-        ff::rect_int windowed_rect{}; // main thread
         ff::signal<ff::window_size> size_changed_; // game thread
         ff::window_size cached_size{}; // game thread
-        bool was_full_screen_on_close{}; // main thread, unless window_mutex is locked
 
         // Swap chain (all on game thread)
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;

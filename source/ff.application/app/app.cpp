@@ -30,15 +30,12 @@ constexpr size_t MAX_ADVANCE_MULTIPLIER = 4;
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
 static ff::timer timer;
-static ff::win_event game_thread_event;
+static ff::window window;
 static ff::signal_connection window_message_connection;
+static ff::win_event game_thread_event;
 static ff::state_wrapper game_state;
-static ff::perf_results perf_results;
-static ff::perf_counter perf_input("Input", ff::perf_color::magenta);
-static ff::perf_counter perf_frame("Frame", ff::perf_color::white, ff::perf_chart_t::frame_total);
-static ff::perf_counter perf_advance("Update", ::perf_input.color);
-static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
-static ff::perf_counter perf_render_game_render("Game", ::perf_render.color);
+static ::game_thread_state_t game_thread_state;
+
 static std::string app_product_name;
 static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
@@ -47,8 +44,13 @@ static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
 static std::shared_ptr<ff::resource_object_provider> app_resources;
-static ::game_thread_state_t game_thread_state;
-static bool window_visible;
+
+static ff::perf_results perf_results;
+static ff::perf_counter perf_input("Input", ff::perf_color::magenta);
+static ff::perf_counter perf_frame("Frame", ff::perf_color::white, ff::perf_chart_t::frame_total);
+static ff::perf_counter perf_advance("Update", ::perf_input.color);
+static ff::perf_counter perf_render("Render", ff::perf_color::green, ff::perf_chart_t::render_total);
+static ff::perf_counter perf_render_game_render("Game", ::perf_render.color);
 
 static void frame_advance_input()
 {
@@ -213,11 +215,11 @@ static void init_game_thread(ff::window* window)
 
     if constexpr (ff::constants::profile_build)
     {
-        states.push_back(std::make_shared<ff::internal::debug_state>(::perf_results));
+        states.push_back(std::make_shared<ff::internal::debug_state>(::target, ::app_resources, ::perf_results));
     }
 
     ::game_state = std::make_shared<ff::state_list>(std::move(states));
-    ff::internal::imgui::init(window);
+    ff::internal::imgui::init(window, ::target, ::app_resources);
 }
 
 static void destroy_game_thread()
@@ -266,11 +268,11 @@ static void start_game_thread(ff::window* window)
 {
     if (::game_thread_dispatch)
     {
-        ff::log::write(ff::log::type::application, "Unpause game thread");
         ::game_thread_dispatch->post([]()
         {
             if (::game_thread_state != ::game_thread_state_t::stopped)
             {
+                ff::log::write(ff::log::type::application, "Unpause game thread");
                 ::game_thread_state = ::game_thread_state_t::running;
             }
         });
@@ -287,13 +289,13 @@ static void start_game_thread(ff::window* window)
 static void pause_game_thread()
 {
     check_ret(::game_thread_dispatch);
-    ff::log::write(ff::log::type::application, "Pause game thread");
 
     ::game_thread_dispatch->post([]()
     {
         switch (::game_thread_state)
         {
             case ::game_thread_state_t::running:
+                ff::log::write(ff::log::type::application, "Pause game thread");
                 ::game_thread_state = ::game_thread_state_t::pausing;
                 break;
 
@@ -310,6 +312,7 @@ static void stop_game_thread()
 {
     check_ret(::game_thread_dispatch);
     ff::log::write(ff::log::type::application, "Stop game thread");
+    ::app_params.app_destroying_func();
 
     ::game_thread_dispatch->post([]()
     {
@@ -322,17 +325,13 @@ static void stop_game_thread()
 // main thread
 static void update_window_visible(ff::window* window)
 {
-    const bool visible = ::IsWindowVisible(*window) && !::IsIconic(*window);
-    if (::window_visible != visible)
+    if (::IsWindowVisible(*window) && !::IsIconic(*window))
     {
-        if (::window_visible = visible)
-        {
-            ::start_game_thread(window);
-        }
-        else
-        {
-            ::pause_game_thread();
-        }
+        ::start_game_thread(window);
+    }
+    else
+    {
+        ::pause_game_thread();
     }
 }
 
@@ -351,7 +350,7 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
         case WM_SIZE:
         case WM_SHOWWINDOW:
         case WM_WINDOWPOSCHANGED:
-            window->dispatch()->post(std::bind(::update_window_visible, window));
+            ff::thread_dispatch::get_main()->post(std::bind(::update_window_visible, window));
             break;
 
         case WM_DESTROY:
@@ -377,57 +376,6 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
                     break;
             }
             break;
-    }
-}
-
-static void init_app_name()
-{
-    if (::app_product_name.empty())
-    {
-        std::array<wchar_t, 2048> wpath;
-        DWORD size = static_cast<DWORD>(wpath.size());
-        if ((size = ::GetModuleFileName(nullptr, wpath.data(), size)) != 0)
-        {
-            std::wstring wstr(std::wstring_view(wpath.data(), static_cast<size_t>(size)));
-
-            DWORD handle, version_size;
-            if ((version_size = ::GetFileVersionInfoSize(wstr.c_str(), &handle)) != 0)
-            {
-                std::vector<uint8_t> version_bytes;
-                version_bytes.resize(static_cast<size_t>(version_size));
-
-                if (::GetFileVersionInfo(wstr.c_str(), 0, version_size, version_bytes.data()))
-                {
-                    wchar_t* product_name = nullptr;
-                    UINT product_name_size = 0;
-
-                    wchar_t* internal_name = nullptr;
-                    UINT internal_name_size = 0;
-
-                    if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\ProductName", reinterpret_cast<void**>(&product_name), &product_name_size) && product_name_size > 1)
-                    {
-                        ::app_product_name = ff::string::to_string(std::wstring_view(product_name, static_cast<size_t>(product_name_size) - 1));
-                    }
-
-                    if (::VerQueryValue(version_bytes.data(), L"\\StringFileInfo\\040904b0\\InternalName", reinterpret_cast<void**>(&internal_name), &internal_name_size) && internal_name_size > 1)
-                    {
-                        ::app_internal_name = ff::string::to_string(std::wstring_view(internal_name, static_cast<size_t>(internal_name_size) - 1));
-                    }
-                }
-            }
-
-            if (::app_product_name.empty())
-            {
-                std::filesystem::path path = ff::filesystem::to_path(ff::string::to_string(wstr));
-                ::app_product_name = ff::filesystem::to_string(path.stem());
-            }
-        }
-    }
-
-    if (::app_product_name.empty())
-    {
-        // fallback
-        ::app_product_name = "App";
     }
 }
 
@@ -472,21 +420,26 @@ static void init_window(HWND hwnd)
     ::SetForegroundWindow(hwnd);
 }
 
-bool ff::internal::app::init(ff::window* window, const ff::init_app_params& params)
+bool ff::internal::app::init(const ff::init_app_params& params)
 {
     ::app_params = params;
-    ::init_app_name();
+    ff::string::get_module_version_strings(nullptr, ::app_product_name, ::app_internal_name);
     ::init_log();
     ::app_time = ff::app_time_t{};
-    ::window_message_connection = window->message_sink().connect(::handle_window_message);
-    ::target = ff::dxgi::create_target_for_window(window, params.target_window);
-    ::render_targets = std::make_unique<ff::render_targets>(::target);
+    ff::internal::app::load_settings();
 
     ff::data_reader assets_reader(ff::assets_app_data());
     ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
 
-    ff::internal::app::load_settings();
-    window->dispatch()->post(std::bind(::init_window, window->handle()));;
+    // TODO: Create the window, using saved settings for size/fullscreen
+    // Move all full screen functions to the window class
+
+    // ::window_message_connection = window->message_sink().connect(::handle_window_message);
+    // ::target = ff::dxgi::create_target_for_window(window, params.target_window);
+    // ::render_targets = std::make_unique<ff::render_targets>(::target);
+    // ::app_params.app_initialized_func(window);
+    // 
+    // window->dispatch()->post(std::bind(::init_window, window->handle()));;
 
     return true;
 }
@@ -494,6 +447,7 @@ bool ff::internal::app::init(ff::window* window, const ff::init_app_params& para
 void ff::internal::app::destroy()
 {
     ::stop_game_thread();
+    ::app_params.app_destroyed_func();
     ff::internal::app::save_settings();
     ff::internal::app::clear_settings();
 
@@ -516,7 +470,7 @@ const std::string& ff::app_product_name()
 
 const std::string& ff::app_internal_name()
 {
-    return ::app_internal_name.empty() ? ff::app_product_name() : ::app_internal_name;
+    return ::app_internal_name;
 }
 
 const ff::app_time_t& ff::app_time()
@@ -543,9 +497,4 @@ std::filesystem::path ff::app_temp_path()
     std::filesystem::path path = ff::filesystem::temp_directory_path() / "ff" / ff::filesystem::clean_file_name(ff::app_internal_name());
     ff::filesystem::create_directories(path);
     return path;
-}
-
-ff::dxgi::target_window_base& ff::app_render_target()
-{
-    return *::target;
 }

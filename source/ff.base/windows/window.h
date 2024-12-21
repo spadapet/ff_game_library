@@ -6,7 +6,7 @@
 
 namespace ff
 {
-    class thread_dispatch;
+    constexpr UINT WM_APP_FULL_SCREEN = WM_APP + 1; // wp = 0/1 (window/full)
 
     struct window_message
     {
@@ -122,11 +122,14 @@ namespace ff
         operator HWND() const;
         bool operator==(HWND handle) const;
 
-        ff::thread_dispatch* dispatch() const;
         ff::signal_sink<ff::window*, ff::window_message&>& message_sink();
-        ff::window_size size();
-        double dpi_scale();
-        bool close();
+        ff::window_size size() const;
+        double dpi_scale() const;
+        ff::rect_int windowed_rect() const;
+        void windowed_rect(const ff::rect_int& rect);
+        bool full_screen() const;
+        bool full_screen(bool value) const;
+        bool close() const;
 
     private:
         void reset(HWND hwnd);
@@ -135,6 +138,8 @@ namespace ff
         static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
         HWND hwnd{};
+        double dpi_scale_{};
+        ff::rect_int windowed_rect_{};
         ff::signal<ff::window*, ff::window_message&> message_signal;
     };
 }

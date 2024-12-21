@@ -47,7 +47,6 @@ void ff::game::root_state_base::internal_init()
     this->load_settings();
     this->init_resources();
     this->init_game_state();
-    this->apply_system_options();
 
     this->connections.emplace_front(ff::request_save_settings_sink().connect(std::bind(&ff::game::root_state_base::on_save_settings, this)));
     this->connections.emplace_front(ff::custom_debug_sink().connect(std::bind(&ff::game::root_state_base::on_custom_debug, this)));
@@ -83,7 +82,6 @@ const ff::game::system_options& ff::game::root_state_base::system_options() cons
 void ff::game::root_state_base::system_options(const ff::game::system_options& options)
 {
     this->system_options_ = options;
-    this->apply_system_options();
 }
 
 double ff::game::root_state_base::time_scale()
@@ -288,16 +286,8 @@ void ff::game::root_state_base::init_game_state()
     this->game_state_ = state ? state->wrap() : nullptr;
 }
 
-void ff::game::root_state_base::apply_system_options()
-{
-    ff::app_render_target().full_screen(this->system_options_.full_screen,
-        !this->system_options_.windowed_rect.empty() ? &this->system_options_.windowed_rect : nullptr);
-}
-
 void ff::game::root_state_base::on_save_settings()
 {
-    this->system_options_.full_screen = ff::app_render_target().full_screen(&this->system_options_.windowed_rect);
-
     ff::dict dict = ff::settings(::ID_APP_STATE);
     dict.set_struct(::ID_SYSTEM_OPTIONS, this->system_options_);
 

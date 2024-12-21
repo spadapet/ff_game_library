@@ -23,7 +23,6 @@
 #include "resource/resource_values.h"
 #include "thread/thread_dispatch.h"
 #include "thread/thread_pool.h"
-#include "windows/window.h"
 
 namespace
 {
@@ -55,7 +54,6 @@ namespace
             ff::internal::global_resources::destroy();
             ff::thread_pool::flush();
             this->thread_dispatch.flush();
-            this->main_window.reset();
             ff::internal::thread_pool::destroy();
 
             if constexpr (ff::constants::track_memory)
@@ -66,35 +64,7 @@ namespace
 
         bool valid() const
         {
-            if (this->main_window && !this->main_window->operator bool())
-            {
-                return false;
-            }
-
             return true;
-        }
-
-        ff::window* init_main_window(const ff::init_window_params& params)
-        {
-            if (!this->main_window)
-            {
-                if (params.window_class.empty())
-                {
-                    this->main_window = std::make_unique<ff::window>(
-                        ff::window::create_blank(params.title, nullptr,
-                            WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
-                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
-                }
-                else
-                {
-                    this->main_window = std::make_unique<ff::window>(
-                        ff::window::create(params.window_class, params.title, nullptr,
-                            WS_OVERLAPPEDWINDOW | (params.visible ? WS_VISIBLE : 0), 0,
-                            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT));
-                }
-            }
-
-            return this->main_window.get();
         }
 
     private:
@@ -141,7 +111,6 @@ namespace
         }
 
         ff::thread_dispatch thread_dispatch;
-        std::unique_ptr<ff::window> main_window;
     };
 }
 
@@ -172,10 +141,4 @@ ff::init_base::~init_base()
 ff::init_base::operator bool() const
 {
     return ::init_base_data && ::init_base_data->valid();
-}
-
-ff::window* ff::init_base::init_main_window(const ff::init_window_params& window_params)
-{
-    std::scoped_lock lock(::init_base_mutex);
-    return ::init_base_data->init_main_window(window_params);
 }

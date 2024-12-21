@@ -20,7 +20,6 @@ namespace ff::dxgi
     void remove_target(ff::dxgi::target_window_base* target);
     void defer_resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size);
     void defer_reset_target(ff::dxgi::target_window_base* target, const ff::dxgi::target_window_params& params);
-    void defer_full_screen(ff::dxgi::target_window_base* target, bool value);
     void defer_reset_device(bool force);
     void flush_commands();
 

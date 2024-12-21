@@ -25,8 +25,6 @@ namespace ff::test::graphics
             Assert::AreEqual<size_t>(1, target.frame_latency());
             Assert::IsTrue(target.vsync());
             Assert::IsTrue(target.dx12_target_texture());
-            Assert::IsTrue(target.allow_full_screen());
-            Assert::IsFalse(target.full_screen());
 
             // Context 1
             {

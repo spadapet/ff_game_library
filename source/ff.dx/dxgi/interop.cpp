@@ -20,12 +20,6 @@ namespace
     };
 }
 
-constexpr int SPECIAL_DMOD_FULL_SCREEN = -1;
-constexpr int SPECIAL_DMOD_WINDOWED = -2;
-
-static ff::window_size special_full_screen_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_FULL_SCREEN };
-static ff::window_size special_windowed_size{ { 0, 0 }, 0, ::SPECIAL_DMOD_WINDOWED };
-
 static std::mutex defer_mutex;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_target_size;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::dxgi::target_window_params>> defer_target_reset;
@@ -50,13 +44,7 @@ void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const f
     {
         if (i.first == target)
         {
-            // If full screen state is already changing, don't allow size to change
-            if ((i.second.rotation != ::SPECIAL_DMOD_FULL_SCREEN && i.second.rotation != ::SPECIAL_DMOD_WINDOWED) ||
-                (size.rotation == ::SPECIAL_DMOD_FULL_SCREEN || size.rotation == ::SPECIAL_DMOD_WINDOWED))
-            {
-                i.second = size;
-            }
-
+            i.second = size;
             return;
         }
     }
@@ -91,11 +79,6 @@ void ff::dxgi::defer_reset_device(bool force)
         force ? ::defer_flags_t::reset_force : ::defer_flags_t::reset_check);
 }
 
-void ff::dxgi::defer_full_screen(ff::dxgi::target_window_base* target, bool value)
-{
-    ff::dxgi::defer_resize_target(target, value ? ::special_full_screen_size : ::special_windowed_size);
-}
-
 void ff::dxgi::flush_commands()
 {
     std::unique_lock lock(::defer_mutex);
@@ -121,15 +104,7 @@ void ff::dxgi::flush_commands()
 
             for (const auto& i : defer_sizes)
             {
-                if (i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN ||
-                    i.second.rotation == ::SPECIAL_DMOD_WINDOWED)
-                {
-                    i.first->full_screen(i.second.rotation == ::SPECIAL_DMOD_FULL_SCREEN);
-                }
-                else
-                {
-                    i.first->size(i.second);
-                }
+                i.first->size(i.second);
             }
 
             lock.lock();

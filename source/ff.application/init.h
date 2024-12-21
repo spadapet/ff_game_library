@@ -6,6 +6,9 @@ namespace ff
 {
     struct init_app_params
     {
+        std::function<void(ff::window*)> app_initialized_func{ &ff::init_app_params::default_with_window };
+        std::function<void()> app_destroying_func{ &ff::init_app_params::default_empty };
+        std::function<void()> app_destroyed_func{ &ff::init_app_params::default_empty };
         std::function<void()> register_resources_func{ &ff::init_app_params::default_empty };
         std::function<void()> game_thread_started_func{ &ff::init_app_params::default_empty };
         std::function<void()> game_thread_finished_func{ &ff::init_app_params::default_empty };
@@ -17,6 +20,7 @@ namespace ff
         ff::dxgi::target_window_params target_window{};
 
     private:
+        static void default_with_window(ff::window* window);
         static void default_empty();
         static std::shared_ptr<ff::state> default_create_initial_state();
         static double default_get_time_scale();
@@ -31,6 +35,5 @@ namespace ff
         ~init_app();
 
         operator bool() const;
-        ff::window* window() const;
     };
 }

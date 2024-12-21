@@ -180,9 +180,13 @@ static void update_chart(const ff::perf_results& results)
     ::chart_wait_.back() = static_cast<float>(wait_ticks * height_scale);
 }
 
-ff::internal::debug_state::debug_state(const ff::perf_results& perf_results)
-    : perf_results(perf_results)
-    , input_mapping(ff::internal::app::app_resources().get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
+ff::internal::debug_state::debug_state(
+    std::shared_ptr<ff::dxgi::target_window_base> app_target,
+    std::shared_ptr<ff::resource_object_provider> app_resources,
+    const ff::perf_results& perf_results)
+    : app_target(app_target)
+    , perf_results(perf_results)
+    , input_mapping(app_resources->get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
     , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
 {
 }
@@ -276,7 +280,7 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                 {
                     if (!was_target_params_visible)
                     {
-                        ::target_params_ = ff::app_render_target().init_params();
+                        ::target_params_ = this->app_target->init_params();
                     }
 
                     int buffer_count = static_cast<int>(::target_params_.buffer_count);
@@ -303,23 +307,22 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
 
                     ImGui::PopItemWidth();
                     ImGui::Checkbox("VSync", &::target_params_.vsync);
-                    ImGui::Checkbox("Allow Full Screen", &::target_params_.allow_full_screen);
                     ImGui::Checkbox("Extra Buffer", &::target_params_.extra_render_target);
 
-                    ImGui::BeginDisabled(::target_params_ == ff::app_render_target().init_params());
+                    ImGui::BeginDisabled(::target_params_ == this->app_target->init_params());
                     if (ImGui::Button("Apply"))
                     {
-                        ff::dxgi::defer_reset_target(&ff::app_render_target(), ::target_params_);
+                        ff::dxgi::defer_reset_target(this->app_target.get(), ::target_params_);
                     }
                     ImGui::EndDisabled();
 
                     ImGui::SameLine();
                     static const ff::dxgi::target_window_params default_params{};
-                    ImGui::BeginDisabled(default_params == ff::app_render_target().init_params());
+                    ImGui::BeginDisabled(default_params == this->app_target->init_params());
                     if (ImGui::Button("Default"))
                     {
                         ::target_params_ = default_params;
-                        ff::dxgi::defer_reset_target(&ff::app_render_target(), default_params);
+                        ff::dxgi::defer_reset_target(this->app_target.get(), default_params);
                     }
                     ImGui::EndDisabled();
                 }
