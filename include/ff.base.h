@@ -82,6 +82,10 @@
 #include "../source/ff.base/types/timer.h"
 #include "../source/ff.base/types/uuid.h"
 
+#include "../source/ff.base/windows/win32.h"
 #include "../source/ff.base/windows/window.h"
 #include "../source/ff.base/windows/win_handle.h"
 #include "../source/ff.base/windows/win_msg.h"
+
+#pragma comment(lib, "version.lib")
+#pragma comment(lib, "shcore.lib")

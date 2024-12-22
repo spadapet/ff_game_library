@@ -186,6 +186,9 @@
     <ClCompile Include="data_value\resource_v.cpp">
       <Filter>data_value</Filter>
     </ClCompile>
+    <ClCompile Include="windows\win32.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -420,6 +423,9 @@
     </ClInclude>
     <ClInclude Include="data_value\resource_v.h">
       <Filter>data_value</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\win32.h">
+      <Filter>windows</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

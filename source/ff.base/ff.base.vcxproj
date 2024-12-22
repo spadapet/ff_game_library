@@ -68,6 +68,7 @@
     <ClCompile Include="types\signal.cpp" />
     <ClCompile Include="types\timer.cpp" />
     <ClCompile Include="types\uuid.cpp" />
+    <ClCompile Include="windows\win32.cpp" />
     <ClCompile Include="windows\window.cpp" />
     <ClCompile Include="windows\win_handle.cpp" />
     <ClCompile Include="windows\win_msg.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="types\stash.h" />
     <ClInclude Include="types\timer.h" />
     <ClInclude Include="types\uuid.h" />
+    <ClInclude Include="windows\win32.h" />
     <ClInclude Include="windows\window.h" />
     <ClInclude Include="windows\win_handle.h" />
     <ClInclude Include="windows\win_msg.h" />

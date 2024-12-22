@@ -26,6 +26,11 @@ namespace
 constexpr size_t MAX_ADVANCES_PER_FRAME = 4;
 constexpr size_t MAX_ADVANCES_PER_FRAME_DEBUGGER = 4;
 constexpr size_t MAX_ADVANCE_MULTIPLIER = 4;
+constexpr std::string_view ID_SETTINGS = "ff::app::settings";
+constexpr std::string_view ID_SETTING_WINDOWED_RECT = "windowed_rect";
+constexpr std::string_view ID_SETTING_MONITOR_RECT = "monitor_rect";
+constexpr std::string_view ID_SETTING_MONITOR_DPI = "monitor_dpi";
+constexpr std::string_view ID_SETTING_FULL_SCREEN = "full_screen";
 
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
@@ -35,6 +40,8 @@ static ff::signal_connection window_message_connection;
 static ff::win_event game_thread_event;
 static ff::state_wrapper game_state;
 static ::game_thread_state_t game_thread_state;
+static bool update_window_visible_pending{};
+static bool window_was_visible{};
 
 static std::string app_product_name;
 static std::string app_internal_name;
@@ -191,7 +198,7 @@ static ff::state::advance_t frame_advance_and_render(ff::state::advance_t previo
     return advance_type;
 }
 
-static void init_game_thread(ff::window* window)
+static void init_game_thread()
 {
     ::game_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::game);
     ::frame_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::frame);
@@ -219,7 +226,7 @@ static void init_game_thread(ff::window* window)
     }
 
     ::game_state = std::make_shared<ff::state_list>(std::move(states));
-    ff::internal::imgui::init(window, ::target, ::app_resources);
+    ff::internal::imgui::init(&::window, ::target, ::app_resources);
 }
 
 static void destroy_game_thread()
@@ -236,9 +243,9 @@ static void destroy_game_thread()
     ::game_thread_event.set();
 }
 
-static void game_thread(ff::window* window)
+static void game_thread()
 {
-    ::init_game_thread(window);
+    ::init_game_thread();
 
     for (ff::state::advance_t advance_type = ff::state::advance_t::stopped; ::game_thread_state != ::game_thread_state_t::stopped;)
     {
@@ -264,7 +271,7 @@ static void game_thread(ff::window* window)
     ::destroy_game_thread();
 }
 
-static void start_game_thread(ff::window* window)
+static void start_game_thread()
 {
     if (::game_thread_dispatch)
     {
@@ -281,7 +288,7 @@ static void start_game_thread(ff::window* window)
     {
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
-        std::jthread(::game_thread, window).detach();
+        std::jthread(::game_thread).detach();
         ::game_thread_event.wait_and_reset();
     }
 }
@@ -308,11 +315,31 @@ static void pause_game_thread()
     ::game_thread_event.wait_and_reset();
 }
 
+static void save_window_settings()
+{
+    check_ret(::window);
+
+    ff::dict settings = ff::settings(::ID_SETTINGS);
+    HMONITOR monitor = ::MonitorFromWindow(::window, MONITOR_DEFAULTTONULL);
+    MONITORINFO monitor_info{ sizeof(monitor_info) };
+
+    if (monitor && ::GetMonitorInfo(monitor, &monitor_info))
+    {
+        settings.set<bool>(::ID_SETTING_FULL_SCREEN, ::window.full_screen());
+        settings.set<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ::window.windowed_rect());
+        settings.set<ff::rect_int>(::ID_SETTING_MONITOR_RECT, ff::win32::convert_rect(monitor_info.rcMonitor));
+        settings.set<size_t>(::ID_SETTING_MONITOR_DPI, ff::win32::get_dpi(monitor));
+    }
+
+    ff::settings(::ID_SETTINGS, settings);
+}
+
 static void stop_game_thread()
 {
     check_ret(::game_thread_dispatch);
     ff::log::write(ff::log::type::application, "Stop game thread");
     ::app_params.app_destroying_func();
+    ::save_window_settings();
 
     ::game_thread_dispatch->post([]()
     {
@@ -322,17 +349,93 @@ static void stop_game_thread()
     ::game_thread_event.wait_and_reset();
 }
 
-// main thread
-static void update_window_visible(ff::window* window)
+static bool is_visible(HWND hwnd)
 {
-    if (::IsWindowVisible(*window) && !::IsIconic(*window))
+    return hwnd && ::IsWindowVisible(hwnd) && !::IsIconic(hwnd);
+}
+
+// main thread
+static void update_window_visible()
+{
+    check_ret(::update_window_visible_pending);
+    ::update_window_visible_pending = false;
+
+    check_ret(::window);
+    const bool visible = ::is_visible(::window);
+    check_ret(::window_was_visible != visible);
+
+    if (::window_was_visible = visible)
     {
-        ::start_game_thread(window);
+        ::start_game_thread();
     }
     else
     {
         ::pause_game_thread();
     }
+}
+
+static ff::window create_window()
+{
+    const ff::dict settings = ff::settings(::ID_SETTINGS);
+    ff::rect_int windowed_rect = settings.get<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ff::rect_int{});
+    ff::rect_int old_monitor_rect = settings.get<ff::rect_int>(::ID_SETTING_MONITOR_RECT, ff::rect_int{});
+    size_t old_monitor_dpi = settings.get<size_t>(::ID_SETTING_MONITOR_DPI, 0);
+
+    ff::rect_int final_rect{ CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT };
+    bool full_screen = false;
+
+    if (windowed_rect)
+    {
+        HMONITOR monitor = ::MonitorFromRect(reinterpret_cast<LPCRECT>(&windowed_rect), MONITOR_DEFAULTTONULL);
+        MONITORINFO monitor_info{ sizeof(monitor_info) };
+        ff::point_int min_size = monitor ? ff::win32::get_minimum_window_size(monitor) : ff::point_int{};
+
+        if (min_size && ::GetMonitorInfo(monitor, &monitor_info) &&
+            old_monitor_rect == ff::win32::convert_rect(monitor_info.rcMonitor) &&
+            old_monitor_dpi == ff::win32::get_dpi(monitor) &&
+            windowed_rect.width() >= min_size.x &&
+            windowed_rect.height() >= min_size.y)
+        {
+            full_screen = settings.get<bool>(::ID_SETTING_FULL_SCREEN, false);
+            final_rect = full_screen ? ff::win32::convert_rect(monitor_info.rcMonitor) : windowed_rect;
+        }
+        else
+        {
+            windowed_rect = {};
+        }
+    }
+
+    constexpr std::string_view class_name = "ff::window::game";
+    const UINT icon_id = ::FindResource(ff::get_hinstance(), MAKEINTRESOURCE(1), RT_ICON) ? 1 : 0;
+    ff::window window;
+
+    assert_ret_val(ff::window::create_class(
+        class_name,
+        CS_DBLCLKS,
+        ff::get_hinstance(),
+        ::LoadCursor(nullptr, IDC_ARROW),
+        nullptr, // brush
+        0, // menu ID
+        icon_id), window);
+
+    window = ff::window::create(
+        class_name,
+        ff::app_product_name(),
+        nullptr, // parent
+        ff::win32::default_window_style(full_screen),
+        0, // ex style
+        final_rect.left,
+        final_rect.top,
+        final_rect.right == CW_USEDEFAULT ? CW_USEDEFAULT : final_rect.width(),
+        final_rect.bottom == CW_USEDEFAULT ? CW_USEDEFAULT : final_rect.height(),
+        ff::get_hinstance());
+
+    if (full_screen)
+    {
+        window.windowed_rect(windowed_rect);
+    }
+
+    return window;
 }
 
 // main thread
@@ -350,11 +453,16 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
         case WM_SIZE:
         case WM_SHOWWINDOW:
         case WM_WINDOWPOSCHANGED:
-            ff::thread_dispatch::get_main()->post(std::bind(::update_window_visible, window));
+            if (!::update_window_visible_pending)
+            {
+                ::update_window_visible_pending = true;
+                ff::thread_dispatch::get_main()->post(::update_window_visible);
+            }
             break;
 
         case WM_DESTROY:
             ff::log::write(ff::log::type::application, "Window destroyed");
+            ::update_window_visible_pending = false;
             ::stop_game_thread();
             break;
 
@@ -372,7 +480,7 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
 
                 case PBT_APMRESUMEAUTOMATIC:
                     ff::log::write(ff::log::type::application, "Resuming");
-                    ::start_game_thread(window);
+                    ::start_game_thread();
                     break;
             }
             break;
@@ -395,53 +503,40 @@ static void destroy_log()
     ::log_file.reset();
 }
 
-static void init_window(HWND hwnd)
+static bool app_initialized()
 {
-    LPCWSTR icon_name = MAKEINTRESOURCE(1);
+    assert_ret_val(::window, false);
+    ::app_params.app_initialized_func(&::window);
 
-    if (::FindResourceW(ff::get_hinstance(), icon_name, RT_ICON))
+    ::ShowWindow(::window, SW_SHOWDEFAULT);
+
+    if (::is_visible(::window))
     {
-        HICON icon = ::LoadIcon(ff::get_hinstance(), icon_name);
-        assert(icon);
-
-        if (icon)
-        {
-            ::SendMessage(hwnd, WM_SETICON, 0, reinterpret_cast<LPARAM>(icon));
-            ::SendMessage(hwnd, WM_SETICON, 1, reinterpret_cast<LPARAM>(icon));
-        }
+        ::SetForegroundWindow(::window);
     }
 
-    if (!::GetWindowTextLength(hwnd))
-    {
-        ::SetWindowText(hwnd, ff::string::to_wstring(ff::app_product_name()).c_str());
-    }
-
-    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-    ::SetForegroundWindow(hwnd);
+    return true;
 }
 
 bool ff::internal::app::init(const ff::init_app_params& params)
 {
-    ::app_params = params;
     ff::string::get_module_version_strings(nullptr, ::app_product_name, ::app_internal_name);
+    ::app_params = params;
     ::init_log();
-    ::app_time = ff::app_time_t{};
+    ::app_time = {};
     ff::internal::app::load_settings();
 
     ff::data_reader assets_reader(ff::assets_app_data());
     ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
 
-    // TODO: Create the window, using saved settings for size/fullscreen
-    // Move all full screen functions to the window class
+    if (::window = ::create_window())
+    {
+        ::window_message_connection = ::window.message_sink().connect(::handle_window_message);
+        ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
+        ::render_targets = std::make_unique<ff::render_targets>(::target);
+    }
 
-    // ::window_message_connection = window->message_sink().connect(::handle_window_message);
-    // ::target = ff::dxgi::create_target_for_window(window, params.target_window);
-    // ::render_targets = std::make_unique<ff::render_targets>(::target);
-    // ::app_params.app_initialized_func(window);
-    // 
-    // window->dispatch()->post(std::bind(::init_window, window->handle()));;
-
-    return true;
+    return ::app_initialized();
 }
 
 void ff::internal::app::destroy()

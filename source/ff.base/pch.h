@@ -35,6 +35,7 @@
 
 // Windows
 #include <Windows.h>
+#include <ShellScalingApi.h>
 #include <ShlObj.h>
 #include <wrl.h>
 

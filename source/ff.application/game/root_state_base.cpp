@@ -12,8 +12,8 @@ static const size_t ID_DEBUG_CANCEL_STEP_ONE_FRAME = ff::stable_hash_func("ff.ga
 static const size_t ID_DEBUG_SPEED_SLOW = ff::stable_hash_func("ff.game.speed_slow"sv);
 static const size_t ID_DEBUG_SPEED_FAST = ff::stable_hash_func("ff.game.speed_fast"sv);
 static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_custom_debug"sv);
-static const std::string_view ID_APP_STATE = "ff::game::ID_APP_STATE";
-static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::ID_SYSTEM_OPTIONS";
+static const std::string_view ID_APP_STATE = "ff::game::app_state";
+static const std::string_view ID_SYSTEM_OPTIONS = "ff::game::system_options";
 static ff::game::root_state_base* global_app{};
 
 ff::game::root_state_base::root_state_base()

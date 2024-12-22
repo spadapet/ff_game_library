@@ -256,7 +256,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
     ff::window_size size = input_size;
     size.logical_pixel_size.x = std::max<size_t>(size.logical_pixel_size.x, 1);
     size.logical_pixel_size.y = std::max<size_t>(size.logical_pixel_size.y, 1);
-    size.dpi_scale = std::min<double>(size.dpi_scale, 1.0);
+    size.dpi_scale = std::max<double>(size.dpi_scale, 1.0);
 
     ff::log::write(ff::log::type::dx12_target,
         "Swap chain set size.",
@@ -270,7 +270,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
     std::vector<std::shared_ptr<ff::dxgi::target_base>> old_extra_render_targets;
     if (this->params.extra_render_target && old_size == size)
     {
-        old_extra_render_targets = std::move(this->extra_render_targets);
+        old_extra_render_targets = this->extra_render_targets;
     }
 
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
@@ -466,7 +466,7 @@ void ff::dx12::target_window::handle_message(ff::window* window, ff::window_mess
         case WM_EXITSIZEMOVE:
             if (this->resizing_data.resizing)
             {
-                if (this->resizing_data.size_valid)
+                if (this->resizing_data.size_valid && this->cached_size != this->resizing_data.size)
                 {
                     ff::dxgi::defer_resize_target(this, this->resizing_data.size);
                 }
@@ -484,7 +484,7 @@ void ff::dx12::target_window::handle_message(ff::window* window, ff::window_mess
                     this->resizing_data.size_valid = true;
                     this->resizing_data.size = size;
                 }
-                else
+                else if (this->cached_size != size)
                 {
                     ff::dxgi::defer_resize_target(this, size);
                 }
