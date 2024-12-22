@@ -224,7 +224,7 @@ bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_m
 
 #else
 
-void ff::internal::imgui::init(ff::window* window) {}
+void ff::internal::imgui::init(ff::window* window, std::shared_ptr<ff::dxgi::target_window_base> app_target, std::shared_ptr<ff::resource_object_provider> app_resources) {}
 void ff::internal::imgui::destroy() {}
 void ff::internal::imgui::advance_input() {}
 void ff::internal::imgui::rendering() {}

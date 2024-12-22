@@ -64,6 +64,11 @@ bool ff::win32::is_full_screen(HWND hwnd)
     return (style & ff::win32::default_window_style(true)) != 0;
 }
 
+bool ff::win32::is_visible(HWND hwnd)
+{
+    return hwnd && ::IsWindowVisible(hwnd) && !::IsIconic(hwnd);
+}
+
 ff::point_int ff::win32::get_minimum_window_size(HMONITOR monitor)
 {
     const UINT dpi = ff::win32::get_dpi(monitor);

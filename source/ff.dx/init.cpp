@@ -23,7 +23,7 @@ namespace
     class one_time_init_dx
     {
     public:
-        one_time_init_dx()
+        one_time_init_dx(bool async)
         {
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::animation_factory>("animation");
@@ -40,14 +40,19 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::texture_factory>("texture");
             ff::resource_object_base::register_factory<ff::internal::texture_metadata_factory>("texture_metadata");
 
-            this->init_audio_status = ff::internal::audio::init();
-            this->init_input_status = ff::internal::input::init();
-            this->init_dxgi_status = ff::internal::dxgi::init();
-            this->init_write_status = ff::internal::write::init();
+            if (!async)
+            {
+                this->init_now();
+            }
         }
 
         ~one_time_init_dx()
         {
+            if (this->init_event)
+            {
+                this->init_wait();
+            }
+
             ff::internal::write::destroy();
             this->init_write_status = false;
 
@@ -59,6 +64,38 @@ namespace
 
             ff::internal::audio::destroy();
             this->init_audio_status = false;
+        }
+
+        void init_now()
+        {
+            this->init_audio_status = ff::internal::audio::init();
+            this->init_input_status = ff::internal::input::init();
+            this->init_dxgi_status = ff::internal::dxgi::init();
+            this->init_write_status = ff::internal::write::init();
+
+            if (this->init_event)
+            {
+                this->init_event->set();
+            }
+        }
+
+        bool init_async()
+        {
+            assert_ret_val(!this->init_event, false);
+            this->init_event = std::make_unique<ff::win_event>();
+            ff::thread_pool::add_task(std::bind(&::one_time_init_dx::init_now, this));
+
+            return true;
+        }
+
+        bool init_wait()
+        {
+            assert_ret_val(this->init_event, false);
+
+            bool status = this->init_event->wait();
+            this->init_event.reset();
+
+            return status && this->valid();
         }
 
         bool valid() const
@@ -75,6 +112,7 @@ namespace
         bool init_input_status{};
         bool init_dxgi_status{};
         bool init_write_status{};
+        std::unique_ptr<ff::win_event> init_event;
         ff::init_base init_base;
     };
 }
@@ -82,14 +120,21 @@ namespace
 static int init_dx_refs;
 static std::unique_ptr<::one_time_init_dx> init_dx_data;
 static std::mutex init_dx_mutex;
+static bool init_dx_async{};
 
-ff::init_dx::init_dx()
+ff::init_dx::init_dx(bool async)
 {
     std::scoped_lock lock(::init_dx_mutex);
 
+    if (::init_dx_data && (::init_dx_async || async))
+    {
+        debug_fail_msg_ret("ff::init_dx can only init async if there is a single instance.");
+    }
+
     if (::init_dx_refs++ == 0)
     {
-        ::init_dx_data = std::make_unique<::one_time_init_dx>();
+        ::init_dx_async = async;
+        ::init_dx_data = std::make_unique<::one_time_init_dx>(async);
     }
 }
 
@@ -106,4 +151,14 @@ ff::init_dx::~init_dx()
 ff::init_dx::operator bool() const
 {
     return ::init_dx_data && ::init_dx_data->valid();
+}
+
+bool ff::init_dx::init_async()
+{
+    return ::init_dx_data && ::init_dx_data->init_async();
+}
+
+bool ff::init_dx::init_wait()
+{
+    return ::init_dx_data && ::init_dx_data->init_wait();
 }

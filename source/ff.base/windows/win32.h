@@ -17,6 +17,7 @@ namespace ff::win32
 
     constexpr LONG default_window_style(bool full_screen);
     bool is_full_screen(HWND hwnd);
+    bool is_visible(HWND hwnd);
 
     ff::point_int get_minimum_window_size(HMONITOR monitor);
     ff::point_int get_minimum_window_size(HWND hwnd);

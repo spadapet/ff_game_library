@@ -42,6 +42,7 @@ static ff::state_wrapper game_state;
 static ::game_thread_state_t game_thread_state;
 static bool update_window_visible_pending{};
 static bool window_was_visible{};
+static bool window_initialized{};
 
 static std::string app_product_name;
 static std::string app_internal_name;
@@ -349,11 +350,6 @@ static void stop_game_thread()
     ::game_thread_event.wait_and_reset();
 }
 
-static bool is_visible(HWND hwnd)
-{
-    return hwnd && ::IsWindowVisible(hwnd) && !::IsIconic(hwnd);
-}
-
 // main thread
 static void update_window_visible()
 {
@@ -361,7 +357,7 @@ static void update_window_visible()
     ::update_window_visible_pending = false;
 
     check_ret(::window);
-    const bool visible = ::is_visible(::window);
+    const bool visible = ff::win32::is_visible(::window);
     check_ret(::window_was_visible != visible);
 
     if (::window_was_visible = visible)
@@ -441,12 +437,15 @@ static ff::window create_window()
 // main thread
 static void handle_window_message(ff::window* window, ff::window_message& message)
 {
-    if (ff::internal::imgui::handle_window_message(window, message))
+    if (::window_initialized)
     {
-        return;
-    }
+        if (ff::internal::imgui::handle_window_message(window, message))
+        {
+            return;
+        }
 
-    ff::input::combined_devices().notify_window_message(message);
+        ff::input::combined_devices().notify_window_message(message);
+    }
 
     switch (message.msg)
     {
@@ -489,6 +488,8 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
 
 static void init_log()
 {
+    ff::string::get_module_version_strings(nullptr, ::app_product_name, ::app_internal_name);
+
     std::filesystem::path path = ff::app_local_path() / "log.txt";
     ::log_file = std::make_unique<std::ofstream>(path);
     ff::log::file(::log_file.get());
@@ -503,14 +504,23 @@ static void destroy_log()
     ::log_file.reset();
 }
 
+static void init_app_resources()
+{
+    ff::internal::app::load_settings();
+
+    ff::data_reader assets_reader(ff::assets_app_data());
+    ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
+}
+
 static bool app_initialized()
 {
     assert_ret_val(::window, false);
+    ::window_initialized = true;
     ::app_params.app_initialized_func(&::window);
 
     ::ShowWindow(::window, SW_SHOWDEFAULT);
 
-    if (::is_visible(::window))
+    if (ff::win32::is_visible(::window))
     {
         ::SetForegroundWindow(::window);
     }
@@ -518,23 +528,20 @@ static bool app_initialized()
     return true;
 }
 
-bool ff::internal::app::init(const ff::init_app_params& params)
+bool ff::internal::app::init(const ff::init_app_params& params, ff::init_dx& async_init_dx)
 {
-    ff::string::get_module_version_strings(nullptr, ::app_product_name, ::app_internal_name);
     ::app_params = params;
     ::init_log();
-    ::app_time = {};
-    ff::internal::app::load_settings();
 
-    ff::data_reader assets_reader(ff::assets_app_data());
-    ::app_resources = std::make_shared<ff::resource_objects>(assets_reader);
+    assert_ret_val(async_init_dx.init_async(), false);
+    ::init_app_resources();
 
-    if (::window = ::create_window())
-    {
-        ::window_message_connection = ::window.message_sink().connect(::handle_window_message);
-        ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
-        ::render_targets = std::make_unique<ff::render_targets>(::target);
-    }
+    assert_ret_val(::window = ::create_window(), false);
+    ::window_message_connection = ::window.message_sink().connect(::handle_window_message);
+
+    assert_ret_val(async_init_dx.init_wait(), false);
+    ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
+    ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     return ::app_initialized();
 }
@@ -542,6 +549,7 @@ bool ff::internal::app::init(const ff::init_app_params& params)
 void ff::internal::app::destroy()
 {
     ::stop_game_thread();
+    ::window_initialized = false;
     ::app_params.app_destroyed_func();
     ff::internal::app::save_settings();
     ff::internal::app::clear_settings();

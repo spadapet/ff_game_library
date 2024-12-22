@@ -79,7 +79,7 @@ static std::string adapter_name(IDXGIAdapter* adapter)
 static Microsoft::WRL::ComPtr<ID3D12Device1> create_dx12_device()
 {
     Microsoft::WRL::ComPtr<ID3D12Device1> device;
-    if (FAILED(::D3D12CreateDevice(/*adapters[i].Get()*/nullptr, ::feature_level, IID_PPV_ARGS(&device))))
+    if (FAILED(::D3D12CreateDevice(nullptr, ::feature_level, IID_PPV_ARGS(&device))))
     {
         ff::log::write_debug_fail(ff::log::type::dx12, "D3D12CreateDevice failed");
         return nullptr;

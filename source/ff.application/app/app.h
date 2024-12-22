@@ -26,7 +26,7 @@ namespace ff
 
 namespace ff::internal::app
 {
-    bool init(const ff::init_app_params& params);
+    bool init(const ff::init_app_params& params, ff::init_dx& async_init_dx);
     void destroy();
 
     ff::resource_object_provider& app_resources();

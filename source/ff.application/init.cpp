@@ -9,7 +9,7 @@ namespace
     public:
         one_time_init_app(const ff::init_app_params& params)
         {
-            this->app_status = ff::internal::app::init(params);
+            this->app_status = ff::internal::app::init(params, this->init_dx);
         }
 
         ~one_time_init_app()
@@ -20,14 +20,13 @@ namespace
 
         bool valid() const
         {
-            return this->init_base && this->init_dx && this->app_status;
+            return this->init_dx && this->app_status;
         }
 
     private:
         bool app_status{};
 
-        ff::init_base init_base;
-        ff::init_dx init_dx;
+        ff::init_dx init_dx{ true };
     };
 }
 
