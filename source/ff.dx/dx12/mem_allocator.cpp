@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "dx12/device_reset_priority.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/mem_allocator.h"
 
 void* ff::dx12::mem_buffer_base::cpu_data(uint64_t start)

@@ -3,7 +3,7 @@
 #include "dx12/commands.h"
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/mem_allocator.h"
 #include "dx12/resource.h"
 

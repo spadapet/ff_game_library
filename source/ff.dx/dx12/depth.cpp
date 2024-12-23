@@ -4,7 +4,7 @@
 #include "dx12/depth.h"
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/resource.h"
 
 static CD3DX12_RESOURCE_DESC depth_desc(const ff::point_size& size, size_t sample_count)

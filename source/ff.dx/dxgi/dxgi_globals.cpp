@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "dx12/depth.h" // only this interop file in DXGI knows that DX12 is used
 #include "dx12/draw_device.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/target_texture.h"
 #include "dx12/target_window.h"
 #include "dx12/texture.h"
-#include "dxgi/interop.h"
+#include "dxgi/dxgi_globals.h"
 #include "dxgi/target_window_base.h"
 
 namespace
@@ -24,6 +24,7 @@ static std::mutex defer_mutex;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_target_size;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::dxgi::target_window_params>> defer_target_reset;
 static ::defer_flags_t defer_flags;
+static DXGI_ADAPTER_DESC user_selected_adapter_desc{};
 
 void ff::dxgi::remove_target(ff::dxgi::target_window_base* target)
 {
@@ -155,6 +156,122 @@ void ff::dxgi::frame_complete()
 ff::dxgi::draw_device_base& ff::dxgi::global_draw_device()
 {
     return ff::dx12::get_draw_device();
+}
+
+IDXGIFactory6* ff::dxgi::factory()
+{
+    return ff::dx12::factory();
+}
+
+IDXGIAdapter3* ff::dxgi::adapter()
+{
+    return ff::dx12::adapter();
+}
+
+static bool adapter_matches(IDXGIAdapter3* adapter, const DXGI_ADAPTER_DESC& match_desc)
+{
+    DXGI_ADAPTER_DESC desc{};
+    if ((match_desc.AdapterLuid.LowPart || match_desc.AdapterLuid.HighPart) && SUCCEEDED(adapter->GetDesc(&desc)))
+    {
+        if (desc.AdapterLuid.LowPart == match_desc.AdapterLuid.LowPart &&
+            desc.AdapterLuid.HighPart == match_desc.AdapterLuid.HighPart)
+        {
+            return true;
+        }
+
+        if (desc.VendorId == match_desc.VendorId &&
+            desc.DeviceId == match_desc.DeviceId &&
+            desc.SubSysId == match_desc.SubSysId &&
+            desc.Revision == match_desc.Revision)
+        {
+            return true;
+        }
+
+        if (std::wcscmp(desc.Description, match_desc.Description) == 0 &&
+            desc.DedicatedVideoMemory == match_desc.DedicatedVideoMemory)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> ff::dxgi::enum_adapters(size_t& out_best_choice)
+{
+    out_best_choice = 0;
+
+    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> result;
+    result.reserve(8);
+
+    bool found_warp = false;
+    bool warp_adapter_valid = false;
+    Microsoft::WRL::ComPtr<IDXGIAdapter3> warp_adapter;
+    DXGI_ADAPTER_DESC warp_desc{};
+
+    if (SUCCEEDED(ff::dxgi::factory()->EnumWarpAdapter(IID_PPV_ARGS(&warp_adapter))) && SUCCEEDED(warp_adapter->GetDesc(&warp_desc)))
+    {
+        warp_adapter_valid = true;
+    }
+
+    for (size_t i = 0; ; i++)
+    {
+        Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
+        DXGI_ADAPTER_DESC desc{};
+
+        if (SUCCEEDED(ff::dxgi::factory()->EnumAdapterByGpuPreference(static_cast<UINT>(i), DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))) &&
+            SUCCEEDED(adapter->GetDesc(&desc)))
+        {
+            if (!found_warp && warp_adapter_valid && desc.VendorId == warp_desc.VendorId && desc.DeviceId == warp_desc.DeviceId)
+            {
+                found_warp = true;
+            }
+
+            ff::log::write(ff::log::type::dx12, "Adapter[", result.size(), "] = ", ff::dxgi::adapter_name(desc));
+            result.push_back(std::move(adapter));
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if (warp_adapter_valid && !found_warp)
+    {
+        result.push_back(std::move(warp_adapter));
+    }
+
+    for (size_t i = 0; i < result.size(); i++)
+    {
+        if (::adapter_matches(result[i].Get(), ::user_selected_adapter_desc))
+        {
+            out_best_choice = i;
+            break;
+        }
+    }
+
+    return result;
+}
+
+void ff::dxgi::user_selected_adapter(const DXGI_ADAPTER_DESC& desc, bool reset_now)
+{
+    ::user_selected_adapter_desc = desc;
+}
+
+const DXGI_ADAPTER_DESC& ff::dxgi::user_selected_adapter()
+{
+    return ::user_selected_adapter_desc;
+}
+
+std::string ff::dxgi::adapter_name(IDXGIAdapter3* adapter)
+{
+    DXGI_ADAPTER_DESC desc{};
+    return SUCCEEDED(adapter->GetDesc(&desc)) ? ff::dxgi::adapter_name(desc) : std::string();
+}
+
+std::string ff::dxgi::adapter_name(const DXGI_ADAPTER_DESC& desc)
+{
+    return ff::string::to_string(std::wstring_view(&desc.Description[0]));
 }
 
 std::unique_ptr<ff::dxgi::draw_device_base> ff::dxgi::create_draw_device()

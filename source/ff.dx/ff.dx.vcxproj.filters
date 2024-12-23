@@ -63,7 +63,7 @@
     <ClCompile Include="dxgi\format_util.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
-    <ClCompile Include="dxgi\interop.cpp">
+    <ClCompile Include="dxgi\dxgi_globals.cpp">
       <Filter>dxgi</Filter>
     </ClCompile>
     <ClCompile Include="dxgi\sprite_data.cpp">
@@ -99,7 +99,7 @@
     <ClCompile Include="dx12\fence_values.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\globals.cpp">
+    <ClCompile Include="dx12\dx12_globals.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\gpu_event.cpp">
@@ -316,7 +316,7 @@
     <ClInclude Include="dxgi\format_util.h">
       <Filter>dxgi</Filter>
     </ClInclude>
-    <ClInclude Include="dxgi\interop.h">
+    <ClInclude Include="dxgi\dxgi_globals.h">
       <Filter>dxgi</Filter>
     </ClInclude>
     <ClInclude Include="dxgi\palette_base.h">
@@ -382,7 +382,7 @@
     <ClInclude Include="dx12\fence_values.h">
       <Filter>dx12</Filter>
     </ClInclude>
-    <ClInclude Include="dx12\globals.h">
+    <ClInclude Include="dx12\dx12_globals.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\gpu_event.h">

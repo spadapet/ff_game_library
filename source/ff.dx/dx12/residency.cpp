@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "dx12/access.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/fence.h"
 #include "dx12/fence_values.h"
-#include "dx12/globals.h"
 #include "dx12/residency.h"
 
 static std::mutex pageable_mutex;

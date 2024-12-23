@@ -18,7 +18,7 @@
     <ClCompile Include="dx12\fence.cpp" />
     <ClCompile Include="dx12\fence_value.cpp" />
     <ClCompile Include="dx12\fence_values.cpp" />
-    <ClCompile Include="dx12\globals.cpp" />
+    <ClCompile Include="dx12\dx12_globals.cpp" />
     <ClCompile Include="dx12\gpu_event.cpp" />
     <ClCompile Include="dx12\heap.cpp" />
     <ClCompile Include="dx12\mem_allocator.cpp" />
@@ -40,7 +40,7 @@
     <ClCompile Include="dxgi\draw_device_base.cpp" />
     <ClCompile Include="dxgi\draw_util.cpp" />
     <ClCompile Include="dxgi\format_util.cpp" />
-    <ClCompile Include="dxgi\interop.cpp" />
+    <ClCompile Include="dxgi\dxgi_globals.cpp" />
     <ClCompile Include="dxgi\sprite_data.cpp" />
     <ClCompile Include="graphics\animation.cpp" />
     <ClCompile Include="graphics\animation_base.cpp" />
@@ -102,7 +102,7 @@
     <ClInclude Include="dx12\fence.h" />
     <ClInclude Include="dx12\fence_value.h" />
     <ClInclude Include="dx12\fence_values.h" />
-    <ClInclude Include="dx12\globals.h" />
+    <ClInclude Include="dx12\dx12_globals.h" />
     <ClInclude Include="dx12\gpu_event.h" />
     <ClInclude Include="dx12\heap.h" />
     <ClInclude Include="dx12\mem_allocator.h" />
@@ -126,7 +126,7 @@
     <ClInclude Include="dxgi\draw_device_base.h" />
     <ClInclude Include="dxgi\draw_util.h" />
     <ClInclude Include="dxgi\format_util.h" />
-    <ClInclude Include="dxgi\interop.h" />
+    <ClInclude Include="dxgi\dxgi_globals.h" />
     <ClInclude Include="dxgi\palette_base.h" />
     <ClInclude Include="dxgi\palette_data_base.h" />
     <ClInclude Include="dxgi\sprite_data.h" />

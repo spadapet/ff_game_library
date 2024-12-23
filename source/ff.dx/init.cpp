@@ -2,7 +2,7 @@
 #include "audio/audio.h"
 #include "audio/audio_effect.h"
 #include "audio/music.h"
-#include "dxgi/interop.h"
+#include "dxgi/dxgi_globals.h"
 #include "graphics/animation.h"
 #include "graphics/palette_data.h"
 #include "graphics/random_sprite.h"
@@ -68,34 +68,21 @@ namespace
 
         void init_now()
         {
-            ff::timer each_timer;
-
             this->init_audio_status = ff::internal::audio::init();
-            ff::log::write(ff::log::type::debug, "- XAudio init: ", &std::fixed, std::setprecision(1), each_timer.tick() * 1000.0, "ms");
-
             this->init_input_status = ff::internal::input::init();
-            ff::log::write(ff::log::type::debug, "- XInput init: ", &std::fixed, std::setprecision(1), each_timer.tick() * 1000.0, "ms");
-
             this->init_dxgi_status = ff::internal::dxgi::init();
-            ff::log::write(ff::log::type::debug, "- DXGI init: ", &std::fixed, std::setprecision(1), each_timer.tick() * 1000.0, "ms");
-
             this->init_write_status = ff::internal::write::init();
-            ff::log::write(ff::log::type::debug, "- DWrite init: ", &std::fixed, std::setprecision(1), each_timer.tick() * 1000.0, "ms");
 
             if (this->init_event)
             {
                 this->init_event->set();
             }
-
-            this->init_timer.tick();
-            ff::log::write(ff::log::type::debug, "ff.dx init complete: ", &std::fixed, std::setprecision(1), this->init_timer.seconds() * 1000.0, "ms");
         }
 
         bool init_async()
         {
             assert_ret_val(!this->init_event, false);
 
-            ff::log::write(ff::log::type::debug, "ff.dx init start async: ", &std::fixed, std::setprecision(1), this->init_timer.tick() * 1000.0, "ms");
             this->init_event = std::make_unique<ff::win_event>();
             ff::thread_pool::add_task(std::bind(&::one_time_init_dx::init_now, this));
 
@@ -122,7 +109,6 @@ namespace
         }
 
     private:
-        ff::timer init_timer;
         bool init_audio_status{};
         bool init_input_status{};
         bool init_dxgi_status{};

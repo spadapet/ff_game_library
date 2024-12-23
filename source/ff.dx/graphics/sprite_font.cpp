@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "dxgi/draw_util.h"
-#include "dxgi/interop.h"
+#include "dxgi/dxgi_globals.h"
 #include "dxgi/sprite_data.h"
 #include "graphics/sprite.h"
 #include "graphics/sprite_font.h"

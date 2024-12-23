@@ -5,7 +5,7 @@
 #include "dx12/descriptor_allocator.h"
 #include "dx12/device_reset_priority.h"
 #include "dx12/draw_device.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/gpu_event.h"
 #include "dx12/object_cache.h"
 #include "dx12/texture.h"

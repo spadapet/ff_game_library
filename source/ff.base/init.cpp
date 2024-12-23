@@ -46,7 +46,6 @@ namespace
 
             ff::internal::thread_pool::init();
             ff::internal::global_resources::init();
-            ff::log::write(ff::log::type::debug, "base init complete: ", &std::fixed, std::setprecision(1), this->init_timer.tick() * 1000.0, "ms");
         }
 
         ~one_time_init_base()
@@ -110,7 +109,6 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
         }
 
-        ff::timer init_timer;
         ff::thread_dispatch thread_dispatch;
     };
 }

@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "dx12/access.h"
 #include "dx12/device_reset_priority.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/fence.h"
-#include "dx12/globals.h"
 #include "dx12/queue.h"
 
 ff::dx12::fence::fence(std::string_view name, ff::dx12::queue* queue, uint64_t initial_value)

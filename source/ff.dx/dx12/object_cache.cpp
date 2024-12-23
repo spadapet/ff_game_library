@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "dx12/device_reset_priority.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/object_cache.h"
 #include "types/blob.h"
 

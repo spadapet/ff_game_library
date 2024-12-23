@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "dxgi/draw_base.h"
+#include "dxgi/dxgi_globals.h"
 #include "dxgi/format_util.h"
-#include "dxgi/interop.h"
 #include "dxgi/sprite_data.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"

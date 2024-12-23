@@ -17,6 +17,7 @@ namespace ff::dxgi
     class texture_base;
     struct target_window_params;
 
+    // Deferred actions for target window, since making changes during the frame can be dangerous
     void remove_target(ff::dxgi::target_window_base* target);
     void defer_resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size);
     void defer_reset_target(ff::dxgi::target_window_base* target, const ff::dxgi::target_window_params& params);
@@ -31,6 +32,16 @@ namespace ff::dxgi
     void frame_complete();
     ff::dxgi::draw_device_base& global_draw_device();
 
+    // Factory and adapters
+    IDXGIFactory6* factory();
+    IDXGIAdapter3* adapter();
+    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> enum_adapters(size_t& out_best_choice);
+    void user_selected_adapter(const DXGI_ADAPTER_DESC& desc, bool reset_now = false);
+    const DXGI_ADAPTER_DESC& user_selected_adapter();
+    std::string adapter_name(IDXGIAdapter3* adapter);
+    std::string adapter_name(const DXGI_ADAPTER_DESC& desc);
+
+    // Create root graphics objects
     std::unique_ptr<ff::dxgi::draw_device_base> create_draw_device();
     std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const DirectX::XMFLOAT4* optimized_clear_color = nullptr);
     std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& scratch, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown);

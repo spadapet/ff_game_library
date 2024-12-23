@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "dx12/fence.h"
 #include "dx12/fence_values.h"
-#include "dx12/globals.h"
+#include "dx12/dx12_globals.h"
 
 ff::dx12::fence_values::fence_values(std::initializer_list<ff::dx12::fence_value> list)
 {
