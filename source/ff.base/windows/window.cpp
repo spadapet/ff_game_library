@@ -131,7 +131,7 @@ ff::window ff::window::create_blank(std::string_view window_name, HWND parent, D
 {
     constexpr std::string_view class_name = "ff::window::blank";
     HCURSOR cursor = ::LoadCursor(nullptr, IDC_ARROW);
-    HBRUSH brush = reinterpret_cast<HBRUSH>(BLACK_BRUSH + 1);
+    HBRUSH brush = static_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
 
     assert_ret_val(ff::window::create_class(class_name, CS_DBLCLKS, ff::get_hinstance(), cursor, brush), ff::window());
     return ff::window::create(class_name, window_name, parent, style, ex_style, x, y, cx, cy, ff::get_hinstance(), menu);

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "base/log.h"
 #include "base/memory.h"
 #include "data_value/bool_v.h"
 #include "data_value/data_v.h"
@@ -23,6 +24,7 @@
 #include "resource/resource_values.h"
 #include "thread/thread_dispatch.h"
 #include "thread/thread_pool.h"
+#include "types/timer.h"
 
 namespace
 {
@@ -32,10 +34,7 @@ namespace
         one_time_init_base()
             : thread_dispatch(ff::thread_dispatch_type::main)
         {
-            if (!::IsMouseInPointerEnabled())
-            {
-                ::EnableMouseInPointer(TRUE);
-            }
+            ::EnableMouseInPointer(TRUE);
 
             if constexpr (ff::constants::track_memory)
             {
@@ -47,6 +46,7 @@ namespace
 
             ff::internal::thread_pool::init();
             ff::internal::global_resources::init();
+            ff::log::write(ff::log::type::debug, "base init complete: ", &std::fixed, std::setprecision(1), this->init_timer.tick() * 1000.0, "ms");
         }
 
         ~one_time_init_base()
@@ -110,6 +110,7 @@ namespace
             ff::resource_object_base::register_factory<ff::internal::resource_values_factory>("resource_values");
         }
 
+        ff::timer init_timer;
         ff::thread_dispatch thread_dispatch;
     };
 }

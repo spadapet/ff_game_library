@@ -15,6 +15,10 @@ std::shared_ptr<ff::game::root_state_base> ff::game::init_params::default_create
     return std::make_shared<ff::game::root_state_base>();
 }
 
+void ff::game::init_params::default_with_window(ff::window* window)
+{
+}
+
 static void register_resources(const ff::game::init_params& params)
 {
     std::filesystem::path path = ff::filesystem::executable_path().parent_path();
@@ -54,6 +58,7 @@ int ff::game::run(const ff::game::init_params& game_params)
     ff::init_app_params app_params{};
     app_params.register_resources_func = [&game_params]() { ::register_resources(game_params); };
     app_params.create_initial_state_func = [&game_params]() { return ::create_root_state(game_params); };
+    app_params.app_initialized_func = [&game_params](ff::window* window) { game_params.window_initialized_func(window); };
     app_params.game_thread_finished_func = ::destroy_root_state;
     app_params.get_time_scale_func = ::get_time_scale;
     app_params.get_advance_type_func = ::get_advance_type;
