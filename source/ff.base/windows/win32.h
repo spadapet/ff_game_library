@@ -14,6 +14,7 @@ namespace ff::win32
     ff::rect_int convert_rect(const RECT& rect);
     ff::rect_int get_window_rect(HWND hwnd);
     ff::rect_int get_client_rect(HWND hwnd);
+    void center_window(HWND hwnd);
 
     constexpr LONG default_window_style(bool full_screen);
     bool is_full_screen(HWND hwnd);

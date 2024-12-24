@@ -53,6 +53,32 @@ ff::rect_int ff::win32::get_client_rect(HWND hwnd)
     return (hwnd && ::GetClientRect(hwnd, &rect)) ? ff::win32::convert_rect(rect) : ff::rect_int{};
 }
 
+void ff::win32::center_window(HWND hwnd)
+{
+    HWND parent_hwnd = ::GetParent(hwnd);
+    RECT parent_rect{};
+
+    if (parent_hwnd)
+    {
+        assert_ret(::GetWindowRect(parent_hwnd, &parent_rect));
+    }
+    else
+    {
+        HMONITOR monitor = ::MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY);
+        MONITORINFO monitor_info{ sizeof(monitor_info) };
+        assert_ret(::GetMonitorInfo(monitor, &monitor_info));
+        parent_rect = monitor_info.rcWork;
+    }
+
+    RECT hwnd_rect{};
+    if (::GetWindowRect(hwnd, &hwnd_rect))
+    {
+        int x = parent_rect.left + (parent_rect.right - parent_rect.left - hwnd_rect.right + hwnd_rect.left) / 2;
+        int y = parent_rect.top + (parent_rect.bottom - parent_rect.top - hwnd_rect.bottom + hwnd_rect.top) / 2;
+        ::SetWindowPos(hwnd, nullptr, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
+    }
+}
+
 constexpr LONG ff::win32::default_window_style(bool full_screen)
 {
     return full_screen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
