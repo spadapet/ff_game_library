@@ -10,10 +10,7 @@ uint32_t ff::win32::get_dpi(HWND hwnd)
 uint32_t ff::win32::get_dpi(HMONITOR monitor)
 {
     UINT dpi_x, dpi_y;
-    MONITORINFO monitor_info{ sizeof(monitor_info) };
-
-    if (monitor && ::GetMonitorInfo(monitor, &monitor_info) &&
-        SUCCEEDED(::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)))
+    if (monitor && SUCCEEDED(::GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dpi_x, &dpi_y)))
     {
         return dpi_x;
     }
