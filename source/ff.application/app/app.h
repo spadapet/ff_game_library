@@ -18,6 +18,8 @@ namespace ff
     const std::string& app_product_name();
     const std::string& app_internal_name();
     const ff::app_time_t& app_time();
+    bool app_full_screen();
+    void app_full_screen(bool value);
 
     std::filesystem::path app_roaming_path();
     std::filesystem::path app_local_path();

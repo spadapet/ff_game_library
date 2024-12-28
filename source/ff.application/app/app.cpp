@@ -581,6 +581,17 @@ const ff::app_time_t& ff::app_time()
     return ::app_time;
 }
 
+bool ff::app_full_screen()
+{
+    return ::window && ::window.full_screen();
+}
+
+void ff::app_full_screen(bool value)
+{
+    assert_ret(::window);
+    ::window.full_screen(value);
+}
+
 std::filesystem::path ff::app_roaming_path()
 {
     std::filesystem::path path = ff::filesystem::user_roaming_path() / ff::filesystem::clean_file_name(ff::app_internal_name());
