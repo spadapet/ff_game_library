@@ -21,6 +21,12 @@ namespace ff::constants
         return static_cast<T>(-1);
     }
 
+    template<class T, class = std::enable_if_t<std::is_unsigned_v<T>>>
+    constexpr T previous_unsigned(T val)
+    {
+        return val ? (val - 1) : ff::constants::invalid_unsigned<T>();
+    }
+
     /// <summary>
     /// Fixed amount of times per second that the game loop advances
     /// </summary>

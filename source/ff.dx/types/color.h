@@ -12,6 +12,10 @@ namespace ff
     const DirectX::XMFLOAT4& color_cyan();
     const DirectX::XMFLOAT4& color_magenta();
 
+    const DirectX::XMFLOAT4& color_or_none(const DirectX::XMFLOAT4* color);
+    const DirectX::XMFLOAT4& color_or_white(const DirectX::XMFLOAT4* color);
+    const DirectX::XMFLOAT4& color_or_black(const DirectX::XMFLOAT4* color);
+
     constexpr DirectX::XMFLOAT4 palette_index_to_color(int index, float alpha = 1.0f)
     {
         return DirectX::XMFLOAT4(index / 256.0f, 0.0f, 0.0f, alpha * (index != 0));

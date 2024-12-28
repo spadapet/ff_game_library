@@ -56,6 +56,21 @@ const DirectX::XMFLOAT4& ff::color_magenta()
     return ::color_mangenta;
 }
 
+const DirectX::XMFLOAT4& ff::color_or_none(const DirectX::XMFLOAT4* color)
+{
+    return color ? *color : ::color_none;
+}
+
+const DirectX::XMFLOAT4& ff::color_or_white(const DirectX::XMFLOAT4* color)
+{
+    return color ? *color : ::color_white;
+}
+
+const DirectX::XMFLOAT4& ff::color_or_black(const DirectX::XMFLOAT4* color)
+{
+    return color ? *color : ::color_black;
+}
+
 void ff::palette_index_to_color(const int* index, DirectX::XMFLOAT4* color, size_t count, float alpha)
 {
     for (size_t i = 0; i != count; i++, index++, color++)
