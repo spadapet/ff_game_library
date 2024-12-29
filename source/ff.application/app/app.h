@@ -20,6 +20,7 @@ namespace ff
     const ff::app_time_t& app_time();
     bool app_full_screen();
     void app_full_screen(bool value);
+    double app_dpi_scale();
 
     std::filesystem::path app_roaming_path();
     std::filesystem::path app_local_path();

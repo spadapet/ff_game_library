@@ -1056,7 +1056,7 @@ bool ff::dxgi::draw_util::draw_device_base::create_geometry_buffer()
         return true;
     }
 
-    assert(false);
+    assert(!byte_size);
     return false;
 }
 

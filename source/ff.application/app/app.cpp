@@ -592,6 +592,12 @@ void ff::app_full_screen(bool value)
     ::window.full_screen(value);
 }
 
+double ff::app_dpi_scale()
+{
+    assert_ret_val(::window, 1.0);
+    return ::window.dpi_scale();
+}
+
 std::filesystem::path ff::app_roaming_path()
 {
     std::filesystem::path path = ff::filesystem::user_roaming_path() / ff::filesystem::clean_file_name(ff::app_internal_name());

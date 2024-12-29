@@ -66,8 +66,8 @@ namespace ff
         void push_start_event(input_event_progress& event);
         void push_stop_event(input_event_progress& event);
 
-        std::unordered_multimap<size_t, input_event_progress> event_id_to_progress;
-        std::unordered_multimap<size_t, int> value_id_to_vk;
+        std::unordered_multimap<size_t, input_event_progress, ff::no_hash<size_t>> event_id_to_progress;
+        std::unordered_multimap<size_t, int, ff::no_hash<size_t>> value_id_to_vk;
         std::vector<input_event> events_;
         std::vector<ff::input_vk const*> devices;
     };

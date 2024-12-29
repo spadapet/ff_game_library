@@ -100,6 +100,12 @@ void ff::settings(std::string_view name, const ff::dict& dict)
     ::settings_changed = true;
 }
 
+bool ff::save_settings()
+{
+    ff::internal::app::request_save_settings();
+    return ff::internal::app::save_settings();
+}
+
 ff::signal_sink<>& ff::request_save_settings_sink()
 {
     return ::save_settings_signal;

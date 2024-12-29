@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/assert.h"
+#include "base/stable_hash.h"
 #include "base/string.h"
 #include "thread/thread_pool.h"
 #include "windows/win_handle.h"
@@ -39,7 +40,7 @@ static bool pool_valid{};
 static TP_CALLBACK_ENVIRON pool_env{};
 static PTP_CLEANUP_GROUP pool_cleanup{};
 static size_t next_data_handle{ 1 }; // odd numbers are for data_map lookups, otherwise it's a ::task_data_t*
-static std::unordered_map<size_t, std::unique_ptr<::task_data_t>> data_map;
+static std::unordered_map<size_t, std::unique_ptr<::task_data_t>, ff::no_hash<size_t>> data_map;
 
 static std::tuple<FILETIME, bool> delay_to_filetime(size_t delay_ms)
 {

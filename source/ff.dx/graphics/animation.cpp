@@ -367,10 +367,10 @@ const ff::animation::cached_visuals_t* ff::animation::get_cached_visuals(const f
 
             for (ff::value_ptr child_value : values)
             {
-                anim = std::dynamic_pointer_cast<ff::animation_base>(child_value->convert_or_default<ff::resource_object_base>()->get<ff::resource_object_base>());
-                if (anim)
+                const ff::animation::cached_visuals_t* child_visuals = this->get_cached_visuals(child_value);
+                if (child_visuals)
                 {
-                    visuals.push_back(anim);
+                    visuals.insert(visuals.end(), child_visuals->begin(), child_visuals->end());
                 }
             }
         }

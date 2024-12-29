@@ -4,6 +4,7 @@ namespace ff
 {
     ff::dict settings(std::string_view name);
     void settings(std::string_view name, const ff::dict& dict);
+    bool save_settings();
     ff::signal_sink<>& request_save_settings_sink();
 }
 
