@@ -135,10 +135,11 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
     ff::dict sprites_dict = dict.get<ff::dict>("sprites");
     std::unordered_map<std::wstring, std::shared_ptr<ff::texture>> texture_views;
     std::vector<ff::sprite> sprites;
+    std::vector<std::string_view> child_names = sprites_dict.child_names(true);
 
-    for (auto& sprite_iter : sprites_dict)
+    for (std::string_view child_name : child_names)
     {
-        ff::dict sprite_dict = sprite_iter.second->get<ff::dict>();
+        ff::dict sprite_dict = sprites_dict.get<ff::dict>(child_name);
         ff::rect_float pos_rect = sprite_dict.get<ff::rect_float>("pos");
         ff::point_float pos;
         ff::point_float size;
@@ -197,7 +198,7 @@ std::shared_ptr<ff::resource_object_base> ff::internal::sprite_list_factory::loa
         for (size_t i = 0; i < repeat; i++)
         {
             std::ostringstream sprite_name;
-            sprite_name << sprite_iter.first;
+            sprite_name << child_name;
 
             if (repeat > 1)
             {

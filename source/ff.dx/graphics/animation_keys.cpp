@@ -36,7 +36,7 @@ ff::value_ptr ff::animation_keys::get_value(float frame, const ff::dict* params)
             const key_frame& next_key = *key_iter;
 
             float time = (frame - prev_key.frame) / (next_key.frame - prev_key.frame);
-            return ff::animation_keys::interpolate(prev_key, next_key, time, params);
+            return ff::animation_keys::interpolate(prev_key, next_key, time, this->method, params);
         }
     }
 
@@ -260,7 +260,7 @@ bool ff::animation_keys::load_from_source_internal(std::string_view name, const 
     return true;
 }
 
-ff::value_ptr ff::animation_keys::interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params)
+ff::value_ptr ff::animation_keys::interpolate(const key_frame& lhs, const key_frame& other, float time, method_t method, const ff::dict* params)
 {
     ff::value_ptr value = lhs.value;
 
@@ -274,8 +274,9 @@ ff::value_ptr ff::animation_keys::interpolate(const key_frame& lhs, const key_fr
     }
     else if (lhs.value->is_same_type(other.value)) // Can only interplate the same types
     {
-        // Spline interpolation
-        if (lhs.tangent_value->is_same_type(lhs.value) && other.tangent_value->is_same_type(lhs.value))
+        if (ff::flags::has(method, method_t::interpolate_spline) &&
+            lhs.tangent_value->is_same_type(lhs.value) &&
+            other.tangent_value->is_same_type(lhs.value))
         {
             if (lhs.value->is_type<float>())
             {

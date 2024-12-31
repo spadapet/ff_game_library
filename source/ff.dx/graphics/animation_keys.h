@@ -45,7 +45,7 @@ namespace ff
             bool operator<(const key_frame& other) const;
             bool operator<(float frame) const;
 
-            float frame;
+            float frame{};
             ff::value_ptr value;
             ff::value_ptr tangent_value;
         };
@@ -53,7 +53,7 @@ namespace ff
         animation_keys();
         bool load_from_cache_internal(const ff::dict& dict);
         bool load_from_source_internal(std::string_view name, const ff::dict& dict, ff::resource_load_context& context);
-        static ff::value_ptr interpolate(const key_frame& lhs, const key_frame& other, float time, const ff::dict* params);
+        static ff::value_ptr interpolate(const key_frame& lhs, const key_frame& other, float time, method_t method, const ff::dict* params);
 
         std::string name_;
         std::vector<key_frame> keys;
