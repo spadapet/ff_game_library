@@ -365,7 +365,7 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                 int speed = static_cast<int>(::timer_update_speed_);
                 if (ImGui::SliderInt("##CountersSpeed", &speed, 1, 60, "Skip:%d"))
                 {
-                    speed = ff::math::clamp<int>(speed, 1, 60);
+                    speed = std::clamp<int>(speed, 1, 60);
                     ::timer_update_speed_ = static_cast<size_t>(speed);
                 }
 

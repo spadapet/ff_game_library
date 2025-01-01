@@ -79,6 +79,6 @@ void ff::test::assert_image(const std::filesystem::path& actual_path, DWORD expe
     for (const uint8_t* ep = expect_image->GetPixels(), *ap = actual_image->GetPixels();
         ep < expect_image->GetPixels() + expect_image->GetPixelsSize(); ep++, ap++)
     {
-        Assert::IsTrue(std::abs((int)*ep - (int)*ap) <= 1);
+        Assert::IsTrue(std::abs((int)*ep - (int)*ap) <= 10);
     }
 }

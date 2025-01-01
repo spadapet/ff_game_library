@@ -18,12 +18,12 @@ static ff::perf_counter perf_render_present("Present", ff::perf_color::cyan, ff:
 
 static size_t fix_buffer_count(size_t value)
 {
-    return ff::math::clamp<size_t>(value, MIN_BUFFER_COUNT, MAX_BUFFER_COUNT);
+    return std::clamp<size_t>(value, MIN_BUFFER_COUNT, MAX_BUFFER_COUNT);
 }
 
 static size_t fix_frame_latency(size_t value, size_t buffer_count)
 {
-    return ff::math::clamp<size_t>(value, 0, ::fix_buffer_count(buffer_count));
+    return std::clamp<size_t>(value, 0, ::fix_buffer_count(buffer_count));
 }
 
 static DXGI_MODE_ROTATION get_dxgi_rotation(int dmod, bool ccw)

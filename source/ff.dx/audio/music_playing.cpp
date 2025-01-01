@@ -197,7 +197,7 @@ void ff::internal::music_playing::advance()
         this->fade_timer.tick();
 
         float abs_fade_scale = std::abs(this->fade_scale);
-        this->fade_volume = ff::math::clamp(static_cast<float>(this->fade_timer.seconds() * abs_fade_scale), 0.0f, 1.0f);
+        this->fade_volume = std::clamp(static_cast<float>(this->fade_timer.seconds() * abs_fade_scale), 0.0f, 1.0f);
 
         bool fade_done = (this->fade_volume >= 1);
         bool fade_out = (this->fade_scale < 0);
@@ -362,7 +362,7 @@ double ff::internal::music_playing::volume() const
 
 bool ff::internal::music_playing::volume(double value)
 {
-    this->play_volume = ff::math::clamp(static_cast<float>(value), 0.0f, 1.0f);
+    this->play_volume = std::clamp(static_cast<float>(value), 0.0f, 1.0f);
     this->update_source_volume(this->source);
     return true;
 }
@@ -375,7 +375,7 @@ bool ff::internal::music_playing::fade_in(double value)
     }
 
     this->fade_timer.reset();
-    this->fade_scale = static_cast<float>(1.0 / ff::math::clamp(value, 0.0, 10.0));
+    this->fade_scale = static_cast<float>(1.0 / std::clamp(value, 0.0, 10.0));
     this->fade_volume = 0;
 
     this->update_source_volume(this->source);
@@ -391,7 +391,7 @@ bool ff::internal::music_playing::fade_out(double value)
     }
 
     this->fade_timer.reset();
-    this->fade_scale = static_cast<float>(-1.0 / ff::math::clamp(value, 0.0, 10.0));
+    this->fade_scale = static_cast<float>(-1.0 / std::clamp(value, 0.0, 10.0));
     this->fade_volume = 1;
 
     this->update_source_volume(this->source);

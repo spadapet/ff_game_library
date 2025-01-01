@@ -650,7 +650,7 @@ void ff::dx12::keep_alive_resource(ff::dx12::resource&& resource, ff::dx12::fenc
 
 size_t ff::dx12::fix_sample_count(DXGI_FORMAT format, size_t sample_count)
 {
-    size_t fixed_sample_count = ff::math::nearest_power_of_two(sample_count);
+    size_t fixed_sample_count = sample_count ? ff::math::nearest_power_of_two(sample_count) : 0;
     assert(fixed_sample_count == sample_count);
 
     D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS levels{};

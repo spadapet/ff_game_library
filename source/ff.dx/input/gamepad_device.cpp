@@ -39,6 +39,90 @@ void ff::gamepad_device::gamepad(size_t gamepad)
     this->gamepad_ = gamepad;
 }
 
+// static
+void ff::gamepad_device::insert_vibration(std::vector<vibrate_t>& dest, vibrate_t value)
+{
+    check_ret(value.value && value.count);
+
+    // Function to find the insertion point using binary search
+    auto insert_pos = std::lower_bound(dest.begin(), dest.end(), value,
+        [](const vibrate_t& a, const vibrate_t& b)
+        {
+            return a.value > b.value; // highest values first
+        });
+
+    if (insert_pos != dest.end() && insert_pos->value == value.value)
+    {
+        // Combine with existing value
+        insert_pos->count = std::max(insert_pos->count, value.count);
+        return;
+    }
+
+    for (auto i = dest.begin(); i != insert_pos; i++)
+    {
+        if (i->count >= value.count)
+        {
+            // No need for this new value, an existing value will last longer
+            return;
+        }
+    }
+
+    insert_pos = dest.insert(insert_pos, value);
+
+    // Remove any lower values that would complete during the new higher value's lifetime
+    dest.erase(std::remove_if(insert_pos + 1, dest.end(), [&](const vibrate_t& v) { return v.count <= value.count; }), dest.end());
+}
+
+void ff::gamepad_device::vibrate(float low_value, float high_value, float time)
+{
+    check_ret(this->connected());
+
+    constexpr float MAX_VIBRATE_TIME = 2.0f;
+
+    low_value = std::clamp(low_value, 0.0f, 1.0f);
+    high_value = std::clamp(high_value, 0.0f, 1.0f);
+    time = std::clamp(time, 0.0f, MAX_VIBRATE_TIME);
+
+    const size_t count = static_cast<size_t>(time * ff::constants::advances_per_second<float>());
+    ff::gamepad_device::insert_vibration(this->vibrate_low, { static_cast<WORD>(low_value * 65535.0f), count });
+    ff::gamepad_device::insert_vibration(this->vibrate_high, { static_cast<WORD>(high_value * 65535.0f), count });
+
+    this->set_vibration();
+}
+
+void ff::gamepad_device::vibrate_stop()
+{
+    this->vibrate_low.clear();
+    this->vibrate_high.clear();
+    this->set_vibration();
+}
+
+void ff::gamepad_device::set_vibration()
+{
+    XINPUT_VIBRATION vibration{};
+
+    if (this->vibrate_low.size())
+    {
+        vibration.wLeftMotorSpeed = this->vibrate_low.front().value;
+    }
+
+    if (this->vibrate_high.size())
+    {
+        vibration.wRightMotorSpeed = this->vibrate_high.front().value;
+    }
+
+    if (vibration.wLeftMotorSpeed != this->current_vibration.wLeftMotorSpeed ||
+        vibration.wRightMotorSpeed != this->current_vibration.wRightMotorSpeed)
+    {
+        this->current_vibration = vibration;
+
+        if (this->connected())
+        {
+            ::XInputSetState(static_cast<DWORD>(this->gamepad_), &this->current_vibration);
+        }
+    }
+}
+
 float ff::gamepad_device::analog_value(int vk) const
 {
     size_t i = ::vk_to_index(vk);
@@ -81,12 +165,30 @@ void ff::gamepad_device::advance()
         this->update_pending_state(reading);
         this->state = this->pending_state;
     }
+
+    // Update vibration
+    {
+        const auto remove_completed = [](std::vector<vibrate_t>& v)
+            {
+                const auto update_count = [](vibrate_t& i) { if (i.count) i.count--; };
+                const auto count_completed = [](const vibrate_t& i) { return !i.count; };
+
+                std::for_each(v.begin(), v.end(), update_count);
+                v.erase(std::remove_if(v.begin(), v.end(), count_completed), v.end());
+            };
+
+        remove_completed(this->vibrate_low);
+        remove_completed(this->vibrate_high);
+
+        this->set_vibration();
+    }
 }
 
 void ff::gamepad_device::kill_pending()
 {
     std::scoped_lock lock(this->mutex);
     this->update_pending_state(reading_t{});
+    this->vibrate_stop();
 }
 
 bool ff::gamepad_device::connected() const
