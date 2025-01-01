@@ -21,6 +21,7 @@ namespace ff::internal::input
 {
     bool init();
     void destroy();
+    bool enabled();
 
     void add_device(ff::input_device_base* device);
     void remove_device(ff::input_device_base* device);

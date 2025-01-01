@@ -7,6 +7,7 @@
 #include "input/pointer_device.h"
 
 static std::unordered_map<ff::input_device_base*, ff::signal_connection> all_devices;
+static bool input_disabled{};
 
 namespace
 {
@@ -89,6 +90,10 @@ namespace
         {
             switch (message.msg)
             {
+                case WM_ACTIVATE:
+                    ::input_disabled = (message.wp == WA_INACTIVE);
+                    break;
+
                 case WM_SETFOCUS:
                 case WM_KILLFOCUS:
                     this->kill_pending();
@@ -131,6 +136,11 @@ void ff::internal::input::destroy()
     ::pointer.reset();
     ::keyboard.reset();
     ::combined_devices_.reset();
+}
+
+bool ff::internal::input::enabled()
+{
+    return !::input_disabled;
 }
 
 void ff::internal::input::add_device(ff::input_device_base* device)

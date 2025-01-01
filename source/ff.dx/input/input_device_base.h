@@ -17,7 +17,7 @@ namespace ff
         virtual void notify_window_message(ff::window_message& message);
 
     protected:
-        bool block_events() const;
+        virtual bool block_events() const;
 
         ff::signal<const ff::input_device_event&> device_event;
 

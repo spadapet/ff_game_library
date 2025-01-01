@@ -159,7 +159,7 @@ void ff::gamepad_device::advance()
         this->check_connected--;
     }
 
-    if (!this->block_events())
+    // update state
     {
         std::scoped_lock lock(this->mutex);
         this->update_pending_state(reading);
@@ -198,7 +198,7 @@ bool ff::gamepad_device::connected() const
 
 bool ff::gamepad_device::poll(reading_t& reading)
 {
-    if (this->block_events())
+    if (this->block_events() || !ff::internal::input::enabled())
     {
         return true;
     }
