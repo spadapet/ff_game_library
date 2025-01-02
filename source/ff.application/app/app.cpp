@@ -41,7 +41,8 @@ static ff::win_event game_thread_event;
 static ff::state_wrapper game_state;
 static ::game_thread_state_t game_thread_state;
 static bool update_window_visible_pending{};
-static bool window_was_visible{};
+static bool window_active{};
+static bool window_was_active{};
 static bool window_initialized{};
 
 static std::string app_product_name;
@@ -357,10 +358,10 @@ static void update_window_visible()
     ::update_window_visible_pending = false;
 
     check_ret(::window);
-    const bool visible = ff::win32::is_visible(::window);
-    check_ret(::window_was_visible != visible);
+    const bool active = ::window_active && ff::win32::is_visible(::window);
+    check_ret(::window_was_active != active);
 
-    if (::window_was_visible = visible)
+    if (::window_was_active = active)
     {
         ::start_game_thread();
     }
@@ -449,6 +450,9 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
 
     switch (message.msg)
     {
+        case WM_ACTIVATE:
+            ::window_active = (message.wp != WA_INACTIVE);
+            [[fallthrough]];
         case WM_SIZE:
         case WM_SHOWWINDOW:
         case WM_WINDOWPOSCHANGED:

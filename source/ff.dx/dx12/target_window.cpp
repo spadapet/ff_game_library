@@ -175,10 +175,12 @@ void ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::lat
     if (latency_strategy == this->params.latency_strategy && this->frame_latency_handle)
     {
         ff::perf_timer timer(::perf_render_wait);
-        if (!this->frame_latency_handle.block(750))
+        if (!this->frame_latency_handle.block(500))
         {
-            // This happens when another game becomes active, hopefully there is a way to avoid it
-            ff::dxgi::defer_reset_device(true);
+            ff::log::write(ff::log::type::dx12_target, "Wait for latency handle failed");
+
+            this->latency_wait_failed = true;
+            ff::dxgi::defer_reset_target(this, this->init_params());
         }
     }
 }
@@ -244,7 +246,7 @@ size_t ff::dx12::target_window::target_sample_count() const
 
 bool ff::dx12::target_window::size(const ff::window_size& input_size)
 {
-    if (this->swap_chain && (this->frame_latency() == 0) != (this->params.frame_latency == 0))
+    if (this->swap_chain && (this->latency_wait_failed || (this->frame_latency() == 0) != (this->params.frame_latency == 0)))
     {
         // On game thread: Turning frame latency on/off requires recreating everything
         if (!this->internal_reset())
@@ -439,7 +441,8 @@ void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& 
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
     this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
 
-    if (old_params.buffer_count != this->params.buffer_count ||
+    if (this->latency_wait_failed ||
+        old_params.buffer_count != this->params.buffer_count ||
         old_params.frame_latency != this->params.frame_latency ||
         old_params.extra_render_target != this->params.extra_render_target)
     {
@@ -449,6 +452,7 @@ void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& 
 
 void ff::dx12::target_window::before_reset()
 {
+    this->latency_wait_failed = false;
     this->frame_latency_handle.close();
     this->target_textures.clear();
     this->extra_render_targets.clear();

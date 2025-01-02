@@ -72,6 +72,7 @@ namespace ff::dx12
         // Swap chain (all on game thread)
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
         ff::win_handle frame_latency_handle;
+        bool latency_wait_failed{};
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
         std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;
