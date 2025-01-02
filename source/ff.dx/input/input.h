@@ -21,7 +21,7 @@ namespace ff::internal::input
 {
     bool init();
     void destroy();
-    bool gamepads_enabled();
+    bool app_window_active();
 
     void add_device(ff::input_device_base* device);
     void remove_device(ff::input_device_base* device);

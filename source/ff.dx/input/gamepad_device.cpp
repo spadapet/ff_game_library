@@ -198,7 +198,7 @@ bool ff::gamepad_device::connected() const
 
 bool ff::gamepad_device::poll(reading_t& reading)
 {
-    if (this->block_events() || !ff::internal::input::gamepads_enabled())
+    if (this->block_events() || !ff::internal::input::app_window_active())
     {
         return true;
     }

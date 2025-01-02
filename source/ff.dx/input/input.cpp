@@ -7,7 +7,7 @@
 #include "input/pointer_device.h"
 
 static std::unordered_map<ff::input_device_base*, ff::signal_connection> all_devices;
-static bool disable_gamepads{}; // set on main thread but accessed on game thread
+static bool app_window_active{}; // set on main thread but accessed on game thread
 
 namespace
 {
@@ -91,7 +91,7 @@ namespace
             switch (message.msg)
             {
                 case WM_ACTIVATE:
-                    ::disable_gamepads = (message.wp == WA_INACTIVE);
+                    ::app_window_active = (message.wp != WA_INACTIVE);
                     break;
 
                 case WM_SETFOCUS:
@@ -138,9 +138,9 @@ void ff::internal::input::destroy()
     ::combined_devices_.reset();
 }
 
-bool ff::internal::input::gamepads_enabled()
+bool ff::internal::input::app_window_active()
 {
-    return !::disable_gamepads;
+    return ::app_window_active;
 }
 
 void ff::internal::input::add_device(ff::input_device_base* device)

@@ -42,7 +42,7 @@ static ff::state_wrapper game_state;
 static ::game_thread_state_t game_thread_state;
 static bool update_window_visible_pending{};
 static bool window_active{};
-static bool window_was_active{};
+static bool window_was_visible{};
 static bool window_initialized{};
 
 static std::string app_product_name;
@@ -358,10 +358,10 @@ static void update_window_visible()
     ::update_window_visible_pending = false;
 
     check_ret(::window);
-    const bool active = ::window_active && ff::win32::is_visible(::window);
-    check_ret(::window_was_active != active);
+    const bool visible = ff::win32::is_visible(::window);
+    check_ret(::window_was_visible != visible);
 
-    if (::window_was_active = active)
+    if (::window_was_visible = visible)
     {
         ::start_game_thread();
     }
@@ -438,21 +438,12 @@ static ff::window create_window()
 // main thread
 static void handle_window_message(ff::window* window, ff::window_message& message)
 {
-    if (::window_initialized)
-    {
-        if (ff::internal::imgui::handle_window_message(window, message))
-        {
-            return;
-        }
-
-        ff::input::combined_devices().notify_window_message(message);
-    }
-
-    switch (message.msg)
+    switch (message.msg) // Before handling input
     {
         case WM_ACTIVATE:
             ::window_active = (message.wp != WA_INACTIVE);
-            [[fallthrough]];
+            break;
+
         case WM_SIZE:
         case WM_SHOWWINDOW:
         case WM_WINDOWPOSCHANGED:
@@ -462,7 +453,15 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
                 ff::thread_dispatch::get_main()->post(::update_window_visible);
             }
             break;
+    }
 
+    if (::window_initialized && !ff::internal::imgui::handle_window_message(window, message))
+    {
+        ff::input::combined_devices().notify_window_message(message);
+    }
+
+    switch (message.msg) // After handling input
+    {
         case WM_DESTROY:
             ff::log::write(ff::log::type::application, "Window destroyed");
             ::update_window_visible_pending = false;
@@ -585,21 +584,14 @@ const ff::app_time_t& ff::app_time()
     return ::app_time;
 }
 
-bool ff::app_full_screen()
+const ff::window& ff::app_window()
 {
-    return ::window && ::window.full_screen();
+    return ::window;
 }
 
-void ff::app_full_screen(bool value)
+bool ff::app_window_active()
 {
-    assert_ret(::window);
-    ::window.full_screen(value);
-}
-
-double ff::app_dpi_scale()
-{
-    assert_ret_val(::window, 1.0);
-    return ::window.dpi_scale();
+    return ::window_active;
 }
 
 std::filesystem::path ff::app_roaming_path()
