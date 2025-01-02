@@ -28,6 +28,7 @@ namespace ff::audio
     void advance_effects();
     void stop_effects();
     void pause_effects();
+    void pause_effects(bool pause);
     void resume_effects();
 }
 

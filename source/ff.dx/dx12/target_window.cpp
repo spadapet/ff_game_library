@@ -175,7 +175,11 @@ void ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::lat
     if (latency_strategy == this->params.latency_strategy && this->frame_latency_handle)
     {
         ff::perf_timer timer(::perf_render_wait);
-        this->frame_latency_handle.block();
+        if (!this->frame_latency_handle.block(750))
+        {
+            // This happens when another game becomes active, hopefully there is a way to avoid it
+            ff::dxgi::defer_reset_device(true);
+        }
     }
 }
 

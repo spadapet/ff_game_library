@@ -272,6 +272,18 @@ void ff::audio::pause_effects()
     }
 }
 
+void ff::audio::pause_effects(bool pause)
+{
+    if (pause)
+    {
+        ff::audio::pause_effects();
+    }
+    else
+    {
+        ff::audio::resume_effects();
+    }
+}
+
 void ff::audio::resume_effects()
 {
     std::vector<ff::audio_playing_base*> paused;
