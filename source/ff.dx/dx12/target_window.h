@@ -53,7 +53,7 @@ namespace ff::dx12
         void handle_message(ff::window* window, ff::window_message& msg);
         void before_resize();
         bool internal_reset();
-        void handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy);
+        bool handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy);
         ff::dxgi::target_base& extra_render_target();
 
         struct
@@ -72,7 +72,6 @@ namespace ff::dx12
         // Swap chain (all on game thread)
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
         ff::win_handle frame_latency_handle;
-        bool latency_wait_failed{};
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
         std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;

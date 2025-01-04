@@ -328,7 +328,10 @@ static void destroy_d3d(bool for_reset)
 {
     assert(!::frame_commands);
 
-    ff::dx12::wait_for_idle();
+    if (ff::dx12::device_valid())
+    {
+        ff::dx12::wait_for_idle();
+    }
 
     if (!for_reset)
     {

@@ -9,6 +9,8 @@
 #include <imgui/backends/imgui_impl_win32.h>
 
 static ff::dx12::descriptor_range descriptor_range;
+static D3D12_CPU_DESCRIPTOR_HANDLE cpu_descriptor_handle{};
+static D3D12_GPU_DESCRIPTOR_HANDLE gpu_descriptor_handle{};
 static std::shared_ptr<ff::data_base> font_data;
 static std::string ini_path;
 static std::shared_ptr<ff::texture> rotated_texture;
@@ -63,13 +65,15 @@ static void imgui_init_dx12(ff::window* window)
         ::ImGui_ImplWin32_Shutdown();
     }
 
+    ::cpu_descriptor_handle = ::descriptor_range.cpu_handle(0);
+    ::gpu_descriptor_handle = ::descriptor_range.gpu_handle(0);
     ::buffer_count = ::app_target->buffer_count();
 
     ::ImGui_ImplWin32_Init(*window);
     ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::buffer_count), ::app_target->format(),
         ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
-        ::descriptor_range.cpu_handle(0),
-        ::descriptor_range.gpu_handle(0));
+        ::cpu_descriptor_handle,
+        ::gpu_descriptor_handle);
 }
 
 void ff::internal::imgui::init(
@@ -121,7 +125,9 @@ void ff::internal::imgui::rendering()
 {
     ::handle_dpi_change(::window);
 
-    if (::buffer_count != ::app_target->buffer_count())
+    if (::buffer_count != ::app_target->buffer_count() ||
+        ::cpu_descriptor_handle.ptr != ::descriptor_range.cpu_handle(0).ptr ||
+        ::gpu_descriptor_handle.ptr != ::descriptor_range.gpu_handle(0).ptr)
     {
         ::imgui_init_dx12(::window);
     }

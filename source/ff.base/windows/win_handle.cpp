@@ -137,11 +137,6 @@ bool ff::win_handle::wait(size_t timeout_ms, bool allow_dispatch) const
     return this->handle && ff::wait_for_handle(this->handle, timeout_ms, allow_dispatch);
 }
 
-bool ff::win_handle::block(size_t timeout_ms) const
-{
-    return this->wait(timeout_ms, false);
-}
-
 bool ff::win_handle::is_set() const
 {
     return this->wait(0);

@@ -30,7 +30,6 @@ namespace ff
 
         void close();
         bool wait(size_t timeout_ms = INFINITE, bool allow_dispatch = true) const;
-        bool block(size_t timeout_ms = INFINITE) const;
         bool is_set() const;
 
     private:

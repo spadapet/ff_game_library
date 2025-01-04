@@ -273,6 +273,15 @@ static void game_thread()
     ::destroy_game_thread();
 }
 
+static void wait_for_game_thread_event()
+{
+    if (!::game_thread_event.wait_and_reset(5000))
+    {
+        // Game thread is hung, can't go on
+        ::TerminateProcess(::GetCurrentProcess(), 1);
+    }
+}
+
 static void start_game_thread()
 {
     if (::game_thread_dispatch)
@@ -290,8 +299,8 @@ static void start_game_thread()
     {
         ff::log::write(ff::log::type::application, "Start game thread");
         ::game_thread_state = ::game_thread_state_t::running;
-        std::jthread(::game_thread).detach();
-        ::game_thread_event.wait_and_reset();
+        std::thread(::game_thread).detach();
+        ::wait_for_game_thread_event();
     }
 }
 
@@ -314,7 +323,7 @@ static void pause_game_thread()
         }
     });
 
-    ::game_thread_event.wait_and_reset();
+    ::wait_for_game_thread_event();
 }
 
 static void save_window_settings()
@@ -348,7 +357,7 @@ static void stop_game_thread()
         ::game_thread_state = ::game_thread_state_t::stopped;
     });
 
-    ::game_thread_event.wait_and_reset();
+    ::wait_for_game_thread_event();
 }
 
 // main thread
