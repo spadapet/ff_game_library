@@ -144,7 +144,7 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 
         // Finish all rendering to extra render target
         queue.execute(commands);
-        check_ret_val(this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute), false);
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
     }
 
     present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
@@ -152,7 +152,7 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 
     if (!this->params.extra_render_target)
     {
-        check_ret_val(this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute), false);
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
     }
 
     bool success;
@@ -164,25 +164,19 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 
     if (success)
     {
-        check_ret_val(this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_present), false);
+        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_present);
     }
 
     return success;
 }
 
-bool ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy)
+void ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy)
 {
     if (latency_strategy == this->params.latency_strategy && this->frame_latency_handle)
     {
         ff::perf_timer timer(::perf_render_wait);
-        if (!this->frame_latency_handle.wait(750, false))
-        {
-            ff::dx12::device_fatal_error("Wait for latency handle failed");
-            return false;
-        }
+        this->frame_latency_handle.wait(INFINITE, false);
     }
-
-    return true;
 }
 
 void ff::dx12::target_window::before_resize()

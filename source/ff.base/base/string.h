@@ -1,5 +1,18 @@
 #pragma once
 
+namespace ff
+{
+    struct module_version_t
+    {
+        std::string product_name;
+        std::string internal_name;
+        std::string company_name;
+        std::string product_version;
+        std::string file_version;
+        std::string copyright;
+    };
+}
+
 namespace ff::string
 {
     std::wstring to_wstring(std::string_view str);
@@ -13,8 +26,8 @@ namespace ff::string
     std::vector<std::string_view> split(std::string_view str, std::string_view delims);
     std::vector<std::string> split_command_line();
     std::vector<std::string> split_command_line(std::string_view str);
-    void get_module_version_strings(HINSTANCE handle, std::string& out_product_name, std::string& out_internal_name);
 
+    ff::module_version_t get_module_version(HINSTANCE module);
     std::string date();
     std::string time();
 

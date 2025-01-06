@@ -15,8 +15,7 @@ namespace ff
         double time_scale{ 1.0 };
     };
 
-    const std::string& app_product_name();
-    const std::string& app_internal_name();
+    const ff::module_version_t& app_version();
     const ff::app_time_t& app_time();
     const ff::window& app_window();
     bool app_window_active();

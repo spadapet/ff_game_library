@@ -104,16 +104,27 @@ std::filesystem::path ff::filesystem::to_path(std::string_view path)
     return std::filesystem::path(ff::string::to_wstring(path));
 }
 
-std::filesystem::path ff::filesystem::executable_path()
+std::filesystem::path ff::filesystem::module_path(HINSTANCE module)
 {
-    std::array<wchar_t, 2048> wpath;
-    DWORD size = static_cast<DWORD>(wpath.size());
-    if ((size = ::GetModuleFileName(nullptr, wpath.data(), size)) != 0)
+    DWORD buffer_size = MAX_PATH;
+    std::vector<wchar_t> buffer(buffer_size);
+
+    while (DWORD result = ::GetModuleFileName(module, buffer.data(), buffer_size))
     {
-        return ff::filesystem::to_path(ff::string::to_string(std::wstring_view(wpath.data(), size)));
+        if (result < buffer_size)
+        {
+            return std::filesystem::path(std::wstring(buffer.data(), result));
+        }
+
+        buffer.resize(buffer_size *= 2);
     }
 
     debug_fail_ret_val(std::filesystem::path{});
+}
+
+std::filesystem::path ff::filesystem::executable_path()
+{
+    return ff::filesystem::module_path(nullptr);
 }
 
 std::filesystem::path ff::filesystem::temp_directory_path()

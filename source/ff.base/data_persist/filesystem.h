@@ -19,6 +19,7 @@ namespace ff::filesystem
     std::string to_string(const std::filesystem::path& path);
     std::string extension_lower_string(const std::filesystem::path& path); // with '.' before extension
     std::filesystem::path to_path(std::string_view path);
+    std::filesystem::path module_path(HINSTANCE module);
     std::filesystem::path executable_path();
     std::filesystem::path temp_directory_path();
     std::filesystem::path user_local_path();

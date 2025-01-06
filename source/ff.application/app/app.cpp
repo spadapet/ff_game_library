@@ -34,6 +34,7 @@ constexpr std::string_view ID_SETTING_FULL_SCREEN = "full_screen";
 
 static ff::init_app_params app_params;
 static ff::app_time_t app_time;
+static ff::module_version_t app_version;
 static ff::timer timer;
 static ff::window window;
 static ff::signal_connection window_message_connection;
@@ -45,8 +46,6 @@ static bool window_active{};
 static bool window_was_visible{};
 static bool window_initialized{};
 
-static std::string app_product_name;
-static std::string app_internal_name;
 static std::unique_ptr<std::ofstream> log_file;
 static std::shared_ptr<ff::dxgi::target_window_base> target;
 static std::unique_ptr<ff::render_targets> render_targets;
@@ -426,7 +425,7 @@ static ff::window create_window()
 
     window = ff::window::create(
         class_name,
-        ff::app_product_name(),
+        ::app_version.product_name,
         nullptr, // parent
         ff::win32::default_window_style(full_screen),
         0, // ex style
@@ -500,12 +499,12 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
 
 static void init_log()
 {
-    ff::string::get_module_version_strings(nullptr, ::app_product_name, ::app_internal_name);
+    ::app_version = ff::string::get_module_version(nullptr);
 
     std::filesystem::path path = ff::app_local_path() / "log.txt";
     ::log_file = std::make_unique<std::ofstream>(path);
     ff::log::file(::log_file.get());
-    ff::log::write(ff::log::type::application, "Init (", ff::app_product_name(), ")");
+    ff::log::write(ff::log::type::application, "Init (", ::app_version.product_name, ")");
     ff::log::write(ff::log::type::application, "Log: ", ff::filesystem::to_string(path));
 }
 
@@ -578,14 +577,9 @@ ff::resource_object_provider& ff::internal::app::app_resources()
     return *::app_resources;
 }
 
-const std::string& ff::app_product_name()
+const ff::module_version_t& ff::app_version()
 {
-    return ::app_product_name;
-}
-
-const std::string& ff::app_internal_name()
-{
-    return ::app_internal_name;
+    return ::app_version;
 }
 
 const ff::app_time_t& ff::app_time()
@@ -605,21 +599,21 @@ bool ff::app_window_active()
 
 std::filesystem::path ff::app_roaming_path()
 {
-    std::filesystem::path path = ff::filesystem::user_roaming_path() / ff::filesystem::clean_file_name(ff::app_internal_name());
+    std::filesystem::path path = ff::filesystem::user_roaming_path() / ff::filesystem::clean_file_name(::app_version.internal_name);
     ff::filesystem::create_directories(path);
     return path;
 }
 
 std::filesystem::path ff::app_local_path()
 {
-    std::filesystem::path path = ff::filesystem::user_local_path() / ff::filesystem::clean_file_name(ff::app_internal_name());
+    std::filesystem::path path = ff::filesystem::user_local_path() / ff::filesystem::clean_file_name(::app_version.internal_name);
     ff::filesystem::create_directories(path);
     return path;
 }
 
 std::filesystem::path ff::app_temp_path()
 {
-    std::filesystem::path path = ff::filesystem::temp_directory_path() / "ff" / ff::filesystem::clean_file_name(ff::app_internal_name());
+    std::filesystem::path path = ff::filesystem::temp_directory_path() / "ff" / ff::filesystem::clean_file_name(::app_version.internal_name);
     ff::filesystem::create_directories(path);
     return path;
 }
