@@ -42,7 +42,7 @@ ff::game::root_state_base& ff::game::root_state_base::get()
     return *::global_app;
 }
 
-void ff::game::root_state_base::internal_init()
+void ff::game::root_state_base::internal_init(ff::window* window)
 {
     this->load_settings();
     this->init_resources();
@@ -112,6 +112,10 @@ ff::dxgi::palette_base* ff::game::root_state_base::palette(size_t index)
 bool ff::game::root_state_base::allow_debug_commands()
 {
     return ff::constants::profile_build;
+}
+
+void ff::game::root_state_base::notify_window_message(ff::window* window, ff::window_message& message)
+{
 }
 
 bool ff::game::root_state_base::clear_back_buffer()
@@ -228,13 +232,16 @@ std::shared_ptr<ff::state> ff::game::root_state_base::create_initial_game_state(
 }
 
 void ff::game::root_state_base::save_settings(ff::dict& dict)
-{}
+{
+}
 
 void ff::game::root_state_base::load_settings(const ff::dict& dict)
-{}
+{
+}
 
 void ff::game::root_state_base::load_resources()
-{}
+{
+}
 
 bool ff::game::root_state_base::debug_command_override(size_t command_id)
 {

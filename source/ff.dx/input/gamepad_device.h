@@ -4,19 +4,6 @@
 
 namespace ff
 {
-    enum class gamepad_stick_type
-    {
-        left_stick,
-        right_stick,
-        stick_pad,
-    };
-
-    enum class gamepad_trigger_type
-    {
-        left_trigger,
-        right_trigger,
-    };
-
     class gamepad_device : public input_device_base
     {
     public:

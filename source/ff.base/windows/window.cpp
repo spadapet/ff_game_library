@@ -2,6 +2,7 @@
 #include "base/assert.h"
 #include "base/string.h"
 #include "types/flags.h"
+#include "thread/thread_dispatch.h"
 #include "windows/win_handle.h"
 #include "windows/win32.h"
 #include "windows/window.h"

@@ -31,7 +31,7 @@ namespace ff::game
 
         static ff::game::root_state_base& get();
 
-        void internal_init();
+        void internal_init(ff::window* window);
         void debug_command(size_t command_id);
         const ff::game::system_options& system_options() const;
         void system_options(const ff::game::system_options& options);
@@ -41,6 +41,7 @@ namespace ff::game
         virtual ff::dxgi::palette_base* palette(size_t index);
         virtual bool clear_back_buffer();
         virtual bool allow_debug_commands();
+        virtual void notify_window_message(ff::window* window, ff::window_message& message);
 
         // ff::state
         virtual std::shared_ptr<ff::state> advance_time() override;
