@@ -171,6 +171,19 @@ ff::pointer_device& ff::input::pointer()
     return *::pointer;
 }
 
+ff::gamepad_device& ff::input::gamepad()
+{
+    for (const auto& gamepad : ::gamepads)
+    {
+        if (gamepad->connected())
+        {
+            return *gamepad;
+        }
+    }
+
+    return *::gamepads.front();
+}
+
 ff::gamepad_device& ff::input::gamepad(size_t index)
 {
     return *::gamepads[index];

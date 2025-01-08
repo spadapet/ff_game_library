@@ -13,6 +13,7 @@ namespace ff::input
     ff::input_device_base& combined_devices();
     ff::keyboard_device& keyboard();
     ff::pointer_device& pointer();
+    ff::gamepad_device& gamepad(); // return first connected
     ff::gamepad_device& gamepad(size_t index);
     size_t gamepad_count();
 }
