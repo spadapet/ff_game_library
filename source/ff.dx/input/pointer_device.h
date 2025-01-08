@@ -28,6 +28,8 @@ namespace ff
         int release_count(int vk_button) const;
         int double_click_count(int vk_button) const;
         ff::point_double wheel_scroll() const;
+        bool touch_to_mouse() const;
+        void touch_to_mouse(bool value);
 
         size_t touch_info_count() const;
         const pointer_touch_info& touch_info(size_t index) const;
@@ -74,5 +76,6 @@ namespace ff
         mouse_info pending_mouse{};
         std::vector<internal_touch_info> touches;
         std::vector<internal_touch_info> pending_touches;
+        bool touch_to_mouse_{};
     };
 }

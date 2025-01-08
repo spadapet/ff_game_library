@@ -71,6 +71,16 @@ ff::point_double ff::pointer_device::wheel_scroll() const
     return this->mouse.wheel_scroll;
 }
 
+bool ff::pointer_device::touch_to_mouse() const
+{
+    return this->touch_to_mouse_;
+}
+
+void ff::pointer_device::touch_to_mouse(bool value)
+{
+    this->touch_to_mouse_ = value;
+}
+
 size_t ff::pointer_device::touch_info_count() const
 {
     return this->touches.size();
@@ -190,7 +200,7 @@ void ff::pointer_device::notify_window_message(ff::window_message& message)
 
 void ff::pointer_device::mouse_message(const ff::window_message& message)
 {
-    if ((::GetMessageExtraInfo() & 0xFFFFFF00) == 0xFF515700)
+    if (!this->touch_to_mouse() && (::GetMessageExtraInfo() & 0xFFFFFF00) == 0xFF515700)
     {
         // Ignore fake mouse messages from touch screen. See:
         // https://docs.microsoft.com/en-us/windows/win32/tablet/system-events-and-mouse-messages
