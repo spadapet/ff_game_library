@@ -85,6 +85,7 @@ int ff::game::run(const ff::game::init_params& game_params)
     app_params.get_time_scale_func = ::get_time_scale;
     app_params.get_advance_type_func = ::get_advance_type;
     app_params.get_clear_back_buffer = ::get_clear_back_buffer;
+    app_params.target_window = game_params.target_window;
 
     ff::init_app init_app(app_params);
     assert_ret_val(init_app, 1);

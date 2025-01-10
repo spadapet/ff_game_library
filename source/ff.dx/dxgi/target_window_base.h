@@ -17,8 +17,8 @@ namespace ff::dxgi
 
         bool operator==(const target_window_params& other) const = default;
 
-        size_t buffer_count{ 2 };
-        size_t frame_latency{ 1 };
+        size_t buffer_count{ 3 };
+        size_t frame_latency{ 2 };
         latency_strategy_t latency_strategy{ latency_strategy_t::after_execute };
         bool vsync{ true };
         bool extra_render_target{ true };

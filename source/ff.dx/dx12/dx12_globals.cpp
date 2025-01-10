@@ -10,7 +10,6 @@
 #include "dx12/queues.h"
 #include "dx12/resource.h"
 #include "dxgi/dxgi_globals.h"
-#include "ff.dx12.res.h"
 
 extern "C"
 {
@@ -19,6 +18,11 @@ extern "C"
     __declspec(dllexport) extern const int AmdPowerXpressRequestHighPerformance = 1;
     __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
     __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
+}
+
+namespace ff
+{
+    std::shared_ptr<::ff::data_base> assets_dx12_data();
 }
 
 // DX12 globals
@@ -295,7 +299,7 @@ static bool init_d3d(bool for_reset)
     // Shader resources
     if (!for_reset)
     {
-        ff::data_reader assets_reader(::assets::dx12::data());
+        ff::data_reader assets_reader(ff::assets_dx12_data());
         ::shader_resources = std::make_unique<ff::resource_objects>(assets_reader);
     }
 

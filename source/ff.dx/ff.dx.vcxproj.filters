@@ -234,6 +234,9 @@
     <ClCompile Include="input\input_device_base.cpp">
       <Filter>input</Filter>
     </ClCompile>
+    <ClCompile Include="assets\ff.dx12.res.cpp">
+      <Filter>assets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

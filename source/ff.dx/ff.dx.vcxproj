@@ -8,6 +8,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup>
+    <ClCompile Include="assets\ff.dx12.res.cpp" />
     <ClCompile Include="dx12\access.cpp" />
     <ClCompile Include="dx12\buffer.cpp" />
     <ClCompile Include="dx12\commands.cpp" />

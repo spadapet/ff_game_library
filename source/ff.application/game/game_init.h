@@ -10,6 +10,8 @@ namespace ff::game
         std::function<std::shared_ptr<ff::game::root_state_base>()> create_root_state_func{ &ff::game::init_params::default_create_root_state };
         std::function<void(ff::window*)> window_initialized_func{ &ff::game::init_params::default_with_window };
 
+        ff::dxgi::target_window_params target_window{};
+
     private:
         static void default_empty();
         static std::shared_ptr<ff::game::root_state_base> default_create_root_state();
