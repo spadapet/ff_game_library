@@ -74,6 +74,8 @@
       <PreprocessorDefinitions>_WINDOWS;NOMINMAX;D3D12_AGILITY_SDK_VERSION_EXPORT=$(D3D12AgilitySDK);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(Configuration)' != 'Release' ">PROFILE;PROFILE_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Release' ">PROFILE_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(UseImguiInternal)' == 'True' ">USE_IMGUI=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition=" '$(UseImguiInternal)' != 'True' ">USE_IMGUI=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
       <TreatWarningAsError>true</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>

@@ -41,7 +41,7 @@
     </ResJson>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\vendor\ff.vendor.imgui.vcxproj">
+    <ProjectReference Condition=" '$(UseImguiInternal)' == 'True' " Include="..\..\vendor\ff.vendor.imgui.vcxproj">
       <Project>{b89ff916-a65c-48bb-b134-b68ffb38c3a6}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ff.dx\ff.dx.vcxproj">

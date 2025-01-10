@@ -17,6 +17,10 @@
     <!-- WinPix/D3D SDK -->
     <WinPixRoot>$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
     <D3D12AgilityRoot>$(PackagesRoot)Microsoft.Direct3D.D3D12.$(D3D12AgilityVersion)\</D3D12AgilityRoot>
+
+    <UseImguiInternal>$(UseImgui)</UseImguiInternal>
+    <UseImguiInternal Condition=" '$(UseImgui)' == '' ">True</UseImguiInternal>
+    <UseImguiInternal Condition=" '$(UseImgui)' == '' And '$(Configuration)' == 'Release' ">False</UseImguiInternal>
   </PropertyGroup>
 
   <!-- .res.json build -->

@@ -109,10 +109,10 @@
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "Mfplat.lib")
-#pragma comment(lib, "Mfreadwrite.lib")
-#pragma comment(lib, "Mfuuid.lib")
-#pragma comment(lib, "Xinput.lib")
+#pragma comment(lib, "mfplat.lib")
+#pragma comment(lib, "mfreadwrite.lib")
+#pragma comment(lib, "mfuuid.lib")
+#pragma comment(lib, "xinput.lib")
 
 #if PROFILE_APP
 #pragma comment(lib, "WinPixEventRuntime.lib")

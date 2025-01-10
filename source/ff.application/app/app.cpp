@@ -530,11 +530,7 @@ static bool app_initialized()
     ::app_params.app_initialized_func(&::window);
 
     ::ShowWindow(::window, SW_SHOWDEFAULT);
-
-    if (ff::win32::is_visible(::window))
-    {
-        ::SetForegroundWindow(::window);
-    }
+    ::SetForegroundWindow(::window);
 
     return true;
 }

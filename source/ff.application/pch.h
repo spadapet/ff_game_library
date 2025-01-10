@@ -5,7 +5,9 @@
 #include <fstream>
 
 // Vendor
+#if USE_IMGUI
 #include <imgui/imgui.h>
+#endif
 
 // FF
 #pragma pop_macro("assert")

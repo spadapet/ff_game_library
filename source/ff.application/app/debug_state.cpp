@@ -115,10 +115,12 @@ static std::array<float, CHART_WIDTH> chart_render_{};
 static std::array<float, CHART_WIDTH> chart_wait_{};
 static ff::dxgi::target_window_params target_params_{};
 
+#if USE_IMGUI
 static const ImVec4& convert_color(const DirectX::XMFLOAT4& color)
 {
     return *reinterpret_cast<const ImVec4*>(&color);
 }
+#endif
 
 static void update_timers(const ff::perf_results& results)
 {
@@ -246,6 +248,7 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
 
 void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
 {
+#if USE_IMGUI
     if (::debug_visible_)
     {
         const float dpi_scale = ImGui::GetIO().FontGlobalScale;
@@ -422,6 +425,7 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
             ::imgui_demo_visible_ = false;
         }
     }
+#endif
 
     ff::state::frame_rendered(type, context, targets);
 }
