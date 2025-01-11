@@ -70,7 +70,7 @@ namespace ff::dx12
 
 namespace ff::internal::dx12
 {
-    bool init(D3D_FEATURE_LEVEL feature_level);
+    bool init(DXGI_GPU_PREFERENCE gpu_preference, D3D_FEATURE_LEVEL feature_level);
     void destroy();
 
     ff::resource_object_provider& shader_resources();

@@ -5,9 +5,9 @@
     <ResPackBuildExe Condition=" '$(ResPackBuildExe)' == '' ">$(FFRoot)build\$(Platform)\ff.resource.build.exe</ResPackBuildExe>
     <MergedResPackName Condition=" '$(MergedResPackName)' == '' ">$(ProjectName).resm.pack</MergedResPackName>
     <MergedResPackIdName Condition=" '$(MergedResPackIdName)' == '' ">$(ProjectName).resm.id.h</MergedResPackIdName>
-    <CreateMergedResPack>True</CreateMergedResPack>
-    <CreateMergedResPack Condition=" '$(Configuration)' == 'Debug' ">False</CreateMergedResPack>
-    <ResJsonDebugCommandArgument Condition=" '$(ResJsonDebugCommandArgument)' == '' And '$(Configuration)' == 'Debug' ">-debug</ResJsonDebugCommandArgument>
+    <CreateMergedResPack>False</CreateMergedResPack>
+    <CreateMergedResPack Condition=" '$(Configuration)' == 'Release' ">True</CreateMergedResPack>
+    <ResJsonDebugCommandArgument Condition=" '$(ResJsonDebugCommandArgument)' == '' And '$(Configuration)' != 'Release' ">-debug</ResJsonDebugCommandArgument>
   </PropertyGroup>
 
   <ItemGroup>

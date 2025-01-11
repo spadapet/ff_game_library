@@ -19,7 +19,7 @@ TEST_MODULE_INITIALIZE(module_init)
         return true;
     });
 
-    ::init_dx = std::make_unique<ff::init_dx>();
+    ::init_dx = std::make_unique<ff::init_dx>(ff::init_dx_params{});
 
     Assert::IsTrue(*::init_dx);
 }

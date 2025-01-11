@@ -1,10 +1,6 @@
 #pragma once
 #pragma push_macro("assert")
 
-// C++
-#include <filesystem>
-#include <iostream>
-
 // VS
 #include <CppUnitTest.h>
 

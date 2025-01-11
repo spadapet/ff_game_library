@@ -542,18 +542,18 @@ static bool app_initialized()
     return true;
 }
 
-bool ff::internal::app::init(const ff::init_app_params& params, ff::init_dx& async_init_dx)
+bool ff::internal::app::init(const ff::init_app_params& params, const ff::init_dx_async& init_dx)
 {
     ::app_params = params;
     ::init_log();
 
-    assert_ret_val(async_init_dx.init_async(), false);
+    assert_ret_val(init_dx.init_async(), false);
     ::init_app_resources();
 
     assert_ret_val(::window = ::create_window(), false);
     ::window_message_connection = ::window.message_sink().connect(::handle_window_message);
 
-    assert_ret_val(async_init_dx.init_wait(), false);
+    assert_ret_val(init_dx.init_wait(), false);
     ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
     ::render_targets = std::make_unique<ff::render_targets>(::target);
 

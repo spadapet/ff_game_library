@@ -2,6 +2,7 @@
 
 #include "app/state.h"
 #include "dxgi/target_window_base.h"
+#include "init_dx.h"
 
 namespace ff
 {
@@ -18,6 +19,7 @@ namespace ff
         std::function<ff::state::advance_t()> get_advance_type_func{ &ff::init_app_params::default_get_advance_type };
         std::function<bool()> get_clear_back_buffer{ &ff::init_app_params::default_clear_back_buffer };
 
+        ff::init_dx_params init_dx_params{};
         ff::dxgi::target_window_params target_window{};
 
     private:

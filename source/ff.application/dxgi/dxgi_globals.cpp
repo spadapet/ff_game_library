@@ -197,7 +197,7 @@ static bool adapter_matches(IDXGIAdapter3* adapter, const DXGI_ADAPTER_DESC& mat
     return false;
 }
 
-std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> ff::dxgi::enum_adapters(size_t& out_best_choice)
+std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> ff::dxgi::enum_adapters(DXGI_GPU_PREFERENCE gpu_preference, size_t& out_best_choice)
 {
     out_best_choice = 0;
 
@@ -219,7 +219,7 @@ std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> ff::dxgi::enum_adapters(size_
         Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
         DXGI_ADAPTER_DESC desc{};
 
-        if (SUCCEEDED(ff::dxgi::factory()->EnumAdapterByGpuPreference(static_cast<UINT>(i), DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&adapter))) &&
+        if (SUCCEEDED(ff::dxgi::factory()->EnumAdapterByGpuPreference(static_cast<UINT>(i), gpu_preference, IID_PPV_ARGS(&adapter))) &&
             SUCCEEDED(adapter->GetDesc(&desc)))
         {
             if (!found_warp && warp_adapter_valid && desc.VendorId == warp_desc.VendorId && desc.DeviceId == warp_desc.DeviceId)
@@ -318,9 +318,9 @@ std::shared_ptr<ff::dxgi::target_base> ff::dxgi::create_target_for_texture(
     return std::make_shared<ff::dx12::target_texture>(texture, array_start, array_count, mip_level, dmdo_rotate, dpi_scale);
 }
 
-bool ff::internal::dxgi::init()
+bool ff::internal::dxgi::init(DXGI_GPU_PREFERENCE gpu_preference, D3D_FEATURE_LEVEL feature_level)
 {
-    return ff::internal::dx12::init(D3D_FEATURE_LEVEL_11_0);
+    return ff::internal::dx12::init(gpu_preference, feature_level);
 }
 
 void ff::internal::dxgi::destroy()

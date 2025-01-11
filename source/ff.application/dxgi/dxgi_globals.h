@@ -35,7 +35,7 @@ namespace ff::dxgi
     // Factory and adapters
     IDXGIFactory6* factory();
     IDXGIAdapter3* adapter();
-    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> enum_adapters(size_t& out_best_choice);
+    std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter3>> enum_adapters(DXGI_GPU_PREFERENCE gpu_preference, size_t& out_best_choice);
     void user_selected_adapter(const DXGI_ADAPTER_DESC& desc, bool reset_now = false);
     const DXGI_ADAPTER_DESC& user_selected_adapter();
     std::string adapter_name(IDXGIAdapter3* adapter);
@@ -52,6 +52,6 @@ namespace ff::dxgi
 
 namespace ff::internal::dxgi
 {
-    bool init();
+    bool init(DXGI_GPU_PREFERENCE gpu_preference, D3D_FEATURE_LEVEL feature_level);
     void destroy();
 }

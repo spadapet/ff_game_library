@@ -9,6 +9,7 @@ namespace
     {
     public:
         one_time_init_app(const ff::init_app_params& params)
+            : init_dx(params.init_dx_params)
         {
             this->app_status = ff::internal::app::init(params, this->init_dx);
         }
@@ -27,7 +28,7 @@ namespace
     private:
         bool app_status{};
 
-        ff::init_dx init_dx{ true };
+        ff::init_dx_async init_dx;
     };
 }
 

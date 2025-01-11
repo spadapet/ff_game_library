@@ -3,7 +3,7 @@
 namespace ff
 {
     struct init_app_params;
-    class init_dx;
+    class init_dx_async;
 
     struct app_time_t
     {
@@ -28,7 +28,7 @@ namespace ff
 
 namespace ff::internal::app
 {
-    bool init(const ff::init_app_params& params, ff::init_dx& async_init_dx);
+    bool init(const ff::init_app_params& params, const ff::init_dx_async& init_dx);
     void destroy();
 
     ff::resource_object_provider& app_resources();

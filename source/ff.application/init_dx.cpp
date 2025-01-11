@@ -23,7 +23,8 @@ namespace
     class one_time_init_dx
     {
     public:
-        one_time_init_dx(bool async)
+        one_time_init_dx(const ff::init_dx_params& params, bool async)
+            : params(params)
         {
             // Resource objects
             ff::resource_object_base::register_factory<ff::internal::animation_factory>("animation");
@@ -70,7 +71,7 @@ namespace
         {
             this->init_audio_status = ff::internal::audio::init();
             this->init_input_status = ff::internal::input::init();
-            this->init_dxgi_status = ff::internal::dxgi::init();
+            this->init_dxgi_status = ff::internal::dxgi::init(this->params.gpu_preference, this->params.feature_level);
             this->init_write_status = ff::internal::write::init();
 
             if (this->init_event)
@@ -114,6 +115,7 @@ namespace
         bool init_dxgi_status{};
         bool init_write_status{};
         std::unique_ptr<ff::win_event> init_event;
+        ff::init_dx_params params;
         ff::init_base init_base;
     };
 }
@@ -123,19 +125,18 @@ static std::unique_ptr<::one_time_init_dx> init_dx_data;
 static std::mutex init_dx_mutex;
 static bool init_dx_async{};
 
-ff::init_dx::init_dx(bool async)
+ff::init_dx::init_dx(const ff::init_dx_params& params)
 {
     std::scoped_lock lock(::init_dx_mutex);
 
-    if (::init_dx_data && (::init_dx_async || async))
+    if (::init_dx_data && ::init_dx_async)
     {
-        debug_fail_msg_ret("ff::init_dx can only init async if there is a single instance.");
+        debug_fail_msg_ret("ff::init_dx cannot work along with ff::init_dx_async.");
     }
 
     if (::init_dx_refs++ == 0)
     {
-        ::init_dx_async = async;
-        ::init_dx_data = std::make_unique<::one_time_init_dx>(async);
+        ::init_dx_data = std::make_unique<::one_time_init_dx>(params, false);
     }
 }
 
@@ -154,12 +155,43 @@ ff::init_dx::operator bool() const
     return ::init_dx_data && ::init_dx_data->valid();
 }
 
-bool ff::init_dx::init_async()
+ff::init_dx_async::init_dx_async(const ff::init_dx_params& params)
+{
+    std::scoped_lock lock(::init_dx_mutex);
+
+    if (::init_dx_data)
+    {
+        debug_fail_msg_ret("ff::init_dx_async can only have a single instance.");
+    }
+
+    if (::init_dx_refs++ == 0)
+    {
+        ::init_dx_async = true;
+        ::init_dx_data = std::make_unique<::one_time_init_dx>(params, true);
+    }
+}
+
+ff::init_dx_async::~init_dx_async()
+{
+    std::scoped_lock lock(::init_dx_mutex);
+
+    if (::init_dx_refs-- == 1)
+    {
+        ::init_dx_data.reset();
+    }
+}
+
+bool ff::init_dx_async::init_async() const
 {
     return ::init_dx_data && ::init_dx_data->init_async();
 }
 
-bool ff::init_dx::init_wait()
+bool ff::init_dx_async::init_wait() const
 {
     return ::init_dx_data && ::init_dx_data->init_wait();
+}
+
+ff::init_dx_async::operator bool() const
+{
+    return ::init_dx_data && ::init_dx_data->valid();
 }

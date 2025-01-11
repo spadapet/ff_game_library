@@ -341,6 +341,13 @@ static bool load_reference_files(const std::vector<std::filesystem::path>& refer
     return true;
 }
 
+static ff::init_dx_params get_dx_params()
+{
+    ff::init_dx_params params;
+    params.gpu_preference = DXGI_GPU_PREFERENCE_MINIMUM_POWER; // faster to init
+    return params;
+}
+
 static int do_compile(
     const std::vector<std::filesystem::path>& input_files,
     const std::filesystem::path& output_file,
@@ -362,7 +369,7 @@ static int do_compile(
     std::cout << "  -> " << (skipped ? "(skipped) " : "") << ff::filesystem::to_string(output_file) << "\n";
     check_ret_val(!skipped, ::EXIT_CODE_SUCCESS);
 
-    ff::init_dx init_dx;
+    ff::init_dx init_dx(::get_dx_params());
     if (!init_dx)
     {
         std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";
@@ -391,7 +398,7 @@ static int do_combine(const std::vector<std::filesystem::path>& input_files, con
 
 static int do_dump(const std::filesystem::path& input_file, bool dump_bin)
 {
-    ff::init_dx init_dx;
+    ff::init_dx init_dx(::get_dx_params());
     if (!init_dx)
     {
         std::cerr << ::PROGRAM_NAME << ": Failed to initialize\n";

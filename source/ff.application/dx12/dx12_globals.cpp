@@ -29,6 +29,7 @@ namespace ff
 static Microsoft::WRL::ComPtr<ID3D12Device6> device;
 static Microsoft::WRL::ComPtr<IDXGIAdapter3> adapter;
 static Microsoft::WRL::ComPtr<IDXGIFactory6> factory;
+static DXGI_GPU_PREFERENCE gpu_preference{};
 static D3D_FEATURE_LEVEL feature_level{};
 static size_t adapters_hash{};
 static bool supports_create_heap_not_resident{};
@@ -71,7 +72,7 @@ static std::unique_ptr<ff::dx12::mem_allocator> target_allocator;
 static Microsoft::WRL::ComPtr<ID3D12Device6> create_dx12_device()
 {
     size_t best_adapter = 0;
-    auto adapters = ff::dxgi::enum_adapters(best_adapter);
+    auto adapters = ff::dxgi::enum_adapters(::gpu_preference, best_adapter);
     assert_ret_val(!adapters.empty(), nullptr);
 
     if (best_adapter > 0)
@@ -377,8 +378,9 @@ static void destroy_d3d(bool for_reset)
     ::device.Reset();
 }
 
-bool ff::internal::dx12::init(D3D_FEATURE_LEVEL feature_level)
+bool ff::internal::dx12::init(DXGI_GPU_PREFERENCE gpu_preference, D3D_FEATURE_LEVEL feature_level)
 {
+    ::gpu_preference = gpu_preference;
     ::feature_level = feature_level;
 
     assert_ret_val(::init_dxgi(false), false);
