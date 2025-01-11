@@ -1,7 +1,21 @@
 #include "pch.h"
 #include "app/app.h"
 #include "app/imgui.h"
+#include "dx12/commands.h"
+#include "dx12/descriptor_allocator.h"
+#include "dx12/descriptor_range.h"
+#include "dx12/dx12_globals.h"
+#include "dx12/gpu_event.h"
+#include "dxgi/draw_device_base.h"
+#include "dxgi/dxgi_globals.h"
+#include "graphics/texture_resource.h"
 #include "ff.app.res.id.h"
+#include "input/input.h"
+#include "input/keyboard_device.h"
+#include "input/pointer_device.h"
+#include "types/color.h"
+#include "types/transform.h"
+#include "write/font_file.h"
 
 #if USE_IMGUI
 

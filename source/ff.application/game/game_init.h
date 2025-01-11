@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../dxgi/target_window_base.h"
+
 namespace ff::game
 {
     class root_state_base;

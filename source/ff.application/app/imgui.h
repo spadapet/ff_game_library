@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../dxgi/command_context_base.h"
+#include "../dxgi/target_window_base.h"
+
 namespace ff::internal::imgui
 {
     void init(

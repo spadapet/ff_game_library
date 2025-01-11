@@ -2,7 +2,7 @@
 #include "app/app.h"
 #include "game/game_init.h"
 #include "game/root_state_base.h"
-#include "init.h"
+#include "init_app.h"
 
 static std::atomic_bool root_state_created{};
 static std::shared_ptr<ff::game::root_state_base> root_state;

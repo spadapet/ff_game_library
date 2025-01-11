@@ -3,8 +3,15 @@
 #include "app/debug_state.h"
 #include "app/imgui.h"
 #include "app/settings.h"
+#include "dxgi/dxgi_globals.h"
 #include "ff.app.res.id.h"
-#include "init.h"
+#include "graphics/random_sprite.h"
+#include "graphics/render_targets.h"
+#include "init_app.h"
+#include "init_dx.h"
+#include "input/input.h"
+#include "input/input_device_base.h"
+#include "types/color.h"
 
 namespace ff
 {

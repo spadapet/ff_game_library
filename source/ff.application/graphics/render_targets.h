@@ -4,6 +4,11 @@
 #include "../dxgi/target_base.h"
 #include "../types/viewport.h"
 
+namespace ff::dxgi
+{
+    class palette_base;
+}
+
 namespace ff
 {
     class render_targets;

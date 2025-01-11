@@ -3,6 +3,7 @@
 namespace ff
 {
     struct init_app_params;
+    class init_dx;
 
     struct app_time_t
     {

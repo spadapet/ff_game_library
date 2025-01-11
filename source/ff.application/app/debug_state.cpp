@@ -1,7 +1,12 @@
 #include "pch.h"
 #include "app/app.h"
 #include "app/debug_state.h"
+#include "dxgi/dxgi_globals.h"
+#include "dxgi/target_window_base.h"
+#include "input/input.h"
+#include "input/keyboard_device.h"
 #include "ff.app.res.id.h"
+#include "types/color.h"
 
 using namespace std::string_view_literals;
 

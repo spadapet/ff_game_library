@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/state.h"
+#include "dxgi/target_window_base.h"
 
 namespace ff
 {

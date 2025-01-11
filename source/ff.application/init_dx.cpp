@@ -12,7 +12,7 @@
 #include "graphics/sprite_resource.h"
 #include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
-#include "init.h"
+#include "init_dx.h"
 #include "input/input.h"
 #include "input/input_mapping.h"
 #include "write/font_file.h"

@@ -1,5 +1,10 @@
 #pragma once
 
+namespace ff::dxgi
+{
+    class command_context_base;
+}
+
 namespace ff
 {
     class render_targets;

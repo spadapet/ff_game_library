@@ -4,6 +4,10 @@
 #include "app/settings.h"
 #include "ff.app.res.id.h"
 #include "game/root_state_base.h"
+#include "graphics/palette_data.h"
+#include "input/input.h"
+#include "input/keyboard_device.h"
+#include "input/pointer_device.h"
 
 using namespace std::string_view_literals;
 
@@ -145,7 +149,7 @@ void ff::game::root_state_base::advance_input()
             if (this->debug_input_mapping[1].object())
             {
                 this->debug_input_events[1] = std::make_unique<ff::input_event_provider>(*this->debug_input_mapping[1].object(),
-                    std::vector<const ff::input_vk*>{ &ff::input::keyboard(), & ff::input::pointer() });
+                    std::vector<const ff::input_vk*>{ &ff::input::keyboard(), &ff::input::pointer() });
             }
         }
 

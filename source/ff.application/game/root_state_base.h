@@ -1,6 +1,10 @@
 #pragma once
 
 #include "../app/state.h"
+#include "../dxgi/palette_base.h"
+#include "../graphics/render_targets.h"
+#include "../graphics/palette_cycle.h"
+#include "../input/input_mapping.h"
 
 namespace ff::game
 {

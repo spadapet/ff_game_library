@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "app/app.h"
-#include "init.h"
+#include "init_app.h"
+#include "init_dx.h"
 
 namespace
 {
