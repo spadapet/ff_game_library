@@ -86,10 +86,9 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
 
     ff::rect_float target_rect({}, direct_to_target ? target_logical_size.cast<float>() : ff::point_float(1920, 1080));
     const ff::rect_float world_rect({}, entry.size.cast<float>());
-    ff::dxgi::draw_ptr draw = direct_to_target
+    if (ff::dxgi::draw_ptr draw = direct_to_target
         ? ff::dxgi::global_draw_device().begin_draw(context, *target, nullptr, target_rect, world_rect)
-        : ff::dxgi::global_draw_device().begin_draw(context, *this->target_1080, nullptr, target_rect, world_rect);
-    if (draw)
+        : ff::dxgi::global_draw_device().begin_draw(context, *this->target_1080, nullptr, target_rect, world_rect))
     {
         constexpr size_t index_palette = static_cast<size_t>(ff::render_target_type::palette);
         constexpr size_t index_rgba = static_cast<size_t>(ff::render_target_type::rgba);
@@ -122,8 +121,7 @@ ff::rect_float ff::render_targets::pop(ff::dxgi::command_context_base& context, 
     if (!direct_to_target)
     {
         target_rect = entry.viewport.view(target_logical_size).cast<float>();
-        draw = ff::dxgi::global_draw_device().begin_draw(context, *target, nullptr, target_rect, ff::rect_float(0, 0, 1920, 1080));
-        if (draw)
+        if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, *target, nullptr, target_rect, ff::rect_float(0, 0, 1920, 1080)))
         {
             draw->push_sampler_linear_filter(true);
             draw->draw_sprite(this->texture_1080->sprite_data(), ff::transform::identity());

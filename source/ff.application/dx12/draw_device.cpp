@@ -76,7 +76,8 @@ namespace
     private:
         dx12_state(const D3D12_INPUT_ELEMENT_DESC* element_desc, size_t element_count)
             : input_layout_desc{ element_desc, static_cast<UINT>(element_count) }
-        {}
+        {
+        }
 
         enum class state_t
         {
@@ -179,13 +180,16 @@ namespace
             desc.NumRenderTargets = 1;
             desc.SampleDesc.Count = 1;
 
-            if (ff::flags::has(index, state_t::blend_alpha))
+            if (!ff::flags::has(index, state_t::out_palette))
             {
-                ::get_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
-            }
-            else if (ff::flags::has(index, state_t::blend_pma))
-            {
-                ::get_pre_multiplied_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
+                if (ff::flags::has(index, state_t::blend_alpha))
+                {
+                    ::get_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
+                }
+                else if (ff::flags::has(index, state_t::blend_pma))
+                {
+                    ::get_pre_multiplied_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
+                }
             }
 
             if (ff::flags::has(index, state_t::depth_enabled))
@@ -232,18 +236,18 @@ namespace
         dx12_draw_device()
             : samplers_gpu(ff::dx12::gpu_sampler_descriptors().alloc_pinned_range(2))
             , states_
-        {
-            ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
+            {
+                ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
 
-            ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
-            ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
-        }
+                ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
+                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
+            }
         {
             this->as_device_child()->reset();
             ff::dx12::add_device_child(this->as_device_child(), ff::dx12::device_reset_priority::normal);
@@ -490,6 +494,7 @@ namespace
             for (size_t i = 0; i < texture_count; i++)
             {
                 ff::dxgi::texture_view_base* view = in_textures[i];
+                assert(&ff::dx12::target_access::get(*this->setup_target).dx12_target_texture() != &this->resource_from(view));
                 this->commands->resource_state(
                     this->resource_from(view), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());
@@ -498,6 +503,7 @@ namespace
             for (size_t i = 0; i < textures_using_palette_count; i++)
             {
                 ff::dxgi::texture_view_base* view = in_textures_using_palette[i];
+                assert(&ff::dx12::target_access::get(*this->setup_target).dx12_target_texture() != &this->resource_from(view));
                 this->commands->resource_state(
                     this->resource_from(view), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
                     view->view_array_start(), view->view_array_size(), view->view_mip_start(), view->view_mip_size());

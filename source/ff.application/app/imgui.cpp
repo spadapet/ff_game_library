@@ -203,8 +203,7 @@ void ff::internal::imgui::render(ff::dxgi::command_context_base& context)
 
     if (::app_target.get() != target)
     {
-        ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, *::app_target);
-        if (draw)
+        if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, *::app_target))
         {
             draw->draw_sprite(::rotated_texture->sprite_data(), ff::pixel_transform::identity());
         }
