@@ -28,7 +28,7 @@ ff::dx12::residency_data::~residency_data()
     ff::intrusive_list::remove(::pageable_front, ::pageable_back, this);
 }
 
-bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_value commands_fence_value, ff::dx12::fence_values& wait_values)
+bool ff::dx12::residency_data::make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, const ff::dx12::fence_value& commands_fence_value, ff::dx12::fence_values& wait_values)
 {
     ff::stack_vector<ID3D12Pageable*, 256> make_resident;
     ff::stack_vector<ID3D12Pageable*, 256> make_evicted;

@@ -258,7 +258,6 @@ namespace ff::dxgi::draw_util
         unsigned int get_palette_remap_index_no_flush();
         int remap_palette_index(int color) const;
         void get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette, unsigned int& model_index, unsigned int& texture_index);
-        void get_world_matrix_and_texture_indexes(ff::dxgi::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index);
 
         void* add_geometry(const void* data, ff::dxgi::draw_util::geometry_bucket_type bucket_type, float depth);
         ff::dxgi::draw_util::geometry_bucket& get_geometry_bucket(ff::dxgi::draw_util::geometry_bucket_type type);

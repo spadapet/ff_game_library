@@ -97,14 +97,6 @@
     "entry": "sprite_palette_ps"
   },
 
-  "ff.dx12.sprite_alpha_ps":
-  {
-    "res:type": "shader",
-    "file": "file:shaders.hlsl",
-    "target": "ps_5_1",
-    "entry": "sprite_alpha_ps"
-  },
-
   "ff.dx12.palette_out_sprite_ps":
   {
     "res:type": "shader",

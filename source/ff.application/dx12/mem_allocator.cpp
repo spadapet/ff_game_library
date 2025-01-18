@@ -87,7 +87,7 @@ bool ff::dx12::mem_buffer_ring::frame_complete()
     return has_range;
 }
 
-ff::dx12::mem_range ff::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_buffer_ring::alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value)
 {
     if (size && size <= this->heap_.size())
     {
@@ -223,7 +223,7 @@ bool ff::dx12::mem_buffer_free_list::frame_complete()
     return this->free_ranges.size() != 1 || this->free_ranges.front().size != this->heap_.size();
 }
 
-ff::dx12::mem_range ff::dx12::mem_buffer_free_list::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_buffer_free_list::alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value)
 {
     if (size && size <= this->heap_.size())
     {
@@ -268,7 +268,7 @@ ff::dx12::heap::usage_t ff::dx12::mem_allocator_base::usage() const
     return this->usage_;
 }
 
-ff::dx12::mem_range ff::dx12::mem_allocator_base::alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_allocator_base::alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value)
 {
     ff::dx12::mem_range range;
     std::scoped_lock lock(this->buffers_mutex);
@@ -324,7 +324,7 @@ ff::dx12::mem_allocator_ring::mem_allocator_ring(uint64_t initial_size, ff::dx12
     : mem_allocator_base(initial_size, 0, usage)
 {}
 
-ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_buffer(uint64_t size, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_buffer(uint64_t size, const ff::dx12::fence_value& fence_value)
 {
     uint64_t align = (this->usage() == ff::dx12::heap::usage_t::upload || this->usage() == ff::dx12::heap::usage_t::readback)
         ? D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT
@@ -333,7 +333,7 @@ ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_buffer(uint64_t size, ff
     return this->alloc_bytes(size, align, fence_value);
 }
 
-ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_texture(uint64_t size, ff::dx12::fence_value fence_value)
+ff::dx12::mem_range ff::dx12::mem_allocator_ring::alloc_texture(uint64_t size, const ff::dx12::fence_value& fence_value)
 {
     uint64_t align = (this->usage() == ff::dx12::heap::usage_t::upload || this->usage() == ff::dx12::heap::usage_t::readback)
         ? D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT

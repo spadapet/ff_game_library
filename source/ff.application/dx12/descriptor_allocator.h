@@ -65,7 +65,7 @@ namespace ff::dx12
         descriptor_buffer_ring& operator=(const descriptor_buffer_ring& other) = delete;
 
         void set(ID3D12DescriptorHeap* descriptor_heap);
-        ff::dx12::descriptor_range alloc_range(size_t count, ff::dx12::fence_value fence_value);
+        ff::dx12::descriptor_range alloc_range(size_t count, const ff::dx12::fence_value& fence_value);
 
         virtual void free_range(const ff::dx12::descriptor_range& range) override;
         virtual D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(size_t index) const override;
@@ -125,7 +125,7 @@ namespace ff::dx12
         gpu_descriptor_allocator& operator=(gpu_descriptor_allocator&& other) noexcept = default;
         gpu_descriptor_allocator& operator=(const gpu_descriptor_allocator& other) = delete;
 
-        ff::dx12::descriptor_range alloc_range(size_t count, ff::dx12::fence_value fence_value);
+        ff::dx12::descriptor_range alloc_range(size_t count, const ff::dx12::fence_value& fence_value);
         ff::dx12::descriptor_range alloc_pinned_range(size_t count);
 
     private:

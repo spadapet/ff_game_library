@@ -19,7 +19,7 @@ namespace ff::dx12
         residency_data& operator=(residency_data&& other) noexcept = delete;
         residency_data& operator=(const residency_data& other) = delete;
 
-        static bool make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, ff::dx12::fence_value commands_fence_value, ff::dx12::fence_values& wait_values);
+        static bool make_resident(const std::unordered_set<ff::dx12::residency_data*>& residency_set, const ff::dx12::fence_value& commands_fence_value, ff::dx12::fence_values& wait_values);
 
     private:
         std::string_view name;

@@ -1311,24 +1311,6 @@ void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_index(f
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::get_world_matrix_and_texture_indexes(ff::dxgi::texture_view_base* const* texture_views, bool use_palette, unsigned int* texture_indexes, size_t count, unsigned int& model_index)
-{
-    model_index = (this->world_matrix_index == ff::constants::invalid_unsigned<DWORD>()) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
-    bool flush = (model_index == ff::constants::invalid_unsigned<DWORD>());
-
-    for (size_t i = 0; !flush && i < count; i++)
-    {
-        texture_indexes[i] = this->get_texture_index_no_flush(*texture_views[i], use_palette);
-        flush |= (texture_indexes[i] == ff::constants::invalid_unsigned<DWORD>());
-    }
-
-    if (flush)
-    {
-        this->flush();
-        this->get_world_matrix_and_texture_indexes(texture_views, use_palette, texture_indexes, count, model_index);
-    }
-}
-
 void* ff::dxgi::draw_util::draw_device_base::add_geometry(const void* data, ff::dxgi::draw_util::geometry_bucket_type bucket_type, float depth)
 {
     ff::dxgi::draw_util::geometry_bucket& bucket = this->get_geometry_bucket(bucket_type);

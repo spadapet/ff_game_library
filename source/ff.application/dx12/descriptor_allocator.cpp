@@ -166,7 +166,7 @@ void ff::dx12::descriptor_buffer_ring::set(ID3D12DescriptorHeap* descriptor_heap
     }
 }
 
-ff::dx12::descriptor_range ff::dx12::descriptor_buffer_ring::alloc_range(size_t count, ff::dx12::fence_value fence_value)
+ff::dx12::descriptor_range ff::dx12::descriptor_buffer_ring::alloc_range(size_t count, const ff::dx12::fence_value& fence_value)
 {
     size_t start = 0;
     size_t allocated_count = 0;
@@ -331,7 +331,7 @@ ff::dx12::gpu_descriptor_allocator::~gpu_descriptor_allocator()
     ff::dx12::remove_device_child(this);
 }
 
-ff::dx12::descriptor_range ff::dx12::gpu_descriptor_allocator::alloc_range(size_t count, ff::dx12::fence_value fence_value)
+ff::dx12::descriptor_range ff::dx12::gpu_descriptor_allocator::alloc_range(size_t count, const ff::dx12::fence_value& fence_value)
 {
     return this->ring ? this->ring->alloc_range(count, fence_value) : ff::dx12::descriptor_range{};
 }

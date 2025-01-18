@@ -404,21 +404,6 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
     return color;
 }
 
-// Texture: Alpha only, Output: RGBA (111A)
-float4 sprite_alpha_ps(sprite_pixel input) : SV_TARGET
-{
-    uint texture_index = input.tex & 0xFF;
-    uint sampler_index = (input.tex & 0xFF00) >> 8;
-    float4 color = input.color * float4(1, 1, 1, SampleSpriteTexture(input.uv, texture_index, sampler_index).a);
-
-    if (color.a == 0)
-    {
-        discard;
-    }
-
-    return color;
-}
-
 // Texture: RGBA, Output: Palette index
 uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
 {

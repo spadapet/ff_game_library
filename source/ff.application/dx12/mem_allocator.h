@@ -19,7 +19,7 @@ namespace ff::dx12
         // Called from mem_allocator_base
         virtual ff::dx12::heap& heap() = 0;
         virtual bool frame_complete() = 0;
-        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) = 0;
+        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value) = 0;
     };
 
     class mem_buffer_ring : public ff::dx12::mem_buffer_base, private ff::dxgi::device_child_base
@@ -39,7 +39,7 @@ namespace ff::dx12
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_data(uint64_t start) override;
         virtual ff::dx12::heap& heap() override;
         virtual bool frame_complete() override;
-        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) override;
+        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value) override;
 
     private:
         struct range_t
@@ -76,7 +76,7 @@ namespace ff::dx12
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_data(uint64_t start) override;
         virtual ff::dx12::heap& heap() override;
         virtual bool frame_complete() override;
-        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value) override;
+        virtual ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value) override;
 
     private:
         struct range_t
@@ -102,7 +102,7 @@ namespace ff::dx12
         mem_allocator_base(uint64_t initial_size, uint64_t max_size, ff::dx12::heap::usage_t usage);
 
         ff::dx12::heap::usage_t usage() const;
-        ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, ff::dx12::fence_value fence_value);
+        ff::dx12::mem_range alloc_bytes(uint64_t size, uint64_t align, const ff::dx12::fence_value& fence_value);
         virtual std::unique_ptr<ff::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const = 0;
 
     private:
@@ -127,8 +127,8 @@ namespace ff::dx12
         mem_allocator_ring& operator=(mem_allocator_ring&& other) noexcept = default;
         mem_allocator_ring& operator=(const mem_allocator_ring& other) = delete;
 
-        ff::dx12::mem_range alloc_buffer(uint64_t size, ff::dx12::fence_value fence_value);
-        ff::dx12::mem_range alloc_texture(uint64_t size, ff::dx12::fence_value fence_value);
+        ff::dx12::mem_range alloc_buffer(uint64_t size, const ff::dx12::fence_value& fence_value);
+        ff::dx12::mem_range alloc_texture(uint64_t size, const ff::dx12::fence_value& fence_value);
 
     protected:
         virtual std::unique_ptr<ff::dx12::mem_buffer_base> new_buffer(uint64_t size, ff::dx12::heap::usage_t usage) const override;

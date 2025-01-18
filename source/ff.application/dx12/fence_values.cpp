@@ -27,9 +27,9 @@ void ff::dx12::fence_values::add(const ff::dx12::fence_values& fence_values)
 {
     this->values_.reserve(fence_values.values_.size() + this->values_.size());
 
-    for (ff::dx12::fence_value value : fence_values.values_)
+    for (const ff::dx12::fence_value& value : fence_values.values_)
     {
-        this->internal_add(std::move(value));
+        this->internal_add(ff::dx12::fence_value(value));
     }
 }
 
@@ -37,9 +37,9 @@ void ff::dx12::fence_values::add(const ff::dx12::fence_values& read_values, ff::
 {
     this->values_.reserve(read_values.values_.size() + this->values_.size() + 1);
 
-    for (ff::dx12::fence_value value : read_values.values_)
+    for (const ff::dx12::fence_value& value : read_values.values_)
     {
-        this->internal_add(std::move(value));
+        this->internal_add(ff::dx12::fence_value(value));
     }
 
     this->internal_add(std::move(write_value));

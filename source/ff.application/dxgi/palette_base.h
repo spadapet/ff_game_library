@@ -4,8 +4,8 @@ namespace ff::dxgi
 {
     class palette_data_base;
 
-    const size_t palette_size = 256;
-    const size_t palette_row_bytes = 256 * 4;
+    constexpr size_t palette_row_bytes = 256 * 4;
+    constexpr size_t palette_size = 256;
 
     class palette_base
     {
