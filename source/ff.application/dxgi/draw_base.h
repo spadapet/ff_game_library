@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../types/color.h"
+
 namespace ff
 {
     class matrix_stack;
@@ -12,6 +14,21 @@ namespace ff::dxgi
     class command_context_base;
     class palette_base;
     class sprite_data;
+    struct remap_t;
+
+    struct endpoint_t
+    {
+        ff::point_float pos;
+        ff::color const* color;
+        float size;
+    };
+
+    struct pixel_endpoint_t
+    {
+        ff::point_fixed pos;
+        ff::color const* color;
+        ff::fixed_int size;
+    };
 
     class draw_base
     {
@@ -22,52 +39,31 @@ namespace ff::dxgi
 
         virtual void end_draw() = 0;
 
+        // Core drawing
         virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform) = 0;
+        virtual void draw_lines(std::span<const ff::dxgi::endpoint_t> points) = 0;
+        virtual void draw_triangles(std::span<const ff::dxgi::endpoint_t> points) = 0;
+        virtual void draw_rectangle(const ff::rect_float& rect, const ff::color& color, std::optional<float> thickness = std::nullopt) = 0;
+        virtual void draw_circle(const ff::dxgi::endpoint_t& pos, std::optional<float> thickness = std::nullopt) = 0;
+
+        // Pixel drawing, converts to core drawing
         void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::pixel_transform& transform);
+        void draw_lines(std::span<const ff::dxgi::pixel_endpoint_t> points);
+        void draw_triangles(std::span<const ff::dxgi::pixel_endpoint_t> points);
+        void draw_rectangle(const ff::rect_fixed& rect, const ff::color& color, std::optional<ff::fixed_int> thickness = std::nullopt);
+        void draw_circle(const ff::dxgi::pixel_endpoint_t& pos, std::optional<ff::fixed_int> thickness = std::nullopt);
 
-        virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_line(const ff::point_float& start, const ff::point_float& end, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4* colors) = 0;
-        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color) = 0;
-        virtual void draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count) = 0;
-        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color) = 0;
-        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color) = 0;
-        virtual void draw_outline_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness = false) = 0;
+        // Helpers, converts to core drawing
+        void draw_line(const ff::point_float& start, const ff::point_float& end, const ff::color& color, float thickness);
 
-        virtual void draw_palette_line_strip(const ff::point_float* points, const int* colors, size_t count, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_palette_filled_rectangle(const ff::rect_float& rect, const int* colors) = 0;
-        virtual void draw_palette_filled_rectangle(const ff::rect_float& rect, int color) = 0;
-        virtual void draw_palette_filled_triangles(const ff::point_float* points, const int* colors, size_t count) = 0;
-        virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int color) = 0;
-        virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color) = 0;
-        virtual void draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness = false) = 0;
-        virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness = false) = 0;
-
-        void draw_line_strip(const ff::point_fixed* points, size_t count, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
-        void draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
-        void draw_filled_rectangle(const ff::rect_fixed& rect, const DirectX::XMFLOAT4& color);
-        void draw_filled_circle(const ff::point_fixed& center, ff::fixed_int radius, const DirectX::XMFLOAT4& color);
-        void draw_outline_rectangle(const ff::rect_fixed& rect, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
-        void draw_outline_circle(const ff::point_fixed& center, ff::fixed_int radius, const DirectX::XMFLOAT4& color, ff::fixed_int thickness);
-
-        void draw_palette_line_strip(const ff::point_fixed* points, size_t count, int color, ff::fixed_int thickness);
-        void draw_palette_line(const ff::point_fixed& start, const ff::point_fixed& end, int color, ff::fixed_int thickness);
-        void draw_palette_filled_rectangle(const ff::rect_fixed& rect, int color);
-        void draw_palette_filled_circle(const ff::point_fixed& center, ff::fixed_int radius, int color);
-        void draw_palette_outline_rectangle(const ff::rect_fixed& rect, int color, ff::fixed_int thickness);
-        void draw_palette_outline_circle(const ff::point_fixed& center, ff::fixed_int radius, int color, ff::fixed_int thickness);
+        // Pixel helpers, converts to core drawing
+        void draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const ff::color& color, ff::fixed_int thickness);
 
         virtual ff::matrix_stack& world_matrix_stack() = 0;
 
         virtual void push_palette(ff::dxgi::palette_base* palette) = 0;
         virtual void pop_palette() = 0;
-        virtual void push_palette_remap(const uint8_t* remap, size_t hash) = 0;
+        virtual void push_palette_remap(ff::dxgi::remap_t remap) = 0;
         virtual void pop_palette_remap() = 0;
         virtual void push_no_overlap() = 0;
         virtual void pop_no_overlap() = 0;

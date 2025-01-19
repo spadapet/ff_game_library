@@ -9,7 +9,8 @@ ff::palette_cycle::palette_cycle(const std::shared_ptr<ff::palette_data>& data, 
     , cycles_per_second(static_cast<double>(cycles_per_second))
     , advances(0)
     , current_row_(0)
-{}
+{
+}
 
 ff::palette_cycle::operator bool() const
 {
@@ -32,12 +33,13 @@ const ff::dxgi::palette_data_base* ff::palette_cycle::data() const
     return this->data_.get();
 }
 
-const uint8_t* ff::palette_cycle::index_remap() const
+ff::dxgi::remap_t ff::palette_cycle::remap() const
 {
-    return this->index_remap_ ? this->index_remap_->data() : nullptr;;
-}
+    if (this->index_remap_)
+    {
+        const uint8_t* data = this->index_remap_->data();
+        return { { data, data + this->index_remap_->size() }, this->index_remap_hash_ };
+    }
 
-size_t ff::palette_cycle::index_remap_hash() const
-{
-    return this->index_remap_hash_;
+    return {};
 }

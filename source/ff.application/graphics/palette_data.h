@@ -29,8 +29,7 @@ namespace ff
         // palette_base
         virtual size_t current_row() const override;
         virtual const ff::dxgi::palette_data_base* data() const override;
-        virtual const uint8_t* index_remap() const override;
-        virtual size_t index_remap_hash() const override;
+        virtual ff::dxgi::remap_t remap() const override;
 
     protected:
         virtual bool save_to_cache(ff::dict& dict) const override;

@@ -4,6 +4,7 @@
 // C++
 #include <algorithm>
 #include <fstream>
+#include <span>
 
 // Windows
 #include <DirectXMath.h>

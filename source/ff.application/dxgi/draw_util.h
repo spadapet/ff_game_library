@@ -148,34 +148,24 @@ namespace ff::dxgi::draw_util
 
         virtual void end_draw() override;
         virtual void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform) override;
-        virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness) override;
-        virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
-        virtual void draw_line(const ff::point_float& start, const ff::point_float& end, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
-        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4* colors) override;
-        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color) override;
-        virtual void draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count) override;
-        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color) override;
-        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color) override;
-        virtual void draw_outline_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
-        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness) override;
-        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness) override;
 
-        virtual void draw_palette_line_strip(const ff::point_float* points, const int* colors, size_t count, float thickness, bool pixel_thickness) override;
-        virtual void draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness) override;
-        virtual void draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness) override;
-        virtual void draw_palette_filled_rectangle(const ff::rect_float& rect, const int* colors) override;
-        virtual void draw_palette_filled_rectangle(const ff::rect_float& rect, int color) override;
-        virtual void draw_palette_filled_triangles(const ff::point_float* points, const int* colors, size_t count) override;
-        virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int color) override;
-        virtual void draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color) override;
-        virtual void draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness) override;
-        virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness) override;
-        virtual void draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness) override;
+        // LEGACY
+        virtual void draw_line_strip(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count, float thickness, bool pixel_thickness);
+        virtual void draw_line_strip(const ff::point_float* points, size_t count, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness);
+        virtual void draw_line(const ff::point_float& start, const ff::point_float& end, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness);
+        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4* colors);
+        virtual void draw_filled_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color);
+        virtual void draw_filled_triangles(const ff::point_float* points, const DirectX::XMFLOAT4* colors, size_t count);
+        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color);
+        virtual void draw_filled_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color);
+        virtual void draw_outline_rectangle(const ff::rect_float& rect, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness);
+        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& color, float thickness, bool pixel_thickness);
+        virtual void draw_outline_circle(const ff::point_float& center, float radius, const DirectX::XMFLOAT4& inside_color, const DirectX::XMFLOAT4& outside_color, float thickness, bool pixel_thickness);
 
         virtual ff::matrix_stack& world_matrix_stack() override;
         virtual void push_palette(ff::dxgi::palette_base* palette) override;
         virtual void pop_palette() override;
-        virtual void push_palette_remap(const uint8_t* remap, size_t hash) override;
+        virtual void push_palette_remap(ff::dxgi::remap_t remap) override;
         virtual void pop_palette_remap() override;
         virtual void push_no_overlap() override;
         virtual void pop_no_overlap() override;

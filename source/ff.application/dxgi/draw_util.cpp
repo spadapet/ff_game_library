@@ -538,94 +538,6 @@ void ff::dxgi::draw_util::draw_device_base::draw_outline_circle(const ff::point_
     }
 }
 
-void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::point_float* points, const int* colors, size_t count, float thickness, bool pixel_thickness)
-{
-    ff::stack_vector<DirectX::XMFLOAT4, 64> colors2;
-    colors2.resize(count);
-
-    for (size_t i = 0; i != colors2.size(); i++)
-    {
-        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
-    }
-
-    this->draw_line_strip(points, count, colors2.data(), count, thickness, pixel_thickness);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_line_strip(const ff::point_float* points, size_t count, int color, float thickness, bool pixel_thickness)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_line_strip(points, count, &color2, 1, thickness, pixel_thickness);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_line(const ff::point_float& start, const ff::point_float& end, int color, float thickness, bool pixel_thickness)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_line(start, end, color2, thickness, pixel_thickness);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const ff::rect_float& rect, const int* colors)
-{
-    std::array<DirectX::XMFLOAT4, 4> colors2;
-
-    for (size_t i = 0; i != colors2.size(); i++)
-    {
-        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
-    }
-
-    this->draw_filled_rectangle(rect, colors2.data());
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_rectangle(const ff::rect_float& rect, int color)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_filled_rectangle(rect, color2);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_triangles(const ff::point_float* points, const int* colors, size_t count)
-{
-    ff::stack_vector<DirectX::XMFLOAT4, 64 * 3> colors2;
-    colors2.resize(count * 3);
-
-    for (size_t i = 0; i != colors2.size(); i++)
-    {
-        ff::palette_index_to_color(this->remap_palette_index(colors[i]), colors2[i]);
-    }
-
-    this->draw_filled_triangles(points, colors2.data(), count);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int color)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_filled_circle(center, radius, color2);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_filled_circle(const ff::point_float& center, float radius, int inside_color, int outside_color)
-{
-    const DirectX::XMFLOAT4 inside_color2 = ff::palette_index_to_color(this->remap_palette_index(inside_color));
-    const DirectX::XMFLOAT4 outside_color2 = ff::palette_index_to_color(this->remap_palette_index(outside_color));
-    this->draw_filled_circle(center, radius, inside_color2, outside_color2);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_rectangle(const ff::rect_float& rect, int color, float thickness, bool pixel_thickness)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_outline_rectangle(rect, color2, thickness, pixel_thickness);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int color, float thickness, bool pixel_thickness)
-{
-    const DirectX::XMFLOAT4 color2 = ff::palette_index_to_color(this->remap_palette_index(color));
-    this->draw_outline_circle(center, radius, color2, thickness, pixel_thickness);
-}
-
-void ff::dxgi::draw_util::draw_device_base::draw_palette_outline_circle(const ff::point_float& center, float radius, int inside_color, int outside_color, float thickness, bool pixel_thickness)
-{
-    const DirectX::XMFLOAT4 inside_color2 = ff::palette_index_to_color(this->remap_palette_index(inside_color));
-    const DirectX::XMFLOAT4 outside_color2 = ff::palette_index_to_color(this->remap_palette_index(outside_color));
-    this->draw_outline_circle(center, radius, inside_color2, outside_color2, thickness, pixel_thickness);
-}
-
 ff::matrix_stack& ff::dxgi::draw_util::draw_device_base::world_matrix_stack()
 {
     return this->world_matrix_stack_;
@@ -641,7 +553,7 @@ void ff::dxgi::draw_util::draw_device_base::push_palette(ff::dxgi::palette_base*
         this->palette_index = ff::constants::invalid_unsigned<DWORD>();
     }
 
-    this->push_palette_remap(palette->index_remap(), palette->index_remap_hash());
+    this->push_palette_remap(palette->remap());
 }
 
 void ff::dxgi::draw_util::draw_device_base::pop_palette()
@@ -656,11 +568,14 @@ void ff::dxgi::draw_util::draw_device_base::pop_palette()
     this->pop_palette_remap();
 }
 
-void ff::dxgi::draw_util::draw_device_base::push_palette_remap(const uint8_t* remap, size_t hash)
+void ff::dxgi::draw_util::draw_device_base::push_palette_remap(ff::dxgi::remap_t remap)
 {
+    bool has_remap = remap.remap.empty();
+    assert(!has_remap || remap.remap.size() == ff::dxgi::palette_size);
+
     this->palette_remap_stack.push_back(std::make_pair(
-        remap ? remap : ff::dxgi::draw_util::default_palette_remap().data(),
-        remap ? (hash ? hash : ff::stable_hash_bytes(remap, ff::dxgi::palette_size)) : ff::dxgi::draw_util::default_palette_remap_hash()));
+        has_remap ? remap.remap.data() : ff::dxgi::draw_util::default_palette_remap().data(),
+        has_remap ? (remap.hash ? remap.hash : ff::stable_hash_bytes(remap.remap.data(), remap.remap.size())) : ff::dxgi::draw_util::default_palette_remap_hash()));
     this->palette_remap_index = ff::constants::invalid_unsigned<DWORD>();
 }
 

@@ -75,14 +75,9 @@ const ff::dxgi::palette_data_base* ff::palette_data::data() const
     return this;
 }
 
-const uint8_t* ff::palette_data::index_remap() const
+ff::dxgi::remap_t ff::palette_data::remap() const
 {
-    return nullptr;
-}
-
-size_t ff::palette_data::index_remap_hash() const
-{
-    return 0;
+    return {};
 }
 
 bool ff::palette_data::save_to_cache(ff::dict& dict) const

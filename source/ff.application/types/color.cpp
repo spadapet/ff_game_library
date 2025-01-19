@@ -144,6 +144,16 @@ const ff::color::palette_t& ff::color::palette() const
     return this->data.palette.palette;
 }
 
+const ff::color& ff::color::cast(const DirectX::XMFLOAT4& other)
+{
+    return *ff::color::cast(&other);
+}
+
+const ff::color* ff::color::cast(const DirectX::XMFLOAT4* other)
+{
+    return reinterpret_cast<const ff::color*>(other);
+}
+
 ff::color::operator const DirectX::XMFLOAT4& () const
 {
     return this->rgba();
