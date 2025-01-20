@@ -231,30 +231,6 @@
     <ClCompile Include="input\pointer_device.cpp">
       <Filter>input</Filter>
     </ClCompile>
-    <ClCompile Include="types\blob.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\color.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\matrix.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\matrix_stack.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\png_image.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\transform.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\vertex.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
-    <ClCompile Include="types\viewport.cpp">
-      <Filter>types</Filter>
-    </ClCompile>
     <ClCompile Include="write\font_file.cpp">
       <Filter>write</Filter>
     </ClCompile>
@@ -262,6 +238,27 @@
       <Filter>write</Filter>
     </ClCompile>
     <ClCompile Include="init_dx.cpp" />
+    <ClCompile Include="graphics\png_image.cpp">
+      <Filter>graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\blob.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\color.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\matrix.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\matrix_stack.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\transform.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
+    <ClCompile Include="dx_types\viewport.cpp">
+      <Filter>dx_types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -536,36 +533,6 @@
     <ClInclude Include="input\pointer_device.h">
       <Filter>input</Filter>
     </ClInclude>
-    <ClInclude Include="types\blob.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\color.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\intrusive_list.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\matrix.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\matrix_stack.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\operators.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\png_image.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\transform.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\vertex.h">
-      <Filter>types</Filter>
-    </ClInclude>
-    <ClInclude Include="types\viewport.h">
-      <Filter>types</Filter>
-    </ClInclude>
     <ClInclude Include="write\font_file.h">
       <Filter>write</Filter>
     </ClInclude>
@@ -573,6 +540,33 @@
       <Filter>write</Filter>
     </ClInclude>
     <ClInclude Include="init_dx.h" />
+    <ClInclude Include="graphics\png_image.h">
+      <Filter>graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\blob.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\color.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\intrusive_list.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\matrix.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\matrix_stack.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\operators.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\transform.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="dx_types\viewport.h">
+      <Filter>dx_types</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="app">
@@ -599,11 +593,11 @@
     <Filter Include="input">
       <UniqueIdentifier>{cb7269ff-6f16-4d76-8152-f251d5b4a616}</UniqueIdentifier>
     </Filter>
-    <Filter Include="types">
-      <UniqueIdentifier>{d465cc29-d956-467a-b6e6-24b882c47560}</UniqueIdentifier>
-    </Filter>
     <Filter Include="write">
       <UniqueIdentifier>{55ff5d3b-6cce-40e2-8b8d-e378de6b3156}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx_types">
+      <UniqueIdentifier>{a0e0cf09-8c60-49cc-8f9e-3ea97dfdb912}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

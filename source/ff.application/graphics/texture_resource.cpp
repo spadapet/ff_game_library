@@ -3,11 +3,11 @@
 #include "dxgi/dxgi_globals.h"
 #include "dxgi/format_util.h"
 #include "dxgi/sprite_data.h"
+#include "graphics/png_image.h"
 #include "graphics/texture_data.h"
 #include "graphics/texture_resource.h"
 #include "graphics/texture_metadata.h"
-#include "types/blob.h"
-#include "types/png_image.h"
+#include "dx_types/blob.h"
 
 static std::shared_ptr<DirectX::ScratchImage> convert_texture_data(const std::shared_ptr<DirectX::ScratchImage>& data, DXGI_FORMAT new_format, size_t new_mip_count)
 {

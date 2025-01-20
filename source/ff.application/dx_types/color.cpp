@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "types/color.h"
-#include "types/operators.h"
+#include "dx_types/color.h"
+#include "dx_types/operators.h"
 
 static const ff::color color_none(0.f, 0.f, 0.f, 0.f);
 static const ff::color color_none_palette(0, 1.f);

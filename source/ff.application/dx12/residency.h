@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../dx12/fence_values.h"
-#include "../types/intrusive_list.h"
+#include "../dx_types/intrusive_list.h"
 
 namespace ff::dx12
 {

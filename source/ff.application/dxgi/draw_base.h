@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types/color.h"
+#include "../dx_types/color.h"
 
 namespace ff
 {
@@ -44,14 +44,14 @@ namespace ff::dxgi
         virtual void draw_lines(std::span<const ff::dxgi::endpoint_t> points) = 0;
         virtual void draw_triangles(std::span<const ff::dxgi::endpoint_t> points) = 0;
         virtual void draw_rectangle(const ff::rect_float& rect, const ff::color& color, std::optional<float> thickness = std::nullopt) = 0;
-        virtual void draw_circle(const ff::dxgi::endpoint_t& pos, std::optional<float> thickness = std::nullopt) = 0;
+        virtual void draw_circle(const ff::dxgi::endpoint_t& pos, std::optional<float> thickness = std::nullopt, const ff::color* outside_color = nullptr) = 0;
 
         // Pixel drawing, converts to core drawing
         void draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::pixel_transform& transform);
         void draw_lines(std::span<const ff::dxgi::pixel_endpoint_t> points);
         void draw_triangles(std::span<const ff::dxgi::pixel_endpoint_t> points);
         void draw_rectangle(const ff::rect_fixed& rect, const ff::color& color, std::optional<ff::fixed_int> thickness = std::nullopt);
-        void draw_circle(const ff::dxgi::pixel_endpoint_t& pos, std::optional<ff::fixed_int> thickness = std::nullopt);
+        void draw_circle(const ff::dxgi::pixel_endpoint_t& pos, std::optional<ff::fixed_int> thickness = std::nullopt, const ff::color* outside_color = nullptr);
 
         // Helpers, converts to core drawing
         void draw_line(const ff::point_float& start, const ff::point_float& end, const ff::color& color, float thickness);

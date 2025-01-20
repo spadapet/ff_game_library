@@ -7,7 +7,7 @@
 #include "graphics/sprite_list.h"
 #include "graphics/sprite_optimizer.h"
 #include "graphics/texture_resource.h"
-#include "types/transform.h"
+#include "dx_types/transform.h"
 #include "write/font_file.h"
 #include "write/write.h"
 

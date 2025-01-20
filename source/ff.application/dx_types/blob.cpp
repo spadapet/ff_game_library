@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "types/blob.h"
+#include "dx_types/blob.h"
 
 ff::data_blob_dx::data_blob_dx(ID3DBlob* blob)
     : data_blob_dx(blob, 0, blob->GetBufferSize())

@@ -15,9 +15,78 @@
 #include "dxgi/draw_util.h"
 #include "dxgi/palette_data_base.h"
 #include "dxgi/target_base.h"
-#include "types/vertex.h"
 
 #include "ff.dx12.res.id.h"
+
+#if 0
+const std::array<D3D12_INPUT_ELEMENT_DESC, 10>& ff::dx12::vertex::line_geometry::layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 10> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 2, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 3, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "THICK", 0, DXGI_FORMAT_R32_FLOAT, 0, 64, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "THICK", 1, DXGI_FORMAT_R32_FLOAT, 0, 68, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "DEPTH", 0, DXGI_FORMAT_R32_FLOAT, 0, 72, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "MATRIX", 0, DXGI_FORMAT_R32_UINT, 0, 76, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    return layout;
+}
+
+const std::array<D3D12_INPUT_ELEMENT_DESC, 6>& ff::dx12::vertex::circle_geometry::layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 6> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 28, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "RADIUS", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "THICK", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "MATRIX", 0, DXGI_FORMAT_R32_UINT, 0, 52, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    return layout;
+}
+
+const std::array<D3D12_INPUT_ELEMENT_DESC, 8>& ff::dx12::vertex::triangle_geometry::layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 8> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 2, DXGI_FORMAT_R32G32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 40, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "DEPTH", 0, DXGI_FORMAT_R32_FLOAT, 0, 72, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "MATRIX", 0, DXGI_FORMAT_R32_UINT, 0, 76, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    return layout;
+}
+
+const std::array<D3D12_INPUT_ELEMENT_DESC, 8>& ff::dx12::vertex::sprite_geometry::layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 8> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "RECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "SCALE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "ROTATE", 0, DXGI_FORMAT_R32_FLOAT, 0, 68, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "TEXINDEX", 0, DXGI_FORMAT_R32_UINT, 0, 72, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        D3D12_INPUT_ELEMENT_DESC{ "MATRIX", 0, DXGI_FORMAT_R32_UINT, 0, 76, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    return layout;
+}
+#endif
 
 static void get_alpha_blend_desc(D3D12_RENDER_TARGET_BLEND_DESC& desc)
 {
@@ -81,17 +150,17 @@ namespace
 
         enum class state_t
         {
-            blend_opaque = 0,
-            blend_alpha = 0b0001,
-            blend_pma = 0b0010,
+            blend_opaque = 0b00,
+            blend_alpha = 0b01,
+            blend_pma = 0b10,
 
-            out_color = 0,
-            out_palette = 0b0100,
+            out_color = 0b000,
+            out_palette = 0b100,
 
-            depth_disabled = 0,
+            depth_disabled = 0b0000,
             depth_enabled = 0b1000,
 
-            target_default = 0,
+            target_default = 0b00000,
             target_bgra = 0b10000,
 
             count = 0b100000
@@ -104,16 +173,10 @@ namespace
             return ::dx12_state(T::layout().data(), T::layout().size());
         }
 
-        void reset(
-            ID3D12RootSignature* root_signature,
-            std::string_view vs_res,
-            std::string_view gs_res,
-            std::string_view ps_res,
-            std::string_view ps_palette_out_res)
+        void reset(ID3D12RootSignature* root_signature, std::string_view vs_res, std::string_view ps_res, std::string_view ps_palette_out_res)
         {
             this->root_signature = root_signature;
             this->vs_res_name = vs_res;
-            this->gs_res_name = gs_res;
             this->ps_res_name = ps_res;
             this->ps_palette_out_res_name = ps_palette_out_res;
 
@@ -128,13 +191,7 @@ namespace
             }
         }
 
-        bool apply(
-            ff::dx12::commands& commands,
-            DXGI_FORMAT target_format,
-            bool has_depth,
-            bool alpha,
-            bool pre_multiplied_alpha,
-            bool palette_out)
+        bool apply(ff::dx12::commands& commands, DXGI_FORMAT target_format, bool has_depth, bool alpha, bool pre_multiplied_alpha, bool palette_out)
         {
             assert(palette_out || target_format == DXGI_FORMAT_R8G8B8A8_UNORM || target_format == DXGI_FORMAT_B8G8R8A8_UNORM);
             assert(!palette_out || target_format == DXGI_FORMAT_R8_UINT);
@@ -168,7 +225,6 @@ namespace
             D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
             desc.pRootSignature = this->root_signature.Get();
             desc.VS = ff::dx12::get_object_cache().shader(shader_resources, this->vs_res_name);
-            desc.GS = ff::dx12::get_object_cache().shader(shader_resources, this->gs_res_name);
             desc.PS = ff::dx12::get_object_cache().shader(shader_resources, ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
             desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
             desc.SampleMask = UINT_MAX;
@@ -221,7 +277,6 @@ namespace
 
     private:
         std::string vs_res_name;
-        std::string gs_res_name;
         std::string ps_res_name;
         std::string ps_palette_out_res_name;
 
@@ -307,10 +362,10 @@ namespace
             // Create root signature
             {
                 CD3DX12_DESCRIPTOR_RANGE1 textures_range;
-                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
+                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 0, 0, /*D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE*/ D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 using_palette_textures;
-                using_palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 32, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
+                using_palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 32, 0, /*D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE*/ D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures;
                 palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 64, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
@@ -319,7 +374,7 @@ namespace
                 samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 std::array<CD3DX12_ROOT_PARAMETER1, 7> params;
-                params[0].InitAsConstants(static_cast<UINT>(ff::dxgi::draw_util::geometry_shader_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_0
+                params[0].InitAsConstants(static_cast<UINT>(ff::dxgi::draw_util::vs_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_0
                 params[1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_1, matrixes
                 params[2].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL); // pixel_constants_0, palette texture sizes
                 params[3].InitAsDescriptorTable(1, &samplers_range, D3D12_SHADER_VISIBILITY_PIXEL); // samplers: point, linear
@@ -347,16 +402,16 @@ namespace
             {
                 ID3D12RootSignature* rs = this->root_signature.Get();
 
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::palette_sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PALETTE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PALETTE_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::lines).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::circles).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::triangles).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::palette_sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PALETTE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PALETTE_PS);
 
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::lines_alpha).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::circles_alpha).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::triangles_alpha).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::geometry_bucket_type::sprites_alpha).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::lines_alpha).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::circles_alpha).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::triangles_alpha).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
+                this->state(ff::dxgi::draw_util::instance_bucket_type::sprites_alpha).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
             }
         }
 
@@ -393,9 +448,9 @@ namespace
             this->setup_viewport = ::get_viewport(physical_view_rect);
             this->setup_depth = depth;
 
-            this->geometry_constants_version_0 = 0;
-            this->geometry_constants_version_1 = 0;
-            this->pixel_constants_version_0 = 0;
+            this->vs_constants_version_0 = 0;
+            this->vs_constants_version_1 = 0;
+            this->ps_constants_version_0 = 0;
 
             this->commands = &commands;
             this->commands->begin_event(ff::dx12::gpu_event::draw_2d);
@@ -465,7 +520,8 @@ namespace
                     if (palette_remap_texture_hashes[row] != row_hash)
                     {
                         palette_remap_texture_hashes[row] = row_hash;
-                        remap_image.pixels = const_cast<uint8_t*>(iter.second.first);
+                        const ff::dxgi::remap_t& row_remap = iter.second.first;
+                        remap_image.pixels = const_cast<uint8_t*>(row_remap.remap.data());
                         dest_remap_texture.update(*this->commands, 0, 0, ff::point_size(0, row), remap_image);
                     }
                 }
@@ -481,14 +537,14 @@ namespace
         {
             // Prepare all resource state ahead of time
 
-            if (this->geometry_constants_buffer_1_)
+            if (this->vs_constants_buffer_1_)
             {
-                this->commands->resource_state(*this->geometry_constants_buffer_1_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                this->commands->resource_state(*this->vs_constants_buffer_1_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             }
 
-            if (this->pixel_constants_buffer_0_)
+            if (this->ps_constants_buffer_0_)
             {
-                this->commands->resource_state(*this->pixel_constants_buffer_0_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                this->commands->resource_state(*this->ps_constants_buffer_0_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             }
 
             for (size_t i = 0; i < texture_count; i++)
@@ -517,22 +573,22 @@ namespace
 
             // Update root constants
 
-            if (this->geometry_constants_buffer_0_ && this->geometry_constants_version_0 != this->geometry_constants_buffer_0_.version())
+            if (this->vs_constants_buffer_0_ && this->vs_constants_version_0 != this->vs_constants_buffer_0_.version())
             {
-                this->geometry_constants_version_0 = this->geometry_constants_buffer_0_.version();
-                this->commands->root_constants(0, this->geometry_constants_buffer_0_.data().data(), ff::dxgi::draw_util::geometry_shader_constants_0::DWORD_COUNT * 4);
+                this->vs_constants_version_0 = this->vs_constants_buffer_0_.version();
+                this->commands->root_constants(0, this->vs_constants_buffer_0_.data().data(), ff::dxgi::draw_util::vs_constants_0::DWORD_COUNT * 4);
             }
 
-            if (geometry_constants_buffer_1_ && this->geometry_constants_version_1 != this->geometry_constants_buffer_1_.version())
+            if (vs_constants_buffer_1_ && this->vs_constants_version_1 != this->vs_constants_buffer_1_.version())
             {
-                this->geometry_constants_version_1 = this->geometry_constants_buffer_1_.version();
-                this->commands->root_cbv(1, this->geometry_constants_buffer_1_);
+                this->vs_constants_version_1 = this->vs_constants_buffer_1_.version();
+                this->commands->root_cbv(1, this->vs_constants_buffer_1_);
             }
 
-            if (this->pixel_constants_buffer_0_ && this->pixel_constants_version_0 != this->pixel_constants_buffer_0_.version())
+            if (this->ps_constants_buffer_0_ && this->ps_constants_version_0 != this->ps_constants_buffer_0_.version())
             {
-                this->pixel_constants_version_0 = this->pixel_constants_buffer_0_.version();
-                this->commands->root_cbv(2, this->pixel_constants_buffer_0_);
+                this->ps_constants_version_0 = this->ps_constants_buffer_0_.version();
+                this->commands->root_cbv(2, this->ps_constants_buffer_0_);
             }
 
             // Update texture descriptors
@@ -591,22 +647,22 @@ namespace
             this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
-        virtual void apply_alpha_state(ff::dxgi::command_context_base& context) override
+        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override
         {
             this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
-        virtual bool apply_geometry_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::geometry_bucket& bucket) override
+        virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::instance_bucket& bucket) override
         {
             if (this->state(bucket.bucket_type()).apply(*this->commands,
                 this->setup_target->format(),
                 this->setup_depth != nullptr,
-                bucket.bucket_type() >= ff::dxgi::draw_util::geometry_bucket_type::first_alpha,
+                bucket.bucket_type() >= ff::dxgi::draw_util::instance_bucket_type::first_transparent,
                 this->pre_multiplied_alpha(),
                 this->target_requires_palette()))
             {
-                ff::dx12::buffer_base* single_buffer = &this->geometry_buffer_;
-                D3D12_VERTEX_BUFFER_VIEW vertex_view = this->geometry_buffer_.vertex_view(bucket.item_size());
+                ff::dx12::buffer_base* single_buffer = &this->instance_buffer_;
+                D3D12_VERTEX_BUFFER_VIEW vertex_view = this->instance_buffer_.vertex_view(bucket.item_size());
                 this->commands->vertex_buffers(&single_buffer, &vertex_view, 0, 1);
                 return true;
             }
@@ -614,24 +670,24 @@ namespace
             return false;
         }
 
-        virtual ff::dxgi::buffer_base& geometry_buffer() override
+        virtual ff::dxgi::buffer_base& instance_buffer() override
         {
-            return this->geometry_buffer_;
+            return this->instance_buffer_;
         }
 
-        virtual ff::dxgi::buffer_base& geometry_constants_buffer_0() override
+        virtual ff::dxgi::buffer_base& vs_constants_buffer_0() override
         {
-            return this->geometry_constants_buffer_0_;
+            return this->vs_constants_buffer_0_;
         }
 
-        virtual ff::dxgi::buffer_base& geometry_constants_buffer_1() override
+        virtual ff::dxgi::buffer_base& vs_constants_buffer_1() override
         {
-            return this->geometry_constants_buffer_1_;
+            return this->vs_constants_buffer_1_;
         }
 
-        virtual ff::dxgi::buffer_base& pixel_constants_buffer_0() override
+        virtual ff::dxgi::buffer_base& ps_constants_buffer_0() override
         {
-            return this->pixel_constants_buffer_0_;
+            return this->ps_constants_buffer_0_;
         }
 
         virtual bool flush_for_sampler_change() const override
@@ -650,7 +706,7 @@ namespace
         }
 
     private:
-        ::dx12_state& state(ff::dxgi::draw_util::geometry_bucket_type type)
+        ::dx12_state& state(ff::dxgi::draw_util::instance_bucket_type type)
         {
             return this->states_[static_cast<size_t>(type)];
         }
@@ -667,18 +723,18 @@ namespace
         }
 
         // Constant data for shaders
-        ff::dx12::buffer_upload geometry_buffer_{ ff::dxgi::buffer_type::vertex };
-        ff::dx12::buffer_cpu geometry_constants_buffer_0_{ ff::dxgi::buffer_type::constant }; // root constants
-        ff::dx12::buffer geometry_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
-        ff::dx12::buffer pixel_constants_buffer_0_{ ff::dxgi::buffer_type::constant };
-        size_t geometry_constants_version_0{};
-        size_t geometry_constants_version_1{};
-        size_t pixel_constants_version_0{};
+        ff::dx12::buffer_upload instance_buffer_{ ff::dxgi::buffer_type::vertex };
+        ff::dx12::buffer_cpu vs_constants_buffer_0_{ ff::dxgi::buffer_type::constant }; // root constants
+        ff::dx12::buffer vs_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
+        ff::dx12::buffer ps_constants_buffer_0_{ ff::dxgi::buffer_type::constant };
+        size_t vs_constants_version_0{};
+        size_t vs_constants_version_1{};
+        size_t ps_constants_version_0{};
 
         // Render state
         ff::dx12::descriptor_range samplers_gpu; // 0:point, 1:linear
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
-        std::array<::dx12_state, static_cast<size_t>(ff::dxgi::draw_util::geometry_bucket_type::count)> states_;
+        std::array<::dx12_state, static_cast<size_t>(ff::dxgi::draw_util::instance_bucket_type::count)> states_;
 
         ff::dx12::commands* commands{};
         ff::dxgi::target_base* setup_target{};

@@ -404,7 +404,7 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
     return color;
 }
 
-// Texture: RGBA, Output: Palette index
+// Texture: RGBA, Output: Palette index (this can be used for fonts with palette output)
 uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;

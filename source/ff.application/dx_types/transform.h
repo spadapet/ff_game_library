@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types/color.h"
+#include "../dx_types/color.h"
 
 namespace ff
 {

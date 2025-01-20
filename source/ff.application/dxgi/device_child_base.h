@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types/intrusive_list.h"
+#include "../dx_types/intrusive_list.h"
 
 namespace ff::dxgi
 {

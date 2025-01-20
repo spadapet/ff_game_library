@@ -11,7 +11,7 @@
 #include "init_dx.h"
 #include "input/input.h"
 #include "input/input_device_base.h"
-#include "types/color.h"
+#include "dx_types/color.h"
 
 namespace ff
 {

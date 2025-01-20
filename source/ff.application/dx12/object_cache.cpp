@@ -2,7 +2,7 @@
 #include "dx12/device_reset_priority.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/object_cache.h"
-#include "types/blob.h"
+#include "dx_types/blob.h"
 
 template<class T, class = std::enable_if_t<std::is_arithmetic_v<T> || std::is_enum_v<T>>>
 static ff::stable_hash_data_t stable_hash(ff::stable_hash_data_t& hash, const T& data)

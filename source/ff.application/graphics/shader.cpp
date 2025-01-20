@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "graphics/shader.h"
-#include "types/blob.h"
+#include "dx_types/blob.h"
 
 namespace
 {

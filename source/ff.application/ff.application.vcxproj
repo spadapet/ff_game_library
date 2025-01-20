@@ -56,6 +56,12 @@
     <ClCompile Include="dxgi\dxgi_globals.cpp" />
     <ClCompile Include="dxgi\format_util.cpp" />
     <ClCompile Include="dxgi\sprite_data.cpp" />
+    <ClCompile Include="dx_types\blob.cpp" />
+    <ClCompile Include="dx_types\color.cpp" />
+    <ClCompile Include="dx_types\matrix.cpp" />
+    <ClCompile Include="dx_types\matrix_stack.cpp" />
+    <ClCompile Include="dx_types\transform.cpp" />
+    <ClCompile Include="dx_types\viewport.cpp" />
     <ClCompile Include="graphics\animation.cpp" />
     <ClCompile Include="graphics\animation_base.cpp" />
     <ClCompile Include="graphics\animation_keys.cpp" />
@@ -63,6 +69,7 @@
     <ClCompile Include="graphics\animation_player_base.cpp" />
     <ClCompile Include="graphics\palette_cycle.cpp" />
     <ClCompile Include="graphics\palette_data.cpp" />
+    <ClCompile Include="graphics\png_image.cpp" />
     <ClCompile Include="graphics\random_sprite.cpp" />
     <ClCompile Include="graphics\render_targets.cpp" />
     <ClCompile Include="graphics\shader.cpp" />
@@ -93,14 +100,6 @@
     <ClCompile Include="game\game_init.cpp" />
     <ClCompile Include="game\root_state_base.cpp" />
     <ClCompile Include="init_app.cpp" />
-    <ClCompile Include="types\blob.cpp" />
-    <ClCompile Include="types\color.cpp" />
-    <ClCompile Include="types\matrix.cpp" />
-    <ClCompile Include="types\matrix_stack.cpp" />
-    <ClCompile Include="types\png_image.cpp" />
-    <ClCompile Include="types\transform.cpp" />
-    <ClCompile Include="types\vertex.cpp" />
-    <ClCompile Include="types\viewport.cpp" />
     <ClCompile Include="write\font_file.cpp" />
     <ClCompile Include="write\write.cpp" />
   </ItemGroup>
@@ -162,6 +161,14 @@
     <ClInclude Include="dxgi\texture_metadata_base.h" />
     <ClInclude Include="dxgi\texture_view_access_base.h" />
     <ClInclude Include="dxgi\texture_view_base.h" />
+    <ClInclude Include="dx_types\blob.h" />
+    <ClInclude Include="dx_types\color.h" />
+    <ClInclude Include="dx_types\intrusive_list.h" />
+    <ClInclude Include="dx_types\matrix.h" />
+    <ClInclude Include="dx_types\matrix_stack.h" />
+    <ClInclude Include="dx_types\operators.h" />
+    <ClInclude Include="dx_types\transform.h" />
+    <ClInclude Include="dx_types\viewport.h" />
     <ClInclude Include="graphics\animation.h" />
     <ClInclude Include="graphics\animation_base.h" />
     <ClInclude Include="graphics\animation_keys.h" />
@@ -169,6 +176,7 @@
     <ClInclude Include="graphics\animation_player_base.h" />
     <ClInclude Include="graphics\palette_cycle.h" />
     <ClInclude Include="graphics\palette_data.h" />
+    <ClInclude Include="graphics\png_image.h" />
     <ClInclude Include="graphics\random_sprite.h" />
     <ClInclude Include="graphics\render_targets.h" />
     <ClInclude Include="graphics\shader.h" />
@@ -198,16 +206,6 @@
     <ClInclude Include="game\game_init.h" />
     <ClInclude Include="game\root_state_base.h" />
     <ClInclude Include="init_app.h" />
-    <ClInclude Include="types\blob.h" />
-    <ClInclude Include="types\color.h" />
-    <ClInclude Include="types\intrusive_list.h" />
-    <ClInclude Include="types\matrix.h" />
-    <ClInclude Include="types\matrix_stack.h" />
-    <ClInclude Include="types\operators.h" />
-    <ClInclude Include="types\png_image.h" />
-    <ClInclude Include="types\transform.h" />
-    <ClInclude Include="types\vertex.h" />
-    <ClInclude Include="types\viewport.h" />
     <ClInclude Include="write\font_file.h" />
     <ClInclude Include="write\write.h" />
   </ItemGroup>

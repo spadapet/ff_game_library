@@ -6,7 +6,7 @@
 #include "input/input.h"
 #include "input/keyboard_device.h"
 #include "ff.app.res.id.h"
-#include "types/color.h"
+#include "dx_types/color.h"
 
 using namespace std::string_view_literals;
 

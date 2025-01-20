@@ -13,8 +13,8 @@
 #include "input/input.h"
 #include "input/keyboard_device.h"
 #include "input/pointer_device.h"
-#include "types/color.h"
-#include "types/transform.h"
+#include "dx_types/color.h"
+#include "dx_types/transform.h"
 #include "write/font_file.h"
 
 #if USE_IMGUI

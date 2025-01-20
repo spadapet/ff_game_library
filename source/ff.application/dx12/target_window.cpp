@@ -7,8 +7,8 @@
 #include "dx12/target_window.h"
 #include "dx12/queue.h"
 #include "dxgi/dxgi_globals.h"
-#include "types/color.h"
-#include "types/operators.h"
+#include "dx_types/color.h"
+#include "dx_types/operators.h"
 
 constexpr size_t MIN_BUFFER_COUNT = 2;
 constexpr size_t MAX_BUFFER_COUNT = 4;

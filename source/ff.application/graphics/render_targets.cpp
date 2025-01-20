@@ -5,8 +5,8 @@
 #include "dxgi/palette_base.h"
 #include "graphics/render_targets.h"
 #include "graphics/texture_resource.h"
-#include "types/color.h"
-#include "types/transform.h"
+#include "dx_types/color.h"
+#include "dx_types/transform.h"
 
 static std::weak_ptr<ff::dxgi::texture_base> weak_texture_1080;
 static std::weak_ptr<ff::dxgi::target_base> weak_target_1080;
