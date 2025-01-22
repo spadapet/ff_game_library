@@ -36,7 +36,7 @@ namespace
                     }
                     else
                     {
-                        draw->draw_filled_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_size.y), obj.color);
+                        draw->draw_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_size.y), ff::color::cast(obj.color));
                     }
                 }
             }

@@ -114,7 +114,7 @@ namespace
             ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target);
             if (draw)
             {
-                draw->draw_filled_rectangle(target.size().logical_pixel_rect<float>(), this->clear_color);
+                draw->draw_rectangle(target.size().logical_pixel_rect<float>(), ff::color::cast(this->clear_color));
             }
         }
 

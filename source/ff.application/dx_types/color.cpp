@@ -86,11 +86,13 @@ ff::color::color(const ff::color::palette_t& palette)
 ff::color& ff::color::operator=(const DirectX::XMFLOAT4& other)
 {
     *this = ff::color(other);
+    return *this;
 }
 
 ff::color& ff::color::operator=(const ff::color::palette_t& other)
 {
     *this = ff::color(other);
+    return *this;
 }
 
 bool ff::color::operator==(const ff::color& other) const
@@ -132,6 +134,12 @@ bool ff::color::is_palette() const
     return this->data.palette.type == ff::color::type_palette;
 }
 
+DirectX::XMFLOAT4& ff::color::rgba()
+{
+    assert(this->is_rgba());
+    return this->data.rgba;
+}
+
 const DirectX::XMFLOAT4& ff::color::rgba() const
 {
     assert(this->is_rgba());
@@ -142,6 +150,11 @@ const ff::color::palette_t& ff::color::palette() const
 {
     assert(this->is_palette());
     return this->data.palette.palette;
+}
+
+float ff::color::alpha() const
+{
+    return this->is_palette() ? this->data.palette.palette.alpha : this->data.rgba.w;
 }
 
 const ff::color& ff::color::cast(const DirectX::XMFLOAT4& other)

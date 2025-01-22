@@ -36,7 +36,7 @@ namespace ff::test::graphics
                 std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi::create_draw_device();
                 ff::dxgi::draw_ptr draw = draw_device->begin_draw(context, *target, depth.get(), ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
                 draw->draw_sprite(sprite->sprite_data(), ff::pixel_transform(ff::point_fixed(32, 32), ff::point_fixed(1, 1), 30));
-                draw->draw_outline_circle(ff::point_fixed(128, 128), 16, ff::color_yellow(), 4);
+                draw->draw_circle(ff::dxgi::pixel_endpoint_t{ { 128, 128 }, &ff::color_yellow(), 16.f }, 4);
                 draw->draw_line(ff::point_fixed(0, 256), ff::point_fixed(256, 0), ff::color_red(), 3);
             }
 

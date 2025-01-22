@@ -26,7 +26,7 @@ namespace ff::test::graphics
 
             ff::palette_cycle palette(palette_data, "foo", 1);
             Assert::IsTrue(palette_data.get() == palette.data());
-            Assert::IsNotNull(palette.index_remap());
+            Assert::AreNotEqual<size_t>(0, palette.remap().hash);
             Assert::AreEqual<size_t>(0, palette.current_row());
 
             palette.advance();

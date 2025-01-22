@@ -82,7 +82,7 @@ ff::point_float ff::sprite_font::draw_text(
     ff::dxgi::draw_base* draw,
     std::string_view text,
     const ff::transform& transform,
-    const DirectX::XMFLOAT4& outline_color,
+    const ff::color& outline_color,
     ff::sprite_font_options options) const
 {
     std::array<wchar_t, 2048> wtext_array;
@@ -90,7 +90,7 @@ ff::point_float ff::sprite_font::draw_text(
     std::wstring_view wtext = ::to_wstring(text, wtext_array, wtext_string);
     ff::point_float size{};
 
-    if ((outline_color.w > 0 || ::text_contains_outline_control(wtext)) && !ff::flags::has(options, ff::sprite_font_options::no_outline) && this->outline_sprites)
+    if ((outline_color.alpha() > 0 || ::text_contains_outline_control(wtext)) && !ff::flags::has(options, ff::sprite_font_options::no_outline) && this->outline_sprites)
     {
         ff::transform outline_transform = transform;
         outline_transform.color = outline_color;
@@ -103,12 +103,6 @@ ff::point_float ff::sprite_font::draw_text(
     }
 
     return size;
-}
-
-ff::point_float ff::sprite_font::draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::transform& transform, int outline_palette_index, ff::sprite_font_options options) const
-{
-    DirectX::XMFLOAT4 outline_color = ff::palette_index_to_color(outline_palette_index);
-    return this->draw_text(draw, text, transform, outline_color, options);
 }
 
 ff::point_float ff::sprite_font::measure_text(std::string_view text, ff::point_float scale) const
@@ -419,16 +413,17 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::dxgi::draw_base* draw, c
         else if (*ch >= static_cast<wchar_t>(ff::sprite_font_control::none) && *ch <= static_cast<wchar_t>(ff::sprite_font_control::after_last))
         {
             ff::sprite_font_control control = static_cast<ff::sprite_font_control>(*ch++);
-            DirectX::XMFLOAT4 color;
+            ff::color color;
 
             switch (control)
             {
                 case ff::sprite_font_control::outline_color:
                 case ff::sprite_font_control::text_color:
-                    color.x = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
-                    color.y = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
-                    color.z = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
-                    color.w = ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f;
+                    color = ff::color(
+                        ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f,
+                        ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f,
+                        ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f,
+                        ((ch != ch_end) ? (int)*ch++ : 0) / 255.0f);
 
                     if (!ff::flags::has(options, ff::sprite_font_options::no_control))
                     {
@@ -442,7 +437,7 @@ ff::point_float ff::sprite_font::internal_draw_text(ff::dxgi::draw_base* draw, c
 
                 case ff::sprite_font_control::outline_palette_color:
                 case ff::sprite_font_control::text_palette_color:
-                    ff::palette_index_to_color((ch != ch_end) ? static_cast<int>(*ch++) : 0, color);
+                    color = ff::color((ch != ch_end) ? static_cast<int>(*ch++) : 0);
 
                     if (!ff::flags::has(options, ff::sprite_font_options::no_control))
                     {

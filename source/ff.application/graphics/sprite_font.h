@@ -2,6 +2,7 @@
 
 namespace ff
 {
+    class color;
     class font_file;
     class sprite_list;
 
@@ -39,8 +40,7 @@ namespace ff
         sprite_font& operator=(const sprite_font & other) = delete;
         operator bool() const;
 
-        ff::point_float draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::transform& transform, const DirectX::XMFLOAT4& outline_color, ff::sprite_font_options options = ff::sprite_font_options::none) const;
-        ff::point_float draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::transform& transform, int outline_palette_index, ff::sprite_font_options options = ff::sprite_font_options::none) const;
+        ff::point_float draw_text(ff::dxgi::draw_base* draw, std::string_view text, const ff::transform& transform, const ff::color& outline_color, ff::sprite_font_options options = ff::sprite_font_options::none) const;
         ff::point_float measure_text(std::string_view text, ff::point_float scale) const;
         float line_spacing() const;
 

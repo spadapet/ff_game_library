@@ -29,7 +29,7 @@ namespace ff::test::graphics
             // Context 1
             {
                 ff::dxgi::command_context_base& context = ff::dx12::frame_started();
-                Assert::IsTrue(target.begin_render(context, &ff::color_black()));
+                Assert::IsTrue(target.begin_render(context, &ff::color_black().rgba()));
                 Assert::IsTrue(target.end_render(context));
                 ff::dx12::frame_complete();
             }
@@ -40,7 +40,7 @@ namespace ff::test::graphics
             // Context 2
             {
                 ff::dxgi::command_context_base& context = ff::dx12::frame_started();
-                Assert::IsTrue(target.begin_render(context, &ff::color_black()));
+                Assert::IsTrue(target.begin_render(context, &ff::color_black().rgba()));
                 Assert::IsTrue(target.end_render(context));
                 ff::dx12::frame_complete();
             }

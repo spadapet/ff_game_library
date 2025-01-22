@@ -178,6 +178,7 @@ namespace ff::dxgi::draw_util
         size_t item_size() const;
         const std::type_info& item_type() const;
         ffdu::instance_bucket_type bucket_type() const;
+        bool is_transparent() const;
         size_t count() const;
         void clear_items();
         size_t byte_size() const;

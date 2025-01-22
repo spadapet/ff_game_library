@@ -36,8 +36,10 @@ namespace ff
         bool is_rgba() const;
         bool is_palette() const;
 
+        DirectX::XMFLOAT4& rgba();
         const DirectX::XMFLOAT4& rgba() const;
         const ff::color::palette_t& palette() const;
+        float alpha() const;
         static const ff::color& cast(const DirectX::XMFLOAT4& other);
         static const ff::color* cast(const DirectX::XMFLOAT4* other);
 

@@ -106,7 +106,7 @@ namespace
                 pd.pos = ff::point_float((float)(std::rand() % 1920), (float)(std::rand() % 1080));
                 pd.vel = ff::point_float((std::rand() % 21 - 10) / 2.0f, (std::rand() % 21 - 10) / 2.0f);
                 rd.scale = use_palette ? ff::point_float(2, 2) : ff::point_float((std::rand() % 16) / 10.0f + 0.5f, (std::rand() % 16) / 10.0f + 0.5f);
-                rd.color = use_palette ? ff::color_white() : DirectX::XMFLOAT4((std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, 1.0f);
+                rd.color = use_palette ? ff::color_white().rgba() : DirectX::XMFLOAT4((std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, (std::rand() % 65) / 64.0f, 1.0f);
                 rd.rotate = ff::math::random_range(0.0f, 360.0f);
                 rd.sprite = use_palette ? &palette_sprites->get(sprite)->sprite_data() : &color_sprite->sprite_data();
 

@@ -367,7 +367,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
             }
             else
             {
-                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
+                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black().rgba());
                 this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
             }
         }

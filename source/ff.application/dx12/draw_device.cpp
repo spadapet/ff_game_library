@@ -18,6 +18,98 @@
 
 #include "ff.dx12.res.id.h"
 
+namespace ffdu = ff::dxgi::draw_util;
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> rotated_sprite_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> line_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> line_strip_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> triangle_filled_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_filled_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_outline_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_filled_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
+static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_outline_layout()
+{
+    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    {
+        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+    };
+
+    return layout;
+}
+
 #if 0
 const std::array<D3D12_INPUT_ELEMENT_DESC, 10>& ff::dx12::vertex::line_geometry::layout()
 {
@@ -143,34 +235,26 @@ namespace
     class dx12_state
     {
     private:
-        dx12_state(const D3D12_INPUT_ELEMENT_DESC* element_desc, size_t element_count)
-            : input_layout_desc{ element_desc, static_cast<UINT>(element_count) }
-        {
-        }
-
         enum class state_t
         {
             blend_opaque = 0b00,
             blend_alpha = 0b01,
             blend_pma = 0b10,
 
-            out_color = 0b000,
-            out_palette = 0b100,
-
-            depth_disabled = 0b0000,
-            depth_enabled = 0b1000,
+            depth_disabled = 0b000,
+            depth_enabled = 0b100,
 
             target_default = 0b00000,
-            target_bgra = 0b10000,
+            target_bgra = 0b01000,
+            target_palette = 0b10000,
 
             count = 0b100000
         };
 
     public:
-        template<typename T>
-        static ::dx12_state create()
+        dx12_state(std::span<const D3D12_INPUT_ELEMENT_DESC> elements)
+            : input_layout_desc{ elements.data(), static_cast<UINT>(elements.size()) }
         {
-            return ::dx12_state(T::layout().data(), T::layout().size());
         }
 
         void reset(ID3D12RootSignature* root_signature, std::string_view vs_res, std::string_view ps_res, std::string_view ps_palette_out_res)
@@ -191,31 +275,21 @@ namespace
             }
         }
 
-        bool apply(ff::dx12::commands& commands, DXGI_FORMAT target_format, bool has_depth, bool alpha, bool pre_multiplied_alpha, bool palette_out)
+        bool apply(ff::dx12::commands& commands, DXGI_FORMAT target_format, bool has_depth, bool transparent, bool pre_multiplied_alpha)
         {
-            assert(palette_out || target_format == DXGI_FORMAT_R8G8B8A8_UNORM || target_format == DXGI_FORMAT_B8G8R8A8_UNORM);
-            assert(!palette_out || target_format == DXGI_FORMAT_R8_UINT);
-
             state_t index = ff::flags::combine(
-                (alpha ? (pre_multiplied_alpha ? state_t::blend_pma : state_t::blend_alpha) : state_t::blend_opaque),
-                (palette_out ? state_t::out_palette : state_t::out_color),
+                (transparent ? (pre_multiplied_alpha ? state_t::blend_pma : state_t::blend_alpha) : state_t::blend_opaque),
                 (has_depth ? state_t::depth_enabled : state_t::depth_disabled),
-                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM ? state_t::target_bgra : state_t::target_default));
+                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM ? state_t::target_bgra : (target_format == DXGI_FORMAT_R8_UINT ? state_t::target_palette : state_t::target_default)));
 
             auto& state = this->pipeline_states[static_cast<size_t>(index)];
-
-            if (!state)
+            if (!state && !(state = this->create_pipeline_state(index)))
             {
-                state = this->create_pipeline_state(index);
+                return false;
             }
 
-            if (state)
-            {
-                commands.pipeline_state(state.Get());
-                return true;
-            }
-
-            return false;
+            commands.pipeline_state(state.Get());
+            return true;
         }
 
         Microsoft::WRL::ComPtr<ID3D12PipelineState> create_pipeline_state(state_t index) const
@@ -225,7 +299,7 @@ namespace
             D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
             desc.pRootSignature = this->root_signature.Get();
             desc.VS = ff::dx12::get_object_cache().shader(shader_resources, this->vs_res_name);
-            desc.PS = ff::dx12::get_object_cache().shader(shader_resources, ff::flags::has(index, state_t::out_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
+            desc.PS = ff::dx12::get_object_cache().shader(shader_resources, ff::flags::has(index, state_t::target_palette) ? this->ps_palette_out_res_name : this->ps_res_name);
             desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
             desc.SampleMask = UINT_MAX;
             desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -236,7 +310,7 @@ namespace
             desc.NumRenderTargets = 1;
             desc.SampleDesc.Count = 1;
 
-            if (!ff::flags::has(index, state_t::out_palette))
+            if (!ff::flags::has(index, state_t::target_palette))
             {
                 if (ff::flags::has(index, state_t::blend_alpha))
                 {
@@ -259,7 +333,7 @@ namespace
                 desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
             }
 
-            if (ff::flags::has(index, state_t::out_palette))
+            if (ff::flags::has(index, state_t::target_palette))
             {
                 desc.RTVFormats[0] = DXGI_FORMAT_R8_UINT;
             }
@@ -285,23 +359,24 @@ namespace
         std::array<Microsoft::WRL::ComPtr<ID3D12PipelineState>, static_cast<size_t>(state_t::count)> pipeline_states;
     };
 
-    class dx12_draw_device : public ff::dxgi::draw_util::draw_device_base, public ff::dxgi::draw_device_base
+    class dx12_draw_device : public ffdu::draw_device_base, public ff::dxgi::draw_device_base
     {
     public:
         dx12_draw_device()
             : samplers_gpu(ff::dx12::gpu_sampler_descriptors().alloc_pinned_range(2))
             , states_
             {
-                ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
-
-                ::dx12_state::create<ff::dx12::vertex::line_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::circle_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::triangle_geometry>(),
-                ::dx12_state::create<ff::dx12::vertex::sprite_geometry>(),
+                sprite_layout(),
+                sprite_layout(),
+                rotated_sprite_layout(),
+                rotated_sprite_layout(),
+                line_layout(),
+                line_strip_layout(),
+                triangle_filled_layout(),
+                rectangle_filled_layout(),
+                rectangle_outline_layout(),
+                circle_filled_layout(),
+                circle_outline_layout(),
             }
         {
             this->as_device_child()->reset();
@@ -374,7 +449,7 @@ namespace
                 samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 std::array<CD3DX12_ROOT_PARAMETER1, 7> params;
-                params[0].InitAsConstants(static_cast<UINT>(ff::dxgi::draw_util::vs_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_0
+                params[0].InitAsConstants(static_cast<UINT>(ffdu::vs_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_0
                 params[1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_1, matrixes
                 params[2].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL); // pixel_constants_0, palette texture sizes
                 params[3].InitAsDescriptorTable(1, &samplers_range, D3D12_SHADER_VISIBILITY_PIXEL); // samplers: point, linear
@@ -401,17 +476,21 @@ namespace
             // Pipeline states
             {
                 ID3D12RootSignature* rs = this->root_signature.Get();
+                namespace a = assets::dx12;
 
-                this->state(ff::dxgi::draw_util::instance_bucket_type::lines).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::circles).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::triangles).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::palette_sprites).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PALETTE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PALETTE_PS);
+                // this->state(ffdu::instance_bucket_type::sprites).reset(rs, a::FF_DX12_LINE_VS, a::FF_DX12_LINE_GS, a::FF_DX12_COLOR_PS, a::FF_DX12_PALETTE_OUT_COLOR_PS);
 
-                this->state(ff::dxgi::draw_util::instance_bucket_type::lines_alpha).reset(rs, assets::dx12::FF_DX12_LINE_VS, assets::dx12::FF_DX12_LINE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::circles_alpha).reset(rs, assets::dx12::FF_DX12_CIRCLE_VS, assets::dx12::FF_DX12_CIRCLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::triangles_alpha).reset(rs, assets::dx12::FF_DX12_TRIANGLE_VS, assets::dx12::FF_DX12_TRIANGLE_GS, assets::dx12::FF_DX12_COLOR_PS, assets::dx12::FF_DX12_PALETTE_OUT_COLOR_PS);
-                this->state(ff::dxgi::draw_util::instance_bucket_type::sprites_alpha).reset(rs, assets::dx12::FF_DX12_SPRITE_VS, assets::dx12::FF_DX12_SPRITE_GS, assets::dx12::FF_DX12_SPRITE_PS, assets::dx12::FF_DX12_PALETTE_OUT_SPRITE_PS);
+                this->state(ffdu::instance_bucket_type::sprites).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::rotated_sprites).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::rotated_palette_sprites).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::lines).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::line_strips).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::triangles).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, "", "", "");
             }
         }
 
@@ -433,6 +512,18 @@ namespace
             const ff::rect_float& view_rect,
             bool ignore_rotation) override
         {
+            switch (target.format())
+            {
+                case DXGI_FORMAT_R8G8B8A8_UNORM:
+                case DXGI_FORMAT_B8G8R8A8_UNORM:
+                case DXGI_FORMAT_R8_UINT:
+                    // All good
+                    break;
+
+                default:
+                    debug_fail_msg_ret_val("Invalid target format", nullptr);
+            }
+
             ff::dx12::commands& commands = ff::dx12::commands::get(context);
             if (depth)
             {
@@ -576,7 +667,7 @@ namespace
             if (this->vs_constants_buffer_0_ && this->vs_constants_version_0 != this->vs_constants_buffer_0_.version())
             {
                 this->vs_constants_version_0 = this->vs_constants_buffer_0_.version();
-                this->commands->root_constants(0, this->vs_constants_buffer_0_.data().data(), ff::dxgi::draw_util::vs_constants_0::DWORD_COUNT * 4);
+                this->commands->root_constants(0, this->vs_constants_buffer_0_.data().data(), ffdu::vs_constants_0::DWORD_COUNT * 4);
             }
 
             if (vs_constants_buffer_1_ && this->vs_constants_version_1 != this->vs_constants_buffer_1_.version())
@@ -592,12 +683,12 @@ namespace
             }
 
             // Update texture descriptors
-            static std::vector<UINT> ones(std::max(ff::dxgi::draw_util::MAX_TEXTURES, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE), 1);
+            static std::vector<UINT> ones(std::max(ffdu::MAX_TEXTURES, ffdu::MAX_TEXTURES_USING_PALETTE), 1);
 
             if (texture_count)
             {
                 ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(texture_count, this->commands->next_fence_value());
-                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ff::dxgi::draw_util::MAX_TEXTURES> views;
+                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ffdu::MAX_TEXTURES> views;
 
                 for (size_t i = 0; i < texture_count; i++)
                 {
@@ -613,7 +704,7 @@ namespace
             if (textures_using_palette_count)
             {
                 ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(textures_using_palette_count, this->commands->next_fence_value());
-                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ff::dxgi::draw_util::MAX_TEXTURES_USING_PALETTE> views;
+                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ffdu::MAX_TEXTURES_USING_PALETTE> views;
 
                 for (size_t i = 0; i < textures_using_palette_count; i++)
                 {
@@ -652,14 +743,13 @@ namespace
             this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
         }
 
-        virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ff::dxgi::draw_util::instance_bucket& bucket) override
+        virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) override
         {
             if (this->state(bucket.bucket_type()).apply(*this->commands,
                 this->setup_target->format(),
                 this->setup_depth != nullptr,
-                bucket.bucket_type() >= ff::dxgi::draw_util::instance_bucket_type::first_transparent,
-                this->pre_multiplied_alpha(),
-                this->target_requires_palette()))
+                bucket.is_transparent(),
+                this->pre_multiplied_alpha()))
             {
                 ff::dx12::buffer_base* single_buffer = &this->instance_buffer_;
                 D3D12_VERTEX_BUFFER_VIEW vertex_view = this->instance_buffer_.vertex_view(bucket.item_size());
@@ -706,9 +796,10 @@ namespace
         }
 
     private:
-        ::dx12_state& state(ff::dxgi::draw_util::instance_bucket_type type)
+        ::dx12_state& state(ffdu::instance_bucket_type type)
         {
-            return this->states_[static_cast<size_t>(type)];
+            size_t index = (type >= ffdu::instance_bucket_type::first_transparent) ? static_cast<size_t>(type) / 2 : static_cast<size_t>(type);
+            return this->states_[index];
         }
 
         ff::dx12::resource& resource_from(ff::dxgi::texture_base& texture_base)
@@ -734,7 +825,7 @@ namespace
         // Render state
         ff::dx12::descriptor_range samplers_gpu; // 0:point, 1:linear
         Microsoft::WRL::ComPtr<ID3D12RootSignature> root_signature;
-        std::array<::dx12_state, static_cast<size_t>(ff::dxgi::draw_util::instance_bucket_type::count)> states_;
+        std::array<::dx12_state, static_cast<size_t>(ffdu::instance_bucket_type::count) / 2> states_;
 
         ff::dx12::commands* commands{};
         ff::dxgi::target_base* setup_target{};

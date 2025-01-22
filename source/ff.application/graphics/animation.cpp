@@ -126,14 +126,14 @@ void ff::animation::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& t
 
             if (rect_value)
             {
-                DirectX::XMStoreFloat4(&visual_transform.color,
+                DirectX::XMStoreFloat4(&visual_transform.color.rgba(),
                     DirectX::XMVectorMultiply(
-                        DirectX::XMLoadFloat4(&visual_transform.color),
+                        DirectX::XMLoadFloat4(&visual_transform.color.rgba()),
                         DirectX::XMLoadFloat4(reinterpret_cast<const DirectX::XMFLOAT4*>(&rect_value->get<ff::rect_float>()))));
             }
             else if (int_value)
             {
-                ff::palette_index_to_color(int_value->get<int>(), visual_transform.color);
+                visual_transform.color = ff::color(int_value->get<int>());
             }
         }
 

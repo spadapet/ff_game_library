@@ -92,13 +92,35 @@ void ff::dxgi::draw_base::draw_line(const ff::point_float& start, const ff::poin
     return this->draw_lines(points);
 }
 
-void ff::dxgi::draw_base::draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const ff::color& color, ff::fixed_int thickness)
+void ff::dxgi::draw_base::draw_rectangle(const ff::rect_float& rect, std::span<const ff::color> colors)
 {
-    std::array<ff::dxgi::endpoint_t, 2> points
+    assert_ret(colors.size());
+
+    const ff::color* color_tl = &colors[0];
+    const ff::color* color_tr = (colors.size() >= 2) ? &colors[1] : color_tl;
+    const ff::color* color_br = (colors.size() >= 3) ? &colors[2] : color_tr;
+    const ff::color* color_bl = (colors.size() >= 4) ? &colors[3] : color_br;
+
+    std::array<ff::dxgi::endpoint_t, 6> triangles
     {
-        ff::dxgi::endpoint_t{ ::floor_float(start), &color, ::floor_float(thickness) },
-        ff::dxgi::endpoint_t{ ::floor_float(end), &color, ::floor_float(thickness) },
+        ff::dxgi::endpoint_t{ rect.top_left(), color_tl },
+        ff::dxgi::endpoint_t{ rect.top_right(), color_tr },
+        ff::dxgi::endpoint_t{ rect.bottom_left(), color_bl },
+
+        ff::dxgi::endpoint_t{ rect.top_right(), color_tr },
+        ff::dxgi::endpoint_t{ rect.bottom_right(), color_br },
+        ff::dxgi::endpoint_t{ rect.bottom_left(), color_bl },
     };
 
-    return this->draw_lines(points);
+    this->draw_triangles(triangles);
+}
+
+void ff::dxgi::draw_base::draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const ff::color& color, ff::fixed_int thickness)
+{
+    this->draw_line(::floor_float(start), ::floor_float(end), color, ::floor_float(thickness));
+}
+
+void ff::dxgi::draw_base::draw_rectangle(const ff::rect_fixed& rect, std::span<const ff::color> colors)
+{
+    this->draw_rectangle(::floor_float(rect), colors);
 }

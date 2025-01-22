@@ -187,6 +187,11 @@ ffdu::instance_bucket_type ffdu::instance_bucket::bucket_type() const
     return this->bucket_type_;
 }
 
+bool ffdu::instance_bucket::is_transparent() const
+{
+    return this->bucket_type_ >= ffdu::instance_bucket_type::first_transparent;
+}
+
 size_t ffdu::instance_bucket::count() const
 {
     return (this->data_cur - this->data_start) / this->item_size_;
@@ -903,7 +908,7 @@ void ffdu::draw_device_base::draw_opaque_instances()
 
     for (ffdu::instance_bucket& bucket : this->instance_buckets)
     {
-        if (bucket.bucket_type() >= ffdu::instance_bucket_type::first_transparent)
+        if (bucket.is_transparent())
         {
             break;
         }
@@ -1151,8 +1156,7 @@ uint32_t ffdu::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::te
 void* ffdu::draw_device_base::add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth)
 {
     ffdu::instance_bucket& bucket = this->get_instance_bucket(bucket_type);
-
-    if (bucket_type >= ffdu::instance_bucket_type::first_transparent)
+    if (bucket.is_transparent())
     {
         assert(!this->force_opaque);
         this->transparent_instances.emplace_back(&bucket, bucket.count(), depth);
