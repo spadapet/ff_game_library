@@ -338,7 +338,7 @@ void ff::dx12::commands::vertex_buffers(ff::dx12::buffer_base** buffers, const D
         {
             this->resource_state(*buffers[i]->resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         }
-        else
+        else // upload buffer mapped to CPU, ensure that its heap is resident
         {
             this->keep_resident(*buffers[i]);
         }
@@ -353,7 +353,7 @@ void ff::dx12::commands::index_buffer(ff::dx12::buffer_base& buffer, const D3D12
     {
         this->resource_state(*buffer.resource(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
     }
-    else
+    else // upload buffer mapped to CPU, ensure that its heap is resident
     {
         this->keep_resident(buffer);
     }

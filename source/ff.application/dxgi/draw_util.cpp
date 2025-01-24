@@ -848,8 +848,12 @@ void ffdu::draw_device_base::update_vs_constants_buffer_1()
         this->vs_constants_1.model[iter.second] = iter.first;
     }
 
-    size_t buffer_size = sizeof(DirectX::XMFLOAT4X4) * (ff::constants::debug_build ? ffdu::MAX_TRANSFORM_MATRIXES : world_matrix_count);
-    this->vs_constants_buffer_1().update(*this->command_context_, this->vs_constants_1.model.data(), ff::vector_byte_size(this->vs_constants_1.model), buffer_size);
+    if constexpr (ff::constants::debug_build)
+    {
+        this->vs_constants_1.model.resize(ffdu::MAX_TRANSFORM_MATRIXES, {});
+    }
+
+    this->vs_constants_buffer_1().update(*this->command_context_, this->vs_constants_1.model.data(), ff::vector_byte_size(this->vs_constants_1.model));
 }
 
 void ffdu::draw_device_base::update_ps_constants_buffer_0()
@@ -879,8 +883,7 @@ bool ffdu::draw_device_base::create_instance_buffer()
         byte_size += bucket.byte_size();
     }
 
-    void* buffer_data = this->instance_buffer().map(*this->command_context_, byte_size);
-    if (buffer_data)
+    if (void* buffer_data = this->instance_buffer().map(*this->command_context_, byte_size))
     {
         for (ffdu::instance_bucket& bucket : this->instance_buckets)
         {
@@ -891,8 +894,7 @@ bool ffdu::draw_device_base::create_instance_buffer()
             }
         }
 
-        this->instance_buffer().unmap();
-
+        this->instance_buffer().unmap(*this->command_context_);
         return true;
     }
 
@@ -1033,7 +1035,7 @@ uint32_t ffdu::draw_device_base::get_texture_index_no_flush(ff::dxgi::texture_vi
 
         if (texture_index == ::INVALID_INDEX)
         {
-            if (this->textures_using_palette_count == ffdu::MAX_TEXTURES_USING_PALETTE)
+            if (this->textures_using_palette_count == ffdu::MAX_PALETTE_TEXTURES)
             {
                 return ::INVALID_INDEX;
             }

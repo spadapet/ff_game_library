@@ -8,7 +8,7 @@ namespace ff::flags
     template<class T>
     constexpr T get(T state, T flags)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         const TI istate = static_cast<TI>(state);
         const TI iflags = static_cast<TI>(flags);
         return static_cast<T>(istate & iflags);
@@ -17,21 +17,21 @@ namespace ff::flags
     template<class T>
     constexpr bool has(T state, T check)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         return (static_cast<TI>(state) & static_cast<TI>(check)) == static_cast<TI>(check);
     }
 
     template<class T>
     constexpr bool has_any(T state, T check)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         return (static_cast<TI>(state) & static_cast<TI>(check)) != static_cast<TI>(0);
     }
 
     template<class T>
     constexpr T set(T state, T set, bool value)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         const TI istate = static_cast<TI>(state);
         const TI iset = static_cast<TI>(set);
         const TI ival = static_cast<TI>(value);
@@ -42,42 +42,31 @@ namespace ff::flags
     template<class T>
     constexpr T set(T state, T set)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<TI>(state) | static_cast<TI>(set));
     }
 
     template<class T>
     constexpr T clear(T state, T clear)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<TI>(state) & ~static_cast<TI>(clear));
     }
 
     template<class T>
     constexpr T toggle(T state, T toggle)
     {
-        typedef std::underlying_type_t<T> TI;
+        using TI = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<TI>(state) ^ static_cast<TI>(toggle));
     }
 
-    template<class T>
-    constexpr T combine(T f1, T f2)
+    template<class T, class... Ts>
+    constexpr T combine(T first, Ts... rest)
     {
-        typedef std::underlying_type_t<T> TI;
-        return static_cast<T>(static_cast<TI>(f1) | static_cast<TI>(f2));
-    }
+        static_assert(std::is_enum_v<T>, "T must be an enum type");
+        static_assert((std::is_same_v<T, Ts> && ...), "All types in Ts must be the same as T");
 
-    template<class T>
-    constexpr T combine(T f1, T f2, T f3)
-    {
-        typedef std::underlying_type_t<T> TI;
-        return static_cast<T>(static_cast<TI>(f1) | static_cast<TI>(f2) | static_cast<TI>(f3));
-    }
-
-    template<class T>
-    constexpr T combine(T f1, T f2, T f3, T f4)
-    {
-        typedef std::underlying_type_t<T> TI;
-        return static_cast<T>(static_cast<TI>(f1) | static_cast<TI>(f2) | static_cast<TI>(f3) | static_cast<TI>(f4));
+        using TI = std::underlying_type_t<T>;
+        return static_cast<T>((static_cast<TI>(first) | ... | static_cast<TI>(rest)));
     }
 }

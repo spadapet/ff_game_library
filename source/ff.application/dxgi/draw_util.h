@@ -24,7 +24,7 @@ namespace ff::dxgi::draw_util
     namespace ffdu = ff::dxgi::draw_util;
 
     constexpr size_t MAX_TEXTURES = 32;
-    constexpr size_t MAX_TEXTURES_USING_PALETTE = 32;
+    constexpr size_t MAX_PALETTE_TEXTURES = 32;
     constexpr size_t MAX_PALETTES = 128; // 256 color palettes only
     constexpr size_t MAX_PALETTE_REMAPS = 128; // 256 entries only
     constexpr size_t MAX_TRANSFORM_MATRIXES = 128;
@@ -223,7 +223,7 @@ namespace ff::dxgi::draw_util
 
     struct ps_constants_0
     {
-        std::array<ff::rect_float, ffdu::MAX_TEXTURES_USING_PALETTE> texture_palette_sizes;
+        std::array<ff::rect_float, ffdu::MAX_PALETTE_TEXTURES> texture_palette_sizes;
     };
 
     class draw_device_base : public ff::dxgi::draw_base, private ff::dxgi::device_child_base
@@ -361,7 +361,7 @@ namespace ff::dxgi::draw_util
 
         // Textures
         std::array<ff::dxgi::texture_view_base*, ffdu::MAX_TEXTURES> textures{};
-        std::array<ff::dxgi::texture_view_base*, ffdu::MAX_TEXTURES_USING_PALETTE> textures_using_palette{};
+        std::array<ff::dxgi::texture_view_base*, ffdu::MAX_PALETTE_TEXTURES> textures_using_palette{};
         size_t texture_count{};
         size_t textures_using_palette_count{};
 

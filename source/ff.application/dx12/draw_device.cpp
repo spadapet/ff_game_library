@@ -20,6 +20,14 @@
 
 namespace ffdu = ff::dxgi::draw_util;
 
+constexpr size_t ROOT_VS_CONSTANTS_0 = 0;
+constexpr size_t ROOT_VS_CONSTANTS_1 = 1;
+constexpr size_t ROOT_PS_CONSTANTS_0 = 2;
+constexpr size_t ROOT_SAMPLERS = 3;
+constexpr size_t ROOT_TEXTURES = 4;
+constexpr size_t ROOT_PALETTE_TEXTURES = 5;
+constexpr size_t ROOT_PALETTES = 6;
+
 static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
 {
     static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
@@ -180,6 +188,19 @@ const std::array<D3D12_INPUT_ELEMENT_DESC, 8>& ff::dx12::vertex::sprite_geometry
 }
 #endif
 
+static bool target_format_valid(DXGI_FORMAT format)
+{
+    switch (format)
+    {
+        case DXGI_FORMAT_R8G8B8A8_UNORM:
+        case DXGI_FORMAT_B8G8R8A8_UNORM:
+        case DXGI_FORMAT_R8_UINT:
+            return true;
+    }
+
+    return false;
+}
+
 static void get_alpha_blend_desc(D3D12_RENDER_TARGET_BLEND_DESC& desc)
 {
     // newColor = (srcColor * SrcBlend) BlendOp (destColor * DestBlend)
@@ -208,26 +229,30 @@ static void get_pre_multiplied_alpha_blend_desc(D3D12_RENDER_TARGET_BLEND_DESC& 
     desc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 }
 
-static void get_texture_sampler_desc(D3D12_FILTER filter, D3D12_SAMPLER_DESC& desc)
+static D3D12_SAMPLER_DESC get_texture_sampler_desc(D3D12_FILTER filter)
 {
-    desc = {};
-    desc.Filter = filter;
-    desc.AddressU = desc.AddressV = desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    desc.MaxLOD = D3D12_FLOAT32_MAX;
+    return D3D12_SAMPLER_DESC
+    {
+        .Filter = filter,
+        .AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        .AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        .AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        .ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
+        .MaxLOD = D3D12_FLOAT32_MAX,
+    };
 }
 
 static D3D12_VIEWPORT get_viewport(const ff::rect_float& view_rect)
 {
-    D3D12_VIEWPORT viewport;
-    viewport.TopLeftX = view_rect.left;
-    viewport.TopLeftY = view_rect.top;
-    viewport.Width = view_rect.width();
-    viewport.Height = view_rect.height();
-    viewport.MinDepth = 0;
-    viewport.MaxDepth = 1;
-
-    return viewport;
+    return D3D12_VIEWPORT
+    {
+        .TopLeftX = view_rect.left,
+        .TopLeftY = view_rect.top,
+        .Width = view_rect.width(),
+        .Height = view_rect.height(),
+        .MinDepth = 0,
+        .MaxDepth = 1,
+    };
 }
 
 namespace
@@ -278,9 +303,11 @@ namespace
         bool apply(ff::dx12::commands& commands, DXGI_FORMAT target_format, bool has_depth, bool transparent, bool pre_multiplied_alpha)
         {
             state_t index = ff::flags::combine(
-                (transparent ? (pre_multiplied_alpha ? state_t::blend_pma : state_t::blend_alpha) : state_t::blend_opaque),
-                (has_depth ? state_t::depth_enabled : state_t::depth_disabled),
-                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM ? state_t::target_bgra : (target_format == DXGI_FORMAT_R8_UINT ? state_t::target_palette : state_t::target_default)));
+                has_depth ? state_t::depth_enabled : state_t::depth_disabled,
+                (transparent && pre_multiplied_alpha && target_format != DXGI_FORMAT_R8_UINT) ? state_t::blend_pma : state_t::blend_opaque,
+                (transparent && !pre_multiplied_alpha && target_format != DXGI_FORMAT_R8_UINT) ? state_t::blend_alpha : state_t::blend_opaque,
+                (target_format == DXGI_FORMAT_B8G8R8A8_UNORM) ? state_t::target_bgra : state_t::target_default,
+                (target_format == DXGI_FORMAT_R8_UINT) ? state_t::target_palette : state_t::target_default);
 
             auto& state = this->pipeline_states[static_cast<size_t>(index)];
             if (!state && !(state = this->create_pipeline_state(index)))
@@ -306,20 +333,17 @@ namespace
             desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
             desc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
             desc.InputLayout = input_layout_desc;
-            desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+            desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
             desc.NumRenderTargets = 1;
             desc.SampleDesc.Count = 1;
 
-            if (!ff::flags::has(index, state_t::target_palette))
+            if (ff::flags::has(index, state_t::blend_alpha))
             {
-                if (ff::flags::has(index, state_t::blend_alpha))
-                {
-                    ::get_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
-                }
-                else if (ff::flags::has(index, state_t::blend_pma))
-                {
-                    ::get_pre_multiplied_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
-                }
+                ::get_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
+            }
+            else if (ff::flags::has(index, state_t::blend_pma))
+            {
+                ::get_pre_multiplied_alpha_blend_desc(desc.BlendState.RenderTarget[0]);
             }
 
             if (ff::flags::has(index, state_t::depth_enabled))
@@ -424,9 +448,8 @@ namespace
         {
             // Create samplers
             {
-                D3D12_SAMPLER_DESC point_desc, linear_desc;
-                ::get_texture_sampler_desc(D3D12_FILTER_MIN_MAG_MIP_POINT, point_desc);
-                ::get_texture_sampler_desc(D3D12_FILTER_MIN_MAG_MIP_LINEAR, linear_desc);
+                D3D12_SAMPLER_DESC point_desc = ::get_texture_sampler_desc(D3D12_FILTER_MIN_MAG_MIP_POINT);
+                D3D12_SAMPLER_DESC linear_desc = ::get_texture_sampler_desc(D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
                 ff::dx12::descriptor_range samplers_cpu = ff::dx12::cpu_sampler_descriptors().alloc_range(2);
                 ff::dx12::device()->CreateSampler(&point_desc, samplers_cpu.cpu_handle(0));
@@ -436,32 +459,32 @@ namespace
 
             // Create root signature
             {
-                CD3DX12_DESCRIPTOR_RANGE1 textures_range;
-                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 0, 0, /*D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE*/ D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+                CD3DX12_DESCRIPTOR_RANGE1 samplers_range;
+                samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
 
-                CD3DX12_DESCRIPTOR_RANGE1 using_palette_textures;
-                using_palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 32, 32, 0, /*D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE*/ D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+                CD3DX12_DESCRIPTOR_RANGE1 textures_range;
+                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_TEXTURES), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
+
+                CD3DX12_DESCRIPTOR_RANGE1 palette_textures_range;
+                palette_textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_PALETTE_TEXTURES), static_cast<UINT>(ffdu::MAX_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures;
-                palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 64, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
-
-                CD3DX12_DESCRIPTOR_RANGE1 samplers_range;
-                samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
+                palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, static_cast<UINT>(ffdu::MAX_TEXTURES + ffdu::MAX_PALETTE_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
 
                 std::array<CD3DX12_ROOT_PARAMETER1, 7> params;
-                params[0].InitAsConstants(static_cast<UINT>(ffdu::vs_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_0
-                params[1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_GEOMETRY); // geometry_constants_1, matrixes
-                params[2].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL); // pixel_constants_0, palette texture sizes
-                params[3].InitAsDescriptorTable(1, &samplers_range, D3D12_SHADER_VISIBILITY_PIXEL); // samplers: point, linear
-                params[4].InitAsDescriptorTable(1, &textures_range, D3D12_SHADER_VISIBILITY_PIXEL); // textures[32]
-                params[5].InitAsDescriptorTable(1, &using_palette_textures, D3D12_SHADER_VISIBILITY_PIXEL); // palette textures[32]
-                params[6].InitAsDescriptorTable(1, &palette_textures, D3D12_SHADER_VISIBILITY_PIXEL); // palette, remap
+                params[::ROOT_VS_CONSTANTS_0].InitAsConstants(static_cast<UINT>(ffdu::vs_constants_0::DWORD_COUNT), 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+                params[::ROOT_VS_CONSTANTS_1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_VERTEX);
+                params[::ROOT_PS_CONSTANTS_0].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_PIXEL);
+                params[::ROOT_SAMPLERS].InitAsDescriptorTable(1, &samplers_range, D3D12_SHADER_VISIBILITY_PIXEL);
+                params[::ROOT_TEXTURES].InitAsDescriptorTable(1, &textures_range, D3D12_SHADER_VISIBILITY_PIXEL);
+                params[::ROOT_PALETTE_TEXTURES].InitAsDescriptorTable(1, &palette_textures_range, D3D12_SHADER_VISIBILITY_PIXEL);
+                params[::ROOT_PALETTES].InitAsDescriptorTable(1, &palette_textures, D3D12_SHADER_VISIBILITY_PIXEL);
 
                 D3D12_VERSIONED_ROOT_SIGNATURE_DESC versioned_desc{ D3D_ROOT_SIGNATURE_VERSION_1_1 };
                 D3D12_ROOT_SIGNATURE_DESC1& desc = versioned_desc.Desc_1_1;
                 desc.Flags =
                     D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-                    D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
+                    D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
                     D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |
@@ -477,8 +500,6 @@ namespace
             {
                 ID3D12RootSignature* rs = this->root_signature.Get();
                 namespace a = assets::dx12;
-
-                // this->state(ffdu::instance_bucket_type::sprites).reset(rs, a::FF_DX12_LINE_VS, a::FF_DX12_LINE_GS, a::FF_DX12_COLOR_PS, a::FF_DX12_PALETTE_OUT_COLOR_PS);
 
                 this->state(ffdu::instance_bucket_type::sprites).reset(rs, "", "", "");
                 this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, "", "", "");
@@ -512,17 +533,7 @@ namespace
             const ff::rect_float& view_rect,
             bool ignore_rotation) override
         {
-            switch (target.format())
-            {
-                case DXGI_FORMAT_R8G8B8A8_UNORM:
-                case DXGI_FORMAT_B8G8R8A8_UNORM:
-                case DXGI_FORMAT_R8_UINT:
-                    // All good
-                    break;
-
-                default:
-                    debug_fail_msg_ret_val("Invalid target format", nullptr);
-            }
+            assert_msg_ret_val(::target_format_valid(target.format()), "Invalid target format", nullptr);
 
             ff::dx12::commands& commands = ff::dx12::commands::get(context);
             if (depth)
@@ -531,12 +542,8 @@ namespace
                 depth->clear(commands, 0, 0);
             }
 
-            const ff::rect_float physical_view_rect = !ignore_rotation
-                ? target.size().logical_to_physical_rect(view_rect)
-                : view_rect;
-
             this->setup_target = &target;
-            this->setup_viewport = ::get_viewport(physical_view_rect);
+            this->setup_viewport = ::get_viewport(!ignore_rotation ? target.size().logical_to_physical_rect(view_rect) : view_rect);
             this->setup_depth = depth;
 
             this->vs_constants_version_0 = 0;
@@ -549,7 +556,8 @@ namespace
             this->commands->viewports(&this->setup_viewport, 1);
             this->commands->scissors(nullptr, 1);
             this->commands->root_signature(this->root_signature.Get());
-            this->commands->root_descriptors(3, this->samplers_gpu);
+            this->commands->root_descriptors(::ROOT_SAMPLERS, this->samplers_gpu);
+            this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
             return this->internal_flush(nullptr, false);
         }
@@ -667,23 +675,23 @@ namespace
             if (this->vs_constants_buffer_0_ && this->vs_constants_version_0 != this->vs_constants_buffer_0_.version())
             {
                 this->vs_constants_version_0 = this->vs_constants_buffer_0_.version();
-                this->commands->root_constants(0, this->vs_constants_buffer_0_.data().data(), ffdu::vs_constants_0::DWORD_COUNT * 4);
+                this->commands->root_constants(::ROOT_VS_CONSTANTS_0, this->vs_constants_buffer_0_.data(), ffdu::vs_constants_0::DWORD_COUNT * 4);
             }
 
             if (vs_constants_buffer_1_ && this->vs_constants_version_1 != this->vs_constants_buffer_1_.version())
             {
                 this->vs_constants_version_1 = this->vs_constants_buffer_1_.version();
-                this->commands->root_cbv(1, this->vs_constants_buffer_1_);
+                this->commands->root_cbv(::ROOT_VS_CONSTANTS_1, this->vs_constants_buffer_1_);
             }
 
             if (this->ps_constants_buffer_0_ && this->ps_constants_version_0 != this->ps_constants_buffer_0_.version())
             {
                 this->ps_constants_version_0 = this->ps_constants_buffer_0_.version();
-                this->commands->root_cbv(2, this->ps_constants_buffer_0_);
+                this->commands->root_cbv(::ROOT_PS_CONSTANTS_0, this->ps_constants_buffer_0_);
             }
 
             // Update texture descriptors
-            static std::vector<UINT> ones(std::max(ffdu::MAX_TEXTURES, ffdu::MAX_TEXTURES_USING_PALETTE), 1);
+            static std::vector<UINT> ones(std::max(ffdu::MAX_TEXTURES, ffdu::MAX_PALETTE_TEXTURES), 1);
 
             if (texture_count)
             {
@@ -698,13 +706,13 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(texture_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(4, dest_range);
+                this->commands->root_descriptors(::ROOT_TEXTURES, dest_range);
             }
 
             if (textures_using_palette_count)
             {
                 ff::dx12::descriptor_range dest_range = ff::dx12::gpu_view_descriptors().alloc_range(textures_using_palette_count, this->commands->next_fence_value());
-                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ffdu::MAX_TEXTURES_USING_PALETTE> views;
+                std::array<D3D12_CPU_DESCRIPTOR_HANDLE, ffdu::MAX_PALETTE_TEXTURES> views;
 
                 for (size_t i = 0; i < textures_using_palette_count; i++)
                 {
@@ -714,7 +722,7 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(textures_using_palette_count);
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(5, dest_range);
+                this->commands->root_descriptors(::ROOT_PALETTE_TEXTURES, dest_range);
             }
 
             if (textures_using_palette_count || this->target_requires_palette())
@@ -729,19 +737,12 @@ namespace
                 D3D12_CPU_DESCRIPTOR_HANDLE dest = dest_range.cpu_handle(0);
                 UINT size = static_cast<UINT>(views.size());
                 ff::dx12::device()->CopyDescriptors(1, &dest, &size, size, views.data(), ones.data(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                this->commands->root_descriptors(6, dest_range);
+                this->commands->root_descriptors(::ROOT_PALETTES, dest_range);
             }
         }
 
-        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override
-        {
-            this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-        }
-
-        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override
-        {
-            this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
-        }
+        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override {}
+        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override {}
 
         virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) override
         {
@@ -754,6 +755,7 @@ namespace
                 ff::dx12::buffer_base* single_buffer = &this->instance_buffer_;
                 D3D12_VERTEX_BUFFER_VIEW vertex_view = this->instance_buffer_.vertex_view(bucket.item_size());
                 this->commands->vertex_buffers(&single_buffer, &vertex_view, 0, 1);
+                // this->commands->index_buffer(...);
                 return true;
             }
 
