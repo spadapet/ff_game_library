@@ -818,8 +818,8 @@ namespace
         // Constant data for shaders
         ff::dx12::buffer_upload instance_buffer_{ ff::dxgi::buffer_type::vertex };
         ff::dx12::buffer_cpu vs_constants_buffer_0_{ ff::dxgi::buffer_type::constant }; // root constants
-        ff::dx12::buffer vs_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
-        ff::dx12::buffer ps_constants_buffer_0_{ ff::dxgi::buffer_type::constant };
+        ff::dx12::buffer_gpu vs_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
+        ff::dx12::buffer_gpu ps_constants_buffer_0_{ ff::dxgi::buffer_type::constant };
         size_t vs_constants_version_0{};
         size_t vs_constants_version_1{};
         size_t ps_constants_version_0{};

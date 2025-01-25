@@ -2,14 +2,12 @@
 
 #include "../dx12/descriptor_range.h"
 #include "../dx12/mem_range.h"
+#include "../dx12/resource.h"
 #include "../dxgi/buffer_base.h"
 #include "../dxgi/device_child_base.h"
 
 namespace ff::dx12
 {
-    class commands;
-    class resource;
-
     /// <summary>
     /// Base class for any type of DX12 buffer resource
     /// </summary>
@@ -20,7 +18,7 @@ namespace ff::dx12
 
         virtual bool valid() const = 0;
         virtual size_t version() const;
-        virtual ff::dx12::resource* resource() const;
+        virtual ff::dx12::resource* resource();
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
 
         D3D12_VERTEX_BUFFER_VIEW vertex_view(size_t vertex_stride, uint64_t start_offset = 0, size_t vertex_count = 0) const;
@@ -64,8 +62,7 @@ namespace ff::dx12
 
         // ff::dx12::buffer_base
         virtual bool valid() const override;
-        virtual size_t version() const override;
-        virtual ff::dx12::resource* resource() const override;
+        virtual ff::dx12::resource* resource() override;
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
 
         // ff::dxgi::buffer_base
@@ -75,31 +72,30 @@ namespace ff::dx12
         virtual ff::dx12::residency_data* residency_data() override;
 
     private:
-        // device_child_base
+        // ff::dxgi::device_child_base
         virtual bool reset() override;
 
-        std::unique_ptr<ff::dx12::resource> resource_;
         std::shared_ptr<ff::data_base> static_data;
+        ff::dx12::resource resource_;
     };
 
     /// <summary>
     /// Saves data in GPU default heap, copied from upload heap
     /// </summary>
-    class buffer : public ff::dx12::buffer_base, private ff::dxgi::device_child_base
+    class buffer_gpu : public ff::dx12::buffer_base
     {
     public:
-        buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data = {});
-        buffer(buffer&& other) noexcept;
-        buffer(const buffer& other) = delete;
-        virtual ~buffer() override;
+        buffer_gpu(ff::dxgi::buffer_type type);
+        buffer_gpu(buffer_gpu&& other) noexcept = default;
+        buffer_gpu(const buffer_gpu& other) = delete;
 
-        buffer& operator=(buffer&& other) noexcept = default;
-        buffer& operator=(const buffer& other) = delete;
+        buffer_gpu& operator=(buffer_gpu&& other) noexcept = default;
+        buffer_gpu& operator=(const buffer_gpu& other) = delete;
 
         // ff::dx12::buffer_base
         virtual bool valid() const override;
         virtual size_t version() const override;
-        virtual ff::dx12::resource* resource() const override;
+        virtual ff::dx12::resource* resource() override;
         virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
 
         // ff::dx12::residency_access
@@ -113,28 +109,10 @@ namespace ff::dx12
         virtual void unmap(ff::dxgi::command_context_base& context) override;
 
     private:
-        buffer(
-            ff::dx12::commands* commands,
-            ff::dxgi::buffer_type type,
-            const void* data,
-            uint64_t data_size,
-            size_t data_hash,
-            size_t version,
-            std::shared_ptr<ff::data_base> initial_data,
-            std::unique_ptr<std::vector<uint8_t>> mapped_mem = {},
-            std::unique_ptr<ff::dx12::resource>&& resource = {},
-            uint64_t resource_data_offset = 0);
-
-        // device_child_base
-        virtual bool reset() override;
-
         std::unique_ptr<ff::dx12::resource> resource_;
-        std::shared_ptr<ff::data_base> initial_data;
-        std::unique_ptr<std::vector<uint8_t>> mapped_mem;
-        uint64_t mem_start;
-        uint64_t data_size;
-        size_t data_hash;
-        size_t version_;
+        ff::dx12::mem_range mapped_memory;
+        size_t data_hash{};
+        size_t version_{ 1 };
     };
 
     /// <summary>
@@ -166,10 +144,8 @@ namespace ff::dx12
         virtual void unmap(ff::dxgi::command_context_base& context) override;
 
     private:
-        ff::dx12::residency_data* mem_residency_data{};
-        D3D12_GPU_VIRTUAL_ADDRESS mem_gpu_address{};
-        uint64_t mem_size{};
-        size_t version_{};
+        ff::dx12::mem_range mapped_memory;
+        size_t version_{ 1 };
     };
 
     /// <summary>
@@ -202,7 +178,7 @@ namespace ff::dx12
 
     private:
         std::vector<uint8_t> data_;
-        size_t data_hash;
-        size_t version_;
+        size_t data_hash{};
+        size_t version_{ 1 };
     };
 }

@@ -22,7 +22,7 @@ size_t ff::dx12::buffer_base::version() const
     return 0;
 }
 
-ff::dx12::resource* ff::dx12::buffer_base::resource() const
+ff::dx12::resource* ff::dx12::buffer_base::resource()
 {
     return nullptr;
 }
@@ -89,155 +89,142 @@ ff::dx12::residency_data* ff::dx12::buffer_base::residency_data()
     return nullptr;
 }
 
-ff::dx12::buffer::buffer(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> initial_data)
-    : buffer(nullptr, type, initial_data ? initial_data->data() : nullptr, initial_data ? initial_data->size() : 0, 0, 0, initial_data)
-{
-}
-
-ff::dx12::buffer::buffer(buffer&& other) noexcept
-    : buffer_base(other.type())
-{
-    *this = std::move(other);
-    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
-}
-
-ff::dx12::buffer::buffer(
-    ff::dx12::commands* commands,
-    ff::dxgi::buffer_type type,
-    const void* data,
-    uint64_t data_size,
-    size_t data_hash,
-    size_t version,
-    std::shared_ptr<ff::data_base> initial_data,
-    std::unique_ptr<std::vector<uint8_t>> mapped_mem,
-    std::unique_ptr<ff::dx12::resource>&& resource,
-    uint64_t mem_start)
+ff::dx12::buffer_gpu_static::buffer_gpu_static(ff::dxgi::buffer_type type, std::shared_ptr<ff::data_base> static_data)
     : ff::dx12::buffer_base(type)
-    , resource_(std::move(resource))
-    , initial_data(initial_data)
-    , mapped_mem(std::move(mapped_mem))
-    , mem_start(mem_start)
-    , data_size(data_size)
-    , data_hash(data_hash ? ff::stable_hash_bytes(data, static_cast<size_t>(data_size)) : data_hash)
-    , version_(version ? version : 1)
+    , static_data(static_data)
+    , resource_("StaticBuffer", std::shared_ptr<ff::dx12::mem_range>(), CD3DX12_RESOURCE_DESC::Buffer(static_data->size()))
 {
-    assert(mem_start == ff::math::align_up<uint64_t>(mem_start, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-
-    if (data && data_size)
-    {
-        if (!this->resource_ || this->mem_start + this->data_size > this->resource_->mem_range()->size())
-        {
-            D3D12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(data_size);
-            D3D12_RESOURCE_ALLOCATION_INFO alloc_info = ff::dx12::device()->GetResourceAllocationInfo(0, 1, &desc);
-            desc.Width = alloc_info.SizeInBytes;
-
-            this->resource_ = std::make_unique<ff::dx12::resource>("Buffer", std::shared_ptr<ff::dx12::mem_range>(), desc);
-            this->mem_start = 0;
-        }
-
-        this->resource_->update_buffer(commands, data, this->mem_start, data_size);
-    }
-
+    this->reset();
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
-ff::dx12::buffer::~buffer()
+ff::dx12::buffer_gpu_static::buffer_gpu_static(buffer_gpu_static&& other) noexcept
+    : ff::dx12::buffer_base(other.type())
+    , static_data(std::move(other.static_data))
+    , resource_(std::move(other.resource_))
+{
+    ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
+}
+
+ff::dx12::buffer_gpu_static::~buffer_gpu_static()
 {
     ff::dx12::remove_device_child(this);
 }
 
-bool ff::dx12::buffer::valid() const
+bool ff::dx12::buffer_gpu_static::valid() const
+{
+    return this->resource_;
+}
+
+ff::dx12::resource* ff::dx12::buffer_gpu_static::resource()
+{
+    return &this->resource_;
+}
+
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_gpu_static::gpu_address() const
+{
+    return this->resource_.gpu_address();
+}
+
+size_t ff::dx12::buffer_gpu_static::size() const
+{
+    return this->static_data->size(); // resource size may be larger
+}
+
+ff::dx12::residency_data* ff::dx12::buffer_gpu_static::residency_data()
+{
+    return this->resource_.residency_data();
+}
+
+bool ff::dx12::buffer_gpu_static::reset()
+{
+    assert_ret_val(this->static_data && this->static_data->size(), false);
+    this->resource_.update_buffer(nullptr, this->static_data->data(), 0, this->static_data->size());
+    return this->valid();
+}
+
+ff::dx12::buffer_gpu::buffer_gpu(ff::dxgi::buffer_type type)
+    : ff::dx12::buffer_base(type)
+{
+}
+
+bool ff::dx12::buffer_gpu::valid() const
 {
     return this->resource_ != nullptr;
 }
 
-size_t ff::dx12::buffer::version() const
+size_t ff::dx12::buffer_gpu::version() const
 {
     return this->version_;
 }
 
-ff::dx12::resource* ff::dx12::buffer::resource() const
+ff::dx12::resource* ff::dx12::buffer_gpu::resource()
 {
     return this->resource_.get();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer::gpu_address() const
+D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_gpu::gpu_address() const
 {
-    return this->resource_->gpu_address() + this->mem_start;
+    return this->valid() ? this->resource_->gpu_address() : 0;
 }
 
-ff::dx12::residency_data* ff::dx12::buffer::residency_data()
+ff::dx12::residency_data* ff::dx12::buffer_gpu::residency_data()
 {
-    return this->resource_->residency_data();
+    return this->valid() ? this->resource_->residency_data() : nullptr;
 }
 
-size_t ff::dx12::buffer::size() const
+size_t ff::dx12::buffer_gpu::size() const
 {
-    return this->resource_ ? static_cast<size_t>(this->data_size) : 0;
+    return this->valid() ? this->resource_->desc().Width : 0;
 }
 
-bool ff::dx12::buffer::writable() const
+bool ff::dx12::buffer_gpu::writable() const
 {
     return true;
 }
 
-bool ff::dx12::buffer::update(ff::dxgi::command_context_base& context, const void* data, size_t size)
+bool ff::dx12::buffer_gpu::update(ff::dxgi::command_context_base& context, const void* data, size_t size)
 {
     assert_ret_val(size, false);
-    size_t new_hash = ff::stable_hash_bytes(data, size);
-    check_ret_val(new_hash != this->data_hash, false);
 
-    if (new_hash != this->data_hash)
+    size_t new_hash = 0;
+    if (size <= 0x10000) // for a lot of data, forget about checking if it changed
     {
-        *this = ff::dx12::buffer(
-            &ff::dx12::commands::get(context),
-            this->type(),
-            data,
-            data_size,
-            new_hash,
-            this->version_ + 1,
-            this->initial_data,
-            std::move(this->mapped_mem),
-            std::move(this->resource_),
-            ff::math::align_up<uint64_t>(this->mem_start + this->data_size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+        new_hash = ff::stable_hash_bytes(data, size);
+        check_ret_val(new_hash != this->data_hash, false);
     }
+
+    std::memcpy(this->map(context, size), data, size);
+    this->unmap(context);
+    this->data_hash = new_hash;
 
     return this->valid();
 }
 
-void* ff::dx12::buffer::map(ff::dxgi::command_context_base& context, size_t size)
+void* ff::dx12::buffer_gpu::map(ff::dxgi::command_context_base& context, size_t size)
 {
-    // TODO: Use an upload buffer
     assert_ret_val(size, nullptr);
+    assert_msg(!this->mapped_memory, "Forgot to unmap buffer");
 
-    if (!this->mapped_mem)
+    if (size > this->size())
     {
-        this->mapped_mem = std::make_unique<std::vector<uint8_t>>();
+        CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(std::max(this->size() * 2, size));
+        this->resource_ = std::make_unique<ff::dx12::resource>("Buffer", std::shared_ptr<ff::dx12::mem_range>(), desc);
     }
 
-    this->mapped_mem->resize(size);
-    return this->mapped_mem->data();
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
+    this->mapped_memory = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
+    this->data_hash = 0;
+    this->version_++;
+
+    return this->mapped_memory.cpu_data();
 }
 
-void ff::dx12::buffer::unmap(ff::dxgi::command_context_base& context)
+void ff::dx12::buffer_gpu::unmap(ff::dxgi::command_context_base& context)
 {
-    assert_ret(this->mapped_mem);
-    this->update(context, this->mapped_mem->data(), this->mapped_mem->size());
-}
-
-bool ff::dx12::buffer::reset()
-{
-    *this = ff::dx12::buffer(
-        nullptr,
-        this->type(),
-        this->initial_data ? this->initial_data->data() : nullptr,
-        this->initial_data ? this->initial_data->size() : 0,
-        0, // hash
-        this->version_ + 1,
-        this->initial_data,
-        std::move(this->mapped_mem));
-
-    return !this->initial_data || *this;
+    assert_ret(this->resource_);
+    this->resource_->update_buffer(&ff::dx12::commands::get(context), this->mapped_memory.cpu_data(), 0, this->mapped_memory.size());
+    this->mapped_memory = {};
 }
 
 ff::dx12::buffer_upload::buffer_upload(ff::dxgi::buffer_type type)
@@ -247,7 +234,7 @@ ff::dx12::buffer_upload::buffer_upload(ff::dxgi::buffer_type type)
 
 bool ff::dx12::buffer_upload::valid() const
 {
-    return this->mem_gpu_address != 0 && this->mem_size > 0;
+    return this->mapped_memory;
 }
 
 size_t ff::dx12::buffer_upload::version() const
@@ -257,17 +244,17 @@ size_t ff::dx12::buffer_upload::version() const
 
 D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_upload::gpu_address() const
 {
-    return this->mem_gpu_address;
+    return this->valid() ? this->mapped_memory.gpu_data() : 0;
 }
 
 ff::dx12::residency_data* ff::dx12::buffer_upload::residency_data()
 {
-    return this->mem_residency_data;
+    return this->valid() ? this->mapped_memory.residency_data() : nullptr;
 }
 
 size_t ff::dx12::buffer_upload::size() const
 {
-    return static_cast<size_t>(this->mem_size);
+    return this->valid() ? this->mapped_memory.size() : 0;
 }
 
 bool ff::dx12::buffer_upload::writable() const
@@ -279,32 +266,28 @@ bool ff::dx12::buffer_upload::update(ff::dxgi::command_context_base& context, co
 {
     assert_ret_val(size, false);
     std::memcpy(this->map(context, size), data, size);
+    this->unmap(context);
     return true;
 }
 
 void* ff::dx12::buffer_upload::map(ff::dxgi::command_context_base& context, size_t size)
 {
     assert_ret_val(size, nullptr);
-    this->version_++;
 
     ff::dx12::commands& commands = ff::dx12::commands::get(context);
-    ff::dx12::mem_range mem = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
+    this->mapped_memory = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
+    this->version_++;
 
-    this->mem_residency_data = mem.residency_data();
-    this->mem_gpu_address = mem.gpu_data();
-    this->mem_size = mem.size();
-
-    return mem.cpu_data();
+    return this->mapped_memory.cpu_data();
 }
 
 void ff::dx12::buffer_upload::unmap(ff::dxgi::command_context_base& context)
 {
+    this->mapped_memory = {};
 }
 
 ff::dx12::buffer_cpu::buffer_cpu(ff::dxgi::buffer_type type)
     : ff::dx12::buffer_base(type)
-    , data_hash(0)
-    , version_(1)
 {
 }
 
@@ -341,8 +324,13 @@ bool ff::dx12::buffer_cpu::writable() const
 bool ff::dx12::buffer_cpu::update(ff::dxgi::command_context_base& context, const void* data, size_t size)
 {
     assert_ret_val(size, false);
-    size_t new_hash = ff::stable_hash_bytes(data, size);
-    check_ret_val(new_hash != this->data_hash, false);
+
+    size_t new_hash = 0;
+    if (size <= 0x10000) // for a lot of data, forget about checking if it changed
+    {
+        new_hash = ff::stable_hash_bytes(data, size);
+        check_ret_val(new_hash != this->data_hash, false);
+    }
 
     std::memcpy(this->map(context, size), data, size);
     this->data_hash = new_hash;

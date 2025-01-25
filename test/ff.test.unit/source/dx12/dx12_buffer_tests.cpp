@@ -9,7 +9,7 @@ namespace ff::test::dx12
         {
             const std::array<int, 4> ints{ 1, 2, 3, 4 };
             auto init_data = std::make_shared<ff::data_static>(ints.data(), ff::array_byte_size(ints));
-            ff::dx12::buffer buffer(ff::dxgi::buffer_type::index, init_data);
+            ff::dx12::buffer_gpu buffer(ff::dxgi::buffer_type::index, init_data);
 
             Assert::IsTrue(buffer);
             Assert::IsTrue(buffer.writable());
