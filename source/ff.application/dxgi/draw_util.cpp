@@ -919,7 +919,7 @@ void ffdu::draw_device_base::draw_opaque_instances()
         {
             if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), true))
             {
-                this->draw(*this->command_context_, bucket.render_count(), bucket.render_start());
+                this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start(), bucket.render_count());
             }
         }
     }
@@ -937,6 +937,7 @@ void ffdu::draw_device_base::draw_transparent_instances()
         for (size_t i = 0; i < alpha_geometry_size; )
         {
             const ffdu::transparent_instance_entry& entry = this->transparent_instances[i];
+            const ffdu::instance_bucket& bucket = *entry.bucket;
             size_t geometry_count = 1;
 
             for (i++; i < alpha_geometry_size; i++, geometry_count++)
@@ -950,11 +951,11 @@ void ffdu::draw_device_base::draw_transparent_instances()
                 }
             }
 
-            if (this->apply_instance_state(*this->command_context_, *entry.bucket))
+            if (this->apply_instance_state(*this->command_context_, bucket))
             {
-                if (!custom_func || (*custom_func)(*this->command_context_, entry.bucket->item_type(), false))
+                if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), false))
                 {
-                    this->draw(*this->command_context_, geometry_count, entry.bucket->render_start() + entry.index);
+                    this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start() + entry.index, geometry_count);
                 }
             }
         }
@@ -1170,12 +1171,4 @@ void* ffdu::draw_device_base::add_instance(const void* data, ffdu::instance_buck
 ffdu::instance_bucket& ffdu::draw_device_base::get_instance_bucket(ffdu::instance_bucket_type type)
 {
     return this->instance_buckets[static_cast<size_t>(type)];
-}
-
-void ffdu::draw_device_base::internal_flush_begin(ff::dxgi::command_context_base* context)
-{
-}
-
-void ffdu::draw_device_base::internal_flush_end(ff::dxgi::command_context_base* context)
-{
 }

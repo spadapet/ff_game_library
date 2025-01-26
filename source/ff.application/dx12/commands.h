@@ -93,8 +93,8 @@ namespace ff::dx12
         void index_buffer(ff::dx12::buffer_base& buffer, const D3D12_INDEX_BUFFER_VIEW& view);
         void primitive_topology(D3D12_PRIMITIVE_TOPOLOGY topology);
         void stencil(uint32_t value);
-        void draw(size_t start, size_t count);
-        void draw(size_t start_index, size_t index_count, size_t start_vertex, size_t instance_count = 1, size_t start_instance = 0);
+        void draw(size_t start_vertex, size_t vertex_count, size_t start_instance = 0, size_t instance_count = 1);
+        void draw_indexed(size_t start_vertex, size_t start_index, size_t index_count, size_t start_instance = 0, size_t instance_count = 1);
         void resolve(ff::dx12::resource& dest_resource, size_t dest_sub_resource, ff::point_size dest_pos, ff::dx12::resource& src_resource, size_t src_sub_resource, ff::rect_size src_rect);
 
         void clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value);

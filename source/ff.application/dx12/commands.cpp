@@ -371,13 +371,17 @@ void ff::dx12::commands::stencil(uint32_t value)
     this->list(false)->OMSetStencilRef(value);
 }
 
-void ff::dx12::commands::draw(size_t start, size_t count)
+void ff::dx12::commands::draw(size_t start_vertex, size_t vertex_count, size_t start_instance, size_t instance_count)
 {
     ff::perf_timer timer(::perf_draw);
-    this->list()->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(start), 0);
+    this->list()->DrawInstanced(
+        static_cast<UINT>(vertex_count),
+        static_cast<UINT>(instance_count),
+        static_cast<UINT>(start_vertex),
+        static_cast<UINT>(start_instance));
 }
 
-void ff::dx12::commands::draw(size_t start_index, size_t index_count, size_t start_vertex, size_t instance_count, size_t start_instance)
+void ff::dx12::commands::draw_indexed(size_t start_vertex, size_t start_index, size_t index_count, size_t start_instance, size_t instance_count)
 {
     ff::perf_timer timer(::perf_draw);
     this->list()->DrawIndexedInstanced(

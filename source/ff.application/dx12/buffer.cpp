@@ -44,7 +44,7 @@ D3D12_VERTEX_BUFFER_VIEW ff::dx12::buffer_base::vertex_view(size_t vertex_stride
     };
 }
 
-D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_base::index_view(size_t start, size_t count, DXGI_FORMAT format) const
+D3D12_INDEX_BUFFER_VIEW ff::dx12::buffer_base::index_view(DXGI_FORMAT format, size_t start, size_t count) const
 {
     check_ret_val(this->type() == ff::dxgi::buffer_type::index && this->valid() && this->gpu_address() && this->size(), D3D12_INDEX_BUFFER_VIEW{});
 

@@ -2,52 +2,23 @@ static const float PI_F = 3.1415926535897932384626433832795f;
 static const float PI2_F = PI_F * 2;
 static const float Z_OFFSET = 0;
 
-struct line_geometry
-{
-    float2 pos0 : POSITION0;
-    float2 pos1 : POSITION1;
-    float2 pos2 : POSITION2;
-    float2 pos3 : POSITION3;
-    float4 color0 : COLOR0;
-    float4 color1 : COLOR1;
-    float thick0 : THICK0;
-    float thick1 : THICK1;
-    float depth : DEPTH;
-    uint world : MATRIX;
-};
-
-struct circle_geometry
-{
-    float3 pos : POSITION;
-    float4 insideColor : COLOR0;
-    float4 outsideColor : COLOR1;
-    float radius : RADIUS;
-    float thickness : THICK;
-    uint world : MATRIX;
-};
-
-struct triangle_geometry
-{
-    float2 pos0 : POSITION0;
-    float2 pos1 : POSITION1;
-    float2 pos2 : POSITION2;
-    float4 color0 : COLOR0;
-    float4 color1 : COLOR1;
-    float4 color2 : COLOR2;
-    float depth : DEPTH;
-    uint world : MATRIX;
-};
-
-struct sprite_geometry
+struct sprite_vertex
 {
     float4 rect : RECT;
     float4 uvrect : TEXCOORD;
     float4 color : COLOR;
     float2 scale : SCALE;
-    float3 pos : POSITION;
-    float rotate : ROTATE;
-    uint tex : TEXINDEX;
-    uint world : MATRIX;
+    float depth : DEPTH;
+    uint indexes : INDEXES;
+};
+
+struct rotated_sprite_vertex
+{
+    float4 rect : RECT;
+    float4 uvrect : TEXCOORD;
+    float4 color : COLOR;
+    float4 posrot : POSROT;
+    uint indexes : INDEXES;
 };
 
 struct color_pixel
@@ -64,15 +35,15 @@ struct sprite_pixel
     uint tex : TEXINDEX0;
 };
 
-cbuffer geometry_shader_constants_0 : register(b0)
+cbuffer vertex_shader_constants_0 : register(b0)
 {
     matrix projection_;
     float2 view_scale_;
 };
 
-cbuffer geometry_shader_constants_1 : register(b1)
+cbuffer vertex_shader_constants_1 : register(b1)
 {
-    matrix model_[1024];
+    matrix model_[128];
 };
 
 cbuffer pixel_shader_constants_0 : register(b2)
@@ -85,26 +56,6 @@ Texture2D<uint> textures_palette_[32] : register(t32);
 Texture2D palette_ : register(t64);
 Texture2D<uint> palette_remap_ : register(t65);
 SamplerState samplers_[2] : register(s0);
-
-line_geometry line_vs(line_geometry input)
-{
-    return input;
-}
-
-circle_geometry circle_vs(circle_geometry input)
-{
-    return input;
-}
-
-triangle_geometry triangle_vs(triangle_geometry input)
-{
-    return input;
-}
-
-sprite_geometry sprite_vs(sprite_geometry input)
-{
-    return input;
-}
 
 float hash_3_to_1(float3 p)
 {
@@ -130,6 +81,7 @@ bool miters_on_same_side_of_line(float2 dir_line, float2 miter1, float2 miter2)
     return dot(cross1, cross2) > 0;
 }
 
+/*
 [maxvertexcount(4)]
 void line_gs(point line_geometry input[1], inout TriangleStream<color_pixel> output)
 {
@@ -333,6 +285,7 @@ void sprite_gs(point sprite_geometry input[1], inout TriangleStream<sprite_pixel
 
     output.RestartStrip();
 }
+*/
 
 float4 color_ps(color_pixel input) : SV_TARGET
 {
@@ -382,7 +335,7 @@ float4 sprite_ps(sprite_pixel input) : SV_TARGET
 }
 
 // Texture: Palette Index, Output: RGBA (needs active palette to map index -> RGB)
-float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
+float4 palette_sprite_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
     uint palette_index = (input.tex & 0xFF00) >> 8;
@@ -405,7 +358,7 @@ float4 sprite_palette_ps(sprite_pixel input) : SV_TARGET
 }
 
 // Texture: RGBA, Output: Palette index (this can be used for fonts with palette output)
-uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
+uint sprite_out_palette_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
     uint sampler_index = (input.tex & 0xFF00) >> 8;
@@ -425,7 +378,7 @@ uint palette_out_sprite_ps(sprite_pixel input) : SV_TARGET
 }
 
 // Texture: Palette index, Output: Palette index
-uint palette_out_sprite_palette_ps(sprite_pixel input) : SV_TARGET
+uint palette_sprite_out_palette_ps(sprite_pixel input) : SV_TARGET
 {
     uint texture_index = input.tex & 0xFF;
     uint remap_index = (input.tex & 0xFF0000) >> 16;

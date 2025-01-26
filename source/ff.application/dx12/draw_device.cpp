@@ -27,9 +27,13 @@ constexpr size_t ROOT_SAMPLERS = 3;
 constexpr size_t ROOT_TEXTURES = 4;
 constexpr size_t ROOT_PALETTE_TEXTURES = 5;
 constexpr size_t ROOT_PALETTES = 6;
+constexpr size_t VERTEX_VIEW_INDEX = 0;
+constexpr size_t INSTANCE_VIEW_INDEX = 1;
+constexpr size_t SPRITE_INDEX_START = 0;
+constexpr size_t SPRITE_INDEX_COUNT = 6;
 
-#define VERTEX_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-#define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 }
+#define VERTEX_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::VERTEX_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+#define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::INSTANCE_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 }
 
 static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
 {
@@ -131,14 +135,14 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_outline_layout()
 
 static std::shared_ptr<ff::data_base> get_static_index_data()
 {
-    const uint16_t indexes[] = { 0, 1, 2, 2, 3, 0 };
+    static const uint16_t indexes[] = { 0, 1, 2, 2, 3, 0 };
     return std::make_shared<ff::data_static>(&indexes[0], _countof(indexes) * sizeof(indexes[0]));
 }
 
 static std::shared_ptr<ff::data_base> get_static_vertex_data()
 {
-    // TODO: Fix this bogus data
-    const DirectX::XMFLOAT2 vertexes[] = { { 0, 0 } };
+    // TODO: Fix this bogus data, probably just need circle points
+    static const DirectX::XMFLOAT2 vertexes[] = { { 0, 0 } };
     return std::make_shared<ff::data_static>(&vertexes[0], _countof(vertexes) * sizeof(vertexes[0]));
 }
 
@@ -417,10 +421,12 @@ namespace
                 samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 textures_range;
-                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_TEXTURES), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
+                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_TEXTURES), 0, 0,
+                    D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE /*| D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE*/, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures_range;
-                palette_textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_PALETTE_TEXTURES), static_cast<UINT>(ffdu::MAX_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
+                palette_textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_PALETTE_TEXTURES), static_cast<UINT>(ffdu::MAX_TEXTURES), 0,
+                    D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE /*| D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE*/, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures;
                 palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, static_cast<UINT>(ffdu::MAX_TEXTURES + ffdu::MAX_PALETTE_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
@@ -695,8 +701,20 @@ namespace
             }
         }
 
-        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override {}
-        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override {}
+        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override
+        {
+            ff::dx12::buffer_base* single_buffer = &this->vertex_buffer;
+            D3D12_VERTEX_BUFFER_VIEW vertex_view = this->vertex_buffer.vertex_view(sizeof(DirectX::XMFLOAT2));
+            this->commands->vertex_buffers(&single_buffer, &vertex_view, ::VERTEX_VIEW_INDEX, 1);
+
+            D3D12_INDEX_BUFFER_VIEW index_view = this->index_buffer.index_view();
+            this->commands->index_buffer(this->index_buffer, index_view);
+        }
+
+        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override
+        {
+            // opaque state alraedy set up vertex/index buffers
+        }
 
         virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) override
         {
@@ -707,9 +725,9 @@ namespace
                 this->pre_multiplied_alpha()))
             {
                 ff::dx12::buffer_base* single_buffer = &this->instance_buffer_;
-                D3D12_VERTEX_BUFFER_VIEW vertex_view = this->instance_buffer_.vertex_view(bucket.item_size());
-                this->commands->vertex_buffers(&single_buffer, &vertex_view, 0, 1);
-                // this->commands->index_buffer(...);
+                D3D12_VERTEX_BUFFER_VIEW instance_view = this->instance_buffer_.vertex_view(bucket.item_size());
+                this->commands->vertex_buffers(&single_buffer, &instance_view, ::INSTANCE_VIEW_INDEX, 1);
+
                 return true;
             }
 
@@ -746,9 +764,53 @@ namespace
             return std::make_shared<ff::dx12::texture>(size, format);
         }
 
-        virtual void draw(ff::dxgi::command_context_base& context, size_t count, size_t start) override
+        virtual void draw(ff::dxgi::command_context_base& context, ffdu::instance_bucket_type instance_type, size_t instance_start, size_t instance_count) override
         {
-            this->commands->draw(start, count);
+            switch (instance_type)
+            {
+                default:
+                    debug_fail_msg("Invalid instance type");
+                    break;
+
+                case ffdu::instance_bucket_type::sprites:
+                case ffdu::instance_bucket_type::sprites_out_transparent:
+                case ffdu::instance_bucket_type::palette_sprites:
+                case ffdu::instance_bucket_type::palette_sprites_out_transparent:
+                case ffdu::instance_bucket_type::rotated_sprites:
+                case ffdu::instance_bucket_type::rotated_sprites_out_transparent:
+                case ffdu::instance_bucket_type::rotated_palette_sprites:
+                case ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent:
+                    this->commands->draw_indexed(0, ::SPRITE_INDEX_START, ::SPRITE_INDEX_COUNT, instance_start, instance_count);
+                    break;
+
+                case ffdu::instance_bucket_type::lines:
+                case ffdu::instance_bucket_type::lines_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::line_strips:
+                case ffdu::instance_bucket_type::line_strips_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::triangles:
+                case ffdu::instance_bucket_type::triangles_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::rectangles_filled:
+                case ffdu::instance_bucket_type::rectangles_filled_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::rectangles_outline:
+                case ffdu::instance_bucket_type::rectangles_outline_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::circles_filled:
+                case ffdu::instance_bucket_type::circles_filled_out_transparent:
+                    break;
+
+                case ffdu::instance_bucket_type::circles_outline:
+                case ffdu::instance_bucket_type::circles_outline_out_transparent:
+                    break;
+            }
         }
 
     private:

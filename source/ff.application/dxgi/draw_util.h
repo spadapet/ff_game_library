@@ -268,8 +268,8 @@ namespace ff::dxgi::draw_util
         virtual void internal_reset() = 0;
         virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) = 0;
         virtual ff::dxgi::command_context_base* internal_setup(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base* depth, const ff::rect_float& view_rect, bool ignore_rotation) = 0;
-        virtual void internal_flush_begin(ff::dxgi::command_context_base* context);
-        virtual void internal_flush_end(ff::dxgi::command_context_base* context);
+        virtual void internal_flush_begin(ff::dxgi::command_context_base* context) = 0;
+        virtual void internal_flush_end(ff::dxgi::command_context_base* context) = 0;
 
         virtual ff::dxgi::buffer_base& instance_buffer() = 0;
         virtual ff::dxgi::buffer_base& vs_constants_buffer_0() = 0;
@@ -289,7 +289,7 @@ namespace ff::dxgi::draw_util
         virtual void apply_transparent_state(ff::dxgi::command_context_base& context) = 0;
         virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) = 0;
         virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) = 0;
-        virtual void draw(ff::dxgi::command_context_base& context, size_t count, size_t start) = 0;
+        virtual void draw(ff::dxgi::command_context_base& context, ffdu::instance_bucket_type instance_type, size_t instance_start, size_t instance_count) = 0;
 
         ff::dxgi::device_child_base* as_device_child();
         bool internal_valid() const;
