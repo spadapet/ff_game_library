@@ -24,7 +24,7 @@ ff::dx12::fence_value::operator bool() const
 
 ff::dx12::fence* ff::dx12::fence_value::fence() const
 {
-    return this->fence_->fence;
+    return this->fence_ ? this->fence_->fence : nullptr;
 }
 
 uint64_t ff::dx12::fence_value::get() const

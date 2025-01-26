@@ -116,39 +116,6 @@ namespace ff::dx12
     };
 
     /// <summary>
-    /// Saves data in GPU upload heap
-    /// </summary>
-    class buffer_upload : public ff::dx12::buffer_base
-    {
-    public:
-        buffer_upload(ff::dxgi::buffer_type type);
-        buffer_upload(buffer_upload&& other) noexcept = default;
-        buffer_upload(const buffer_upload& other) = delete;
-
-        buffer_upload& operator=(buffer_upload&& other) noexcept = default;
-        buffer_upload& operator=(const buffer_upload& other) = delete;
-
-        // ff::dx12::buffer_base
-        virtual bool valid() const override;
-        virtual size_t version() const override;
-        virtual D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const override;
-
-        // ff::dx12::residency_access
-        virtual ff::dx12::residency_data* residency_data() override;
-
-        // ff::dxgi::buffer_base
-        virtual size_t size() const override;
-        virtual bool writable() const override;
-        virtual bool update(ff::dxgi::command_context_base& context, const void* data, size_t size) override;
-        virtual void* map(ff::dxgi::command_context_base& context, size_t size) override;
-        virtual void unmap(ff::dxgi::command_context_base& context) override;
-
-    private:
-        ff::dx12::mem_range mapped_memory;
-        size_t version_{ 1 };
-    };
-
-    /// <summary>
     /// Doesn't upload buffer data to GPU, just saved in CPU vector
     /// </summary>
     class buffer_cpu : public ff::dx12::buffer_base, public ff::data_base

@@ -227,65 +227,6 @@ void ff::dx12::buffer_gpu::unmap(ff::dxgi::command_context_base& context)
     this->mapped_memory = {};
 }
 
-ff::dx12::buffer_upload::buffer_upload(ff::dxgi::buffer_type type)
-    : ff::dx12::buffer_base(type)
-{
-}
-
-bool ff::dx12::buffer_upload::valid() const
-{
-    return this->mapped_memory;
-}
-
-size_t ff::dx12::buffer_upload::version() const
-{
-    return this->version_;
-}
-
-D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::buffer_upload::gpu_address() const
-{
-    return this->valid() ? this->mapped_memory.gpu_data() : 0;
-}
-
-ff::dx12::residency_data* ff::dx12::buffer_upload::residency_data()
-{
-    return this->valid() ? this->mapped_memory.residency_data() : nullptr;
-}
-
-size_t ff::dx12::buffer_upload::size() const
-{
-    return this->valid() ? this->mapped_memory.size() : 0;
-}
-
-bool ff::dx12::buffer_upload::writable() const
-{
-    return true;
-}
-
-bool ff::dx12::buffer_upload::update(ff::dxgi::command_context_base& context, const void* data, size_t size)
-{
-    assert_ret_val(size, false);
-    std::memcpy(this->map(context, size), data, size);
-    this->unmap(context);
-    return true;
-}
-
-void* ff::dx12::buffer_upload::map(ff::dxgi::command_context_base& context, size_t size)
-{
-    assert_ret_val(size, nullptr);
-
-    ff::dx12::commands& commands = ff::dx12::commands::get(context);
-    this->mapped_memory = ff::dx12::upload_allocator().alloc_buffer(size, commands.next_fence_value());
-    this->version_++;
-
-    return this->mapped_memory.cpu_data();
-}
-
-void ff::dx12::buffer_upload::unmap(ff::dxgi::command_context_base& context)
-{
-    this->mapped_memory = {};
-}
-
 ff::dx12::buffer_cpu::buffer_cpu(ff::dxgi::buffer_type type)
     : ff::dx12::buffer_base(type)
 {

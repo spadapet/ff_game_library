@@ -237,6 +237,14 @@ ID3D12RootSignature* ff::dx12::object_cache::root_signature(const D3D12_VERSIONE
         }
     }
 
+    if (errors)
+    {
+        // Retrieve and log the error message
+        const char* error_cstr = static_cast<const char*>(errors->GetBufferPointer());
+        std::string_view error_string(error_cstr, errors->GetBufferSize() - 1);
+        ff::log::write(ff::log::type::dx12, "Root signature serialization error: ", error_string);
+    }
+
     assert(false);
     return nullptr;
 }

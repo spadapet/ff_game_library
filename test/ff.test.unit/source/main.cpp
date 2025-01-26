@@ -15,6 +15,11 @@ TEST_MODULE_INITIALIZE(module_init)
             file ? file : "",
             line);
 
+        if (ff::constants::debug_build && ::IsDebuggerPresent())
+        {
+            __debugbreak();
+        }
+
         Assert::Fail(ff::string::to_wstring(std::string_view(error_text)).c_str());
         return true;
     });
