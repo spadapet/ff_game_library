@@ -3,6 +3,7 @@
 #include "dxgi/depth_base.h"
 #include "dxgi/draw_device_base.h"
 #include "dxgi/draw_util.h"
+#include "dxgi/dxgi_globals.h"
 #include "dxgi/format_util.h"
 #include "dxgi/palette_data_base.h"
 #include "dxgi/sprite_data.h"
@@ -311,7 +312,7 @@ ffdu::draw_device_base::draw_device_base()
         ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_palette_sprites>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips>(),
-        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles>(),
+        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled>(),
         ffdu::instance_bucket::create<ffdu::rectangle_filled_instance, ffdu::instance_bucket_type::rectangles_filled>(),
         ffdu::instance_bucket::create<ffdu::rectangle_outline_instance, ffdu::instance_bucket_type::rectangles_outline>(),
         ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled>(),
@@ -323,7 +324,7 @@ ffdu::draw_device_base::draw_device_base()
         ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::rectangle_filled_instance, ffdu::instance_bucket_type::rectangles_filled_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::rectangle_outline_instance, ffdu::instance_bucket_type::rectangles_outline_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled_out_transparent>(),
@@ -358,29 +359,49 @@ void ffdu::draw_device_base::end_draw()
 
 void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform)
 {
-#if 0
     ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
-    if (alpha_type != ::alpha_type::invisible && sprite.view())
+    check_ret(alpha_type != ::alpha_type::invisible && sprite.view());
+
+    bool is_palette_sprite = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
+    float depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
+    uint32_t indexes = this->get_world_matrix_and_texture_index(*sprite.view(), is_palette_sprite);
+
+    if (transform.rotation)
     {
-        bool use_palette = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
-        ffdu::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent && !this->target_requires_palette_)
-            ? (use_palette ? ffdu::geometry_bucket_type::palette_sprites : ffdu::geometry_bucket_type::sprites_alpha)
-            : (use_palette ? ffdu::geometry_bucket_type::palette_sprites : ffdu::geometry_bucket_type::sprites);
+        ffdu::instance_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent)
+            ? (is_palette_sprite ? ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent : ffdu::instance_bucket_type::rotated_sprites_out_transparent)
+            : (is_palette_sprite ? ffdu::instance_bucket_type::rotated_palette_sprites : ffdu::instance_bucket_type::rotated_sprites);
 
-        float depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
-        ff::vertex::sprite_geometry& input = *reinterpret_cast<ff::vertex::sprite_geometry*>(this->add_geometry(nullptr, bucket_type, depth));
+        ffdu::rotated_sprite_instance& input = *reinterpret_cast<ffdu::rotated_sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
 
-        this->get_world_matrix_and_texture_index(*sprite.view(), use_palette, input.matrix_index, input.texture_index);
-        input.position.x = transform.position.x;
-        input.position.y = transform.position.y;
-        input.position.z = depth;
-        input.scale = *reinterpret_cast<const DirectX::XMFLOAT2*>(&transform.scale);
-        input.rotate = transform.rotation_radians();
+        DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiply(
+            DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
+            DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y)));
+        input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
         input.color = transform.color;
-        input.uv_rect = *reinterpret_cast<const DirectX::XMFLOAT4*>(&sprite.texture_uv());
-        input.rect = *reinterpret_cast<const DirectX::XMFLOAT4*>(&sprite.world());
+        input.pos_rot.x = transform.position.x;
+        input.pos_rot.y = transform.position.y;
+        input.pos_rot.z = depth;
+        input.pos_rot.w = transform.rotation_radians();
+        input.indexes = indexes;
     }
-#endif
+    else
+    {
+        ffdu::instance_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent)
+            ? (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites_out_transparent : ffdu::instance_bucket_type::sprites_out_transparent)
+            : (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites : ffdu::instance_bucket_type::sprites);
+
+        ffdu::sprite_instance& input = *reinterpret_cast<ffdu::sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
+
+        DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiplyAdd(
+            DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
+            DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y),
+            DirectX::XMVectorSet(transform.position.x, transform.position.y, transform.position.x, transform.position.y)));
+        input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
+        input.color = transform.color;
+        input.depth = depth;
+        input.indexes = indexes;
+    }
 }
 
 void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> points)
@@ -620,24 +641,11 @@ void ffdu::draw_device_base::pop_custom_context()
 
 void ffdu::draw_device_base::push_sampler_linear_filter(bool linear_filter)
 {
-    if (linear_filter != this->linear_sampler() && this->flush_for_sampler_change())
-    {
-        this->flush();
-    }
-
     this->sampler_stack.push_back(linear_filter);
 }
 
 void ffdu::draw_device_base::pop_sampler_linear_filter()
 {
-    const size_t size = this->sampler_stack.size();
-    assert(size > 1);
-
-    if (this->sampler_stack[size - 1] != this->sampler_stack[size - 2] && this->flush_for_sampler_change())
-    {
-        this->flush();
-    }
-
     this->sampler_stack.pop_back();
 }
 
@@ -701,20 +709,12 @@ bool ffdu::draw_device_base::reset()
 {
     this->destroy();
 
-    // Geometry buckets
-    for (auto& i : this->instance_buckets)
-    {
-        i.reset();
-    }
-
-    // Palette
     this->palette_stack.push_back(nullptr);
-    this->palette_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ffdu::MAX_PALETTES), DXGI_FORMAT_R8G8B8A8_UNORM);
+    this->palette_texture = ff::dxgi::create_render_texture(ff::point_size(ff::dxgi::palette_size, ffdu::MAX_PALETTES));
 
     this->palette_remap_stack.push_back(::default_palette_remap());
-    this->palette_remap_texture = this->create_texture(ff::point_size(ff::dxgi::palette_size, ffdu::MAX_PALETTE_REMAPS), DXGI_FORMAT_R8_UINT);
+    this->palette_remap_texture = ff::dxgi::create_render_texture(ff::point_size(ff::dxgi::palette_size, ffdu::MAX_PALETTE_REMAPS), DXGI_FORMAT_R8_UINT);
 
-    // States
     this->sampler_stack.push_back(false);
 
     this->internal_reset();
@@ -792,8 +792,9 @@ void ffdu::draw_device_base::flush(bool end_draw)
             this->textures_using_palette_count, this->textures_using_palette.data(),
             *this->palette_texture, *this->palette_remap_texture);
 
-        this->draw_opaque_instances();
-        this->draw_transparent_instances();
+        const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+        this->draw_opaque_instances(custom_func);
+        this->draw_transparent_instances(custom_func);
         this->internal_flush_end(this->command_context_);
 
         // Reset draw data
@@ -902,18 +903,11 @@ bool ffdu::draw_device_base::create_instance_buffer()
     return false;
 }
 
-void ffdu::draw_device_base::draw_opaque_instances()
+void ffdu::draw_device_base::draw_opaque_instances(const ff::dxgi::draw_base::custom_context_func* custom_func)
 {
-    const size_t custom_size = this->custom_context_stack.size();
-    const ff::dxgi::draw_base::custom_context_func* custom_func = custom_size ? &this->custom_context_stack[custom_size - 1] : nullptr;
-    this->apply_opaque_state(*this->command_context_);
-
-    for (ffdu::instance_bucket& bucket : this->instance_buckets)
+    for (size_t i = 0; i < static_cast<size_t>(ffdu::instance_bucket_type::first_transparent); i++)
     {
-        if (bucket.is_transparent())
-        {
-            break;
-        }
+        const ffdu::instance_bucket& bucket = this->instance_buckets[i];
 
         if (bucket.render_count() && this->apply_instance_state(*this->command_context_, bucket))
         {
@@ -925,38 +919,30 @@ void ffdu::draw_device_base::draw_opaque_instances()
     }
 }
 
-void ffdu::draw_device_base::draw_transparent_instances()
+void ffdu::draw_device_base::draw_transparent_instances(const ff::dxgi::draw_base::custom_context_func* custom_func)
 {
-    const size_t alpha_geometry_size = this->transparent_instances.size();
-    if (alpha_geometry_size)
+    for (size_t transparent_size = this->transparent_instances.size(), i = 0; i < transparent_size; )
     {
-        const size_t custom_size = this->custom_context_stack.size();
-        const ff::dxgi::draw_base::custom_context_func* custom_func = custom_size ? &this->custom_context_stack[custom_size - 1] : nullptr;
-        this->apply_transparent_state(*this->command_context_);
+        const ffdu::transparent_instance_entry& entry = this->transparent_instances[i];
+        const ffdu::instance_bucket& bucket = *entry.bucket;
+        size_t instance_count = 1;
 
-        for (size_t i = 0; i < alpha_geometry_size; )
+        for (i++; i < transparent_size; i++, instance_count++)
         {
-            const ffdu::transparent_instance_entry& entry = this->transparent_instances[i];
-            const ffdu::instance_bucket& bucket = *entry.bucket;
-            size_t geometry_count = 1;
-
-            for (i++; i < alpha_geometry_size; i++, geometry_count++)
+            const ffdu::transparent_instance_entry& entry2 = this->transparent_instances[i];
+            if (entry2.bucket != entry.bucket ||
+                entry2.depth != entry.depth ||
+                entry2.index != entry.index + instance_count)
             {
-                const ffdu::transparent_instance_entry& entry2 = this->transparent_instances[i];
-                if (entry2.bucket != entry.bucket ||
-                    entry2.depth != entry.depth ||
-                    entry2.index != entry.index + geometry_count)
-                {
-                    break;
-                }
+                break;
             }
+        }
 
-            if (this->apply_instance_state(*this->command_context_, bucket))
+        if (this->apply_instance_state(*this->command_context_, bucket))
+        {
+            if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), false))
             {
-                if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), false))
-                {
-                    this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start() + entry.index, geometry_count);
-                }
+                this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start() + entry.index, instance_count);
             }
         }
     }
@@ -1012,19 +998,12 @@ uint32_t ffdu::draw_device_base::get_texture_index_no_flush(ff::dxgi::texture_vi
     if (use_palette)
     {
         uint32_t palette_index = (this->palette_index == ::INVALID_INDEX) ? this->get_palette_index_no_flush() : this->palette_index;
-        if (palette_index == ::INVALID_INDEX)
-        {
-            return ::INVALID_INDEX;
-        }
+        check_ret_val(palette_index != ::INVALID_INDEX, ::INVALID_INDEX);
 
         uint32_t palette_remap_index = (this->palette_remap_index == ::INVALID_INDEX) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
-        if (palette_remap_index == ::INVALID_INDEX)
-        {
-            return ::INVALID_INDEX;
-        }
+        check_ret_val(palette_remap_index != ::INVALID_INDEX, ::INVALID_INDEX);
 
         uint32_t texture_index = ::INVALID_INDEX;
-
         for (size_t i = this->textures_using_palette_count; i != 0; i--)
         {
             if (this->textures_using_palette[i - 1] == &texture_view)
@@ -1053,10 +1032,7 @@ uint32_t ffdu::draw_device_base::get_texture_index_no_flush(ff::dxgi::texture_vi
         if (this->target_requires_palette_)
         {
             palette_remap_index = (this->palette_remap_index == ::INVALID_INDEX) ? this->get_palette_remap_index_no_flush() : this->palette_remap_index;
-            if (palette_remap_index == ::INVALID_INDEX)
-            {
-                return ::INVALID_INDEX;
-            }
+            check_ret_val(palette_remap_index != ::INVALID_INDEX, ::INVALID_INDEX);
         }
 
         uint32_t texture_index = ::INVALID_INDEX;
@@ -1073,10 +1049,7 @@ uint32_t ffdu::draw_device_base::get_texture_index_no_flush(ff::dxgi::texture_vi
 
         if (texture_index == ::INVALID_INDEX)
         {
-            if (this->texture_count == ffdu::MAX_TEXTURES)
-            {
-                return ::INVALID_INDEX;
-            }
+            check_ret_val(this->texture_count != ffdu::MAX_TEXTURES, ::INVALID_INDEX);
 
             this->textures[this->texture_count] = &texture_view;
             texture_index = static_cast<uint32_t>(this->texture_count++);

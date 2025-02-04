@@ -322,8 +322,8 @@ static bool init_d3d(bool for_reset)
         ::gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = std::make_unique<ff::dx12::gpu_descriptor_allocator>(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, 1920); // max is 2048
         ::queues = std::make_unique<ff::dx12::queues>();
         ::object_cache = std::make_unique<ff::dx12::object_cache>();
-        ::draw_device = ff::dx12::create_draw_device();
         ::residency_fence = std::make_unique<ff::dx12::fence>("Memory residency fence", nullptr);
+        ::draw_device = ff::dx12::create_draw_device();
     }
 
     return true;

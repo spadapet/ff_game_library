@@ -222,8 +222,9 @@ void* ff::dx12::buffer_gpu::map(ff::dxgi::command_context_base& context, size_t 
 
 void ff::dx12::buffer_gpu::unmap(ff::dxgi::command_context_base& context)
 {
-    assert_ret(this->resource_);
-    this->resource_->update_buffer(&ff::dx12::commands::get(context), this->mapped_memory.cpu_data(), 0, this->mapped_memory.size());
+    assert_ret(this->resource_ && this->mapped_memory);
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
+    commands.update_buffer(*this->resource_, 0, this->mapped_memory);
     this->mapped_memory = {};
 }
 

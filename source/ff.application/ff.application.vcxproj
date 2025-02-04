@@ -210,9 +210,8 @@
     <ClInclude Include="write\write.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\shaders.hlsl">
-      <FileType>Document</FileType>
-    </None>
+    <None Include="assets\shaders\data.hlsli" />
+    <None Include="assets\shaders\functions.hlsli" />
     <None Include="packages.ff.application.config" />
     <ResJson Include="assets\ff.dx12.res.json">
       <FileType>Document</FileType>
@@ -234,6 +233,29 @@
     <ProjectReference Include="..\ff.base\ff.base.vcxproj">
       <Project>{f89161f3-74e5-4b6b-9a53-6b97b83d1700}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\shaders\ps_color.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\ps_sprite.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\vs_circle.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\vs_line.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\vs_rectangle.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\vs_sprite.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="assets\shaders\vs_triangle.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />

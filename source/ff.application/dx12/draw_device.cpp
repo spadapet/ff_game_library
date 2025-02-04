@@ -33,7 +33,7 @@ constexpr size_t SPRITE_INDEX_START = 0;
 constexpr size_t SPRITE_INDEX_COUNT = 6;
 
 #define VERTEX_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::VERTEX_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-#define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::INSTANCE_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 }
+#define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::INSTANCE_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 }
 
 static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
 {
@@ -135,7 +135,7 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_outline_layout()
 
 static std::shared_ptr<ff::data_base> get_static_index_data()
 {
-    static const uint16_t indexes[] = { 0, 1, 2, 2, 3, 0 };
+    static const uint16_t indexes[] = { 0, 1, 2, 2, 1, 3 };
     return std::make_shared<ff::data_static>(&indexes[0], _countof(indexes) * sizeof(indexes[0]));
 }
 
@@ -461,17 +461,17 @@ namespace
                 ID3D12RootSignature* rs = this->root_signature.Get();
                 namespace a = assets::dx12;
 
-                this->state(ffdu::instance_bucket_type::sprites).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::rotated_sprites).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::rotated_palette_sprites).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::lines).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::line_strips).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::triangles).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, "", "", "");
-                this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, "", "", "");
+                this->state(ffdu::instance_bucket_type::sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_SPRITE, a::FF_DX12_PS_SPRITE_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rotated_sprites).reset(rs, a::FF_DX12_VS_ROTATED_SPRITE, a::FF_DX12_PS_SPRITE, a::FF_DX12_PS_SPRITE_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rotated_palette_sprites).reset(rs, a::FF_DX12_VS_ROTATED_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::lines).reset(rs, a::FF_DX12_VS_LINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::line_strips).reset(rs, a::FF_DX12_VS_LINE_STRIP, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::triangles_filled).reset(rs, a::FF_DX12_VS_TRIANGLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, a::FF_DX12_VS_RECTANGLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, a::FF_DX12_VS_RECTANGLE_OUTLINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, a::FF_DX12_VS_CIRCLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, a::FF_DX12_VS_CIRCLE_OUTLINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
             }
         }
 
@@ -606,6 +606,16 @@ namespace
                 this->commands->resource_state(*this->ps_constants_buffer_0_.resource(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             }
 
+            // Vertex and index buffers
+            {
+                ff::dx12::buffer_base* single_buffer = &this->vertex_buffer;
+                D3D12_VERTEX_BUFFER_VIEW vertex_view = this->vertex_buffer.vertex_view(sizeof(DirectX::XMFLOAT2));
+                this->commands->vertex_buffers(&single_buffer, &vertex_view, ::VERTEX_VIEW_INDEX, 1);
+
+                D3D12_INDEX_BUFFER_VIEW index_view = this->index_buffer.index_view();
+                this->commands->index_buffer(this->index_buffer, index_view);
+            }
+
             for (size_t i = 0; i < texture_count; i++)
             {
                 ff::dxgi::texture_view_base* view = in_textures[i];
@@ -701,21 +711,6 @@ namespace
             }
         }
 
-        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) override
-        {
-            ff::dx12::buffer_base* single_buffer = &this->vertex_buffer;
-            D3D12_VERTEX_BUFFER_VIEW vertex_view = this->vertex_buffer.vertex_view(sizeof(DirectX::XMFLOAT2));
-            this->commands->vertex_buffers(&single_buffer, &vertex_view, ::VERTEX_VIEW_INDEX, 1);
-
-            D3D12_INDEX_BUFFER_VIEW index_view = this->index_buffer.index_view();
-            this->commands->index_buffer(this->index_buffer, index_view);
-        }
-
-        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) override
-        {
-            // opaque state alraedy set up vertex/index buffers
-        }
-
         virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) override
         {
             if (this->state(bucket.bucket_type()).apply(*this->commands,
@@ -754,16 +749,6 @@ namespace
             return this->ps_constants_buffer_0_;
         }
 
-        virtual bool flush_for_sampler_change() const override
-        {
-            return false;
-        }
-
-        virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) override
-        {
-            return std::make_shared<ff::dx12::texture>(size, format);
-        }
-
         virtual void draw(ff::dxgi::command_context_base& context, ffdu::instance_bucket_type instance_type, size_t instance_start, size_t instance_count) override
         {
             switch (instance_type)
@@ -791,8 +776,8 @@ namespace
                 case ffdu::instance_bucket_type::line_strips_out_transparent:
                     break;
 
-                case ffdu::instance_bucket_type::triangles:
-                case ffdu::instance_bucket_type::triangles_out_transparent:
+                case ffdu::instance_bucket_type::triangles_filled:
+                case ffdu::instance_bucket_type::triangles_filled_out_transparent:
                     break;
 
                 case ffdu::instance_bucket_type::rectangles_filled:

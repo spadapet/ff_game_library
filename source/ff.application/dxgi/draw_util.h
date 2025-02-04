@@ -39,7 +39,7 @@ namespace ff::dxgi::draw_util
         DirectX::XMFLOAT4 uv_rect;
         DirectX::XMFLOAT4 color; // For palette out: R=1 to use sprite sample, <1 to override output (like for fonts)
         float depth;
-        uint32_t matrix_texture_index; // matrix<<24, remap<<16, (palette or sampler)<<8, texture
+        uint32_t indexes; // matrix<<24, remap<<16, (palette or sampler)<<8, texture
     };
 
     struct rotated_sprite_instance
@@ -136,7 +136,7 @@ namespace ff::dxgi::draw_util
         rotated_palette_sprites,
         lines,
         line_strips,
-        triangles,
+        triangles_filled,
         rectangles_filled,
         rectangles_outline,
         circles_filled,
@@ -148,7 +148,7 @@ namespace ff::dxgi::draw_util
         rotated_palette_sprites_out_transparent,
         lines_out_transparent,
         line_strips_out_transparent,
-        triangles_out_transparent,
+        triangles_filled_out_transparent,
         rectangles_filled_out_transparent,
         rectangles_outline_out_transparent,
         circles_filled_out_transparent,
@@ -275,7 +275,6 @@ namespace ff::dxgi::draw_util
         virtual ff::dxgi::buffer_base& vs_constants_buffer_0() = 0;
         virtual ff::dxgi::buffer_base& vs_constants_buffer_1() = 0;
         virtual ff::dxgi::buffer_base& ps_constants_buffer_0() = 0;
-        virtual bool flush_for_sampler_change() const = 0;
 
         virtual void update_palette_texture(ff::dxgi::command_context_base& context,
             size_t textures_using_palette_count,
@@ -285,10 +284,7 @@ namespace ff::dxgi::draw_util
             size_t texture_count, ff::dxgi::texture_view_base** textures,
             size_t textures_using_palette_count, ff::dxgi::texture_view_base** textures_using_palette,
             ff::dxgi::texture_base& palette_texture, ff::dxgi::texture_base& palette_remap_texture) = 0;
-        virtual void apply_opaque_state(ff::dxgi::command_context_base& context) = 0;
-        virtual void apply_transparent_state(ff::dxgi::command_context_base& context) = 0;
         virtual bool apply_instance_state(ff::dxgi::command_context_base& context, const ffdu::instance_bucket& bucket) = 0;
-        virtual std::shared_ptr<ff::dxgi::texture_base> create_texture(ff::point_size size, DXGI_FORMAT format) = 0;
         virtual void draw(ff::dxgi::command_context_base& context, ffdu::instance_bucket_type instance_type, size_t instance_start, size_t instance_count) = 0;
 
         ff::dxgi::device_child_base* as_device_child();
@@ -318,8 +314,8 @@ namespace ff::dxgi::draw_util
         void update_vs_constants_buffer_1();
         void update_ps_constants_buffer_0();
         bool create_instance_buffer();
-        void draw_opaque_instances();
-        void draw_transparent_instances();
+        void draw_opaque_instances(const ff::dxgi::draw_base::custom_context_func* custom_func);
+        void draw_transparent_instances(const ff::dxgi::draw_base::custom_context_func* custom_func);
         float nudge_depth(ffdu::last_depth_type depth_type);
 
         uint32_t get_world_matrix_index();

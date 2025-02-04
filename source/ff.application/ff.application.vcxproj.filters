@@ -599,6 +599,9 @@
     <Filter Include="dx_types">
       <UniqueIdentifier>{a0e0cf09-8c60-49cc-8f9e-3ea97dfdb912}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets\shaders">
+      <UniqueIdentifier>{6c7e627e-6487-49d1-a3b7-31d4796a7595}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResJson Include="assets\ff.app.res.json">
@@ -609,9 +612,33 @@
     </ResJson>
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\shaders.hlsl">
-      <Filter>assets</Filter>
-    </None>
     <None Include="packages.ff.application.config" />
+    <None Include="assets\shaders\data.hlsli">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\ps_color.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\ps_sprite.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\vs_circle.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\vs_line.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\vs_rectangle.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\vs_sprite.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\vs_triangle.hlsl">
+      <Filter>assets\shaders</Filter>
+    </None>
+    <None Include="assets\shaders\functions.hlsli">
+      <Filter>assets\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

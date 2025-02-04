@@ -1,115 +1,123 @@
 {
   "res:namespace": "assets::dx12",
 
-  "ff.dx12.line_vs":
+  "ff.dx12.vs_circle_filled":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/vs_circle.hlsl",
     "target": "vs_5_1",
-    "entry": "line_vs"
+    "entry": "vs_circle_filled"
   },
 
-  "ff.dx12.circle_vs":
+  "ff.dx12.vs_circle_outline":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/vs_circle.hlsl",
     "target": "vs_5_1",
-    "entry": "circle_vs"
+    "entry": "vs_circle_outline"
   },
 
-  "ff.dx12.triangle_vs":
+  "ff.dx12.vs_line":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/vs_line.hlsl",
     "target": "vs_5_1",
-    "entry": "triangle_vs"
+    "entry": "vs_line"
   },
 
-  "ff.dx12.sprite_vs":
+  "ff.dx12.vs_line_strip":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/vs_line.hlsl",
     "target": "vs_5_1",
-    "entry": "sprite_vs"
+    "entry": "vs_line_strip"
   },
 
-  "ff.dx12.line_gs":
+  "ff.dx12.vs_rectangle_filled":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
-    "target": "gs_5_1",
-    "entry": "line_gs"
+    "file": "file:shaders/vs_rectangle.hlsl",
+    "target": "vs_5_1",
+    "entry": "vs_rectangle_filled"
   },
 
-  "ff.dx12.circle_gs":
+  "ff.dx12.vs_rectangle_outline":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
-    "target": "gs_5_1",
-    "entry": "circle_gs"
+    "file": "file:shaders/vs_rectangle.hlsl",
+    "target": "vs_5_1",
+    "entry": "vs_rectangle_outline"
   },
 
-  "ff.dx12.triangle_gs":
+  "ff.dx12.vs_sprite":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
-    "target": "gs_5_1",
-    "entry": "triangle_gs"
+    "file": "file:shaders/vs_sprite.hlsl",
+    "target": "vs_5_1",
+    "entry": "vs_sprite"
   },
 
-  "ff.dx12.sprite_gs":
+  "ff.dx12.vs_rotated_sprite":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
-    "target": "gs_5_1",
-    "entry": "sprite_gs"
+    "file": "file:shaders/vs_sprite.hlsl",
+    "target": "vs_5_1",
+    "entry": "vs_rotated_sprite"
   },
 
-  "ff.dx12.color_ps":
+  "ff.dx12.vs_triangle_filled":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/vs_triangle.hlsl",
+    "target": "vs_5_1",
+    "entry": "vs_triangle_filled"
+  },
+
+  "ff.dx12.ps_color":
+  {
+    "res:type": "shader",
+    "file": "file:shaders/ps_color.hlsl",
     "target": "ps_5_1",
-    "entry": "color_ps"
+    "entry": "ps_color"
   },
 
-  "ff.dx12.palette_out_color_ps":
+  "ff.dx12.ps_color_out_palette":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/ps_color.hlsl",
     "target": "ps_5_1",
-    "entry": "palette_out_color_ps"
+    "entry": "ps_color_out_palette"
   },
 
-  "ff.dx12.sprite_ps":
+  "ff.dx12.ps_sprite":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/ps_sprite.hlsl",
     "target": "ps_5_1",
-    "entry": "sprite_ps"
+    "entry": "ps_sprite"
   },
 
-  "ff.dx12.sprite_palette_ps":
+  "ff.dx12.ps_palette_sprite":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/ps_sprite.hlsl",
     "target": "ps_5_1",
-    "entry": "sprite_palette_ps"
+    "entry": "ps_palette_sprite"
   },
 
-  "ff.dx12.palette_out_sprite_ps":
+  "ff.dx12.ps_sprite_out_palette":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/ps_sprite.hlsl",
     "target": "ps_5_1",
-    "entry": "palette_out_sprite_ps"
+    "entry": "ps_sprite_out_palette"
   },
 
-  "ff.dx12.palette_out_sprite_palette_ps":
+  "ff.dx12.ps_palette_sprite_out_palette":
   {
     "res:type": "shader",
-    "file": "file:shaders.hlsl",
+    "file": "file:shaders/ps_sprite.hlsl",
     "target": "ps_5_1",
-    "entry": "palette_out_sprite_palette_ps"
+    "entry": "ps_palette_sprite_out_palette"
   }
 }
