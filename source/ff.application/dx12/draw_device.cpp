@@ -79,21 +79,15 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> triangle_filled_layout()
     return layout;
 }
 
-static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_filled_layout()
+static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_layout()
 {
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    static const std::array layout
     {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
-    };
-
-    return layout;
-}
-
-static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_outline_layout()
-{
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
-    {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+        INSTANCE_DESC("RECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("DEPTH", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("THICKNESS", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("INDEX", 0, DXGI_FORMAT_R32_UINT),
     };
 
     return layout;
@@ -339,8 +333,8 @@ namespace
                 line_layout(),
                 line_strip_layout(),
                 triangle_filled_layout(),
-                rectangle_filled_layout(),
-                rectangle_outline_layout(),
+                rectangle_layout(),
+                rectangle_layout(),
                 circle_filled_layout(),
                 circle_outline_layout(),
             }

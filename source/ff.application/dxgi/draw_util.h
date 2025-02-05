@@ -76,15 +76,7 @@ namespace ff::dxgi::draw_util
         uint32_t matrix_index;
     };
 
-    struct rectangle_filled_instance
-    {
-        DirectX::XMFLOAT4 rect;
-        DirectX::XMFLOAT4 color;
-        float depth;
-        uint32_t matrix_index;
-    };
-
-    struct rectangle_outline_instance
+    struct rectangle_instance
     {
         DirectX::XMFLOAT4 rect;
         DirectX::XMFLOAT4 color;
@@ -303,15 +295,17 @@ namespace ff::dxgi::draw_util
         bool create_instance_buffer();
         void draw_opaque_instances(const ff::dxgi::draw_base::custom_context_func* custom_func);
         void draw_transparent_instances(const ff::dxgi::draw_base::custom_context_func* custom_func);
-        float nudge_depth(ffdu::last_depth_type depth_type);
+        float nudge_depth();
 
         uint32_t get_world_matrix_index();
         uint32_t get_world_matrix_index_no_flush();
         uint32_t get_texture_index_no_flush(ff::dxgi::texture_view_base& texture_view, bool use_palette);
         uint32_t get_palette_index_no_flush();
         uint32_t get_palette_remap_index_no_flush();
-        int remap_palette_index(int color) const;
         uint32_t get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette);
+
+        int remap_palette_index(int color) const;
+        bool target_opaque();
 
         void* add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth);
         ffdu::instance_bucket& get_instance_bucket(ffdu::instance_bucket_type type);

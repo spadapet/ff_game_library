@@ -28,14 +28,14 @@ namespace
     };
 }
 
-static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_opaque)
+static ::alpha_type get_alpha_type(float alpha, bool force_opaque)
 {
-    if (color.w == 0)
+    if (alpha == 0)
     {
         return ::alpha_type::invisible;
     }
 
-    if (color.w == 1 || force_opaque)
+    if (alpha == 1 || force_opaque)
     {
         return ::alpha_type::opaque;
     }
@@ -43,24 +43,15 @@ static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4& color, bool force_op
     return ::alpha_type::transparent;
 }
 
-static ::alpha_type get_alpha_type(const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
+static ::alpha_type get_alpha_type(float alpha, bool force_opaque, ::alpha_type previous_alpha_type)
 {
-    ::alpha_type type = ::get_alpha_type(colors[0], force_opaque);
-
-    for (size_t i = 1; i < count; i++)
-    {
-        if (type != ::get_alpha_type(colors[i], force_opaque))
-        {
-            return ::alpha_type::transparent;
-        }
-    }
-
-    return type;
+    ::alpha_type type = ::get_alpha_type(alpha, force_opaque);
+    return (type == previous_alpha_type) ? type : ::alpha_type::transparent;
 }
 
-static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const DirectX::XMFLOAT4& color, bool force_opaque)
+static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, float alpha, bool force_opaque)
 {
-    switch (::get_alpha_type(color, force_opaque))
+    switch (::get_alpha_type(alpha, force_opaque))
     {
         case ::alpha_type::transparent:
             return ff::flags::has(data.type(), ff::dxgi::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
@@ -73,21 +64,6 @@ static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, const Dire
         default:
             return ::alpha_type::invisible;
     }
-}
-
-static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data** datas, const DirectX::XMFLOAT4* colors, size_t count, bool force_opaque)
-{
-    ::alpha_type type = ::get_alpha_type(*datas[0], colors[0], force_opaque);
-
-    for (size_t i = 1; i < count; i++)
-    {
-        if (type != ::get_alpha_type(*datas[i], colors[i], force_opaque))
-        {
-            return ::alpha_type::transparent;
-        }
-    }
-
-    return type;
 }
 
 static ff::dxgi::remap_t default_palette_remap()
@@ -311,8 +287,8 @@ ffdu::draw_device_base::draw_device_base()
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips>(),
         ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled>(),
-        ffdu::instance_bucket::create<ffdu::rectangle_filled_instance, ffdu::instance_bucket_type::rectangles_filled>(),
-        ffdu::instance_bucket::create<ffdu::rectangle_outline_instance, ffdu::instance_bucket_type::rectangles_outline>(),
+        ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_filled>(),
+        ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_outline>(),
         ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled>(),
         ffdu::instance_bucket::create<ffdu::circle_outline_instance, ffdu::instance_bucket_type::circles_outline>(),
 
@@ -321,8 +297,8 @@ ffdu::draw_device_base::draw_device_base()
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::rectangle_filled_instance, ffdu::instance_bucket_type::rectangles_filled_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::rectangle_outline_instance, ffdu::instance_bucket_type::rectangles_outline_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_filled_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_outline_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::circle_outline_instance, ffdu::instance_bucket_type::circles_outline_out_transparent>(),
     }
@@ -355,7 +331,7 @@ void ffdu::draw_device_base::end_draw()
 
 void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform)
 {
-    ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color, this->force_opaque || this->target_requires_palette_);
+    ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color.alpha(), this->target_opaque());
     check_ret(alpha_type != ::alpha_type::invisible && sprite.view());
 
     bool is_palette_sprite = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
@@ -365,7 +341,7 @@ void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, co
         ? (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites_out_transparent : ffdu::instance_bucket_type::sprites_out_transparent)
         : (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites : ffdu::instance_bucket_type::sprites);
 
-    float depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
+    float depth = this->nudge_depth();
     ffdu::sprite_instance& input = *reinterpret_cast<ffdu::sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
 
     DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiply(
@@ -451,6 +427,40 @@ void ffdu::draw_device_base::draw_triangles(std::span<const ff::dxgi::endpoint_t
 
 void ffdu::draw_device_base::draw_rectangle(const ff::rect_float& rect, const ff::color& color, std::optional<float> thickness)
 {
+    ::alpha_type alpha_type = ::get_alpha_type(color.alpha(), this->target_opaque());
+    check_ret(alpha_type != ::alpha_type::invisible);
+
+    ff::rect_float rect2 = rect.normalize();
+    check_ret(rect2.area());
+
+    if (thickness.has_value())
+    {
+        float thick = thickness.value();
+        check_ret(thick);
+
+        if (thick < 0)
+        {
+            rect2 = rect2.deflate(thick, thick);
+            thick = -thick;
+        }
+
+        if (thick * 2 >= rect2.width() || thick * 2 >= rect2.height())
+        {
+            this->draw_rectangle(rect2, color, std::nullopt);
+            return;
+        }
+
+        float depth = this->nudge_depth();
+        ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
+            ? ffdu::instance_bucket_type::rectangles_outline_out_transparent
+            : ffdu::instance_bucket_type::rectangles_outline;
+        ffdu::rectangle_instance& input = *reinterpret_cast<ffdu::rectangle_instance*>(this->add_instance(nullptr, type, depth));
+        // Fill in
+    }
+    else
+    {
+    }
+
 #if 0
     ff::rect_float rect2 = rect.normalize();
 
@@ -920,8 +930,9 @@ void ffdu::draw_device_base::draw_transparent_instances(const ff::dxgi::draw_bas
     }
 }
 
-float ffdu::draw_device_base::nudge_depth(ffdu::last_depth_type depth_type)
+float ffdu::draw_device_base::nudge_depth()
 {
+    ffdu::last_depth_type depth_type = this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance;
     if (depth_type != ffdu::last_depth_type::instance_no_overlap || this->last_depth_type != depth_type)
     {
         this->draw_depth += ffdu::RENDER_DEPTH_DELTA;
@@ -1082,11 +1093,6 @@ uint32_t ffdu::draw_device_base::get_palette_remap_index_no_flush()
     return this->palette_remap_index;
 }
 
-int ffdu::draw_device_base::remap_palette_index(int color) const
-{
-    return this->palette_remap_stack.back().remap[color];
-}
-
 uint32_t ffdu::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette)
 {
     uint32_t model_index = (this->world_matrix_index == ::INVALID_INDEX) ? this->get_world_matrix_index_no_flush() : this->world_matrix_index;
@@ -1099,6 +1105,16 @@ uint32_t ffdu::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::te
     }
 
     return (model_index << 24) | texture_index;
+}
+
+int ffdu::draw_device_base::remap_palette_index(int color) const
+{
+    return this->palette_remap_stack.back().remap[color];
+}
+
+bool ff::dxgi::draw_util::draw_device_base::target_opaque()
+{
+    return this->force_opaque || this->target_requires_palette_;
 }
 
 void* ffdu::draw_device_base::add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth)
