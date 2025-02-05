@@ -57,14 +57,6 @@
     "entry": "vs_sprite"
   },
 
-  "ff.dx12.vs_rotated_sprite":
-  {
-    "res:type": "shader",
-    "file": "file:shaders/vs_sprite.hlsl",
-    "target": "vs_5_1",
-    "entry": "vs_rotated_sprite"
-  },
-
   "ff.dx12.vs_triangle_filled":
   {
     "res:type": "shader",

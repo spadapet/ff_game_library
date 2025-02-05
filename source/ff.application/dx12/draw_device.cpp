@@ -42,20 +42,6 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
         INSTANCE_DESC("RECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
         INSTANCE_DESC("TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
         INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
-        INSTANCE_DESC("DEPTH", 0, DXGI_FORMAT_R32_FLOAT),
-        INSTANCE_DESC("INDEXES", 0, DXGI_FORMAT_R32_UINT),
-    };
-
-    return layout;
-}
-
-static std::span<const D3D12_INPUT_ELEMENT_DESC> rotated_sprite_layout()
-{
-    static const std::array layout
-    {
-        INSTANCE_DESC("RECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
-        INSTANCE_DESC("TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
-        INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
         INSTANCE_DESC("POSROT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
         INSTANCE_DESC("INDEXES", 0, DXGI_FORMAT_R32_UINT),
     };
@@ -350,8 +336,6 @@ namespace
             {
                 sprite_layout(),
                 sprite_layout(),
-                rotated_sprite_layout(),
-                rotated_sprite_layout(),
                 line_layout(),
                 line_strip_layout(),
                 triangle_filled_layout(),
@@ -463,8 +447,6 @@ namespace
 
                 this->state(ffdu::instance_bucket_type::sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_SPRITE, a::FF_DX12_PS_SPRITE_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::rotated_sprites).reset(rs, a::FF_DX12_VS_ROTATED_SPRITE, a::FF_DX12_PS_SPRITE, a::FF_DX12_PS_SPRITE_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::rotated_palette_sprites).reset(rs, a::FF_DX12_VS_ROTATED_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::lines).reset(rs, a::FF_DX12_VS_LINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::line_strips).reset(rs, a::FF_DX12_VS_LINE_STRIP, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::triangles_filled).reset(rs, a::FF_DX12_VS_TRIANGLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
@@ -761,10 +743,6 @@ namespace
                 case ffdu::instance_bucket_type::sprites_out_transparent:
                 case ffdu::instance_bucket_type::palette_sprites:
                 case ffdu::instance_bucket_type::palette_sprites_out_transparent:
-                case ffdu::instance_bucket_type::rotated_sprites:
-                case ffdu::instance_bucket_type::rotated_sprites_out_transparent:
-                case ffdu::instance_bucket_type::rotated_palette_sprites:
-                case ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent:
                     this->commands->draw_indexed(0, ::SPRITE_INDEX_START, ::SPRITE_INDEX_COUNT, instance_start, instance_count);
                     break;
 

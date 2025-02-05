@@ -38,15 +38,6 @@ namespace ff::dxgi::draw_util
         DirectX::XMFLOAT4 rect;
         DirectX::XMFLOAT4 uv_rect;
         DirectX::XMFLOAT4 color; // For palette out: R=1 to use sprite sample, <1 to override output (like for fonts)
-        float depth;
-        uint32_t indexes; // matrix<<24, remap<<16, (palette or sampler)<<8, texture
-    };
-
-    struct rotated_sprite_instance
-    {
-        DirectX::XMFLOAT4 rect;
-        DirectX::XMFLOAT4 uv_rect;
-        DirectX::XMFLOAT4 color; // For palette out: R=1 to use sprite sample, <1 to override output (like for fonts)
         DirectX::XMFLOAT4 pos_rot; // x,y, z=depth, w=rotate degrees CCW
         uint32_t indexes; // matrix<<24, remap<<16, (palette or sampler)<<8, texture
     };
@@ -132,8 +123,6 @@ namespace ff::dxgi::draw_util
     {
         sprites,
         palette_sprites,
-        rotated_sprites,
-        rotated_palette_sprites,
         lines,
         line_strips,
         triangles_filled,
@@ -144,8 +133,6 @@ namespace ff::dxgi::draw_util
 
         sprites_out_transparent,
         palette_sprites_out_transparent,
-        rotated_sprites_out_transparent,
-        rotated_palette_sprites_out_transparent,
         lines_out_transparent,
         line_strips_out_transparent,
         triangles_filled_out_transparent,

@@ -308,8 +308,6 @@ ffdu::draw_device_base::draw_device_base()
     {
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::sprites>(),
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::palette_sprites>(),
-        ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_sprites>(),
-        ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_palette_sprites>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips>(),
         ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled>(),
@@ -320,8 +318,6 @@ ffdu::draw_device_base::draw_device_base()
 
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::sprites_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::palette_sprites_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_sprites_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::rotated_sprite_instance, ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled_out_transparent>(),
@@ -349,7 +345,7 @@ void ffdu::draw_device_base::end_draw()
     this->palette_stack.resize(1);
     this->palette_remap_stack.resize(1);
     this->sampler_stack.resize(1);
-    this->custom_context_stack.clear();
+    this->custom_context_stack.resize(1);
     this->world_matrix_stack_.reset();
     this->draw_depth = 0;
     this->force_no_overlap = 0;
@@ -363,45 +359,25 @@ void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, co
     check_ret(alpha_type != ::alpha_type::invisible && sprite.view());
 
     bool is_palette_sprite = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
-    float depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
     uint32_t indexes = this->get_world_matrix_and_texture_index(*sprite.view(), is_palette_sprite);
 
-    if (transform.rotation)
-    {
-        ffdu::instance_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent)
-            ? (is_palette_sprite ? ffdu::instance_bucket_type::rotated_palette_sprites_out_transparent : ffdu::instance_bucket_type::rotated_sprites_out_transparent)
-            : (is_palette_sprite ? ffdu::instance_bucket_type::rotated_palette_sprites : ffdu::instance_bucket_type::rotated_sprites);
+    ffdu::instance_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent)
+        ? (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites_out_transparent : ffdu::instance_bucket_type::sprites_out_transparent)
+        : (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites : ffdu::instance_bucket_type::sprites);
 
-        ffdu::rotated_sprite_instance& input = *reinterpret_cast<ffdu::rotated_sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
+    float depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
+    ffdu::sprite_instance& input = *reinterpret_cast<ffdu::sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
 
-        DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiply(
-            DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
-            DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y)));
-        input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
-        input.color = transform.color;
-        input.pos_rot.x = transform.position.x;
-        input.pos_rot.y = transform.position.y;
-        input.pos_rot.z = depth;
-        input.pos_rot.w = transform.rotation_radians();
-        input.indexes = indexes;
-    }
-    else
-    {
-        ffdu::instance_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent)
-            ? (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites_out_transparent : ffdu::instance_bucket_type::sprites_out_transparent)
-            : (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites : ffdu::instance_bucket_type::sprites);
-
-        ffdu::sprite_instance& input = *reinterpret_cast<ffdu::sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
-
-        DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiplyAdd(
-            DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
-            DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y),
-            DirectX::XMVectorSet(transform.position.x, transform.position.y, transform.position.x, transform.position.y)));
-        input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
-        input.color = transform.color;
-        input.depth = depth;
-        input.indexes = indexes;
-    }
+    DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiply(
+        DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
+        DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y)));
+    input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
+    input.color = transform.color;
+    input.pos_rot.x = transform.position.x;
+    input.pos_rot.y = transform.position.y;
+    input.pos_rot.z = depth;
+    input.pos_rot.w = transform.rotation_radians();
+    input.indexes = indexes;
 }
 
 void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> points)
@@ -716,6 +692,7 @@ bool ffdu::draw_device_base::reset()
     this->palette_remap_texture = ff::dxgi::create_render_texture(ff::point_size(ff::dxgi::palette_size, ffdu::MAX_PALETTE_REMAPS), DXGI_FORMAT_R8_UINT);
 
     this->sampler_stack.push_back(false);
+    this->custom_context_stack.push_back([](ff::dxgi::command_context_base&, const std::type_info&, bool) { return true; });
 
     this->internal_reset();
 
@@ -792,7 +769,7 @@ void ffdu::draw_device_base::flush(bool end_draw)
             this->textures_using_palette_count, this->textures_using_palette.data(),
             *this->palette_texture, *this->palette_remap_texture);
 
-        const ff::dxgi::draw_base::custom_context_func* custom_func = this->custom_context_stack.size() ? &this->custom_context_stack.back() : nullptr;
+        const ff::dxgi::draw_base::custom_context_func* custom_func = &this->custom_context_stack.back();
         this->draw_opaque_instances(custom_func);
         this->draw_transparent_instances(custom_func);
         this->internal_flush_end(this->command_context_);
@@ -909,12 +886,9 @@ void ffdu::draw_device_base::draw_opaque_instances(const ff::dxgi::draw_base::cu
     {
         const ffdu::instance_bucket& bucket = this->instance_buckets[i];
 
-        if (bucket.render_count() && this->apply_instance_state(*this->command_context_, bucket))
+        if (bucket.render_count() && this->apply_instance_state(*this->command_context_, bucket) && (*custom_func)(*this->command_context_, bucket.item_type(), true))
         {
-            if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), true))
-            {
-                this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start(), bucket.render_count());
-            }
+            this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start(), bucket.render_count());
         }
     }
 }
@@ -927,6 +901,7 @@ void ffdu::draw_device_base::draw_transparent_instances(const ff::dxgi::draw_bas
         const ffdu::instance_bucket& bucket = *entry.bucket;
         size_t instance_count = 1;
 
+        // Multiple transparent instances can be drawn at the same time if they don't overlap
         for (i++; i < transparent_size; i++, instance_count++)
         {
             const ffdu::transparent_instance_entry& entry2 = this->transparent_instances[i];
@@ -938,12 +913,9 @@ void ffdu::draw_device_base::draw_transparent_instances(const ff::dxgi::draw_bas
             }
         }
 
-        if (this->apply_instance_state(*this->command_context_, bucket))
+        if (this->apply_instance_state(*this->command_context_, bucket) && (*custom_func)(*this->command_context_, bucket.item_type(), false))
         {
-            if (!custom_func || (*custom_func)(*this->command_context_, bucket.item_type(), false))
-            {
-                this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start() + entry.index, instance_count);
-            }
+            this->draw(*this->command_context_, bucket.bucket_type(), bucket.render_start() + entry.index, instance_count);
         }
     }
 }
