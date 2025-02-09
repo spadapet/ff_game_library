@@ -1,43 +1,29 @@
 #include "data.hlsli"
 
-struct triangle_filled_vertex
+struct triangle_vertex
 {
+    float2 pos0 : POSITION0;
+    float2 pos1 : POSITION1;
+    float2 pos2 : POSITION2;
+    float4 color0 : COLOR0;
+    float4 color1 : COLOR1;
+    float4 color2 : COLOR2;
+    float depth : DEPTH;
+    uint matrix_index : INDEX;
+    uint vertex_id : SV_VertexID;
 };
 
-color_pixel vs_triangle_filled(triangle_filled_vertex input)
+color_pixel vs_triangle(triangle_vertex input)
 {
-    color_pixel output = (color_pixel) 0;
+    const uint vx = input.vertex_id & 1; // Position 0 or 1
+    const uint vy = input.vertex_id >> 1; // or 2
+
+    color_pixel output;
+    output.color = lerp(lerp(input.color0, input.color1, vx), input.color2, vy);
+
+    matrix transform_matrix = input.matrix_index ? mul(model_[input.matrix_index], projection_) : projection_;
+    output.pos = float4(lerp(lerp(input.pos0, input.pos1, vx), input.pos2, vy), input.depth, 1);
+    output.pos = mul(output.pos, transform_matrix);
+
     return output;
 }
-
-/*
-[maxvertexcount(3)]
-void triangle_gs(point triangle_geometry input[1], inout TriangleStream<color_pixel> output)
-{
-    color_pixel vertex;
-
-    float z = input[0].depth + Z_OFFSET;
-    float4 p0 = float4(input[0].pos0, z, 1);
-    float4 p1 = float4(input[0].pos1, z, 1);
-    float4 p2 = float4(input[0].pos2, z, 1);
-
-    matrix transform_matrix = mul(model_[input[0].world], projection_);
-    p0 = mul(p0, transform_matrix);
-    p1 = mul(p1, transform_matrix);
-    p2 = mul(p2, transform_matrix);
-
-    vertex.pos = p0;
-    vertex.color = input[0].color0;
-    output.Append(vertex);
-
-    vertex.pos = p1;
-    vertex.color = input[0].color1;
-    output.Append(vertex);
-
-    vertex.pos = p2;
-    vertex.color = input[0].color2;
-    output.Append(vertex);
-
-    output.RestartStrip();
-}
-*/

@@ -28,14 +28,14 @@ namespace
     };
 }
 
-static ::alpha_type get_alpha_type(float alpha, bool force_opaque)
+static ::alpha_type get_alpha_type(float alpha, bool allow_transparent)
 {
     if (alpha == 0)
     {
         return ::alpha_type::invisible;
     }
 
-    if (alpha == 1 || force_opaque)
+    if (alpha == 1 || !allow_transparent)
     {
         return ::alpha_type::opaque;
     }
@@ -43,21 +43,21 @@ static ::alpha_type get_alpha_type(float alpha, bool force_opaque)
     return ::alpha_type::transparent;
 }
 
-static ::alpha_type get_alpha_type(float alpha, bool force_opaque, ::alpha_type previous_alpha_type)
+static ::alpha_type get_alpha_type(float alpha, bool allow_transparent, ::alpha_type previous_alpha_type)
 {
-    ::alpha_type type = ::get_alpha_type(alpha, force_opaque);
+    ::alpha_type type = ::get_alpha_type(alpha, allow_transparent);
     return (type == previous_alpha_type) ? type : ::alpha_type::transparent;
 }
 
-static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, float alpha, bool force_opaque)
+static ::alpha_type get_alpha_type(const ff::dxgi::sprite_data& data, float alpha, bool allow_transparent)
 {
-    switch (::get_alpha_type(alpha, force_opaque))
+    switch (::get_alpha_type(alpha, allow_transparent))
     {
         case ::alpha_type::transparent:
             return ff::flags::has(data.type(), ff::dxgi::sprite_type::palette) ? alpha_type::opaque : alpha_type::transparent;
 
         case ::alpha_type::opaque:
-            return (ff::flags::has(data.type(), ff::dxgi::sprite_type::transparent) && !force_opaque)
+            return (ff::flags::has(data.type(), ff::dxgi::sprite_type::transparent) && allow_transparent)
                 ? ::alpha_type::transparent
                 : ::alpha_type::opaque;
 
@@ -285,22 +285,20 @@ ffdu::draw_device_base::draw_device_base()
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::sprites>(),
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::palette_sprites>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines>(),
-        ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips>(),
-        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled>(),
+        ffdu::instance_bucket::create<ffdu::triangle_instance, ffdu::instance_bucket_type::triangles>(),
         ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_filled>(),
         ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_outline>(),
-        ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled>(),
-        ffdu::instance_bucket::create<ffdu::circle_outline_instance, ffdu::instance_bucket_type::circles_outline>(),
+        ffdu::instance_bucket::create<ffdu::circle_instance, ffdu::instance_bucket_type::circles_filled>(),
+        ffdu::instance_bucket::create<ffdu::circle_instance, ffdu::instance_bucket_type::circles_outline>(),
 
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::sprites_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::sprite_instance, ffdu::instance_bucket_type::palette_sprites_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::line_instance, ffdu::instance_bucket_type::lines_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::line_strip_instance, ffdu::instance_bucket_type::line_strips_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::triangle_filled_instance, ffdu::instance_bucket_type::triangles_filled_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::triangle_instance, ffdu::instance_bucket_type::triangles_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_filled_out_transparent>(),
         ffdu::instance_bucket::create<ffdu::rectangle_instance, ffdu::instance_bucket_type::rectangles_outline_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::circle_filled_instance, ffdu::instance_bucket_type::circles_filled_out_transparent>(),
-        ffdu::instance_bucket::create<ffdu::circle_outline_instance, ffdu::instance_bucket_type::circles_outline_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::circle_instance, ffdu::instance_bucket_type::circles_filled_out_transparent>(),
+        ffdu::instance_bucket::create<ffdu::circle_instance, ffdu::instance_bucket_type::circles_outline_out_transparent>(),
     }
 {
 }
@@ -331,7 +329,7 @@ void ffdu::draw_device_base::end_draw()
 
 void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, const ff::transform& transform)
 {
-    ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color.alpha(), this->target_opaque());
+    ::alpha_type alpha_type = ::get_alpha_type(sprite, transform.color.alpha(), this->allow_transparent());
     check_ret(alpha_type != ::alpha_type::invisible && sprite.view());
 
     bool is_palette_sprite = ff::flags::has(sprite.type(), ff::dxgi::sprite_type::palette);
@@ -342,18 +340,18 @@ void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, co
         : (is_palette_sprite ? ffdu::instance_bucket_type::palette_sprites : ffdu::instance_bucket_type::sprites);
 
     float depth = this->nudge_depth();
-    ffdu::sprite_instance& input = *reinterpret_cast<ffdu::sprite_instance*>(this->add_instance(nullptr, bucket_type, depth));
+    ffdu::sprite_instance& instance = this->add_instance<ffdu::sprite_instance>(bucket_type, depth);
 
-    DirectX::XMStoreFloat4(&input.rect, DirectX::XMVectorMultiply(
+    DirectX::XMStoreFloat4(&instance.rect, DirectX::XMVectorMultiply(
         DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
         DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y)));
-    input.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
-    input.color = transform.color;
-    input.pos_rot.x = transform.position.x;
-    input.pos_rot.y = transform.position.y;
-    input.pos_rot.z = depth;
-    input.pos_rot.w = transform.rotation_radians();
-    input.indexes = indexes;
+    instance.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
+    instance.color = transform.color;
+    instance.pos_rot.x = transform.position.x;
+    instance.pos_rot.y = transform.position.y;
+    instance.pos_rot.z = depth;
+    instance.pos_rot.w = transform.rotation_radians();
+    instance.indexes = indexes;
 }
 
 void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> points)
@@ -405,119 +403,119 @@ void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> po
 
 void ffdu::draw_device_base::draw_triangles(std::span<const ff::dxgi::endpoint_t> points)
 {
-#if 0
-    ff::vertex::triangle_geometry input;
-    input.matrix_index = (this->world_matrix_index == ::INVALID_INDEX) ? this->get_world_matrix_index() : this->world_matrix_index;
-    input.depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
+    assert(points.size() % 3 == 0);
 
-    for (size_t i = 0; i < count; i++, points += 3, colors += 3)
+    const uint32_t matrix_index = this->get_world_matrix_index();
+    const float depth = this->nudge_depth();
+
+    for (size_t i = 0; i + 2 < points.size(); i += 3)
     {
-        std::memcpy(input.position, points, sizeof(input.position));
-        std::memcpy(input.color, colors, sizeof(input.color));
+        const ff::color* color0 = points[i].color ? points[i].color : &ff::color_none();
+        const ff::color* color1 = points[i + 1].color ? points[i + 1].color : color0;
+        const ff::color* color2 = points[i + 2].color ? points[i + 2].color : color1;
 
-        ::alpha_type alpha_type = ::get_alpha_type(colors, 3, this->force_opaque || this->target_requires_palette_);
-        if (alpha_type != ::alpha_type::invisible)
-        {
-            ffdu::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ffdu::geometry_bucket_type::triangles_alpha : ffdu::geometry_bucket_type::triangles;
-            this->add_geometry(&input, bucket_type, input.depth);
-        }
+        ::alpha_type alpha_type = ::get_alpha_type(color0->alpha(), this->allow_transparent());
+        alpha_type = ::get_alpha_type(color1->alpha(), this->allow_transparent(), alpha_type);
+        alpha_type = ::get_alpha_type(color2->alpha(), this->allow_transparent(), alpha_type);
+        check_ret(alpha_type != ::alpha_type::invisible);
+
+        ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
+            ? ffdu::instance_bucket_type::triangles_out_transparent
+            : ffdu::instance_bucket_type::triangles;
+
+        ffdu::triangle_instance& instance = this->add_instance<ffdu::triangle_instance>(type, depth);
+        instance.position[0] = ff::dxgi::cast_point(points[i].pos);
+        instance.position[1] = ff::dxgi::cast_point(points[i + 1].pos);
+        instance.position[2] = ff::dxgi::cast_point(points[i + 2].pos);
+        instance.color[0] = color0->to_shader_color(this->palette_remap());
+        instance.color[1] = color1->to_shader_color(this->palette_remap());
+        instance.color[2] = color2->to_shader_color(this->palette_remap());
+        instance.depth = depth;
+        instance.matrix_index = matrix_index;
     }
-#endif
 }
 
 void ffdu::draw_device_base::draw_rectangle(const ff::rect_float& rect, const ff::color& color, std::optional<float> thickness)
 {
-    ::alpha_type alpha_type = ::get_alpha_type(color.alpha(), this->target_opaque());
+    ::alpha_type alpha_type = ::get_alpha_type(color.alpha(), this->allow_transparent());
     check_ret(alpha_type != ::alpha_type::invisible);
 
     ff::rect_float rect2 = rect.normalize();
     check_ret(rect2.area());
 
+    float thickness2 = 0;
     if (thickness.has_value())
     {
-        float thick = thickness.value();
-        check_ret(thick);
+        thickness2 = thickness.value();
+        check_ret(thickness2);
 
-        if (thick < 0)
+        if (thickness2 < 0)
         {
-            rect2 = rect2.deflate(thick, thick);
-            thick = -thick;
+            rect2 = rect2.deflate(thickness2, thickness2);
+            thickness2 = -thickness2;
         }
 
-        if (thick * 2 >= rect2.width() || thick * 2 >= rect2.height())
+        if (thickness2 * 2 >= rect2.width() || thickness2 * 2 >= rect2.height())
         {
-            this->draw_rectangle(rect2, color, std::nullopt);
-            return;
+            thickness2 = 0;
         }
-
-        float depth = this->nudge_depth();
-        ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
-            ? ffdu::instance_bucket_type::rectangles_outline_out_transparent
-            : ffdu::instance_bucket_type::rectangles_outline;
-        ffdu::rectangle_instance& input = *reinterpret_cast<ffdu::rectangle_instance*>(this->add_instance(nullptr, type, depth));
-        // Fill in
-    }
-    else
-    {
     }
 
-#if 0
-    ff::rect_float rect2 = rect.normalize();
+    ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
+        ? (thickness2 ? ffdu::instance_bucket_type::rectangles_outline_out_transparent : ffdu::instance_bucket_type::rectangles_filled_out_transparent)
+        : (thickness2 ? ffdu::instance_bucket_type::rectangles_outline : ffdu::instance_bucket_type::rectangles_filled);
+    uint32_t matrix_index = this->get_world_matrix_index();
+    float depth = this->nudge_depth();
 
-    if (thickness < 0)
-    {
-        ff::point_float deflate = this->geometry_constants_0.view_scale * thickness;
-        rect2 = rect2.deflate(deflate);
-        this->draw_outline_rectangle(rect2, color, -thickness, pixel_thickness);
-    }
-    else if (!pixel_thickness && (thickness * 2 >= rect2.width() || thickness * 2 >= rect2.height()))
-    {
-        this->draw_filled_rectangle(rect2, color);
-    }
-    else
-    {
-        ff::point_float half_thickness(thickness / 2, thickness / 2);
-        if (pixel_thickness)
-        {
-            half_thickness *= this->geometry_constants_0.view_scale;
-        }
-
-        rect2 = rect2.deflate(half_thickness);
-
-        const ff::point_float points[5] =
-        {
-            rect2.top_left(),
-            rect2.top_right(),
-            rect2.bottom_right(),
-            rect2.bottom_left(),
-            rect2.top_left(),
-        };
-
-        this->draw_line_strip(points, 5, color, thickness, pixel_thickness);
-    }
-#endif
+    ffdu::rectangle_instance& instance = this->add_instance<ffdu::rectangle_instance>(type, depth);
+    instance.rect = ff::dxgi::cast_rect(rect2);
+    instance.color = color.to_shader_color(this->palette_remap());
+    instance.depth = depth;
+    instance.thickness = thickness2;
+    instance.matrix_index = matrix_index;
 }
 
 void ffdu::draw_device_base::draw_circle(const ff::dxgi::endpoint_t& pos, std::optional<float> thickness, const ff::color* outside_color)
 {
-#if 0
-    ff::vertex::circle_geometry input;
-    input.matrix_index = (this->world_matrix_index == ::INVALID_INDEX) ? this->get_world_matrix_index() : this->world_matrix_index;
-    input.position.x = center.x;
-    input.position.y = center.y;
-    input.position.z = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
-    input.radius = std::abs(radius);
-    input.thickness = pixel_thickness ? -std::abs(thickness) : std::min(std::abs(thickness), input.radius);
-    input.inside_color = inside_color;
-    input.outside_color = outside_color;
+    float radius = std::abs(pos.size);
+    check_ret(radius && (pos.color || outside_color));
 
-    ::alpha_type alpha_type = ::get_alpha_type(&input.inside_color, 2, this->force_opaque || this->target_requires_palette_);
-    if (alpha_type != ::alpha_type::invisible)
+    ::alpha_type alpha_type = ::get_alpha_type(pos.color ? pos.color->alpha() : 1.f, this->allow_transparent());
+    check_ret(alpha_type != ::alpha_type::invisible);
+
+    float thickness2 = 0;
+    if (thickness.has_value())
     {
-        ffdu::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ffdu::geometry_bucket_type::circles_alpha : ffdu::geometry_bucket_type::circles;
-        this->add_geometry(&input, bucket_type, input.position.z);
+        thickness2 = thickness.value();
+        check_ret(thickness2);
+
+        if (thickness2 < 0)
+        {
+            radius += thickness2;
+            thickness2 = -thickness2;
+        }
+
+        if (thickness2 >= radius)
+        {
+            thickness2 = 0;
+        }
     }
-#endif
+
+    ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
+        ? (thickness2 ? ffdu::instance_bucket_type::circles_outline_out_transparent : ffdu::instance_bucket_type::circles_filled_out_transparent)
+        : (thickness2 ? ffdu::instance_bucket_type::circles_outline : ffdu::instance_bucket_type::circles_filled);
+    uint32_t matrix_index = this->get_world_matrix_index();
+    float depth = this->nudge_depth();
+
+    ffdu::circle_instance& instance = this->add_instance<ffdu::circle_instance>(type, depth);
+    instance.position.x = pos.pos.x;
+    instance.position.y = pos.pos.y;
+    instance.position.z = depth;
+    instance.inside_color = (pos.color ? pos.color : outside_color)->to_shader_color(this->palette_remap());
+    instance.outside_color = outside_color ? outside_color->to_shader_color(this->palette_remap()) : instance.inside_color;
+    instance.radius = radius;
+    instance.thickness = thickness2;
+    instance.matrix_index = matrix_index;
 }
 
 ff::matrix_stack& ffdu::draw_device_base::world_matrix_stack()
@@ -1107,14 +1105,14 @@ uint32_t ffdu::draw_device_base::get_world_matrix_and_texture_index(ff::dxgi::te
     return (model_index << 24) | texture_index;
 }
 
-int ffdu::draw_device_base::remap_palette_index(int color) const
+const uint8_t* ffdu::draw_device_base::palette_remap() const
 {
-    return this->palette_remap_stack.back().remap[color];
+    return this->palette_remap_stack.back().remap.data();
 }
 
-bool ff::dxgi::draw_util::draw_device_base::target_opaque()
+bool ff::dxgi::draw_util::draw_device_base::allow_transparent() const
 {
-    return this->force_opaque || this->target_requires_palette_;
+    return !this->force_opaque && !this->target_requires_palette_;
 }
 
 void* ffdu::draw_device_base::add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth)

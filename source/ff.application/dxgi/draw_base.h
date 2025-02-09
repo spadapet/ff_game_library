@@ -18,16 +18,16 @@ namespace ff::dxgi
 
     struct endpoint_t
     {
-        ff::point_float pos;
-        ff::color const* color;
-        float size;
+        ff::point_float pos{};
+        ff::color const* color{};
+        float size{};
     };
 
     struct pixel_endpoint_t
     {
-        ff::point_fixed pos;
-        ff::color const* color;
-        ff::fixed_int size;
+        ff::point_fixed pos{};
+        ff::color const* color{};
+        ff::fixed_int size{};
     };
 
     class draw_base

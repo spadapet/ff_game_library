@@ -1,20 +1,23 @@
 #include "data.hlsli"
 
-struct circle_filled_vertex
+struct circle_vertex
 {
+    float4 position : POSITION;
+    float4 inside_color : COLOR0;
+    float4 outside_color : COLOR1;
+    float radius : RADIUS;
+    float thickness : THICKNESS;
+    uint matrix_index : INDEX;
+    uint vertex_id : SV_VertexID;
 };
 
-struct circle_outline_vertex
-{
-};
-
-color_pixel vs_circle_filled(circle_filled_vertex input)
+color_pixel vs_circle_filled(circle_vertex input)
 {
     color_pixel output = (color_pixel) 0;
     return output;
 }
 
-color_pixel vs_circle_outline(circle_filled_vertex input)
+color_pixel vs_circle_outline(circle_vertex input)
 {
     color_pixel output = (color_pixel) 0;
     return output;

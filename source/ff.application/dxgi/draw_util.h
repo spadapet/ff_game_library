@@ -46,18 +46,6 @@ namespace ff::dxgi::draw_util
     {
         DirectX::XMFLOAT2 start;
         DirectX::XMFLOAT2 end;
-        DirectX::XMFLOAT4 start_color;
-        DirectX::XMFLOAT4 end_color;
-        float start_thickness;
-        float end_thickness;
-        float depth;
-        uint32_t matrix_index;
-    };
-
-    struct line_strip_instance
-    {
-        DirectX::XMFLOAT2 start;
-        DirectX::XMFLOAT2 end;
         DirectX::XMFLOAT2 before_start;
         DirectX::XMFLOAT2 after_end;
         DirectX::XMFLOAT4 start_color;
@@ -68,7 +56,7 @@ namespace ff::dxgi::draw_util
         uint32_t matrix_index;
     };
 
-    struct triangle_filled_instance
+    struct triangle_instance
     {
         DirectX::XMFLOAT2 position[3];
         DirectX::XMFLOAT4 color[3];
@@ -85,16 +73,7 @@ namespace ff::dxgi::draw_util
         uint32_t matrix_index;
     };
 
-    struct circle_filled_instance
-    {
-        DirectX::XMFLOAT3 position;
-        DirectX::XMFLOAT4 inside_color;
-        DirectX::XMFLOAT4 outside_color;
-        float radius;
-        uint32_t matrix_index;
-    };
-
-    struct circle_outline_instance
+    struct circle_instance
     {
         DirectX::XMFLOAT3 position;
         DirectX::XMFLOAT4 inside_color;
@@ -116,8 +95,7 @@ namespace ff::dxgi::draw_util
         sprites,
         palette_sprites,
         lines,
-        line_strips,
-        triangles_filled,
+        triangles,
         rectangles_filled,
         rectangles_outline,
         circles_filled,
@@ -126,8 +104,7 @@ namespace ff::dxgi::draw_util
         sprites_out_transparent,
         palette_sprites_out_transparent,
         lines_out_transparent,
-        line_strips_out_transparent,
-        triangles_filled_out_transparent,
+        triangles_out_transparent,
         rectangles_filled_out_transparent,
         rectangles_outline_out_transparent,
         circles_filled_out_transparent,
@@ -304,11 +281,17 @@ namespace ff::dxgi::draw_util
         uint32_t get_palette_remap_index_no_flush();
         uint32_t get_world_matrix_and_texture_index(ff::dxgi::texture_view_base& texture_view, bool use_palette);
 
-        int remap_palette_index(int color) const;
-        bool target_opaque();
+        const uint8_t* palette_remap() const;
+        bool allow_transparent() const;
 
         void* add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth);
         ffdu::instance_bucket& get_instance_bucket(ffdu::instance_bucket_type type);
+
+        template<class T>
+        T& add_instance(ffdu::instance_bucket_type bucket_type, float depth)
+        {
+            return *reinterpret_cast<T*>(this->add_instance(nullptr, bucket_type, depth));
+        }
 
         // State
         enum class state_t

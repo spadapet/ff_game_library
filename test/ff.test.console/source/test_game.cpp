@@ -12,7 +12,12 @@ namespace
 
         virtual std::shared_ptr<ff::state> advance_time() override
         {
-            for (obj_t& obj : this->objs)
+            for (rect_t& obj : this->rects)
+            {
+                obj.advance();
+            }
+
+            for (tri_t& obj : this->tris)
             {
                 obj.advance();
             }
@@ -28,7 +33,7 @@ namespace
 
             if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth))
             {
-                for (obj_t& obj : this->objs)
+                for (rect_t& obj : this->rects)
                 {
                     if (obj.x >= target_size.x)
                     {
@@ -36,7 +41,22 @@ namespace
                     }
                     else
                     {
-                        draw->draw_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_size.y), ff::color::cast(obj.color));
+                        draw->draw_rectangle(ff::rect_float(obj.x, 0.0f, obj.x + obj.width, target_size.y), obj.color, obj.thickness);
+                    }
+                }
+
+                if (ff::input::keyboard().pressing('T'))
+                {
+                    for (tri_t& obj : this->tris)
+                    {
+                        ff::dxgi::endpoint_t points[3] =
+                        {
+                            { obj.pos[0], &obj.color },
+                            { obj.pos[1] },
+                            { obj.pos[2] },
+                        };
+
+                        draw->draw_triangles(points);
                     }
                 }
             }
@@ -45,24 +65,25 @@ namespace
         }
 
     private:
-        struct obj_t
+        struct rect_t
         {
-            obj_t()
+            rect_t()
                 : width(static_cast<float>(ff::math::random_range(40, 400)))
                 , x(-this->width)
                 , speed(ff::math::random_range(2.0f, 80.0f))
+                , thickness(ff::math::random_bool() ? std::make_optional(ff::math::random_range(1.0f, 100.0f)) : std::nullopt)
                 , color(
                     1.0f - ff::math::random_range(0.0f, 1.0f),
                     1.0f - ff::math::random_range(0.0f, 1.0f),
                     1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f)
+                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
             {}
 
             void advance()
             {
                 if (this->dead)
                 {
-                    *this = obj_t();
+                    *this = rect_t();
                 }
                 else
                 {
@@ -73,11 +94,46 @@ namespace
             float width;
             float x;
             float speed;
-            DirectX::XMFLOAT4 color;
+            std::optional<float> thickness;
+            ff::color color;
             bool dead{};
         };
 
-        std::array<obj_t, 16> objs;
+        struct tri_t
+        {
+            tri_t()
+                : pos{
+                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
+                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
+                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
+                }
+                , color(
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
+                , life(ff::math::random_range(30, 300))
+            {}
+
+            void advance()
+            {
+                if (this->life)
+                {
+                    this->life--;
+                }
+                else
+                {
+                    *this = tri_t();
+                }
+            }
+
+            ff::point_float pos[3];
+            ff::color color;
+            size_t life;
+        };
+
+        std::array<rect_t, 16> rects;
+        std::array<tri_t, 16> tris;
     };
 }
 

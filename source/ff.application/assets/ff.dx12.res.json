@@ -25,28 +25,12 @@
     "entry": "vs_line"
   },
 
-  "ff.dx12.vs_line_strip":
-  {
-    "res:type": "shader",
-    "file": "file:shaders/vs_line.hlsl",
-    "target": "vs_5_1",
-    "entry": "vs_line_strip"
-  },
-
-  "ff.dx12.vs_rectangle_filled":
+  "ff.dx12.vs_rectangle":
   {
     "res:type": "shader",
     "file": "file:shaders/vs_rectangle.hlsl",
     "target": "vs_5_1",
-    "entry": "vs_rectangle_filled"
-  },
-
-  "ff.dx12.vs_rectangle_outline":
-  {
-    "res:type": "shader",
-    "file": "file:shaders/vs_rectangle.hlsl",
-    "target": "vs_5_1",
-    "entry": "vs_rectangle_outline"
+    "entry": "vs_rectangle"
   },
 
   "ff.dx12.vs_sprite":
@@ -57,12 +41,12 @@
     "entry": "vs_sprite"
   },
 
-  "ff.dx12.vs_triangle_filled":
+  "ff.dx12.vs_triangle":
   {
     "res:type": "shader",
     "file": "file:shaders/vs_triangle.hlsl",
     "target": "vs_5_1",
-    "entry": "vs_triangle_filled"
+    "entry": "vs_triangle"
   },
 
   "ff.dx12.ps_color":

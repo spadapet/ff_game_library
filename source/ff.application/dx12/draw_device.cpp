@@ -29,8 +29,12 @@ constexpr size_t ROOT_PALETTE_TEXTURES = 5;
 constexpr size_t ROOT_PALETTES = 6;
 constexpr size_t VERTEX_VIEW_INDEX = 0;
 constexpr size_t INSTANCE_VIEW_INDEX = 1;
-constexpr size_t SPRITE_INDEX_START = 0;
-constexpr size_t SPRITE_INDEX_COUNT = 6;
+constexpr size_t TRIANGLE_INDEX_START = 0;
+constexpr size_t TRIANGLE_INDEX_COUNT = 3;
+constexpr size_t RECTANGLE_INDEX_START = 0;
+constexpr size_t RECTANGLE_INDEX_COUNT = 6;
+constexpr size_t RECTANGLE_OUTLINE_INDEX_START = ::RECTANGLE_INDEX_START + ::RECTANGLE_INDEX_COUNT;
+constexpr size_t RECTANGLE_OUTLINE_INDEX_COUNT = 24;
 
 #define VERTEX_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::VERTEX_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 #define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::INSTANCE_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 }
@@ -59,21 +63,18 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> line_layout()
     return layout;
 }
 
-static std::span<const D3D12_INPUT_ELEMENT_DESC> line_strip_layout()
+static std::span<const D3D12_INPUT_ELEMENT_DESC> triangle_layout()
 {
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    static const std::array layout
     {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
-    };
-
-    return layout;
-}
-
-static std::span<const D3D12_INPUT_ELEMENT_DESC> triangle_filled_layout()
-{
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
-    {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+        INSTANCE_DESC("POSITION", 0, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 1, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 2, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 2, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("DEPTH", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("INDEX", 0, DXGI_FORMAT_R32_UINT),
     };
 
     return layout;
@@ -115,7 +116,12 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_outline_layout()
 
 static std::shared_ptr<ff::data_base> get_static_index_data()
 {
-    static const uint16_t indexes[] = { 0, 1, 2, 2, 1, 3 };
+    static const uint16_t indexes[] =
+    {
+        0, 1, 2, 2, 1, 3, // RECTANGLE_INDEX_START|COUNT
+        0, 1, 4, 4, 1, 5, 1, 3, 5, 5, 3, 7, 3, 2, 7, 7, 2, 6, 2, 0, 6, 6, 0, 4 // RECTANGLE_OUTLINE_INDEX_START|COUNT
+    };
+
     return std::make_shared<ff::data_static>(&indexes[0], _countof(indexes) * sizeof(indexes[0]));
 }
 
@@ -331,8 +337,7 @@ namespace
                 sprite_layout(),
                 sprite_layout(),
                 line_layout(),
-                line_strip_layout(),
-                triangle_filled_layout(),
+                triangle_layout(),
                 rectangle_layout(),
                 rectangle_layout(),
                 circle_filled_layout(),
@@ -399,12 +404,10 @@ namespace
                 samplers_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 2, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 textures_range;
-                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_TEXTURES), 0, 0,
-                    D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE /*| D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE*/, 0);
+                textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_TEXTURES), 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures_range;
-                palette_textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_PALETTE_TEXTURES), static_cast<UINT>(ffdu::MAX_TEXTURES), 0,
-                    D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE /*| D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE*/, 0);
+                palette_textures_range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, static_cast<UINT>(ffdu::MAX_PALETTE_TEXTURES), static_cast<UINT>(ffdu::MAX_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE, 0);
 
                 CD3DX12_DESCRIPTOR_RANGE1 palette_textures;
                 palette_textures.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, static_cast<UINT>(ffdu::MAX_TEXTURES + ffdu::MAX_PALETTE_TEXTURES), 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE, 0);
@@ -432,6 +435,7 @@ namespace
                 desc.pParameters = params.data();
 
                 this->root_signature = ff::dx12::get_object_cache().root_signature(versioned_desc);
+                this->root_signature->SetName(L"dx12_draw_device root signature");
             }
 
             // Pipeline states
@@ -442,10 +446,9 @@ namespace
                 this->state(ffdu::instance_bucket_type::sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_SPRITE, a::FF_DX12_PS_SPRITE_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::palette_sprites).reset(rs, a::FF_DX12_VS_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE, a::FF_DX12_PS_PALETTE_SPRITE_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::lines).reset(rs, a::FF_DX12_VS_LINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::line_strips).reset(rs, a::FF_DX12_VS_LINE_STRIP, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::triangles_filled).reset(rs, a::FF_DX12_VS_TRIANGLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, a::FF_DX12_VS_RECTANGLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, a::FF_DX12_VS_RECTANGLE_OUTLINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::triangles).reset(rs, a::FF_DX12_VS_TRIANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, a::FF_DX12_VS_RECTANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, a::FF_DX12_VS_RECTANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, a::FF_DX12_VS_CIRCLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, a::FF_DX12_VS_CIRCLE_OUTLINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
             }
@@ -737,27 +740,23 @@ namespace
                 case ffdu::instance_bucket_type::sprites_out_transparent:
                 case ffdu::instance_bucket_type::palette_sprites:
                 case ffdu::instance_bucket_type::palette_sprites_out_transparent:
-                    this->commands->draw_indexed(0, ::SPRITE_INDEX_START, ::SPRITE_INDEX_COUNT, instance_start, instance_count);
+                case ffdu::instance_bucket_type::rectangles_filled:
+                case ffdu::instance_bucket_type::rectangles_filled_out_transparent:
+                    this->commands->draw_indexed(0, ::RECTANGLE_INDEX_START, ::RECTANGLE_INDEX_COUNT, instance_start, instance_count);
+                    break;
+
+                case ffdu::instance_bucket_type::rectangles_outline:
+                case ffdu::instance_bucket_type::rectangles_outline_out_transparent:
+                    this->commands->draw_indexed(0, ::RECTANGLE_OUTLINE_INDEX_START, ::RECTANGLE_OUTLINE_INDEX_COUNT, instance_start, instance_count);
                     break;
 
                 case ffdu::instance_bucket_type::lines:
                 case ffdu::instance_bucket_type::lines_out_transparent:
                     break;
 
-                case ffdu::instance_bucket_type::line_strips:
-                case ffdu::instance_bucket_type::line_strips_out_transparent:
-                    break;
-
-                case ffdu::instance_bucket_type::triangles_filled:
-                case ffdu::instance_bucket_type::triangles_filled_out_transparent:
-                    break;
-
-                case ffdu::instance_bucket_type::rectangles_filled:
-                case ffdu::instance_bucket_type::rectangles_filled_out_transparent:
-                    break;
-
-                case ffdu::instance_bucket_type::rectangles_outline:
-                case ffdu::instance_bucket_type::rectangles_outline_out_transparent:
+                case ffdu::instance_bucket_type::triangles:
+                case ffdu::instance_bucket_type::triangles_out_transparent:
+                    this->commands->draw_indexed(0, ::TRIANGLE_INDEX_START, ::TRIANGLE_INDEX_COUNT, instance_start, instance_count);
                     break;
 
                 case ffdu::instance_bucket_type::circles_filled:
@@ -773,7 +772,12 @@ namespace
     private:
         ::dx12_state& state(ffdu::instance_bucket_type type)
         {
-            size_t index = (type >= ffdu::instance_bucket_type::first_transparent) ? static_cast<size_t>(type) / 2 : static_cast<size_t>(type);
+            size_t index = static_cast<size_t>(type);
+            if (type >= ffdu::instance_bucket_type::first_transparent)
+            {
+                index -= static_cast<size_t>(ffdu::instance_bucket_type::first_transparent);
+            }
+
             return this->states_[index];
         }
 

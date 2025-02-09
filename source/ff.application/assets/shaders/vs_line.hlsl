@@ -4,17 +4,7 @@ struct line_vertex
 {
 };
 
-struct line_strip_vertex
-{
-};
-
 color_pixel vs_line(line_vertex input)
-{
-    color_pixel output = (color_pixel) 0;
-    return output;
-}
-
-color_pixel vs_line_strip(line_strip_vertex input)
 {
     color_pixel output = (color_pixel) 0;
     return output;
