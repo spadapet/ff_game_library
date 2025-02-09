@@ -1,20 +1,12 @@
 {
   "res:namespace": "assets::dx12",
 
-  "ff.dx12.vs_circle_filled":
+  "ff.dx12.vs_circle":
   {
     "res:type": "shader",
     "file": "file:shaders/vs_circle.hlsl",
     "target": "vs_5_1",
-    "entry": "vs_circle_filled"
-  },
-
-  "ff.dx12.vs_circle_outline":
-  {
-    "res:type": "shader",
-    "file": "file:shaders/vs_circle.hlsl",
-    "target": "vs_5_1",
-    "entry": "vs_circle_outline"
+    "entry": "vs_circle"
   },
 
   "ff.dx12.vs_line":

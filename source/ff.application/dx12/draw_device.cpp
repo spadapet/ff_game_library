@@ -35,6 +35,10 @@ constexpr size_t RECTANGLE_INDEX_START = 0;
 constexpr size_t RECTANGLE_INDEX_COUNT = 6;
 constexpr size_t RECTANGLE_OUTLINE_INDEX_START = ::RECTANGLE_INDEX_START + ::RECTANGLE_INDEX_COUNT;
 constexpr size_t RECTANGLE_OUTLINE_INDEX_COUNT = 24;
+constexpr size_t CIRCLE_FILLED_INDEX_START = ::RECTANGLE_OUTLINE_INDEX_START + ::RECTANGLE_OUTLINE_INDEX_COUNT;
+constexpr size_t CIRCLE_FILLED_INDEX_COUNT = 96; // 32 * 3
+constexpr size_t CIRCLE_OUTLINE_INDEX_START = ::CIRCLE_FILLED_INDEX_START + ::CIRCLE_FILLED_INDEX_COUNT;
+constexpr size_t CIRCLE_OUTLINE_INDEX_COUNT = 192; // 32 * 6
 
 #define VERTEX_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::VERTEX_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 #define INSTANCE_DESC(name, index, type) D3D12_INPUT_ELEMENT_DESC{ name, index, type, static_cast<UINT>(::INSTANCE_VIEW_INDEX), D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 }
@@ -94,21 +98,16 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> rectangle_layout()
     return layout;
 }
 
-static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_filled_layout()
+static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_layout()
 {
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    static const std::array layout
     {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
-    };
-
-    return layout;
-}
-
-static std::span<const D3D12_INPUT_ELEMENT_DESC> circle_outline_layout()
-{
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
-    {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+        VERTEX_DESC("COSSIN", 0, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("THICKNESS", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("INDEX", 0, DXGI_FORMAT_R32_UINT),
     };
 
     return layout;
@@ -118,17 +117,169 @@ static std::shared_ptr<ff::data_base> get_static_index_data()
 {
     static const uint16_t indexes[] =
     {
-        0, 1, 2, 2, 1, 3, // RECTANGLE_INDEX_START|COUNT
-        0, 1, 4, 4, 1, 5, 1, 3, 5, 5, 3, 7, 3, 2, 7, 7, 2, 6, 2, 0, 6, 6, 0, 4 // RECTANGLE_OUTLINE_INDEX_START|COUNT
+        // RECTANGLE_INDEX_START|COUNT
+        0, 1, 2, 2, 1, 3,
+
+        // RECTANGLE_OUTLINE_INDEX_START|COUNT
+        0, 1, 4, 4, 1, 5,
+        1, 3, 5, 5, 3, 7,
+        3, 2, 7, 7, 2, 6,
+        2, 0, 6, 6, 0, 4,
+
+        // CIRCLE_FILLED_INDEX_START|COUNT
+        0, 64, 1,
+        1, 64, 2,
+        2, 64, 3,
+        3, 64, 4,
+        4, 64, 5,
+        5, 64, 6,
+        6, 64, 7,
+        7, 64, 8,
+        8, 64, 9,
+        9, 64, 10,
+        10, 64, 11,
+        11, 64, 12,
+        12, 64, 13,
+        13, 64, 14,
+        14, 64, 15,
+        15, 64, 16,
+        16, 64, 17,
+        17, 64, 18,
+        18, 64, 19,
+        19, 64, 20,
+        20, 64, 21,
+        21, 64, 22,
+        22, 64, 23,
+        23, 64, 24,
+        24, 64, 25,
+        25, 64, 26,
+        26, 64, 27,
+        27, 64, 28,
+        28, 64, 29,
+        29, 64, 30,
+        30, 64, 31,
+        31, 64, 0,
+
+        // CIRCLE_OUTLINE_INDEX_START|COUNT
+        0, 32, 1, 1, 32, 33,
+        1, 33, 2, 2, 33, 34,
+        2, 34, 3, 3, 34, 35,
+        3, 35, 4, 4, 35, 36,
+        4, 36, 5, 5, 36, 37,
+        5, 37, 6, 6, 37, 38,
+        6, 38, 7, 7, 38, 39,
+        7, 39, 8, 8, 39, 40,
+        8, 40, 9, 9, 40, 41,
+        9, 41, 10, 10, 41, 42,
+        10, 42, 11, 11, 42, 43,
+        11, 43, 12, 12, 43, 44,
+        12, 44, 13, 13, 44, 45,
+        13, 45, 14, 14, 45, 46,
+        14, 46, 15, 15, 46, 47,
+        15, 47, 16, 16, 47, 48,
+        16, 48, 17, 17, 48, 49,
+        17, 49, 18, 18, 49, 50,
+        18, 50, 19, 19, 50, 51,
+        19, 51, 20, 20, 51, 52,
+        20, 52, 21, 21, 52, 53,
+        21, 53, 22, 22, 53, 54,
+        22, 54, 23, 23, 54, 55,
+        23, 55, 24, 24, 55, 56,
+        24, 56, 25, 25, 56, 57,
+        25, 57, 26, 26, 57, 58,
+        26, 58, 27, 27, 58, 59,
+        27, 59, 28, 28, 59, 60,
+        28, 60, 29, 29, 60, 61,
+        29, 61, 30, 30, 61, 62,
+        30, 62, 31, 31, 62, 63,
+        31, 63, 0, 0, 63, 32,
     };
+
+    static_assert(_countof(indexes) ==
+        ::RECTANGLE_INDEX_COUNT +
+        ::RECTANGLE_OUTLINE_INDEX_COUNT +
+        ::CIRCLE_FILLED_INDEX_COUNT +
+        ::CIRCLE_OUTLINE_INDEX_COUNT);
 
     return std::make_shared<ff::data_static>(&indexes[0], _countof(indexes) * sizeof(indexes[0]));
 }
 
 static std::shared_ptr<ff::data_base> get_static_vertex_data()
 {
-    // TODO: Fix this bogus data, probably just need circle points
-    static const DirectX::XMFLOAT2 vertexes[] = { { 0, 0 } };
+    static const DirectX::XMFLOAT2 vertexes[] =
+    {
+        // Outside of cirlce, indexes 0 - 31
+        { 1.000000f, 0.000000f }, // 0 - 90 degrees, indexes 0 - 7
+        { 0.980785f, 0.195090f },
+        { 0.923880f, 0.382683f },
+        { 0.831470f, 0.555570f },
+        { 0.707107f, 0.707107f },
+        { 0.555570f, 0.831470f },
+        { 0.382683f, 0.923880f },
+        { 0.195090f, 0.980785f },
+        { 0.000000f, 1.000000f }, // 90 - 180 degrees, indexes 8 - 15
+        { -0.195090f, 0.980785f },
+        { -0.382683f, 0.923880f },
+        { -0.555570f, 0.831470f },
+        { -0.707107f, 0.707107f },
+        { -0.831470f, 0.555570f },
+        { -0.923880f, 0.382683f },
+        { -0.980785f, 0.195090f },
+        { -1.000000f, 0.000000f }, // 180 - 270 degrees, indexes 16 - 23
+        { -0.980785f, -0.195090f },
+        { -0.923880f, -0.382683f },
+        { -0.831470f, -0.555570f },
+        { -0.707107f, -0.707107f },
+        { -0.555570f, -0.831470f },
+        { -0.382683f, -0.923880f },
+        { -0.195090f, -0.980785f },
+        { -0.000000f, -1.000000f }, // 270 - 360 degrees, indexes 24 - 31
+        { 0.195090f, -0.980785f },
+        { 0.382683f, -0.923880f },
+        { 0.555570f, -0.831470f },
+        { 0.707107f, -0.707107f },
+        { 0.831470f, -0.555570f },
+        { 0.923880f, -0.382683f },
+        { 0.980785f, -0.195090f }, // end of 360 degrees, index 31
+
+        // Inside of cirlce, indexes 32 - 63
+        { 1.000000f, 0.000000f }, // 0 - 90 degrees, indexes 32 - 39
+        { 0.980785f, 0.195090f },
+        { 0.923880f, 0.382683f },
+        { 0.831470f, 0.555570f },
+        { 0.707107f, 0.707107f },
+        { 0.555570f, 0.831470f },
+        { 0.382683f, 0.923880f },
+        { 0.195090f, 0.980785f },
+        { 0.000000f, 1.000000f }, // 90 - 180 degrees, indexes 40 - 47
+        { -0.195090f, 0.980785f },
+        { -0.382683f, 0.923880f },
+        { -0.555570f, 0.831470f },
+        { -0.707107f, 0.707107f },
+        { -0.831470f, 0.555570f },
+        { -0.923880f, 0.382683f },
+        { -0.980785f, 0.195090f },
+        { -1.000000f, 0.000000f }, // 180 - 270 degrees, indexes 48 - 55
+        { -0.980785f, -0.195090f },
+        { -0.923880f, -0.382683f },
+        { -0.831470f, -0.555570f },
+        { -0.707107f, -0.707107f },
+        { -0.555570f, -0.831470f },
+        { -0.382683f, -0.923880f },
+        { -0.195090f, -0.980785f },
+        { -0.000000f, -1.000000f }, // 270 - 360 degrees, indexes 56 - 63
+        { 0.195090f, -0.980785f },
+        { 0.382683f, -0.923880f },
+        { 0.555570f, -0.831470f },
+        { 0.707107f, -0.707107f },
+        { 0.831470f, -0.555570f },
+        { 0.923880f, -0.382683f },
+        { 0.980785f, -0.195090f }, // end of 360 degrees, index 63
+
+        // Center of circle, index 64
+        { 0.000000f, 0.000000f },
+    };
+
     return std::make_shared<ff::data_static>(&vertexes[0], _countof(vertexes) * sizeof(vertexes[0]));
 }
 
@@ -340,8 +491,8 @@ namespace
                 triangle_layout(),
                 rectangle_layout(),
                 rectangle_layout(),
-                circle_filled_layout(),
-                circle_outline_layout(),
+                circle_layout(),
+                circle_layout(),
             }
         {
             this->as_device_child()->reset();
@@ -449,8 +600,8 @@ namespace
                 this->state(ffdu::instance_bucket_type::triangles).reset(rs, a::FF_DX12_VS_TRIANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::rectangles_filled).reset(rs, a::FF_DX12_VS_RECTANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
                 this->state(ffdu::instance_bucket_type::rectangles_outline).reset(rs, a::FF_DX12_VS_RECTANGLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, a::FF_DX12_VS_CIRCLE_FILLED, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
-                this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, a::FF_DX12_VS_CIRCLE_OUTLINE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::circles_filled).reset(rs, a::FF_DX12_VS_CIRCLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
+                this->state(ffdu::instance_bucket_type::circles_outline).reset(rs, a::FF_DX12_VS_CIRCLE, a::FF_DX12_PS_COLOR, a::FF_DX12_PS_COLOR_OUT_PALETTE);
             }
         }
 
@@ -761,10 +912,12 @@ namespace
 
                 case ffdu::instance_bucket_type::circles_filled:
                 case ffdu::instance_bucket_type::circles_filled_out_transparent:
+                    this->commands->draw_indexed(0, ::CIRCLE_FILLED_INDEX_START, ::CIRCLE_FILLED_INDEX_COUNT, instance_start, instance_count);
                     break;
 
                 case ffdu::instance_bucket_type::circles_outline:
                 case ffdu::instance_bucket_type::circles_outline_out_transparent:
+                    this->commands->draw_indexed(0, ::CIRCLE_OUTLINE_INDEX_START, ::CIRCLE_OUTLINE_INDEX_COUNT, instance_start, instance_count);
                     break;
             }
         }
@@ -795,7 +948,7 @@ namespace
         // Constant data for shaders
         ff::dx12::buffer_gpu instance_buffer_{ ff::dxgi::buffer_type::vertex };
         ff::dx12::buffer_gpu_static index_buffer{ ff::dxgi::buffer_type::index, ::get_static_index_data() };
-        ff::dx12::buffer_gpu_static vertex_buffer{ ff::dxgi::buffer_type::index, ::get_static_vertex_data() };
+        ff::dx12::buffer_gpu_static vertex_buffer{ ff::dxgi::buffer_type::vertex, ::get_static_vertex_data() };
         ff::dx12::buffer_cpu vs_constants_buffer_0_{ ff::dxgi::buffer_type::constant }; // root constants
         ff::dx12::buffer_gpu vs_constants_buffer_1_{ ff::dxgi::buffer_type::constant };
         ff::dx12::buffer_gpu ps_constants_buffer_0_{ ff::dxgi::buffer_type::constant };

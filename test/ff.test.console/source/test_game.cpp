@@ -12,14 +12,25 @@ namespace
 
         virtual std::shared_ptr<ff::state> advance_time() override
         {
-            for (rect_t& obj : this->rects)
+            for (auto& obj : this->rects)
             {
                 obj.advance();
             }
 
-            for (tri_t& obj : this->tris)
+            if (ff::input::keyboard().pressing('T'))
             {
-                obj.advance();
+                for (auto& obj : this->tris)
+                {
+                    obj.advance();
+                }
+            }
+
+            if (ff::input::keyboard().pressing('C'))
+            {
+                for (auto& obj : this->circles)
+                {
+                    obj.advance();
+                }
             }
 
             return ff::game::root_state_base::advance_time();
@@ -57,6 +68,15 @@ namespace
                         };
 
                         draw->draw_triangles(points);
+                    }
+                }
+
+                if (ff::input::keyboard().pressing('C'))
+                {
+                    for (circle_t& obj : this->circles)
+                    {
+                        ff::dxgi::endpoint_t pos = { obj.pos, &obj.color, obj.radius };
+                        draw->draw_circle(pos, obj.thickness);
                     }
                 }
             }
@@ -112,7 +132,7 @@ namespace
                     1.0f - ff::math::random_range(0.0f, 1.0f),
                     1.0f - ff::math::random_range(0.0f, 1.0f),
                     ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
-                , life(ff::math::random_range(30, 300))
+                , life(ff::math::random_range(15, 200))
             {}
 
             void advance()
@@ -132,8 +152,43 @@ namespace
             size_t life;
         };
 
+        struct circle_t
+        {
+            circle_t()
+                : pos{ ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f) }
+                , color(
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    1.0f - ff::math::random_range(0.0f, 1.0f),
+                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
+                , radius(ff::math::random_range(4.0f, 300.0f))
+                , thickness(ff::math::random_bool() ? std::make_optional(ff::math::random_range(1.0f, this->radius)) : std::nullopt)
+                , life(ff::math::random_range(15, 200))
+            {
+            }
+
+            void advance()
+            {
+                if (this->life)
+                {
+                    this->life--;
+                }
+                else
+                {
+                    *this = circle_t();
+                }
+            }
+
+            ff::point_float pos;
+            ff::color color;
+            float radius;
+            std::optional<float> thickness;
+            size_t life;
+        };
+
         std::array<rect_t, 16> rects;
         std::array<tri_t, 16> tris;
+        std::array<circle_t, 16> circles;
     };
 }
 

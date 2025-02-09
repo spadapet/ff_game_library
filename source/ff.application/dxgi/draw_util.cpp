@@ -480,7 +480,10 @@ void ffdu::draw_device_base::draw_circle(const ff::dxgi::endpoint_t& pos, std::o
     float radius = std::abs(pos.size);
     check_ret(radius && (pos.color || outside_color));
 
-    ::alpha_type alpha_type = ::get_alpha_type(pos.color ? pos.color->alpha() : 1.f, this->allow_transparent());
+    const ff::color& inside_color2 = pos.color ? *pos.color : *outside_color;
+    const ff::color& outside_color2 = outside_color ? *outside_color : inside_color2;
+    ::alpha_type alpha_type = ::get_alpha_type(inside_color2.alpha(), this->allow_transparent());
+    alpha_type = ::get_alpha_type(outside_color2.alpha(), this->allow_transparent(), alpha_type);
     check_ret(alpha_type != ::alpha_type::invisible);
 
     float thickness2 = 0;
@@ -508,12 +511,12 @@ void ffdu::draw_device_base::draw_circle(const ff::dxgi::endpoint_t& pos, std::o
     float depth = this->nudge_depth();
 
     ffdu::circle_instance& instance = this->add_instance<ffdu::circle_instance>(type, depth);
-    instance.position.x = pos.pos.x;
-    instance.position.y = pos.pos.y;
-    instance.position.z = depth;
-    instance.inside_color = (pos.color ? pos.color : outside_color)->to_shader_color(this->palette_remap());
-    instance.outside_color = outside_color ? outside_color->to_shader_color(this->palette_remap()) : instance.inside_color;
-    instance.radius = radius;
+    instance.position_radius.x = pos.pos.x;
+    instance.position_radius.y = pos.pos.y;
+    instance.position_radius.z = depth;
+    instance.position_radius.w = radius;
+    instance.inside_color = inside_color2.to_shader_color(this->palette_remap());
+    instance.outside_color = outside_color2.to_shader_color(this->palette_remap());
     instance.thickness = thickness2;
     instance.matrix_index = matrix_index;
 }

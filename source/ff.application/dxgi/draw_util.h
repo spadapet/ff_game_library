@@ -75,10 +75,9 @@ namespace ff::dxgi::draw_util
 
     struct circle_instance
     {
-        DirectX::XMFLOAT3 position;
+        DirectX::XMFLOAT4 position_radius;
         DirectX::XMFLOAT4 inside_color;
         DirectX::XMFLOAT4 outside_color;
-        float radius;
         float thickness;
         uint32_t matrix_index;
     };
