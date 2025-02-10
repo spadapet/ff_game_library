@@ -2,6 +2,7 @@
 
 #include "../dxgi/depth_base.h"
 #include "../dxgi/target_base.h"
+#include "../dx_types/color.h"
 #include "../dx_types/viewport.h"
 
 namespace ff::dxgi
@@ -26,7 +27,7 @@ namespace ff
     class render_target
     {
     public:
-        render_target(ff::point_size size, const DirectX::XMFLOAT4* clear_color = nullptr, int palette_clear_color = 0);
+        render_target(ff::point_size size, const ff::color* clear_color = nullptr, int palette_clear_color = 0);
         render_target(render_target&& other) noexcept = default;
         render_target(const render_target& other) = default;
 
@@ -39,8 +40,8 @@ namespace ff
 
         ff::point_size size;
         ff::viewport viewport;
-        DirectX::XMFLOAT4 clear_color;
-        DirectX::XMFLOAT4 palette_clear_color;
+        ff::color clear_color;
+        ff::color palette_clear_color;
         std::shared_ptr<ff::texture> textures[COUNT];
         std::shared_ptr<ff::dxgi::target_base> targets[COUNT];
         bool used_targets[COUNT];

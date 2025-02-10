@@ -6,6 +6,11 @@
 #include "../dx12/resource_tracker.h"
 #include "../dxgi/command_context_base.h"
 
+namespace ff
+{
+    class color;
+}
+
 namespace ff::dxgi
 {
     class depth_base;
@@ -100,7 +105,7 @@ namespace ff::dx12
         void clear(const ff::dx12::depth& depth, const float* depth_value, const BYTE* stencil_value);
         void discard(const ff::dx12::depth& depth);
 
-        void clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color);
+        void clear(ff::dxgi::target_base& target, const ff::color& color);
         void discard(ff::dxgi::target_base& target);
         void discard_target(ff::dx12::resource& resource);
 

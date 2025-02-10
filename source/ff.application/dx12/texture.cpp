@@ -5,6 +5,7 @@
 #include "dx12/dx12_globals.h"
 #include "dx12/resource.h"
 #include "dx12/texture.h"
+#include "dx_types/color.h"
 #include "dxgi/format_util.h"
 
 static std::atomic_int dynamic_texture_counter;
@@ -15,7 +16,7 @@ ff::dx12::texture::texture()
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
 
-ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const DirectX::XMFLOAT4* optimized_clear_color)
+ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_count, size_t array_size, size_t sample_count, const ff::color* optimized_clear_color)
 {
     format = ff::dxgi::fix_format(format, static_cast<size_t>(size.x), static_cast<size_t>(size.y), mip_count);
 
@@ -25,8 +26,9 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
 
         if (optimized_clear_color)
         {
+            const DirectX::XMFLOAT4 optimized_clear_color2 = optimized_clear_color->to_shader_color();
             clear_value.Format = format;
-            std::memcpy(clear_value.Color, optimized_clear_color, sizeof(clear_value.Color));
+            std::memcpy(clear_value.Color, &optimized_clear_color2.x, sizeof(clear_value.Color));
         }
 
         this->resource_ = std::make_unique<ff::dx12::resource>(
@@ -297,10 +299,14 @@ bool ff::dx12::texture::reset()
     }
     else
     {
-        D3D12_CLEAR_VALUE clear_value = this->optimized_clear_value();
-        const DirectX::XMFLOAT4* clear_color = (clear_value.Format != DXGI_FORMAT_UNKNOWN)
-            ? reinterpret_cast<const DirectX::XMFLOAT4*>(&clear_value.Color)
-            : nullptr;
+        const D3D12_CLEAR_VALUE clear_value = this->optimized_clear_value();
+        const ff::color* clear_color{};
+        ff::color clear_color_storage;
+        if (clear_value.Format != DXGI_FORMAT_UNKNOWN)
+        {
+            clear_color_storage = ff::color(clear_value.Color[0], clear_value.Color[1], clear_value.Color[2], clear_value.Color[3]);
+            clear_color = &clear_color_storage;
+        }
         
         *this = ff::dx12::texture(this->size(), this->format(), this->mip_count(), this->array_size(), this->sample_count(), clear_color);
     }

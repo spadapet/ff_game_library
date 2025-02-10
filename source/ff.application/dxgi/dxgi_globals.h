@@ -4,6 +4,7 @@
 
 namespace ff
 {
+    class color;
     struct window_size;
 }
 
@@ -43,7 +44,7 @@ namespace ff::dxgi
 
     // Create root graphics objects
     std::unique_ptr<ff::dxgi::draw_device_base> create_draw_device();
-    std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const DirectX::XMFLOAT4* optimized_clear_color = nullptr);
+    std::shared_ptr<ff::dxgi::texture_base> create_render_texture(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t mip_count = 1, size_t array_size = 1, size_t sample_count = 1, const ff::color* optimized_clear_color = nullptr);
     std::shared_ptr<ff::dxgi::texture_base> create_static_texture(const std::shared_ptr<DirectX::ScratchImage>& scratch, ff::dxgi::sprite_type sprite_type = ff::dxgi::sprite_type::unknown);
     std::shared_ptr<ff::dxgi::depth_base> create_depth(ff::point_size size, size_t sample_count = 1);
     std::shared_ptr<ff::dxgi::target_window_base> create_target_for_window(ff::window* window, const ff::dxgi::target_window_params& params);

@@ -174,7 +174,7 @@ void ff::internal::imgui::render(ff::dxgi::command_context_base& context)
 
         if (!::rotated_target)
         {
-            auto texture = ff::dxgi::create_render_texture(target_size.logical_pixel_size, target->format(), 1, 1, 1, &ff::color_none().rgba());
+            auto texture = ff::dxgi::create_render_texture(target_size.logical_pixel_size, target->format(), 1, 1, 1, &ff::color_none());
             ::rotated_texture = std::make_shared<ff::texture>(texture);
             ::rotated_target = ff::dxgi::create_target_for_texture(texture, 0, 0, 0, DMDO_DEFAULT, target_size.dpi_scale);
         }

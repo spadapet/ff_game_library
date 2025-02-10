@@ -43,7 +43,7 @@ namespace
             return this->info_.counter ? this->info_.counter->name.c_str() : "";
         }
 
-        DirectX::XMFLOAT4 color() const
+        const ff::color& color() const
         {
             switch (this->info_.counter ? this->info_.counter->color : ff::perf_color::white)
             {
@@ -121,9 +121,9 @@ static std::array<float, CHART_WIDTH> chart_wait_{};
 static ff::dxgi::target_window_params target_params_{};
 
 #if USE_IMGUI
-static const ImVec4& convert_color(const DirectX::XMFLOAT4& color)
+static const ImVec4& convert_color(const ff::color& color)
 {
-    return *reinterpret_cast<const ImVec4*>(&color);
+    return *reinterpret_cast<const ImVec4*>(&color.rgba());
 }
 #endif
 
@@ -397,7 +397,7 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
                             ImGui::Indent(indent);
                         }
 
-                        const DirectX::XMFLOAT4 color = timer.color();
+                        const ff::color& color = timer.color();
                         ImGui::TextColored(::convert_color(color), "%s", timer.name_cstr());
 
                         if (indent)

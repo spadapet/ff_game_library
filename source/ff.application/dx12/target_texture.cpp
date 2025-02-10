@@ -48,12 +48,12 @@ const std::shared_ptr<ff::dx12::texture>& ff::dx12::target_texture::shared_textu
     return this->texture_;
 }
 
-void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
+void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, const ff::color& clear_color)
 {
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color)
 {
     if (*this && ff::dx12::device_valid())
     {

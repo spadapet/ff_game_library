@@ -98,12 +98,12 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
     return this->target_views.cpu_handle(this->swap_chain->GetCurrentBackBufferIndex());
 }
 
-void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color)
+void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const ff::color& clear_color)
 {
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
-bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color)
+bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color)
 {
     check_ret_val(*this, false);
 
@@ -367,7 +367,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
             }
             else
             {
-                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black().rgba());
+                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
                 this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
             }
         }

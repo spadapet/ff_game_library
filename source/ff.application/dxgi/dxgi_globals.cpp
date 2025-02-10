@@ -285,7 +285,7 @@ std::shared_ptr<ff::dxgi::texture_base> ff::dxgi::create_render_texture(
     size_t mip_count,
     size_t array_size,
     size_t sample_count,
-    const DirectX::XMFLOAT4* optimized_clear_color)
+    const ff::color* optimized_clear_color)
 {
     return std::make_shared<ff::dx12::texture>(size, format, mip_count, array_size, sample_count, optimized_clear_color);
 }

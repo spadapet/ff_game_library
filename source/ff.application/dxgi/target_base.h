@@ -1,5 +1,10 @@
 #pragma once
 
+namespace ff
+{
+    class color;
+}
+
 namespace ff::dxgi
 {
     class command_context_base;
@@ -10,8 +15,8 @@ namespace ff::dxgi
     public:
         virtual ~target_base() = default;
 
-        virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) = 0;
-        virtual bool begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color = nullptr) = 0;
+        virtual void clear(ff::dxgi::command_context_base& context, const ff::color& clear_color) = 0;
+        virtual bool begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color = nullptr) = 0;
         virtual bool end_render(ff::dxgi::command_context_base& context) = 0;
 
         virtual ff::dxgi::target_access_base& target_access() = 0;

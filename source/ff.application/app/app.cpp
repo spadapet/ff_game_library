@@ -171,7 +171,7 @@ static void frame_render(ff::state::advance_t advance_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
-        if (begin_render = ::target->begin_render(context, ::app_params.get_clear_back_buffer() ? &ff::color_black().rgba() : nullptr))
+        if (begin_render = ::target->begin_render(context, ::app_params.get_clear_back_buffer() ? &ff::color_black() : nullptr))
         {
             ff::internal::imgui::rendering();
             ::game_state.frame_rendering(advance_type, context, *::render_targets);

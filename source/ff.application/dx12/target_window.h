@@ -20,8 +20,8 @@ namespace ff::dx12
         operator bool() const;
 
         // target_base
-        virtual void clear(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4& clear_color) override;
-        virtual bool begin_render(ff::dxgi::command_context_base& context, const DirectX::XMFLOAT4* clear_color) override;
+        virtual void clear(ff::dxgi::command_context_base& context, const ff::color& clear_color) override;
+        virtual bool begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color) override;
         virtual bool end_render(ff::dxgi::command_context_base& context) override;
         virtual ff::dxgi::target_access_base& target_access() override;
         virtual size_t target_array_start() const override;

@@ -13,6 +13,7 @@
 #include "dx12/queue.h"
 #include "dx12/resource.h"
 #include "dx12/resource_tracker.h"
+#include "dx_types/color.h"
 #include "dxgi/target_base.h"
 
 static ff::perf_counter perf_draw("Draw", ff::perf_color::green);
@@ -422,11 +423,12 @@ void ff::dx12::commands::discard(const ff::dx12::depth& depth)
     this->list()->DiscardResource(ff::dx12::get_resource(*depth.resource()), nullptr);
 }
 
-void ff::dx12::commands::clear(ff::dxgi::target_base& target, const DirectX::XMFLOAT4& color)
+void ff::dx12::commands::clear(ff::dxgi::target_base& target, const ff::color& color)
 {
     ff::dx12::target_access& access = ff::dx12::target_access::get(target);
     this->resource_state(access.dx12_target_texture(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-    this->list()->ClearRenderTargetView(access.dx12_target_view(), static_cast<const float*>(&color.x), 0, nullptr);
+    DirectX::XMFLOAT4 color2 = color.to_shader_color();
+    this->list()->ClearRenderTargetView(access.dx12_target_view(), &color2.x, 0, nullptr);
 }
 
 void ff::dx12::commands::discard(ff::dxgi::target_base& target)
