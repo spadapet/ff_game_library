@@ -43,17 +43,27 @@ namespace ff::test::dx12
                 std::unique_ptr<ff::dxgi::draw_device_base> draw_device = ff::dxgi::create_draw_device();
                 ff::dxgi::draw_ptr draw = draw_device->begin_draw(context, target, &depth, ff::rect_fixed(0, 0, 256, 256), ff::rect_fixed(0, 0, 256, 256));
 
-                std::array<ff::color, 4> rectangle_colors
+                const ff::color color_tl(1, 1, 0, 0);
+                const ff::color color_tr(1, 0, 1, 1);
+                const ff::color color_br(0, 1, 1, 0);
+                const ff::color color_bl(1, 1, 1, 1);
+                const ff::rect_float rect(32, 32, 224, 224);
+
+                std::array<ff::dxgi::endpoint_t, 6> triangles
                 {
-                    ff::color(1, 1, 0, 0),
-                    ff::color(1, 0, 1, 1),
-                    ff::color(0, 1, 1, 0),
-                    ff::color(1, 1, 1, 1),
+                    ff::dxgi::endpoint_t{ rect.top_left(), &color_tl },
+                    ff::dxgi::endpoint_t{ rect.top_right(), &color_tr },
+                    ff::dxgi::endpoint_t{ rect.bottom_right(), &color_br },
+
+                    ff::dxgi::endpoint_t{ rect.top_left(), &color_tl },
+                    ff::dxgi::endpoint_t{ rect.bottom_right(), &color_br },
+                    ff::dxgi::endpoint_t{ rect.bottom_left(), &color_bl },
                 };
+
 
                 ff::dxgi::sprite_data test_sprite(test_texture.get(), ff::rect_float(0, 0, 32, 32), ff::point_float(16, 16), ff::point_float(1, 1), ff::dxgi::sprite_type::opaque);
 
-                draw->draw_rectangle(ff::rect_float(32, 32, 224, 224), rectangle_colors);
+                draw->draw_triangles(triangles);
                 draw->draw_sprite(test_sprite, ff::pixel_transform(ff::point_fixed(40, 40)));
                 draw->draw_sprite(test_sprite, ff::pixel_transform(ff::point_fixed(216, 216), ff::point_fixed(1, 1), 30));
                 draw->draw_circle(ff::dxgi::pixel_endpoint_t{ { 128, 128 }, &ff::color_yellow(), 16.f }, 4);

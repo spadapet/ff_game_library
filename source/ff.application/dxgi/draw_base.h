@@ -55,11 +55,9 @@ namespace ff::dxgi
 
         // Helpers, converts to core drawing
         void draw_line(const ff::point_float& start, const ff::point_float& end, const ff::color& color, float thickness);
-        void draw_rectangle(const ff::rect_float& rect, std::span<const ff::color> colors);
 
         // Pixel helpers, converts to core drawing
         void draw_line(const ff::point_fixed& start, const ff::point_fixed& end, const ff::color& color, ff::fixed_int thickness);
-        void draw_rectangle(const ff::rect_fixed& rect, std::span<const ff::color> colors);
 
         virtual ff::matrix_stack& world_matrix_stack() = 0;
 
