@@ -12,9 +12,12 @@ namespace
 
         virtual std::shared_ptr<ff::state> advance_time() override
         {
-            for (auto& obj : this->rects)
+            if (!ff::input::keyboard().pressing('R'))
             {
-                obj.advance();
+                for (auto& obj : this->rects)
+                {
+                    obj.advance();
+                }
             }
 
             if (ff::input::keyboard().pressing('T'))
@@ -30,6 +33,24 @@ namespace
                 for (auto& obj : this->circles)
                 {
                     obj.advance();
+                }
+            }
+
+            if (ff::input::keyboard().pressing('L'))
+            {
+                if (ff::input::keyboard().pressing(VK_SHIFT))
+                {
+                    for (auto& obj : this->line_strips)
+                    {
+                        obj.advance();
+                    }
+                }
+                else
+                {
+                    for (auto& obj : this->lines)
+                    {
+                        obj.advance();
+                    }
                 }
             }
 
@@ -79,24 +100,58 @@ namespace
                         draw->draw_circle(pos, obj.thickness);
                     }
                 }
+
+                if (ff::input::keyboard().pressing('L'))
+                {
+                    if (ff::input::keyboard().pressing(VK_SHIFT))
+                    {
+                        for (line_strip_t& obj : this->line_strips)
+                        {
+                            draw->draw_lines(obj.points);
+                        }
+                    }
+                    else
+                    {
+                        for (line_t& obj : this->lines)
+                        {
+                            draw->draw_line(obj.start, obj.end, obj.color, obj.thickness);
+                        }
+                    }
+                }
             }
 
             ff::game::root_state_base::render(context, targets);
         }
 
     private:
+        static float rand(float min, float max)
+        {
+            return ff::math::random_range(min, max);
+        }
+
+        static ff::color rand_color()
+        {
+            return ff::color(rand(0, 1), rand(0, 1), rand(0, 1), ff::math::random_bool() ? 1.0f : rand(0, 1));
+        }
+
+        static ff::point_float rand_point()
+        {
+            return ff::point_float(rand(0, 800), rand(0, 600));
+        }
+
+        static size_t rand_life()
+        {
+            return ff::math::random_range(15, 200);
+        }
+
         struct rect_t
         {
             rect_t()
-                : width(static_cast<float>(ff::math::random_range(40, 400)))
+                : width(rand(40, 400))
                 , x(-this->width)
-                , speed(ff::math::random_range(2.0f, 80.0f))
-                , thickness(ff::math::random_bool() ? std::make_optional(ff::math::random_range(1.0f, 100.0f)) : std::nullopt)
-                , color(
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
+                , speed(rand(2, 80))
+                , thickness(ff::math::random_bool() ? std::make_optional(rand(1, 100)) : std::nullopt)
+                , color(rand_color())
             {}
 
             void advance()
@@ -122,17 +177,9 @@ namespace
         struct tri_t
         {
             tri_t()
-                : pos{
-                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
-                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
-                    ff::point_float(ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f)),
-                }
-                , color(
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
-                , life(ff::math::random_range(15, 200))
+                : pos{ rand_point(), rand_point(), rand_point() }
+                , color(rand_color())
+                , life(rand_life())
             {}
 
             void advance()
@@ -155,15 +202,11 @@ namespace
         struct circle_t
         {
             circle_t()
-                : pos{ ff::math::random_range(0.0f, 500.0f), ff::math::random_range(0.0f, 500.0f) }
-                , color(
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    1.0f - ff::math::random_range(0.0f, 1.0f),
-                    ff::math::random_bool() ? 1.0f : ff::math::random_range(0.0f, 1.0f))
+                : pos{ rand_point() }
+                , color(rand_color())
                 , radius(ff::math::random_range(4.0f, 300.0f))
-                , thickness(ff::math::random_bool() ? std::make_optional(ff::math::random_range(1.0f, this->radius)) : std::nullopt)
-                , life(ff::math::random_range(15, 200))
+                , thickness(ff::math::random_bool() ? std::make_optional(rand(1, this->radius)) : std::nullopt)
+                , life(rand_life())
             {
             }
 
@@ -186,9 +229,88 @@ namespace
             size_t life;
         };
 
+        struct line_t
+        {
+            line_t()
+                : start(rand_point())
+                , end(rand_point())
+                , color(rand_color())
+                , thickness(rand(1, 20))
+                , life(rand_life())
+            {
+            }
+
+            void advance()
+            {
+                if (this->life)
+                {
+                    this->life--;
+                }
+                else
+                {
+                    *this = line_t();
+                }
+            }
+
+            ff::point_float start;
+            ff::point_float end;
+            ff::color color;
+            float thickness;
+            size_t life;
+        };
+
+        struct line_strip_t
+        {
+            line_strip_t()
+                : color(rand_color())
+                , life(rand_life())
+            {
+                float thickness = rand(1, 20);
+                size_t count = ff::math::random_range(3, 10);
+                this->points.reserve(count);
+
+                for (size_t i = 0; i < count; i++)
+                {
+                    this->points.emplace_back(rand_point(), &this->color, thickness);
+                }
+            }
+
+            line_strip_t& operator=(line_strip_t&& other) noexcept
+            {
+                this->points = std::move(other.points);
+                this->color = other.color;
+                this->life = other.life;
+
+                for (auto& i : this->points)
+                {
+                    i.color = &this->color;
+                }
+
+                return *this;
+            }
+
+            void advance()
+            {
+                if (this->life)
+                {
+                    this->life--;
+                }
+                else
+                {
+                    *this = line_strip_t();
+                }
+            }
+
+            std::vector<ff::dxgi::endpoint_t> points;
+            ff::color color;
+            size_t life;
+        };
+
         std::array<rect_t, 16> rects;
         std::array<tri_t, 16> tris;
         std::array<circle_t, 16> circles;
+        std::array<line_t, 16> lines;
+        std::array<line_strip_t, 16> line_strips;
     };
 }
 

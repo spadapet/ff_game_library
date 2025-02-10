@@ -356,49 +356,114 @@ void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, co
 
 void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> points)
 {
-#if 0
-    assert(color_count == 1 || color_count == point_count);
-    thickness = pixel_thickness ? -std::abs(thickness) : std::abs(thickness);
+    size_t count = points.size();
+    check_ret(count > 1);
 
-    ff::vertex::line_geometry input;
-    input.matrix_index = (this->world_matrix_index == ::INVALID_INDEX) ? this->get_world_matrix_index() : this->world_matrix_index;
-    input.depth = this->nudge_depth(this->force_no_overlap ? ffdu::last_depth_type::instance_no_overlap : ffdu::last_depth_type::instance);
-    input.color[0] = colors[0];
-    input.color[1] = colors[0];
-    input.thickness[0] = thickness;
-    input.thickness[1] = thickness;
+    bool closed = count > 2 && points.front().pos == points.back().pos;
+    const uint32_t matrix_index = this->get_world_matrix_index();
+    const float depth = this->nudge_depth();
+    const ff::color* default_color = points.front().color ? points.front().color : &ff::color_none();
 
-    const DirectX::XMFLOAT2* dxpoints = reinterpret_cast<const DirectX::XMFLOAT2*>(points);
-    bool closed = point_count > 2 && points[0] == points[point_count - 1];
-    ::alpha_type alpha_type = ::get_alpha_type(colors[0], this->force_opaque || this->target_requires_palette_);
-
-    for (size_t i = 0; i < point_count - 1; i++)
+    for (size_t i = 0; i < count - 1; i++)
     {
-        input.position[1] = dxpoints[i];
-        input.position[2] = dxpoints[i + 1];
+        const ff::dxgi::endpoint_t& p0 = points[i];
+        const ff::dxgi::endpoint_t& p1 = points[i + 1];
 
-        input.position[0] = (i == 0)
-            ? (closed ? dxpoints[point_count - 2] : dxpoints[i])
-            : dxpoints[i - 1];
-
-        input.position[3] = (i == point_count - 2)
-            ? (closed ? dxpoints[1] : dxpoints[i + 1])
-            : dxpoints[i + 2];
-
-        if (color_count != 1)
+        if (p0.pos == p1.pos || (!p0.size && !p1.size))
         {
-            input.color[0] = colors[i];
-            input.color[1] = colors[i + 1];
-            alpha_type = ::get_alpha_type(colors + i, 2, this->force_opaque || this->target_requires_palette_);
+            continue;
         }
 
-        if (alpha_type != ::alpha_type::invisible)
+        const ff::color* color0 = p0.color ? p0.color : default_color;
+        const ff::color* color1 = p1.color ? p1.color : default_color;
+
+        ::alpha_type alpha_type = ::get_alpha_type(color0->alpha(), this->allow_transparent());
+        alpha_type = ::get_alpha_type(color1->alpha(), this->allow_transparent(), alpha_type);
+        if (alpha_type == ::alpha_type::invisible)
         {
-            ffdu::geometry_bucket_type bucket_type = (alpha_type == ::alpha_type::transparent) ? ffdu::geometry_bucket_type::lines_alpha : ffdu::geometry_bucket_type::lines;
-            this->add_geometry(&input, bucket_type, input.depth);
+            continue;
         }
-    }
+
+        ffdu::instance_bucket_type type = (alpha_type == ::alpha_type::transparent)
+            ? ffdu::instance_bucket_type::lines_out_transparent
+            : ffdu::instance_bucket_type::lines;
+
+        ffdu::line_instance& instance = this->add_instance<ffdu::line_instance>(type, depth);
+        instance.start = ff::dxgi::cast_point(p0.pos);
+        instance.end = ff::dxgi::cast_point(p1.pos);
+        instance.before_start = ff::dxgi::cast_point((i == 0) ? (closed ? points[count - 2].pos : p0.pos) : points[i - 1].pos);
+        instance.after_end = ff::dxgi::cast_point((i == count - 2) ? (closed ? points[1].pos : p1.pos) : points[i + 2].pos);
+        instance.start_color = color0->to_shader_color(this->palette_remap());
+        instance.end_color = color1->to_shader_color(this->palette_remap());
+        instance.start_thickness = std::abs(p0.size);
+        instance.end_thickness = std::abs(p1.size);
+        instance.depth = depth;
+        instance.matrix_index = matrix_index;
+#if 0
+        ffdu::line_instance& instance = this->add_instance<ffdu::line_instance>(type, depth);
+        instance.start = ff::dxgi::cast_point(p0.pos);
+        instance.end = ff::dxgi::cast_point(p1.pos);
+        instance.start_color = color0->to_shader_color(this->palette_remap());
+        instance.end_color = color1->to_shader_color(this->palette_remap());
+        instance.start_thickness = std::abs(p0.size);
+        instance.end_thickness = std::abs(p1.size);
+        instance.depth = depth;
+        instance.matrix_index = matrix_index;
+
+        size_t before_index = i;
+        size_t after_index = i;
+
+        for (size_t h = ff::constants::previous_unsigned(i); before_index == i && h != ff::constants::invalid_unsigned<size_t>(); h = ff::constants::previous_unsigned(h))
+        {
+            if (points[h].pos != p0.pos)
+            {
+                before_index = h;
+            }
+        }
+
+        for (size_t h = count - 1; before_index == i && h > i + 1; h--)
+        {
+            if (points[h].pos != p0.pos)
+            {
+                before_index = h;
+            }
+        }
+
+        for (size_t h = i + 2; after_index == i && h < count; h++)
+        {
+            if (points[h].pos != p1.pos)
+            {
+                after_index = h;
+            }
+        }
+
+        for (size_t h = 0; after_index == i && h < i; h++)
+        {
+            if (points[h].pos != p1.pos)
+            {
+                after_index = h;
+            }
+        }
+
+        if (before_index != i)
+        {
+            instance.before_start = ff::dxgi::cast_point(points[before_index].pos);
+        }
+        else
+        {
+            instance.before_start = ff::dxgi::cast_point(p0.pos - (p1.pos - p0.pos));
+        }
+
+        if (after_index != i)
+        {
+            instance.after_end = ff::dxgi::cast_point(points[after_index].pos);
+        }
+        else
+        {
+            instance.after_end = ff::dxgi::cast_point(p1.pos + (p1.pos - p0.pos));
+        }
 #endif
+    }
 }
 
 void ffdu::draw_device_base::draw_triangles(std::span<const ff::dxgi::endpoint_t> points)

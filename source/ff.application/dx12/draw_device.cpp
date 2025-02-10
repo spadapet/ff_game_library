@@ -59,9 +59,18 @@ static std::span<const D3D12_INPUT_ELEMENT_DESC> sprite_layout()
 
 static std::span<const D3D12_INPUT_ELEMENT_DESC> line_layout()
 {
-    static const std::array<D3D12_INPUT_ELEMENT_DESC, 1> layout
+    static const std::array layout
     {
-        D3D12_INPUT_ELEMENT_DESC{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 0 },
+        INSTANCE_DESC("POSITION", 0, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 1, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 2, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("POSITION", 3, DXGI_FORMAT_R32G32_FLOAT),
+        INSTANCE_DESC("COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("COLOR", 1, DXGI_FORMAT_R32G32B32A32_FLOAT),
+        INSTANCE_DESC("THICKNESS", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("THICKNESS", 1, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("DEPTH", 0, DXGI_FORMAT_R32_FLOAT),
+        INSTANCE_DESC("INDEX", 0, DXGI_FORMAT_R32_UINT),
     };
 
     return layout;
@@ -893,16 +902,14 @@ namespace
                 case ffdu::instance_bucket_type::palette_sprites_out_transparent:
                 case ffdu::instance_bucket_type::rectangles_filled:
                 case ffdu::instance_bucket_type::rectangles_filled_out_transparent:
+                case ffdu::instance_bucket_type::lines:
+                case ffdu::instance_bucket_type::lines_out_transparent:
                     this->commands->draw_indexed(0, ::RECTANGLE_INDEX_START, ::RECTANGLE_INDEX_COUNT, instance_start, instance_count);
                     break;
 
                 case ffdu::instance_bucket_type::rectangles_outline:
                 case ffdu::instance_bucket_type::rectangles_outline_out_transparent:
                     this->commands->draw_indexed(0, ::RECTANGLE_OUTLINE_INDEX_START, ::RECTANGLE_OUTLINE_INDEX_COUNT, instance_start, instance_count);
-                    break;
-
-                case ffdu::instance_bucket_type::lines:
-                case ffdu::instance_bucket_type::lines_out_transparent:
                     break;
 
                 case ffdu::instance_bucket_type::triangles:
