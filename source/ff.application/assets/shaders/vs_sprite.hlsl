@@ -25,12 +25,11 @@ sprite_pixel vs_sprite(sprite_vertex input)
     {
         float rotate_sin, rotate_cos;
         sincos(input.posrot.w, rotate_sin, rotate_cos);
-        output.pos.xy = float2(output.pos.x * rotate_cos - output.pos.y * rotate_sin, output.pos.x * rotate_sin + output.pos.y * rotate_cos);
+        output.pos.xy = float2(output.pos.x * rotate_cos + output.pos.y * rotate_sin, output.pos.y * rotate_cos - output.pos.x * rotate_sin);
     }
 
-    matrix transform_matrix = (input.indexes & 0xFF000000) ? mul(model_[input.indexes >> 24], projection_) : projection_;
     output.pos.xy += input.posrot.xy;
-    output.pos = mul(output.pos, transform_matrix);
+    output.pos = mul(output.pos, mul(model_[input.indexes >> 24], projection_));
 
     return output;
 }

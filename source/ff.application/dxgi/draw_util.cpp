@@ -368,14 +368,13 @@ void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> po
     {
         const ff::dxgi::endpoint_t& p0 = points[i];
         const ff::dxgi::endpoint_t& p1 = points[i + 1];
+        const ff::color* color0 = p0.color ? p0.color : default_color;
+        const ff::color* color1 = p1.color ? p1.color : default_color;
 
         if (p0.pos == p1.pos || (!p0.size && !p1.size))
         {
             continue;
         }
-
-        const ff::color* color0 = p0.color ? p0.color : default_color;
-        const ff::color* color1 = p1.color ? p1.color : default_color;
 
         ::alpha_type alpha_type = ::get_alpha_type(color0->alpha(), this->allow_transparent());
         alpha_type = ::get_alpha_type(color1->alpha(), this->allow_transparent(), alpha_type);
@@ -399,70 +398,6 @@ void ffdu::draw_device_base::draw_lines(std::span<const ff::dxgi::endpoint_t> po
         instance.end_thickness = std::abs(p1.size);
         instance.depth = depth;
         instance.matrix_index = matrix_index;
-#if 0
-        ffdu::line_instance& instance = this->add_instance<ffdu::line_instance>(type, depth);
-        instance.start = ff::dxgi::cast_point(p0.pos);
-        instance.end = ff::dxgi::cast_point(p1.pos);
-        instance.start_color = color0->to_shader_color(this->palette_remap());
-        instance.end_color = color1->to_shader_color(this->palette_remap());
-        instance.start_thickness = std::abs(p0.size);
-        instance.end_thickness = std::abs(p1.size);
-        instance.depth = depth;
-        instance.matrix_index = matrix_index;
-
-        size_t before_index = i;
-        size_t after_index = i;
-
-        for (size_t h = ff::constants::previous_unsigned(i); before_index == i && h != ff::constants::invalid_unsigned<size_t>(); h = ff::constants::previous_unsigned(h))
-        {
-            if (points[h].pos != p0.pos)
-            {
-                before_index = h;
-            }
-        }
-
-        for (size_t h = count - 1; before_index == i && h > i + 1; h--)
-        {
-            if (points[h].pos != p0.pos)
-            {
-                before_index = h;
-            }
-        }
-
-        for (size_t h = i + 2; after_index == i && h < count; h++)
-        {
-            if (points[h].pos != p1.pos)
-            {
-                after_index = h;
-            }
-        }
-
-        for (size_t h = 0; after_index == i && h < i; h++)
-        {
-            if (points[h].pos != p1.pos)
-            {
-                after_index = h;
-            }
-        }
-
-        if (before_index != i)
-        {
-            instance.before_start = ff::dxgi::cast_point(points[before_index].pos);
-        }
-        else
-        {
-            instance.before_start = ff::dxgi::cast_point(p0.pos - (p1.pos - p0.pos));
-        }
-
-        if (after_index != i)
-        {
-            instance.after_end = ff::dxgi::cast_point(points[after_index].pos);
-        }
-        else
-        {
-            instance.after_end = ff::dxgi::cast_point(p1.pos + (p1.pos - p0.pos));
-        }
-#endif
     }
 }
 

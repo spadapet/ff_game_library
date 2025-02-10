@@ -14,14 +14,11 @@ struct circle_vertex
 color_pixel vs_circle(circle_vertex input)
 {
     const uint v_inner = (input.vertex_id >> 5) & 1; // 0 for outer, 1 for inner
-    const float radius = input.position_radius.w;
 
     color_pixel output;
     output.color = lerp(input.outside_color, input.inside_color, v_inner);
-    
-    matrix transform_matrix = input.matrix_index ? mul(model_[input.matrix_index], projection_) : projection_;
-    output.pos = float4(input.cos_sin * lerp(radius, radius - input.thickness, v_inner) + input.position_radius.xy, input.position_radius.z, 1);
-    output.pos = mul(output.pos, transform_matrix);
+    output.pos = float4(input.cos_sin * lerp(input.position_radius.w, input.position_radius.w - input.thickness, v_inner) + input.position_radius.xy, input.position_radius.z, 1);
+    output.pos = mul(output.pos, mul(model_[input.matrix_index], projection_));
 
     return output;
 }

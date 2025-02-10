@@ -20,10 +20,8 @@ color_pixel vs_triangle(triangle_vertex input)
 
     color_pixel output;
     output.color = lerp(lerp(input.color0, input.color1, vx), input.color2, vy);
-
-    matrix transform_matrix = input.matrix_index ? mul(model_[input.matrix_index], projection_) : projection_;
     output.pos = float4(lerp(lerp(input.pos0, input.pos1, vx), input.pos2, vy), input.depth, 1);
-    output.pos = mul(output.pos, transform_matrix);
+    output.pos = mul(output.pos, mul(model_[input.matrix_index], projection_));
 
     return output;
 }

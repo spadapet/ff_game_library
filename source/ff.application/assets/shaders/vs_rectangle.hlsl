@@ -19,10 +19,8 @@ color_pixel vs_rectangle(rectangle_vertex input)
 
     color_pixel output;
     output.color = input.color;
-
-    matrix transform_matrix = input.matrix_index ? mul(model_[input.matrix_index], projection_) : projection_;
     output.pos = float4(lerp(input.rect.x + offset, input.rect.z - offset, vx), lerp(input.rect.y + offset, input.rect.w - offset, vy), input.depth, 1);
-    output.pos = mul(output.pos, transform_matrix);
+    output.pos = mul(output.pos, mul(model_[input.matrix_index], projection_));
 
     return output;
 }
