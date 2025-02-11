@@ -31,7 +31,7 @@ namespace ff::test::dx12
                 test_texture = std::make_unique<ff::dx12::texture>(std::make_shared<DirectX::ScratchImage>(std::move(*png.read())));
             }
 
-            const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+            const ff::color clear_color(0.25, 0, 0.5, 1);
             ff::dx12::target_texture target(std::make_shared<ff::dx12::texture>(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color));
 
             ff::dxgi::command_context_base& context = ff::dx12::frame_started();

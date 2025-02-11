@@ -23,7 +23,7 @@ namespace ff::test::graphics
             ff::auto_resource<ff::sprite_resource> sprites_res = res->get_resource_object("sprites.box[7]");
             std::shared_ptr<ff::sprite_resource> sprite = sprites_res.object();
 
-            static const DirectX::XMFLOAT4 clear_color(0.25, 0, 0.5, 1);
+            static const ff::color clear_color(0.25, 0, 0.5, 1);
             auto target_texture = ff::dxgi::create_render_texture(ff::point_size(256, 256), DXGI_FORMAT_UNKNOWN, 1, 1, 1, &clear_color);
             auto target = ff::dxgi::create_target_for_texture(target_texture, 0, 0, 0, 0, 0);
 
