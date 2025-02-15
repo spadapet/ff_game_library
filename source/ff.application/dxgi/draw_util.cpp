@@ -128,7 +128,7 @@ void ffdu::instance_bucket::reset()
     this->data_end = nullptr;
 }
 
-void* ffdu::instance_bucket::add(const void* data)
+void* ffdu::instance_bucket::add()
 {
     if (this->data_cur == this->data_end)
     {
@@ -137,11 +137,6 @@ void* ffdu::instance_bucket::add(const void* data)
         this->data_start = reinterpret_cast<uint8_t*>(_aligned_realloc(this->data_start, new_size, this->item_align));
         this->data_cur = this->data_start + cur_size;
         this->data_end = this->data_start + new_size;
-    }
-
-    if (this->data_cur && data)
-    {
-        std::memcpy(this->data_cur, data, this->item_size_);
     }
 
     void* result = this->data_cur;
@@ -828,21 +823,13 @@ void ffdu::draw_device_base::update_vs_constants_buffer_0()
 
 void ffdu::draw_device_base::update_vs_constants_buffer_1()
 {
-    // Build up model matrix array
-    size_t world_matrix_count = this->world_matrix_to_index.size();
-    this->vs_constants_1.model.resize(world_matrix_count);
-
     for (const auto& iter : this->world_matrix_to_index)
     {
         this->vs_constants_1.model[iter.second] = iter.first;
     }
 
-    if constexpr (ff::constants::debug_build)
-    {
-        this->vs_constants_1.model.resize(ffdu::MAX_TRANSFORM_MATRIXES, {});
-    }
-
-    this->vs_constants_buffer_1().update(*this->command_context_, this->vs_constants_1.model.data(), ff::vector_byte_size(this->vs_constants_1.model));
+    this->vs_constants_buffer_1().update(*this->command_context_, &this->vs_constants_1,
+        ff::constants::debug_build ? sizeof(this->vs_constants_1) : sizeof(DirectX::XMFLOAT4X4) * this->world_matrix_to_index.size());
 }
 
 void ffdu::draw_device_base::update_ps_constants_buffer_0()
@@ -1118,19 +1105,14 @@ bool ff::dxgi::draw_util::draw_device_base::allow_transparent() const
     return !this->force_opaque && !this->target_requires_palette_;
 }
 
-void* ffdu::draw_device_base::add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth)
+void* ffdu::draw_device_base::add_instance_void(ffdu::instance_bucket_type bucket_type, float depth)
 {
-    ffdu::instance_bucket& bucket = this->get_instance_bucket(bucket_type);
+    ffdu::instance_bucket& bucket = this->instance_buckets[static_cast<size_t>(bucket_type)];
     if (bucket.is_transparent())
     {
         assert(!this->force_opaque);
         this->transparent_instances.emplace_back(&bucket, bucket.count(), depth);
     }
 
-    return bucket.add(data);
-}
-
-ffdu::instance_bucket& ffdu::draw_device_base::get_instance_bucket(ffdu::instance_bucket_type type)
-{
-    return this->instance_buckets[static_cast<size_t>(type)];
+    return bucket.add();
 }

@@ -129,7 +129,7 @@ namespace ff::dxgi::draw_util
         }
 
         void reset();
-        void* add(const void* data = nullptr);
+        void* add();
         size_t item_size() const;
         const std::type_info& item_type() const;
         ffdu::instance_bucket_type bucket_type() const;
@@ -173,7 +173,7 @@ namespace ff::dxgi::draw_util
 
     struct vs_constants_1
     {
-        std::vector<DirectX::XMFLOAT4X4> model;
+        std::array<DirectX::XMFLOAT4X4, ffdu::MAX_TRANSFORM_MATRIXES> model;
     };
 
     struct ps_constants_0
@@ -282,14 +282,12 @@ namespace ff::dxgi::draw_util
 
         const uint8_t* palette_remap() const;
         bool allow_transparent() const;
-
-        void* add_instance(const void* data, ffdu::instance_bucket_type bucket_type, float depth);
-        ffdu::instance_bucket& get_instance_bucket(ffdu::instance_bucket_type type);
+        void* add_instance_void(ffdu::instance_bucket_type bucket_type, float depth);
 
         template<class T>
         T& add_instance(ffdu::instance_bucket_type bucket_type, float depth)
         {
-            return *reinterpret_cast<T*>(this->add_instance(nullptr, bucket_type, depth));
+            return *reinterpret_cast<T*>(this->add_instance_void(bucket_type, depth));
         }
 
         // State

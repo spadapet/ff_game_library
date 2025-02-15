@@ -614,17 +614,6 @@ namespace
             }
         }
 
-        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) override
-        {
-            if (end_draw)
-            {
-                this->commands->end_event();
-                this->commands = nullptr;
-            }
-
-            return this->commands;
-        }
-
         virtual ff::dxgi::command_context_base* internal_setup(
             ff::dxgi::command_context_base& context,
             ff::dxgi::target_base& target,
@@ -658,7 +647,18 @@ namespace
             this->commands->root_descriptors(::ROOT_SAMPLERS, this->samplers_gpu);
             this->commands->primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-            return this->internal_flush(nullptr, false);
+            return this->commands;
+        }
+
+        virtual ff::dxgi::command_context_base* internal_flush(ff::dxgi::command_context_base* context, bool end_draw) override
+        {
+            if (end_draw)
+            {
+                this->commands->end_event();
+                this->commands = nullptr;
+            }
+
+            return this->commands;
         }
 
         virtual void internal_flush_begin(ff::dxgi::command_context_base* context) override
