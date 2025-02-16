@@ -341,7 +341,7 @@ void ffdu::draw_device_base::draw_sprite(const ff::dxgi::sprite_data& sprite, co
         DirectX::XMLoadFloat4(&ff::dxgi::cast_rect(sprite.world())),
         DirectX::XMVectorSet(transform.scale.x, transform.scale.y, transform.scale.x, transform.scale.y)));
     instance.uv_rect = ff::dxgi::cast_rect(sprite.texture_uv());
-    instance.color = transform.color;
+    instance.color = transform.color.to_shader_color(this->palette_remap());;
     instance.pos_rot.x = transform.position.x;
     instance.pos_rot.y = transform.position.y;
     instance.pos_rot.z = depth;
