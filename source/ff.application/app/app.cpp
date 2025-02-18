@@ -212,14 +212,8 @@ static void init_game_thread()
     ::frame_thread_dispatch = std::make_unique<ff::thread_dispatch>(ff::thread_dispatch_type::frame);
     ::game_thread_event.set();
 
-    if (::game_state)
-    {
-        ::app_params.game_thread_started_func();
-        return;
-    }
-
-    ::app_params.register_resources_func();
-    ::app_params.game_thread_started_func();
+    check_ret(!::game_state);
+    ::app_params.game_thread_initialized_func();
 
     std::vector<std::shared_ptr<ff::state>> states;
     auto initial_state = ::app_params.create_initial_state_func();
@@ -355,7 +349,6 @@ static void stop_game_thread()
 {
     check_ret(::game_thread_dispatch);
     ff::log::write(ff::log::type::application, "Stop game thread");
-    ::app_params.app_destroying_func();
     ::save_window_settings();
 
     ::game_thread_dispatch->post([]()
@@ -534,7 +527,7 @@ static bool app_initialized()
 {
     assert_ret_val(::window, false);
     ::window_initialized = true;
-    ::app_params.app_initialized_func(&::window);
+    ::app_params.main_thread_initialized_func(&::window);
 
     ::ShowWindow(::window, SW_SHOWDEFAULT);
     ::SetForegroundWindow(::window);
@@ -564,7 +557,6 @@ void ff::internal::app::destroy()
 {
     ::stop_game_thread();
     ::window_initialized = false;
-    ::app_params.app_destroyed_func();
     ff::internal::app::save_settings();
     ff::internal::app::clear_settings();
 

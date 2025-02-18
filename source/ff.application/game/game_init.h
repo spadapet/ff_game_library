@@ -8,9 +8,9 @@ namespace ff::game
 
     struct init_params
     {
-        std::function<void()> register_resources_func{ &ff::game::init_params::default_empty };
+        std::function<void(ff::window*)> main_thread_initialized_func{ &ff::game::init_params::default_with_window };
+        std::function<void()> game_thread_initialized_func{ &ff::game::init_params::default_empty };
         std::function<std::shared_ptr<ff::game::root_state_base>()> create_root_state_func{ &ff::game::init_params::default_create_root_state };
-        std::function<void(ff::window*)> window_initialized_func{ &ff::game::init_params::default_with_window };
 
         ff::dxgi::target_window_params target_window{};
 

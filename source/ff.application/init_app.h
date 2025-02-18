@@ -8,11 +8,8 @@ namespace ff
 {
     struct init_app_params
     {
-        std::function<void(ff::window*)> app_initialized_func{ &ff::init_app_params::default_with_window };
-        std::function<void()> app_destroying_func{ &ff::init_app_params::default_empty };
-        std::function<void()> app_destroyed_func{ &ff::init_app_params::default_empty };
-        std::function<void()> register_resources_func{ &ff::init_app_params::default_empty };
-        std::function<void()> game_thread_started_func{ &ff::init_app_params::default_empty };
+        std::function<void(ff::window*)> main_thread_initialized_func{ &ff::init_app_params::default_with_window };
+        std::function<void()> game_thread_initialized_func{ &ff::init_app_params::default_empty };
         std::function<void()> game_thread_finished_func{ &ff::init_app_params::default_empty };
         std::function<std::shared_ptr<ff::state>()> create_initial_state_func{ &ff::init_app_params::default_create_initial_state };
         std::function<double()> get_time_scale_func{ &ff::init_app_params::default_get_time_scale };
