@@ -8,19 +8,19 @@ ff::animation_player::animation_player(const std::shared_ptr<ff::animation_base>
     , start_frame(start_frame)
     , frame(start_frame)
     , fps((speed != 0.0 ? std::abs(speed) : 1.0f) * animation->frames_per_second())
-    , advances(0)
+    , updates(0)
 {}
 
-bool ff::animation_player::advance_animation(ff::push_base<ff::animation_event>* events)
+bool ff::animation_player::update_animation(ff::push_base<ff::animation_event>* events)
 {
-    bool first_advance = !this->advances;
+    bool first_update = !this->updates;
     float begin_frame = this->frame;
-    this->advances += 1.0f;
-    this->frame = this->start_frame + (this->advances * this->fps / ff::constants::advances_per_second<float>());
+    this->updates += 1.0f;
+    this->frame = this->start_frame + (this->updates * this->fps / ff::constants::updates_per_second<float>());
 
     if (events)
     {
-        this->animation_->frame_events(begin_frame, this->frame, first_advance, *events);
+        this->animation_->frame_events(begin_frame, this->frame, first_update, *events);
     }
 
     return this->frame < this->animation_->frame_length();

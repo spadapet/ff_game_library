@@ -215,12 +215,12 @@ void ff::audio::volume(voice_type type, float volume)
     }
 }
 
-void ff::audio::advance_effects()
+void ff::audio::update_effects()
 {
-    static size_t advances = 0;
+    static size_t updates = 0;
 
     // Check if speakers were plugged in every two seconds
-    if (!::master_voice && ++advances % 120 == 0)
+    if (!::master_voice && ++updates % 120 == 0)
     {
         ::init_mastering_voice();
     }
@@ -230,7 +230,7 @@ void ff::audio::advance_effects()
 
     for (ff::audio_playing_base* playing : audio_playing_copy)
     {
-        playing->advance();
+        playing->update();
     }
 }
 

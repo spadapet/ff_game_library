@@ -40,7 +40,7 @@ namespace ff::internal
         virtual bool stopped() const override;
         virtual bool music() const override;
 
-        virtual void advance() override;
+        virtual void update() override;
         virtual void stop() override;
         virtual void pause() override;
         virtual void resume() override;

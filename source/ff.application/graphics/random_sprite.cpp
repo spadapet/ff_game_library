@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "graphics/random_sprite.h"
 
-static size_t advance_count = 0;
+static size_t update_count = 0;
 
 ff::random_sprite::random_sprite(std::vector<count_t>&& repeat_counts, std::vector<count_t>&& sprite_counts, std::vector<sprite_t>&& sprites)
     : repeat_counts(std::move(repeat_counts))
     , sprite_counts(std::move(sprite_counts))
     , sprites(std::move(sprites))
-    , next_advance(0)
+    , next_update(0)
     , repeat_count_weight(0)
     , sprite_count_weight(0)
     , sprite_weight(0)
@@ -28,9 +28,9 @@ ff::random_sprite::random_sprite(std::vector<count_t>&& repeat_counts, std::vect
     }
 }
 
-void ff::random_sprite::advance_time()
+void ff::random_sprite::update()
 {
-    ::advance_count++;
+    ::update_count++;
 }
 
 void ff::random_sprite::draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params)
@@ -74,7 +74,7 @@ std::vector<std::shared_ptr<ff::resource>> ff::random_sprite::resource_get_depen
 
 const std::vector<std::pair<ff::animation_base*, float>>& ff::random_sprite::pick_sprites() const
 {
-    if (::advance_count >= this->next_advance)
+    if (::update_count >= this->next_update)
     {
         this->picked.clear();
 
@@ -137,7 +137,7 @@ const std::vector<std::pair<ff::animation_base*, float>>& ff::random_sprite::pic
         }
 
         assert(repeat_count > 0);
-        this->next_advance = ::advance_count + static_cast<size_t>(repeat_count);
+        this->next_update = ::update_count + static_cast<size_t>(repeat_count);
     }
 
     return this->picked;

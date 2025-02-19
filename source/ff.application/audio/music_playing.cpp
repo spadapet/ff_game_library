@@ -189,7 +189,7 @@ bool ff::internal::music_playing::music() const
     return true;
 }
 
-void ff::internal::music_playing::advance()
+void ff::internal::music_playing::update()
 {
     if (this->state == state_t::playing && this->source && this->fade_scale != 0)
     {

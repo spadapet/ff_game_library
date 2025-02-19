@@ -5,15 +5,23 @@ namespace ff
     struct init_app_params;
     class init_dx_async;
 
+    enum class app_update_t
+    {
+        running,
+        single_step,
+        stopped,
+    };
+
     struct app_time_t
     {
         size_t frame_count{};
-        size_t advance_count{};
+        size_t update_count{};
         int64_t perf_clock_ticks{};
         double clock_seconds{};
-        double advance_seconds{};
-        double unused_advance_seconds{};
+        double update_seconds{};
+        double unused_update_seconds{};
         double time_scale{ 1.0 };
+        ff::app_update_t update_type{ ff::app_update_t::running };
     };
 
     const ff::module_version_t& app_version();

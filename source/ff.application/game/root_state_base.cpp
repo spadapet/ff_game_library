@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "app/app.h"
-#include "app/debug_state.h"
+#include "app/debug_stats.h"
 #include "app/settings.h"
 #include "ff.app.res.id.h"
 #include "game/root_state_base.h"

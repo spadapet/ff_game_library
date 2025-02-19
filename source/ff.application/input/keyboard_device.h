@@ -17,7 +17,7 @@ namespace ff
         virtual int press_count(int vk) const override;
 
         // input_device_base
-        virtual void advance() override;
+        virtual void update() override;
         virtual void kill_pending() override;
         virtual void notify_window_message(ff::window_message& message) override;
 

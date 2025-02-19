@@ -7,7 +7,7 @@ ff::palette_cycle::palette_cycle(const std::shared_ptr<ff::palette_data>& data, 
     , index_remap_(data ? data->remap(remap_name) : nullptr)
     , index_remap_hash_(this->index_remap_ ? ff::stable_hash_bytes(this->index_remap_->data(), this->index_remap_->size()) : 0)
     , cycles_per_second(static_cast<double>(cycles_per_second))
-    , advances(0)
+    , updates(0)
     , current_row_(0)
 {
 }
@@ -17,10 +17,10 @@ ff::palette_cycle::operator bool() const
     return this->data_ && *this->data_;
 }
 
-void ff::palette_cycle::advance()
+void ff::palette_cycle::update()
 {
     size_t size = this->data_->row_size();
-    this->current_row_ = static_cast<size_t>(++this->advances * this->cycles_per_second * size / ff::constants::advances_per_second<double>()) % size;
+    this->current_row_ = static_cast<size_t>(++this->updates * this->cycles_per_second * size / ff::constants::updates_per_second<double>()) % size;
 }
 
 size_t ff::palette_cycle::current_row() const

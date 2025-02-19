@@ -1,18 +1,12 @@
 #include "pch.h"
 #include "app/app.h"
-#include "app/debug_state.h"
+#include "app/debug_stats.h"
 #include "dxgi/dxgi_globals.h"
 #include "dxgi/target_window_base.h"
 #include "input/input.h"
 #include "input/keyboard_device.h"
 #include "ff.app.res.id.h"
 #include "dx_types/color.h"
-
-using namespace std::string_view_literals;
-
-static const size_t EVENT_TOGGLE_DEBUG = ff::stable_hash_func("toggle_debug"sv);
-static const size_t EVENT_CUSTOM = ff::stable_hash_func("custom_debug"sv);
-static ff::signal<> custom_debug_signal;
 
 constexpr size_t CHART_WIDTH = 150;
 constexpr size_t CHART_HEIGHT = 64;
@@ -101,11 +95,11 @@ namespace
     };
 }
 
-static double advance_seconds_{};
+static double update_seconds_{};
 static size_t frames_per_second_{};
 static size_t frame_count_{};
 static size_t timer_update_speed_{ 16 };
-static size_t frame_start_counter_{};
+static size_t timer_update_counter_{};
 static bool debug_visible_{};
 static bool timers_visible_{};
 static bool timers_updating_{ true };
@@ -175,7 +169,7 @@ static void update_chart(const ff::perf_results& results)
     }
 
     const double height_scale = results.delta_ticks
-        ? results.delta_seconds / (ff::constants::seconds_per_advance<double>() * results.delta_ticks)
+        ? results.delta_seconds / (ff::constants::seconds_per_update<double>() * results.delta_ticks)
         : 0.0;
 
     std::memmove(::chart_total_.data(), ::chart_total_.data() + 1, sizeof(float) * (CHART_WIDTH - 1));
@@ -187,46 +181,34 @@ static void update_chart(const ff::perf_results& results)
     ::chart_wait_.back() = static_cast<float>(wait_ticks * height_scale);
 }
 
-ff::internal::debug_state::debug_state(
+ff::internal::debug_stats::debug_stats(
     std::shared_ptr<ff::dxgi::target_window_base> app_target,
     std::shared_ptr<ff::resource_object_provider> app_resources,
     const ff::perf_results& perf_results)
     : app_target(app_target)
     , perf_results(perf_results)
-    , input_mapping(app_resources->get_resource_object(assets::app::FF_DEBUG_PAGE_INPUT))
-    , input_events(std::make_unique<ff::input_event_provider>(*this->input_mapping.object(), std::vector<const ff::input_vk*>{ &ff::input::keyboard() }))
 {
 }
 
-void ff::internal::debug_state::advance_input()
+void ff::internal::debug_stats::update_input()
 {
-    if (this->input_events->advance())
+    if (ff::input::keyboard().press_count(VK_F8) && ff::input::keyboard().pressing(VK_CONTROL))
     {
-        if (this->input_events->event_hit(::EVENT_CUSTOM))
-        {
-            ::custom_debug_signal.notify();
-        }
-        else if (this->input_events->event_hit(::EVENT_TOGGLE_DEBUG))
-        {
-            ::debug_visible_ = !::debug_visible_;
-        }
+        ::debug_visible_ = !::debug_visible_;
     }
-
-    ff::state::advance_input();
 }
 
-void ff::internal::debug_state::frame_started(ff::state::advance_t type)
+void ff::internal::debug_stats::frame_started(ff::app_update_t type)
 {
-    const ff::perf_results& pr = this->perf_results;
-
-    ::stopped_visible_ = (type == ff::state::advance_t::stopped);
+    ::stopped_visible_ = (type == ff::app_update_t::stopped);
 
     if (::debug_visible_)
     {
-        ::advance_seconds_ = ff::app_time().advance_seconds;
-        ::frame_count_ = ff::app_time().advance_count;
+        const ff::perf_results& pr = this->perf_results;
+        ::update_seconds_ = ff::app_time().update_seconds;
+        ::frame_count_ = ff::app_time().update_count;
 
-        if (::timers_visible_ && ::timers_updating_ && (::frame_start_counter_ % ::timer_update_speed_) == 0)
+        if (::timers_visible_ && ::timers_updating_ && (::timer_update_counter_++ % ::timer_update_speed_) == 0)
         {
             ::update_timers(pr);
         }
@@ -245,13 +227,9 @@ void ff::internal::debug_state::frame_started(ff::state::advance_t type)
             }
         }
     }
-
-    ff::state::frame_started(type);
-
-    ::frame_start_counter_++; // after UI updates
 }
 
-void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dxgi::command_context_base& context, ff::render_targets& targets)
+void ff::internal::debug_stats::render(ff::app_update_t type, ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
 {
 #if USE_IMGUI
     if (::debug_visible_)
@@ -430,12 +408,7 @@ void ff::internal::debug_state::frame_rendered(ff::state::advance_t type, ff::dx
             ::imgui_demo_visible_ = false;
         }
     }
+#else
+    // TODO: Maybe render FPS not using IMGUI
 #endif
-
-    ff::state::frame_rendered(type, context, targets);
-}
-
-ff::signal_sink<>& ff::custom_debug_sink()
-{
-    return ::custom_debug_signal;
 }

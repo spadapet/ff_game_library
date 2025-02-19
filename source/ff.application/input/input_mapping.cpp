@@ -36,7 +36,7 @@ ff::input_event_provider::input_event_provider(const input_mapping_def& mapping,
     }
 }
 
-bool ff::input_event_provider::advance(double delta_time)
+bool ff::input_event_provider::update(double delta_time)
 {
     this->events_.clear();
 

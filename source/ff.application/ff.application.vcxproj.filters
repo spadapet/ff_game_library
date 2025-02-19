@@ -6,19 +6,13 @@
     <ClCompile Include="app\app.cpp">
       <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="app\debug_state.cpp">
+    <ClCompile Include="app\debug_stats.cpp">
       <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="game\game_init.cpp">
-      <Filter>game</Filter>
     </ClCompile>
     <ClCompile Include="game\root_state_base.cpp">
       <Filter>game</Filter>
     </ClCompile>
     <ClCompile Include="app\settings.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\state.cpp">
       <Filter>app</Filter>
     </ClCompile>
     <ClCompile Include="assets\ff.app.res.cpp">
@@ -259,6 +253,9 @@
     <ClCompile Include="dx_types\viewport.cpp">
       <Filter>dx_types</Filter>
     </ClCompile>
+    <ClCompile Include="app\game.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -266,19 +263,13 @@
     <ClInclude Include="app\app.h">
       <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="app\debug_state.h">
+    <ClInclude Include="app\debug_stats.h">
       <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="game\game_init.h">
-      <Filter>game</Filter>
     </ClInclude>
     <ClInclude Include="game\root_state_base.h">
       <Filter>game</Filter>
     </ClInclude>
     <ClInclude Include="app\settings.h">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="app\state.h">
       <Filter>app</Filter>
     </ClInclude>
     <ClInclude Include="app\imgui.h">
@@ -566,6 +557,9 @@
     </ClInclude>
     <ClInclude Include="dx_types\viewport.h">
       <Filter>dx_types</Filter>
+    </ClInclude>
+    <ClInclude Include="app\game.h">
+      <Filter>app</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

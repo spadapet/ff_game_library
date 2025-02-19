@@ -31,7 +31,7 @@ namespace ff::constants
     /// Fixed amount of times per second that the game loop advances
     /// </summary>
     template<class T, class = std::enable_if_t<std::is_arithmetic_v<T>>>
-    constexpr T advances_per_second()
+    constexpr T updates_per_second()
     {
         return static_cast<T>(60.0);
     }
@@ -40,8 +40,8 @@ namespace ff::constants
     /// Each time the game advances, this fixed amount of time has passed
     /// </summary>
     template<class T, class = std::enable_if_t<std::is_arithmetic_v<T>>>
-    constexpr T seconds_per_advance()
+    constexpr T seconds_per_update()
     {
-        return static_cast<T>(1.0) / ff::constants::advances_per_second<T>();
+        return static_cast<T>(1.0) / ff::constants::updates_per_second<T>();
     }
 }

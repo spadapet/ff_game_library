@@ -449,7 +449,7 @@ bool ff::dx12::reset_device(bool force)
     assert_ret_val(!resetting, false);
 
     resetting = true;
-    ff::scope_exit scope_exit([]()
+    ff::scope_exit scope_exit([]
     {
         resetting = false;
     });

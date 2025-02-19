@@ -504,7 +504,7 @@ void ff::dx12::target_window::handle_message(ff::window* window, ff::window_mess
             {
                 if (::GetKeyState(VK_SHIFT) < 0)
                 {
-                    ff::thread_dispatch::get_game()->post([]()
+                    ff::thread_dispatch::get_game()->post([]
                     {
                         ff::dx12::device_fatal_error("Pretend DX12 device fatal error for testing");
                     });

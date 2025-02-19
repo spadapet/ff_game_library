@@ -11,7 +11,7 @@
 static std::atomic_int handling_assert = 0;
 static std::function<bool(const char*, const char*, const char*, unsigned int)> assert_listener_;
 static bool statics_destroyed{};
-static ff::scope_exit statics_invalidate([]() { ::statics_destroyed = true; });
+static ff::scope_exit statics_invalidate([] { ::statics_destroyed = true; });
 
 bool ff::internal::assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {

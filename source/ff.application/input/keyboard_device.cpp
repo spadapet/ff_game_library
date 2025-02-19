@@ -28,7 +28,7 @@ std::string ff::keyboard_device::text() const
     return ff::string::to_string(this->state.text);
 }
 
-void ff::keyboard_device::advance()
+void ff::keyboard_device::update()
 {
     std::scoped_lock lock(this->mutex);
 

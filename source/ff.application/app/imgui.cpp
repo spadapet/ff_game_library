@@ -128,7 +128,7 @@ void ff::internal::imgui::destroy()
     ::window = nullptr;
 }
 
-void ff::internal::imgui::advance_input()
+void ff::internal::imgui::update_input()
 {
     ImGuiIO& io = ImGui::GetIO();
     ff::input::keyboard().block_events(io.WantCaptureKeyboard);
@@ -226,7 +226,7 @@ bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_m
 {
     if (!message.handled && ::ImGui_ImplWin32_WndProcHandler(message.hwnd, message.msg, message.wp, message.lp))
     {
-        ff::internal::imgui::advance_input();
+        ff::internal::imgui::update_input();
         message.handled = true;
         return true;
     }
@@ -245,7 +245,7 @@ bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_m
 
 void ff::internal::imgui::init(ff::window* window, std::shared_ptr<ff::dxgi::target_window_base> app_target, std::shared_ptr<ff::resource_object_provider> app_resources) {}
 void ff::internal::imgui::destroy() {}
-void ff::internal::imgui::advance_input() {}
+void ff::internal::imgui::update_input() {}
 void ff::internal::imgui::rendering() {}
 void ff::internal::imgui::render(ff::dxgi::command_context_base& context) {}
 void ff::internal::imgui::rendered() {}

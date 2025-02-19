@@ -5,9 +5,10 @@
 #include "../source/ff.application/init_dx.h"
 
 #include "../source/ff.application/app/app.h"
-#include "../source/ff.application/app/debug_state.h"
+#include "../source/ff.application/app/debug_stats.h"
+#include "../source/ff.application/app/game.h"
+#include "../source/ff.application/app/imgui.h"
 #include "../source/ff.application/app/settings.h"
-#include "../source/ff.application/app/state.h"
 
 #include "../source/ff.application/audio/audio.h"
 #include "../source/ff.application/audio/audio_child_base.h"
@@ -76,9 +77,6 @@
 #include "../source/ff.application/dxgi/texture_metadata_base.h"
 #include "../source/ff.application/dxgi/texture_view_access_base.h"
 #include "../source/ff.application/dxgi/texture_view_base.h"
-
-#include "../source/ff.application/game/game_init.h"
-#include "../source/ff.application/game/root_state_base.h"
 
 #include "../source/ff.application/graphics/animation.h"
 #include "../source/ff.application/graphics/animation_base.h"

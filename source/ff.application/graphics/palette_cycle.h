@@ -17,7 +17,7 @@ namespace ff
         palette_cycle& operator=(const palette_cycle & other) = delete;
         operator bool() const;
 
-        void advance();
+        void update();
 
         // palette_base
         virtual size_t current_row() const override;
@@ -29,7 +29,7 @@ namespace ff
         std::shared_ptr<ff::data_base> index_remap_;
         size_t index_remap_hash_;
         double cycles_per_second;
-        double advances;
+        double updates;
         size_t current_row_;
     };
 }

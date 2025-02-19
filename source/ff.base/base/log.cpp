@@ -41,7 +41,7 @@ static std::unordered_map<ff::log::type, ::log_type> types
 
 static std::ostream* file_stream{};
 static bool statics_destroyed{};
-static ff::scope_exit statics_invalidate([]()
+static ff::scope_exit statics_invalidate([]
     {
         assert_msg(!::file_stream, "ff::log::file(nullptr) must be called before exit.");
         ::statics_destroyed = true;

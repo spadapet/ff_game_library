@@ -83,7 +83,7 @@ void ff::gamepad_device::vibrate(float low_value, float high_value, float time)
     high_value = std::clamp(high_value, 0.0f, 1.0f);
     time = std::clamp(time, 0.0f, MAX_VIBRATE_TIME);
 
-    const size_t count = static_cast<size_t>(time * ff::constants::advances_per_second<float>());
+    const size_t count = static_cast<size_t>(time * ff::constants::updates_per_second<float>());
     ff::gamepad_device::insert_vibration(this->vibrate_low, { static_cast<WORD>(low_value * 65535.0f), count });
     ff::gamepad_device::insert_vibration(this->vibrate_high, { static_cast<WORD>(high_value * 65535.0f), count });
 
@@ -141,7 +141,7 @@ int ff::gamepad_device::press_count(int vk) const
     return (i < this->state.press_count.size() && this->state.press_count[i] == 1) ? 1 : 0;
 }
 
-void ff::gamepad_device::advance()
+void ff::gamepad_device::update()
 {
     reading_t reading{};
     if ((this->connected_ || !this->check_connected) && this->poll(reading))
@@ -151,8 +151,8 @@ void ff::gamepad_device::advance()
     else if (this->connected_ || !this->check_connected)
     {
         this->connected_ = false;
-        this->check_connected = ff::constants::advances_per_second<int>() +
-            (ff::math::random_non_negative() % ff::constants::advances_per_second<int>());
+        this->check_connected = ff::constants::updates_per_second<int>() +
+            (ff::math::random_non_negative() % ff::constants::updates_per_second<int>());
     }
     else
     {

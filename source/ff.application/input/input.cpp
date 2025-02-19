@@ -44,11 +44,11 @@ namespace
             this->kill_pending();
         }
 
-        virtual void advance() override
+        virtual void update() override
         {
             for (auto& pair : ::all_devices)
             {
-                pair.first->advance();
+                pair.first->update();
             }
         }
 

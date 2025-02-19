@@ -25,7 +25,7 @@ namespace ff::audio
     float volume(voice_type type);
     void volume(voice_type type, float volume);
 
-    void advance_effects();
+    void update_effects();
     void stop_effects();
     void pause_effects();
     void pause_effects(bool pause);

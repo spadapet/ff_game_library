@@ -62,10 +62,10 @@ int ff::game::run(const ff::game::init_params& game_params)
     app_params.game_thread_initialized_func = std::bind(::game_thread_initialized, game_params);
     app_params.create_initial_state_func = std::bind(::create_root_state, game_params);
     app_params.main_thread_initialized_func = std::bind(::main_thread_initialized, game_params, std::placeholders::_1);
-    app_params.game_thread_finished_func = []() { ::root_state.reset(); };
-    app_params.get_time_scale_func = []() { return ::root_state->time_scale(); };
-    app_params.get_advance_type_func = []() { return ::root_state->advance_type(); };
-    app_params.get_clear_back_buffer = []() { return ::root_state->clear_back_buffer(); };
+    app_params.game_thread_finished_func = [] { ::root_state.reset(); };
+    app_params.get_time_scale_func = [] { return ::root_state->time_scale(); };
+    app_params.get_advance_type_func = [] { return ::root_state->advance_type(); };
+    app_params.get_clear_back_buffer = [] { return ::root_state->clear_back_buffer(); };
     app_params.target_window = game_params.target_window;
 
     ff::init_app init_app(app_params);

@@ -22,7 +22,7 @@ namespace ff
         virtual float analog_value(int vk) const override;
 
         // input_device_base
-        virtual void advance() override;
+        virtual void update() override;
         virtual void kill_pending() override;
         virtual bool connected() const override;
 

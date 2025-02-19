@@ -2,11 +2,9 @@
 
 #include "../dxgi/target_window_base.h"
 
-namespace ff::game
+namespace ff
 {
-    class root_state_base;
-
-    struct init_params
+    struct init_game_params
     {
         std::function<void(ff::window*)> main_thread_initialized_func{ &ff::game::init_params::default_with_window };
         std::function<void()> game_thread_initialized_func{ &ff::game::init_params::default_empty };
@@ -20,29 +18,5 @@ namespace ff::game
         static void default_with_window(ff::window* window);
     };
 
-    template<class T>
-    struct init_params_t : public ff::game::init_params
-    {
-        init_params_t()
-        {
-            this->create_root_state_func = []() -> std::shared_ptr<ff::game::root_state_base>
-                {
-                    return std::make_shared<T>();
-                };
-        }
-    };
-
     int run(const ff::game::init_params& params);
-
-    template<class T>
-    int run(std::function<void()>&& register_resources_func = {})
-    {
-        ff::game::init_params_t<T> params;
-        if (register_resources_func)
-        {
-            params.register_resources_func = std::move(register_resources_func);
-        }
-
-        return ff::game::run(params);
-    }
 }

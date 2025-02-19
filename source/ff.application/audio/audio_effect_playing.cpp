@@ -66,7 +66,7 @@ bool ff::internal::audio_effect_playing::music() const
     return false;
 }
 
-void ff::internal::audio_effect_playing::advance()
+void ff::internal::audio_effect_playing::update()
 {
     if (this->done)
     {

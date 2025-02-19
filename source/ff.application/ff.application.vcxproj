@@ -12,6 +12,7 @@
     <AdditionalResJsonInputs>$(DesignTimeProjectRoot)**\*.xaml;$(DesignTimeProjectRoot)**\*.ttf;$(DesignTimeProjectRoot)**\*.png</AdditionalResJsonInputs>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="app\game.cpp" />
     <ClCompile Include="app\imgui.cpp" />
     <ClCompile Include="assets\ff.app.res.cpp" />
     <ClCompile Include="assets\ff.dx12.res.cpp" />
@@ -94,16 +95,15 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="app\app.cpp" />
-    <ClCompile Include="app\debug_state.cpp" />
+    <ClCompile Include="app\debug_stats.cpp" />
     <ClCompile Include="app\settings.cpp" />
-    <ClCompile Include="app\state.cpp" />
-    <ClCompile Include="game\game_init.cpp" />
     <ClCompile Include="game\root_state_base.cpp" />
     <ClCompile Include="init_app.cpp" />
     <ClCompile Include="write\font_file.cpp" />
     <ClCompile Include="write\write.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\game.h" />
     <ClInclude Include="app\imgui.h" />
     <ClInclude Include="audio\audio.h" />
     <ClInclude Include="audio\audio_child_base.h" />
@@ -200,10 +200,8 @@
     <ClInclude Include="input\pointer_device.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="app\app.h" />
-    <ClInclude Include="app\debug_state.h" />
+    <ClInclude Include="app\debug_stats.h" />
     <ClInclude Include="app\settings.h" />
-    <ClInclude Include="app\state.h" />
-    <ClInclude Include="game\game_init.h" />
     <ClInclude Include="game\root_state_base.h" />
     <ClInclude Include="init_app.h" />
     <ClInclude Include="write\font_file.h" />

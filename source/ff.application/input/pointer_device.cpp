@@ -91,7 +91,7 @@ const ff::pointer_touch_info& ff::pointer_device::touch_info(size_t index) const
     return this->touches[index].info;
 }
 
-void ff::pointer_device::advance()
+void ff::pointer_device::update()
 {
     std::scoped_lock lock(this->mutex);
 

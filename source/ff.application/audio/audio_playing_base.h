@@ -14,7 +14,7 @@ namespace ff
         virtual bool stopped() const = 0;
         virtual bool music() const = 0;
 
-        virtual void advance() = 0;
+        virtual void update() = 0;
         virtual void stop() = 0;
         virtual void pause() = 0;
         virtual void resume() = 0;

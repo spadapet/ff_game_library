@@ -9,7 +9,7 @@ namespace ff
     class input_device_base : public input_vk
     {
     public:
-        virtual void advance() = 0;
+        virtual void update() = 0;
         virtual void kill_pending() = 0;
         virtual void block_events(bool block); // not reference counted
         virtual bool connected() const;

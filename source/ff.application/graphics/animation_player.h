@@ -15,7 +15,7 @@ namespace ff
         animation_player& operator=(const animation_player & other) = default;
 
         // animation_player_base
-        virtual bool advance_animation(ff::push_base<ff::animation_event>* events) override;
+        virtual bool update_animation(ff::push_base<ff::animation_event>* events) override;
         virtual void draw_animation(ff::dxgi::draw_base& draw, const ff::transform& transform) const override;
 
     private:
@@ -24,6 +24,6 @@ namespace ff
         float start_frame;
         float frame;
         float fps;
-        float advances;
+        float updates;
     };
 }

@@ -14,16 +14,6 @@
     "size": 10
   },
 
-  "ff.debug_page_input":
-  {
-    "res:type": "input",
-    "events":
-    {
-      "toggle_debug": "control+f8",
-      "custom_debug": "shift+f8"
-    }
-  },
-
   "ff.game.debug_input":
   {
     "res:type": "input",

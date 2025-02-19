@@ -31,7 +31,7 @@ namespace ff
         random_sprite& operator=(random_sprite&& other) noexcept = default;
         random_sprite& operator=(const random_sprite& other) = default;
 
-        static void advance_time();
+        static void update();
 
         // animation_base
         virtual void draw_frame(ff::dxgi::draw_base& draw, const ff::transform& transform, float frame, const ff::dict* params = nullptr) override;
@@ -50,7 +50,7 @@ namespace ff
         const std::vector<std::pair<ff::animation_base*, float>>& pick_sprites() const;
 
         mutable std::vector<std::pair<ff::animation_base*, float>> picked;
-        mutable size_t next_advance;
+        mutable size_t next_update;
 
         std::vector<count_t> repeat_counts;
         std::vector<count_t> sprite_counts;

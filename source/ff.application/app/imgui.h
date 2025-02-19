@@ -10,7 +10,7 @@ namespace ff::internal::imgui
         std::shared_ptr<ff::dxgi::target_window_base> app_target,
         std::shared_ptr<ff::resource_object_provider> app_resources);
     void destroy();
-    void advance_input();
+    void update_input();
     void rendering();
     void render(ff::dxgi::command_context_base& context);
     void rendered();
