@@ -22,6 +22,7 @@ namespace ff
 
         std::function<void()> game_input_func{ [] {} };
         std::function<void()> game_update_func{ [] {} };
+        std::function<void(ff::app_update_t, ff::dxgi::command_context_base&)> game_render_offscreen_func{ std::bind([] {}) };
         std::function<void(ff::app_update_t, ff::dxgi::command_context_base&, ff::dxgi::target_base&)> game_render_func{ std::bind([] {}) };
 
         ff::init_dx_params init_dx_params{};

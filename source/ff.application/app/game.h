@@ -1,22 +1,17 @@
 #pragma once
 
-#include "../dxgi/target_window_base.h"
+#include "../init_app.h"
 
 namespace ff
 {
-    struct init_game_params
+    struct init_game_params : public ff::init_app_params
     {
-        std::function<void(ff::window*)> main_thread_initialized_func{ &ff::game::init_params::default_with_window };
-        std::function<void()> game_thread_initialized_func{ &ff::game::init_params::default_empty };
-        std::function<std::shared_ptr<ff::game::root_state_base>()> create_root_state_func{ &ff::game::init_params::default_create_root_state };
+        std::function<bool(size_t)> game_debug_command_func{ [](size_t) { return false; } };
 
-        ff::dxgi::target_window_params target_window{};
-
-    private:
-        static void default_empty();
-        static std::shared_ptr<ff::game::root_state_base> default_create_root_state();
-        static void default_with_window(ff::window* window);
+        std::string debug_input_mapping;
+        bool allow_debug_commands{ ff::constants::profile_build };
+        bool allow_debug_stepping{ ff::constants::profile_build };
     };
 
-    int run(const ff::game::init_params& params);
+    int run_game(const ff::init_game_params& params);
 }

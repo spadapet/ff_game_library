@@ -60,7 +60,6 @@
     <ClCompile Include="dx_types\blob.cpp" />
     <ClCompile Include="dx_types\color.cpp" />
     <ClCompile Include="dx_types\matrix.cpp" />
-    <ClCompile Include="dx_types\matrix_stack.cpp" />
     <ClCompile Include="dx_types\transform.cpp" />
     <ClCompile Include="dx_types\viewport.cpp" />
     <ClCompile Include="graphics\animation.cpp" />
@@ -72,7 +71,6 @@
     <ClCompile Include="graphics\palette_data.cpp" />
     <ClCompile Include="graphics\png_image.cpp" />
     <ClCompile Include="graphics\random_sprite.cpp" />
-    <ClCompile Include="graphics\render_targets.cpp" />
     <ClCompile Include="graphics\shader.cpp" />
     <ClCompile Include="graphics\sprite.cpp" />
     <ClCompile Include="graphics\sprite_font.cpp" />
@@ -97,7 +95,6 @@
     <ClCompile Include="app\app.cpp" />
     <ClCompile Include="app\debug_stats.cpp" />
     <ClCompile Include="app\settings.cpp" />
-    <ClCompile Include="game\root_state_base.cpp" />
     <ClCompile Include="init_app.cpp" />
     <ClCompile Include="write\font_file.cpp" />
     <ClCompile Include="write\write.cpp" />
@@ -165,7 +162,6 @@
     <ClInclude Include="dx_types\color.h" />
     <ClInclude Include="dx_types\intrusive_list.h" />
     <ClInclude Include="dx_types\matrix.h" />
-    <ClInclude Include="dx_types\matrix_stack.h" />
     <ClInclude Include="dx_types\operators.h" />
     <ClInclude Include="dx_types\transform.h" />
     <ClInclude Include="dx_types\viewport.h" />
@@ -178,7 +174,6 @@
     <ClInclude Include="graphics\palette_data.h" />
     <ClInclude Include="graphics\png_image.h" />
     <ClInclude Include="graphics\random_sprite.h" />
-    <ClInclude Include="graphics\render_targets.h" />
     <ClInclude Include="graphics\shader.h" />
     <ClInclude Include="graphics\sprite.h" />
     <ClInclude Include="graphics\sprite_base.h" />
@@ -202,7 +197,6 @@
     <ClInclude Include="app\app.h" />
     <ClInclude Include="app\debug_stats.h" />
     <ClInclude Include="app\settings.h" />
-    <ClInclude Include="game\root_state_base.h" />
     <ClInclude Include="init_app.h" />
     <ClInclude Include="write\font_file.h" />
     <ClInclude Include="write\write.h" />

@@ -144,6 +144,7 @@ int ff::gamepad_device::press_count(int vk) const
 void ff::gamepad_device::update()
 {
     reading_t reading{};
+    bool was_connected = this->connected_;
     if ((this->connected_ || !this->check_connected) && this->poll(reading))
     {
         this->connected_ = true;
@@ -158,6 +159,8 @@ void ff::gamepad_device::update()
     {
         this->check_connected--;
     }
+
+    check_ret(was_connected || this->connected_);
 
     // update state
     {

@@ -6,7 +6,6 @@
 #include "dxgi/dxgi_globals.h"
 #include "ff.app.res.id.h"
 #include "graphics/random_sprite.h"
-#include "graphics/render_targets.h"
 #include "init_app.h"
 #include "init_dx.h"
 #include "input/input.h"
@@ -55,7 +54,6 @@ static bool window_initialized{};
 
 static std::unique_ptr<std::ofstream> log_file;
 static std::shared_ptr<ff::dxgi::target_window_base> target;
-static std::unique_ptr<ff::render_targets> render_targets;
 static std::unique_ptr<ff::thread_dispatch> game_thread_dispatch;
 static std::unique_ptr<ff::thread_dispatch> frame_thread_dispatch;
 static std::shared_ptr<ff::resource_object_provider> app_resources;
@@ -171,6 +169,7 @@ static void frame_render(ff::app_update_t update_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
+        ::app_params.game_render_offscreen_func(update_type, context);
         if (begin_render = ::target->begin_render(context, ::app_params.game_clears_back_buffer_func() ? &ff::color_black() : nullptr))
         {
             ff::internal::imgui::rendering();
@@ -219,11 +218,13 @@ static void init_game_thread()
 static void destroy_game_thread()
 {
     ff::dxgi::trim_device();
+    ff::internal::imgui::destroy();
     ff::internal::app::request_save_settings();
+    ff::global_resources::destroy_game_thread();
     ::resources_rebuilt_connection.disconnect();
     ::app_params.game_thread_finished_func();
-    ff::internal::imgui::destroy();
-    ff::global_resources::destroy_game_thread();
+    ::debug_stats.reset();
+
     ff::thread_pool::flush();
     ::frame_thread_dispatch.reset();
     ::game_thread_dispatch.reset();
@@ -537,7 +538,6 @@ bool ff::internal::app::init(const ff::init_app_params& params, const ff::init_d
 
     assert_ret_val(init_dx.init_wait(), false);
     ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
-    ::render_targets = std::make_unique<ff::render_targets>(::target);
 
     return ::app_initialized();
 }
@@ -550,10 +550,10 @@ void ff::internal::app::destroy()
     ff::internal::app::clear_settings();
 
     ::app_resources.reset();
-    ::render_targets.reset();
     ::target.reset();
     ::window_message_connection.disconnect();
     ::destroy_log();
+    ::app_params = {};
 }
 
 ff::resource_object_provider& ff::internal::app::app_resources()

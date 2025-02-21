@@ -39,6 +39,7 @@ static std::mutex init_app_mutex;
 ff::init_app::init_app(const ff::init_app_params& app_params)
 {
     std::scoped_lock init(::init_app_mutex);
+    assert_msg(!::init_app_refs, "Cannot init more than one app");
 
     if (::init_app_refs++ == 0)
     {

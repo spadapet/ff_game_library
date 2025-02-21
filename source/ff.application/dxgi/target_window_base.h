@@ -19,9 +19,9 @@ namespace ff::dxgi
 
         size_t buffer_count{ 2 };
         size_t frame_latency{ 1 };
-        latency_strategy_t latency_strategy{ latency_strategy_t::after_present };
+        latency_strategy_t latency_strategy{ latency_strategy_t::after_execute };
         bool vsync{ true };
-        bool extra_render_target{ false };
+        bool extra_render_target{ true };
     };
 
     class target_window_base : public ff::dxgi::target_base

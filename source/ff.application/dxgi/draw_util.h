@@ -3,8 +3,8 @@
 #include "../dxgi/device_child_base.h"
 #include "../dxgi/draw_base.h"
 #include "../dxgi/palette_base.h"
+#include "../dx_types/matrix.h"
 #include "../dx_types/operators.h"
-#include "../dx_types/matrix_stack.h"
 
 namespace ff::dxgi
 {

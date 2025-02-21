@@ -9,9 +9,6 @@
     <ClCompile Include="app\debug_stats.cpp">
       <Filter>app</Filter>
     </ClCompile>
-    <ClCompile Include="game\root_state_base.cpp">
-      <Filter>game</Filter>
-    </ClCompile>
     <ClCompile Include="app\settings.cpp">
       <Filter>app</Filter>
     </ClCompile>
@@ -171,9 +168,6 @@
     <ClCompile Include="graphics\random_sprite.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="graphics\render_targets.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
     <ClCompile Include="graphics\shader.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
@@ -244,9 +238,6 @@
     <ClCompile Include="dx_types\matrix.cpp">
       <Filter>dx_types</Filter>
     </ClCompile>
-    <ClCompile Include="dx_types\matrix_stack.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
     <ClCompile Include="dx_types\transform.cpp">
       <Filter>dx_types</Filter>
     </ClCompile>
@@ -265,9 +256,6 @@
     </ClInclude>
     <ClInclude Include="app\debug_stats.h">
       <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="game\root_state_base.h">
-      <Filter>game</Filter>
     </ClInclude>
     <ClInclude Include="app\settings.h">
       <Filter>app</Filter>
@@ -467,9 +455,6 @@
     <ClInclude Include="graphics\random_sprite.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="graphics\render_targets.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
     <ClInclude Include="graphics\shader.h">
       <Filter>graphics</Filter>
     </ClInclude>
@@ -546,9 +531,6 @@
     <ClInclude Include="dx_types\matrix.h">
       <Filter>dx_types</Filter>
     </ClInclude>
-    <ClInclude Include="dx_types\matrix_stack.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
     <ClInclude Include="dx_types\operators.h">
       <Filter>dx_types</Filter>
     </ClInclude>
@@ -565,9 +547,6 @@
   <ItemGroup>
     <Filter Include="app">
       <UniqueIdentifier>{f56895ca-ca6e-4be1-aa91-abdf70c16bbe}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="game">
-      <UniqueIdentifier>{8f6b6eac-4462-441f-a595-0a0b605433f8}</UniqueIdentifier>
     </Filter>
     <Filter Include="assets">
       <UniqueIdentifier>{9593420c-cec8-45d4-81a9-af6a4ed036c3}</UniqueIdentifier>
