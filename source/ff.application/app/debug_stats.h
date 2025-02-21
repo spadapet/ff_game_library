@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../dxgi/target_window_base.h"
+#include "../graphics/dxgi/target_window_base.h"
 #include "../input/input_mapping.h"
 
 namespace ff

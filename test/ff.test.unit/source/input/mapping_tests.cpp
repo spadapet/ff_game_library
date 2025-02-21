@@ -8,7 +8,7 @@ namespace ff::test::input
         class test_vk_device : public ff::input_vk
         {
         public:
-            void advance()
+            void update()
             {
                 this->advance_count++;
             }
@@ -62,23 +62,23 @@ namespace ff::test::input
             test_vk_device device;
             ff::input_event_provider events(*mapping.object(), std::vector<ff::input_vk const*>{ &device });
 
-            Assert::IsFalse(events.advance(1.0));
+            Assert::IsFalse(events.update(1.0));
 
-            device.advance();
-            Assert::IsTrue(events.advance(1.0) && events.events().size() == 2);
+            device.update();
+            Assert::IsTrue(events.update(1.0) && events.events().size() == 2);
             Assert::IsTrue(events.event_hit(up_id));
             Assert::IsTrue(events.event_hit(print_id));
             Assert::IsFalse(events.event_hit(down_id));
 
-            device.advance();
-            Assert::IsTrue(events.advance(1.0));
+            device.update();
+            Assert::IsTrue(events.update(1.0));
             Assert::IsFalse(events.event_stopped(up_id));
             Assert::IsTrue(events.event_hit(up_id));
             Assert::IsTrue(events.event_stopped(print_id));
             Assert::IsFalse(events.event_hit(print_id));
 
-            device.advance();
-            Assert::IsTrue(events.advance(1.0));
+            device.update();
+            Assert::IsTrue(events.update(1.0));
             Assert::IsTrue(events.event_stopped(up_id));
             Assert::IsFalse(events.event_hit(up_id));
             Assert::IsFalse(events.event_hit(print_id));

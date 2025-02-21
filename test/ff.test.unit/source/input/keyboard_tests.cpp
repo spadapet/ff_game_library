@@ -16,16 +16,16 @@ namespace ff::test::input
             Assert::IsFalse(ff::input::keyboard().pressing(VK_DOWN));
 
             ::SendMessage(window, WM_KEYDOWN, VK_DOWN, 0);
-            ff::input::keyboard().advance();
+            ff::input::keyboard().update();
             Assert::IsTrue(ff::input::keyboard().pressing(VK_DOWN));
 
             ::SendMessage(window, WM_KEYUP, VK_DOWN, 0);
-            ff::input::keyboard().advance();
+            ff::input::keyboard().update();
             Assert::IsFalse(ff::input::keyboard().pressing(VK_DOWN));
 
             ::SendMessage(window, WM_KEYDOWN, VK_DOWN, 0);
             ff::input::keyboard().kill_pending();
-            ff::input::keyboard().advance();
+            ff::input::keyboard().update();
             Assert::IsFalse(ff::input::keyboard().pressing(VK_DOWN));
         }
     };

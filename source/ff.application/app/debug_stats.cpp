@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "app/app.h"
 #include "app/debug_stats.h"
-#include "dxgi/dxgi_globals.h"
-#include "dxgi/target_window_base.h"
+#include "graphics/dxgi/dxgi_globals.h"
+#include "graphics/dxgi/target_window_base.h"
 #include "input/input.h"
 #include "input/keyboard_device.h"
 #include "ff.app.res.id.h"
-#include "dx_types/color.h"
+#include "graphics/types/color.h"
 
 constexpr size_t CHART_WIDTH = 150;
 constexpr size_t CHART_HEIGHT = 64;

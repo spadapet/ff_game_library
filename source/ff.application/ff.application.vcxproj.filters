@@ -42,159 +42,6 @@
     <ClCompile Include="audio\wav_file.cpp">
       <Filter>audio</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\access.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\buffer.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\commands.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\depth.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\descriptor_allocator.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\descriptor_range.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\draw_device.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\dx12_globals.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\fence.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\fence_value.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\fence_values.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\gpu_event.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\heap.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\mem_allocator.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\mem_range.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\object_cache.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\queue.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\queues.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\residency.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\resource.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\resource_state.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\resource_tracker.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\target_texture.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\target_window.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\texture.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dx12\texture_view.cpp">
-      <Filter>dx12</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\buffer_base.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\device_child_base.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\draw_base.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\draw_device_base.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\draw_util.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\dxgi_globals.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\format_util.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="dxgi\sprite_data.cpp">
-      <Filter>dxgi</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\animation.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\animation_base.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\animation_keys.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\animation_player.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\animation_player_base.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\palette_cycle.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\palette_data.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\random_sprite.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\shader.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\sprite.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\sprite_font.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\sprite_list.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\sprite_optimizer.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\sprite_resource.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\texture_data.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\texture_metadata.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="graphics\texture_resource.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
     <ClCompile Include="input\gamepad_device.cpp">
       <Filter>input</Filter>
     </ClCompile>
@@ -219,33 +66,186 @@
     <ClCompile Include="input\pointer_device.cpp">
       <Filter>input</Filter>
     </ClCompile>
-    <ClCompile Include="write\font_file.cpp">
-      <Filter>write</Filter>
-    </ClCompile>
-    <ClCompile Include="write\write.cpp">
-      <Filter>write</Filter>
-    </ClCompile>
     <ClCompile Include="init_dx.cpp" />
-    <ClCompile Include="graphics\png_image.cpp">
-      <Filter>graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="dx_types\blob.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
-    <ClCompile Include="dx_types\color.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
-    <ClCompile Include="dx_types\matrix.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
-    <ClCompile Include="dx_types\transform.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
-    <ClCompile Include="dx_types\viewport.cpp">
-      <Filter>dx_types</Filter>
-    </ClCompile>
     <ClCompile Include="app\game.cpp">
       <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\access.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\buffer.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\commands.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\depth.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\descriptor_allocator.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\descriptor_range.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\draw_device.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\dx12_globals.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\fence.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\fence_value.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\fence_values.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\gpu_event.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\heap.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\mem_allocator.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\mem_range.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\object_cache.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\queue.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\queues.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\residency.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\resource.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\resource_state.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\resource_tracker.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\target_texture.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\target_window.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\texture.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dx12\texture_view.cpp">
+      <Filter>graphics\dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\buffer_base.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\device_child_base.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\draw_base.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\draw_device_base.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\draw_util.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\dxgi_globals.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\format_util.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\dxgi\sprite_data.cpp">
+      <Filter>graphics\dxgi</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\animation.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\animation_base.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\animation_keys.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\animation_player.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\animation_player_base.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\palette_cycle.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\palette_data.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\png_image.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\random_sprite.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\shader.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\sprite.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\sprite_font.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\sprite_list.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\sprite_optimizer.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\sprite_resource.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\texture_data.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\texture_metadata.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\resource\texture_resource.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\write\font_file.cpp">
+      <Filter>graphics\write</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\write\write.cpp">
+      <Filter>graphics\write</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\types\blob.cpp">
+      <Filter>graphics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\types\color.cpp">
+      <Filter>graphics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\types\matrix.cpp">
+      <Filter>graphics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\types\transform.cpp">
+      <Filter>graphics\types</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics\types\viewport.cpp">
+      <Filter>graphics\types</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -293,198 +293,6 @@
     <ClInclude Include="audio\wav_file.h">
       <Filter>audio</Filter>
     </ClInclude>
-    <ClInclude Include="dx12\access.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\buffer.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\commands.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\depth.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\descriptor_allocator.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\descriptor_range.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\device_reset_priority.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\draw_device.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\dx12_globals.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\fence.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\fence_value.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\fence_values.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\gpu_event.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\heap.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\mem_allocator.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\mem_range.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\object_cache.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\queue.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\queues.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\residency.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\resource.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\resource_state.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\resource_tracker.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\target_texture.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\target_window.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\texture.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dx12\texture_view.h">
-      <Filter>dx12</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\buffer_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\command_context_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\depth_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\device_child_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\draw_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\draw_device_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\draw_util.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\dxgi_globals.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\format_util.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\palette_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\palette_data_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\sprite_data.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\target_access_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\target_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\target_window_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\texture_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\texture_metadata_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\texture_view_access_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="dxgi\texture_view_base.h">
-      <Filter>dxgi</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\animation.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\animation_base.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\animation_keys.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\animation_player.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\animation_player_base.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\palette_cycle.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\palette_data.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\random_sprite.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\shader.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite_base.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite_font.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite_list.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite_optimizer.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\sprite_resource.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\texture_data.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\texture_metadata.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="graphics\texture_resource.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
     <ClInclude Include="input\gamepad_device.h">
       <Filter>input</Filter>
     </ClInclude>
@@ -509,39 +317,231 @@
     <ClInclude Include="input\pointer_device.h">
       <Filter>input</Filter>
     </ClInclude>
-    <ClInclude Include="write\font_file.h">
-      <Filter>write</Filter>
-    </ClInclude>
-    <ClInclude Include="write\write.h">
-      <Filter>write</Filter>
-    </ClInclude>
     <ClInclude Include="init_dx.h" />
-    <ClInclude Include="graphics\png_image.h">
-      <Filter>graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\blob.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\color.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\intrusive_list.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\matrix.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\operators.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\transform.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
-    <ClInclude Include="dx_types\viewport.h">
-      <Filter>dx_types</Filter>
-    </ClInclude>
     <ClInclude Include="app\game.h">
       <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\access.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\buffer.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\commands.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\depth.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\descriptor_allocator.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\descriptor_range.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\device_reset_priority.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\draw_device.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\dx12_globals.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\fence.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\fence_value.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\fence_values.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\gpu_event.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\heap.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\mem_allocator.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\mem_range.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\object_cache.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\queue.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\queues.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\residency.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\resource.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\resource_state.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\resource_tracker.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\target_texture.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\target_window.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\texture.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dx12\texture_view.h">
+      <Filter>graphics\dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\buffer_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\command_context_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\depth_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\device_child_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\draw_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\draw_device_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\draw_util.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\dxgi_globals.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\format_util.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\palette_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\palette_data_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\sprite_data.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\target_access_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\target_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\target_window_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\texture_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\texture_metadata_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\texture_view_access_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\dxgi\texture_view_base.h">
+      <Filter>graphics\dxgi</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\animation.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\animation_base.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\animation_keys.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\animation_player.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\animation_player_base.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\palette_cycle.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\palette_data.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\png_image.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\random_sprite.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\shader.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite_base.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite_font.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite_list.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite_optimizer.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\sprite_resource.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\texture_data.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\texture_metadata.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\texture_resource.h">
+      <Filter>graphics\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\write\font_file.h">
+      <Filter>graphics\write</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\write\write.h">
+      <Filter>graphics\write</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\blob.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\color.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\intrusive_list.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\matrix.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\operators.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\transform.h">
+      <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\types\viewport.h">
+      <Filter>graphics\types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -554,26 +554,29 @@
     <Filter Include="audio">
       <UniqueIdentifier>{1e84cf4c-dad0-41c5-b6b6-b3c5dfc3b7b9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dx12">
-      <UniqueIdentifier>{51f09b21-2bf0-46a6-b4e7-4b057b2ddcef}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dxgi">
-      <UniqueIdentifier>{65cd8192-f478-4f83-bc86-48c5f1adf7bb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="graphics">
       <UniqueIdentifier>{163f9dbc-5589-4595-9b95-fdb45d84862e}</UniqueIdentifier>
     </Filter>
     <Filter Include="input">
       <UniqueIdentifier>{cb7269ff-6f16-4d76-8152-f251d5b4a616}</UniqueIdentifier>
     </Filter>
-    <Filter Include="write">
-      <UniqueIdentifier>{55ff5d3b-6cce-40e2-8b8d-e378de6b3156}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="dx_types">
-      <UniqueIdentifier>{a0e0cf09-8c60-49cc-8f9e-3ea97dfdb912}</UniqueIdentifier>
-    </Filter>
     <Filter Include="assets\shaders">
       <UniqueIdentifier>{6c7e627e-6487-49d1-a3b7-31d4796a7595}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\types">
+      <UniqueIdentifier>{0f5547a9-463d-4c73-8f4d-ff682dff2121}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\dx12">
+      <UniqueIdentifier>{5ad39bb3-ef36-4ed7-b1b9-2d25dadddfcd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\dxgi">
+      <UniqueIdentifier>{d5d29ebc-3e6c-47e1-8db1-6aee9a16a4be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\write">
+      <UniqueIdentifier>{105f1cbb-d4b8-46ef-a4af-38eb255955e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\resource">
+      <UniqueIdentifier>{5d32f1a1-06be-4081-ae90-8dffe25b201e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

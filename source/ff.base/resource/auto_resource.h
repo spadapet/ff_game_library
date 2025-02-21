@@ -59,6 +59,7 @@ namespace ff
         {
             if (this->resource() != resource)
             {
+                this->resource_for_object.reset();
                 this->resource_object.reset();
                 ff::auto_resource_value::operator=(resource);
             }

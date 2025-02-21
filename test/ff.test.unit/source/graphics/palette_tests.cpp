@@ -29,7 +29,7 @@ namespace ff::test::graphics
             Assert::AreNotEqual<size_t>(0, palette.remap().hash);
             Assert::AreEqual<size_t>(0, palette.current_row());
 
-            palette.advance();
+            palette.update();
             Assert::AreEqual<size_t>(4, palette.current_row());
         }
     };

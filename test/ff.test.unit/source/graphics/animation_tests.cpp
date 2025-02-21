@@ -79,7 +79,7 @@ namespace ff::test::graphics
             ff::animation_player player(anim);
             std::vector<ff::animation_event> events;
             ff::push_back_collection push_back_events(events);
-            player.advance_animation(&push_back_events);
+            player.update_animation(&push_back_events);
 
             Assert::AreEqual<size_t>(1, events.size());
             Assert::AreEqual<size_t>(ff::stable_hash_func("start"sv), events[0].event_id);

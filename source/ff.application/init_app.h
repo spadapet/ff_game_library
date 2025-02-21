@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dxgi/target_window_base.h"
+#include "graphics/dxgi/target_window_base.h"
 #include "init_dx.h"
 
 namespace ff
@@ -17,7 +17,7 @@ namespace ff
 
         std::function<double()> game_time_scale_func{ [] { return 1.0; } };
         std::function<ff::app_update_t()> game_update_type_func{ [] { return ff::app_update_t{}; } };
-        std::function<bool()> game_clears_back_buffer_func{ [] { return false; } };
+        std::function<bool()> game_clears_back_buffer_func{ [] { return true; } };
         std::function<void()> game_resources_rebuilt{ [] {} };
 
         std::function<void()> game_input_func{ [] {} };

@@ -3,14 +3,13 @@
 #include "app/debug_stats.h"
 #include "app/imgui.h"
 #include "app/settings.h"
-#include "dxgi/dxgi_globals.h"
+#include "graphics/dxgi/dxgi_globals.h"
 #include "ff.app.res.id.h"
-#include "graphics/random_sprite.h"
 #include "init_app.h"
 #include "init_dx.h"
 #include "input/input.h"
 #include "input/input_device_base.h"
-#include "dx_types/color.h"
+#include "graphics/types/color.h"
 
 namespace ff
 {
@@ -30,7 +29,6 @@ namespace
 }
 
 constexpr size_t MAX_UPDATES_PER_FRAME = 4;
-constexpr size_t MAX_UPDATES_PER_FRAME_DEBUGGER = 4;
 constexpr size_t MAX_UPDATE_MULTIPLIER = 4;
 constexpr std::string_view ID_SETTINGS = "ff::app::settings";
 constexpr std::string_view ID_SETTING_WINDOWED_RECT = "windowed_rect";
@@ -95,9 +93,7 @@ static ff::app_update_t frame_start_timer(ff::app_update_t previous_update_type)
 
 static bool frame_update_timer(ff::app_update_t update_type, size_t& update_count)
 {
-    size_t max_updates = (ff::constants::debug_build && ::IsDebuggerPresent())
-        ? ::MAX_UPDATES_PER_FRAME_DEBUGGER
-        : ::MAX_UPDATES_PER_FRAME;
+    size_t max_updates = ::MAX_UPDATES_PER_FRAME;
 
     switch (update_type)
     {
@@ -157,7 +153,6 @@ static void frame_update(ff::app_update_t update_type)
         }
 
         ff::perf_timer timer(::perf_update);
-        ff::random_sprite::update();
         ::app_params.game_update_func();
     }
 }
@@ -261,7 +256,8 @@ static void game_thread()
 
 static void wait_for_game_thread_event()
 {
-    if (!::game_thread_event.wait_and_reset(5000))
+    size_t timeout_ms = ff::constants::debug_build && ::IsDebuggerPresent() ? INFINITE : 5000;
+    if (!::game_thread_event.wait_and_reset(timeout_ms))
     {
         // Game thread is hung, can't go on
         ::TerminateProcess(::GetCurrentProcess(), 1);

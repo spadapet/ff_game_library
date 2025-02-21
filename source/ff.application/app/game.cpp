@@ -15,7 +15,7 @@ static const size_t ID_DEBUG_SPEED_SLOW = ff::stable_hash_func("ff.game.speed_sl
 static const size_t ID_DEBUG_SPEED_FAST = ff::stable_hash_func("ff.game.speed_fast"sv);
 static const size_t ID_SHOW_CUSTOM_DEBUG = ff::stable_hash_func("ff.game.show_custom_debug"sv);
 
-static ff::init_game_params game_params;
+static const ff::init_game_params* game_params;
 static bool debug_step_one_frame{};
 static bool debug_stepping_frames{};
 static double debug_time_scale{ 1.0 };
@@ -24,9 +24,9 @@ static std::array<std::unique_ptr<ff::input_event_provider>, 2> debug_input_even
 
 static void game_debug_command(size_t id)
 {
-    check_ret(::game_params.allow_debug_commands && ::game_params.game_debug_command_func(id));
+    check_ret(::game_params->allow_debug_commands && !::game_params->game_debug_command_func(id));
 
-    if (::game_params.allow_debug_stepping)
+    if (::game_params->allow_debug_stepping)
     {
         if (id == ::ID_DEBUG_CANCEL_STEP_ONE_FRAME)
         {
@@ -43,7 +43,7 @@ static void game_debug_command(size_t id)
 
 static double game_time_scale()
 {
-    return ::game_params.game_time_scale_func() * ::debug_time_scale;
+    return ::game_params->game_time_scale_func() * ::debug_time_scale;
 }
 
 static ff::app_update_t game_update_type()
@@ -58,12 +58,14 @@ static ff::app_update_t game_update_type()
         return ff::app_update_t::stopped;
     }
 
-    return ::game_params.game_update_type_func();
+    return ::game_params->game_update_type_func();
 }
 
 static void game_input()
 {
-    if (::game_params.allow_debug_commands)
+    ::debug_time_scale = 1.0;
+
+    if (::game_params->allow_debug_commands)
     {
         if (!::debug_input_events[0])
         {
@@ -81,18 +83,7 @@ static void game_input()
         {
             for (const ff::input_event& event_ : ::debug_input_events[0]->events())
             {
-                if (event_.count >= 1)
-                {
-                    ::game_debug_command(event_.event_id);
-                }
-            }
-        }
-
-        if (::debug_input_mapping[1].object() && ::debug_input_events[1]->update())
-        {
-            for (const ff::input_event& event_ : ::debug_input_events[1]->events())
-            {
-                if (event_.count >= 1)
+                for (size_t i = 0; i < event_.count; i++)
                 {
                     ::game_debug_command(event_.event_id);
                 }
@@ -107,55 +98,82 @@ static void game_input()
         {
             ::debug_time_scale = 0.25;
         }
-        else
+
+        if (::debug_input_events[1] && ::debug_input_events[1]->update())
         {
-            ::debug_time_scale = 1.0;
+            for (const ff::input_event& event_ : ::debug_input_events[1]->events())
+            {
+                for (size_t i = 0; i < event_.count; i++)
+                {
+                    ::game_debug_command(event_.event_id);
+                }
+            }
         }
     }
     else
     {
         ::debug_step_one_frame = false;
         ::debug_stepping_frames = false;
-        ::debug_time_scale = 1.0;
     }
 
-    ::game_params.game_input_func();
+    ::game_params->game_input_func();
 }
 
 static void game_render(ff::app_update_t type, ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
 {
-    ::game_params.game_render_func(type, context, target);
+    ::game_params->game_render_func(type, context, target);
     ::debug_step_one_frame = false;
+}
+
+static void clear_resources()
+{
+    ::debug_input_mapping = {};
+    ::debug_input_events = {};
+}
+
+static void init_resources()
+{
+    ::clear_resources();
+
+    ::debug_input_mapping[0] = ff::internal::app::app_resources().get_resource_object(assets::app::FF_GAME_DEBUG_INPUT);
+
+    if (!::game_params->debug_input_mapping.empty())
+    {
+        ::debug_input_mapping[1] = ::game_params->debug_input_mapping;
+    }
+}
+
+static void game_thread_initialized()
+{
+    ::init_resources();
+    ::game_params->game_thread_initialized_func();
+}
+
+static void game_thread_finished()
+{
+    ::clear_resources();
+    ::game_params->game_thread_finished_func();
 }
 
 static void game_resources_rebuilt()
 {
-    ::debug_input_mapping[0] = ff::internal::app::app_resources().get_resource_object(assets::app::FF_GAME_DEBUG_INPUT);
-
-    if (!::game_params.debug_input_mapping.empty())
-    {
-        ::debug_input_mapping[1] = ::game_params.debug_input_mapping;
-    }
-    else
-    {
-        ::debug_input_mapping[1].reset();
-    }
-
-    ::game_params.game_resources_rebuilt();
+    ::init_resources();
+    ::game_params->game_resources_rebuilt();
 }
 
 int ff::run_game(const ff::init_game_params& params)
 {
-    ::game_params = params;
+    ::game_params = &params;
 
     ff::init_app_params app_params = params;
     app_params.game_time_scale_func = ::game_time_scale;
     app_params.game_update_type_func = ::game_update_type;
     app_params.game_input_func = ::game_input;
     app_params.game_render_func = ::game_render;
+    app_params.game_thread_initialized_func = ::game_thread_initialized;
+    app_params.game_thread_finished_func = ::game_thread_finished;
     app_params.game_resources_rebuilt = ::game_resources_rebuilt;
 
-    ff::init_app init_app(params);
-    assert_ret_val(init_app, 1);
-    return ff::handle_messages_until_quit();
+    ff::init_app init_app(app_params);
+    return init_app ? ff::handle_messages_until_quit() : 1;
 }
