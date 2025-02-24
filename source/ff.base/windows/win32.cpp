@@ -136,28 +136,59 @@ ff::rect_int ff::win32::fix_window_rect(const ff::rect_int& rect, bool full_scre
     return new_rect;
 }
 
-bool ff::win32::update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int* windowed_rect)
+ff::window_placement ff::win32::get_window_placement(HWND hwnd)
 {
-    const ff::rect_int old_window_rect = ff::win32::get_window_rect(hwnd);
-    const ff::rect_int new_window_rect = ff::win32::fix_window_rect(windowed_rect ? *windowed_rect : old_window_rect, full_screen);
+    ff::window_placement result{};
+    result.full_screen = ff::win32::is_full_screen(hwnd);
+    result.minimized = ::IsIconic(hwnd);
+    result.maximized = ::IsZoomed(hwnd);
+
+    ::WINDOWPLACEMENT wp{ sizeof(::WINDOWPLACEMENT) };
+    if (::GetWindowPlacement(hwnd, &wp))
+    {
+        result.normal_position = ff::win32::convert_rect(wp.rcNormalPosition);
+    }
+
+    return result;
+}
+
+void ff::win32::set_window_placement(HWND hwnd, const ff::window_placement& wp)
+{
+    // Update style
 
     const LONG old_style = ::GetWindowLong(hwnd, GWL_STYLE);
-    const LONG new_style = ff::win32::default_window_style(full_screen) | (old_style & WS_VISIBLE);
+    const LONG new_style = ff::win32::default_window_style(wp.full_screen) | (old_style & WS_VISIBLE);
     constexpr LONG relevant_styles = WS_POPUP | WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    const bool style_changed = (old_style & relevant_styles) != (new_style & relevant_styles);
-    const bool any_changed = style_changed || old_window_rect != new_window_rect;
 
-    if (style_changed)
+    if ((old_style & relevant_styles) != (new_style & relevant_styles))
     {
         ::SetWindowLong(hwnd, GWL_STYLE, new_style);
     }
 
-    if (any_changed)
+    // Update position
+
+    const ff::rect_int old_window_rect = ff::win32::get_window_rect(hwnd);
+    const ff::rect_int new_window_rect = ff::win32::fix_window_rect(wp.normal_position ? wp.normal_position : old_window_rect, wp.full_screen);
+
+    if (!wp.full_screen && wp.maximized)
+    {
+        if (!::IsZoomed(hwnd))
+        {
+            ::SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            ::ShowWindow(hwnd, SW_MAXIMIZE);
+        }
+
+        ::WINDOWPLACEMENT wp{ sizeof(::WINDOWPLACEMENT) };
+        if (::GetWindowPlacement(hwnd, &wp) && ff::win32::convert_rect(wp.rcNormalPosition) != new_window_rect)
+        {
+            wp.rcNormalPosition = ff::win32::convert_rect(new_window_rect);
+            ::SetWindowPlacement(hwnd, &wp);
+        }
+    }
+    else
     {
         ::SetWindowPos(hwnd, nullptr,
             new_window_rect.left, new_window_rect.top, new_window_rect.width(), new_window_rect.height(),
             SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
     }
-
-    return any_changed;
 }

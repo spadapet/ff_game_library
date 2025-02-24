@@ -70,6 +70,7 @@
     <ClCompile Include="types\uuid.cpp" />
     <ClCompile Include="windows\win32.cpp" />
     <ClCompile Include="windows\window.cpp" />
+    <ClCompile Include="windows\window_types.cpp" />
     <ClCompile Include="windows\win_handle.cpp" />
     <ClCompile Include="windows\win_msg.cpp" />
   </ItemGroup>
@@ -152,6 +153,7 @@
     <ClInclude Include="types\uuid.h" />
     <ClInclude Include="windows\win32.h" />
     <ClInclude Include="windows\window.h" />
+    <ClInclude Include="windows\window_types.h" />
     <ClInclude Include="windows\win_handle.h" />
     <ClInclude Include="windows\win_msg.h" />
   </ItemGroup>

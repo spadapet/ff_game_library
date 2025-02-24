@@ -37,19 +37,19 @@ namespace ff::internal
 
 #define assert(exp) assert_msg(exp, nullptr)
 #define assert_ret(exp) { if(!(exp)) { assert_msg(false, #exp); return; } }
-#define assert_ret_val(exp, val) { if(!(exp)) { assert_msg(false, #exp); return (val); } }
+#define assert_ret_val(exp, val) { if(!(exp)) { assert_msg(false, #exp); return val; } }
 #define assert_msg_ret(exp, txt) { if(!(exp)) { assert_msg(false, txt); return; } }
-#define assert_msg_ret_val(exp, txt, val) { if(!(exp)) { assert_msg(false, txt); return (val); } }
+#define assert_msg_ret_val(exp, txt, val) { if(!(exp)) { assert_msg(false, txt); return val; } }
 #define assert_hr(exp) assert_msg(SUCCEEDED(exp), nullptr)
 #define assert_hr_ret(exp) { if(FAILED(exp)) { assert_msg(false, #exp); return; } }
-#define assert_hr_ret_val(exp, val) { if(FAILED(exp)) { assert_msg(false, #exp); return (val); } }
+#define assert_hr_ret_val(exp, val) { if(FAILED(exp)) { assert_msg(false, #exp); return val; } }
 #define assert_hr_msg_ret(exp, txt) { if(FAILED(exp)) { assert_msg(false, txt); return; } }
-#define assert_hr_msg_ret_val(exp, txt, val) { if(FAILED(exp)) { assert_msg(false, txt); return (val); } }
+#define assert_hr_msg_ret_val(exp, txt, val) { if(FAILED(exp)) { assert_msg(false, txt); return val; } }
 
 #define check_ret(exp) { if(!(exp)) return; }
-#define check_ret_val(exp, val) { if(!(exp)) return (val); }
+#define check_ret_val(exp, val) { if(!(exp)) return val; }
 #define check_hr_ret(exp) { if(FAILED(exp)) return; }
-#define check_hr_ret_val(exp, val) { if(FAILED(exp)) return (val); }
+#define check_hr_ret_val(exp, val) { if(FAILED(exp)) return val; }
 
 #define debug_fail() assert(false)
 #define debug_fail_ret() assert_ret(false)

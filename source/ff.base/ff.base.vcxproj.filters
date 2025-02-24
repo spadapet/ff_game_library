@@ -189,6 +189,9 @@
     <ClCompile Include="windows\win32.cpp">
       <Filter>windows</Filter>
     </ClCompile>
+    <ClCompile Include="windows\window_types.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -425,6 +428,9 @@
       <Filter>data_value</Filter>
     </ClInclude>
     <ClInclude Include="windows\win32.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\window_types.h">
       <Filter>windows</Filter>
     </ClInclude>
   </ItemGroup>

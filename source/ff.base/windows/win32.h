@@ -2,6 +2,7 @@
 
 #include "../types/point.h"
 #include "../types/rect.h"
+#include "../windows/window_types.h"
 
 namespace ff::win32
 {
@@ -23,5 +24,6 @@ namespace ff::win32
     ff::point_int get_minimum_window_size(HMONITOR monitor);
     ff::point_int get_minimum_window_size(HWND hwnd);
     ff::rect_int fix_window_rect(const ff::rect_int& rect, bool full_screen);
-    bool update_window_styles(HWND hwnd, bool full_screen, const ff::rect_int* windowed_rect = nullptr);
+    ff::window_placement get_window_placement(HWND hwnd);
+    void set_window_placement(HWND hwnd, const ff::window_placement& wp);
 }

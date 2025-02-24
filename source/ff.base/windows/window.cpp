@@ -7,16 +7,6 @@
 #include "windows/win32.h"
 #include "windows/window.h"
 
-ff::point_size ff::window_size::physical_pixel_size() const
-{
-    return this->logical_to_physical_size(this->logical_pixel_size);
-}
-
-int ff::window_size::rotated_degrees(bool ccw) const
-{
-    return ccw ? (360 - this->rotation * 90) % 360 : this->rotation * 90;
-}
-
 ff::window::window(window&& other) noexcept
 {
     *this = std::move(other);
@@ -35,13 +25,10 @@ ff::window& ff::window::operator=(window&& other) noexcept
     if (this != &other)
     {
         HWND hwnd = other.hwnd;
+        std::optional<ff::window_placement> wp = std::move(other.full_screen_window_placement_);
         other.reset(nullptr);
         this->reset(hwnd);
-
-        if (this->full_screen())
-        {
-            this->windowed_rect_ = other.windowed_rect_;
-        }
+        this->full_screen_window_placement_ = std::move(wp);
     }
 
     return *this;
@@ -51,8 +38,11 @@ void ff::window::reset(HWND hwnd)
 {
     check_ret(this->hwnd != hwnd);
 
+    this->full_screen_window_placement_ = {};
+
     if (this->hwnd)
     {
+        this->dpi_scale_ = 0;
         ::SetWindowLongPtr(this->hwnd, 0, 0);
     }
 
@@ -61,8 +51,6 @@ void ff::window::reset(HWND hwnd)
     if (this->hwnd)
     {
         this->dpi_scale_ = ff::win32::get_dpi_scale(hwnd);
-        this->windowed_rect_ = !ff::win32::is_full_screen(hwnd) ? ff::win32::get_window_rect(hwnd) : ff::rect_int{};
-
         ::SetWindowLongPtr(this->hwnd, 0, reinterpret_cast<ULONG_PTR>(this));
     }
 }
@@ -170,17 +158,9 @@ void ff::window::notify_message(ff::window_message& message)
     switch (message.msg)
     {
         case WM_DISPLAYCHANGE:
-            if (this->full_screen())
+            if (this->full_screen_window_placement_)
             {
-                ff::win32::update_window_styles(message.hwnd, true);
-            }
-            break;
-
-        case WM_SIZE:
-        case WM_MOVE:
-            if ((message.msg != WM_SIZE || message.wp != SIZE_MINIMIZED) && !this->full_screen())
-            {
-                this->windowed_rect_ = ff::win32::get_window_rect(message.hwnd);
+                ff::win32::set_window_placement(message.hwnd, *this->full_screen_window_placement_);
             }
             break;
 
@@ -227,7 +207,16 @@ void ff::window::notify_message(ff::window_message& message)
             break;
 
         case ff::WM_APP_FULL_SCREEN:
-            ff::win32::update_window_styles(message.hwnd, static_cast<bool>(message.wp), &this->windowed_rect_);
+            {
+                const bool full_screen = (message.wp != 0);
+                if (this->full_screen() != full_screen)
+                {
+                    ff::window_placement wp = this->window_placement();
+                    wp.full_screen = full_screen;
+                    this->full_screen_window_placement_ = wp.full_screen ? std::make_optional(wp) : std::nullopt;
+                    ff::win32::set_window_placement(message.hwnd, wp);
+                }
+            }
             break;
     }
 
@@ -262,23 +251,16 @@ double ff::window::dpi_scale() const
     return this->dpi_scale_;
 }
 
-ff::rect_int ff::window::windowed_rect() const
+ff::window_placement ff::window::window_placement() const
 {
-    return this->windowed_rect_;
+    assert_ret_val(this->hwnd, {});
+    return this->full_screen_window_placement_ ? *this->full_screen_window_placement_ : ff::win32::get_window_placement(*this);
 }
 
-void ff::window::windowed_rect(const ff::rect_int& rect)
+void ff::window::full_screen_window_placement(const ff::window_placement& wp)
 {
-    assert_ret(this->hwnd);
-
-    if (this->full_screen())
-    {
-        this->windowed_rect_ = rect;
-    }
-    else
-    {
-        ff::win32::update_window_styles(this->hwnd, false, &rect);
-    }
+    check_ret(this->hwnd && this->full_screen());
+    this->full_screen_window_placement_ = wp;
 }
 
 bool ff::window::full_screen() const
@@ -289,7 +271,8 @@ bool ff::window::full_screen() const
 bool ff::window::full_screen(bool value) const
 {
     assert_ret_val(this->hwnd, false);
-    return ::PostMessage(this->hwnd, ff::WM_APP_FULL_SCREEN, static_cast<WPARAM>(value), 0) != 0;
+    check_ret_val(this->full_screen() != value, true);
+    return ::PostMessage(this->hwnd, ff::WM_APP_FULL_SCREEN, value, 0) != 0;
 }
 
 bool ff::window::close() const

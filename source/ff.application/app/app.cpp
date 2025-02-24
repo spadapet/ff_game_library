@@ -32,6 +32,7 @@ constexpr size_t MAX_UPDATES_PER_FRAME = 4;
 constexpr size_t MAX_UPDATE_MULTIPLIER = 4;
 constexpr std::string_view ID_SETTINGS = "ff::app::settings";
 constexpr std::string_view ID_SETTING_WINDOWED_RECT = "windowed_rect";
+constexpr std::string_view ID_SETTING_WINDOWED_MAXIMIZED = "windowed_maximized";
 constexpr std::string_view ID_SETTING_MONITOR_RECT = "monitor_rect";
 constexpr std::string_view ID_SETTING_MONITOR_DPI = "monitor_dpi";
 constexpr std::string_view ID_SETTING_FULL_SCREEN = "full_screen";
@@ -213,13 +214,12 @@ static void init_game_thread()
 static void destroy_game_thread()
 {
     ff::dxgi::trim_device();
-    ff::internal::imgui::destroy();
     ff::internal::app::request_save_settings();
     ff::global_resources::destroy_game_thread();
     ::resources_rebuilt_connection.disconnect();
     ::app_params.game_thread_finished_func();
     ::debug_stats.reset();
-
+    ff::internal::imgui::destroy();
     ff::thread_pool::flush();
     ::frame_thread_dispatch.reset();
     ::game_thread_dispatch.reset();
@@ -319,7 +319,8 @@ static void save_window_settings()
     if (monitor && ::GetMonitorInfo(monitor, &monitor_info))
     {
         settings.set<bool>(::ID_SETTING_FULL_SCREEN, ::window.full_screen());
-        settings.set<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ::window.windowed_rect());
+        settings.set<bool>(::ID_SETTING_WINDOWED_MAXIMIZED, ::window.window_placement().maximized);
+        settings.set<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ::window.window_placement().normal_position);
         settings.set<ff::rect_int>(::ID_SETTING_MONITOR_RECT, ff::win32::convert_rect(monitor_info.rcMonitor));
         settings.set<size_t>(::ID_SETTING_MONITOR_DPI, ff::win32::get_dpi(monitor));
     }
@@ -364,31 +365,34 @@ static void update_window_visible()
 static ff::window create_window()
 {
     const ff::dict settings = ff::settings(::ID_SETTINGS);
-    ff::rect_int windowed_rect = settings.get<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ff::rect_int{});
     ff::rect_int old_monitor_rect = settings.get<ff::rect_int>(::ID_SETTING_MONITOR_RECT, ff::rect_int{});
     size_t old_monitor_dpi = settings.get<size_t>(::ID_SETTING_MONITOR_DPI, 0);
 
     ff::rect_int final_rect{ CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT };
-    bool full_screen = false;
+    ff::window_placement window_placement{};
+    window_placement.normal_position = settings.get<ff::rect_int>(::ID_SETTING_WINDOWED_RECT, ff::rect_int{});
 
-    if (windowed_rect)
+    if (window_placement.normal_position)
     {
-        HMONITOR monitor = ::MonitorFromRect(reinterpret_cast<LPCRECT>(&windowed_rect), MONITOR_DEFAULTTONULL);
+        HMONITOR monitor = ::MonitorFromRect(reinterpret_cast<LPCRECT>(&window_placement.normal_position), MONITOR_DEFAULTTONULL);
         MONITORINFO monitor_info{ sizeof(monitor_info) };
         ff::point_int min_size = monitor ? ff::win32::get_minimum_window_size(monitor) : ff::point_int{};
 
-        if (min_size && ::GetMonitorInfo(monitor, &monitor_info) &&
+        if (min_size && monitor && ::GetMonitorInfo(monitor, &monitor_info) &&
             old_monitor_rect == ff::win32::convert_rect(monitor_info.rcMonitor) &&
             old_monitor_dpi == ff::win32::get_dpi(monitor) &&
-            windowed_rect.width() >= min_size.x &&
-            windowed_rect.height() >= min_size.y)
+            window_placement.normal_position.width() >= min_size.x &&
+            window_placement.normal_position.height() >= min_size.y)
         {
-            full_screen = settings.get<bool>(::ID_SETTING_FULL_SCREEN, false);
-            final_rect = full_screen ? ff::win32::convert_rect(monitor_info.rcMonitor) : windowed_rect;
+            window_placement.maximized = settings.get<bool>(::ID_SETTING_WINDOWED_MAXIMIZED, false);
+            window_placement.full_screen = settings.get<bool>(::ID_SETTING_FULL_SCREEN, false);
+            final_rect = window_placement.full_screen
+                ? ff::win32::convert_rect(monitor_info.rcMonitor)
+                : window_placement.normal_position;
         }
         else
         {
-            windowed_rect = {};
+            window_placement.normal_position = {};
         }
     }
 
@@ -409,7 +413,7 @@ static ff::window create_window()
         class_name,
         ::app_version.product_name,
         nullptr, // parent
-        ff::win32::default_window_style(full_screen),
+        ff::win32::default_window_style(window_placement.full_screen) | (!window_placement.full_screen && window_placement.maximized ? WS_MAXIMIZE : 0),
         0, // ex style
         final_rect.left,
         final_rect.top,
@@ -417,10 +421,7 @@ static ff::window create_window()
         final_rect.bottom == CW_USEDEFAULT ? CW_USEDEFAULT : final_rect.height(),
         ff::get_hinstance());
 
-    if (full_screen)
-    {
-        window.windowed_rect(windowed_rect);
-    }
+    window.full_screen_window_placement(window_placement);
 
     return window;
 }
@@ -515,7 +516,13 @@ static bool app_initialized()
     ::window_initialized = true;
     ::app_params.main_thread_initialized_func(&::window);
 
-    ::ShowWindow(::window, SW_SHOWDEFAULT);
+    ::STARTUPINFO si{ sizeof(::STARTUPINFO) };
+    ::GetStartupInfo(&si);
+
+    LONG style = ::GetWindowLong(::window, GWL_STYLE);
+    bool maximize = !::window.full_screen() && (style & WS_MAXIMIZE) != 0;
+    int cmd_show = (maximize && !(si.dwFlags & STARTF_USESHOWWINDOW)) ? SW_MAXIMIZE : SW_SHOWDEFAULT;
+    ::ShowWindow(::window, cmd_show);
     ::SetForegroundWindow(::window);
 
     return true;
