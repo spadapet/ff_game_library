@@ -83,11 +83,17 @@ static void imgui_init_dx12(ff::window* window)
     ::gpu_descriptor_handle = ::descriptor_range.gpu_handle(0);
     ::buffer_count = ::app_target->buffer_count();
 
+    ::ImGui_ImplDX12_InitInfo init_info{};
+    init_info.Device = ff::dx12::device();
+    init_info.CommandQueue = ff::dx12::get_command_queue(ff::dx12::direct_queue());
+    init_info.NumFramesInFlight = static_cast<int>(::buffer_count);
+    init_info.RTVFormat = ::app_target->format();
+    init_info.SrvDescriptorHeap = ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors());
+    init_info.LegacySingleSrvCpuDescriptor = ::cpu_descriptor_handle;
+    init_info.LegacySingleSrvGpuDescriptor = ::gpu_descriptor_handle;
+
     ::ImGui_ImplWin32_Init(*window);
-    ::ImGui_ImplDX12_Init(ff::dx12::device(), static_cast<int>(::buffer_count), ::app_target->format(),
-        ff::dx12::get_descriptor_heap(ff::dx12::gpu_view_descriptors()),
-        ::cpu_descriptor_handle,
-        ::gpu_descriptor_handle);
+    ::ImGui_ImplDX12_Init(&init_info);
 }
 
 void ff::internal::imgui::init(
