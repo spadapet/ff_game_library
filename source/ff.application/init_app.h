@@ -3,9 +3,22 @@
 #include "graphics/dxgi/target_window_base.h"
 #include "init_dx.h"
 
+namespace ff::dxgi
+{
+    class depth_base;
+}
+
 namespace ff
 {
     enum class app_update_t;
+
+    struct render_params
+    {
+        ff::app_update_t update_type;
+        ff::dxgi::command_context_base& context;
+        ff::dxgi::target_base& target;
+        ff::dxgi::depth_base& depth;
+    };
 
     struct init_app_params
     {
@@ -22,8 +35,8 @@ namespace ff
 
         std::function<void()> game_input_func{ [] {} };
         std::function<void()> game_update_func{ [] {} };
-        std::function<void(ff::app_update_t, ff::dxgi::command_context_base&)> game_render_offscreen_func{ std::bind([] {}) };
-        std::function<void(ff::app_update_t, ff::dxgi::command_context_base&, ff::dxgi::target_base&)> game_render_func{ std::bind([] {}) };
+        std::function<void(const ff::render_params&)> game_render_offscreen_func{ std::bind([] {}) };
+        std::function<void(const ff::render_params&)> game_render_func{ std::bind([] {}) };
 
         ff::init_dx_params init_dx_params{};
         ff::dxgi::target_window_params target_window{};

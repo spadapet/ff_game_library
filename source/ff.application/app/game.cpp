@@ -119,9 +119,9 @@ static void game_input()
     ::game_params->game_input_func();
 }
 
-static void game_render(ff::app_update_t type, ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
+static void game_render(const ff::render_params& params)
 {
-    ::game_params->game_render_func(type, context, target);
+    ::game_params->game_render_func(params);
     ::debug_step_one_frame = false;
 }
 
