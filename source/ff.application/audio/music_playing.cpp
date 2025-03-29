@@ -202,7 +202,7 @@ void ff::internal::music_playing::update()
         bool fade_done = (this->fade_volume >= 1);
         bool fade_out = (this->fade_scale < 0);
 
-        if (this->fade_scale < 0)
+        if (fade_out)
         {
             this->fade_volume = 1.0f - this->fade_volume;
         }
@@ -737,6 +737,7 @@ void ff::internal::music_playing::update_source_volume(IXAudio2SourceVoice* sour
 {
     if (source)
     {
-        source->SetVolume(this->volume_ * this->play_volume * this->fade_volume);
+        const float volume = this->volume_ * this->play_volume * this->fade_volume;
+        source->SetVolume(volume);
     }
 }

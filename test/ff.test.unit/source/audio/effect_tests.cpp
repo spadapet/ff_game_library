@@ -24,7 +24,7 @@ namespace ff::test::audio
             while (effect->playing() && ++i < 200)
             {
                 std::this_thread::sleep_for(16ms);
-                ff::audio::advance_effects();
+                ff::audio::update_effects();
             }
 
             Assert::IsTrue(i < 200);

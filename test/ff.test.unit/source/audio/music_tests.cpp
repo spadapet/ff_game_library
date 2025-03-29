@@ -20,19 +20,24 @@ namespace ff::test::audio
 
             Assert::IsFalse(music->playing());
             std::shared_ptr<ff::audio_playing_base> playing = music->play(false);
-            playing->fade_in(3.0);
+            playing->fade_in(2.0);
             playing->resume();
 
             int i = 0;
-            while (music->playing() && ++i < 200)
+            while (music->playing() && ++i < 150)
             {
                 std::this_thread::sleep_for(16ms);
-                ff::audio::advance_effects();
+                ff::audio::update_effects();
             }
 
-            Assert::IsTrue(i == 200);
-            music->stop();
-            Assert::IsFalse(music->playing());
+            Assert::IsTrue(i == 150 && music->playing());
+            playing->fade_out(1.0);
+
+            while (music->playing())
+            {
+                std::this_thread::sleep_for(16ms);
+                ff::audio::update_effects();
+            }
         }
     };
 }

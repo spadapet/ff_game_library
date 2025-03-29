@@ -6,7 +6,7 @@ static const ff::rect_float world_rect(0, 0, 1920, 1080);
 
 namespace
 {
-    class app_state : public ff::state
+    class app_state
     {
     public:
         app_state()
@@ -18,7 +18,7 @@ namespace
             , palette_cycle(this->palette_data.object())
         {}
 
-        virtual std::shared_ptr<ff::state> advance_time() override
+        void update()
         {
             if (ff::input::keyboard().press_count(VK_DELETE))
             {
@@ -46,16 +46,13 @@ namespace
                 this->add_entities();
             }
 
-            this->palette_cycle.advance();
-
-            return {};
+            this->palette_cycle.update();
         }
 
-        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets)
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
         {
-            ff::dxgi::target_base& target = targets.target(context);
             ff::rect_float view = this->viewport.view(target.size().logical_pixel_size).cast<float>();
-            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &targets.depth(context), view, ::world_rect);
+            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth, view, ::world_rect);
             assert_ret(draw);
 
             draw->push_palette(&this->palette_cycle);
@@ -128,24 +125,21 @@ namespace
 
 void run_test_sprite_perf()
 {
-    ff::init_app_params app_params{};
+    std::unique_ptr<app_state> app;
+    ff::init_app_params params{};
 
-    app_params.register_resources_func = []()
+    params.game_thread_initialized_func = [&app]
         {
             ff::data_reader assets_reader(::assets::test::data());
             ff::global_resources::add(assets_reader);
+
+            app = std::make_unique<app_state>();
         };
 
-    app_params.create_initial_state_func = []()
-        {
-            return std::make_shared<::app_state>();
-        };
+    params.game_thread_finished_func = [&app] { app.reset(); };
+    params.game_update_func = [&app] { app->update(); };
+    params.game_render_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target, rp.depth); };
 
-    app_params.get_clear_back_buffer = []()
-        {
-            return true;
-        };
-
-    ff::init_app init_app(app_params);
+    ff::init_app init_app(params);
     ff::handle_messages_until_quit();
 }

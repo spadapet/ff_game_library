@@ -3,6 +3,7 @@
 #include "app/debug_stats.h"
 #include "app/imgui.h"
 #include "app/settings.h"
+#include "audio/audio.h"
 #include "graphics/dxgi/dxgi_globals.h"
 #include "ff.app.res.id.h"
 #include "init_app.h"
@@ -155,6 +156,7 @@ static void frame_update(ff::app_update_t update_type)
         }
 
         ff::perf_timer timer(::perf_update);
+        ff::audio::update_effects();
         ::app_params.game_update_func();
     }
 }

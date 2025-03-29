@@ -6,23 +6,23 @@ static ff::window* window{};
 template<class StateT>
 static void run_app()
 {
-    ff::init_app_params app_params{};
-    app_params.create_initial_state_func = []()
-        {
-            return std::make_shared<StateT>();
-        };
+    std::unique_ptr<StateT> app;
+    ff::init_app_params params{};
 
-    app_params.app_initialized_func = [](ff::window* window)
+    params.game_thread_initialized_func = [&app] { app = std::make_unique<StateT>(); };
+    params.game_thread_finished_func = [&app] { app.reset(); };
+    params.main_thread_initialized_func = [](ff::window* window) { ::window = window; };
+    params.main_window_message_func = [](ff::window* window, ff::window_message& message)
         {
-            ::window = window;
+            if (message.msg == WM_DESTROY)
+            {
+                ::window = nullptr;
+            }
         };
+    params.game_update_func = [&app] { app->update(); };
+    params.game_render_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target); };
 
-    app_params.app_destroying_func = []()
-        {
-            ::window = nullptr;
-        };
-
-    ff::init_app init_app(app_params);
+    ff::init_app init_app(params);
     assert_ret(init_app);
     ff::handle_messages_until_quit();
 }
@@ -64,7 +64,7 @@ static int show_wait_dialog()
 
 namespace
 {
-    class test_app_state : public ff::state
+    class test_app_state
     {
     public:
         test_app_state()
@@ -102,15 +102,13 @@ namespace
             });
         }
 
-        virtual std::shared_ptr<ff::state> advance_time() override
+        void update()
         {
             this->clear_color.y = std::fmod(clear_color.y + 1.0f / 512.0f, 1.0f);
-            return {};
         }
 
-        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
         {
-            ff::dxgi::target_base& target = targets.target(context);
             ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target);
             if (draw)
             {
@@ -126,24 +124,26 @@ namespace
         ff::input_device_event last_input_event{};
     };
 
-    class coroutine_state : public ff::state
+    class coroutine_state
     {
     public:
-        virtual std::shared_ptr<ff::state> advance_time() override
+        void update()
         {
-            if (!this->task)
+            if (!this->done && !this->task)
             {
                 auto task = this->show_wait_dialog_async();
                 this->task = std::make_unique<ff::co_task<bool>>(std::move(task));
             }
-            else if (this->task->done())
+            else if (!this->done && this->task->done())
             {
+                this->done = true;
                 this->task = {};
                 ::window->close();
-                return std::make_shared<ff::state>();
             }
+        }
 
-            return {};
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
+        {
         }
 
     private:
@@ -168,6 +168,7 @@ namespace
         }
 
         std::unique_ptr<ff::co_task<bool>> task;
+        bool done{};
     };
 }
 

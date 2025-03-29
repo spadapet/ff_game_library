@@ -2,15 +2,10 @@
 
 namespace
 {
-    class app_state : public ff::game::root_state_base
+    class app_state
     {
     public:
-        virtual bool clear_back_buffer() override
-        {
-            return true;
-        }
-
-        virtual std::shared_ptr<ff::state> advance_time() override
+        void update()
         {
             if (!ff::input::keyboard().pressing('R'))
             {
@@ -53,14 +48,10 @@ namespace
                     }
                 }
             }
-
-            return ff::game::root_state_base::advance_time();
         }
 
-        virtual void render(ff::dxgi::command_context_base& context, ff::render_targets& targets) override
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
         {
-            ff::dxgi::depth_base& depth = targets.depth(context);
-            ff::dxgi::target_base& target = targets.target(context);
             const ff::point_float target_size = target.size().logical_scaled_size<float>();
 
             if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth))
@@ -119,8 +110,6 @@ namespace
                     }
                 }
             }
-
-            ff::game::root_state_base::render(context, targets);
         }
 
     private:
@@ -316,5 +305,10 @@ namespace
 
 void run_test_game_wrapper()
 {
-    ff::game::run<::app_state>();
+    ::app_state app;
+    ff::init_game_params params{};
+    params.game_update_func = [&app] { app.update(); };
+    params.game_render_func = [&app](const ff::render_params& params) { app.render(params.context, params.target, params.depth); };
+
+    ff::run_game(params);
 }
