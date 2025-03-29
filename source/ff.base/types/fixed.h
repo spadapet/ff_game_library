@@ -251,14 +251,12 @@ namespace ff
     private:
         static this_type from_expanded(ExpandedT data)
         {
-            this_type value;
-            value.data = static_cast<T>(data);
-            return value;
+            return this_type::from_raw(static_cast<T>(data));
         }
 
         ExpandedT get_expanded() const
         {
-            return static_cast<int64_t>(this->data);
+            return static_cast<ExpandedT>(this->data);
         }
 
         T data;
