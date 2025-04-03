@@ -40,6 +40,7 @@ namespace ff::dx12
         virtual bool size(const ff::window_size& size) override;
         virtual ff::signal_sink<ff::window_size>& size_changed() override;
         virtual size_t buffer_count() const override;
+        virtual size_t buffer_index() const override;
         virtual size_t frame_latency() const override;
         virtual bool vsync() const override;
         virtual const ff::dxgi::target_window_params& init_params() const override;
@@ -53,8 +54,6 @@ namespace ff::dx12
         void handle_message(ff::window* window, ff::window_message& msg);
         void before_resize();
         bool internal_reset();
-        void handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy);
-        ff::dxgi::target_base& extra_render_target();
 
         struct
         {
@@ -73,7 +72,6 @@ namespace ff::dx12
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
         ff::win_handle frame_latency_handle;
         std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
-        std::vector<std::shared_ptr<ff::dxgi::target_base>> extra_render_targets;
         ff::dx12::descriptor_range target_views;
         ff::dxgi::target_window_params params{};
     };

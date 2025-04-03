@@ -17,7 +17,6 @@ namespace ff
         ff::app_update_t update_type;
         ff::dxgi::command_context_base& context;
         ff::dxgi::target_base& target;
-        ff::dxgi::depth_base& depth;
     };
 
     struct init_app_params
@@ -36,7 +35,7 @@ namespace ff
         std::function<void()> game_input_func{ [] {} };
         std::function<void()> game_update_func{ [] {} };
         std::function<void(const ff::render_params&)> game_render_offscreen_func{ std::bind([] {}) };
-        std::function<void(const ff::render_params&)> game_render_func{ std::bind([] {}) };
+        std::function<void(const ff::render_params&)> game_render_screen_func{ std::bind([] {}) };
 
         ff::init_dx_params init_dx_params{};
         ff::dxgi::target_window_params target_window{};

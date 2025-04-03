@@ -78,6 +78,7 @@
 #include "../source/ff.application/graphics/resource/palette_data.h"
 #include "../source/ff.application/graphics/resource/png_image.h"
 #include "../source/ff.application/graphics/resource/random_sprite.h"
+#include "../source/ff.application/graphics/resource/render_targets.h"
 #include "../source/ff.application/graphics/resource/shader.h"
 #include "../source/ff.application/graphics/resource/sprite.h"
 #include "../source/ff.application/graphics/resource/sprite_base.h"

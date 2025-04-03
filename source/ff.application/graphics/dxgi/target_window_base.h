@@ -6,22 +6,11 @@ namespace ff::dxgi
 {
     struct target_window_params
     {
-        enum class latency_strategy_t
-        {
-            before_execute,
-            after_execute,
-            after_present,
-
-            count
-        };
-
         bool operator==(const target_window_params& other) const = default;
 
         size_t buffer_count{ 2 };
         size_t frame_latency{ 1 };
-        latency_strategy_t latency_strategy{ latency_strategy_t::after_execute };
         bool vsync{ true };
-        bool extra_render_target{ true };
     };
 
     class target_window_base : public ff::dxgi::target_base
@@ -33,6 +22,7 @@ namespace ff::dxgi
         virtual ff::signal_sink<ff::window_size>& size_changed() = 0;
 
         virtual size_t buffer_count() const = 0;
+        virtual size_t buffer_index() const = 0;
         virtual size_t frame_latency() const = 0;
         virtual bool vsync() const = 0;
 

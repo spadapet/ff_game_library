@@ -42,6 +42,7 @@ namespace ff::dx12
 
     size_t frame_count();
     ff::dxgi::command_context_base& frame_started();
+    void frame_flush();
     void frame_complete();
     ff::dx12::commands& frame_commands();
     ff::signal_sink<size_t>& frame_complete_sink();

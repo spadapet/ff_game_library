@@ -80,22 +80,12 @@ ff::window_size ff::dx12::target_window::size() const
 
 ff::dx12::resource& ff::dx12::target_window::dx12_target_texture()
 {
-    if (this->params.extra_render_target)
-    {
-        return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_texture();
-    }
-
-    return *this->target_textures[this->swap_chain->GetCurrentBackBufferIndex()];
+    return *this->target_textures[this->buffer_index()];
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff::dx12::target_window::dx12_target_view()
 {
-    if (this->params.extra_render_target)
-    {
-        return ff::dx12::target_access::get(this->extra_render_target()).dx12_target_view();
-    }
-
-    return this->target_views.cpu_handle(this->swap_chain->GetCurrentBackBufferIndex());
+    return this->target_views.cpu_handle(this->buffer_index());
 }
 
 void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, const ff::color& clear_color)
@@ -107,15 +97,14 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
 {
     check_ret_val(*this, false);
 
-    ff::dxgi::target_base& target = this->params.extra_render_target ? this->extra_render_target() : *this;
     if (clear_color)
     {
         assert_msg(*clear_color == ff::color_black(), "Swap chain render targets must be cleared to black");
-        target.clear(context, *clear_color);
+        this->clear(context, *clear_color);
     }
     else
     {
-        ff::dx12::commands::get(context).discard(target);
+        ff::dx12::commands::get(context).discard(*this);
     }
 
     return true;
@@ -125,58 +114,19 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 {
     check_ret_val(*this, false);
 
-    this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::before_execute);
-
-    ff::dx12::commands& commands = ff::dx12::commands::get(context);
-    ff::dx12::queue& queue = commands.queue();
-    ff::dx12::commands* present_commands = &commands;
-    ff::dx12::resource& back_buffer_resource = *this->target_textures[this->swap_chain->GetCurrentBackBufferIndex()];
-    std::unique_ptr<ff::dx12::commands> new_commands;
-
-    if (this->params.extra_render_target)
-    {
-        // Copy extra render target to back buffer
-        ff::dxgi::target_base& extra_target = this->extra_render_target();
-        ff::dx12::resource& extra_resource = ff::dx12::target_access::get(extra_target).dx12_target_texture();
-        new_commands = queue.new_commands();
-        present_commands = new_commands.get();
-        present_commands->copy_resource(back_buffer_resource, extra_resource);
-
-        // Finish all rendering to extra render target
-        queue.execute(commands);
-        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
-    }
-
-    present_commands->resource_state(back_buffer_resource, D3D12_RESOURCE_STATE_PRESENT);
-    queue.execute(*present_commands);
-
-    if (!this->params.extra_render_target)
-    {
-        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_execute);
-    }
-
-    bool success;
-    {
-        ff::perf_timer timer(::perf_render_present);
-        const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
-        success = (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
-    }
-
-    if (success)
-    {
-        this->handle_latency(ff::dxgi::target_window_params::latency_strategy_t::after_present);
-    }
-
-    return success;
-}
-
-void ff::dx12::target_window::handle_latency(ff::dxgi::target_window_params::latency_strategy_t latency_strategy)
-{
-    if (latency_strategy == this->params.latency_strategy && this->frame_latency_handle)
+    if (this->frame_latency_handle)
     {
         ff::perf_timer timer(::perf_render_wait);
         this->frame_latency_handle.wait(INFINITE, false);
     }
+
+    ff::dx12::commands& commands = ff::dx12::commands::get(context);
+    commands.resource_state(*this->target_textures[this->buffer_index()], D3D12_RESOURCE_STATE_PRESENT);
+    commands.queue().execute(commands);
+
+    ff::perf_timer timer(::perf_render_present);
+    const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
+    return (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
 }
 
 void ff::dx12::target_window::before_resize()
@@ -268,12 +218,6 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
         " VSync=", this->vsync());
 
     ff::window_size old_size = this->cached_size;
-    std::vector<std::shared_ptr<ff::dxgi::target_base>> old_extra_render_targets;
-    if (this->params.extra_render_target && old_size == size)
-    {
-        old_extra_render_targets = this->extra_render_targets;
-    }
-
     ff::point_t<UINT> buffer_size = size.physical_pixel_size().cast<UINT>();
     this->cached_size = size;
     this->before_resize();
@@ -344,7 +288,7 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
     }
 
     this->frame_latency_handle = ff::win_handle(this->params.frame_latency ? this->swap_chain->GetFrameLatencyWaitableObject() : nullptr);
-    assert(this->target_textures.empty() && this->extra_render_targets.empty());
+    assert(this->target_textures.empty());
 
     for (size_t i = 0; i < this->params.buffer_count; i++)
     {
@@ -358,30 +302,11 @@ bool ff::dx12::target_window::size(const ff::window_size& input_size)
         auto texture_resource = std::make_unique<ff::dx12::resource>(ff::string::concat("Swap chain back buffer ", i), resource.Get());
         this->target_textures.push_back(std::move(texture_resource));
         this->target_textures.back()->create_target_view(this->target_views.cpu_handle(i));
-
-        if (this->params.extra_render_target)
-        {
-            if (i < old_extra_render_targets.size())
-            {
-                this->extra_render_targets.push_back(old_extra_render_targets[i]);
-            }
-            else
-            {
-                auto texture = ff::dxgi::create_render_texture(size.physical_pixel_size(), this->format(), 1, 1, 1, &ff::color_black());
-                this->extra_render_targets.push_back(ff::dxgi::create_target_for_texture(texture, 0, 0, 0, size.rotation, size.dpi_scale));
-            }
-        }
     }
 
     this->size_changed_.notify(size);
 
     return true;
-}
-
-ff::dxgi::target_base& ff::dx12::target_window::extra_render_target()
-{
-    assert(this->params.extra_render_target);
-    return *this->extra_render_targets[this->swap_chain->GetCurrentBackBufferIndex()];
 }
 
 ff::signal_sink<ff::window_size>& ff::dx12::target_window::size_changed()
@@ -398,6 +323,12 @@ size_t ff::dx12::target_window::buffer_count() const
     }
 
     return 0;
+}
+
+size_t ff::dx12::target_window::buffer_index() const
+{
+    assert_ret_val(this->swap_chain, 0);
+    return this->swap_chain->GetCurrentBackBufferIndex();
 }
 
 size_t ff::dx12::target_window::frame_latency() const
@@ -436,9 +367,7 @@ void ff::dx12::target_window::init_params(const ff::dxgi::target_window_params& 
     this->params.buffer_count = ::fix_buffer_count(this->params.buffer_count);
     this->params.frame_latency = ::fix_frame_latency(this->params.frame_latency, this->params.buffer_count);
 
-    if (old_params.buffer_count != this->params.buffer_count ||
-        old_params.frame_latency != this->params.frame_latency ||
-        old_params.extra_render_target != this->params.extra_render_target)
+    if (old_params.buffer_count != this->params.buffer_count || old_params.frame_latency != this->params.frame_latency)
     {
         this->size(this->size());
     }
@@ -448,7 +377,6 @@ void ff::dx12::target_window::before_reset()
 {
     this->frame_latency_handle.close();
     this->target_textures.clear();
-    this->extra_render_targets.clear();
 }
 
 bool ff::dx12::target_window::reset()

@@ -66,6 +66,7 @@
     <ClCompile Include="graphics\resource\palette_data.cpp" />
     <ClCompile Include="graphics\resource\png_image.cpp" />
     <ClCompile Include="graphics\resource\random_sprite.cpp" />
+    <ClCompile Include="graphics\resource\render_targets.cpp" />
     <ClCompile Include="graphics\resource\shader.cpp" />
     <ClCompile Include="graphics\resource\sprite.cpp" />
     <ClCompile Include="graphics\resource\sprite_font.cpp" />
@@ -167,6 +168,7 @@
     <ClInclude Include="graphics\resource\palette_data.h" />
     <ClInclude Include="graphics\resource\png_image.h" />
     <ClInclude Include="graphics\resource\random_sprite.h" />
+    <ClInclude Include="graphics\resource\render_targets.h" />
     <ClInclude Include="graphics\resource\shader.h" />
     <ClInclude Include="graphics\resource\sprite.h" />
     <ClInclude Include="graphics\resource\sprite_base.h" />

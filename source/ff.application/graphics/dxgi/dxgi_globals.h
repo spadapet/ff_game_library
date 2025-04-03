@@ -30,6 +30,7 @@ namespace ff::dxgi
     void trim_device();
     void wait_for_idle();
     ff::dxgi::command_context_base& frame_started();
+    void frame_flush();
     void frame_complete();
     ff::dxgi::draw_device_base& global_draw_device();
 

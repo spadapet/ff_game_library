@@ -247,6 +247,9 @@
     <ClCompile Include="graphics\types\viewport.cpp">
       <Filter>graphics\types</Filter>
     </ClCompile>
+    <ClCompile Include="graphics\resource\render_targets.cpp">
+      <Filter>graphics\resource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -542,6 +545,9 @@
     </ClInclude>
     <ClInclude Include="graphics\types\viewport.h">
       <Filter>graphics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics\resource\render_targets.h">
+      <Filter>graphics\resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

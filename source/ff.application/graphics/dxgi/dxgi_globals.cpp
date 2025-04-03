@@ -148,6 +148,11 @@ ff::dxgi::command_context_base& ff::dxgi::frame_started()
     return ff::dx12::frame_started();
 }
 
+void ff::dxgi::frame_flush()
+{
+    ff::dx12::frame_flush();
+}
+
 void ff::dxgi::frame_complete()
 {
     ff::dx12::frame_complete();

@@ -121,7 +121,7 @@ static void game_input()
 
 static void game_render(const ff::render_params& params)
 {
-    ::game_params->game_render_func(params);
+    ::game_params->game_render_screen_func(params);
     ::debug_step_one_frame = false;
 }
 
@@ -169,7 +169,7 @@ int ff::run_game(const ff::init_game_params& params)
     app_params.game_time_scale_func = ::game_time_scale;
     app_params.game_update_type_func = ::game_update_type;
     app_params.game_input_func = ::game_input;
-    app_params.game_render_func = ::game_render;
+    app_params.game_render_screen_func = ::game_render;
     app_params.game_thread_initialized_func = ::game_thread_initialized;
     app_params.game_thread_finished_func = ::game_thread_finished;
     app_params.game_resources_rebuilt = ::game_resources_rebuilt;
