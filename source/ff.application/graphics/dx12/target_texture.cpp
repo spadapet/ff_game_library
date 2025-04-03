@@ -53,6 +53,11 @@ void ff::dx12::target_texture::clear(ff::dxgi::command_context_base& context, co
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
+void ff::dx12::target_texture::discard(ff::dxgi::command_context_base& context)
+{
+    ff::dx12::commands::get(context).discard(*this);
+}
+
 bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color)
 {
     if (*this && ff::dx12::device_valid())
@@ -63,7 +68,7 @@ bool ff::dx12::target_texture::begin_render(ff::dxgi::command_context_base& cont
         }
         else
         {
-            ff::dx12::commands::get(context).discard(*this);
+            this->discard(context);
         }
 
         return true;

@@ -21,6 +21,7 @@ namespace ff::dx12
 
         // target_base
         virtual void clear(ff::dxgi::command_context_base& context, const ff::color& clear_color) override;
+        virtual void discard(ff::dxgi::command_context_base& context) override;
         virtual bool begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color) override;
         virtual bool end_render(ff::dxgi::command_context_base& context) override;
         virtual ff::dxgi::target_access_base& target_access() override;

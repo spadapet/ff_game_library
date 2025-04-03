@@ -167,7 +167,7 @@ static void frame_render(ff::app_update_t update_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
-        ff::render_params params{ update_type, context, *::target };
+        ff::render_params params{ update_type, context, *::target, ::target->buffer_count(), ::target->buffer_index() };
         ::app_params.game_render_offscreen_func(params);
         ff::dxgi::frame_flush();
 

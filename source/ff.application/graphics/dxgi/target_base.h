@@ -16,6 +16,7 @@ namespace ff::dxgi
         virtual ~target_base() = default;
 
         virtual void clear(ff::dxgi::command_context_base& context, const ff::color& clear_color) = 0;
+        virtual void discard(ff::dxgi::command_context_base& context) = 0;
         virtual bool begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color = nullptr) = 0;
         virtual bool end_render(ff::dxgi::command_context_base& context) = 0;
 

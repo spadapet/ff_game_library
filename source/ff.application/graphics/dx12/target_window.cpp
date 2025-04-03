@@ -93,6 +93,11 @@ void ff::dx12::target_window::clear(ff::dxgi::command_context_base& context, con
     ff::dx12::commands::get(context).clear(*this, clear_color);
 }
 
+void ff::dx12::target_window::discard(ff::dxgi::command_context_base& context)
+{
+    ff::dx12::commands::get(context).discard(*this);
+}
+
 bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& context, const ff::color* clear_color)
 {
     check_ret_val(*this, false);
@@ -104,7 +109,7 @@ bool ff::dx12::target_window::begin_render(ff::dxgi::command_context_base& conte
     }
     else
     {
-        ff::dx12::commands::get(context).discard(*this);
+        this->discard(context);
     }
 
     return true;

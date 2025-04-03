@@ -283,17 +283,8 @@ void ff::internal::debug_stats::render(ff::app_update_t type, ff::dxgi::command_
                         ::target_params_.frame_latency = static_cast<size_t>(frame_latency);
                     }
 
-                    const char* strategy_names[] = { "Wait before execute", "Wait after execute", "Wait after present" };
-                    int strategy_int = static_cast<int>(::target_params_.latency_strategy);
-                    const int strategy_count = static_cast<int>(ff::dxgi::target_window_params::latency_strategy_t::count);
-                    if (ImGui::SliderInt("##LatencyStrategy", &strategy_int, 0, strategy_count - 1, strategy_names[strategy_int]))
-                    {
-                        ::target_params_.latency_strategy = static_cast<ff::dxgi::target_window_params::latency_strategy_t>(strategy_int);
-                    }
-
                     ImGui::PopItemWidth();
                     ImGui::Checkbox("VSync", &::target_params_.vsync);
-                    ImGui::Checkbox("Extra Buffer", &::target_params_.extra_render_target);
 
                     ImGui::BeginDisabled(::target_params_ == this->app_target->init_params());
                     if (ImGui::Button("Apply"))

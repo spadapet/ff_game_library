@@ -1,17 +1,10 @@
 #include "pch.h"
+#include "graphics/dxgi/dxgi_globals.h"
 #include "graphics/dxgi/format_util.h"
 #include "graphics/resource/render_targets.h"
 
-ff::render_targets::render_targets(
-    ff::point_size size,
-    DXGI_FORMAT format,
-    size_t mip_count,
-    size_t array_size,
-    size_t sample_count,
-    const ff::color* optimized_clear_color)
+ff::render_targets::render_targets(ff::point_size size, DXGI_FORMAT format, size_t sample_count, const ff::color* optimized_clear_color)
     : format_(format)
-    , mip_count_(mip_count)
-    , array_size_(array_size)
     , sample_count_(sample_count)
     , size_(size)
     , clear_color_(optimized_clear_color
@@ -37,28 +30,23 @@ const ff::point_size ff::render_targets::size() const
     return this->size_;
 }
 
-void ff::render_targets::size(ff::dxgi::command_context_base& context, ff::point_size value)
+void ff::render_targets::size(ff::point_size value)
 {
-    for (ff::render_targets::target_t& i : this->targets)
+    if (this->size_ != value)
     {
-        i.target.reset();
-        i.texture.reset();
+        this->size_ = value;
+
+        for (ff::render_targets::target_t& i : this->targets)
+        {
+            i.target.reset();
+            i.texture.reset();
+        }
     }
 }
 
 DXGI_FORMAT ff::render_targets::format() const
 {
     return this->format_;
-}
-
-size_t ff::render_targets::mip_count() const
-{
-    return this->mip_count_;
-}
-
-size_t ff::render_targets::array_size() const
-{
-    return this->array_size_;
 }
 
 size_t ff::render_targets::sample_count() const
@@ -71,11 +59,23 @@ const ff::color& ff::render_targets::clear_color() const
     return this->clear_color_;
 }
 
-ff::dxgi::texture_base& ff::render_targets::texture(size_t index)
+void ff::render_targets::clear(ff::dxgi::command_context_base& context, size_t index)
+{
+    this->target(index).clear(context, this->clear_color_);
+}
+
+void ff::render_targets::discard(ff::dxgi::command_context_base& context, size_t index)
+{
+    this->target(index).discard(context);
+}
+
+ff::texture& ff::render_targets::texture(size_t index)
 {
     ff::render_targets::target_t& data = this->targets[index];
     if (!data.texture)
     {
+        auto dxgi_texture = ff::dxgi::create_render_texture(this->size_, this->format_, 1, 1, this->sample_count_, &this->clear_color_);
+        data.texture = std::make_unique<ff::texture>(dxgi_texture);
     }
 
     return *data.texture;
@@ -86,6 +86,7 @@ ff::dxgi::target_base& ff::render_targets::target(size_t index)
     ff::render_targets::target_t& data = this->targets[index];
     if (!data.target)
     {
+        data.target = ff::dxgi::create_target_for_texture(this->texture(index).dxgi_texture());
     }
 
     return *data.target;
@@ -96,6 +97,7 @@ ff::dxgi::depth_base& ff::render_targets::depth(size_t index)
     ff::render_targets::target_t& data = this->targets[index];
     if (!data.depth)
     {
+        data.depth = ff::dxgi::create_depth(this->size_, this->sample_count_);
     }
 
     return *data.depth;
