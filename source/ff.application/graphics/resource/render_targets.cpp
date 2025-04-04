@@ -3,7 +3,7 @@
 #include "graphics/dxgi/format_util.h"
 #include "graphics/resource/render_targets.h"
 
-ff::render_targets::render_targets(ff::point_size size, DXGI_FORMAT format, size_t sample_count, const ff::color* optimized_clear_color)
+ff::render_targets::render_targets(size_t count, ff::point_size size, DXGI_FORMAT format, size_t sample_count, const ff::color* optimized_clear_color)
     : format_(format)
     , sample_count_(sample_count)
     , size_(size)
@@ -13,6 +13,7 @@ ff::render_targets::render_targets(ff::point_size size, DXGI_FORMAT format, size
             ? ff::color_none_palette()
             : ff::color_none()))
 {
+    this->count(count);
 }
 
 size_t ff::render_targets::count() const

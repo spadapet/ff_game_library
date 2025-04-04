@@ -10,7 +10,7 @@ namespace ff
     class render_targets
     {
     public:
-        render_targets(ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t sample_count = 1, const ff::color* optimized_clear_color = nullptr);
+        render_targets(size_t count, ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t sample_count = 1, const ff::color* optimized_clear_color = nullptr);
         render_targets(render_targets&& other) noexcept = default;
         render_targets(const render_targets& other) = delete;
 

@@ -53,6 +53,7 @@ namespace ff::dx12
         virtual bool reset() override;
 
         void handle_message(ff::window* window, ff::window_message& msg);
+        void handle_latency();
         void before_resize();
         bool internal_reset();
 

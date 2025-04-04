@@ -119,11 +119,7 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
 {
     check_ret_val(*this, false);
 
-    if (this->frame_latency_handle)
-    {
-        ff::perf_timer timer(::perf_render_wait);
-        this->frame_latency_handle.wait(INFINITE, false);
-    }
+    this->handle_latency();
 
     ff::dx12::commands& commands = ff::dx12::commands::get(context);
     commands.resource_state(*this->target_textures[this->buffer_index()], D3D12_RESOURCE_STATE_PRESENT);
@@ -132,6 +128,35 @@ bool ff::dx12::target_window::end_render(ff::dxgi::command_context_base& context
     ff::perf_timer timer(::perf_render_present);
     const HRESULT hr = this->swap_chain->Present(this->vsync() ? 1 : 0, 0);
     return (hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED);
+}
+
+void ff::dx12::target_window::handle_latency()
+{
+    if (this->frame_latency_handle)
+    {
+        ff::perf_timer perf_timer(::perf_render_wait);
+        ff::timer wait_timer;
+        this->frame_latency_handle.wait(INFINITE, false);
+
+        if (wait_timer.tick() >= 17.0)
+        {
+            if (this->frame_latency() != 1)
+            {
+                this->frame_latency_handle.close();
+                this->swap_chain->SetMaximumFrameLatency(1);
+                this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
+            }
+        }
+        else
+        {
+            if (this->frame_latency() != 2)
+            {
+                this->frame_latency_handle.close();
+                this->swap_chain->SetMaximumFrameLatency(2);
+                this->frame_latency_handle = ff::win_handle(this->swap_chain->GetFrameLatencyWaitableObject());
+            }
+        }
+    }
 }
 
 void ff::dx12::target_window::before_resize()
