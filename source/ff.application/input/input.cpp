@@ -86,7 +86,7 @@ namespace
             return this->device_event;
         }
 
-        virtual void notify_window_message(ff::window_message& message) override
+        virtual void notify_window_message(ff::window* window, ff::window_message& message) override
         {
             switch (message.msg)
             {
@@ -102,7 +102,7 @@ namespace
 
             for (auto& pair : ::all_devices)
             {
-                pair.first->notify_window_message(message);
+                pair.first->notify_window_message(window, message);
             }
         }
 

@@ -10,7 +10,7 @@ namespace ff::dx12
     class target_window : public ff::dxgi::target_window_base, public ff::dx12::target_access, private ff::dxgi::device_child_base
     {
     public:
-        target_window(ff::window* window, const ff::dxgi::target_window_params& params);
+        target_window(ff::window* window);
         target_window(target_window&& other) noexcept = delete;
         target_window(const target_window& other) = delete;
         virtual ~target_window() override;
@@ -39,21 +39,17 @@ namespace ff::dx12
 
         // target_window_base
         virtual bool size(const ff::window_size& size) override;
-        virtual ff::signal_sink<ff::window_size>& size_changed() override;
+        virtual void notify_window_message(ff::window* window, ff::window_message& message) override;
         virtual size_t buffer_count() const override;
-        virtual size_t buffer_index() const override;
-        virtual size_t frame_latency() const override;
-        virtual bool vsync() const override;
-        virtual const ff::dxgi::target_window_params& init_params() const override;
-        virtual void init_params(const ff::dxgi::target_window_params& params) override;
 
     private:
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
 
-        void handle_message(ff::window* window, ff::window_message& msg);
+       
         void handle_latency();
+        void update_pacing();
         void before_resize();
         bool internal_reset();
 
@@ -66,15 +62,54 @@ namespace ff::dx12
 
         // Window
         ff::window* window{}; // main thread
-        ff::signal_connection window_message_connection; // main thread
-        ff::signal<ff::window_size> size_changed_; // game thread
         ff::window_size cached_size{}; // game thread
 
         // Swap chain (all on game thread)
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
-        ff::win_handle frame_latency_handle;
-        std::vector<std::unique_ptr<ff::dx12::resource>> target_textures;
+        ff::stack_vector<ff::dx12::resource, 2> target_textures;
         ff::dx12::descriptor_range target_views;
-        ff::dxgi::target_window_params params{};
+        ff::win_handle latency_handle;
+
+        // Frame pacing
+        ff::timer pacing_timer;
+        size_t pacing_count{};
+
+        enum class pacing_t
+        {
+            init,
+            normal,
+            slow_1, // vsync off, latency 1
+            slow_2, // vsync on, latency 2
+            slow_3, // vsync off, latency 2
+            panic = slow_3,
+        } pacing{};
+
+        constexpr static uint32_t pacing_vsync(pacing_t pacing)
+        {
+            switch (pacing)
+            {
+                case pacing_t::init:
+                case pacing_t::normal:
+                case pacing_t::slow_2:
+                    return 1;
+
+                default:
+                    return 0;
+            }
+        }
+
+        constexpr static uint32_t pacing_latency(pacing_t pacing)
+        {
+            switch (pacing)
+            {
+                case pacing_t::init:
+                case pacing_t::normal:
+                case pacing_t::slow_1:
+                    return 1;
+
+                default:
+                    return 2;
+            }
+        }
     };
 }

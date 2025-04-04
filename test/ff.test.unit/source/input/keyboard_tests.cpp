@@ -10,7 +10,7 @@ namespace ff::test::input
             ff::window window = ff::window::create_blank("key_down_up", nullptr, WS_OVERLAPPEDWINDOW);
             ff::signal_connection window_connection = window.message_sink().connect([](ff::window* window, ff::window_message& msg)
             {
-                ff::input::combined_devices().notify_window_message(msg);
+                ff::input::combined_devices().notify_window_message(window, msg);
             });
 
             Assert::IsFalse(ff::input::keyboard().pressing(VK_DOWN));

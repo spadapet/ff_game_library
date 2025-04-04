@@ -22,7 +22,6 @@ namespace
 
 static std::mutex defer_mutex;
 static std::vector<std::pair<ff::dxgi::target_window_base*, ff::window_size>> defer_target_size;
-static std::vector<std::pair<ff::dxgi::target_window_base*, ff::dxgi::target_window_params>> defer_target_reset;
 static ::defer_flags_t defer_flags;
 static DXGI_ADAPTER_DESC user_selected_adapter_desc{};
 
@@ -32,7 +31,6 @@ void ff::dxgi::remove_target(ff::dxgi::target_window_base* target)
     assert_ret(target);
 
     std::erase_if(::defer_target_size, [target](const auto& pair) { return pair.first == target; });
-    std::erase_if(::defer_target_reset, [target](const auto& pair) { return pair.first == target; });
 }
 
 void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const ff::window_size& size)
@@ -53,24 +51,6 @@ void ff::dxgi::defer_resize_target(ff::dxgi::target_window_base* target, const f
     ::defer_target_size.push_back(std::make_pair(target, size));
 }
 
-void ff::dxgi::defer_reset_target(ff::dxgi::target_window_base* target, const ff::dxgi::target_window_params& params)
-{
-    assert_ret(target);
-
-    std::scoped_lock lock(::defer_mutex);
-
-    for (auto& i : ::defer_target_reset)
-    {
-        if (i.first == target)
-        {
-            i.second = params;
-            return;
-        }
-    }
-
-    ::defer_target_reset.push_back(std::make_pair(target, params));
-}
-
 void ff::dxgi::defer_reset_device(bool force)
 {
     std::scoped_lock lock(::defer_mutex);
@@ -84,9 +64,7 @@ void ff::dxgi::flush_commands()
 {
     std::unique_lock lock(::defer_mutex);
 
-    while (::defer_flags != ::defer_flags_t::none ||
-        !::defer_target_size.empty() ||
-        !::defer_target_reset.empty())
+    while (::defer_flags != ::defer_flags_t::none || !::defer_target_size.empty())
     {
         if (ff::flags::has_any(::defer_flags, ::defer_flags_t::reset_bits))
         {
@@ -106,19 +84,6 @@ void ff::dxgi::flush_commands()
             for (const auto& i : defer_sizes)
             {
                 i.first->size(i.second);
-            }
-
-            lock.lock();
-        }
-
-        if (!::defer_target_reset.empty())
-        {
-            const auto defer_reset = std::move(::defer_target_reset);
-            lock.unlock();
-
-            for (const auto& i : defer_reset)
-            {
-                i.first->init_params(i.second);
             }
 
             lock.lock();
@@ -307,9 +272,9 @@ std::shared_ptr<ff::dxgi::depth_base> ff::dxgi::create_depth(ff::point_size size
         : std::make_shared<ff::dx12::depth>(sample_count);
 }
 
-std::shared_ptr<ff::dxgi::target_window_base> ff::dxgi::create_target_for_window(ff::window* window, const ff::dxgi::target_window_params& params)
+std::shared_ptr<ff::dxgi::target_window_base> ff::dxgi::create_target_for_window(ff::window* window)
 {
-    return std::make_shared<ff::dx12::target_window>(window, params);
+    return std::make_shared<ff::dx12::target_window>(window);
 }
 
 std::shared_ptr<ff::dxgi::target_base> ff::dxgi::create_target_for_texture(

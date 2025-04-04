@@ -20,7 +20,7 @@ ff::signal_sink<const ff::input_device_event&>& ff::input_device_base::event_sin
     return this->device_event;
 }
 
-void ff::input_device_base::notify_window_message(ff::window_message& message)
+void ff::input_device_base::notify_window_message(ff::window* window, ff::window_message& message)
 {
 }
 

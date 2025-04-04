@@ -112,7 +112,6 @@ static std::vector<::debug_timer_model> timers_;
 static std::array<float, CHART_WIDTH> chart_total_{};
 static std::array<float, CHART_WIDTH> chart_render_{};
 static std::array<float, CHART_WIDTH> chart_wait_{};
-static ff::dxgi::target_window_params target_params_{};
 
 #if USE_IMGUI
 static const ImVec4& convert_color(const ff::color& color)
@@ -258,50 +257,6 @@ void ff::internal::debug_stats::render(ff::app_update_t type, ff::dxgi::command_
                 else if (ImGui::Button("Update resources"))
                 {
                     ff::global_resources::rebuild_async();
-                }
-
-                bool was_target_params_visible = ::target_params_visible_;
-                ImGui::SetNextItemOpen(::target_params_visible_);
-                if (::target_params_visible_ = ImGui::CollapsingHeader("Target Window"))
-                {
-                    if (!was_target_params_visible)
-                    {
-                        ::target_params_ = this->app_target->init_params();
-                    }
-
-                    int buffer_count = static_cast<int>(::target_params_.buffer_count);
-                    int frame_latency = static_cast<int>(::target_params_.frame_latency);
-                    ImGui::PushItemWidth(::CHART_WIDTH * dpi_scale);
-
-                    if (ImGui::SliderInt("##Buffers", &buffer_count, 2, 4, "Buffers:%d"))
-                    {
-                        ::target_params_.buffer_count = static_cast<size_t>(buffer_count);
-                    }
-
-                    if (ImGui::SliderInt("##Latency", &frame_latency, 0, 4, "Latency:%d"))
-                    {
-                        ::target_params_.frame_latency = static_cast<size_t>(frame_latency);
-                    }
-
-                    ImGui::PopItemWidth();
-                    ImGui::Checkbox("VSync", &::target_params_.vsync);
-
-                    ImGui::BeginDisabled(::target_params_ == this->app_target->init_params());
-                    if (ImGui::Button("Apply"))
-                    {
-                        ff::dxgi::defer_reset_target(this->app_target.get(), ::target_params_);
-                    }
-                    ImGui::EndDisabled();
-
-                    ImGui::SameLine();
-                    static const ff::dxgi::target_window_params default_params{};
-                    ImGui::BeginDisabled(default_params == this->app_target->init_params());
-                    if (ImGui::Button("Default"))
-                    {
-                        ::target_params_ = default_params;
-                        ff::dxgi::defer_reset_target(this->app_target.get(), default_params);
-                    }
-                    ImGui::EndDisabled();
                 }
             }
 

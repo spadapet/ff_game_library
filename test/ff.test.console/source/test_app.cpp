@@ -20,7 +20,7 @@ static void run_app()
             }
         };
     params.game_update_func = [&app] { app->update(); };
-    params.game_render_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target); };
+    params.game_render_screen_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target); };
 
     ff::init_app init_app(params);
     assert_ret(init_app);

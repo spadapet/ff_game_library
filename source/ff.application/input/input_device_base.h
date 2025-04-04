@@ -14,7 +14,7 @@ namespace ff
         virtual void block_events(bool block); // not reference counted
         virtual bool connected() const;
         virtual ff::signal_sink<const ff::input_device_event&>& event_sink();
-        virtual void notify_window_message(ff::window_message& message);
+        virtual void notify_window_message(ff::window* window, ff::window_message& message);
 
     protected:
         virtual bool block_events() const;

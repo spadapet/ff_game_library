@@ -167,7 +167,7 @@ static void frame_render(ff::app_update_t update_type)
     bool begin_render;
     {
         ff::perf_timer timer(::perf_render_game_render);
-        ff::render_params params{ update_type, context, *::target, ::target->buffer_count(), ::target->buffer_index() };
+        ff::render_params params{ update_type, context, *::target };
         ::app_params.game_render_offscreen_func(params);
         ff::dxgi::frame_flush();
 
@@ -451,7 +451,13 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
 
     if (::window_initialized && !ff::internal::imgui::handle_window_message(window, message))
     {
-        ff::input::combined_devices().notify_window_message(message);
+        ff::input::combined_devices().notify_window_message(window, message);
+
+        if (::target)
+        {
+            ::target->notify_window_message(window, message);
+        }
+
         ::app_params.main_window_message_func(window, message);
     }
 
@@ -543,7 +549,7 @@ bool ff::internal::app::init(const ff::init_app_params& params, const ff::init_d
     ::window_message_connection = ::window.message_sink().connect(::handle_window_message);
 
     assert_ret_val(init_dx.init_wait(), false);
-    ::target = ff::dxgi::create_target_for_window(&::window, params.target_window);
+    ::target = ff::dxgi::create_target_for_window(&::window);
 
     return ::app_initialized();
 }

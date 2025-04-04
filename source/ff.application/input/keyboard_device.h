@@ -19,7 +19,7 @@ namespace ff
         // input_device_base
         virtual void update() override;
         virtual void kill_pending() override;
-        virtual void notify_window_message(ff::window_message& message) override;
+        virtual void notify_window_message(ff::window* window, ff::window_message& message) override;
 
     private:
         static constexpr size_t KEY_COUNT = 256;

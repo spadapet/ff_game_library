@@ -88,7 +88,7 @@ static unsigned int get_other_vk(const ff::window_message& message)
     return other_vk;
 }
 
-void ff::keyboard_device::notify_window_message(ff::window_message& message)
+void ff::keyboard_device::notify_window_message(ff::window* window, ff::window_message& message)
 {
     if (this->block_events())
     {

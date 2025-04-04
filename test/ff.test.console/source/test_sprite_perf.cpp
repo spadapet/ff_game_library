@@ -16,6 +16,7 @@ namespace
             , palette_sprites(assets::test::PALETTE_SPRITES)
             , color_sprite(assets::test::PLAYER_SPRITES_PLAYER)
             , palette_cycle(this->palette_data.object())
+            , depth(ff::dxgi::create_depth({}))
         {}
 
         void update()
@@ -49,10 +50,10 @@ namespace
             this->palette_cycle.update();
         }
 
-        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
         {
             ff::rect_float view = this->viewport.view(target.size().logical_pixel_size).cast<float>();
-            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth, view, ::world_rect);
+            ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, this->depth.get(), view, ::world_rect);
             assert_ret(draw);
 
             draw->push_palette(&this->palette_cycle);
@@ -115,6 +116,7 @@ namespace
         ff::viewport viewport;
         std::vector<pos_data> pos_datas;
         std::vector<render_data> render_datas;
+        std::shared_ptr<ff::dxgi::depth_base> depth;
         ff::auto_resource<ff::sprite_font> font;
         ff::auto_resource<ff::palette_data> palette_data;
         ff::auto_resource<ff::sprite_list> palette_sprites;
@@ -138,7 +140,7 @@ void run_test_sprite_perf()
 
     params.game_thread_finished_func = [&app] { app.reset(); };
     params.game_update_func = [&app] { app->update(); };
-    params.game_render_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target, rp.depth); };
+    params.game_render_screen_func = [&app](const ff::render_params& rp) { app->render(rp.context, rp.target); };
 
     ff::init_app init_app(params);
     ff::handle_messages_until_quit();

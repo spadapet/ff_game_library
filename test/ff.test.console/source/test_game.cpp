@@ -5,6 +5,10 @@ namespace
     class app_state
     {
     public:
+        app_state()
+            : depth(ff::dxgi::create_depth({}))
+        {}
+
         void update()
         {
             if (!ff::input::keyboard().pressing('R'))
@@ -50,11 +54,11 @@ namespace
             }
         }
 
-        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target, ff::dxgi::depth_base& depth)
+        void render(ff::dxgi::command_context_base& context, ff::dxgi::target_base& target)
         {
             const ff::point_float target_size = target.size().logical_scaled_size<float>();
 
-            if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, &depth))
+            if (ff::dxgi::draw_ptr draw = ff::dxgi::global_draw_device().begin_draw(context, target, this->depth.get()))
             {
                 for (rect_t& obj : this->rects)
                 {
@@ -300,15 +304,18 @@ namespace
         std::array<circle_t, 16> circles;
         std::array<line_t, 16> lines;
         std::array<line_strip_t, 16> line_strips;
+        std::shared_ptr<ff::dxgi::depth_base> depth;
     };
 }
 
 void run_test_game_wrapper()
 {
-    ::app_state app;
+    std::unique_ptr<::app_state> app;
     ff::init_game_params params{};
-    params.game_update_func = [&app] { app.update(); };
-    params.game_render_func = [&app](const ff::render_params& params) { app.render(params.context, params.target, params.depth); };
+    params.game_thread_initialized_func = [&app] { app = std::make_unique<::app_state>(); };
+    params.game_thread_finished_func = [&app] { app.reset(); };
+    params.game_update_func = [&app] { app->update(); };
+    params.game_render_screen_func = [&app](const ff::render_params& params) { app->render(params.context, params.target); };
 
     ff::run_game(params);
 }
