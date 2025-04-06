@@ -43,12 +43,12 @@ namespace ff::dx12
         virtual size_t buffer_count() const override;
 
     private:
+        constexpr static size_t BUFFER_COUNT = 2;
+
         // device_child_base
         virtual void before_reset() override;
         virtual bool reset() override;
 
-       
-        void handle_latency();
         void update_pacing();
         void before_resize();
         bool internal_reset();
@@ -66,50 +66,26 @@ namespace ff::dx12
 
         // Swap chain (all on game thread)
         Microsoft::WRL::ComPtr<IDXGISwapChain3> swap_chain;
-        ff::stack_vector<ff::dx12::resource, 2> target_textures;
+        ff::stack_vector<ff::dx12::resource, BUFFER_COUNT> target_textures;
         ff::dx12::descriptor_range target_views;
         ff::win_handle latency_handle;
 
-        // Frame pacing
-        ff::timer pacing_timer;
-        size_t pacing_count{};
-
-        enum class pacing_t
+        struct pacing_stage
         {
-            init,
-            normal,
-            slow_1, // vsync off, latency 1
-            slow_2, // vsync on, latency 2
-            slow_3, // vsync off, latency 2
-            panic = slow_3,
+            uint32_t latency;
+            bool vsync;
+        };
+
+        struct
+        {
+            ff::timer timer{};
+            double average = ff::constants::seconds_per_update<double>();
+            size_t count{};
+            size_t stage{};
         } pacing{};
 
-        constexpr static uint32_t pacing_vsync(pacing_t pacing)
-        {
-            switch (pacing)
-            {
-                case pacing_t::init:
-                case pacing_t::normal:
-                case pacing_t::slow_2:
-                    return 1;
-
-                default:
-                    return 0;
-            }
-        }
-
-        constexpr static uint32_t pacing_latency(pacing_t pacing)
-        {
-            switch (pacing)
-            {
-                case pacing_t::init:
-                case pacing_t::normal:
-                case pacing_t::slow_1:
-                    return 1;
-
-                default:
-                    return 2;
-            }
-        }
+        static std::array<pacing_stage, 4> pacing_stages;
+        uint32_t pacing_latency() const;
+        bool pacing_vsync() const;
     };
 }
