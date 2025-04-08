@@ -190,7 +190,10 @@ bool ff::dx12::buffer_gpu::update(ff::dxgi::command_context_base& context, const
     size_t new_hash = 0;
     if (size <= 0x10000) // for a lot of data, forget about checking if it changed
     {
-        new_hash = ff::stable_hash_bytes(data, size);
+        ff::stable_hash_data_t temp_hash(this->resource_ ? this->resource_->reset_count() : 0);
+        temp_hash.hash(data, size);
+        new_hash = temp_hash;
+
         check_ret_val(new_hash != this->data_hash, false);
     }
 

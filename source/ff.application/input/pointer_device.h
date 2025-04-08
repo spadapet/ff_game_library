@@ -18,9 +18,6 @@ namespace ff
     class pointer_device : public input_device_base
     {
     public:
-        pointer_device();
-        virtual ~pointer_device() override;
-
         bool in_window() const;
         ff::point_double pos() const; // in pixels
         ff::point_double relative_pos() const;

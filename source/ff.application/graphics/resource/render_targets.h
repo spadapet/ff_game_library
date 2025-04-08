@@ -10,7 +10,7 @@ namespace ff
     class render_targets
     {
     public:
-        render_targets(size_t count, ff::point_size size, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t sample_count = 1, const ff::color* optimized_clear_color = nullptr);
+        render_targets(size_t count, ff::point_size size, double dpi_scale, DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM, size_t sample_count = 1, const ff::color* optimized_clear_color = nullptr);
         render_targets(render_targets&& other) noexcept = default;
         render_targets(const render_targets& other) = delete;
 
@@ -20,8 +20,9 @@ namespace ff
         size_t count() const;
         void count(size_t value);
 
-        const ff::point_size size() const;
-        void size(ff::point_size value);
+        ff::point_size size() const;
+        double dpi_scale() const;
+        void size(ff::point_size value, double dpi_scale = 1.0);
 
         DXGI_FORMAT format() const;
         size_t sample_count() const;
@@ -43,6 +44,7 @@ namespace ff
 
         DXGI_FORMAT format_;
         size_t sample_count_;
+        double dpi_scale_;
         ff::point_size size_;
         ff::color clear_color_;
         std::vector<ff::render_targets::target_t> targets;

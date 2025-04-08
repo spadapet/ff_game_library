@@ -93,7 +93,7 @@ ff::dx12::resource::resource(std::string_view name, ID3D12Resource* swap_chain_r
     , desc_(swap_chain_resource->GetDesc())
     , optimized_clear_value_{}
     , resource_(swap_chain_resource)
-    , external_resource(true)
+    , external_resource(1)
     , global_state_(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::global, static_cast<size_t>(this->desc_.DepthOrArraySize), static_cast<size_t>(this->desc_.MipLevels))
 {
     verify(this->reset());
@@ -113,7 +113,6 @@ ff::dx12::resource::resource(
     , desc_(desc)
     , optimized_clear_value_(optimized_clear_value)
     , mem_range_(mem_range)
-    , external_resource(false)
     , global_state_(initial_state, ff::dx12::resource_state::type_t::global, static_cast<size_t>(desc.DepthOrArraySize), static_cast<size_t>(desc.MipLevels))
 {
     assert(desc.Dimension != D3D12_RESOURCE_DIMENSION_UNKNOWN && desc.MipLevels * desc.DepthOrArraySize > 0);
@@ -187,6 +186,11 @@ ff::dx12::resource::operator bool() const
 const std::string& ff::dx12::resource::name() const
 {
     return this->name_;
+}
+
+size_t ff::dx12::resource::reset_count() const
+{
+    return this->reset_count_;
 }
 
 const D3D12_GPU_VIRTUAL_ADDRESS ff::dx12::resource::gpu_address() const
@@ -567,6 +571,8 @@ void ff::dx12::resource::before_reset()
 
 bool ff::dx12::resource::reset()
 {
+    this->reset_count_++;
+
     if (this->external_resource)
     {
         // this resource shouldn't be recreated (like a swap chain buffer)

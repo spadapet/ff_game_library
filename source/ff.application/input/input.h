@@ -16,6 +16,10 @@ namespace ff::input
     ff::gamepad_device& gamepad(); // return first connected
     ff::gamepad_device& gamepad(size_t index);
     size_t gamepad_count();
+
+    ff::input_device_base& debug_devices();
+    ff::input_device_base& keyboard_debug();
+    ff::input_device_base& pointer_debug();
 }
 
 namespace ff::internal::input
@@ -23,7 +27,4 @@ namespace ff::internal::input
     bool init();
     void destroy();
     bool app_window_active();
-
-    void add_device(ff::input_device_base* device);
-    void remove_device(ff::input_device_base* device);
 }

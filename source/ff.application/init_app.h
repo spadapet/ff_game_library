@@ -32,6 +32,7 @@ namespace ff
         std::function<bool()> game_clears_back_buffer_func{ [] { return true; } };
         std::function<void()> game_resources_rebuilt{ [] {} };
 
+        std::function<void()> game_debug_input_func{ [] {} };
         std::function<void()> game_input_func{ [] {} };
         std::function<void()> game_update_func{ [] {} };
         std::function<void(const ff::render_params&)> game_render_offscreen_func{ std::bind([] {}) };

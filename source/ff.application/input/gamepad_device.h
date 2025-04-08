@@ -8,7 +8,6 @@ namespace ff
     {
     public:
         gamepad_device(size_t gamepad);
-        virtual ~gamepad_device() override;
 
         size_t gamepad() const;
         void gamepad(size_t gamepad);

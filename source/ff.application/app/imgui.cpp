@@ -138,7 +138,9 @@ void ff::internal::imgui::update_input()
 {
     ImGuiIO& io = ImGui::GetIO();
     ff::input::keyboard().block_events(io.WantCaptureKeyboard);
+    ff::input::keyboard_debug().block_events(io.WantCaptureKeyboard);
     ff::input::pointer().block_events(io.WantCaptureMouse);
+    ff::input::pointer_debug().block_events(io.WantCaptureMouse);
 }
 
 void ff::internal::imgui::rendering()

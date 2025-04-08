@@ -30,6 +30,7 @@ namespace ff::dx12
 
         operator bool() const;
         const std::string& name() const;
+        size_t reset_count() const;
 
         const D3D12_GPU_VIRTUAL_ADDRESS gpu_address() const;
         const std::shared_ptr<ff::dx12::mem_range>& mem_range() const;
@@ -90,11 +91,12 @@ namespace ff::dx12
 
         D3D12_RESOURCE_DESC desc_;
         D3D12_CLEAR_VALUE optimized_clear_value_;
+        uint32_t reset_count_:24{};
+        uint32_t external_resource:8{};
         std::string name_;
         std::shared_ptr<ff::dx12::mem_range> mem_range_;
         std::unique_ptr<ff::dx12::residency_data> residency_data_;
         Microsoft::WRL::ComPtr<ID3D12Resource> resource_;
-        bool external_resource;
 
         // Global state of the resource BETWEEN ExecuteCommandLists. Command lists must keep track of state while building the commands.
         ff::dx12::fence_values global_reads_;

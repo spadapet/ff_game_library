@@ -7,9 +7,6 @@ namespace ff
     class keyboard_device : public input_device_base
     {
     public:
-        keyboard_device();
-        virtual ~keyboard_device() override;
-
         std::string text() const;
 
         // input_vk

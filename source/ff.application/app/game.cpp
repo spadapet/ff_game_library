@@ -70,12 +70,12 @@ static void game_input()
         if (!::debug_input_events[0])
         {
             ::debug_input_events[0] = std::make_unique<ff::input_event_provider>(*::debug_input_mapping[0].object(),
-                std::vector<const ff::input_vk*>{ &ff::input::keyboard(), &ff::input::pointer() });
+                std::vector<const ff::input_vk*>{ &ff::input::keyboard_debug(), &ff::input::pointer_debug() });
 
             if (::debug_input_mapping[1].object())
             {
                 ::debug_input_events[1] = std::make_unique<ff::input_event_provider>(*::debug_input_mapping[1].object(),
-                    std::vector<const ff::input_vk*>{ &ff::input::keyboard(), &ff::input::pointer() });
+                    std::vector<const ff::input_vk*>{ &ff::input::keyboard_debug(), &ff::input::pointer_debug() });
             }
         }
 

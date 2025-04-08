@@ -21,16 +21,6 @@ static bool is_valid_button(int vk_button)
     }
 }
 
-ff::pointer_device::pointer_device()
-{
-    ff::internal::input::add_device(this);
-}
-
-ff::pointer_device::~pointer_device()
-{
-    ff::internal::input::remove_device(this);
-}
-
 bool ff::pointer_device::in_window() const
 {
     return this->mouse.inside_window;

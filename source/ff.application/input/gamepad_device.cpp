@@ -21,12 +21,6 @@ static float analog_short_to_float(int16_t value)
 ff::gamepad_device::gamepad_device(size_t gamepad)
     : gamepad_(gamepad)
 {
-    ff::internal::input::add_device(this);
-}
-
-ff::gamepad_device::~gamepad_device()
-{
-    ff::internal::input::remove_device(this);
 }
 
 size_t ff::gamepad_device::gamepad() const

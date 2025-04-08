@@ -71,9 +71,9 @@ static void frame_update_input()
     ff::perf_timer timer(::perf_input);
     ff::internal::imgui::update_input();
     ff::thread_dispatch::get_game()->flush();
-    ff::input::combined_devices().update();
+    ff::input::debug_devices().update();
     ::debug_stats->update_input();
-    ::app_params.game_input_func();
+    ::app_params.game_debug_input_func();
 }
 
 static ff::app_update_t frame_start_timer(ff::app_update_t previous_update_type)
@@ -154,9 +154,19 @@ static void frame_update(ff::app_update_t update_type)
             ::frame_update_input();
         }
 
-        ff::perf_timer timer(::perf_update);
-        ff::audio::update_effects();
-        ::app_params.game_update_func();
+        // Input update
+        {
+            ff::perf_timer timer(::perf_input);
+            ff::input::combined_devices().update();
+            ::app_params.game_input_func();
+        }
+
+        // Game update
+        {
+            ff::perf_timer timer(::perf_update);
+            ff::audio::update_effects();
+            ::app_params.game_update_func();
+        }
     }
 }
 
@@ -452,6 +462,7 @@ static void handle_window_message(ff::window* window, ff::window_message& messag
     if (::window_initialized && !ff::internal::imgui::handle_window_message(window, message))
     {
         ff::input::combined_devices().notify_window_message(window, message);
+        ff::input::debug_devices().notify_window_message(window, message);
 
         if (::target)
         {

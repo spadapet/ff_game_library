@@ -3,10 +3,11 @@
 #include "graphics/dxgi/format_util.h"
 #include "graphics/resource/render_targets.h"
 
-ff::render_targets::render_targets(size_t count, ff::point_size size, DXGI_FORMAT format, size_t sample_count, const ff::color* optimized_clear_color)
+ff::render_targets::render_targets(size_t count, ff::point_size size, double dpi_scale, DXGI_FORMAT format, size_t sample_count, const ff::color* optimized_clear_color)
     : format_(format)
     , sample_count_(sample_count)
     , size_(size)
+    , dpi_scale_(dpi_scale)
     , clear_color_(optimized_clear_color
         ? *optimized_clear_color
         : (ff::dxgi::palette_format(format)
@@ -26,20 +27,35 @@ void ff::render_targets::count(size_t value)
     this->targets.resize(value);
 }
 
-const ff::point_size ff::render_targets::size() const
+ff::point_size ff::render_targets::size() const
 {
     return this->size_;
 }
 
-void ff::render_targets::size(ff::point_size value)
+double ff::render_targets::dpi_scale() const
+{
+    return this->dpi_scale_;
+}
+
+void ff::render_targets::size(ff::point_size value, double dpi_scale)
 {
     if (this->size_ != value)
     {
         this->size_ = value;
+        this->dpi_scale_ = dpi_scale;
 
         for (ff::render_targets::target_t& i : this->targets)
         {
             i.target.reset();
+            i.texture.reset();
+        }
+    }
+    else if (this->dpi_scale_ != dpi_scale)
+    {
+        this->dpi_scale_ = dpi_scale;
+
+        for (ff::render_targets::target_t& i : this->targets)
+        {
             i.texture.reset();
         }
     }
@@ -87,7 +103,7 @@ ff::dxgi::target_base& ff::render_targets::target(size_t index)
     ff::render_targets::target_t& data = this->targets[index];
     if (!data.target)
     {
-        data.target = ff::dxgi::create_target_for_texture(this->texture(index).dxgi_texture());
+        data.target = ff::dxgi::create_target_for_texture(this->texture(index).dxgi_texture(), 0, 0, 0, 0, this->dpi_scale_);
     }
 
     return *data.target;

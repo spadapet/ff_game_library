@@ -191,7 +191,7 @@ ff::internal::debug_stats::debug_stats(
 
 void ff::internal::debug_stats::update_input()
 {
-    if (ff::input::keyboard().press_count(VK_F8) && ff::input::keyboard().pressing(VK_CONTROL))
+    if (ff::input::keyboard_debug().press_count(VK_F8) && ff::input::keyboard_debug().pressing(VK_CONTROL))
     {
         ::debug_visible_ = !::debug_visible_;
     }
