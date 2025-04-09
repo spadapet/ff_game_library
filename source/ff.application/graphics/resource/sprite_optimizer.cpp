@@ -7,6 +7,8 @@
 #include "graphics/resource/texture_data.h"
 #include "graphics/resource/texture_resource.h"
 
+#define FORCE_GAP 1
+
 static const int TEXTURE_SIZE_MAX = 1024;
 static const int TEXTURE_SIZE_MIN = 128;
 static const int TEXTURE_GRID_SIZE = 8;
@@ -111,7 +113,6 @@ namespace
                         if (attempt)
                         {
                             x = this->row_right[y];
-
 #if FORCE_GAP
                             if (x)
                             {
@@ -133,7 +134,6 @@ namespace
                         if (x >= 0 && x + cell_size.x <= this->size.x / ::TEXTURE_GRID_SIZE)
                         {
                             bool found = true;
-
 #if FORCE_GAP
                             // Look for intersection with another sprite
                             for (int check_y = y + cell_size.y; check_y >= y - 1; check_y--)
@@ -199,7 +199,6 @@ namespace
             }
 
             // Validate that the sprite doesn't overlap anything
-
 #if FORCE_GAP
             for (int y = rect_cells.top - 1; y <= rect_cells.bottom; y++)
             {
