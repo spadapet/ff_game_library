@@ -14,8 +14,9 @@
 extern "C"
 {
     // NVIDIA and AMD globals to prefer their higher powered GPU over Intel
-    __declspec(dllexport) extern const DWORD NvOptimusEnablement = 1;
-    __declspec(dllexport) extern const int AmdPowerXpressRequestHighPerformance = 1;
+    // Not needed anymore though due to DXGI_GPU_PREFERENCE
+    //__declspec(dllexport) extern const DWORD NvOptimusEnablement = 1;
+    //__declspec(dllexport) extern const int AmdPowerXpressRequestHighPerformance = 1;
 
     // To use agility SDK: Uncomment these, uncomment NuGet package reference, uncomment imports in project file
     //__declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
@@ -107,7 +108,7 @@ static Microsoft::WRL::ComPtr<ID3D12Device6> create_dx12_device()
     }
 
     ff::log::write(ff::log::type::dx12, "D3D12CreateDevice succeeded, node count: ", device->GetNodeCount());
-    ff::log::write(ff::log::type::dx12, "- supports non-resident heaps: ", device->GetNodeCount());
+    ff::log::write(ff::log::type::dx12, "- supports non-resident heaps: ", ::supports_create_heap_not_resident);
 
     return device;
 }

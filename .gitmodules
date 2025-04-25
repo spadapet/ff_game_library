@@ -14,3 +14,7 @@
 	path = vendor/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule "vendor/RectangleBinPack"]
+	path = vendor/RectangleBinPack
+	url = https://github.com/juj/RectangleBinPack.git
+	branch = master

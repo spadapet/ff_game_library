@@ -52,7 +52,7 @@ namespace ff::log
         if (ff::log::type_enabled(type))
         {
             std::ostringstream ostr;
-            ostr << "[" << ff::log::type_name(type) << "," << ff::string::time() << "] ";
+            ostr << std::boolalpha << "[" << ff::log::type_name(type) << "," << ff::string::time() << "] ";
             (ostr << ... << args);
             ostr << "\r\n";
 
