@@ -9,6 +9,7 @@
 
 #pragma warning(disable : 4267)
 #include "../vendor/RectangleBinPack/MaxRectsBinPack.cpp"
+#include "../vendor/RectangleBinPack/Rect.cpp"
 #pragma warning(default : 4267)
 
 constexpr int TEXTURE_SIZE_MAX = 1024;
@@ -144,7 +145,7 @@ static bool place_sprites(std::vector<::optimized_sprite_info>& sprites, std::ve
             // Look for empty space in an existing texture
             for (size_t h = start_texture; h < texture_infos.size() && !sprite.has_dest_texture(); h++)
             {
-                if (texture_infos[h].find_placement(sprite.source_rect.size(), sprite.dest_rect))
+                if (texture_infos[h].find_placement(size, sprite.dest_rect))
                 {
                     sprite.dest_texture = h;
                 }
@@ -266,33 +267,170 @@ static bool copy_optimized_sprites(
     std::unordered_map<const ff::texture*, ::original_texture_info>& original_textures,
     std::vector<::optimized_texture_info>& texture_infos)
 {
+    std::vector<ff::co_task_source<bool>> tasks;
+    tasks.reserve(sprite_infos.size());
+
     for (::optimized_sprite_info& sprite : sprite_infos)
     {
-        auto iter = original_textures.find(sprite.sprite->texture().get());
-        if (sprite.dest_texture >= texture_infos.size() || iter == original_textures.cend())
+        tasks.emplace_back(ff::task::run<bool>([&sprite, &original_textures, &texture_infos]()
         {
-            debug_fail_ret_val(false);
-        }
+            auto iter = original_textures.find(sprite.sprite->texture().get());
+            if (sprite.dest_texture >= texture_infos.size() || iter == original_textures.cend())
+            {
+                debug_fail_ret_val(false);
+            }
 
-        ::original_texture_info& original_info = iter->second;
-        ff::rect_size source_size = sprite.source_rect.cast<size_t>();
-        sprite.dest_sprite_type = ff::dxgi::get_sprite_type(*original_info.rgb_scratch, &source_size);
+            ::original_texture_info& original_info = iter->second;
+            ff::rect_size source_size = sprite.source_rect.cast<size_t>();
+            sprite.dest_sprite_type = ff::dxgi::get_sprite_type(*original_info.rgb_scratch, &source_size);
 
-        bool status = SUCCEEDED(DirectX::CopyRectangle(
-            *original_info.rgb_scratch->GetImages(),
-            DirectX::Rect(
-                sprite.source_rect.left,
-                sprite.source_rect.top,
-                sprite.source_rect.width(),
-                sprite.source_rect.height()),
-            *texture_infos[sprite.dest_texture].scratch_texture.GetImages(),
-            DirectX::TEX_FILTER_DEFAULT,
-            sprite.dest_rect.left,
-            sprite.dest_rect.top));
-        assert(status);
+            const DirectX::Image& source_image = *original_info.rgb_scratch->GetImages();
+            const DirectX::Image& dest_image = *texture_infos[sprite.dest_texture].scratch_texture.GetImages();
+            ff::rect_int dest_rect = sprite.dest_rect;
+            bool has_border = sprite.source_rect.size() != dest_rect.size();
+
+            if (has_border)
+            {
+                dest_rect = dest_rect.deflate(::BORDER_SIZE, ::BORDER_SIZE);
+            }
+
+            bool status = SUCCEEDED(DirectX::CopyRectangle(
+                source_image,
+                DirectX::Rect(
+                    sprite.source_rect.left,
+                    sprite.source_rect.top,
+                    sprite.source_rect.width(),
+                    sprite.source_rect.height()),
+                dest_image,
+                DirectX::TEX_FILTER_DEFAULT,
+                dest_rect.left,
+                dest_rect.top));
+
+            // Top row
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.left,
+                        sprite.source_rect.top,
+                        sprite.source_rect.width(),
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.left,
+                    dest_rect.top - 1));
+
+            // Bottom row
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.left,
+                        sprite.source_rect.bottom - 1,
+                        sprite.source_rect.width(),
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.left,
+                    dest_rect.bottom));
+
+            // Left side
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.left,
+                        sprite.source_rect.top,
+                        1,
+                        sprite.source_rect.height()),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.left - 1,
+                    dest_rect.top));
+
+            // Right side
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.right - 1,
+                        sprite.source_rect.top,
+                        1,
+                        sprite.source_rect.height()),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.right,
+                    dest_rect.top));
+
+            // Top left
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.left,
+                        sprite.source_rect.top,
+                        1,
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.left - 1,
+                    dest_rect.top - 1));
+
+            // Top right
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.right - 1,
+                        sprite.source_rect.top,
+                        1,
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.right,
+                    dest_rect.top - 1));
+
+            // Bottom left
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.left,
+                        sprite.source_rect.bottom - 1,
+                        1,
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.left - 1,
+                    dest_rect.bottom));
+
+            // Bottom right
+            status &= !has_border ||
+                SUCCEEDED(DirectX::CopyRectangle(
+                    source_image,
+                    DirectX::Rect(
+                        sprite.source_rect.right - 1,
+                        sprite.source_rect.bottom - 1,
+                        1,
+                        1),
+                    dest_image,
+                    DirectX::TEX_FILTER_DEFAULT,
+                    dest_rect.right,
+                    dest_rect.bottom));
+
+            assert(status);
+            return status;
+        }));
     }
 
-    return true;
+    bool status = true;
+    for (ff::co_task_source<bool>& task : tasks)
+    {
+        status &= task.wait();
+    }
+
+    assert(status);
+    return status;
 }
 
 static bool convert_final_textures(

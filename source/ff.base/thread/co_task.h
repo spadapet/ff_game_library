@@ -3,6 +3,7 @@
 #include "../base/assert.h"
 #include "../base/constants.h"
 #include "../thread/thread_dispatch.h"
+#include "../thread/thread_pool.h"
 
 namespace ff::internal
 {
@@ -313,6 +314,12 @@ namespace ff
             this->data_->set_result(std::move(value));
             this->data_->run_continuations();
         }
+
+        void unhandled_exception() const
+        {
+            assert(this->valid() && !this->done());
+            this->data_->set_exception();
+        }
     };
 
     template<>
@@ -349,6 +356,12 @@ namespace ff
             this->data_->set_result();
             this->data_->run_continuations();
         }
+
+        void unhandled_exception() const
+        {
+            assert(this->valid() && !this->done());
+            this->data_->set_exception();
+        }
     };
 }
 
@@ -367,5 +380,27 @@ namespace ff::task
     ff::internal::co_handle_awaiter wait_handle(HANDLE handle, size_t timeout_ms = ff::constants::invalid_unsigned<size_t>(), ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
     ff::internal::co_event_awaiter wait_handle(const ff::win_event& handle, size_t timeout_ms = ff::constants::invalid_unsigned<size_t>(), ff::thread_dispatch_type type = ff::thread_dispatch_type::none);
 
+    template<class T>
+    ff::co_task_source<T> run(std::function<T()>&& func)
+    {
+        auto task_source = ff::co_task_source<T>::create();
+
+        ff::thread_pool::add_task([func = std::move(func), task_source]()
+        {
+            try
+            {
+                T result = func();
+                task_source.set_result(std::move(result));
+            }
+            catch (...)
+            {
+                task_source.unhandled_exception();
+            }
+        });
+
+        return task_source;
+    }
+
+    template<>
     ff::co_task_source<void> run(std::function<void()>&& func);
 }

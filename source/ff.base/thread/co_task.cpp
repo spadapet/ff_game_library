@@ -142,14 +142,23 @@ ff::internal::co_event_awaiter ff::task::wait_handle(const ff::win_event& handle
     return ff::internal::co_event_awaiter((type == ff::thread_dispatch_type::none) ? ff::thread_dispatch::get_type() : type, handle, timeout_ms);
 }
 
+template<>
 ff::co_task_source<void> ff::task::run(std::function<void()>&& func)
 {
     auto task_source = ff::co_task_source<void>::create();
 
     ff::thread_pool::add_task([func = std::move(func), task_source]()
     {
-        func();
-        task_source.set_result();
+        try
+        {
+            func();
+            task_source.set_result();
+        }
+        catch (const std::exception&)
+        {
+            task_source.unhandled_exception();
+
+        }
     });
 
     return task_source;
