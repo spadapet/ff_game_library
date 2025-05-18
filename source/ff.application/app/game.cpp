@@ -61,7 +61,7 @@ static ff::app_update_t game_update_type()
     return ::game_params->game_update_type_func();
 }
 
-static void game_input()
+static void game_debug_input()
 {
     ::debug_time_scale = 1.0;
 
@@ -116,6 +116,11 @@ static void game_input()
         ::debug_stepping_frames = false;
     }
 
+    ::game_params->game_debug_input_func();
+}
+
+static void game_input()
+{
     ::game_params->game_input_func();
 }
 
@@ -168,6 +173,7 @@ int ff::run_game(const ff::init_game_params& params)
     ff::init_app_params app_params = params;
     app_params.game_time_scale_func = ::game_time_scale;
     app_params.game_update_type_func = ::game_update_type;
+    app_params.game_debug_input_func = ::game_debug_input;
     app_params.game_input_func = ::game_input;
     app_params.game_render_screen_func = ::game_render;
     app_params.game_thread_initialized_func = ::game_thread_initialized;

@@ -64,6 +64,13 @@ namespace
             return this->source_rect.height() > other.source_rect.height();
         }
 
+        ff::rect_int sprite_dest_rect() const
+        {
+            return this->source_rect != this->dest_rect
+                ? this->dest_rect.deflate(::BORDER_SIZE, ::BORDER_SIZE)
+                : this->dest_rect;
+        }
+
         const ff::sprite* sprite;
         ff::dxgi::sprite_type dest_sprite_type;
         ff::rect_int source_rect;
@@ -286,13 +293,8 @@ static bool copy_optimized_sprites(
 
             const DirectX::Image& source_image = *original_info.rgb_scratch->GetImages();
             const DirectX::Image& dest_image = *texture_infos[sprite.dest_texture].scratch_texture.GetImages();
-            ff::rect_int dest_rect = sprite.dest_rect;
-            bool has_border = sprite.source_rect.size() != dest_rect.size();
-
-            if (has_border)
-            {
-                dest_rect = dest_rect.deflate(::BORDER_SIZE, ::BORDER_SIZE);
-            }
+            bool has_border = sprite.source_rect.size() != sprite.dest_rect.size();
+            ff::rect_int dest_rect = sprite.sprite_dest_rect();
 
             bool status = SUCCEEDED(DirectX::CopyRectangle(
                 source_image,
@@ -467,7 +469,7 @@ static bool create_final_sprites(
         new_sprites.emplace_back(
             std::string(sprite_info.sprite->name()),
             texture_infos[sprite_info.dest_texture].final_texture,
-            sprite_info.dest_rect.cast<float>(),
+            sprite_info.sprite_dest_rect().cast<float>(),
             sprite_info.sprite->sprite_data().handle(),
             sprite_info.sprite->sprite_data().scale(),
             sprite_info.dest_sprite_type);
