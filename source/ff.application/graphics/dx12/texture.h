@@ -70,6 +70,6 @@ namespace ff::dx12
         mutable ff::dx12::descriptor_range view_;
         std::shared_ptr<DirectX::ScratchImage> data_;
         ff::dxgi::sprite_type sprite_type_{ ff::dxgi::sprite_type::unknown };
-        bool upload_data_pending{};
+        bool init_pending{};
     };
 }

@@ -7,11 +7,11 @@
     <CharacterSet Condition=" '$(CharacterSet)' == '' ">Unicode</CharacterSet>
     <ConfigurationType Condition=" '$(ConfigurationType)' == '' ">Application</ConfigurationType>
     <Keyword Condition=" '$(Keyword)' == '' ">Win32Proj</Keyword>
-    <PlatformToolset Condition=" '$(PlatformToolset)' == '' ">v143</PlatformToolset>
+    <PlatformToolset Condition=" '$(PlatformToolset)' == '' ">v145</PlatformToolset>
     <RootNamespace Condition=" '$(RootNamespace)' == '' ">$(ProjectName)</RootNamespace>
     <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.8</TargetFrameworkVersion>
     <AppContainerApplication Condition=" '$(AppContainerApplication)' == '' ">false</AppContainerApplication>
-    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.$(WinSdkRelease10).0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0</WindowsTargetPlatformVersion>
     <IgnoreImportLibrary Condition=" '$(IgnoreImportLibrary)' == '' ">false</IgnoreImportLibrary>
 
     <!-- WinPix/D3D SDK -->

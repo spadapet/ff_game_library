@@ -18,6 +18,7 @@
 #include "graphics/write/font_file.h"
 
 #if USE_IMGUI
+#define USE_IMGUI_VIEWPORTS 0
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_win32.h>
@@ -222,12 +223,14 @@ void ff::internal::imgui::render(ff::dxgi::command_context_base& context)
 
 void ff::internal::imgui::rendered()
 {
+#if USE_IMGUI_VIEWPORTS
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
+#endif
 }
 
 bool ff::internal::imgui::handle_window_message(ff::window* window, ff::window_message& message)

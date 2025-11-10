@@ -31,6 +31,7 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
             std::memcpy(clear_value.Color, &optimized_clear_color2.x, sizeof(clear_value.Color));
         }
 
+        this->init_pending = true;
         this->resource_ = std::make_unique<ff::dx12::resource>(
             ff::string::concat("Dynamic texture ", ::dynamic_texture_counter.fetch_add(1)),
             CD3DX12_RESOURCE_DESC::Tex2D(format,
@@ -56,7 +57,7 @@ ff::dx12::texture::texture(ff::point_size size, DXGI_FORMAT format, size_t mip_c
 
 ff::dx12::texture::texture(const std::shared_ptr<DirectX::ScratchImage>& data, ff::dxgi::sprite_type sprite_type)
     : data_(data)
-    , upload_data_pending(true)
+    , init_pending(true)
 {
     const DirectX::TexMetadata& md = this->data_->GetMetadata();
 
@@ -81,7 +82,7 @@ ff::dx12::texture::texture(texture&& other) noexcept
     , data_(std::move(other.data_))
     , view_(std::move(other.view_))
     , sprite_type_(std::move(other.sprite_type_))
-    , upload_data_pending(std::move(other.upload_data_pending))
+    , init_pending(std::move(other.init_pending))
 {
     ff::dx12::add_device_child(this, ff::dx12::device_reset_priority::normal);
 }
@@ -109,7 +110,7 @@ ff::dx12::texture& ff::dx12::texture::assign(texture&& other) noexcept
         this->view_ = std::move(other.view_);
         this->data_ = std::move(other.data_);
         this->sprite_type_ = std::move(other.sprite_type_);
-        this->upload_data_pending = std::move(other.upload_data_pending);
+        this->init_pending = std::move(other.init_pending);
 
         this->on_reset();
     }
@@ -244,10 +245,19 @@ std::shared_ptr<DirectX::ScratchImage> ff::dx12::texture::data() const
 
 ff::dx12::resource* ff::dx12::texture::dx12_resource_updated(ff::dx12::commands& commands)
 {
-    if (this->upload_data_pending)
+    if (this->init_pending)
     {
-        this->upload_data_pending = false;
-        this->resource_->update_texture(&commands, this->data_->GetImages(), 0, this->data_->GetImageCount(), ff::point_size{});
+        this->init_pending = false;
+
+        if (this->data_)
+        {
+            this->resource_->update_texture(&commands, this->data_->GetImages(), 0, this->data_->GetImageCount(), ff::point_size{});
+        }
+        else
+        {
+            // assumed to be a render target since it has no static texture data
+            commands.discard_target(*this->resource_);
+        }
     }
 
     return this->resource_.get();
@@ -281,7 +291,7 @@ bool ff::dx12::texture::update(ff::dxgi::command_context_base& context, size_t a
         debug_fail_msg("Failed to update texture scratch image");
     }
 
-    if (!this->upload_data_pending)
+    if (!this->init_pending)
     {
         UINT sub_index = ::D3D12CalcSubresource(static_cast<UINT>(mip_index), static_cast<UINT>(array_index), 0, static_cast<UINT>(this->mip_count()), static_cast<UINT>(this->array_size()));
         ff::dx12::commands& commands = ff::dx12::commands::get(context);
