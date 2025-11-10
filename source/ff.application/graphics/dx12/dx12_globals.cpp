@@ -19,8 +19,8 @@ extern "C"
     //__declspec(dllexport) extern const int AmdPowerXpressRequestHighPerformance = 1;
 
     // To use agility SDK: Uncomment these, uncomment NuGet package reference, uncomment imports in project file
-    //__declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
-    //__declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
+    __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
+    __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 }
 
 namespace ff

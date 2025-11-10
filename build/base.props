@@ -6,11 +6,11 @@
     <!-- Versions -->
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
+    <!-- Also update version in /source/ff.application/packages.ff.application.config -->
     <WinPixVersion>1.0.240308001</WinPixVersion>
-    <!-- Also update version in /source/ff.dx12/packages.ff.dx12.config -->
-    <D3D12AgilitySDK>614</D3D12AgilitySDK>
-    <D3D12AgilityVersion>1.$(D3D12AgilitySDK).1</D3D12AgilityVersion>
+    <!-- Also update version in /source/ff.application/packages.ff.application.config -->
+    <D3D12AgilitySDK>618</D3D12AgilitySDK>
+    <D3D12AgilityVersion>1.618.2</D3D12AgilityVersion>
 
     <!-- Root dirs -->
     <FFRoot>$([MSBuild]::EnsureTrailingSlash($([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), ".."))))</FFRoot>
