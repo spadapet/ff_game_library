@@ -76,10 +76,17 @@
       <PreprocessorDefinitions Condition=" '$(Configuration)' == 'Release' ">PROFILE_APP=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(UseImguiInternal)' == 'True' ">USE_IMGUI=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition=" '$(UseImguiInternal)' != 'True' ">USE_IMGUI=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
       <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+    <ClCompile Condition=" '$(CppCodeStyle)' != 'C' ">
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4103</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Condition=" '$(CppCodeStyle)' == 'C' ">
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings></DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Condition=" '$(Configuration)' != 'Debug' ">
       <BufferSecurityCheck>false</BufferSecurityCheck>

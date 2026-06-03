@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{7e93fa0b-cd99-4af3-81e9-145a4efdf7f7}</ProjectGuid>
+    <CppCodeStyle>C</CppCodeStyle>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="base2.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.zlib.vcxproj">
+      <Project>{d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vendor\ff.vendor.libpng.vcxproj">
+      <Project>{7023aadb-413d-4c4e-b8a7-481484c943ba}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

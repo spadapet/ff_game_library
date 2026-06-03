@@ -1,0 +1,49 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Profile" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/build/">
+    <File Path="build/base.props" />
+    <File Path="build/cpp.props" />
+    <File Path="build/cpp.targets" />
+    <File Path="build/cpp.xml" />
+    <File Path="build/cs.props" />
+    <File Path="build/project.props" />
+    <File Path="build/wap.props" />
+    <File Path="directory.build.props" />
+    <File Path="directory.build.targets" />
+  </Folder>
+  <Folder Name="/config/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path=".gitmodules" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/include/">
+    <File Path="include/ff.all.h" />
+    <File Path="include/ff.application.h" />
+    <File Path="include/ff.base.h" />
+    <File Path="include/ff.base2.h" />
+  </Folder>
+  <Folder Name="/source/">
+    <Project Path="source/ff.application/ff.application.vcxproj" Id="376073e9-ea4d-4513-941c-906ca968c6c3" />
+    <Project Path="source/ff.base/ff.base.vcxproj" Id="f89161f3-74e5-4b6b-9a53-6b97b83d1700" />
+    <Project Path="source/ff.base2/ff.base2.vcxproj" Id="7e93fa0b-cd99-4af3-81e9-145a4efdf7f7" />
+    <Project Path="source/ff.resource.build/ff.resource.build.vcxproj" Id="cbabf708-3dca-4933-8d94-188536af1ec2" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/ff.test.console/ff.test.console.vcxproj" Id="94ef3680-8599-4d2d-b0a6-5455208a84c0" />
+    <Project Path="test/ff.test.unit/ff.test.unit.vcxproj" Id="3cdc3451-f711-4ec0-96ea-1767804b2df0" />
+    <Project Path="test/ff.test.unit2/ff.test.unit2.vcxproj" Id="41f13236-15bb-4322-88c9-75028fe2acbe" />
+  </Folder>
+  <Folder Name="/vendor/">
+    <Project Path="vendor/ff.vendor.directxtex.vcxproj" Id="5f0b3fd1-44d5-4524-8f61-e22098986a43" />
+    <Project Path="vendor/ff.vendor.imgui.vcxproj" Id="b89ff916-a65c-48bb-b134-b68ffb38c3a6" />
+    <Project Path="vendor/ff.vendor.libpng.vcxproj" Id="7023aadb-413d-4c4e-b8a7-481484c943ba" />
+    <Project Path="vendor/ff.vendor.zlib.vcxproj" Id="d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc" />
+  </Folder>
+</Solution>
