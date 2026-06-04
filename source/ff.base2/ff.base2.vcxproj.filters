@@ -8,10 +8,16 @@
     <ClCompile Include="base\assert.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\arena.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="base\assert.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\arena.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

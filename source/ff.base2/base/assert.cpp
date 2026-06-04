@@ -3,11 +3,8 @@
 
 #ifdef _DEBUG
 
-namespace
-{
-    uint32_t handling_assert = 0;
-    ff::assert_listener_func assert_listener_ = nullptr;
-}
+static long handling_assert = 0;
+static ff::assert_listener_func assert_listener_ = nullptr;
 
 bool ff::internal::assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {
@@ -20,7 +17,7 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
 
     if (::assert_listener_ && ::assert_listener_(exp, text, file, line))
     {
-        // Handled by the listener (most likely a test a running)
+        // Handled by the listener (most likely a test is running and will mark this as a failure)
         ::InterlockedDecrement(&::handling_assert);
         return true;
     }
