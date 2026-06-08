@@ -11,6 +11,15 @@
     <ClCompile Include="base\arena.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\string_builder.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\math.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -18,6 +27,18 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\arena.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string_builder.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string_view.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\math.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

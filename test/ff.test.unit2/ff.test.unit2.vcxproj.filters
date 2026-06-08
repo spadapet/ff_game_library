@@ -6,6 +6,10 @@
     <ClCompile Include="base\arena_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\string_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string_builder_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

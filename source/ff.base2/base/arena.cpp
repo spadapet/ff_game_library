@@ -1,6 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
+#include "base/math.h"
 
 constexpr size_t max_heap_buffer_size = 1024 * 1024;
 constexpr size_t max_virtual_buffer_size = 1024 * 1024 * 1024;
@@ -19,32 +20,11 @@ static size_t page_size()
     return info.dwPageSize;
 }
 
+// Double value, but never exceed cap. Arena-specific growth helper.
 static size_t double_capped(size_t value, size_t cap)
 {
     size_t doubled = value * 2;
     return __min(doubled, cap);
-}
-
-static size_t round_up(size_t value, size_t alignment)
-{
-    return (value + alignment - 1) & ~(alignment - 1);
-}
-
-static size_t round_up_pow2(size_t value)
-{
-    if (value <= 1)
-    {
-        return 1;
-    }
-
-    unsigned long index;
-    ::_BitScanReverse64(&index, value - 1);
-    return (index < 63) ? ((size_t)1 << (index + 1)) : value;
-}
-
-static uint8_t* align_up(uint8_t* ptr, size_t alignment)
-{
-    return (uint8_t*)::round_up((size_t)ptr, alignment);
 }
 
 static bool is_reusable(ff::internal::arena_buffer_type type)
@@ -78,7 +58,7 @@ static ff::internal::arena_buffer* new_virtual_buffer(size_t size, bool oversize
     // 'size' is the total reservation size. Round up to allocation granularity (NOT to size + header),
     // so a caller asking for exactly 64 KB gets exactly 64 KB of address space rather than 128 KB.
     // The header is carved from the front; payload is actual_size - sizeof(header).
-    size_t actual_size = ::round_up(size, ::allocation_granularity());
+    size_t actual_size = ff::round_up(size, ::allocation_granularity());
 
     if (oversize)
     {
@@ -124,7 +104,7 @@ static ff::internal::arena_buffer* new_external_buffer(HANDLE header_heap, uint8
 {
     // External payload is caller-owned, so the header still needs its own small heap allocation.
     // Round up to next power of 2 so the request hits an allocator-friendly bucket.
-    ff::internal::arena_buffer* new_buffer = (ff::internal::arena_buffer*)::HeapAlloc(header_heap, 0, ::round_up_pow2(sizeof(ff::internal::arena_buffer)));
+    ff::internal::arena_buffer* new_buffer = (ff::internal::arena_buffer*)::HeapAlloc(header_heap, 0, ff::round_up_pow2(sizeof(ff::internal::arena_buffer)));
     FF_ASSERT_RET_VAL(new_buffer, nullptr);
 
     new_buffer->next = nullptr;
@@ -192,7 +172,7 @@ void ff::arena::init_external(uint8_t* buffer, size_t size, size_t grow_buffer_s
     // clamp to at least one page and round up to the next power of 2 for allocator-friendly sizing.
     size_t page_size = ::page_size();
     size_t initial_grow = (grow_buffer_size > 0) ? grow_buffer_size : size;
-    this->grow_buffer_size = ::round_up_pow2(__max(initial_grow, page_size));
+    this->grow_buffer_size = ff::round_up_pow2(__max(initial_grow, page_size));
     this->max_buffer_size = __max(this->grow_buffer_size, ::max_heap_buffer_size);
     this->buffer = nullptr;
     this->spare = nullptr;
@@ -208,13 +188,12 @@ void ff::arena::init_external(uint8_t* buffer, size_t size, size_t grow_buffer_s
 
 void ff::arena::init_heap(size_t initial_buffer_size)
 {
-    FF_ASSERT(initial_buffer_size > 0);
     size_t page_size = ::page_size();
 
     this->next = nullptr;
     this->end = nullptr;
     this->heap = ::GetProcessHeap();
-    this->grow_buffer_size = ::round_up_pow2(__max(initial_buffer_size, page_size));
+    this->grow_buffer_size = ff::round_up_pow2(__max(initial_buffer_size, page_size));
     this->max_buffer_size = __max(this->grow_buffer_size, ::max_heap_buffer_size);
     this->buffer = nullptr;
     this->spare = nullptr;
@@ -233,15 +212,13 @@ void ff::arena::init_heap(size_t initial_buffer_size)
 
 void ff::arena::init_heap_local(size_t initial_buffer_size)
 {
-    FF_ASSERT(initial_buffer_size > 0);
-
     this->next = nullptr;
     this->end = nullptr;
     this->heap = ::HeapCreate(HEAP_NO_SERIALIZE, 0, 0);
     FF_ASSERT_RET(this->heap);
 
     size_t page_size = ::page_size();
-    this->grow_buffer_size = ::round_up_pow2(__max(initial_buffer_size, page_size));
+    this->grow_buffer_size = ff::round_up_pow2(__max(initial_buffer_size, page_size));
     this->max_buffer_size = __max(this->grow_buffer_size, ::max_heap_buffer_size);
     this->buffer = nullptr;
     this->spare = nullptr;
@@ -260,13 +237,11 @@ void ff::arena::init_heap_local(size_t initial_buffer_size)
 
 void ff::arena::init_virtual_memory(size_t initial_buffer_size)
 {
-    FF_ASSERT(initial_buffer_size > 0);
-
     this->next = nullptr;
     this->end = nullptr;
     this->heap = ::GetProcessHeap();
     size_t allocation_granularity = ::allocation_granularity();
-    this->grow_buffer_size = ::round_up_pow2(__max(initial_buffer_size, allocation_granularity));
+    this->grow_buffer_size = ff::round_up_pow2(__max(initial_buffer_size, allocation_granularity));
     // Virtual reservations are cheap (lazy commit), so cap at a much larger value than heap;
     // honor a larger user-requested initial size if it exceeds the cap.
     this->max_buffer_size = __max(this->grow_buffer_size, ::max_virtual_buffer_size);
@@ -316,13 +291,13 @@ void ff::arena::destroy()
 // it into cross-TU callers.
 static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
 {
-    uint8_t* aligned = ::align_up(arena->next, align);
+    uint8_t* aligned = ff::align_up(arena->next, align);
 
     // Lazy-commit path: if the current buffer is a non-oversize virtual reservation with
     // room left to commit, extend the committed region instead of allocating a new buffer.
     // The new committed extent is doubled per commit (amortizes the MEM_COMMIT syscall) and
     // rounded up to the next power of 2 (allocator-friendly extent).
-    if (arena->buffer 
+    if (arena->buffer
         && arena->buffer->type == ff::internal::arena_buffer_type::virtual_memory
         && aligned <= arena->buffer->reserve_end
         && size <= (size_t)(arena->buffer->reserve_end - aligned))
@@ -336,7 +311,7 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
         if (target < needed_total)
         {
             // Single request needs more than one doubling step; jump to the next pow2 that fits.
-            target = ::round_up_pow2(needed_total);
+            target = ff::round_up_pow2(needed_total);
             target = __min(target, reserve_total);
         }
 
@@ -413,7 +388,7 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
         }
 
         // Round up to next power of 2 so HeapAlloc/VirtualAlloc see allocator-friendly sizes.
-        alloc_size = ::round_up_pow2(alloc_size);
+        alloc_size = ff::round_up_pow2(alloc_size);
         new_buffer = ::allocate_grow_buffer(arena->type, arena->heap, alloc_size, oversize);
     }
 
@@ -434,7 +409,7 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
     arena->next = new_buffer->start;
     arena->end = new_buffer->end;
 
-    aligned = ::align_up(arena->next, align);
+    aligned = ff::align_up(arena->next, align);
 
     // For a freshly-allocated virtual_memory buffer only the first page is committed (lazy
     // commit). If the request that triggered this grow doesn't fit, commit more pages now
@@ -444,7 +419,7 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
         && size > (size_t)(arena->end - aligned))
     {
         uint8_t* needed_end = aligned + size;
-        uint8_t* new_committed_end = (uint8_t*)::round_up((size_t)needed_end, ::page_size());
+        uint8_t* new_committed_end = (uint8_t*)ff::round_up((size_t)needed_end, ::page_size());
         new_committed_end = __min(new_committed_end, new_buffer->reserve_end);
         size_t commit_bytes = (size_t)(new_committed_end - new_buffer->end);
         void* committed = ::VirtualAlloc(new_buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
@@ -466,7 +441,7 @@ void* ff::arena::alloc(size_t size, size_t align)
     // Fast path: bump within the current buffer. Tiny on purpose so LTCG can reliably inline
     // alloc() into cross-TU callers. Everything else (lazy commit, growth, oversize, spare)
     // lives in the out-of-line static alloc_slow.
-    uint8_t* aligned = ::align_up(this->next, align);
+    uint8_t* aligned = ff::align_up(this->next, align);
     if (aligned <= this->end && size <= (size_t)(this->end - aligned))
     {
         this->next = aligned + size;
@@ -474,6 +449,37 @@ void* ff::arena::alloc(size_t size, size_t align)
     }
 
     return ::alloc_slow(this, size, align);
+}
+
+void* ff::arena::realloc(const void* start, size_t size, size_t new_size, size_t align)
+{
+    FF_ASSERT(align && !(align & (align - 1)));
+    FF_CHECK_RET_VAL(new_size, nullptr);
+
+    uint8_t* old_start = (uint8_t*)start;
+
+    // In-place: if this block's end is touching the bump pointer it's the most-recent allocation,
+    // so we can resize by just moving 'next'. The block stays put, so it must already satisfy the
+    // requested alignment - if it doesn't, fall through to relocate (which allocates correctly
+    // aligned memory). Shrink/equal always fits; grow only if it stays within the current buffer.
+    if (old_start + size == this->next && !((uintptr_t)old_start & (align - 1)))
+    {
+        if (new_size <= size || old_start + new_size <= this->end)
+        {
+            this->next = old_start + new_size;
+            return old_start;
+        }
+    }
+
+    // Relocate: allocate a fresh block (handles growth, oversize, lazy commit, spare reuse) and
+    // copy the overlapping prefix. min(size, new_size) is correct for both grow and shrink.
+    void* new_start = this->alloc(new_size, align);
+    if (new_start && size)
+    {
+        ::memcpy(new_start, start, __min(size, new_size));
+    }
+
+    return new_start;
 }
 
 void ff::arena::reset()

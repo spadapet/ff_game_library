@@ -44,6 +44,7 @@ namespace ff
         void destroy();
 
         void* alloc(size_t size, size_t align);
+        void* realloc(const void* start, size_t size, size_t new_size, size_t align); // resizes a prior alloc in place when it's the last block, else allocates and copies
         void reset();
         ff::arena_marker mark() const;
         void rewind(ff::arena_marker marker);
