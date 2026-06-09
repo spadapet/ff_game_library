@@ -6,10 +6,10 @@ static bool utf8_equals(ff::string_view view, const char* bytes, size_t size)
     return view.size == size && (size == 0 || ::memcmp(view.data, bytes, size) == 0);
 }
 
-// Compare a UTF-16 view to a known char16_t array (exact length, no null terminator assumed).
-static bool wide_equals(ff::wstring_view view, const char16_t* units, size_t size)
+// Compare a UTF-16 view to a known wchar_t array (exact length, no null terminator assumed).
+static bool wide_equals(ff::wstring_view view, const wchar_t* units, size_t size)
 {
-    return view.size == size && (size == 0 || ::memcmp(view.data, units, size * sizeof(char16_t)) == 0);
+    return view.size == size && (size == 0 || ::memcmp(view.data, units, size * sizeof(wchar_t)) == 0);
 }
 
 namespace ff::test::base
@@ -28,8 +28,9 @@ namespace ff::test::base
             ff::string_view src{ "Hello", 5 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            const char16_t expected[] = { u'H', u'e', u'l', u'l', u'o' };
+            const wchar_t expected[] = { L'H', L'e', L'l', L'l', L'o' };
             Assert::IsTrue(wide_equals(dest, expected, 5));
+            Assert::IsTrue(dest.data[dest.size] == 0); // null-terminated past the reported size
 
             arena.destroy();
         }
@@ -44,7 +45,7 @@ namespace ff::test::base
             ff::string_view src{ src_bytes, 2 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            const char16_t expected[] = { 0x00E9 };
+            const wchar_t expected[] = { 0x00E9 };
             Assert::IsTrue(wide_equals(dest, expected, 1));
 
             arena.destroy();
@@ -60,7 +61,7 @@ namespace ff::test::base
             ff::string_view src{ src_bytes, 3 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            const char16_t expected[] = { 0x20AC };
+            const wchar_t expected[] = { 0x20AC };
             Assert::IsTrue(wide_equals(dest, expected, 1));
 
             arena.destroy();
@@ -76,7 +77,7 @@ namespace ff::test::base
             ff::string_view src{ src_bytes, 4 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            const char16_t expected[] = { 0xD83D, 0xDE00 };
+            const wchar_t expected[] = { 0xD83D, 0xDE00 };
             Assert::IsTrue(wide_equals(dest, expected, 2));
 
             arena.destroy();
@@ -91,6 +92,8 @@ namespace ff::test::base
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
             Assert::AreEqual((size_t)0, dest.size);
+            Assert::IsTrue(dest.data != nullptr);
+            Assert::IsTrue(dest.data[0] == 0); // empty but still null-terminated
 
             arena.destroy();
         }
@@ -102,7 +105,7 @@ namespace ff::test::base
 
             ff::wstring_view dest = ff::utf8_to_wide(ff::sz_view("abc"), &arena);
 
-            const char16_t expected[] = { u'a', u'b', u'c' };
+            const wchar_t expected[] = { L'a', L'b', L'c' };
             Assert::IsTrue(wide_equals(dest, expected, 3));
 
             arena.destroy();
@@ -113,13 +116,15 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(256);
 
-            // The returned size must be exactly the converted length, with no implied terminator.
+            // The returned size is exactly the converted length (the terminator is not counted),
+            // but the buffer is still null-terminated at data[size].
             ff::string_view src{ "AB", 2 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
             Assert::AreEqual((size_t)2, dest.size);
-            Assert::IsTrue(dest.data[0] == u'A');
-            Assert::IsTrue(dest.data[1] == u'B');
+            Assert::IsTrue(dest.data[0] == L'A');
+            Assert::IsTrue(dest.data[1] == L'B');
+            Assert::IsTrue(dest.data[2] == 0); // explicit terminator just past the size
 
             arena.destroy();
         }
@@ -132,11 +137,12 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(256);
 
-            const char16_t src_units[] = { u'H', u'e', u'l', u'l', u'o' };
+            const wchar_t src_units[] = { L'H', L'e', L'l', L'l', L'o' };
             ff::wstring_view src{ src_units, 5 };
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
             Assert::IsTrue(utf8_equals(dest, "Hello", 5));
+            Assert::IsTrue(dest.data[dest.size] == 0); // null-terminated past the reported size
 
             arena.destroy();
         }
@@ -147,7 +153,7 @@ namespace ff::test::base
             arena.init_heap(256);
 
             // U+20AC => UTF-8 E2 82 AC (3 bytes)
-            const char16_t src_units[] = { 0x20AC };
+            const wchar_t src_units[] = { 0x20AC };
             ff::wstring_view src{ src_units, 1 };
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
@@ -163,7 +169,7 @@ namespace ff::test::base
             arena.init_heap(256);
 
             // Surrogate pair D83D DE00 => U+1F600 => UTF-8 F0 9F 98 80 (4 bytes)
-            const char16_t src_units[] = { 0xD83D, 0xDE00 };
+            const wchar_t src_units[] = { 0xD83D, 0xDE00 };
             ff::wstring_view src{ src_units, 2 };
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
@@ -178,11 +184,13 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(256);
 
-            const char16_t src_units[] = { 0 };
+            const wchar_t src_units[] = { 0 };
             ff::wstring_view src{ src_units, 0 };
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
             Assert::AreEqual((size_t)0, dest.size);
+            Assert::IsTrue(dest.data != nullptr);
+            Assert::IsTrue(dest.data[0] == 0); // empty but still null-terminated
 
             arena.destroy();
         }
@@ -192,7 +200,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(256);
 
-            ff::string_view dest = ff::wide_to_utf8(ff::sz_view(u"abc"), &arena);
+            ff::string_view dest = ff::wide_to_utf8(ff::sz_view(L"abc"), &arena);
 
             Assert::IsTrue(utf8_equals(dest, "abc", 3));
 
@@ -224,7 +232,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(1024);
 
-            const char16_t original[] = { u'A', 0x00E9, 0x20AC, 0xD83D, 0xDE00, u'Z' };
+            const wchar_t original[] = { L'A', 0x00E9, 0x20AC, 0xD83D, 0xDE00, L'Z' };
             ff::wstring_view src{ original, _countof(original) };
 
             ff::string_view utf8 = ff::wide_to_utf8(src, &arena);
@@ -289,40 +297,40 @@ namespace ff::test::base
 
         TEST_METHOD(ff_wsvl_literal_length)
         {
-            // 'size' must be the char16_t unit count, not the byte count.
-            ff::wstring_view view = FF_WSVL(u"hello");
+            // 'size' must be the wchar_t unit count, not the byte count.
+            ff::wstring_view view = FF_WSVL(L"hello");
             Assert::AreEqual((size_t)5, view.size);
 
-            const char16_t expected[] = { u'h', u'e', u'l', u'l', u'o' };
+            const wchar_t expected[] = { L'h', L'e', L'l', L'l', L'o' };
             Assert::IsTrue(wide_equals(view, expected, 5));
         }
 
         TEST_METHOD(ff_wsvl_empty_literal)
         {
-            ff::wstring_view view = FF_WSVL(u"");
+            ff::wstring_view view = FF_WSVL(L"");
             Assert::AreEqual((size_t)0, view.size);
         }
 
         TEST_METHOD(ff_wsvl_counts_units_not_bytes)
         {
-            // A surrogate pair is 2 char16_t units; "ab😀" => 'a','b', D83D, DE00 = 4 units.
-            ff::wstring_view view = FF_WSVL(u"ab\U0001F600");
+            // A surrogate pair is 2 wchar_t units; "ab" + U+1F600 => 'a', 'b', D83D, DE00 = 4 units.
+            ff::wstring_view view = FF_WSVL(L"ab\U0001F600");
             Assert::AreEqual((size_t)4, view.size);
         }
 
         TEST_METHOD(sz_view_wide)
         {
-            const char16_t* sz = u"world";
+            const wchar_t* sz = L"world";
             ff::wstring_view view = ff::sz_view(sz);
             Assert::AreEqual((size_t)5, view.size);
 
-            const char16_t expected[] = { u'w', u'o', u'r', u'l', u'd' };
+            const wchar_t expected[] = { L'w', L'o', L'r', L'l', L'd' };
             Assert::IsTrue(wide_equals(view, expected, 5));
         }
 
         TEST_METHOD(sz_view_wide_null)
         {
-            ff::wstring_view view = ff::sz_view((const char16_t*)nullptr);
+            ff::wstring_view view = ff::sz_view((const wchar_t*)nullptr);
             Assert::AreEqual((size_t)0, view.size);
             Assert::IsNull(view.data);
         }
@@ -333,7 +341,7 @@ namespace ff::test::base
             arena.init_heap(256);
 
             // FF_WSVL view feeds straight into the UTF-16 -> UTF-8 conversion.
-            ff::string_view utf8 = ff::wide_to_utf8(FF_WSVL(u"Hello"), &arena);
+            ff::string_view utf8 = ff::wide_to_utf8(FF_WSVL(L"Hello"), &arena);
             Assert::IsTrue(utf8_equals(utf8, "Hello", 5));
 
             arena.destroy();

@@ -1,7 +1,10 @@
 #pragma once
 
 #define FF_SVL(literal) (ff::string_view{ (literal), sizeof(literal) - 1 })
-#define FF_WSVL(literal) (ff::wstring_view{ (literal), sizeof(literal) / sizeof(char16_t) - 1 })
+#define FF_WSVL(literal) (ff::wstring_view{ (literal), sizeof(literal) / sizeof(wchar_t) - 1 })
+
+// FF_SV_FORMAT is for use in format strings, like: printf("%.*s", FF_SV_FORMAT(sv));
+#define FF_SV_FORMAT(sv) ((int)(sv).size), ((sv).data)
 
 namespace ff
 {
@@ -13,7 +16,7 @@ namespace ff
 
     struct wstring_view
     {
-        const char16_t* data;
+        const wchar_t* data;
         size_t size;
     };
 }
