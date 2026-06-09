@@ -6,7 +6,7 @@
 
 The `ff.base2` project has strict constraints. When suggesting or generating code for any file under `source/ff.base2/`:
 
-- The `ff.base2` project doesn't reference other "ff" projects in this solution, don't look at other projects for examples of what to do in `ff.base2`
+- The `ff.base2` project doesn't reference other "ff" projects in this solution; don't look at other projects for examples of what to do in `ff.base2`.
 - **Never use anything from the C++ `std` namespace.** Do not suggest `std::string`, `std::vector`, `std::atomic`, `std::unique_ptr`, `<algorithm>`, `<memory>`, `<type_traits>`, etc. Do not include standard library headers that exist solely to provide `std::` types.
 - The only C++ language features allowed are **namespaces** and **enum classes**. Everything else should be plain C-style code or Win32 API usage.
 - **All data types must be plain old data (POD).** Structs may contain member functions, but:
@@ -23,5 +23,7 @@ The `ff.base2` project has strict constraints. When suggesting or generating cod
 - Avoid any C++ language features that imply non-POD semantics, such as templates, exceptions, RTTI, etc. Stick to plain C-style code with namespaces and enum classes for organization.
 - Always use `this->` in member functions to access member variables, even when not strictly necessary, to maintain clarity and consistency with C-style code.
 - Prefer `static` for internal-linkage globals (variables and functions in .cpp files) over anonymous namespaces to maintain a more C-like style and avoid extra indentation.
+- **Always use `ff::string_view` (or `ff::wstring_view`) for string parameters instead of null-terminated `const char*` / `const char16_t*`.** Never add API overloads that take raw null-terminated string pointers. Callers convert at the call site: use the `FF_SVL` / `FF_WSVL` macros for string literals (compile-time length, no runtime scan) and `ff::sz_view(...)` for runtime null-terminated C-strings. If an underlying API (e.g., a CRT function) genuinely requires a null-terminated string, make a temporary null-terminated copy internally rather than exposing a pointer-based parameter.
+- Do not add comments that explain what the code obviously does. Only add comments for non-obvious reasoning, tricky edge cases, or important context. Keep comments minimal.
 
 When in doubt for `ff.base2`, write the code as if only C with namespaces and enum classes were available.

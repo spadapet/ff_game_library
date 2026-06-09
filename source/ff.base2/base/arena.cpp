@@ -100,7 +100,7 @@ static ff::internal::arena_buffer* new_virtual_buffer(size_t size, bool oversize
     return new_buffer;
 }
 
-static ff::internal::arena_buffer* new_external_buffer(HANDLE header_heap, uint8_t* data, size_t size)
+static ff::internal::arena_buffer* new_external_buffer(HANDLE header_heap, void* data, size_t size)
 {
     // External payload is caller-owned, so the header still needs its own small heap allocation.
     // Round up to next power of 2 so the request hits an allocator-friendly bucket.
@@ -108,8 +108,8 @@ static ff::internal::arena_buffer* new_external_buffer(HANDLE header_heap, uint8
     FF_ASSERT_RET_VAL(new_buffer, nullptr);
 
     new_buffer->next = nullptr;
-    new_buffer->start = data;
-    new_buffer->end = data + size;
+    new_buffer->start = (uint8_t*)data;
+    new_buffer->end = new_buffer->start + size;
     new_buffer->reserve_end = new_buffer->end;
     new_buffer->type = ff::internal::arena_buffer_type::external;
 
@@ -160,7 +160,7 @@ static ff::internal::arena_buffer* allocate_grow_buffer(ff::internal::arena_type
     return nullptr;
 }
 
-void ff::arena::init_external(uint8_t* buffer, size_t size, size_t grow_buffer_size)
+void ff::arena::init_external(void* buffer, size_t size, size_t grow_buffer_size)
 {
     FF_ASSERT(buffer && size > 0);
 

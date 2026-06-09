@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdarg.h>
 #include "../base/string_view.h"
 
 namespace ff
@@ -21,12 +22,16 @@ namespace ff
         void init(ff::arena* arena); // default initial capacity, empty content
         void init(ff::arena* arena, size_t initial_capacity); // explicit initial capacity, empty content
         void init(ff::arena* arena, ff::string_view initial); // seeded with initial content
+        void init_format(ff::arena* arena, ff::string_view format, ...); // seeded with a printf-formatted string
+        void init_format_v(ff::arena* arena, ff::string_view format, va_list args);
 
         ff::string_builder* reset(); // clears content, keeps the allocated buffer
         ff::string_builder* reserve(size_t capacity); // ensures room for at least 'capacity' chars
 
         ff::string_builder* append(char value);
         ff::string_builder* append(ff::string_view value);
+        ff::string_builder* append_format(ff::string_view format, ...);
+        ff::string_builder* append_format_v(ff::string_view format, va_list args);
 
         ff::string_builder* insert(size_t pos, char value);
         ff::string_builder* insert(size_t pos, ff::string_view value);

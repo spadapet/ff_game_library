@@ -12,6 +12,24 @@ static bool view_equals(ff::string_view view, const char* expected)
     return ::memcmp(view.data, expected, expected_len) == 0;
 }
 
+// Forwarders that build a va_list and call the *_v entry points (simulating a caller that already
+// has a va_list, e.g. a variadic wrapper forwarding its arguments).
+static void call_init_format_v(ff::string_builder* sb, ff::arena* arena, ff::string_view format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    sb->init_format_v(arena, format, args);
+    va_end(args);
+}
+
+static void call_append_format_v(ff::string_builder* sb, ff::string_view format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    sb->append_format_v(format, args);
+    va_end(args);
+}
+
 namespace ff::test::base
 {
     TEST_CLASS(string_builder_tests)
@@ -541,6 +559,171 @@ namespace ff::test::base
 
             sb.append('!');
             Assert::AreEqual("The brown fox!", sb.c_str());
+
+            arena.destroy();
+        }
+
+        // ====================================================================
+        // Formatted append / init
+        // ====================================================================
+        TEST_METHOD(append_format_basic)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+
+            sb.append_format(FF_SVL("%s = %d"), "answer", 42);
+
+            Assert::AreEqual("answer = 42", sb.c_str());
+            Assert::AreEqual((size_t)11, sb.size);
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_after_existing_content)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+            sb.append(FF_SVL("prefix:"));
+
+            sb.append_format(FF_SVL(" %d-%d"), 1, 2);
+
+            Assert::AreEqual("prefix: 1-2", sb.c_str());
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_chains)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+
+            sb.append_format(FF_SVL("[%d]"), 1)->append_format(FF_SVL("[%d]"), 2)->append_format(FF_SVL("[%d]"), 3);
+
+            Assert::AreEqual("[1][2][3]", sb.c_str());
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_percent_literal)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+
+            sb.append_format(FF_SVL("%d%% done"), 50);
+
+            Assert::AreEqual("50% done", sb.c_str());
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_grows_buffer)
+        {
+            ff::arena arena;
+            arena.init_heap(64);
+
+            ff::string_builder sb;
+            sb.init(&arena, 8); // small so the formatted string forces growth
+
+            // Produces a long string (well past the initial capacity).
+            sb.append_format(FF_SVL("%0500d"), 7);
+
+            Assert::AreEqual((size_t)500, sb.size);
+            const char* result = sb.c_str();
+            Assert::AreEqual('\0', result[500]);
+            // Last char is the '7', the rest are leading zeros.
+            Assert::AreEqual('7', result[499]);
+            Assert::AreEqual('0', result[0]);
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(init_format_seeds_content)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init_format(&arena, FF_SVL("%s/%d"), "path", 12);
+
+            Assert::AreEqual("path/12", sb.c_str());
+            Assert::AreEqual((size_t)7, sb.size);
+
+            // Can keep building after a formatted init.
+            sb.append(FF_SVL(".txt"));
+            Assert::AreEqual("path/12.txt", sb.c_str());
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_large_format_string_spills_to_heap)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            // Build a format string longer than append_format_v's 1024-byte stack buffer so the
+            // temp arena has to spill the null-terminated copy onto the heap. It's 2000 literal
+            // 'x' chars followed by "%d".
+            ff::string_builder format;
+            format.init(&arena);
+            for (int i = 0; i < 2000; ++i)
+            {
+                format.append('x');
+            }
+            format.append(FF_SVL("%d"));
+
+            ff::string_builder sb;
+            sb.init(&arena);
+            sb.append_format(format.view(), 7);
+
+            Assert::AreEqual((size_t)2001, sb.size); // 2000 'x' + "7"
+            const char* result = sb.c_str();
+            for (int i = 0; i < 2000; ++i)
+            {
+                Assert::AreEqual('x', result[i]);
+            }
+            Assert::AreEqual('7', result[2000]);
+            Assert::AreEqual('\0', result[2001]);
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(init_format_v_seeds_content)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            call_init_format_v(&sb, &arena, FF_SVL("%s-%d"), "id", 99);
+
+            Assert::AreEqual("id-99", sb.c_str());
+            Assert::AreEqual((size_t)5, sb.size);
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(append_format_v_appends)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+            sb.append(FF_SVL("x="));
+            call_append_format_v(&sb, FF_SVL("%d"), 5);
+
+            Assert::AreEqual("x=5", sb.c_str());
 
             arena.destroy();
         }
