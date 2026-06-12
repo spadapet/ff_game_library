@@ -10,6 +10,7 @@
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\string_builder_tests.cpp" />
+    <ClCompile Include="base\array_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

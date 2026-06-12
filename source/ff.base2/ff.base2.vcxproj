@@ -9,6 +9,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
     <ClCompile Include="base\arena.cpp" />
+    <ClCompile Include="base\array.cpp" />
     <ClCompile Include="base\assert.cpp" />
     <ClCompile Include="base\math.cpp" />
     <ClCompile Include="base\string.cpp" />
@@ -19,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base\arena.h" />
+    <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\string.h" />
