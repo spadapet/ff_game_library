@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Natvis Include="base2.natvis" />
@@ -26,10 +26,16 @@
     <ClCompile Include="base\hash.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\variant.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="base\assert.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\blob.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\arena.h">
@@ -51,6 +57,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\hash.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\variant.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

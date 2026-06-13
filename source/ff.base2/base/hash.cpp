@@ -26,17 +26,7 @@ static inline uint64_t mul128(uint64_t a, uint64_t b, uint64_t* hi)
     *hi = __umulh(a, b);
     return a * b;
 #else
-    uint64_t a_lo = (uint32_t)a;
-    uint64_t a_hi = a >> 32;
-    uint64_t b_lo = (uint32_t)b;
-    uint64_t b_hi = b >> 32;
-    uint64_t lo_lo = a_lo * b_lo;
-    uint64_t hi_lo = a_hi * b_lo;
-    uint64_t lo_hi = a_lo * b_hi;
-    uint64_t hi_hi = a_hi * b_hi;
-    uint64_t cross = (lo_lo >> 32) + (uint32_t)hi_lo + lo_hi;
-    *hi = hi_hi + (hi_lo >> 32) + (cross >> 32);
-    return (cross << 32) | (uint32_t)lo_lo;
+#error "hash requires x64 or ARM64 (no 64x64->128 multiply intrinsic for this target)."
 #endif
 }
 

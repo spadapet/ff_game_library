@@ -17,7 +17,7 @@ namespace ff
 
         uint64_t seed;
         size_t total;
-        size_t buffer_size; // trailing bytes held back for finalize (1..16, or 0 when total is 0)
+        size_t buffer_size;
         uint8_t buffer[16];
     };
 

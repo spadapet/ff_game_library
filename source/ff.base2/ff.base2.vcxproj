@@ -15,6 +15,7 @@
     <ClCompile Include="base\math.cpp" />
     <ClCompile Include="base\string.cpp" />
     <ClCompile Include="base\string_builder.cpp" />
+    <ClCompile Include="base\variant.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -23,11 +24,13 @@
     <ClInclude Include="base\arena.h" />
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
+    <ClInclude Include="base\blob.h" />
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
     <ClInclude Include="base\string_view.h" />
+    <ClInclude Include="base\variant.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
