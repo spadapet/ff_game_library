@@ -4,13 +4,12 @@
 #include "base/assert.h"
 #include "base/math.h"
 
-constexpr size_t array_min_align = 16; // covers SSE / XMVECTOR
+constexpr size_t array_min_align = alignof(ff::internal::array_header); // the header's size_t fields set the floor
 constexpr size_t array_min_capacity = 8;
 
 void* ff::internal::array_alloc(ff::arena* arena, size_t item_size, size_t item_align, size_t capacity)
 {
     FF_ASSERT_RET_VAL(arena, nullptr);
-    capacity = capacity ? ff::round_up_pow2(capacity) : 0;
 
     size_t align = __max(item_align, ::array_min_align);
     size_t offset = ff::round_up(sizeof(ff::internal::array_header), align); // data starts past the header

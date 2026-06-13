@@ -41,6 +41,12 @@ namespace ff
         const char* c_str() const; // null-terminates and returns the buffer (terminator slot is always reserved)
         ff::string_view view() const; // start + size, not null-terminated
 
+        // Copy the built string into a newly allocated char array (see array.h) that outlives the
+        // builder. The array's size is the string length; one extra capacity byte holds a '\0', so the
+        // result works as both a null-terminated C-string and a string_view{ p, ff::array_size(p) }.
+        // A null arena uses this->arena.
+        const char* store(ff::arena* arena = nullptr) const;
+
         ff::arena* arena;
         char* data;
         size_t size; // used chars (excludes the lazily-written null terminator)

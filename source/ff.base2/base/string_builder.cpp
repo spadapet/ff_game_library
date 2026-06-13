@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/arena.h"
+#include "base/array.h"
 #include "base/assert.h"
 #include "base/math.h"
 #include "base/string_builder.h"
@@ -199,5 +200,22 @@ ff::string_view ff::string_builder::view() const
     ff::string_view result;
     result.data = this->data;
     result.size = this->size;
+    return result;
+}
+
+const char* ff::string_builder::store(ff::arena* arena) const
+{
+    // Always return an allocated array so ff::array_size works (empty included); null only on alloc failure.
+    char* result = ff::array_init<char>(arena ? arena : this->arena, this->size + 1);
+    FF_ASSERT_RET_VAL(result, nullptr);
+
+    ff::array_resize(result, this->size);
+
+    if (this->size)
+    {
+        ::memcpy(result, this->data, this->size);
+    }
+
+    result[this->size] = '\0';
     return result;
 }

@@ -727,5 +727,93 @@ namespace ff::test::base
 
             arena.destroy();
         }
+
+        // ====================================================================
+        // Store (persistent copy)
+        // ====================================================================
+        TEST_METHOD(store_returns_independent_null_terminated_copy)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+            sb.append(FF_SVL("hello"));
+
+            const char* stored = sb.store();
+            Assert::IsNotNull(stored);
+            Assert::AreEqual("hello", stored);                   // null-terminated C-string
+            Assert::AreEqual((size_t)5, ff::array_size(stored)); // array size excludes the terminator
+            Assert::IsTrue(stored != sb.data); // a separate allocation, not the builder's working buffer
+
+            // Reusing the builder must not disturb the stored copy.
+            sb.reset();
+            sb.append(FF_SVL("world"));
+            Assert::AreEqual("hello", stored);
+            Assert::AreEqual("world", sb.c_str());
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(store_into_separate_arena_outlives_builder_arena)
+        {
+            ff::arena dest;
+            dest.init_heap(4096);
+
+            const char* stored = nullptr;
+            {
+                ff::arena scratch;
+                scratch.init_heap(4096);
+
+                ff::string_builder sb;
+                sb.init(&scratch);
+                sb.append(FF_SVL("persist me"));
+
+                stored = sb.store(&dest);
+
+                scratch.destroy(); // the builder's arena is gone, but 'stored' lives in 'dest'
+            }
+
+            Assert::AreEqual("persist me", stored);
+            Assert::AreEqual((size_t)10, ff::array_size(stored));
+
+            dest.destroy();
+        }
+
+        TEST_METHOD(store_empty_returns_empty_string)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+
+            const char* stored = sb.store();
+            Assert::IsNotNull(stored);
+            Assert::AreEqual("", stored);
+            Assert::AreEqual((size_t)0, ff::array_size(stored));
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(store_result_usable_as_view_and_cstring)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            ff::string_builder sb;
+            sb.init(&arena);
+            sb.append(FF_SVL("hello"));
+
+            const char* stored = sb.store();
+            Assert::IsNotNull(stored);
+
+            // The array size gives the length, so it works as a string_view...
+            Assert::IsTrue(view_equals(ff::string_view{ stored, ff::array_size(stored) }, "hello"));
+            // ...and the spare-capacity terminator makes it a valid C-string.
+            Assert::AreEqual("hello", stored);
+
+            arena.destroy();
+        }
     };
 }

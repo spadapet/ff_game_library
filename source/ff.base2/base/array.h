@@ -27,9 +27,9 @@ namespace ff::internal
 namespace ff
 {
     template<class T>
-    void array_init(T*& a, ff::arena* arena, size_t capacity = 0)
+    T* array_init(ff::arena* arena, size_t capacity = 0)
     {
-        a = (T*)ff::internal::array_alloc(arena, sizeof(T), alignof(T), capacity);
+        return (T*)ff::internal::array_alloc(arena, sizeof(T), alignof(T), capacity);
     }
 
     inline size_t array_size(const void* data)

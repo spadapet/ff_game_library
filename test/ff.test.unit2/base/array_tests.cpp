@@ -27,8 +27,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
 
             Assert::IsNotNull(values);
             Assert::AreEqual((size_t)0, ff::array_size(values));
@@ -41,8 +40,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena, 100);
+            int* values = ff::array_init<int>(&arena, 100);
             Assert::AreEqual((size_t)0, ff::array_size(values));
 
             // Preallocated capacity means filling up to it must not relocate the block.
@@ -58,21 +56,18 @@ namespace ff::test::base
             arena.destroy();
         }
 
-        TEST_METHOD(init_reserve_rounds_capacity_up_to_power_of_2)
+        TEST_METHOD(init_reserve_uses_capacity_directly)
         {
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* a = nullptr;
-            ff::array_init(a, &arena, 5); // -> 8
-            Assert::AreEqual((size_t)8, ff::internal::array_get_header(a)->capacity);
+            int* a = ff::array_init<int>(&arena, 5); // used as-is, no rounding
+            Assert::AreEqual((size_t)5, ff::internal::array_get_header(a)->capacity);
 
-            int* b = nullptr;
-            ff::array_init(b, &arena, 100); // -> 128
-            Assert::AreEqual((size_t)128, ff::internal::array_get_header(b)->capacity);
+            int* b = ff::array_init<int>(&arena, 100);
+            Assert::AreEqual((size_t)100, ff::internal::array_get_header(b)->capacity);
 
-            int* c = nullptr;
-            ff::array_init(c, &arena); // default 0 stays 0 (no element allocation)
+            int* c = ff::array_init<int>(&arena); // default 0 (no element allocation)
             Assert::AreEqual((size_t)0, ff::internal::array_get_header(c)->capacity);
 
             arena.destroy();
@@ -86,8 +81,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             ff::array_push(values, 42);
 
             Assert::AreEqual((size_t)1, ff::array_size(values));
@@ -101,8 +95,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             for (int i = 0; i < 5; i++)
             {
                 ff::array_push(values, i * 10);
@@ -122,8 +115,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(64 * 1024);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
 
             for (int i = 0; i < 1000; i++)
             {
@@ -144,8 +136,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
 
             size_t first = ff::array_push(values, 7);
             size_t second = ff::array_push(values, 8);
@@ -166,8 +157,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             ff::array_push(values, 1);
 
             ff::array_resize(values, 4); // slots [1..3] are now live but uninitialized
@@ -189,8 +179,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             for (int i = 0; i < 10; i++)
             {
                 ff::array_push(values, i);
@@ -212,8 +201,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             for (int i = 0; i < 5; i++)
             {
                 ff::array_push(values, i);
@@ -238,8 +226,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             ff::array_push(values, 5);
 
             ff::array_reserve(values, 256);
@@ -263,8 +250,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
             for (int i = 0; i < 10; i++)
             {
                 ff::array_push(values, i);
@@ -292,8 +278,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(64 * 1024);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
+            int* values = ff::array_init<int>(&arena);
 
             // Fill to capacity so the next push must grow.
             for (int i = 0; i < 8; i++)
@@ -330,8 +315,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(4096);
 
-            point* points = nullptr;
-            ff::array_init(points, &arena);
+            point* points = ff::array_init<point>(&arena);
             for (int i = 0; i < 6; i++)
             {
                 point p{ i, i * i };
@@ -348,21 +332,22 @@ namespace ff::test::base
             arena.destroy();
         }
 
-        TEST_METHOD(element_data_is_16_byte_aligned)
+        TEST_METHOD(element_data_meets_header_alignment)
         {
             ff::arena arena;
             arena.init_heap(64 * 1024);
 
-            int* values = nullptr;
-            ff::array_init(values, &arena);
-            Assert::AreEqual((size_t)0, (size_t)((uintptr_t)values % 16));
+            // int (alignof 4) is floored to the header's alignment, so the data is header-aligned.
+            constexpr size_t min_align = alignof(ff::internal::array_header);
+            int* values = ff::array_init<int>(&arena);
+            Assert::AreEqual((size_t)0, (size_t)((uintptr_t)values % min_align));
 
             // Stays aligned across growth/relocation.
             for (int i = 0; i < 500; i++)
             {
                 ff::array_push(values, i);
             }
-            Assert::AreEqual((size_t)0, (size_t)((uintptr_t)values % 16));
+            Assert::AreEqual((size_t)0, (size_t)((uintptr_t)values % min_align));
 
             arena.destroy();
         }
@@ -372,8 +357,7 @@ namespace ff::test::base
             ff::arena arena;
             arena.init_heap(64 * 1024);
 
-            cache_line* items = nullptr;
-            ff::array_init(items, &arena);
+            cache_line* items = ff::array_init<cache_line>(&arena);
             Assert::AreEqual((size_t)0, (size_t)((uintptr_t)items % alignof(cache_line)));
 
             // Stays aligned to the element's over-alignment across growth/relocation.
