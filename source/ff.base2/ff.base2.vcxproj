@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -11,6 +11,7 @@
     <ClCompile Include="base\arena.cpp" />
     <ClCompile Include="base\array.cpp" />
     <ClCompile Include="base\assert.cpp" />
+    <ClCompile Include="base\hash.cpp" />
     <ClCompile Include="base\math.cpp" />
     <ClCompile Include="base\string.cpp" />
     <ClCompile Include="base\string_builder.cpp" />
@@ -22,6 +23,7 @@
     <ClInclude Include="base\arena.h" />
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
+    <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />

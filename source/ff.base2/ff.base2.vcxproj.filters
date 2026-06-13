@@ -23,6 +23,9 @@
     <ClCompile Include="base\array.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\hash.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -45,6 +48,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\array.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\hash.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
