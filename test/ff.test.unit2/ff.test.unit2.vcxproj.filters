@@ -9,11 +9,16 @@
     <ClCompile Include="base\string_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\string_builder_tests.cpp" />
     <ClCompile Include="base\array_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\hash_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string_builder_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\value_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
   </ItemGroup>

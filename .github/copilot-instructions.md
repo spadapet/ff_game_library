@@ -16,7 +16,7 @@ The `ff.base2` project has strict constraints. When suggesting or generating cod
   - Use `init()` and `destroy()` member (or free) functions for lifetime management instead of constructors/destructors.
 - Prefer Win32 intrinsics (`InterlockedIncrement`, etc.) over C++ standard equivalents.
 - Prefer C types from stdint.h (`uint32_t`, `int64_t`, etc.) and `bool` over Win32 or C++ types. Only use Win32 types when necessary for API compatibility (e.g., `DWORD`, `HANDLE`).
-- Use fixed-size C arrays or raw pointers rather than `std::array` / `std::vector`.
+- Use fixed-size C arrays or raw pointers rather than `std::array` / `std::vector`. For dynamic arrays, use the `ff::array` helpers in `array.h` (which are thin, POD-only wrappers over a type-erased core) rather than any C++ container types. Variables that use `ff::array` should have a `_a` suffix to the variable name. Otherwise they just look like pointers.
 - Use `_snprintf_s` and similar CRT functions rather than `std::format` or C++ streams.
 - Use C-style casts rather than C++ casts (`static_cast`, `reinterpret_cast`, etc.).
 - `constexpr` is good for compile-time constants, but avoid `const` variables that require dynamic initialization.

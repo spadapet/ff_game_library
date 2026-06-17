@@ -1,6 +1,11 @@
 #include "pch.h"
 #include "base/math.h"
 
+bool ff::is_pow2(size_t value)
+{
+    return value && !(value & (value - 1));
+}
+
 size_t ff::round_up_pow2(size_t value)
 {
     if (value <= 1)

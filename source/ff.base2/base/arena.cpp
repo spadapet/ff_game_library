@@ -435,7 +435,7 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
 
 void* ff::arena::alloc(size_t size, size_t align)
 {
-    FF_ASSERT(align && !(align & (align - 1)));
+    FF_ASSERT(ff::is_pow2(align));
     FF_CHECK_RET_VAL(size, nullptr);
 
     // Fast path: bump within the current buffer. Tiny on purpose so LTCG can reliably inline
@@ -453,7 +453,7 @@ void* ff::arena::alloc(size_t size, size_t align)
 
 void* ff::arena::realloc(const void* start, size_t size, size_t new_size, size_t align)
 {
-    FF_ASSERT(align && !(align & (align - 1)));
+    FF_ASSERT(ff::is_pow2(align));
     FF_CHECK_RET_VAL(new_size, nullptr);
 
     uint8_t* old_start = (uint8_t*)start;

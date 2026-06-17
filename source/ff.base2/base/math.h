@@ -2,6 +2,8 @@
 
 namespace ff
 {
+    bool is_pow2(size_t value);
+
     // Smallest power of 2 that is >= value (returns 1 for value <= 1). For values whose next
     // power of 2 would overflow size_t, returns value unchanged.
     size_t round_up_pow2(size_t value);

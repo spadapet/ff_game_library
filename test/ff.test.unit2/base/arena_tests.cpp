@@ -8,6 +8,7 @@ static size_t buffer_count(const ff::internal::arena_buffer* list)
     {
         ++count;
     }
+
     return count;
 }
 

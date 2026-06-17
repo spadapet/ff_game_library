@@ -26,7 +26,7 @@
     <ClCompile Include="base\hash.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\variant.cpp">
+    <ClCompile Include="base\value.cpp">
       <Filter>base</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,7 +35,7 @@
     <ClInclude Include="base\assert.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\blob.h">
+    <ClInclude Include="base\span.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\arena.h">
@@ -59,7 +59,10 @@
     <ClInclude Include="base\hash.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\variant.h">
+    <ClInclude Include="base\value.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\dict.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
