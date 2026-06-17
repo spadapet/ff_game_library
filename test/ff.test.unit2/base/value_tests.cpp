@@ -199,25 +199,25 @@ namespace ff::test::base
         }
 
         // ====================================================================
-        // Data (ff::span overload)
+        // Data (ff::raw_span overload)
         // ====================================================================
         TEST_METHOD(data_from_span_sets_metadata)
         {
             uint8_t bytes[4] = { 10, 20, 30, 40 };
-            ff::span span{ bytes, 4 };
+            ff::raw_span span{ bytes, 4 };
 
             ff::value v = ff::value::new_data(span);
 
             Assert::IsTrue(v.type == ff::value_type::data);
             Assert::AreEqual<size_t>(4, (size_t)v.data_a.count);
-            Assert::AreEqual<size_t>(1, (size_t)v.data_a.element_size);
-            Assert::AreEqual<size_t>(alignof(size_t), (size_t)v.data_a.element_align);
+            Assert::AreEqual<size_t>(1, (size_t)v.data_a.item_size);
+            Assert::AreEqual<size_t>(alignof(size_t), (size_t)v.data_a.item_align);
         }
 
         TEST_METHOD(data_from_span_no_arena_shares_pointer)
         {
             uint8_t bytes[4] = { 10, 20, 30, 40 };
-            ff::span span{ bytes, 4 };
+            ff::raw_span span{ bytes, 4 };
 
             ff::value v = ff::value::new_data(span);
 
@@ -231,7 +231,7 @@ namespace ff::test::base
             arena.init_heap(4096);
 
             uint8_t bytes[4] = { 1, 2, 3, 4 };
-            ff::span span{ bytes, 4 };
+            ff::raw_span span{ bytes, 4 };
 
             ff::value v = ff::value::new_data(span, &arena);
 
@@ -252,7 +252,7 @@ namespace ff::test::base
             arena.init_heap(4096);
 
             uint8_t bytes[4] = { 1, 2, 3, 4 };
-            ff::span span{ bytes, 4 };
+            ff::raw_span span{ bytes, 4 };
 
             ff::value v = ff::value::new_data(span, &arena);
             Assert::IsTrue(is_aligned(v.data_a.data, alignof(size_t)));
@@ -270,16 +270,16 @@ namespace ff::test::base
             ff::array_span as{};
             as.data = nums;
             as.count = 3;
-            as.element_size = sizeof(uint32_t);
-            as.element_align = alignof(uint32_t);
+            as.item_size = sizeof(uint32_t);
+            as.item_align = alignof(uint32_t);
 
             ff::value v = ff::value::new_data(as);
 
             Assert::IsTrue(v.type == ff::value_type::data);
             Assert::IsTrue(v.data_a.data == nums);
             Assert::AreEqual<size_t>(3, (size_t)v.data_a.count);
-            Assert::AreEqual<size_t>(sizeof(uint32_t), (size_t)v.data_a.element_size);
-            Assert::AreEqual<size_t>(alignof(uint32_t), (size_t)v.data_a.element_align);
+            Assert::AreEqual<size_t>(sizeof(uint32_t), (size_t)v.data_a.item_size);
+            Assert::AreEqual<size_t>(alignof(uint32_t), (size_t)v.data_a.item_align);
         }
 
         TEST_METHOD(data_from_array_span_with_arena_copies_all_elements)
@@ -292,8 +292,8 @@ namespace ff::test::base
             ff::array_span as{};
             as.data = nums;
             as.count = 3;
-            as.element_size = sizeof(uint32_t);
-            as.element_align = alignof(uint32_t);
+            as.item_size = sizeof(uint32_t);
+            as.item_align = alignof(uint32_t);
 
             ff::value v = ff::value::new_data(as, &arena);
 
@@ -313,7 +313,7 @@ namespace ff::test::base
             arena.init_heap(4096);
 
             uint8_t bytes[1] = { 7 };
-            ff::span span{ bytes, 0 };
+            ff::raw_span span{ bytes, 0 };
 
             // Zero-count data has nothing to copy; the pointer is left as provided.
             ff::value v = ff::value::new_data(span, &arena);
@@ -359,7 +359,7 @@ namespace ff::test::base
 
             Assert::IsTrue(v.type == ff::value_type::string);
             Assert::IsTrue(out.data == src.data);
-            Assert::AreEqual<size_t>(5, out.size);
+            Assert::AreEqual<size_t>(5, out.count);
         }
 
         TEST_METHOD(string_with_arena_copies)
@@ -375,7 +375,7 @@ namespace ff::test::base
 
             Assert::IsTrue(v.type == ff::value_type::string);
             Assert::IsTrue(out.data != buffer); // deep copy
-            Assert::AreEqual<size_t>(5, out.size);
+            Assert::AreEqual<size_t>(5, out.count);
             Assert::IsTrue(bytes_equal(out.data, "hello", 5));
 
             // Mutating the source must not affect the copy.
@@ -393,7 +393,7 @@ namespace ff::test::base
             ff::string_view out = v.as_string();
 
             Assert::IsTrue(v.type == ff::value_type::string);
-            Assert::AreEqual<size_t>(0, out.size);
+            Assert::AreEqual<size_t>(0, out.count);
         }
 
         // ====================================================================
@@ -411,8 +411,8 @@ namespace ff::test::base
             ff::value v = ff::value::new_array(items, 3);
 
             Assert::IsTrue(v.type == ff::value_type::array);
-            Assert::IsTrue(v.as_array() == items);
-            Assert::AreEqual<size_t>(3, v.as_array_size());
+            Assert::IsTrue(v.as_array().data == items);
+            Assert::AreEqual<size_t>(3, v.as_array().count);
         }
 
         TEST_METHOD(array_elements_readable)
@@ -425,7 +425,7 @@ namespace ff::test::base
             };
 
             ff::value v = ff::value::new_array(items, 3);
-            ff::value* arr = v.as_array();
+            const ff::value* arr = v.as_array().data;
 
             for (int32_t i = 0; i < 3; i++)
             {
@@ -446,16 +446,16 @@ namespace ff::test::base
             };
 
             ff::value v = ff::value::new_array(items, 2, &arena);
-            ff::value* arr = v.as_array();
+            const ff::value* arr = v.as_array().data;
 
             Assert::IsTrue(arr != items); // deep copy
-            Assert::AreEqual<size_t>(2, v.as_array_size());
+            Assert::AreEqual<size_t>(2, v.as_array().count);
             Assert::AreEqual<int32_t>(10, arr[0].i32);
             Assert::AreEqual<int32_t>(20, arr[1].i32);
 
             // Mutating the source must not affect the copy.
             items[0] = ff::value::new_int32(999);
-            Assert::AreEqual<int32_t>(10, v.as_array()[0].i32);
+            Assert::AreEqual<int32_t>(10, v.as_array().data[0].i32);
 
             arena.destroy();
         }
@@ -467,7 +467,7 @@ namespace ff::test::base
             ff::value v = ff::value::new_array(items, 0);
 
             Assert::IsTrue(v.type == ff::value_type::array);
-            Assert::AreEqual<size_t>(0, v.as_array_size());
+            Assert::AreEqual<size_t>(0, v.as_array().count);
         }
 
         TEST_METHOD(array_of_mixed_types_round_trip)
@@ -480,7 +480,7 @@ namespace ff::test::base
             };
 
             ff::value v = ff::value::new_array(items, 3);
-            ff::value* arr = v.as_array();
+            const ff::value* arr = v.as_array().data;
 
             Assert::IsTrue(arr[0].type == ff::value_type::boolean);
             Assert::IsTrue(arr[0].b);

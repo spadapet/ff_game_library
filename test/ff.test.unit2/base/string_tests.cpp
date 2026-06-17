@@ -3,13 +3,13 @@
 // Compare a UTF-8 view to a known byte array (exact length, no null terminator assumed).
 static bool utf8_equals(ff::string_view view, const char* bytes, size_t size)
 {
-    return view.size == size && (size == 0 || ::memcmp(view.data, bytes, size) == 0);
+    return view.count == size && (size == 0 || ::memcmp(view.data, bytes, size) == 0);
 }
 
 // Compare a UTF-16 view to a known wchar_t array (exact length, no null terminator assumed).
 static bool wide_equals(ff::wstring_view view, const wchar_t* units, size_t size)
 {
-    return view.size == size && (size == 0 || ::memcmp(view.data, units, size * sizeof(wchar_t)) == 0);
+    return view.count == size && (size == 0 || ::memcmp(view.data, units, size * sizeof(wchar_t)) == 0);
 }
 
 namespace ff::test::base
@@ -30,7 +30,7 @@ namespace ff::test::base
 
             const wchar_t expected[] = { L'H', L'e', L'l', L'l', L'o' };
             Assert::IsTrue(wide_equals(dest, expected, 5));
-            Assert::IsTrue(dest.data[dest.size] == 0); // null-terminated past the reported size
+            Assert::IsTrue(dest.data[dest.count] == 0); // null-terminated past the reported size
 
             arena.destroy();
         }
@@ -91,7 +91,7 @@ namespace ff::test::base
             ff::string_view src{ "", 0 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            Assert::AreEqual((size_t)0, dest.size);
+            Assert::AreEqual((size_t)0, dest.count);
             Assert::IsTrue(dest.data != nullptr);
             Assert::IsTrue(dest.data[0] == 0); // empty but still null-terminated
 
@@ -121,7 +121,7 @@ namespace ff::test::base
             ff::string_view src{ "AB", 2 };
             ff::wstring_view dest = ff::utf8_to_wide(src, &arena);
 
-            Assert::AreEqual((size_t)2, dest.size);
+            Assert::AreEqual((size_t)2, dest.count);
             Assert::IsTrue(dest.data[0] == L'A');
             Assert::IsTrue(dest.data[1] == L'B');
             Assert::IsTrue(dest.data[2] == 0); // explicit terminator just past the size
@@ -142,7 +142,7 @@ namespace ff::test::base
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
             Assert::IsTrue(utf8_equals(dest, "Hello", 5));
-            Assert::IsTrue(dest.data[dest.size] == 0); // null-terminated past the reported size
+            Assert::IsTrue(dest.data[dest.count] == 0); // null-terminated past the reported size
 
             arena.destroy();
         }
@@ -188,7 +188,7 @@ namespace ff::test::base
             ff::wstring_view src{ src_units, 0 };
             ff::string_view dest = ff::wide_to_utf8(src, &arena);
 
-            Assert::AreEqual((size_t)0, dest.size);
+            Assert::AreEqual((size_t)0, dest.count);
             Assert::IsTrue(dest.data != nullptr);
             Assert::IsTrue(dest.data[0] == 0); // empty but still null-terminated
 
@@ -256,7 +256,7 @@ namespace ff::test::base
 
             ff::string_view src{ buffer, sizeof(buffer) };
             ff::wstring_view wide = ff::utf8_to_wide(src, &arena);
-            Assert::AreEqual((size_t)2000, wide.size);
+            Assert::AreEqual((size_t)2000, wide.count);
 
             ff::string_view back = ff::wide_to_utf8(wide, &arena);
             Assert::IsTrue(utf8_equals(back, buffer, sizeof(buffer)));
@@ -270,28 +270,28 @@ namespace ff::test::base
         TEST_METHOD(ff_svl_literal_length)
         {
             ff::string_view view = FF_SVL("hello");
-            Assert::AreEqual((size_t)5, view.size); // excludes the null terminator
+            Assert::AreEqual((size_t)5, view.count); // excludes the null terminator
             Assert::IsTrue(utf8_equals(view, "hello", 5));
         }
 
         TEST_METHOD(ff_svl_empty_literal)
         {
             ff::string_view view = FF_SVL("");
-            Assert::AreEqual((size_t)0, view.size);
+            Assert::AreEqual((size_t)0, view.count);
         }
 
         TEST_METHOD(sz_view_narrow)
         {
             const char* sz = "world";
             ff::string_view view = ff::sz_view(sz);
-            Assert::AreEqual((size_t)5, view.size);
+            Assert::AreEqual((size_t)5, view.count);
             Assert::IsTrue(utf8_equals(view, "world", 5));
         }
 
         TEST_METHOD(sz_view_narrow_null)
         {
             ff::string_view view = ff::sz_view((const char*)nullptr);
-            Assert::AreEqual((size_t)0, view.size);
+            Assert::AreEqual((size_t)0, view.count);
             Assert::IsNull(view.data);
         }
 
@@ -299,7 +299,7 @@ namespace ff::test::base
         {
             // 'size' must be the wchar_t unit count, not the byte count.
             ff::wstring_view view = FF_WSVL(L"hello");
-            Assert::AreEqual((size_t)5, view.size);
+            Assert::AreEqual((size_t)5, view.count);
 
             const wchar_t expected[] = { L'h', L'e', L'l', L'l', L'o' };
             Assert::IsTrue(wide_equals(view, expected, 5));
@@ -308,21 +308,21 @@ namespace ff::test::base
         TEST_METHOD(ff_wsvl_empty_literal)
         {
             ff::wstring_view view = FF_WSVL(L"");
-            Assert::AreEqual((size_t)0, view.size);
+            Assert::AreEqual((size_t)0, view.count);
         }
 
         TEST_METHOD(ff_wsvl_counts_units_not_bytes)
         {
             // A surrogate pair is 2 wchar_t units; "ab" + U+1F600 => 'a', 'b', D83D, DE00 = 4 units.
             ff::wstring_view view = FF_WSVL(L"ab\U0001F600");
-            Assert::AreEqual((size_t)4, view.size);
+            Assert::AreEqual((size_t)4, view.count);
         }
 
         TEST_METHOD(sz_view_wide)
         {
             const wchar_t* sz = L"world";
             ff::wstring_view view = ff::sz_view(sz);
-            Assert::AreEqual((size_t)5, view.size);
+            Assert::AreEqual((size_t)5, view.count);
 
             const wchar_t expected[] = { L'w', L'o', L'r', L'l', L'd' };
             Assert::IsTrue(wide_equals(view, expected, 5));
@@ -331,7 +331,7 @@ namespace ff::test::base
         TEST_METHOD(sz_view_wide_null)
         {
             ff::wstring_view view = ff::sz_view((const wchar_t*)nullptr);
-            Assert::AreEqual((size_t)0, view.size);
+            Assert::AreEqual((size_t)0, view.count);
             Assert::IsNull(view.data);
         }
 

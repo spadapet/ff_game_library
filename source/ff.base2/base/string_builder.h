@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdarg.h>
 #include "../base/string_view.h"
 
 namespace ff
@@ -11,7 +10,7 @@ namespace ff
     // use an init() function for setup. There is no destroy(): the arena owns the memory and
     // reclaims it on arena reset/destroy, so the builder needs no teardown.
     //
-    // The buffer always keeps one extra byte of capacity past 'size' so c_str() can write a
+    // The buffer always keeps one extra byte of capacity past 'count' so c_str() can write a
     // terminating '\0' without growing. Mutators return 'this' for chaining and assert on failure.
     //
     // Arena note: growth calls arena::realloc, which only resizes in place when this buffer is the
@@ -39,7 +38,7 @@ namespace ff
         ff::string_builder* remove(size_t pos, size_t count);
 
         const char* c_str() const; // null-terminates and returns the buffer (terminator slot is always reserved)
-        ff::string_view view() const; // start + size, not null-terminated
+        ff::string_view view() const; // start + count, not null-terminated
 
         // Copy the built string into a newly allocated char array (see array.h) that outlives the
         // builder. The array's size is the string length; one extra capacity byte holds a '\0', so the
@@ -49,7 +48,7 @@ namespace ff
 
         ff::arena* arena;
         char* data;
-        size_t size; // used chars (excludes the lazily-written null terminator)
-        size_t capacity; // total allocated chars (always >= size + 1 for the terminator)
+        size_t count; // used chars (excludes the lazily-written null terminator)
+        size_t capacity; // total allocated chars (always >= count + 1 for the terminator)
     };
 }

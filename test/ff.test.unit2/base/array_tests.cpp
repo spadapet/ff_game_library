@@ -30,7 +30,7 @@ namespace ff::test::base
             int* values = ff::array_init<int>(&arena);
 
             Assert::IsNotNull(values);
-            Assert::AreEqual((size_t)0, ff::array_size(values));
+            Assert::AreEqual((size_t)0, ff::array_count(values));
 
             arena.destroy();
         }
@@ -41,7 +41,7 @@ namespace ff::test::base
             arena.init_heap(4096);
 
             int* values = ff::array_init<int>(&arena, 100);
-            Assert::AreEqual((size_t)0, ff::array_size(values));
+            Assert::AreEqual((size_t)0, ff::array_count(values));
 
             // Preallocated capacity means filling up to it must not relocate the block.
             int* before = values;
@@ -51,7 +51,7 @@ namespace ff::test::base
             }
 
             Assert::IsTrue(values == before);
-            Assert::AreEqual((size_t)100, ff::array_size(values));
+            Assert::AreEqual((size_t)100, ff::array_count(values));
 
             arena.destroy();
         }
@@ -84,7 +84,7 @@ namespace ff::test::base
             int* values = ff::array_init<int>(&arena);
             ff::array_push(values, 42);
 
-            Assert::AreEqual((size_t)1, ff::array_size(values));
+            Assert::AreEqual((size_t)1, ff::array_count(values));
             Assert::AreEqual(42, values[0]);
 
             arena.destroy();
@@ -101,7 +101,7 @@ namespace ff::test::base
                 ff::array_push(values, i * 10);
             }
 
-            Assert::AreEqual((size_t)5, ff::array_size(values));
+            Assert::AreEqual((size_t)5, ff::array_count(values));
             for (int i = 0; i < 5; i++)
             {
                 Assert::AreEqual(i * 10, values[i]);
@@ -122,7 +122,7 @@ namespace ff::test::base
                 ff::array_push(values, i);
             }
 
-            Assert::AreEqual((size_t)1000, ff::array_size(values));
+            Assert::AreEqual((size_t)1000, ff::array_count(values));
             for (int i = 0; i < 1000; i++)
             {
                 Assert::AreEqual(i, values[i]);
@@ -165,7 +165,7 @@ namespace ff::test::base
             values[2] = 20;
             values[3] = 30;
 
-            Assert::AreEqual((size_t)4, ff::array_size(values));
+            Assert::AreEqual((size_t)4, ff::array_count(values));
             Assert::AreEqual(1, values[0]);
             Assert::AreEqual(10, values[1]);
             Assert::AreEqual(20, values[2]);
@@ -188,7 +188,7 @@ namespace ff::test::base
             int* before = values;
             ff::array_resize(values, 3);
 
-            Assert::AreEqual((size_t)3, ff::array_size(values));
+            Assert::AreEqual((size_t)3, ff::array_count(values));
             Assert::IsTrue(values == before); // shrink keeps the block (no arena work)
             Assert::AreEqual(0, values[0]);
             Assert::AreEqual(2, values[2]);
@@ -209,7 +209,7 @@ namespace ff::test::base
 
             ff::array_resize(values, 500); // grows well past capacity, forcing a relocation
 
-            Assert::AreEqual((size_t)500, ff::array_size(values));
+            Assert::AreEqual((size_t)500, ff::array_count(values));
             for (int i = 0; i < 5; i++)
             {
                 Assert::AreEqual(i, values[i]); // original elements preserved across the grow
@@ -230,7 +230,7 @@ namespace ff::test::base
             ff::array_push(values, 5);
 
             ff::array_reserve(values, 256);
-            Assert::AreEqual((size_t)1, ff::array_size(values)); // reserve doesn't change size
+            Assert::AreEqual((size_t)1, ff::array_count(values)); // reserve doesn't change size
             Assert::AreEqual(5, values[0]);
 
             // Capacity now covers 256, so filling up to it must not relocate.
@@ -240,7 +240,7 @@ namespace ff::test::base
                 ff::array_push(values, i);
             }
             Assert::IsTrue(values == before);
-            Assert::AreEqual((size_t)256, ff::array_size(values));
+            Assert::AreEqual((size_t)256, ff::array_count(values));
 
             arena.destroy();
         }
@@ -259,12 +259,12 @@ namespace ff::test::base
             int* before = values;
             ff::array_resize(values, 0); // clear: size 0, capacity kept
 
-            Assert::AreEqual((size_t)0, ff::array_size(values));
+            Assert::AreEqual((size_t)0, ff::array_count(values));
 
             // Capacity is retained, so refilling does not relocate.
             ff::array_push(values, 123);
             Assert::IsTrue(values == before);
-            Assert::AreEqual((size_t)1, ff::array_size(values));
+            Assert::AreEqual((size_t)1, ff::array_count(values));
             Assert::AreEqual(123, values[0]);
 
             arena.destroy();
@@ -298,7 +298,7 @@ namespace ff::test::base
             }
 
             Assert::IsTrue(values != before); // relocated
-            Assert::AreEqual((size_t)20, ff::array_size(values));
+            Assert::AreEqual((size_t)20, ff::array_count(values));
             for (int i = 0; i < 20; i++)
             {
                 Assert::AreEqual(i, values[i]);
@@ -322,7 +322,7 @@ namespace ff::test::base
                 ff::array_push(points, p);
             }
 
-            Assert::AreEqual((size_t)6, ff::array_size(points));
+            Assert::AreEqual((size_t)6, ff::array_count(points));
             for (int i = 0; i < 6; i++)
             {
                 Assert::AreEqual(i, points[i].x);
@@ -367,7 +367,7 @@ namespace ff::test::base
                 ff::array_push(items, item);
             }
 
-            Assert::AreEqual((size_t)500, ff::array_size(items));
+            Assert::AreEqual((size_t)500, ff::array_count(items));
             Assert::AreEqual((size_t)0, (size_t)((uintptr_t)items % alignof(cache_line)));
             for (int i = 0; i < 500; i++)
             {

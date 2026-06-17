@@ -20,7 +20,7 @@ void* ff::internal::array_alloc(ff::arena* arena, size_t item_size, size_t item_
     uint8_t* data = block + offset;
     ff::internal::array_header* header = ff::internal::array_get_header(data);
     header->arena = arena;
-    header->size = 0;
+    header->count = 0;
     header->capacity = capacity;
 
     return data;

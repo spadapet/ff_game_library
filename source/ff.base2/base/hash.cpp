@@ -165,10 +165,10 @@ uint64_t ff::hash_bytes(const void* data, size_t size)
 
 uint64_t ff::hash_string(ff::string_view value)
 {
-    return ff::hash_bytes(value.data, value.size);
+    return ff::hash_bytes(value.data, value.count);
 }
 
 uint64_t ff::hash_string(ff::wstring_view value)
 {
-    return ff::hash_bytes(value.data, value.size * sizeof(wchar_t));
+    return ff::hash_bytes(value.data, value.count * sizeof(wchar_t));
 }

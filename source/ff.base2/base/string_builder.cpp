@@ -33,16 +33,16 @@ static void init_common(ff::string_builder* builder, ff::arena* arena, size_t in
 {
     builder->arena = arena;
     builder->data = nullptr;
-    builder->size = 0;
+    builder->count = 0;
     builder->capacity = 0;
 
     // +1 reserves the null terminator slot; seed content must also fit for a single allocation.
-    size_t wanted = __max(initial_capacity, initial.size);
+    size_t wanted = __max(initial_capacity, initial.count);
     size_t needed = __max(wanted, ::min_capacity) + 1;
-    if (::ensure_capacity(builder, needed) && initial.size && builder->data)
+    if (::ensure_capacity(builder, needed) && initial.count && builder->data)
     {
-        ::memcpy(builder->data, initial.data, initial.size);
-        builder->size = initial.size;
+        ::memcpy(builder->data, initial.data, initial.count);
+        builder->count = initial.count;
     }
 }
 
@@ -79,7 +79,7 @@ void ff::string_builder::init_format_v(ff::arena* arena, ff::string_view format,
 
 ff::string_builder* ff::string_builder::reset()
 {
-    this->size = 0;
+    this->count = 0;
     return this;
 }
 
@@ -91,9 +91,9 @@ ff::string_builder* ff::string_builder::reserve(size_t capacity)
 
 ff::string_builder* ff::string_builder::append(char value)
 {
-    if (::ensure_capacity(this, this->size + 2))
+    if (::ensure_capacity(this, this->count + 2))
     {
-        this->data[this->size++] = value;
+        this->data[this->count++] = value;
     }
 
     return this;
@@ -101,10 +101,10 @@ ff::string_builder* ff::string_builder::append(char value)
 
 ff::string_builder* ff::string_builder::append(ff::string_view value)
 {
-    if (value.size && ::ensure_capacity(this, this->size + value.size + 1))
+    if (value.count && ::ensure_capacity(this, this->count + value.count + 1))
     {
-        ::memcpy(this->data + this->size, value.data, value.size);
-        this->size += value.size;
+        ::memcpy(this->data + this->count, value.data, value.count);
+        this->count += value.count;
     }
 
     return this;
@@ -119,7 +119,7 @@ ff::string_builder* ff::string_builder::append_format_v(ff::string_view format, 
     ff::arena temp_arena;
     temp_arena.init_external(format_stack, sizeof(format_stack), 0);
 
-    char* format_copy = (char*)temp_arena.alloc(format.size + 1, 1);
+    char* format_copy = (char*)temp_arena.alloc(format.count + 1, 1);
     if (!format_copy)
     {
         FF_ASSERT(format_copy);
@@ -127,8 +127,8 @@ ff::string_builder* ff::string_builder::append_format_v(ff::string_view format, 
         return this;
     }
 
-    ::memcpy(format_copy, format.data, format.size);
-    format_copy[format.size] = '\0';
+    ::memcpy(format_copy, format.data, format.count);
+    format_copy[format.count] = '\0';
 
     // va_copy: the measure pass consumes the va_list, leaving 'args' for the fill pass.
     va_list measure_args;
@@ -136,10 +136,10 @@ ff::string_builder* ff::string_builder::append_format_v(ff::string_view format, 
     int needed = ::_vscprintf(format_copy, measure_args);
     va_end(measure_args);
 
-    if (needed > 0 && ::ensure_capacity(this, this->size + (size_t)needed + 1) && this->data)
+    if (needed > 0 && ::ensure_capacity(this, this->count + (size_t)needed + 1) && this->data)
     {
-        ::vsnprintf(this->data + this->size, (size_t)needed + 1, format_copy, args);
-        this->size += (size_t)needed;
+        ::vsnprintf(this->data + this->count, (size_t)needed + 1, format_copy, args);
+        this->count += (size_t)needed;
     }
 
     temp_arena.destroy();
@@ -162,13 +162,13 @@ ff::string_builder* ff::string_builder::insert(size_t pos, char value)
 
 ff::string_builder* ff::string_builder::insert(size_t pos, ff::string_view value)
 {
-    FF_ASSERT_RET_VAL(pos <= this->size, this);
+    FF_ASSERT_RET_VAL(pos <= this->count, this);
 
-    if (value.size && ::ensure_capacity(this, this->size + value.size + 1))
+    if (value.count && ::ensure_capacity(this, this->count + value.count + 1))
     {
-        ::memmove(this->data + pos + value.size, this->data + pos, this->size - pos);
-        ::memcpy(this->data + pos, value.data, value.size);
-        this->size += value.size;
+        ::memmove(this->data + pos + value.count, this->data + pos, this->count - pos);
+        ::memcpy(this->data + pos, value.data, value.count);
+        this->count += value.count;
     }
 
     return this;
@@ -176,13 +176,13 @@ ff::string_builder* ff::string_builder::insert(size_t pos, ff::string_view value
 
 ff::string_builder* ff::string_builder::remove(size_t pos, size_t count)
 {
-    FF_ASSERT_RET_VAL(pos <= this->size, this);
+    FF_ASSERT_RET_VAL(pos <= this->count, this);
 
-    count = __min(count, this->size - pos); // clamp so removing past the end trims to the end
+    count = __min(count, this->count - pos); // clamp so removing past the end trims to the end
     if (count)
     {
-        ::memmove(this->data + pos, this->data + pos + count, this->size - pos - count);
-        this->size -= count;
+        ::memmove(this->data + pos, this->data + pos + count, this->count - pos - count);
+        this->count -= count;
     }
 
     return this;
@@ -191,7 +191,7 @@ ff::string_builder* ff::string_builder::remove(size_t pos, size_t count)
 const char* ff::string_builder::c_str() const
 {
     // const is safe: capacity always reserves the terminator slot, so writing it changes no member.
-    this->data[this->size] = '\0';
+    this->data[this->count] = '\0';
     return this->data;
 }
 
@@ -199,23 +199,23 @@ ff::string_view ff::string_builder::view() const
 {
     ff::string_view result;
     result.data = this->data;
-    result.size = this->size;
+    result.count = this->count;
     return result;
 }
 
 const char* ff::string_builder::store(ff::arena* arena) const
 {
     // Always return an allocated array so ff::array_size works (empty included); null only on alloc failure.
-    char* result = ff::array_init<char>(arena ? arena : this->arena, this->size + 1);
+    char* result = ff::array_init<char>(arena ? arena : this->arena, this->count + 1);
     FF_ASSERT_RET_VAL(result, nullptr);
 
-    ff::array_resize(result, this->size);
+    ff::array_resize(result, this->count);
 
-    if (this->size)
+    if (this->count)
     {
-        ::memcpy(result, this->data, this->size);
+        ::memcpy(result, this->data, this->count);
     }
 
-    result[this->size] = '\0';
+    result[this->count] = '\0';
     return result;
 }

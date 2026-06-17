@@ -11,7 +11,7 @@ namespace ff::internal
     struct array_header
     {
         ff::arena* arena;
-        size_t size;
+        size_t count;
         size_t capacity;
     };
 
@@ -32,9 +32,9 @@ namespace ff
         return (T*)ff::internal::array_alloc(arena, sizeof(T), alignof(T), capacity);
     }
 
-    inline size_t array_size(const void* data)
+    inline size_t array_count(const void* data)
     {
-        return ff::internal::array_get_header(data)->size;
+        return ff::internal::array_get_header(data)->count;
     }
 
     template<class T>
@@ -47,7 +47,7 @@ namespace ff
     size_t array_push(T*& a, T value)
     {
         ff::internal::array_header* header = ff::internal::array_get_header(a);
-        size_t index = header->size;
+        size_t index = header->count;
 
         if (index + 1 > header->capacity)
         {
@@ -57,7 +57,7 @@ namespace ff
         }
 
         a[index] = value;
-        header->size = index + 1;
+        header->count = index + 1;
         return index;
     }
 
@@ -65,6 +65,6 @@ namespace ff
     void array_resize(T*& a, size_t new_size)
     {
         ff::array_reserve(a, new_size); // no-op when shrinking or already large enough
-        ff::internal::array_get_header(a)->size = new_size;
+        ff::internal::array_get_header(a)->count = new_size;
     }
 }

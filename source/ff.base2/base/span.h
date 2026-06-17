@@ -2,11 +2,20 @@
 
 namespace ff
 {
-    // A non-owning span of memory.
-    struct span
+    // A non-owning, type-erased span of raw memory (bytes).
+    struct raw_span
     {
         const void* data;
         size_t size;
+    };
+
+    // A non-owning, typed view over a contiguous run of T. Thin POD wrapper (no ownership,
+    // no constructors); used in APIs where the element type is known.
+    template<class T>
+    struct span
+    {
+        const T* data;
+        size_t count;
     };
 
     // A non-owning span of an array.
@@ -14,8 +23,8 @@ namespace ff
     {
         const void* data;
         size_t count : 32;
-        size_t element_size : 16;
-        size_t element_align : 16;
+        size_t item_size : 16;
+        size_t item_align : 16;
     };
 
     // A non-owning slice of memory.
@@ -30,7 +39,7 @@ namespace ff
     {
         size_t offset;
         size_t count : 32;
-        size_t element_size : 16;
-        size_t element_align : 16;
+        size_t item_size : 16;
+        size_t item_align : 16;
     };
 }

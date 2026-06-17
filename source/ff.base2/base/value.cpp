@@ -135,13 +135,13 @@ ff::value ff::value::new_dict(ff::dict* value)
     return result;
 }
 
-ff::value ff::value::new_data(ff::span value, ff::arena* copy_arena)
+ff::value ff::value::new_data(ff::raw_span value, ff::arena* copy_arena)
 {
     ff::array_span as;
     as.data = value.data;
     as.count = value.size;
-    as.element_size = 1;
-    as.element_align = alignof(size_t);
+    as.item_size = 1;
+    as.item_align = alignof(size_t);
 
     return ff::value::new_data(as, copy_arena);
 }
@@ -151,10 +151,10 @@ ff::value ff::value::new_data(ff::array_span value, ff::arena* copy_arena)
     ff::value result{};
     result.data_a = value;
 
-    if (copy_arena && value.data && value.count && value.element_size)
+    if (copy_arena && value.data && value.count && value.item_size)
     {
-        size_t bytes = value.count * value.element_size;
-        void* copied = copy_arena->alloc(bytes, __max(value.element_align, alignof(size_t)));
+        size_t bytes = value.count * value.item_size;
+        void* copied = copy_arena->alloc(bytes, __max(value.item_align, alignof(size_t)));
         ::memcpy(copied, value.data, bytes);
         result.data_a.data = copied;
     }
@@ -165,9 +165,9 @@ ff::value ff::value::new_data(ff::array_span value, ff::arena* copy_arena)
 
 ff::value ff::value::new_string(ff::string_view value, ff::arena* copy_arena)
 {
-    ff::span span;
+    ff::raw_span span;
     span.data = value.data;
-    span.size = value.size;
+    span.size = value.count;
 
     ff::value result = ff::value::new_data(span, copy_arena);
     result.type = ff::value_type::string;
@@ -179,8 +179,8 @@ ff::value ff::value::new_array(ff::value* values, size_t size, ff::arena* copy_a
     ff::array_span span;
     span.data = values;
     span.count = size;
-    span.element_size = sizeof(ff::value);
-    span.element_align = alignof(ff::value);
+    span.item_size = sizeof(ff::value);
+    span.item_align = alignof(ff::value);
 
     ff::value result = ff::value::new_data(span, copy_arena);
     result.type = ff::value_type::array;
@@ -193,16 +193,10 @@ ff::dict* ff::value::as_dict() const
     return (ff::dict*)this->data_a.data;
 }
 
-ff::value* ff::value::as_array() const
+ff::span<ff::value> ff::value::as_array() const
 {
     FF_ASSERT(type == ff::value_type::array);
-    return (ff::value*)this->data_a.data;
-}
-
-size_t ff::value::as_array_size() const
-{
-    FF_ASSERT(type == ff::value_type::array);
-    return this->data_a.count;
+    return ff::span<ff::value>{ (ff::value*)this->data_a.data, this->data_a.count };
 }
 
 ff::string_view ff::value::as_string() const

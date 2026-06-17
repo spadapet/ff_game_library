@@ -51,15 +51,14 @@ namespace ff
         static ff::value new_point_float64(double x, double y);
         static ff::value new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
         static ff::value new_rect_float32(float left, float top, float right, float bottom);
-        static ff::value new_data(ff::span value, ff::arena* copy_arena = nullptr);
+        static ff::value new_data(ff::raw_span value, ff::arena* copy_arena = nullptr);
         static ff::value new_data(ff::array_span value, ff::arena* copy_arena = nullptr);
         static ff::value new_dict(ff::dict* value);
         static ff::value new_string(ff::string_view value, ff::arena* copy_arena = nullptr);
         static ff::value new_array(ff::value* values, size_t size, ff::arena* copy_arena = nullptr);
 
         ff::dict* as_dict() const;
-        ff::value* as_array() const;
-        size_t as_array_size() const;
+        ff::span<ff::value> as_array() const;
         ff::string_view as_string() const;
 
         union

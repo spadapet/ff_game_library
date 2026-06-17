@@ -4,7 +4,7 @@
 static bool view_equals(ff::string_view view, const char* expected)
 {
     size_t expected_len = ::strlen(expected);
-    if (view.size != expected_len)
+    if (view.count != expected_len)
     {
         return false;
     }
@@ -48,7 +48,7 @@ namespace ff::test::base
 
             Assert::AreEqual((void*)&arena, (void*)sb.arena);
             Assert::IsNotNull(sb.data);
-            Assert::AreEqual((size_t)0, sb.size);
+            Assert::AreEqual((size_t)0, sb.count);
             Assert::IsTrue(sb.capacity > 0);
             Assert::AreEqual("", sb.c_str());
 
@@ -64,7 +64,7 @@ namespace ff::test::base
             sb.init(&arena, 4096);
 
             Assert::IsTrue(sb.capacity >= 4096 + 1);
-            Assert::AreEqual((size_t)0, sb.size);
+            Assert::AreEqual((size_t)0, sb.count);
 
             arena.destroy();
         }
@@ -77,7 +77,7 @@ namespace ff::test::base
             ff::string_builder sb;
             sb.init(&arena, ff::string_view{ "hello", 5 });
 
-            Assert::AreEqual((size_t)5, sb.size);
+            Assert::AreEqual((size_t)5, sb.count);
             Assert::AreEqual("hello", sb.c_str());
 
             // Can keep appending after a seeded init.
@@ -95,7 +95,7 @@ namespace ff::test::base
             ff::string_builder sb;
             sb.init(&arena, ff::string_view{ nullptr, 0 });
 
-            Assert::AreEqual((size_t)0, sb.size);
+            Assert::AreEqual((size_t)0, sb.count);
             Assert::AreEqual("", sb.c_str());
 
             arena.destroy();
@@ -116,7 +116,7 @@ namespace ff::test::base
             ff::string_builder sb;
             sb.init(&arena, ff::string_view{ big, sizeof(big) });
 
-            Assert::AreEqual((size_t)2000, sb.size);
+            Assert::AreEqual((size_t)2000, sb.count);
             Assert::IsTrue(::memcmp(sb.data, big, sizeof(big)) == 0);
 
             arena.destroy();
@@ -135,7 +135,7 @@ namespace ff::test::base
 
             sb.append('a')->append('b')->append('c');
 
-            Assert::AreEqual((size_t)3, sb.size);
+            Assert::AreEqual((size_t)3, sb.count);
             Assert::AreEqual("abc", sb.c_str());
 
             arena.destroy();
@@ -152,7 +152,7 @@ namespace ff::test::base
             sb.append(FF_SVL("hello"))->append(FF_SVL(", "))->append(FF_SVL("world"));
 
             Assert::AreEqual("hello, world", sb.c_str());
-            Assert::AreEqual((size_t)12, sb.size);
+            Assert::AreEqual((size_t)12, sb.count);
 
             arena.destroy();
         }
@@ -218,7 +218,7 @@ namespace ff::test::base
             sb.append(FF_SVL("keep"));
             sb.append(ff::string_view{ "", 0 });
 
-            Assert::AreEqual((size_t)4, sb.size);
+            Assert::AreEqual((size_t)4, sb.count);
             Assert::AreEqual("keep", sb.c_str());
 
             arena.destroy();
@@ -237,7 +237,7 @@ namespace ff::test::base
             sb.append(FF_SVL("abcdef"));
 
             ff::string_view view = sb.view();
-            Assert::AreEqual((size_t)6, view.size);
+            Assert::AreEqual((size_t)6, view.count);
             Assert::IsTrue(::view_equals(view, "abcdef"));
             Assert::AreEqual((void*)sb.data, (void*)view.data);
 
@@ -255,7 +255,7 @@ namespace ff::test::base
 
             const char* result = sb.c_str();
             Assert::AreEqual('\0', result[4]);
-            Assert::AreEqual((size_t)4, sb.size); // size excludes the terminator
+            Assert::AreEqual((size_t)4, sb.count); // size excludes the terminator
 
             // Appending after c_str() overwrites the terminator slot correctly.
             sb.append('!');
@@ -308,7 +308,7 @@ namespace ff::test::base
             sb.init(&arena);
             sb.append(FF_SVL("hello"));
 
-            sb.insert(sb.size, FF_SVL("!!!"));
+            sb.insert(sb.count, FF_SVL("!!!"));
 
             Assert::AreEqual("hello!!!", sb.c_str());
 
@@ -395,7 +395,7 @@ namespace ff::test::base
             sb.remove(3, 100); // count past end => trims to end
 
             Assert::AreEqual("abc", sb.c_str());
-            Assert::AreEqual((size_t)3, sb.size);
+            Assert::AreEqual((size_t)3, sb.count);
 
             arena.destroy();
         }
@@ -433,7 +433,7 @@ namespace ff::test::base
 
             sb.reset();
 
-            Assert::AreEqual((size_t)0, sb.size);
+            Assert::AreEqual((size_t)0, sb.count);
             Assert::AreEqual("", sb.c_str());
             Assert::AreEqual((void*)data_before, (void*)sb.data); // same buffer reused
             Assert::AreEqual(capacity_before, sb.capacity);
@@ -457,7 +457,7 @@ namespace ff::test::base
 
             sb.reserve(10000);
             Assert::IsTrue(sb.capacity >= 10000 + 1);
-            Assert::AreEqual((size_t)0, sb.size);
+            Assert::AreEqual((size_t)0, sb.count);
 
             arena.destroy();
         }
@@ -478,7 +478,7 @@ namespace ff::test::base
                 sb.append('x');
             }
 
-            Assert::AreEqual((size_t)1000, sb.size);
+            Assert::AreEqual((size_t)1000, sb.count);
             Assert::IsTrue(sb.capacity > initial_capacity);
 
             // Every char should still be 'x' and the string null-terminated.
@@ -505,7 +505,7 @@ namespace ff::test::base
                 sb.append((char)('a' + (i % 26)));
             }
 
-            Assert::AreEqual((size_t)500, sb.size);
+            Assert::AreEqual((size_t)500, sb.count);
 
             const char* result = sb.c_str();
             for (int i = 0; i < 500; ++i)
@@ -577,7 +577,7 @@ namespace ff::test::base
             sb.append_format(FF_SVL("%s = %d"), "answer", 42);
 
             Assert::AreEqual("answer = 42", sb.c_str());
-            Assert::AreEqual((size_t)11, sb.size);
+            Assert::AreEqual((size_t)11, sb.count);
 
             arena.destroy();
         }
@@ -639,7 +639,7 @@ namespace ff::test::base
             // Produces a long string (well past the initial capacity).
             sb.append_format(FF_SVL("%0500d"), 7);
 
-            Assert::AreEqual((size_t)500, sb.size);
+            Assert::AreEqual((size_t)500, sb.count);
             const char* result = sb.c_str();
             Assert::AreEqual('\0', result[500]);
             // Last char is the '7', the rest are leading zeros.
@@ -658,7 +658,7 @@ namespace ff::test::base
             sb.init_format(&arena, FF_SVL("%s/%d"), "path", 12);
 
             Assert::AreEqual("path/12", sb.c_str());
-            Assert::AreEqual((size_t)7, sb.size);
+            Assert::AreEqual((size_t)7, sb.count);
 
             // Can keep building after a formatted init.
             sb.append(FF_SVL(".txt"));
@@ -687,7 +687,7 @@ namespace ff::test::base
             sb.init(&arena);
             sb.append_format(format.view(), 7);
 
-            Assert::AreEqual((size_t)2001, sb.size); // 2000 'x' + "7"
+            Assert::AreEqual((size_t)2001, sb.count); // 2000 'x' + "7"
             const char* result = sb.c_str();
             for (int i = 0; i < 2000; ++i)
             {
@@ -708,7 +708,7 @@ namespace ff::test::base
             call_init_format_v(&sb, &arena, FF_SVL("%s-%d"), "id", 99);
 
             Assert::AreEqual("id-99", sb.c_str());
-            Assert::AreEqual((size_t)5, sb.size);
+            Assert::AreEqual((size_t)5, sb.count);
 
             arena.destroy();
         }
@@ -743,7 +743,7 @@ namespace ff::test::base
             const char* stored = sb.store();
             Assert::IsNotNull(stored);
             Assert::AreEqual("hello", stored);                   // null-terminated C-string
-            Assert::AreEqual((size_t)5, ff::array_size(stored)); // array size excludes the terminator
+            Assert::AreEqual((size_t)5, ff::array_count(stored)); // array size excludes the terminator
             Assert::IsTrue(stored != sb.data); // a separate allocation, not the builder's working buffer
 
             // Reusing the builder must not disturb the stored copy.
@@ -775,7 +775,7 @@ namespace ff::test::base
             }
 
             Assert::AreEqual("persist me", stored);
-            Assert::AreEqual((size_t)10, ff::array_size(stored));
+            Assert::AreEqual((size_t)10, ff::array_count(stored));
 
             dest.destroy();
         }
@@ -791,7 +791,7 @@ namespace ff::test::base
             const char* stored = sb.store();
             Assert::IsNotNull(stored);
             Assert::AreEqual("", stored);
-            Assert::AreEqual((size_t)0, ff::array_size(stored));
+            Assert::AreEqual((size_t)0, ff::array_count(stored));
 
             arena.destroy();
         }
@@ -809,7 +809,7 @@ namespace ff::test::base
             Assert::IsNotNull(stored);
 
             // The array size gives the length, so it works as a string_view...
-            Assert::IsTrue(view_equals(ff::string_view{ stored, ff::array_size(stored) }, "hello"));
+            Assert::IsTrue(view_equals(ff::string_view{ stored, ff::array_count(stored) }, "hello"));
             // ...and the spare-capacity terminator makes it a valid C-string.
             Assert::AreEqual("hello", stored);
 
