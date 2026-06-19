@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
+#include "base/log.h"
 #include "base/string.h"
 #include "base/string_builder.h"
 
@@ -32,15 +33,12 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     ff::string_builder sb;
     sb.init_format(&arena, FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"),
         text ? text : "", exp ? exp : "", file ? file : "", line);
+    ff::log::write(ff::log::type::debug, sb.view());
 
     wchar_t dialog_text_w[1024];
     ff::arena arena_w;
     arena_w.init_external(dialog_text_w, sizeof(dialog_text_w), 0);
     ff::wstring_view dialog_text_wv = ff::utf8_to_wide(sb.view(), &arena_w);
-
-//     ::OutputDebugString(dialog_text_wv.);
-    // std::wstring message_text = ff::string::to_wstring(dialog_text_view) + L"\r\n\r\nBreak?";
-    // ff::log::write(ff::log::type::debug, dialog_text_view);
 
     // Only the main thread should show dialog UI
     bool ignored = true;

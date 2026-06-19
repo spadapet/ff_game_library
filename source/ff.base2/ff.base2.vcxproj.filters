@@ -29,6 +29,9 @@
     <ClCompile Include="base\value.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\log.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -42,9 +45,6 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\string_builder.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="base\string_view.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\math.h">
@@ -63,6 +63,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\dict.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\log.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

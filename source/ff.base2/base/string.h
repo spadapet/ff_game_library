@@ -1,10 +1,26 @@
 #pragma once
 
-#include "../base/string_view.h"
+#define FF_SVL(literal) (ff::string_view{ (literal), sizeof(literal) - 1 })
+#define FF_WSVL(literal) (ff::wstring_view{ (literal), sizeof(literal) / sizeof(wchar_t) - 1 })
+
+// FF_SV_FORMAT is for use in format strings, like: printf("%.*s", FF_SV_FORMAT(sv));
+#define FF_SV_FORMAT(sv) ((int)(sv).count), ((sv).data)
 
 namespace ff
 {
     struct arena;
+
+    struct string_view
+    {
+        const char* data;
+        size_t count;
+    };
+
+    struct wstring_view
+    {
+        const wchar_t* data;
+        size_t count;
+    };
 
     ff::string_view sz_view(const char* sz);
     ff::wstring_view sz_view(const wchar_t* sz);

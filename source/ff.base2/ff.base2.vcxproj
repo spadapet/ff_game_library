@@ -12,6 +12,7 @@
     <ClCompile Include="base\array.cpp" />
     <ClCompile Include="base\assert.cpp" />
     <ClCompile Include="base\hash.cpp" />
+    <ClCompile Include="base\log.cpp" />
     <ClCompile Include="base\math.cpp" />
     <ClCompile Include="base\string.cpp" />
     <ClCompile Include="base\string_builder.cpp" />
@@ -26,10 +27,10 @@
     <ClInclude Include="base\assert.h" />
     <ClInclude Include="base\span.h" />
     <ClInclude Include="base\hash.h" />
+    <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
-    <ClInclude Include="base\string_view.h" />
     <ClInclude Include="base\dict.h" />
     <ClInclude Include="base\value.h" />
     <ClInclude Include="pch.h" />

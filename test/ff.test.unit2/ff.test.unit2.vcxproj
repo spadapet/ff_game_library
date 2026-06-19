@@ -17,6 +17,7 @@
     <ClCompile Include="base\arena_tests.cpp" />
     <ClCompile Include="base\hash_tests.cpp" />
     <ClCompile Include="base\string_tests.cpp" />
+    <ClCompile Include="base\log_tests.cpp" />
     <ClCompile Include="base\value_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
