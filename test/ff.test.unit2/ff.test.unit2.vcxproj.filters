@@ -21,6 +21,9 @@
     <ClCompile Include="base\value_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\log_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

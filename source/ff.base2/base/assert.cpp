@@ -31,14 +31,19 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     arena.init_external(dialog_text, sizeof(dialog_text), 0);
 
     ff::string_builder sb;
-    sb.init_format(&arena, FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"),
+    sb.init(&arena, (size_t)0); // minimal capacity so append_format sizes the buffer in one allocation
+    sb.append_format(FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"),
         text ? text : "", exp ? exp : "", file ? file : "", line);
-    ff::log::write(ff::log::type::debug, sb.view());
+
+    // Pass the message as a '%.*s' argument, not as the format itself: the assert text can contain
+    // '%' (e.g. an expression like 'x % 2'), which would otherwise be read as a bogus conversion.
+    ff::string_view message = sb.view();
+    ff::log::write(ff::log::type::debug, FF_SVL("%.*s"), FF_SV_FORMAT(message));
 
     wchar_t dialog_text_w[1024];
     ff::arena arena_w;
     arena_w.init_external(dialog_text_w, sizeof(dialog_text_w), 0);
-    ff::wstring_view dialog_text_wv = ff::utf8_to_wide(sb.view(), &arena_w);
+    ff::wstring_view dialog_text_wv = ff::utf8_to_wide(message, &arena_w);
 
     // Only the main thread should show dialog UI
     bool ignored = true;
@@ -48,7 +53,7 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
     {
         ignored = false;
     }
-    else if (::MessageBoxA(nullptr, dialog_text, "Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
+    else if (::MessageBoxW(nullptr, dialog_text_wv.data, L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
     {
         ignored = false;
     }

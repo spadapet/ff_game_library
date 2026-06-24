@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "base/arena.h"
-#include "base/array.h"
 #include "base/assert.h"
 #include "base/math.h"
 #include "base/string_builder.h"
@@ -36,9 +35,9 @@ static void init_common(ff::string_builder* builder, ff::arena* arena, size_t in
     builder->count = 0;
     builder->capacity = 0;
 
-    // +1 reserves the null terminator slot; seed content must also fit for a single allocation.
+    // Size for the requested capacity (and any seed content) in a single allocation; no terminator slot.
     size_t wanted = __max(initial_capacity, initial.count);
-    size_t needed = __max(wanted, ::min_capacity) + 1;
+    size_t needed = __max(wanted, ::min_capacity);
     if (::ensure_capacity(builder, needed) && initial.count && builder->data)
     {
         ::memcpy(builder->data, initial.data, initial.count);
@@ -48,7 +47,12 @@ static void init_common(ff::string_builder* builder, ff::arena* arena, size_t in
 
 void ff::string_builder::init(ff::arena* arena)
 {
-    ::init_common(this, arena, ::default_initial_capacity, ff::string_view{ nullptr, 0 });
+    size_t arena_capacity = (arena->end - arena->next);
+    size_t initial_capacity = arena_capacity
+        ? __min(arena_capacity, ::default_initial_capacity)
+        : ::default_initial_capacity;
+
+    this->init(arena, initial_capacity);
 }
 
 void ff::string_builder::init(ff::arena* arena, size_t initial_capacity)
@@ -61,22 +65,6 @@ void ff::string_builder::init(ff::arena* arena, ff::string_view initial)
     ::init_common(this, arena, ::default_initial_capacity, initial);
 }
 
-void ff::string_builder::init_format(ff::arena* arena, ff::string_view format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    this->init_format_v(arena, format, args);
-    va_end(args);
-}
-
-void ff::string_builder::init_format_v(ff::arena* arena, ff::string_view format, va_list args)
-{
-    // Init with minimal capacity so append_format_v sizes the buffer in a single allocation rather
-    // than pre-allocating the default capacity and then growing past it.
-    this->init(arena, (size_t)0);
-    this->append_format_v(format, args);
-}
-
 ff::string_builder* ff::string_builder::reset()
 {
     this->count = 0;
@@ -85,13 +73,13 @@ ff::string_builder* ff::string_builder::reset()
 
 ff::string_builder* ff::string_builder::reserve(size_t capacity)
 {
-    FF_VERIFY(::ensure_capacity(this, capacity + 1)); // +1 for the null terminator slot
+    FF_VERIFY(::ensure_capacity(this, capacity));
     return this;
 }
 
 ff::string_builder* ff::string_builder::append(char value)
 {
-    if (::ensure_capacity(this, this->count + 2))
+    if (::ensure_capacity(this, this->count + 1))
     {
         this->data[this->count++] = value;
     }
@@ -101,7 +89,7 @@ ff::string_builder* ff::string_builder::append(char value)
 
 ff::string_builder* ff::string_builder::append(ff::string_view value)
 {
-    if (value.count && ::ensure_capacity(this, this->count + value.count + 1))
+    if (value.count && ::ensure_capacity(this, this->count + value.count))
     {
         ::memcpy(this->data + this->count, value.data, value.count);
         this->count += value.count;
@@ -136,6 +124,8 @@ ff::string_builder* ff::string_builder::append_format_v(ff::string_view format, 
     int needed = ::_vscprintf(format_copy, measure_args);
     va_end(measure_args);
 
+    // vsnprintf always writes a trailing '\0', so it needs 'needed + 1' bytes even though we don't
+    // keep the terminator (count advances by 'needed' only).
     if (needed > 0 && ::ensure_capacity(this, this->count + (size_t)needed + 1) && this->data)
     {
         ::vsnprintf(this->data + this->count, (size_t)needed + 1, format_copy, args);
@@ -164,7 +154,7 @@ ff::string_builder* ff::string_builder::insert(size_t pos, ff::string_view value
 {
     FF_ASSERT_RET_VAL(pos <= this->count, this);
 
-    if (value.count && ::ensure_capacity(this, this->count + value.count + 1))
+    if (value.count && ::ensure_capacity(this, this->count + value.count))
     {
         ::memmove(this->data + pos + value.count, this->data + pos, this->count - pos);
         ::memcpy(this->data + pos, value.data, value.count);
@@ -188,13 +178,6 @@ ff::string_builder* ff::string_builder::remove(size_t pos, size_t count)
     return this;
 }
 
-const char* ff::string_builder::c_str() const
-{
-    // const is safe: capacity always reserves the terminator slot, so writing it changes no member.
-    this->data[this->count] = '\0';
-    return this->data;
-}
-
 ff::string_view ff::string_builder::view() const
 {
     ff::string_view result;
@@ -203,19 +186,23 @@ ff::string_view ff::string_builder::view() const
     return result;
 }
 
-const char* ff::string_builder::store(ff::arena* arena) const
+ff::string_view ff::string_builder::copy(ff::arena* arena) const
 {
-    // Always return an allocated array so ff::array_size works (empty included); null only on alloc failure.
-    char* result = ff::array_init<char>(arena ? arena : this->arena, this->count + 1);
-    FF_ASSERT_RET_VAL(result, nullptr);
+    // One extra byte holds a '\0' so 'data' works as a C-string; the returned 'count' excludes it.
+    // A static empty (still null-terminated) string is returned only on alloc failure.
+    ff::string_view result{ "", 0 };
 
-    ff::array_resize(result, this->count);
+    char* dest = (char*)(arena ? arena : this->arena)->alloc(this->count + 1, alignof(char));
+    FF_ASSERT_RET_VAL(dest, result);
 
     if (this->count)
     {
-        ::memcpy(result, this->data, this->count);
+        ::memcpy(dest, this->data, this->count);
     }
 
-    result[this->count] = '\0';
+    dest[this->count] = '\0';
+
+    result.data = dest;
+    result.count = this->count;
     return result;
 }
