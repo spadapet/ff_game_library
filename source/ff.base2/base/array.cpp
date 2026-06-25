@@ -7,6 +7,19 @@
 constexpr size_t array_min_align = alignof(ff::internal::array_header); // the header's size_t fields set the floor
 constexpr size_t array_min_capacity = 8;
 
+#ifdef _DEBUG
+constexpr size_t array_magic = 0xA22A5E27A22A5E27ull;
+#endif
+
+ff::internal::array_header* ff::internal::array_get_header(const void* data)
+{
+    ff::internal::array_header* header = (ff::internal::array_header*)data - 1;
+#ifdef _DEBUG
+    FF_ASSERT(data && header->magic == ::array_magic);
+#endif
+    return header;
+}
+
 void* ff::internal::array_alloc(ff::arena* arena, size_t item_size, size_t item_align, size_t capacity)
 {
     FF_ASSERT_RET_VAL(arena, nullptr);
@@ -18,7 +31,11 @@ void* ff::internal::array_alloc(ff::arena* arena, size_t item_size, size_t item_
     FF_ASSERT_RET_VAL(block, nullptr);
 
     uint8_t* data = block + offset;
-    ff::internal::array_header* header = ff::internal::array_get_header(data);
+    // Write the header directly here: array_get_header asserts the magic, which isn't set yet.
+    ff::internal::array_header* header = (ff::internal::array_header*)data - 1;
+#ifdef _DEBUG
+    header->magic = ::array_magic;
+#endif
     header->arena = arena;
     header->count = 0;
     header->capacity = capacity;

@@ -5,19 +5,27 @@
 
 ff::string_view ff::sz_view(const char* sz)
 {
-    return ff::string_view{ sz, sz ? ::strlen(sz) : 0 };
+    ff::string_view result;
+    result.data = sz;
+    result.count = sz ? ::strlen(sz) : 0;
+    return result;
 }
 
 ff::wstring_view ff::sz_view(const wchar_t* sz)
 {
-    return ff::wstring_view{ sz, sz ? ::wcslen(sz) : 0 };
+    ff::wstring_view result;
+    result.data = sz;
+    result.count = sz ? ::wcslen(sz) : 0;
+    return result;
 }
 
 ff::wstring_view ff::utf8_to_wide(ff::string_view utf8, ff::arena* arena)
 {
     // Every return path is contracted to be null-terminated, so the default/failure result is an
     // empty (but still null-terminated) static string rather than a null pointer.
-    ff::wstring_view result{ L"", 0 };
+    ff::wstring_view result;
+    result.data = L"";
+    result.count = 0;
     FF_CHECK_RET_VAL(utf8.count, result);
 
     // Source length is passed explicitly so the input need not be null-terminated and the returned
@@ -44,7 +52,9 @@ ff::string_view ff::wide_to_utf8(ff::wstring_view wide, ff::arena* arena)
 {
     // Every return path is contracted to be null-terminated, so the default/failure result is an
     // empty (but still null-terminated) static string rather than a null pointer.
-    ff::string_view result{ "", 0 };
+    ff::string_view result;
+    result.data = "";
+    result.count = 0;
     FF_CHECK_RET_VAL(wide.count, result);
 
     // Source length is passed explicitly so the input need not be null-terminated and the returned

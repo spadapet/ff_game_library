@@ -57,7 +57,10 @@ void ff::string_builder::init(ff::arena* arena)
 
 void ff::string_builder::init(ff::arena* arena, size_t initial_capacity)
 {
-    ::init_common(this, arena, initial_capacity, ff::string_view{ nullptr, 0 });
+    ff::string_view empty;
+    empty.data = nullptr;
+    empty.count = 0;
+    ::init_common(this, arena, initial_capacity, empty);
 }
 
 void ff::string_builder::init(ff::arena* arena, ff::string_view initial)
@@ -147,7 +150,10 @@ ff::string_builder* ff::string_builder::append_format(ff::string_view format, ..
 
 ff::string_builder* ff::string_builder::insert(size_t pos, char value)
 {
-    return this->insert(pos, ff::string_view{ &value, 1 });
+    ff::string_view single;
+    single.data = &value;
+    single.count = 1;
+    return this->insert(pos, single);
 }
 
 ff::string_builder* ff::string_builder::insert(size_t pos, ff::string_view value)
@@ -190,7 +196,9 @@ ff::string_view ff::string_builder::copy(ff::arena* arena) const
 {
     // One extra byte holds a '\0' so 'data' works as a C-string; the returned 'count' excludes it.
     // A static empty (still null-terminated) string is returned only on alloc failure.
-    ff::string_view result{ "", 0 };
+    ff::string_view result;
+    result.data = "";
+    result.count = 0;
 
     char* dest = (char*)(arena ? arena : this->arena)->alloc(this->count + 1, alignof(char));
     FF_ASSERT_RET_VAL(dest, result);

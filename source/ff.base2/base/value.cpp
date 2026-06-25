@@ -2,10 +2,13 @@
 #include "base/array.h"
 #include "base/arena.h"
 #include "base/assert.h"
+#include "base/dict.h"
 #include "base/math.h"
 #include "base/value.h"
 
 static_assert(sizeof(ff::value) == 24);
+static_assert(sizeof(ff::ivalue) == 24);
+static_assert(sizeof(ff::ivalue) == sizeof(ff::value)); // value and ivalue must stay layout-compatible
 
 ff::value ff::value::new_empty()
 {
@@ -130,7 +133,7 @@ ff::value ff::value::new_guid(const GUID& value)
 ff::value ff::value::new_dict(ff::dict* value)
 {
     ff::value result{};
-    result.data_a.data = value;
+    result.data.data = value;
     result.type = ff::value_type::dict;
     return result;
 }
@@ -149,14 +152,14 @@ ff::value ff::value::new_data(ff::raw_span value, ff::arena* copy_arena)
 ff::value ff::value::new_data(ff::array_span value, ff::arena* copy_arena)
 {
     ff::value result{};
-    result.data_a = value;
+    result.data = value;
 
     if (copy_arena && value.data && value.count && value.item_size)
     {
         size_t bytes = value.count * value.item_size;
         void* copied = copy_arena->alloc(bytes, __max(value.item_align, alignof(size_t)));
         ::memcpy(copied, value.data, bytes);
-        result.data_a.data = copied;
+        result.data.data = copied;
     }
 
     result.type = ff::value_type::data;
@@ -190,17 +193,91 @@ ff::value ff::value::new_array(ff::value* values, size_t size, ff::arena* copy_a
 ff::dict* ff::value::as_dict() const
 {
     FF_ASSERT(type == ff::value_type::dict);
-    return (ff::dict*)this->data_a.data;
+    return (ff::dict*)this->data.data;
 }
 
-ff::span<ff::value> ff::value::as_array() const
+ff::raw_span ff::value::as_data() const
 {
-    FF_ASSERT(type == ff::value_type::array);
-    return ff::span<ff::value>{ (ff::value*)this->data_a.data, this->data_a.count };
+    FF_ASSERT(type == ff::value_type::data || type == ff::value_type::string || type == ff::value_type::array);
+    ff::raw_span result;
+    result.data = this->data.data;
+    result.size = this->data.count * this->data.item_size;
+    return result;
 }
 
 ff::string_view ff::value::as_string() const
 {
     FF_ASSERT(type == ff::value_type::string);
-    return ff::string_view((const char*)this->data_a.data, this->data_a.count);
+
+    ff::string_view result;
+    result.data = (const char*)this->data.data;
+    result.count = this->data.count;
+    return result;
 }
+
+ff::span<ff::value> ff::value::as_array() const
+{
+    FF_ASSERT(type == ff::value_type::array);
+
+    ff::span<ff::value> result;
+    result.data = (ff::value*)this->data.data;
+    result.count = this->data.count;
+    return result;
+}
+
+ff::ivalue ff::ivalue::pack(const ff::value& source)
+{
+    ff::ivalue result{};
+    result.type = source.type;
+
+    switch (source.type)
+    {
+        case ff::value_type::data:
+        case ff::value_type::dict:
+        case ff::value_type::string:
+        case ff::value_type::array:
+            // TODO: reference types. Append the target bytes/elements into the owning idict's blob and
+            // record result.data.offset/count (recursing for array/dict). This needs the blob writer
+            // and base pointer, so it is finalized together with ff::dict::pack's blob construction.
+            break;
+
+        default:
+            // Inline types (empty/null/boolean/guid/int*/float*/point*/rect*) share value's layout, so
+            // copy the 16-byte inline payload unchanged (GUID is the largest inline member).
+            ::memcpy(&result.guid, &source.guid, sizeof(source.guid));
+            break;
+    }
+
+    return result;
+}
+
+ff::idict ff::ivalue::as_dict(const void* base) const
+{
+    FF_ASSERT(this->type == ff::value_type::dict);
+
+    ff::idict result{};
+    result.data = (const uint8_t*)base + this->data.offset;
+    result.size = this->data.count; // TODO: nested-dict region size, finalized with ff::dict::pack
+    return result;
+}
+
+ff::string_view ff::ivalue::as_string(const void* base) const
+{
+    FF_ASSERT(this->type == ff::value_type::string);
+
+    ff::string_view result;
+    result.data = (const char*)((const uint8_t*)base + this->data.offset);
+    result.count = this->data.count;
+    return result;
+}
+
+ff::span<ff::ivalue> ff::ivalue::as_array(const void* base) const
+{
+    FF_ASSERT(this->type == ff::value_type::array);
+
+    ff::span<ff::ivalue> result;
+    result.data = (const ff::ivalue*)((const uint8_t*)base + this->data.offset);
+    result.count = this->data.count;
+    return result;
+}
+

@@ -26,6 +26,9 @@
     <ClCompile Include="base\hash.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\dict.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\value.cpp">
       <Filter>base</Filter>
     </ClCompile>

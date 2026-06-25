@@ -11,6 +11,7 @@
     <ClCompile Include="base\arena.cpp" />
     <ClCompile Include="base\array.cpp" />
     <ClCompile Include="base\assert.cpp" />
+    <ClCompile Include="base\dict.cpp" />
     <ClCompile Include="base\hash.cpp" />
     <ClCompile Include="base\log.cpp" />
     <ClCompile Include="base\math.cpp" />

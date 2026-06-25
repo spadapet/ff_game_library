@@ -10,6 +10,10 @@ namespace ff::internal
     // The header is stored in the bytes immediately preceding the array data.
     struct array_header
     {
+#ifdef _DEBUG
+        size_t magic; // sentinel set by array_alloc; the array_* functions assert it to catch a raw
+                      // or foreign pointer (debug only - the field is absent in release builds)
+#endif
         ff::arena* arena;
         size_t count;
         size_t capacity;
@@ -18,10 +22,9 @@ namespace ff::internal
     void* array_alloc(ff::arena* arena, size_t item_size, size_t item_align, size_t capacity);
     void* array_realloc(void* data, size_t item_size, size_t item_align, size_t min_capacity);
 
-    inline ff::internal::array_header* array_get_header(const void* data)
-    {
-        return (ff::internal::array_header*)data - 1;
-    }
+    // Returns the header stored just before 'data'. In debug it also asserts a magic sentinel to catch
+    // a raw or foreign pointer being passed to the array_* functions. Defined in array.cpp.
+    ff::internal::array_header* array_get_header(const void* data);
 }
 
 namespace ff
