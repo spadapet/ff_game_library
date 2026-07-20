@@ -225,12 +225,11 @@ ff::span<ff::value> ff::value::as_array() const
     return result;
 }
 
-ff::ivalue ff::ivalue::pack(const ff::value& source)
+void ff::value::pack(ff::ivalue& dest)
 {
-    ff::ivalue result{};
-    result.type = source.type;
+    dest.type = this->type;
 
-    switch (source.type)
+    switch (this->type)
     {
         case ff::value_type::data:
         case ff::value_type::dict:
@@ -244,11 +243,9 @@ ff::ivalue ff::ivalue::pack(const ff::value& source)
         default:
             // Inline types (empty/null/boolean/guid/int*/float*/point*/rect*) share value's layout, so
             // copy the 16-byte inline payload unchanged (GUID is the largest inline member).
-            ::memcpy(&result.guid, &source.guid, sizeof(source.guid));
+            ::memcpy(&dest.guid, &this->guid, sizeof(this->guid));
             break;
     }
-
-    return result;
 }
 
 ff::idict ff::ivalue::as_dict(const void* base) const

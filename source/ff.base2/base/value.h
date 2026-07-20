@@ -8,6 +8,7 @@ namespace ff
     struct arena;
     struct dict;
     struct idict;
+    struct ivalue;
 
     enum class value_type : uint32_t
     {
@@ -62,6 +63,10 @@ namespace ff
         ff::string_view as_string() const;
         ff::span<ff::value> as_array() const;
 
+        // Convert a mutable ff::value into an immutable ivalue. Inline types copy their payload as-is;
+        // reference types are written into the owning idict's blob by ff::dict::pack (see value.cpp).
+        void pack(ff::ivalue& dest);
+
         union
         {
             bool b;
@@ -94,10 +99,6 @@ namespace ff
     // distinguishes a pointer payload from an offset payload.
     struct ivalue
     {
-        // Convert a mutable ff::value into an immutable ivalue. Inline types copy their payload as-is;
-        // reference types are written into the owning idict's blob by ff::dict::pack (see value.cpp).
-        static ff::ivalue pack(const ff::value& source);
-
         // Reference-type accessors. 'base' is the owning idict's blob base, used to resolve the stored
         // offset; inline types are read directly from the union and ignore it.
         ff::idict as_dict(const void* base) const;
