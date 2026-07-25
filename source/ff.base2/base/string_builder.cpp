@@ -16,8 +16,7 @@ static bool ensure_capacity(ff::string_builder* builder, size_t needed)
         return true;
     }
 
-    size_t doubled = builder->capacity * 2;
-    size_t new_capacity = ff::round_up_pow2(__max(doubled, needed));
+    size_t new_capacity = ff::grow_capacity(builder->capacity, needed, ::min_capacity);
 
     // arena::realloc may relocate the block, so re-fetch 'data'.
     char* new_data = (char*)builder->arena->realloc(builder->data, builder->capacity, new_capacity, 1);

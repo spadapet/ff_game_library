@@ -282,6 +282,18 @@ namespace ff::test::base
             Assert::AreEqual<size_t>(alignof(uint32_t), (size_t)v.data.item_align);
         }
 
+        TEST_METHOD(data_size_uses_full_size_t_product)
+        {
+            ff::array_span as{};
+            as.data = nullptr;
+            as.count = 200000000;
+            as.item_size = 24;
+            as.item_align = 8;
+
+            ff::value v = ff::value::new_data(as);
+            Assert::AreEqual((size_t)200000000 * 24, v.as_data().size);
+        }
+
         TEST_METHOD(data_from_array_span_with_arena_copies_all_elements)
         {
             ff::arena arena;

@@ -20,7 +20,6 @@ static size_t page_size()
     return info.dwPageSize;
 }
 
-// Double value, but never exceed cap. Arena-specific growth helper.
 static size_t double_capped(size_t value, size_t cap)
 {
     size_t doubled = value * 2;
@@ -100,20 +99,13 @@ static ff::internal::arena_buffer* new_virtual_buffer(size_t size, bool oversize
     return new_buffer;
 }
 
-static ff::internal::arena_buffer* new_external_buffer(HANDLE header_heap, void* data, size_t size)
+static void init_external_buffer(ff::internal::arena_buffer* buffer, void* data, size_t size)
 {
-    // External payload is caller-owned, so the header still needs its own small heap allocation.
-    // Round up to next power of 2 so the request hits an allocator-friendly bucket.
-    ff::internal::arena_buffer* new_buffer = (ff::internal::arena_buffer*)::HeapAlloc(header_heap, 0, ff::round_up_pow2(sizeof(ff::internal::arena_buffer)));
-    FF_ASSERT_RET_VAL(new_buffer, nullptr);
-
-    new_buffer->next = nullptr;
-    new_buffer->start = (uint8_t*)data;
-    new_buffer->end = new_buffer->start + size;
-    new_buffer->reserve_end = new_buffer->end;
-    new_buffer->type = ff::internal::arena_buffer_type::external;
-
-    return new_buffer;
+    buffer->next = nullptr;
+    buffer->start = (uint8_t*)data;
+    buffer->end = buffer->start + size;
+    buffer->reserve_end = buffer->end;
+    buffer->type = ff::internal::arena_buffer_type::external;
 }
 
 static void free_buffer(HANDLE heap, ff::internal::arena_buffer* buffer)
@@ -121,9 +113,10 @@ static void free_buffer(HANDLE heap, ff::internal::arena_buffer* buffer)
     switch (buffer->type)
     {
         case ff::internal::arena_buffer_type::external:
+            break;
+
         case ff::internal::arena_buffer_type::heap:
         case ff::internal::arena_buffer_type::heap_oversize:
-            // External: header only; heap variants: combined header + payload block
             ::HeapFree(heap, 0, buffer);
             break;
 
@@ -160,6 +153,36 @@ static ff::internal::arena_buffer* allocate_grow_buffer(ff::internal::arena_type
     return nullptr;
 }
 
+static bool commit_virtual_buffer(ff::internal::arena_buffer* buffer, uint8_t* needed_end)
+{
+    if (needed_end <= buffer->end)
+    {
+        return true;
+    }
+
+    if (buffer->type != ff::internal::arena_buffer_type::virtual_memory || needed_end > buffer->reserve_end)
+    {
+        return false;
+    }
+
+    size_t current_committed = (size_t)(buffer->end - (uint8_t*)buffer);
+    size_t reserve_total = (size_t)(buffer->reserve_end - (uint8_t*)buffer);
+    size_t needed_total = (size_t)(needed_end - (uint8_t*)buffer);
+    size_t target = ::double_capped(current_committed, reserve_total);
+    if (target < needed_total)
+    {
+        target = __min(ff::round_up_pow2(needed_total), reserve_total);
+    }
+
+    uint8_t* new_committed_end = (uint8_t*)buffer + target;
+    size_t commit_bytes = (size_t)(new_committed_end - buffer->end);
+    void* committed = ::VirtualAlloc(buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
+    FF_ASSERT_RET_VAL(committed, false);
+
+    buffer->end = new_committed_end;
+    return true;
+}
+
 void ff::arena::init_external(void* buffer, size_t size, size_t grow_buffer_size)
 {
     FF_ASSERT(buffer && size > 0);
@@ -178,12 +201,10 @@ void ff::arena::init_external(void* buffer, size_t size, size_t grow_buffer_size
     this->spare = nullptr;
     this->type = ff::internal::arena_type::heap;
 
-    ff::internal::arena_buffer* new_buffer = ::new_external_buffer(this->heap, buffer, size);
-    FF_ASSERT_RET(new_buffer);
-
-    this->buffer = new_buffer;
-    this->next = new_buffer->start;
-    this->end = new_buffer->end;
+    ::init_external_buffer(&this->external_buffer, buffer, size);
+    this->buffer = &this->external_buffer;
+    this->next = this->buffer->start;
+    this->end = this->buffer->end;
 }
 
 void ff::arena::init_heap(size_t initial_buffer_size)
@@ -205,8 +226,6 @@ void ff::arena::init_heap(size_t initial_buffer_size)
     this->buffer = new_buffer;
     this->next = new_buffer->start;
     this->end = new_buffer->end;
-
-    // Next buffer should be double this one (capped at max_buffer_size).
     this->grow_buffer_size = ::double_capped(this->grow_buffer_size, this->max_buffer_size);
 }
 
@@ -230,8 +249,6 @@ void ff::arena::init_heap_local(size_t initial_buffer_size)
     this->buffer = new_buffer;
     this->next = new_buffer->start;
     this->end = new_buffer->end;
-
-    // Next buffer should be double this one (capped at max_buffer_size).
     this->grow_buffer_size = ::double_capped(this->grow_buffer_size, this->max_buffer_size);
 }
 
@@ -255,8 +272,6 @@ void ff::arena::init_virtual_memory(size_t initial_buffer_size)
     this->buffer = new_buffer;
     this->next = new_buffer->start;
     this->end = new_buffer->end;
-
-    // Next buffer should be double this one (capped at max_buffer_size).
     this->grow_buffer_size = ::double_capped(this->grow_buffer_size, this->max_buffer_size);
 }
 
@@ -297,32 +312,16 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
     // room left to commit, extend the committed region instead of allocating a new buffer.
     // The new committed extent is doubled per commit (amortizes the MEM_COMMIT syscall) and
     // rounded up to the next power of 2 (allocator-friendly extent).
-    if (arena->buffer
-        && arena->buffer->type == ff::internal::arena_buffer_type::virtual_memory
-        && aligned <= arena->buffer->reserve_end
-        && size <= (size_t)(arena->buffer->reserve_end - aligned))
+    if (arena->buffer &&
+        arena->buffer->type == ff::internal::arena_buffer_type::virtual_memory &&
+        aligned <= arena->buffer->reserve_end &&
+        size <= (size_t)(arena->buffer->reserve_end - aligned))
     {
-        size_t current_committed = (size_t)(arena->buffer->end - (uint8_t*)arena->buffer);
-        size_t reserve_total = (size_t)(arena->buffer->reserve_end - (uint8_t*)arena->buffer);
-        size_t needed_total = (size_t)(aligned - (uint8_t*)arena->buffer) + size;
+        uint8_t* needed_end = aligned + size;
+        FF_ASSERT_RET_VAL(::commit_virtual_buffer(arena->buffer, needed_end), nullptr);
 
-        // Default target: double the current committed (with overflow/cap handling).
-        size_t target = ::double_capped(current_committed, reserve_total);
-        if (target < needed_total)
-        {
-            // Single request needs more than one doubling step; jump to the next pow2 that fits.
-            target = ff::round_up_pow2(needed_total);
-            target = __min(target, reserve_total);
-        }
-
-        uint8_t* new_committed_end = (uint8_t*)arena->buffer + target;
-        size_t commit_bytes = (size_t)(new_committed_end - arena->buffer->end);
-        void* committed = ::VirtualAlloc(arena->buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
-        FF_ASSERT_RET_VAL(committed, nullptr);
-
-        arena->buffer->end = new_committed_end;
-        arena->end = new_committed_end;
-        arena->next = aligned + size;
+        arena->end = arena->buffer->end;
+        arena->next = needed_end;
 
         return aligned;
     }
@@ -340,7 +339,6 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
         return nullptr;
     }
 
-    // Oversize if the request exceeds the per-arena cap.
     bool oversize = needed > arena->max_buffer_size;
 
     ff::internal::arena_buffer* new_buffer = nullptr;
@@ -376,19 +374,22 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
     size_t alloc_size = 0;
     if (!new_buffer && arena->grow_buffer_size > 0)
     {
-        // For oversize, allocate a dedicated buffer just big enough.
-        // For normal, use grow_buffer_size but bump up if the single request needs more.
         if (oversize)
         {
+            // Dedicated one-shot buffer: freed as a unit and never retained for reuse, so size
+            // it tightly to the request. Do NOT round up to the next power of 2 - that would
+            // nearly double the reservation for e.g. a 2 MB request (-> 4 MB). Virtual oversize
+            // buffers are still rounded to allocation granularity inside new_virtual_buffer.
             alloc_size = needed;
         }
         else
         {
-            alloc_size = __max(arena->grow_buffer_size, needed);
+            // Reusable growth buffer: use grow_buffer_size, bumped up if the single request needs
+            // more, then rounded to the next power of 2 so HeapAlloc/VirtualAlloc see
+            // allocator-friendly sizes and buffers slot together cleanly on reuse.
+            alloc_size = ff::round_up_pow2(__max(arena->grow_buffer_size, needed));
         }
 
-        // Round up to next power of 2 so HeapAlloc/VirtualAlloc see allocator-friendly sizes.
-        alloc_size = ff::round_up_pow2(alloc_size);
         new_buffer = ::allocate_grow_buffer(arena->type, arena->heap, alloc_size, oversize);
     }
 
@@ -403,29 +404,26 @@ static void* alloc_slow(ff::arena* arena, size_t size, size_t align)
         arena->grow_buffer_size = ::double_capped(alloc_size, arena->max_buffer_size);
     }
 
-    // Push at head and bump within the new buffer
     new_buffer->next = arena->buffer;
     arena->buffer = new_buffer;
     arena->next = new_buffer->start;
     arena->end = new_buffer->end;
 
     aligned = ff::align_up(arena->next, align);
+    uint8_t* needed_end = aligned + size;
 
     // For a freshly-allocated virtual_memory buffer only the first page is committed (lazy
-    // commit). If the request that triggered this grow doesn't fit, commit more pages now
-    // within the reservation. (Heap buffers have end == reserve_end so this is a no-op.)
-    if (new_buffer->type == ff::internal::arena_buffer_type::virtual_memory
-        && aligned <= new_buffer->reserve_end
-        && size > (size_t)(arena->end - aligned))
+    // commit). If the aligned request extends past the committed region, commit more pages now
+    // within the reservation. Compare the committed end against needed_end rather than testing
+    // 'size > end - aligned': an alignment larger than a page can push 'aligned' past the
+    // committed first page, which would make 'end - aligned' underflow and wrongly skip the
+    // commit. (Heap buffers have end == reserve_end so this is a no-op.)
+    if (new_buffer->type == ff::internal::arena_buffer_type::virtual_memory &&
+        needed_end > arena->end &&
+        needed_end <= new_buffer->reserve_end)
     {
-        uint8_t* needed_end = aligned + size;
-        uint8_t* new_committed_end = (uint8_t*)ff::round_up((size_t)needed_end, ::page_size());
-        new_committed_end = __min(new_committed_end, new_buffer->reserve_end);
-        size_t commit_bytes = (size_t)(new_committed_end - new_buffer->end);
-        void* committed = ::VirtualAlloc(new_buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
-        FF_ASSERT_RET_VAL(committed, nullptr);
-        new_buffer->end = new_committed_end;
-        arena->end = new_committed_end;
+        FF_ASSERT_RET_VAL(::commit_virtual_buffer(new_buffer, needed_end), nullptr);
+        arena->end = new_buffer->end;
     }
 
     FF_ASSERT_RET_VAL(aligned <= arena->end && size <= (size_t)(arena->end - aligned), nullptr);
@@ -460,14 +458,25 @@ void* ff::arena::realloc(const void* start, size_t size, size_t new_size, size_t
 
     // In-place: if this block's end is touching the bump pointer it's the most-recent allocation,
     // so we can resize by just moving 'next'. The block stays put, so it must already satisfy the
-    // requested alignment - if it doesn't, fall through to relocate (which allocates correctly
-    // aligned memory). Shrink/equal always fits; grow only if it stays within the current buffer.
+    // requested alignment - if it doesn't, fall through to relocate.
     if (old_start + size == this->next && !((uintptr_t)old_start & (align - 1)))
     {
-        if (new_size <= size || old_start + new_size <= this->end)
+        if (new_size <= size)
         {
             this->next = old_start + new_size;
             return old_start;
+        }
+
+        if (this->buffer && old_start <= this->buffer->reserve_end &&
+            new_size <= (size_t)(this->buffer->reserve_end - old_start))
+        {
+            uint8_t* needed_end = old_start + new_size;
+            if (::commit_virtual_buffer(this->buffer, needed_end))
+            {
+                this->end = this->buffer->end;
+                this->next = needed_end;
+                return old_start;
+            }
         }
     }
 
@@ -603,8 +612,8 @@ void ff::arena::rewind(ff::arena_marker marker)
         // Retain in spare only if the buffer is reusable AND large enough to still be useful
         // at the current grow size. Buffers smaller than grow_buffer_size are stale leftovers
         // from earlier doubling stages and are freed rather than kept around as dead weight.
-        if (::is_reusable(old_buffer->type)
-            && (size_t)(old_buffer->reserve_end - (uint8_t*)old_buffer) >= this->grow_buffer_size)
+        if (::is_reusable(old_buffer->type) &&
+            (size_t)(old_buffer->reserve_end - (uint8_t*)old_buffer) >= this->grow_buffer_size)
         {
             old_buffer->next = this->spare;
             this->spare = old_buffer;

@@ -57,5 +57,6 @@ namespace ff
         ff::internal::arena_buffer* buffer; // head is the current active buffer (next/end live in it)
         ff::internal::arena_buffer* spare; // retained buffers for reuse on grow
         ff::internal::arena_type type;
+        ff::internal::arena_buffer external_buffer; // inline header used only by init_external
     };
 }

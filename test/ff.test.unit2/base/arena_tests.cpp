@@ -149,6 +149,7 @@ namespace ff::test::base
 
             Assert::IsTrue(arena.type == ff::internal::arena_type::heap);
             Assert::IsNotNull(arena.buffer);
+            Assert::IsTrue(arena.buffer == &arena.external_buffer);
             Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::external);
             Assert::IsTrue(arena.buffer->start == buffer);
             Assert::IsTrue(arena.buffer->end == buffer + sizeof(buffer));
@@ -637,6 +638,26 @@ namespace ff::test::base
             void* p = arena.alloc(1024 * 1024 - 1024, 8);
             Assert::IsNotNull(p);
             Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::heap);
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(oversize_buffer_sized_tightly_not_rounded_to_pow2)
+        {
+            ff::arena arena;
+            arena.init_heap(4096);
+
+            // 2 MB is already a power of two, so 'needed' (request + header + alignment padding)
+            // is just over 2 MB. A dedicated oversize buffer must be sized tightly to that, not
+            // rounded up to the next power of two (4 MB), which would waste nearly 2 MB.
+            size_t request = 2 * 1024 * 1024;
+            void* p = arena.alloc(request, 8);
+            Assert::IsNotNull(p);
+            Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::heap_oversize);
+
+            size_t total = buffer_total_size(arena.buffer);
+            Assert::IsTrue(total >= request);
+            Assert::IsTrue(total < request + 4096); // header + padding only, nowhere near 2x
 
             arena.destroy();
         }
@@ -1903,9 +1924,15 @@ namespace ff::test::base
             fill_pattern(p, 128, 0x88);
             Assert::IsTrue(arena.next == p + 128);
 
-            // In-place grow within the committed/reserved region.
-            uint8_t* grown = (uint8_t*)arena.realloc(p, 128, 512, 8);
+            ff::internal::arena_buffer* original_buffer = arena.buffer;
+            uint8_t* original_end = arena.end;
+            size_t grown_size = (size_t)(original_end - p) + 4096;
+
+            // Growing beyond committed memory but within the reservation commits in place.
+            uint8_t* grown = (uint8_t*)arena.realloc(p, 128, grown_size, 8);
             Assert::IsTrue(grown == p);
+            Assert::IsTrue(arena.buffer == original_buffer);
+            Assert::IsTrue(arena.end > original_end);
             Assert::IsTrue(check_pattern(grown, 128, 0x88));
 
             arena.destroy();
@@ -2195,6 +2222,29 @@ namespace ff::test::base
             Assert::IsTrue(is_aligned(q, 4096));
             Assert::IsTrue(q != p);
             Assert::IsTrue(check_pattern(p, 100, 0xE5));
+
+            arena.destroy();
+        }
+
+        TEST_METHOD(alloc_large_alignment_on_fresh_virtual_buffer)
+        {
+            ff::arena arena;
+            arena.init_virtual_memory(64 * 1024);
+
+            // Force a brand-new virtual reservation (request exceeds the first 64K reservation)
+            // together with an alignment larger than a page. A freshly-reserved virtual buffer
+            // commits only its first page; the large alignment pushes the aligned start past
+            // that first page, so the grow path must still commit enough pages to satisfy the
+            // request rather than skipping the commit and failing.
+            size_t align = 16 * 1024; // 16K, well above the 4K page size
+            uint8_t* p = (uint8_t*)arena.alloc(80 * 1024, align);
+            Assert::IsNotNull(p);
+            Assert::IsTrue(is_aligned(p, align));
+            Assert::IsTrue(buffer_count(arena.buffer) >= 2);
+
+            // The whole range must be committed and writable.
+            fill_pattern(p, 80 * 1024, 0x3C);
+            Assert::IsTrue(check_pattern(p, 80 * 1024, 0x3C));
 
             arena.destroy();
         }

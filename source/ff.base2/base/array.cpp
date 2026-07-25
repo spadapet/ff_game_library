@@ -26,7 +26,11 @@ void* ff::internal::array_alloc(ff::arena* arena, size_t item_size, size_t item_
 
     size_t align = __max(item_align, ::array_min_align);
     size_t offset = ff::round_up(sizeof(ff::internal::array_header), align); // data starts past the header
-    size_t block_size = offset + capacity * item_size;
+    size_t item_bytes;
+    size_t block_size;
+    FF_CHECK_RET_VAL(ff::size_multiply(capacity, item_size, &item_bytes), nullptr);
+    FF_CHECK_RET_VAL(ff::size_add(offset, item_bytes, &block_size), nullptr);
+
     uint8_t* block = (uint8_t*)arena->alloc(block_size, align);
     FF_ASSERT_RET_VAL(block, nullptr);
 
@@ -48,16 +52,20 @@ void* ff::internal::array_realloc(void* data, size_t item_size, size_t item_alig
     ff::internal::array_header* header = ff::internal::array_get_header(data);
     FF_CHECK_RET_VAL(min_capacity > header->capacity, data); // already big enough
 
-    size_t doubled = header->capacity * 2;
-    size_t wanted = __max(__max(doubled, min_capacity), ::array_min_capacity);
-    size_t new_capacity = ff::round_up_pow2(wanted);
+    size_t new_capacity = ff::grow_capacity(header->capacity, min_capacity, ::array_min_capacity);
 
     // The block starts 'offset' before the data; realloc relocates and copies the whole block for us.
     size_t align = __max(item_align, ::array_min_align);
     size_t offset = ff::round_up(sizeof(ff::internal::array_header), align);
     uint8_t* block = (uint8_t*)data - offset;
-    size_t old_block_size = offset + header->capacity * item_size;
-    size_t new_block_size = offset + new_capacity * item_size;
+    size_t old_item_bytes;
+    size_t new_item_bytes;
+    size_t old_block_size;
+    size_t new_block_size;
+    FF_CHECK_RET_VAL(ff::size_multiply(header->capacity, item_size, &old_item_bytes), data);
+    FF_CHECK_RET_VAL(ff::size_multiply(new_capacity, item_size, &new_item_bytes), data);
+    FF_CHECK_RET_VAL(ff::size_add(offset, old_item_bytes, &old_block_size), data);
+    FF_CHECK_RET_VAL(ff::size_add(offset, new_item_bytes, &new_block_size), data);
 
     uint8_t* new_block = (uint8_t*)header->arena->realloc(block, old_block_size, new_block_size, align);
     FF_ASSERT_RET_VAL(new_block, data);

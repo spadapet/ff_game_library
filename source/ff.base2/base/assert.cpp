@@ -12,7 +12,7 @@ static ff::assert_listener_func assert_listener_ = nullptr;
 
 bool ff::internal::assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {
-    if (::InterlockedIncrement(&::handling_assert))
+    if (::InterlockedIncrement(&::handling_assert) > 1)
     {
         // Assert during an assert, could be different threads, but just break immediately
         ::InterlockedDecrement(&::handling_assert);

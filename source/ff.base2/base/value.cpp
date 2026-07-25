@@ -140,9 +140,11 @@ ff::value ff::value::new_dict(ff::dict* value)
 
 ff::value ff::value::new_data(ff::raw_span value, ff::arena* copy_arena)
 {
+    FF_ASSERT_RET_VAL(value.size <= UINT32_MAX, ff::value::new_empty());
+
     ff::array_span as;
     as.data = value.data;
-    as.count = value.size;
+    as.count = (uint32_t)value.size;
     as.item_size = 1;
     as.item_align = alignof(size_t);
 
@@ -156,8 +158,11 @@ ff::value ff::value::new_data(ff::array_span value, ff::arena* copy_arena)
 
     if (copy_arena && value.data && value.count && value.item_size)
     {
-        size_t bytes = value.count * value.item_size;
+        size_t bytes;
+        FF_ASSERT_RET_VAL(ff::size_multiply(value.count, value.item_size, &bytes), ff::value::new_empty());
+
         void* copied = copy_arena->alloc(bytes, __max(value.item_align, alignof(size_t)));
+        FF_ASSERT_RET_VAL(copied, ff::value::new_empty());
         ::memcpy(copied, value.data, bytes);
         result.data.data = copied;
     }
@@ -173,20 +178,30 @@ ff::value ff::value::new_string(ff::string_view value, ff::arena* copy_arena)
     span.size = value.count;
 
     ff::value result = ff::value::new_data(span, copy_arena);
-    result.type = ff::value_type::string;
+    if (result.type != ff::value_type::empty)
+    {
+        result.type = ff::value_type::string;
+    }
+
     return result;
 }
 
 ff::value ff::value::new_array(ff::value* values, size_t size, ff::arena* copy_arena)
 {
+    FF_ASSERT_RET_VAL(size <= UINT32_MAX, ff::value::new_empty());
+
     ff::array_span span;
     span.data = values;
-    span.count = size;
+    span.count = (uint32_t)size;
     span.item_size = sizeof(ff::value);
     span.item_align = alignof(ff::value);
 
     ff::value result = ff::value::new_data(span, copy_arena);
-    result.type = ff::value_type::array;
+    if (result.type != ff::value_type::empty)
+    {
+        result.type = ff::value_type::array;
+    }
+
     return result;
 }
 
@@ -201,7 +216,7 @@ ff::raw_span ff::value::as_data() const
     FF_ASSERT(type == ff::value_type::data || type == ff::value_type::string || type == ff::value_type::array);
     ff::raw_span result;
     result.data = this->data.data;
-    result.size = this->data.count * this->data.item_size;
+    result.size = (size_t)this->data.count * this->data.item_size;
     return result;
 }
 
