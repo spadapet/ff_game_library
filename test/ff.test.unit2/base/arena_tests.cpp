@@ -149,11 +149,12 @@ namespace ff::test::base
 
             Assert::IsTrue(arena.type == ff::internal::arena_type::heap);
             Assert::IsNotNull(arena.buffer);
-            Assert::IsTrue(arena.buffer == &arena.external_buffer);
+            // The buffer header is carved from the front of the caller's memory
+            Assert::IsTrue((uint8_t*)arena.buffer >= buffer && (uint8_t*)arena.buffer < buffer + sizeof(buffer));
             Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::external);
-            Assert::IsTrue(arena.buffer->start == buffer);
+            Assert::IsTrue(arena.buffer->start == (uint8_t*)arena.buffer + sizeof(ff::internal::arena_buffer));
             Assert::IsTrue(arena.buffer->end == buffer + sizeof(buffer));
-            Assert::IsTrue(arena.next == buffer);
+            Assert::IsTrue(arena.next == arena.buffer->start);
             // 0 grow size now means "default based on the external size": clamped to a page
             // and rounded up to a power of 2 (1024 -> 4096), with the usual 1 MB cap.
             Assert::AreEqual<size_t>(4096, arena.grow_buffer_size);
@@ -807,7 +808,7 @@ namespace ff::test::base
                 tail = tail->next;
             }
             Assert::IsTrue(tail->type == ff::internal::arena_buffer_type::external);
-            Assert::IsTrue(tail->start == buffer);
+            Assert::IsTrue(tail->start == (uint8_t*)tail + sizeof(ff::internal::arena_buffer));
 
             // Head should be a heap buffer
             Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::heap);
@@ -818,14 +819,19 @@ namespace ff::test::base
         TEST_METHOD(external_buffer_data_not_freed_on_destroy)
         {
             uint8_t buffer[1024];
-            fill_pattern(buffer, sizeof(buffer), 0x33);
 
             ff::arena arena;
             arena.init_external(buffer, sizeof(buffer), 0);
+
+            // Fill the usable payload after init (the header now lives at the front of the buffer),
+            // then verify destroy leaves caller-owned memory untouched (never freed or scribbled on).
+            uint8_t* payload = arena.buffer->start;
+            size_t payload_size = (size_t)(arena.buffer->end - payload);
+            fill_pattern(payload, payload_size, 0x33);
+
             arena.destroy();
 
-            // External buffer memory is untouched after destroy
-            Assert::IsTrue(check_pattern(buffer, sizeof(buffer), 0x33));
+            Assert::IsTrue(check_pattern(payload, payload_size, 0x33));
         }
 
         TEST_METHOD(external_with_small_grow_clamped_to_page)
@@ -1095,7 +1101,7 @@ namespace ff::test::base
             // Active list: exactly ONE buffer (the external), nothing chained after it.
             Assert::AreEqual<size_t>(1, buffer_count(arena.buffer));
             Assert::IsTrue(arena.buffer->type == ff::internal::arena_buffer_type::external);
-            Assert::IsTrue(arena.buffer->start == external);
+            Assert::IsTrue(arena.buffer->start == (uint8_t*)arena.buffer + sizeof(ff::internal::arena_buffer));
             Assert::IsNull(arena.buffer->next);
 
             // Spare list: exactly ONE buffer (the absolute largest heap buffer).
@@ -1105,7 +1111,7 @@ namespace ff::test::base
             Assert::IsNull(arena.spare->next);
 
             // Next/end aligned to external (the new active head)
-            Assert::IsTrue(arena.next == external);
+            Assert::IsTrue(arena.next == arena.buffer->start);
             Assert::IsTrue(arena.end == external + sizeof(external));
 
             arena.destroy();

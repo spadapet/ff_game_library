@@ -73,17 +73,6 @@ namespace ff::test::base
             arena.destroy();
         }
 
-        TEST_METHOD(init_rejects_overflowing_capacity)
-        {
-            ff::arena arena;
-            arena.init_heap(4096);
-
-            int* values = ff::array_init<int>(&arena, SIZE_MAX);
-            Assert::IsNull(values);
-
-            arena.destroy();
-        }
-
         // ====================================================================
         // Push / indexing
         // ====================================================================

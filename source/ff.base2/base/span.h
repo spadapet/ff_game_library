@@ -18,13 +18,13 @@ namespace ff
         size_t count;
     };
 
-    // A non-owning span of an array. Compact fixed-width metadata keeps value at 24 bytes.
+    // A non-owning span of an array.
     struct array_span
     {
         const void* data;
-        uint32_t count;
-        uint16_t item_size;
-        uint16_t item_align;
+        size_t count : 32;
+        size_t item_size : 16;
+        size_t item_align : 16;
     };
 
     // A non-owning slice of memory.
@@ -38,8 +38,8 @@ namespace ff
     struct array_slice
     {
         size_t offset;
-        uint32_t count;
-        uint16_t item_size;
-        uint16_t item_align;
+        size_t count : 32;
+        size_t item_size : 16;
+        size_t item_align : 16;
     };
 }

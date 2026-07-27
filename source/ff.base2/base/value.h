@@ -52,9 +52,6 @@ namespace ff
         static ff::value new_point_float64(double x, double y);
         static ff::value new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
         static ff::value new_rect_float32(float left, float top, float right, float bottom);
-
-        // Reference payloads are borrowed when copy_arena is null and must outlive the value.
-        // Passing copy_arena copies the payload into that arena and ties its lifetime to the arena.
         static ff::value new_data(ff::raw_span value, ff::arena* copy_arena = nullptr);
         static ff::value new_data(ff::array_span value, ff::arena* copy_arena = nullptr);
         static ff::value new_dict(ff::dict* value);

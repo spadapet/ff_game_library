@@ -41,10 +41,9 @@ namespace ff
     }
 
     template<class T>
-    bool array_reserve(T*& a, size_t capacity)
+    void array_reserve(T*& a, size_t capacity)
     {
         a = (T*)ff::internal::array_realloc(a, sizeof(T), alignof(T), capacity);
-        return ff::internal::array_get_header(a)->capacity >= capacity;
     }
 
     template<class T>
@@ -52,37 +51,23 @@ namespace ff
     {
         ff::internal::array_header* header = ff::internal::array_get_header(a);
         size_t index = header->count;
-        if (index == SIZE_MAX)
-        {
-            return SIZE_MAX;
-        }
 
-        size_t needed = index + 1;
-        if (needed > header->capacity)
+        if (index + 1 > header->capacity)
         {
             // Slow path: grow (may relocate 'a'), then re-read the header at its new location.
-            if (!ff::array_reserve(a, needed))
-            {
-                return SIZE_MAX;
-            }
-
+            ff::array_reserve(a, index + 1);
             header = ff::internal::array_get_header(a);
         }
 
         a[index] = value;
-        header->count = needed;
+        header->count = index + 1;
         return index;
     }
 
     template<class T>
-    bool array_resize(T*& a, size_t new_size)
+    void array_resize(T*& a, size_t new_size)
     {
-        if (!ff::array_reserve(a, new_size))
-        {
-            return false;
-        }
-
+        ff::array_reserve(a, new_size); // no-op when shrinking or already large enough
         ff::internal::array_get_header(a)->count = new_size;
-        return true;
     }
 }

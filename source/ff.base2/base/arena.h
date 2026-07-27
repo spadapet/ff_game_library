@@ -37,7 +37,7 @@ namespace ff
 
     struct arena
     {
-        void init_external(void* buffer, size_t size, size_t grow_buffer_size); // grows on process-wide heap (grow_buffer_size 0 uses a default)
+        void init_external(void* buffer, size_t size, size_t grow_buffer_size); // buffer holds the header at its front (size must exceed sizeof(arena_buffer)); grows on process-wide heap (grow_buffer_size 0 uses a default)
         void init_heap(size_t initial_buffer_size); // allocates on process-wide heap
         void init_heap_local(size_t initial_buffer_size); // creates a new heap and allocates from it
         void init_virtual_memory(size_t initial_buffer_size); // reserves virtual memory and commits as needed
@@ -57,6 +57,5 @@ namespace ff
         ff::internal::arena_buffer* buffer; // head is the current active buffer (next/end live in it)
         ff::internal::arena_buffer* spare; // retained buffers for reuse on grow
         ff::internal::arena_type type;
-        ff::internal::arena_buffer external_buffer; // inline header used only by init_external
     };
 }
