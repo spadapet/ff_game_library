@@ -65,6 +65,7 @@
       <CompileAsWinRT>false</CompileAsWinRT>
       <FloatingPointModel>Fast</FloatingPointModel>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdclatest</LanguageStandard_C>
       <PrecompiledHeader Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition=" Exists('$(MSBuildProjectDirectory)\pch.h') ">pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>WINVER=0x0A00;_WIN32_WINNT=0x0A00;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>

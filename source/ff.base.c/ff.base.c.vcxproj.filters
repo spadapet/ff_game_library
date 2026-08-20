@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Natvis Include="base.c.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.c" />
+    <ClCompile Include="base\assert.c">
+      <Filter>base</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="base\assert.h">
+      <Filter>base</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="base">
+      <UniqueIdentifier>{8fc7d87d-611d-4b08-91b6-8abe24948899}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

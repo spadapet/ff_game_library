@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ProjectGuid>{9acbc255-a76a-495d-9d2f-e6f39d8d3312}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemGroup>
+    <ClCompile Include="base\assert.c" />
+    <ClCompile Include="pch.c">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="base\assert.h" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="base.c.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vendor\ff.vendor.zlib.vcxproj">
+      <Project>{d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vendor\ff.vendor.libpng.vcxproj">
+      <Project>{7023aadb-413d-4c4e-b8a7-481484c943ba}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
