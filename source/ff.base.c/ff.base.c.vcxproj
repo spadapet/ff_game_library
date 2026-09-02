@@ -7,14 +7,29 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
+    <ClCompile Include="base\arena.c" />
     <ClCompile Include="base\assert.c" />
+    <ClCompile Include="base\hash.c" />
+    <ClCompile Include="base\log.c" />
+    <ClCompile Include="base\math.c" />
+    <ClCompile Include="base\string.c" />
+    <ClCompile Include="base\string_builder.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="platform\platform_win.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base\arena.h" />
     <ClInclude Include="base\assert.h" />
+    <ClInclude Include="base\hash.h" />
+    <ClInclude Include="base\log.h" />
+    <ClInclude Include="base\math.h" />
+    <ClInclude Include="base\span.h" />
+    <ClInclude Include="base\string.h" />
+    <ClInclude Include="base\string_builder.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="platform\platform_win.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.c.natvis" />

@@ -8,16 +8,64 @@
     <ClCompile Include="base\assert.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="platform\platform_win.c">
+      <Filter>platform</Filter>
+    </ClCompile>
+    <ClCompile Include="base\log.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\arena.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\hash.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\math.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\string_builder.c">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="base\assert.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="platform\platform_win.h">
+      <Filter>platform</Filter>
+    </ClInclude>
+    <ClInclude Include="base\log.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\arena.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\hash.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\math.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\span.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\string_builder.h">
+      <Filter>base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
       <UniqueIdentifier>{8fc7d87d-611d-4b08-91b6-8abe24948899}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="platform">
+      <UniqueIdentifier>{6d6dd85d-f7aa-4478-ae33-5f372f755382}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
