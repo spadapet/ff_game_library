@@ -11,10 +11,10 @@ typedef enum
     ff_log_type_count,
 } ff_log_type;
 
-typedef void (*sink_func)(ff_string_view text);
-ff_log_type ff_log_set_sink(ff_log_type sink);
+typedef void (*ff_log_sink_func)(ff_log_type type, ff_string_view text);
+ff_log_sink_func ff_log_set_sink(ff_log_sink_func sink);
 
-ff_string_view type_name(ff_log_type type);
+ff_string_view ff_log_get_type_name(ff_log_type type);
 bool ff_log_get_type_enabled(ff_log_type type);
 void ff_log_set_type_enabled(ff_log_type type, bool value);
 

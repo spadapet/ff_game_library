@@ -1,9 +1,9 @@
 #include "pch.h"
-//#include "base/arena.h"
+#include "base/arena.h"
 #include "base/assert.h"
-//#include "base/log.h"
-//#include "base/string.h"
-//#include "base/string_builder.h"
+#include "base/log.h"
+#include "base/string.h"
+#include "base/string_builder.h"
 
 #ifdef _DEBUG
 
@@ -26,26 +26,21 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
         return true;
     }
 
-    /*
     char dialog_text[1024];
-    ff::arena arena;
-    arena.init_external(dialog_text, sizeof(dialog_text), 0);
+    ff_arena arena;
+    ff_arena_init_external(&arena, dialog_text, sizeof(dialog_text), 0);
 
-    ff::string_builder sb;
-    sb.init(&arena, (size_t)0); // minimal capacity so append_format sizes the buffer in one allocation
-    sb.append_format(FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"),
-        text ? text : "", exp ? exp : "", file ? file : "", line);
+    ff_string_builder sb;
+    ff_string_builder_init_capacity(&sb, &arena, 0);
+    ff_string_builder_append_format(&sb, FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"), text ? text : "", exp ? exp : "", file ? file : "", line);
 
-    // Pass the message as a '%.*s' argument, not as the format itself: the assert text can contain
-    // '%' (e.g. an expression like 'x % 2'), which would otherwise be read as a bogus conversion.
-    ff::string_view message = sb.view();
-    ff::log::write(ff::log::type::debug, FF_SVL("%.*s"), FF_SV_FORMAT(message));
+    ff_string_view message = ff_string_builder_view(&sb);
+    ff_log_write(ff_log_type_debug, FF_SVL("%.*s"), FF_SV_FORMAT(message));
 
     wchar_t dialog_text_w[1024];
-    ff::arena arena_w;
-    arena_w.init_external(dialog_text_w, sizeof(dialog_text_w), 0);
-    ff::wstring_view dialog_text_wv = ff::utf8_to_wide(message, &arena_w);
-    */
+    ff_arena arena_w;
+    ff_arena_init_external(&arena_w, dialog_text_w, sizeof(dialog_text_w), 0);
+    ff_wstring_view dialog_text_wv = ff_utf8_to_wide(message, &arena_w);
 
     // Only the main thread should show dialog UI
     bool ignored = true;
@@ -60,8 +55,8 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
         ignored = false;
     }
 
-    //arena_w.destroy();
-    //arena.destroy();
+    ff_arena_destroy(&arena_w);
+    ff_arena_destroy(&arena);
     InterlockedDecrement(&s_handling_assert);
 
     return ignored;

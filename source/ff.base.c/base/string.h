@@ -1,7 +1,10 @@
 #pragma once
 
-#define FF_SVL(literal) ((ff_string_view){ .data = (literal), .count = sizeof(literal) - 1 })
-#define FF_WSVL(literal) ((ff_wstring_view){ .data = (literal), .count = sizeof(literal) / sizeof((literal)[0]) - 1 })
+#define FF_SVL_INIT(literal) { .data = (literal), .count = sizeof(literal) - 1 }
+#define FF_WSVL_INIT(literal) { .data = (literal), .count = sizeof(literal) / sizeof((literal)[0]) - 1 }
+
+#define FF_SVL(literal) (ff_string_view)FF_SVL_INIT(literal)
+#define FF_WSVL(literal) (ff_wstring_view)FF_WSVL_INIT(literal)
 
 // FF_SV_FORMAT is for use in format strings, like: printf("%.*s", FF_SV_FORMAT(sv));
 #define FF_SV_FORMAT(sv) ((int)(sv).count), ((sv).data)
@@ -19,6 +22,9 @@ typedef struct ff_wstring_view
     const wchar_t* data;
     size_t count;
 } ff_wstring_view;
+
+ff_string_view ff_string_view_empty();
+ff_wstring_view ff_wstring_view_empty();
 
 ff_string_view ff_sz_view(const char* sz);
 ff_wstring_view ff_wz_view(const wchar_t* sz);

@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "base/math.h"
 
-bool ff::is_pow2(size_t value)
+bool ff_math_is_pow2(size_t value)
 {
     return value && !(value & (value - 1));
 }
 
-size_t ff::round_up_pow2(size_t value)
+size_t ff_math_round_up_pow2(size_t value)
 {
     if (value <= 1)
     {
@@ -14,16 +14,16 @@ size_t ff::round_up_pow2(size_t value)
     }
 
     unsigned long index;
-    ::_BitScanReverse64(&index, value - 1);
+    _BitScanReverse64(&index, value - 1);
     return (index < 63) ? ((size_t)1 << (index + 1)) : value;
 }
 
-size_t ff::round_up(size_t value, size_t alignment)
+size_t ff_math_round_up(size_t value, size_t alignment)
 {
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-uint8_t* ff::align_up(uint8_t* ptr, size_t alignment)
+uint8_t* ff_math_align_up(uint8_t* ptr, size_t alignment)
 {
-    return (uint8_t*)ff::round_up((size_t)ptr, alignment);
+    return (uint8_t*)ff_math_round_up((size_t)ptr, alignment);
 }

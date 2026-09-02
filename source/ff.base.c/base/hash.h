@@ -2,26 +2,19 @@
 
 #include "../base/string.h"
 
-namespace ff
+typedef struct ff_hash_data
 {
-    // 64-bit hash from the wyhash family, intended for dictionary keys. Values are stable across
-    // runs and builds (fixed secret and default seed) and use little-endian byte order, so they
-    // can be persisted. A streamed hash (ff::hash_data) always produces the same value as the
-    // one-shot ff::hash_bytes for the same bytes, no matter how the data is split across calls.
+    uint64_t seed;
+    size_t total;
+    size_t buffer_size;
+    uint8_t buffer[16];
+} ff_hash_data;
 
-    struct hash_data
-    {
-        void init();
-        void hash(const void* data, size_t size);
-        uint64_t done() const;
+void ff_hash_init(ff_hash_data* data);
+void ff_hash(ff_hash_data* data, const void* input, size_t size);
+uint64_t ff_hash_done(const ff_hash_data* data);
 
-        uint64_t seed;
-        size_t total;
-        size_t buffer_size;
-        uint8_t buffer[16];
-    };
 
-    uint64_t hash_bytes(const void* data, size_t size);
-    uint64_t hash_string(ff::string_view value);
-    uint64_t hash_string(ff::wstring_view value);
-}
+uint64_t ff_hash_bytes(const void* data, size_t size);
+uint64_t ff_hash_string(ff_string_view value);
+uint64_t ff_hash_wstring(ff_wstring_view value);

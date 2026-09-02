@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "base/hash.h"
 
-#include <intrin.h>
-
 // A streaming variant of wyhash (by Wang Yi, public domain). The rolling state absorbs complete
 // 16-byte blocks and always holds back the trailing 1..16 bytes so that finalize sees the tail and
 // the total length. Because "absorb every complete 16-byte block except the final 1..16 bytes" is a
@@ -11,8 +9,8 @@
 // target, so the values are stable and can be persisted.
 
 // Two of the canonical wyhash secret constants. Fixed forever so hashes stay stable across builds.
-constexpr uint64_t secret0 = 0xa0761d6478bd642full;
-constexpr uint64_t secret1 = 0xe7037ed1a0b428dbull;
+static const uint64_t s_secret0 = 0xa0761d6478bd642full;
+static const uint64_t s_secret1 = 0xe7037ed1a0b428dbull;
 
 // 64x64 -> 128 multiply: returns the low half, writes the high half through 'hi'.
 static inline uint64_t mul128(uint64_t a, uint64_t b, uint64_t* hi)
@@ -33,28 +31,28 @@ static inline uint64_t mul128(uint64_t a, uint64_t b, uint64_t* hi)
 static inline void wymum(uint64_t* a, uint64_t* b)
 {
     uint64_t hi;
-    uint64_t lo = ::mul128(*a, *b, &hi);
+    uint64_t lo = mul128(*a, *b, &hi);
     *a = lo;
     *b = hi;
 }
 
 static inline uint64_t wymix(uint64_t a, uint64_t b)
 {
-    ::wymum(&a, &b);
+    wymum(&a, &b);
     return a ^ b;
 }
 
 static inline uint64_t load64(const uint8_t* p)
 {
     uint64_t value;
-    ::memcpy(&value, p, sizeof(value));
+    memcpy(&value, p, sizeof(value));
     return value;
 }
 
 static inline uint64_t load32(const uint8_t* p)
 {
     uint32_t value;
-    ::memcpy(&value, p, sizeof(value));
+    memcpy(&value, p, sizeof(value));
     return value;
 }
 
@@ -65,50 +63,50 @@ static inline uint64_t load3(const uint8_t* p, size_t size)
 }
 
 // Fold one complete 16-byte block into the rolling state.
-static inline void absorb_block(uint64_t& seed, const uint8_t* p)
+static inline uint64_t absorb_block(uint64_t seed, const uint8_t* p)
 {
-    seed = ::wymix(::load64(p) ^ ::secret1, ::load64(p + 8) ^ seed);
+    return wymix(load64(p) ^ s_secret1, load64(p + 8) ^ seed);
 }
 
-void ff::hash_data::init()
+void ff_hash_init(ff_hash_data* data)
 {
-    constexpr uint64_t seed = 0;
-    this->seed = seed ^ ::wymix(seed ^ ::secret0, ::secret1);
-    this->total = 0;
-    this->buffer_size = 0;
+    const uint64_t init_seed = 0;
+    data->seed = init_seed ^ wymix(init_seed ^ s_secret0, s_secret1);
+    data->total = 0;
+    data->buffer_size = 0;
 }
 
-void ff::hash_data::hash(const void* data, size_t size)
+void ff_hash(ff_hash_data* data, const void* input, size_t size)
 {
     if (size == 0)
     {
         return;
     }
 
-    const uint8_t* p = (const uint8_t*)data;
-    this->total += size;
+    const uint8_t* p = (const uint8_t*)input;
+    data->total += size;
 
-    if (this->buffer_size != 0)
+    if (data->buffer_size != 0)
     {
         // Top up the held bytes toward a full block.
-        while (this->buffer_size < 16 && size != 0)
+        while (data->buffer_size < 16 && size != 0)
         {
-            this->buffer[this->buffer_size++] = *p++;
+            data->buffer[data->buffer_size++] = *p++;
             size--;
         }
 
         // Only absorb the block once we know more bytes follow; the final block is kept for finalize.
-        if (this->buffer_size == 16 && size != 0)
+        if (data->buffer_size == 16 && size != 0)
         {
-            ::absorb_block(this->seed, this->buffer);
-            this->buffer_size = 0;
+            data->seed = absorb_block(data->seed, data->buffer);
+            data->buffer_size = 0;
         }
     }
 
     // Absorb full blocks straight from the input while strictly more than one block remains.
     while (size > 16)
     {
-        ::absorb_block(this->seed, p);
+        data->seed = absorb_block(data->seed, p);
         p += 16;
         size -= 16;
     }
@@ -119,28 +117,28 @@ void ff::hash_data::hash(const void* data, size_t size)
     {
         for (size_t i = 0; i < size; i++)
         {
-            this->buffer[i] = p[i];
+            data->buffer[i] = p[i];
         }
 
-        this->buffer_size = size;
+        data->buffer_size = size;
     }
 }
 
-uint64_t ff::hash_data::done() const
+uint64_t ff_hash_done(const ff_hash_data* data)
 {
-    const uint8_t* p = this->buffer;
-    size_t size = this->buffer_size;
+    const uint8_t* p = data->buffer;
+    size_t size = data->buffer_size;
     uint64_t a, b;
 
     if (size >= 4)
     {
         size_t offset = (size >> 3) << 2; // 0 for 4..7 bytes, 4 for 8..16 bytes
-        a = (::load32(p) << 32) | ::load32(p + offset);
-        b = (::load32(p + size - 4) << 32) | ::load32(p + size - 4 - offset);
+        a = (load32(p) << 32) | load32(p + offset);
+        b = (load32(p + size - 4) << 32) | load32(p + size - 4 - offset);
     }
     else if (size != 0)
     {
-        a = ::load3(p, size);
+        a = load3(p, size);
         b = 0;
     }
     else
@@ -149,26 +147,26 @@ uint64_t ff::hash_data::done() const
         b = 0;
     }
 
-    a ^= ::secret1;
-    b ^= this->seed;
-    ::wymum(&a, &b);
-    return ::wymix(a ^ ::secret0 ^ (uint64_t)this->total, b ^ ::secret1);
+    a ^= s_secret1;
+    b ^= data->seed;
+    wymum(&a, &b);
+    return wymix(a ^ s_secret0 ^ (uint64_t)data->total, b ^ s_secret1);
 }
 
-uint64_t ff::hash_bytes(const void* data, size_t size)
+uint64_t ff_hash_bytes(const void* data, size_t size)
 {
-    ff::hash_data state;
-    state.init();
-    state.hash(data, size);
-    return state.done();
+    ff_hash_data state;
+    ff_hash_init(&state);
+    ff_hash(&state, data, size);
+    return ff_hash_done(&state);
 }
 
-uint64_t ff::hash_string(ff::string_view value)
+uint64_t ff_hash_string(ff_string_view value)
 {
-    return ff::hash_bytes(value.data, value.count);
+    return ff_hash_bytes(value.data, value.count);
 }
 
-uint64_t ff::hash_string(ff::wstring_view value)
+uint64_t ff_hash_wstring(ff_wstring_view value)
 {
-    return ff::hash_bytes(value.data, value.count * sizeof(wchar_t));
+    return ff_hash_bytes(value.data, value.count * sizeof(wchar_t));
 }

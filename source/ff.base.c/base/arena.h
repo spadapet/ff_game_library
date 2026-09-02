@@ -1,13 +1,13 @@
 #pragma once
 
-typedef enum
+typedef enum internal_ff_arena_type
 {
     internal_ff_arena_type_heap_global,
     internal_ff_arena_type_heap_local,
     internal_ff_arena_type_virtual_memory,
 } internal_ff_arena_type;
 
-typedef enum
+typedef enum internal_ff_arena_buffer_type
 {
     internal_ff_arena_buffer_type_external,
     internal_ff_arena_buffer_type_heap,
@@ -16,16 +16,16 @@ typedef enum
     internal_ff_arena_buffer_type_virtual_memory_oversize,
 } internal_ff_arena_buffer_type;
 
-typedef struct
+typedef struct internal_ff_arena_buffer
 {
-    internal_ff_arena_buffer* next;
+    struct internal_ff_arena_buffer* next;
     uint8_t* start;
     uint8_t* end;
     uint8_t* reserve_end;
     internal_ff_arena_buffer_type type;
 } internal_ff_arena_buffer;
 
-typedef struct
+typedef struct ff_arena
 {
     uint8_t* next;
     uint8_t* end;
@@ -49,4 +49,4 @@ void* ff_arena_alloc(ff_arena* arena, size_t size, size_t align);
 void* ff_arena_realloc(ff_arena* arena, const void* start, size_t size, size_t new_size, size_t align);
 void ff_arena_reset(ff_arena* arena);
 void ff_arena_rewind(ff_arena* arena, ff_arena_marker marker);
-ff_arena_marker ff_arena_mark(ff_arena* arena);
+ff_arena_marker ff_arena_mark(const ff_arena* arena);

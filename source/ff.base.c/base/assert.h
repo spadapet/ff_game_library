@@ -22,12 +22,12 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
 
 #endif
 
-#define FF_ASSERT(exp) FF_ASSERT_MSG(exp, nullptr)
+#define FF_ASSERT(exp) FF_ASSERT_MSG(exp, NULL)
 #define FF_ASSERT_RET(exp) { if(!(exp)) { FF_ASSERT_MSG(false, #exp); return; } }
 #define FF_ASSERT_RET_VAL(exp, val) { if(!(exp)) { FF_ASSERT_MSG(false, #exp); return (val); } }
 #define FF_ASSERT_MSG_RET(exp, txt) { if(!(exp)) { FF_ASSERT_MSG(false, txt); return; } }
 #define FF_ASSERT_MSG_RET_VAL(exp, txt, val) { if(!(exp)) { FF_ASSERT_MSG(false, txt); return (val); } }
-#define FF_ASSERT_HR(exp) FF_ASSERT_MSG(SUCCEEDED(exp), nullptr)
+#define FF_ASSERT_HR(exp) FF_ASSERT_MSG(SUCCEEDED(exp), NULL)
 #define FF_ASSERT_HR_MSG(exp, txt) FF_ASSERT_MSG(SUCCEEDED(exp), txt)
 #define FF_ASSERT_HR_RET(exp) { if(FAILED(exp)) { FF_ASSERT_MSG(false, #exp); return; } }
 #define FF_ASSERT_HR_RET_VAL(exp, val) { if(FAILED(exp)) { FF_ASSERT_MSG(false, #exp); return (val); } }
@@ -48,9 +48,9 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
 
 #ifdef _DEBUG
 
-#define FF_VERIFY(exp) FF_ASSERT_MSG(exp, nullptr)
+#define FF_VERIFY(exp) FF_ASSERT_MSG(exp, NULL)
 #define FF_VERIFY_MSG(exp, txt) FF_ASSERT_MSG(exp, txt)
-#define FF_VERIFY_HR(exp) FF_ASSERT_MSG(SUCCEEDED(exp), nullptr)
+#define FF_VERIFY_HR(exp) FF_ASSERT_MSG(SUCCEEDED(exp), NULL)
 #define FF_VERIFY_HR_MSG(exp, txt) FF_ASSERT_MSG(SUCCEEDED(exp), txt)
 
 #else
