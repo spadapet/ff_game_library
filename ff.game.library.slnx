@@ -40,6 +40,7 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/ff.test.console/ff.test.console.vcxproj" Id="94ef3680-8599-4d2d-b0a6-5455208a84c0" />
+    <Project Path="test/ff.test.unit.c/ff.test.unit.c.vcxproj" Id="59fc162a-acf0-491a-8f0f-771d9a9a2158" />
     <Project Path="test/ff.test.unit/ff.test.unit.vcxproj" Id="3cdc3451-f711-4ec0-96ea-1767804b2df0" />
     <Project Path="test/ff.test.unit2/ff.test.unit2.vcxproj" Id="41f13236-15bb-4322-88c9-75028fe2acbe" />
   </Folder>
