@@ -8,12 +8,15 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
     <ClCompile Include="base\arena.c" />
+    <ClCompile Include="base\array.c" />
     <ClCompile Include="base\assert.c" />
+    <ClCompile Include="base\dict.c" />
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
     <ClCompile Include="base\string.c" />
     <ClCompile Include="base\string_builder.c" />
+    <ClCompile Include="base\value.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -21,13 +24,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base\arena.h" />
+    <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
+    <ClInclude Include="base\dict.h" />
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\span.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
+    <ClInclude Include="base\value.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="platform\platform_win.h" />
   </ItemGroup>

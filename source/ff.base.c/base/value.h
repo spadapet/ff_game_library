@@ -1,0 +1,142 @@
+#pragma once
+
+#include "../base/span.h"
+#include "../base/string.h"
+
+typedef struct ff_arena ff_arena;
+typedef struct ff_dict ff_dict;
+typedef struct ff_idict ff_idict;
+typedef struct ff_ivalue ff_ivalue;
+
+typedef enum ff_value_type
+{
+    ff_value_type_empty,
+    ff_value_type_null,
+    ff_value_type_boolean,
+    ff_value_type_guid,
+
+    ff_value_type_int32,
+    ff_value_type_int64,
+    ff_value_type_float32,
+    ff_value_type_float64,
+
+    ff_value_type_point_int32,
+    ff_value_type_point_int64,
+    ff_value_type_point_float32,
+    ff_value_type_point_float64,
+
+    ff_value_type_rect_int32,
+    ff_value_type_rect_float32,
+
+    ff_value_type_data, // any binary data
+    ff_value_type_dict, // ff_dict*
+    ff_value_type_string, // char* (UTF-8, no null terminator)
+    ff_value_type_array, // ff_value*
+} ff_value_type;
+
+typedef struct ff_value
+{
+    union
+    {
+        bool b;
+        GUID guid;
+
+        int32_t i32;
+        int64_t i64;
+        float f32;
+        double f64;
+
+        int32_t point_i32[2];
+        float point_f32[2];
+        int64_t point_i64[2];
+        double point_f64[2];
+
+        int32_t rect_i32[4];
+        float rect_f32[4];
+
+        struct ff_array_span data;
+    };
+
+    ff_value_type type;
+} ff_value;
+
+// A non-owning, typed view over a contiguous run of ff_value (C has no templates, so this is a
+// one-off, plain-old-data span, unlike ff.base2's templated ff::span<T>).
+typedef struct ff_value_span
+{
+    const ff_value* data;
+    size_t count;
+} ff_value_span;
+
+ff_value ff_value_new_empty(void);
+ff_value ff_value_new_null(void);
+ff_value ff_value_new_boolean(bool value);
+ff_value ff_value_new_guid(GUID value);
+ff_value ff_value_new_int32(int32_t value);
+ff_value ff_value_new_int64(int64_t value);
+ff_value ff_value_new_float32(float value);
+ff_value ff_value_new_float64(double value);
+ff_value ff_value_new_point_int32(int32_t x, int32_t y);
+ff_value ff_value_new_point_int64(int64_t x, int64_t y);
+ff_value ff_value_new_point_float32(float x, float y);
+ff_value ff_value_new_point_float64(double x, double y);
+ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
+ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom);
+ff_value ff_value_new_data(struct ff_span value, ff_arena* copy_arena); // raw bytes; pass NULL for copy_arena to share the pointer
+ff_value ff_value_new_data_array_span(struct ff_array_span value, ff_arena* copy_arena);
+ff_value ff_value_new_dict(ff_dict* value);
+ff_value ff_value_new_string(ff_string_view value, ff_arena* copy_arena);
+ff_value ff_value_new_array(ff_value* values, size_t size, ff_arena* copy_arena);
+
+ff_dict* ff_value_as_dict(const ff_value* value);
+struct ff_span ff_value_as_data(const ff_value* value);
+ff_string_view ff_value_as_string(const ff_value* value);
+ff_value_span ff_value_as_array(const ff_value* value);
+
+// Convert a mutable ff_value into an immutable ivalue. Inline types copy their payload as-is;
+// reference types are written into the owning idict's blob by ff_dict_pack (see value.c).
+void ff_value_pack(ff_value* value, ff_ivalue* dest);
+
+// Immutable, offset-based counterpart to ff_value, stored inside a packed ff_idict blob. It
+// shares ff_value_type and the inline scalar layout with ff_value; the reference types
+// (data/dict/string/array) store a byte 'offset' from the blob base (see ff_array_slice) instead
+// of a raw pointer, so an idict is position-independent and can be persisted and used in place
+// after loading. The same ff_value_type tags are reused - the struct type (ff_value vs ff_ivalue) is
+// what distinguishes a pointer payload from an offset payload.
+typedef struct ff_ivalue
+{
+    union
+    {
+        bool b;
+        GUID guid;
+
+        int32_t i32;
+        int64_t i64;
+        float f32;
+        double f64;
+
+        int32_t point_i32[2];
+        float point_f32[2];
+        int64_t point_i64[2];
+        double point_f64[2];
+
+        int32_t rect_i32[4];
+        float rect_f32[4];
+
+        struct ff_array_slice data;
+    };
+
+    ff_value_type type;
+} ff_ivalue;
+
+typedef struct ff_ivalue_span
+{
+    const ff_ivalue* data;
+    size_t count;
+} ff_ivalue_span;
+
+// Reference-type accessors. 'base' is the owning idict's blob base, used to resolve the stored
+// offset; inline types are read directly from the union and ignore it.
+ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base);
+ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base);
+ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base);

@@ -69,12 +69,15 @@ bool ff::internal::assert_core(const char* exp, const char* text, const char* fi
 
 ff::assert_listener_func ff::assert_listener(ff::assert_listener_func listener)
 {
+#ifdef _DEBUG
     ff::assert_listener_func old_listener = nullptr;
 
-#ifdef _DEBUG
     old_listener = ::assert_listener_;
     ::assert_listener_ = listener;
-#endif
 
     return old_listener;
+#else
+    (void)listener;
+    return nullptr;
+#endif
 }

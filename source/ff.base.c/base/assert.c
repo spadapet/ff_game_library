@@ -50,7 +50,7 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
     {
         ignored = false;
     }
-    else if (MessageBoxW(NULL, L"Assert" /*dialog_text_wv.data*/, L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
+    else if (MessageBoxW(NULL, dialog_text_wv.data, L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
     {
         ignored = false;
     }

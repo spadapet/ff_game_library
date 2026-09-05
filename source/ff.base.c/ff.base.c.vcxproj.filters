@@ -29,6 +29,15 @@
     <ClCompile Include="base\string_builder.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\dict.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\value.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\array.c">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -57,6 +66,15 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\string_builder.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\dict.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\value.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\array.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
