@@ -3,7 +3,7 @@
 #include "base/assert.h"
 #include "base/string.h"
 
-ff_string_view ff_string_view_empty()
+ff_string_view ff_string_view_empty(void)
 {
     return (ff_string_view)
     {
@@ -12,7 +12,7 @@ ff_string_view ff_string_view_empty()
     };
 }
 
-ff_wstring_view ff_wstring_view_empty()
+ff_wstring_view ff_wstring_view_empty(void)
 {
     return (ff_wstring_view)
     {

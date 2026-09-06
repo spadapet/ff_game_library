@@ -4,6 +4,8 @@
 #include "base/math.h"
 #include "base/string_builder.h"
 
+static_assert(sizeof(ff_string_builder) == 32, "ff_string_builder layout changed unexpectedly");
+
 static const size_t s_default_initial_capacity = 1024;
 static const size_t s_min_capacity = 16;
 

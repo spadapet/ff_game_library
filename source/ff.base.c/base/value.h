@@ -6,7 +6,6 @@
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
 typedef struct ff_idict ff_idict;
-typedef struct ff_ivalue ff_ivalue;
 
 typedef enum ff_value_type
 {
@@ -31,7 +30,7 @@ typedef enum ff_value_type
     ff_value_type_data, // any binary data
     ff_value_type_dict, // ff_dict*
     ff_value_type_string, // char* (UTF-8, no null terminator)
-    ff_value_type_array, // ff_value*
+    ff_value_type_array, // ff_value* plus count
 } ff_value_type;
 
 typedef struct ff_value
@@ -60,11 +59,9 @@ typedef struct ff_value
     ff_value_type type;
 } ff_value;
 
-// A non-owning, typed view over a contiguous run of ff_value (C has no templates, so this is a
-// one-off, plain-old-data span, unlike ff.base2's templated ff::span<T>).
 typedef struct ff_value_span
 {
-    const ff_value* data;
+    ff_value* data;
     size_t count;
 } ff_value_span;
 
@@ -82,27 +79,17 @@ ff_value ff_value_new_point_float32(float x, float y);
 ff_value ff_value_new_point_float64(double x, double y);
 ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
 ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom);
-ff_value ff_value_new_data(struct ff_span value, ff_arena* copy_arena); // raw bytes; pass NULL for copy_arena to share the pointer
-ff_value ff_value_new_data_array_span(struct ff_array_span value, ff_arena* copy_arena);
+ff_value ff_value_new_data(ff_span value, ff_arena* copy_arena);
+ff_value ff_value_new_data_array(ff_array_span value, ff_arena* copy_arena);
 ff_value ff_value_new_dict(ff_dict* value);
 ff_value ff_value_new_string(ff_string_view value, ff_arena* copy_arena);
-ff_value ff_value_new_array(ff_value* values, size_t size, ff_arena* copy_arena);
+ff_value ff_value_new_array(ff_value_span value, ff_arena* copy_arena);
 
 ff_dict* ff_value_as_dict(const ff_value* value);
-struct ff_span ff_value_as_data(const ff_value* value);
+ff_span ff_value_as_data(const ff_value* value);
 ff_string_view ff_value_as_string(const ff_value* value);
 ff_value_span ff_value_as_array(const ff_value* value);
 
-// Convert a mutable ff_value into an immutable ivalue. Inline types copy their payload as-is;
-// reference types are written into the owning idict's blob by ff_dict_pack (see value.c).
-void ff_value_pack(ff_value* value, ff_ivalue* dest);
-
-// Immutable, offset-based counterpart to ff_value, stored inside a packed ff_idict blob. It
-// shares ff_value_type and the inline scalar layout with ff_value; the reference types
-// (data/dict/string/array) store a byte 'offset' from the blob base (see ff_array_slice) instead
-// of a raw pointer, so an idict is position-independent and can be persisted and used in place
-// after loading. The same ff_value_type tags are reused - the struct type (ff_value vs ff_ivalue) is
-// what distinguishes a pointer payload from an offset payload.
 typedef struct ff_ivalue
 {
     union
@@ -135,8 +122,8 @@ typedef struct ff_ivalue_span
     size_t count;
 } ff_ivalue_span;
 
-// Reference-type accessors. 'base' is the owning idict's blob base, used to resolve the stored
-// offset; inline types are read directly from the union and ignore it.
 ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base);
 ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base);
 ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base);
+
+void ff_value_pack(ff_value* value, ff_ivalue* dest);

@@ -6,158 +6,158 @@
 #include "base/math.h"
 #include "base/value.h"
 
-_Static_assert(sizeof(ff_value) == 24, "ff_value must stay 24 bytes");
-_Static_assert(sizeof(ff_ivalue) == 24, "ff_ivalue must stay 24 bytes");
-_Static_assert(sizeof(ff_ivalue) == sizeof(ff_value), "ff_value and ff_ivalue must stay layout-compatible");
+static_assert(sizeof(ff_value) == 24, "ff_value must stay 24 bytes");
+static_assert(sizeof(ff_ivalue) == 24, "ff_ivalue must stay 24 bytes");
+static_assert(sizeof(ff_ivalue) == sizeof(ff_value), "ff_value and ff_ivalue must stay layout-compatible");
 
 ff_value ff_value_new_empty(void)
 {
-    ff_value result = { 0 };
-    result.type = ff_value_type_empty;
-    return result;
+    return (ff_value) { .type = ff_value_type_empty };
 }
 
 ff_value ff_value_new_null(void)
 {
-    ff_value result = { 0 };
-    result.type = ff_value_type_null;
-    return result;
+    return (ff_value) { .type = ff_value_type_null };
 }
 
 ff_value ff_value_new_boolean(bool value)
 {
-    ff_value result = { 0 };
-    result.b = value;
-    result.type = ff_value_type_boolean;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_boolean,
+        .b = value,
+    };
 }
 
 ff_value ff_value_new_int32(int32_t value)
 {
-    ff_value result = { 0 };
-    result.i32 = value;
-    result.type = ff_value_type_int32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_int32,
+        .i32 = value,
+    };
 }
 
 ff_value ff_value_new_int64(int64_t value)
 {
-    ff_value result = { 0 };
-    result.i64 = value;
-    result.type = ff_value_type_int64;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_int64,
+        .i64 = value,
+    };
 }
 
 ff_value ff_value_new_float32(float value)
 {
-    ff_value result = { 0 };
-    result.f32 = value;
-    result.type = ff_value_type_float32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_float32,
+        .f32 = value,
+    };
 }
 
 ff_value ff_value_new_float64(double value)
 {
-    ff_value result = { 0 };
-    result.f64 = value;
-    result.type = ff_value_type_float64;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_float64,
+        .f64 = value,
+    };
 }
 
 ff_value ff_value_new_point_int32(int32_t x, int32_t y)
 {
-    ff_value result = { 0 };
-    result.point_i32[0] = x;
-    result.point_i32[1] = y;
-    result.type = ff_value_type_point_int32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_point_int32,
+        .point_i32 = { x, y },
+    };
 }
 
 ff_value ff_value_new_point_int64(int64_t x, int64_t y)
 {
-    ff_value result = { 0 };
-    result.point_i64[0] = x;
-    result.point_i64[1] = y;
-    result.type = ff_value_type_point_int64;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_point_int64,
+        .point_i64 = { x, y },
+    };
 }
 
 ff_value ff_value_new_point_float32(float x, float y)
 {
-    ff_value result = { 0 };
-    result.point_f32[0] = x;
-    result.point_f32[1] = y;
-    result.type = ff_value_type_point_float32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_point_float32,
+        .point_f32 = { x, y },
+    };
 }
 
 ff_value ff_value_new_point_float64(double x, double y)
 {
-    ff_value result = { 0 };
-    result.point_f64[0] = x;
-    result.point_f64[1] = y;
-    result.type = ff_value_type_point_float64;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_point_float64,
+        .point_f64 = { x, y },
+    };
 }
 
 ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom)
 {
-    ff_value result = { 0 };
-    result.rect_i32[0] = left;
-    result.rect_i32[1] = top;
-    result.rect_i32[2] = right;
-    result.rect_i32[3] = bottom;
-    result.type = ff_value_type_rect_int32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_rect_int32,
+        .rect_i32 = { left, top, right, bottom },
+    };
 }
 
 ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom)
 {
-    ff_value result = { 0 };
-    result.rect_f32[0] = left;
-    result.rect_f32[1] = top;
-    result.rect_f32[2] = right;
-    result.rect_f32[3] = bottom;
-    result.type = ff_value_type_rect_float32;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_rect_float32,
+        .rect_f32 = { left, top, right, bottom },
+    };
 }
 
 ff_value ff_value_new_guid(GUID value)
 {
-    ff_value result = { 0 };
-    result.guid = value;
-    result.type = ff_value_type_guid;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_guid,
+        .guid = value,
+    };
 }
 
 ff_value ff_value_new_dict(ff_dict* value)
 {
-    ff_value result = { 0 };
-    result.data.data = value;
-    result.type = ff_value_type_dict;
-    return result;
+    return (ff_value)
+    {
+        .type = ff_value_type_dict,
+        .data = { .data = value, .count = 0, .item_size = 0, .item_align = 0 },
+    };
 }
 
 ff_value ff_value_new_data(struct ff_span value, ff_arena* copy_arena)
 {
-    struct ff_array_span as = { 0 };
-    as.data = value.data;
-    as.count = value.size;
-    as.item_size = 1;
-    as.item_align = _Alignof(size_t);
+    ff_array_span as =
+    {
+        .data = value.data,
+        .count = value.size,
+        .item_size = 1,
+        .item_align = alignof(size_t),
+    };
 
-    return ff_value_new_data_array_span(as, copy_arena);
+    return ff_value_new_data_array(as, copy_arena);
 }
 
-ff_value ff_value_new_data_array_span(struct ff_array_span value, ff_arena* copy_arena)
+ff_value ff_value_new_data_array(struct ff_array_span value, ff_arena* copy_arena)
 {
-    ff_value result = { 0 };
-    result.data = value;
+    ff_value result = { .data = value };
 
     if (copy_arena && value.data && value.count && value.item_size)
     {
-        size_t bytes = (size_t)value.count * (size_t)value.item_size;
-        void* copied = ff_arena_alloc(copy_arena, bytes, ff_math_max_size(value.item_align, _Alignof(size_t)));
+        size_t bytes = value.count * value.item_size;
+        void* copied = ff_arena_alloc(copy_arena, bytes, ff_math_max_size(value.item_align, alignof(size_t)));
         memcpy(copied, value.data, bytes);
         result.data.data = copied;
     }
@@ -168,24 +168,28 @@ ff_value ff_value_new_data_array_span(struct ff_array_span value, ff_arena* copy
 
 ff_value ff_value_new_string(ff_string_view value, ff_arena* copy_arena)
 {
-    struct ff_span span;
-    span.data = value.data;
-    span.size = value.count;
+    ff_span span =
+    {
+        .data = value.data,
+        .size = value.count,
+    };
 
     ff_value result = ff_value_new_data(span, copy_arena);
     result.type = ff_value_type_string;
     return result;
 }
 
-ff_value ff_value_new_array(ff_value* values, size_t size, ff_arena* copy_arena)
+ff_value ff_value_new_array(ff_value_span value, ff_arena* copy_arena)
 {
-    struct ff_array_span span = { 0 };
-    span.data = values;
-    span.count = size;
-    span.item_size = sizeof(ff_value);
-    span.item_align = _Alignof(ff_value);
+    ff_array_span span =
+    {
+        .data = value.data,
+        .count = value.count,
+        .item_size = sizeof(ff_value),
+        .item_align = alignof(ff_value),
+    };
 
-    ff_value result = ff_value_new_data_array_span(span, copy_arena);
+    ff_value result = ff_value_new_data_array(span, copy_arena);
     result.type = ff_value_type_array;
     return result;
 }
@@ -199,30 +203,33 @@ ff_dict* ff_value_as_dict(const ff_value* value)
 struct ff_span ff_value_as_data(const ff_value* value)
 {
     FF_ASSERT(value->type == ff_value_type_data || value->type == ff_value_type_string || value->type == ff_value_type_array);
-    struct ff_span result;
-    result.data = value->data.data;
-    result.size = (size_t)value->data.count * (size_t)value->data.item_size;
-    return result;
+    return (ff_span)
+    {
+        .data = value->data.data,
+        .size = value->data.count * value->data.item_size,
+    };
 }
 
 ff_string_view ff_value_as_string(const ff_value* value)
 {
     FF_ASSERT(value->type == ff_value_type_string);
 
-    ff_string_view result;
-    result.data = (const char*)value->data.data;
-    result.count = value->data.count;
-    return result;
+    return (ff_string_view)
+    {
+        .data = (const char*)value->data.data,
+        .count = value->data.count,
+    };
 }
 
 ff_value_span ff_value_as_array(const ff_value* value)
 {
     FF_ASSERT(value->type == ff_value_type_array);
 
-    ff_value_span result;
-    result.data = (const ff_value*)value->data.data;
-    result.count = value->data.count;
-    return result;
+    return (ff_value_span)
+    {
+        .data = (ff_value*)value->data.data,
+        .count = value->data.count,
+    };
 }
 
 void ff_value_pack(ff_value* value, ff_ivalue* dest)
@@ -252,28 +259,31 @@ ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base)
 {
     FF_ASSERT(value->type == ff_value_type_dict);
 
-    ff_idict result = { 0 };
-    result.data = (const uint8_t*)base + value->data.offset;
-    result.size = value->data.count; // TODO: nested-dict region size, finalized with ff_dict_pack
-    return result;
+    return (ff_idict)
+    {
+        .data = (const uint8_t*)base + value->data.offset,
+        .size = value->data.count, // TODO: nested-dict region size, finalized with ff_dict_pack
+    };
 }
 
 ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base)
 {
     FF_ASSERT(value->type == ff_value_type_string);
 
-    ff_string_view result;
-    result.data = (const char*)((const uint8_t*)base + value->data.offset);
-    result.count = value->data.count;
-    return result;
+    return (ff_string_view)
+    {
+        .data = (const char*)((const uint8_t*)base + value->data.offset),
+        .count = value->data.count,
+    };
 }
 
 ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base)
 {
     FF_ASSERT(value->type == ff_value_type_array);
 
-    ff_ivalue_span result;
-    result.data = (const ff_ivalue*)((const uint8_t*)base + value->data.offset);
-    result.count = value->data.count;
-    return result;
+    return (ff_ivalue_span)
+    {
+        .data = (const ff_ivalue*)((const uint8_t*)base + value->data.offset),
+        .count = value->data.count,
+    };
 }

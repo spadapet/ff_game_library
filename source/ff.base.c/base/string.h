@@ -23,8 +23,8 @@ typedef struct ff_wstring_view
     size_t count;
 } ff_wstring_view;
 
-ff_string_view ff_string_view_empty();
-ff_wstring_view ff_wstring_view_empty();
+ff_string_view ff_string_view_empty(void);
+ff_wstring_view ff_wstring_view_empty(void);
 
 ff_string_view ff_sz_view(const char* sz);
 ff_wstring_view ff_wz_view(const wchar_t* sz);

@@ -273,7 +273,7 @@ namespace ff::test::base
             as.item_size = sizeof(uint32_t);
             as.item_align = alignof(uint32_t);
 
-            ff_value v = ff_value_new_data_array_span(as, nullptr);
+            ff_value v = ff_value_new_data_array(as, nullptr);
 
             Assert::IsTrue(v.type == ff_value_type_data);
             Assert::IsTrue(v.data.data == nums);
@@ -290,7 +290,7 @@ namespace ff::test::base
             as.item_size = 24;
             as.item_align = 8;
 
-            ff_value v = ff_value_new_data_array_span(as, nullptr);
+            ff_value v = ff_value_new_data_array(as, nullptr);
             Assert::AreEqual((size_t)200000000 * 24, ff_value_as_data(&v).size);
         }
 
@@ -307,7 +307,7 @@ namespace ff::test::base
             as.item_size = sizeof(uint32_t);
             as.item_align = alignof(uint32_t);
 
-            ff_value v = ff_value_new_data_array_span(as, &arena);
+            ff_value v = ff_value_new_data_array(as, &arena);
 
             Assert::IsTrue(v.data.data != nums);
             Assert::IsTrue(bytes_equal(v.data.data, nums, 3 * sizeof(uint32_t)));
@@ -420,7 +420,7 @@ namespace ff::test::base
                 ff_value_new_int32(30),
             };
 
-            ff_value v = ff_value_new_array(items, 3, nullptr);
+            ff_value v = ff_value_new_array(ff_value_span{ items, 3 }, nullptr);
 
             Assert::IsTrue(v.type == ff_value_type_array);
             Assert::IsTrue(ff_value_as_array(&v).data == items);
@@ -436,7 +436,7 @@ namespace ff::test::base
                 ff_value_new_int32(30),
             };
 
-            ff_value v = ff_value_new_array(items, 3, nullptr);
+            ff_value v = ff_value_new_array(ff_value_span{ items, 3 }, nullptr);
             const ff_value* arr = ff_value_as_array(&v).data;
 
             for (int32_t i = 0; i < 3; i++)
@@ -457,7 +457,7 @@ namespace ff::test::base
                 ff_value_new_int32(20),
             };
 
-            ff_value v = ff_value_new_array(items, 2, &arena);
+            ff_value v = ff_value_new_array(ff_value_span{ items, 2 }, &arena);
             const ff_value* arr = ff_value_as_array(&v).data;
 
             Assert::IsTrue(arr != items); // deep copy
@@ -476,7 +476,7 @@ namespace ff::test::base
         {
             ff_value items[1] = { ff_value_new_int32(0) };
 
-            ff_value v = ff_value_new_array(items, 0, nullptr);
+            ff_value v = ff_value_new_array(ff_value_span{ items, 0 }, nullptr);
 
             Assert::IsTrue(v.type == ff_value_type_array);
             Assert::AreEqual<size_t>(0, ff_value_as_array(&v).count);
@@ -491,7 +491,7 @@ namespace ff::test::base
                 ff_value_new_int64(42),
             };
 
-            ff_value v = ff_value_new_array(items, 3, nullptr);
+            ff_value v = ff_value_new_array(ff_value_span{ items, 3 }, nullptr);
             const ff_value* arr = ff_value_as_array(&v).data;
 
             Assert::IsTrue(arr[0].type == ff_value_type_boolean);

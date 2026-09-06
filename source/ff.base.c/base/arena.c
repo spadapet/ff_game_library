@@ -6,14 +6,14 @@
 static const size_t s_max_heap_buffer_size = 1024 * 1024;
 static const size_t s_max_virtual_buffer_size = 1024 * 1024 * 1024;
 
-static size_t get_allocation_granularity()
+static size_t get_allocation_granularity(void)
 {
     SYSTEM_INFO info;
     GetSystemInfo(&info);
     return info.dwAllocationGranularity;
 }
 
-static size_t get_page_size()
+static size_t get_page_size(void)
 {
     SYSTEM_INFO info;
     GetSystemInfo(&info);
