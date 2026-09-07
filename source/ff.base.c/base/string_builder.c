@@ -102,7 +102,7 @@ void ff_string_builder_append_format_v(ff_string_builder* sb, ff_string_view for
     ff_arena temp_arena;
     ff_arena_init_external(&temp_arena, format_stack, sizeof(format_stack), 0);
 
-    char* format_copy = (char*)ff_arena_alloc(&temp_arena, format.count + 1, 1);
+    char* format_copy = ff_arena_alloc_type(&temp_arena, char, format.count + 1);
     if (!format_copy)
     {
         FF_ASSERT(format_copy);
@@ -189,7 +189,7 @@ ff_string_view ff_string_builder_copy(const ff_string_builder* sb)
 
 ff_string_view ff_string_builder_copy_to(const ff_string_builder* sb, ff_arena* arena)
 {
-    char* dest = (char*)ff_arena_alloc(arena, sb->count + 1, alignof(char));
+    char* dest = ff_arena_alloc_type(arena, char, sb->count + 1);
     FF_ASSERT_RET_VAL(dest, ff_string_view_empty());
 
     if (sb->count)

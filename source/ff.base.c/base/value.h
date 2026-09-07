@@ -5,7 +5,6 @@
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
-typedef struct ff_idict ff_idict;
 
 typedef enum ff_value_type
 {
@@ -79,51 +78,13 @@ ff_value ff_value_new_point_float32(float x, float y);
 ff_value ff_value_new_point_float64(double x, double y);
 ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
 ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom);
-ff_value ff_value_new_data(ff_span value, ff_arena* copy_arena);
-ff_value ff_value_new_data_array(ff_array_span value, ff_arena* copy_arena);
+ff_value ff_value_new_data(ff_span value);
+ff_value ff_value_new_data_array(ff_array_span value);
 ff_value ff_value_new_dict(ff_dict* value);
-ff_value ff_value_new_string(ff_string_view value, ff_arena* copy_arena);
-ff_value ff_value_new_array(ff_value_span value, ff_arena* copy_arena);
+ff_value ff_value_new_string(ff_string_view value);
+ff_value ff_value_new_array(ff_value_span value);
 
 ff_dict* ff_value_as_dict(const ff_value* value);
 ff_span ff_value_as_data(const ff_value* value);
 ff_string_view ff_value_as_string(const ff_value* value);
 ff_value_span ff_value_as_array(const ff_value* value);
-
-typedef struct ff_ivalue
-{
-    union
-    {
-        bool b;
-        GUID guid;
-
-        int32_t i32;
-        int64_t i64;
-        float f32;
-        double f64;
-
-        int32_t point_i32[2];
-        float point_f32[2];
-        int64_t point_i64[2];
-        double point_f64[2];
-
-        int32_t rect_i32[4];
-        float rect_f32[4];
-
-        struct ff_array_slice data;
-    };
-
-    ff_value_type type;
-} ff_ivalue;
-
-typedef struct ff_ivalue_span
-{
-    const ff_ivalue* data;
-    size_t count;
-} ff_ivalue_span;
-
-ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base);
-ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base);
-ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base);
-
-void ff_value_pack(ff_value* value, ff_ivalue* dest);

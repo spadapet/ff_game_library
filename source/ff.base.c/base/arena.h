@@ -50,3 +50,5 @@ void* ff_arena_realloc(ff_arena* arena, const void* start, size_t size, size_t n
 void ff_arena_reset(ff_arena* arena);
 void ff_arena_rewind(ff_arena* arena, ff_arena_marker marker);
 ff_arena_marker ff_arena_mark(const ff_arena* arena);
+
+#define ff_arena_alloc_type(arena, type, count) (type*)ff_arena_alloc((arena), sizeof(type) * (count), alignof(type))

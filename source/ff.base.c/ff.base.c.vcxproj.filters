@@ -38,6 +38,12 @@
     <ClCompile Include="base\array.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\idict.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\ivalue.c">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -75,6 +81,12 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\array.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\idict.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\ivalue.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

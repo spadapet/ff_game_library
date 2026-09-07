@@ -1,14 +1,10 @@
 #include "pch.h"
 #include "base/arena.h"
-#include "base/array.h"
 #include "base/assert.h"
-#include "base/dict.h"
 #include "base/math.h"
 #include "base/value.h"
 
 static_assert(sizeof(ff_value) == 24, "ff_value must stay 24 bytes");
-static_assert(sizeof(ff_ivalue) == 24, "ff_ivalue must stay 24 bytes");
-static_assert(sizeof(ff_ivalue) == sizeof(ff_value), "ff_value and ff_ivalue must stay layout-compatible");
 
 ff_value ff_value_new_empty(void)
 {
@@ -137,59 +133,48 @@ ff_value ff_value_new_dict(ff_dict* value)
     };
 }
 
-ff_value ff_value_new_data(struct ff_span value, ff_arena* copy_arena)
+ff_value ff_value_new_data(struct ff_span value)
 {
-    ff_array_span as =
+    return ff_value_new_data_array((ff_array_span)
     {
         .data = value.data,
         .count = value.size,
         .item_size = 1,
         .item_align = alignof(size_t),
-    };
-
-    return ff_value_new_data_array(as, copy_arena);
+    });
 }
 
-ff_value ff_value_new_data_array(struct ff_array_span value, ff_arena* copy_arena)
+ff_value ff_value_new_data_array(struct ff_array_span value)
 {
-    ff_value result = { .data = value };
-
-    if (copy_arena && value.data && value.count && value.item_size)
+    return (ff_value)
     {
-        size_t bytes = value.count * value.item_size;
-        void* copied = ff_arena_alloc(copy_arena, bytes, ff_math_max_size(value.item_align, alignof(size_t)));
-        memcpy(copied, value.data, bytes);
-        result.data.data = copied;
-    }
-
-    result.type = ff_value_type_data;
-    return result;
+        .data = value,
+        .type = ff_value_type_data,
+    };
 }
 
-ff_value ff_value_new_string(ff_string_view value, ff_arena* copy_arena)
+ff_value ff_value_new_string(ff_string_view value)
 {
-    ff_span span =
+    ff_value result = ff_value_new_data((ff_span)
     {
         .data = value.data,
         .size = value.count,
-    };
+    });
 
-    ff_value result = ff_value_new_data(span, copy_arena);
     result.type = ff_value_type_string;
     return result;
 }
 
-ff_value ff_value_new_array(ff_value_span value, ff_arena* copy_arena)
+ff_value ff_value_new_array(ff_value_span value)
 {
-    ff_array_span span =
+    ff_value result = ff_value_new_data_array((ff_array_span)
     {
         .data = value.data,
         .count = value.count,
         .item_size = sizeof(ff_value),
         .item_align = alignof(ff_value),
-    };
+    });
 
-    ff_value result = ff_value_new_data_array(span, copy_arena);
     result.type = ff_value_type_array;
     return result;
 }
@@ -213,7 +198,6 @@ struct ff_span ff_value_as_data(const ff_value* value)
 ff_string_view ff_value_as_string(const ff_value* value)
 {
     FF_ASSERT(value->type == ff_value_type_string);
-
     return (ff_string_view)
     {
         .data = (const char*)value->data.data,
@@ -223,67 +207,10 @@ ff_string_view ff_value_as_string(const ff_value* value)
 
 ff_value_span ff_value_as_array(const ff_value* value)
 {
-    FF_ASSERT(value->type == ff_value_type_array);
-
+    FF_ASSERT(value->type == ff_value_type_array && value->data.item_size == sizeof(ff_value) && value->data.item_align == alignof(ff_value));
     return (ff_value_span)
     {
         .data = (ff_value*)value->data.data,
-        .count = value->data.count,
-    };
-}
-
-void ff_value_pack(ff_value* value, ff_ivalue* dest)
-{
-    dest->type = value->type;
-
-    switch (value->type)
-    {
-        case ff_value_type_data:
-        case ff_value_type_dict:
-        case ff_value_type_string:
-        case ff_value_type_array:
-            // TODO: reference types. Append the target bytes/elements into the owning idict's blob and
-            // record result.data.offset/count (recursing for array/dict). This needs the blob writer
-            // and base pointer, so it is finalized together with ff_dict_pack's blob construction.
-            break;
-
-        default:
-            // Inline types (empty/null/boolean/guid/int*/float*/point*/rect*) share value's layout, so
-            // copy the 16-byte inline payload unchanged (GUID is the largest inline member).
-            memcpy(&dest->guid, &value->guid, sizeof(value->guid));
-            break;
-    }
-}
-
-ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base)
-{
-    FF_ASSERT(value->type == ff_value_type_dict);
-
-    return (ff_idict)
-    {
-        .data = (const uint8_t*)base + value->data.offset,
-        .size = value->data.count, // TODO: nested-dict region size, finalized with ff_dict_pack
-    };
-}
-
-ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base)
-{
-    FF_ASSERT(value->type == ff_value_type_string);
-
-    return (ff_string_view)
-    {
-        .data = (const char*)((const uint8_t*)base + value->data.offset),
-        .count = value->data.count,
-    };
-}
-
-ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base)
-{
-    FF_ASSERT(value->type == ff_value_type_array);
-
-    return (ff_ivalue_span)
-    {
-        .data = (const ff_ivalue*)((const uint8_t*)base + value->data.offset),
         .count = value->data.count,
     };
 }

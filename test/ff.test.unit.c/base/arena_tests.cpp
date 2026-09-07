@@ -476,7 +476,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             // Allocate something in the first buffer and write a pattern
-            uint8_t* p1 = (uint8_t*)ff_arena_alloc(&arena, 1024, 8);
+            uint8_t* p1 = ff_arena_alloc_type(&arena, uint8_t, 1024);
             fill_pattern(p1, 1024, 0x55);
 
             // Force growth
@@ -622,7 +622,7 @@ namespace ff::test::base
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 2 * 1024 * 1024, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 2 * 1024 * 1024);
             Assert::IsNotNull(p);
             fill_pattern(p, 2 * 1024 * 1024, 0xAA);
             Assert::IsTrue(check_pattern(p, 2 * 1024 * 1024, 0xAA));
@@ -1645,7 +1645,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             // Big allocation forces oversize
-            uint8_t* big = (uint8_t*)ff_arena_alloc(&arena, 2 * 1024 * 1024, 8);
+            uint8_t* big = ff_arena_alloc_type(&arena, uint8_t, 2 * 1024 * 1024);
             Assert::IsNotNull(big);
             fill_pattern(big, 2 * 1024 * 1024, 0x55);
 
@@ -1670,7 +1670,7 @@ namespace ff::test::base
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 64, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 64);
             Assert::IsNotNull(p);
             fill_pattern(p, 64, 0x11);
             Assert::IsTrue(arena.next == p + 64);
@@ -1689,7 +1689,7 @@ namespace ff::test::base
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 128, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 128);
             Assert::IsNotNull(p);
             fill_pattern(p, 128, 0x22);
             Assert::IsTrue(arena.next == p + 128);
@@ -1708,7 +1708,7 @@ namespace ff::test::base
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 48, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 48);
             Assert::IsNotNull(p);
             Assert::IsTrue(arena.next == p + 48);
 
@@ -1726,12 +1726,12 @@ namespace ff::test::base
 
             // Shrinking the last block should hand the freed bytes back to the bump pointer,
             // so the very next alloc reuses the just-freed space.
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 256, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 256);
             Assert::IsNotNull(p);
             uint8_t* shrunk = (uint8_t*)ff_arena_realloc(&arena, p, 256, 64, 8);
             Assert::IsTrue(shrunk == p);
 
-            void* next_alloc = ff_arena_alloc(&arena, 8, 8);
+            void* next_alloc = ff_arena_alloc_type(&arena, uint8_t, 8);
             Assert::IsTrue((uint8_t*)next_alloc == p + 64);
 
             ff_arena_destroy(&arena);
@@ -1742,12 +1742,12 @@ namespace ff::test::base
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            uint8_t* first = (uint8_t*)ff_arena_alloc(&arena, 64, 8);
+            uint8_t* first = ff_arena_alloc_type(&arena, uint8_t, 64);
             Assert::IsNotNull(first);
             fill_pattern(first, 64, 0x33);
 
             // A second allocation makes 'first' no longer the last block.
-            uint8_t* second = (uint8_t*)ff_arena_alloc(&arena, 64, 8);
+            uint8_t* second = ff_arena_alloc_type(&arena, uint8_t, 64);
             Assert::IsNotNull(second);
             Assert::IsTrue(arena.next == second + 64);
 
@@ -1980,7 +1980,7 @@ namespace ff::test::base
             const internal_ff_arena_buffer* marker_buffer = arena.buffer;
 
             // Allocate a block, then realloc it with a grow large enough to force a new buffer.
-            uint8_t* p = (uint8_t*)ff_arena_alloc(&arena, 64, 8);
+            uint8_t* p = ff_arena_alloc_type(&arena, uint8_t, 64);
             Assert::IsNotNull(p);
             fill_pattern(p, 64, 0xA1);
 

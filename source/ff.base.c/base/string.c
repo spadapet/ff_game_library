@@ -51,7 +51,7 @@ ff_wstring_view ff_utf8_to_wide(ff_string_view utf8, ff_arena* arena)
     int wide_len = MultiByteToWideChar(CP_UTF8, 0, utf8.data, source_len, NULL, 0);
     FF_ASSERT_RET_VAL(wide_len > 0, result);
 
-    wchar_t* dest = (wchar_t*)ff_arena_alloc(arena, ((size_t)wide_len + 1) * sizeof(wchar_t), alignof(wchar_t));
+    wchar_t* dest = ff_arena_alloc_type(arena, wchar_t, (size_t)wide_len + 1);
     FF_ASSERT_RET_VAL(dest, result);
 
     MultiByteToWideChar(CP_UTF8, 0, utf8.data, source_len, dest, wide_len);
@@ -73,7 +73,7 @@ ff_string_view ff_wide_to_utf8(ff_wstring_view wide, ff_arena* arena)
     int utf8_len = WideCharToMultiByte(CP_UTF8, 0, wide.data, source_len, NULL, 0, NULL, NULL);
     FF_ASSERT_RET_VAL(utf8_len > 0, result);
 
-    char* dest = (char*)ff_arena_alloc(arena, (size_t)utf8_len + 1, alignof(char));
+    char* dest = ff_arena_alloc_type(arena, char, (size_t)utf8_len + 1);
     FF_ASSERT_RET_VAL(dest, result);
 
     WideCharToMultiByte(CP_UTF8, 0, wide.data, source_len, dest, utf8_len, NULL, NULL);
