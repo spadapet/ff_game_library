@@ -2,6 +2,7 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/dict.h"
+#include "base/dict_internal.h"
 #include "base/hash.h"
 #include "base/math.h"
 #include "base/value.h"
@@ -10,7 +11,7 @@ static_assert(alignof(uint64_t) == alignof(ff_value), "uint64_t and ff_value mus
 
 static const size_t s_dict_item_size = sizeof(uint64_t) + sizeof(ff_value);
 
-static ff_value* internal_ff_dict_values(const ff_dict* dict)
+ff_value* internal_ff_dict_values(const ff_dict* dict)
 {
     return (ff_value*)(dict->keys + dict->capacity);
 }
@@ -94,7 +95,11 @@ void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other)
 
     ff_dict_init_capacity(dict, arena, other_count);
 
-    if (other_count && dict->capacity >= other_count)
+    // Capacity was reserved for exactly this many entries, so failing to get it means the arena is
+    // out of memory. Copying part of the dict and reporting nothing would be worse than nothing.
+    FF_ASSERT_RET(!other_count || dict->capacity >= other_count);
+
+    if (other_count)
     {
         memcpy(dict->keys, other_keys, other_count * sizeof(uint64_t));
         memcpy(internal_ff_dict_values(dict), other_values, other_count * sizeof(ff_value));

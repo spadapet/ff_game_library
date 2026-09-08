@@ -429,9 +429,9 @@ namespace ff::test::base
             Assert::AreEqual((size_t)200000000 * 24, ff_value_as_data(&v).size);
         }
 
-        TEST_METHOD(data_array_holds_maximum_bitfield_values)
+        TEST_METHOD(data_array_holds_maximum_field_values)
         {
-            // ff_array_span packs count into 32 bits and item_size/item_align into 16 bits each.
+            // ff_array_span stores count in 32 bits and item_size/item_align in 16 bits each.
             struct ff_array_span as{};
             as.data = nullptr;
             as.count = 0xFFFFFFFFu;

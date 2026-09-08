@@ -15,6 +15,9 @@
     <ClCompile Include="base\hash_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\idict_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\log_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>

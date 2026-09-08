@@ -29,6 +29,7 @@
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
     <ClInclude Include="base\dict.h" />
+    <ClInclude Include="base\dict_internal.h" />
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\idict.h" />
     <ClInclude Include="base\ivalue.h" />

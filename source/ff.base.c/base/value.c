@@ -135,17 +135,23 @@ ff_value ff_value_new_dict(ff_dict* value)
 
 ff_value ff_value_new_data(struct ff_span value)
 {
-    return ff_value_new_data_array((ff_array_span)
-    {
-        .data = value.data,
-        .count = value.size,
-        .item_size = 1,
-        .item_align = alignof(size_t),
-    });
+    // ff_array_span's count is 32 bits, so anything larger would silently truncate.
+    FF_ASSERT(value.size <= UINT32_MAX);
+
+    ff_array_span span;
+    span.data = value.data;
+    span.count = (uint32_t)value.size;
+    span.item_size = 1;
+    span.item_align = alignof(size_t);
+
+    return ff_value_new_data_array(span);
 }
 
 ff_value ff_value_new_data_array(struct ff_array_span value)
 {
+    // No range check here: ff_array_span's own fields are already 32 and 16 bits wide, so anything
+    // too large was truncated when the caller filled the span in. The checks live in the functions
+    // below that narrow a size_t down into one of these, which is where the real value still exists.
     return (ff_value)
     {
         .data = value,
@@ -155,26 +161,27 @@ ff_value ff_value_new_data_array(struct ff_array_span value)
 
 ff_value ff_value_new_string(ff_string_view value)
 {
-    ff_value result = ff_value_new_data((ff_span)
-    {
-        .data = value.data,
-        .size = value.count,
-    });
+    ff_span span;
+    span.data = value.data;
+    span.size = value.count;
 
+    ff_value result = ff_value_new_data(span);
     result.type = ff_value_type_string;
     return result;
 }
 
 ff_value ff_value_new_array(ff_value_span value)
 {
-    ff_value result = ff_value_new_data_array((ff_array_span)
-    {
-        .data = value.data,
-        .count = value.count,
-        .item_size = sizeof(ff_value),
-        .item_align = alignof(ff_value),
-    });
+    // ff_array_span's count is 32 bits, so anything larger would silently truncate.
+    FF_ASSERT(value.count <= UINT32_MAX);
 
+    ff_array_span span;
+    span.data = value.data;
+    span.count = (uint32_t)value.count;
+    span.item_size = sizeof(ff_value);
+    span.item_align = alignof(ff_value);
+
+    ff_value result = ff_value_new_data_array(span);
     result.type = ff_value_type_array;
     return result;
 }
@@ -191,7 +198,10 @@ struct ff_span ff_value_as_data(const ff_value* value)
     return (ff_span)
     {
         .data = value->data.data,
-        .size = value->data.count * value->data.item_size,
+
+        // Widened first: both fields are narrower than size_t, so multiplying them as they are would
+        // do the arithmetic in 32 bits and wrap on a large blob.
+        .size = (size_t)value->data.count * value->data.item_size,
     };
 }
 

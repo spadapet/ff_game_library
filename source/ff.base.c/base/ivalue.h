@@ -38,6 +38,7 @@ typedef struct ff_ivalue_span
     size_t count;
 } ff_ivalue_span;
 
+ff_array_span ff_ivalue_as_data(const ff_ivalue* value, const ff_idict* parent_dict);
 ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const ff_idict* parent_dict);
 ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const ff_idict* parent_dict);
 ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const ff_idict* parent_dict);

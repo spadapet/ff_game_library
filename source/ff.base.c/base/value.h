@@ -6,6 +6,10 @@
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
 
+// The numbering of these is written into saved ff_idict files, so it is part of that format: types
+// may only be appended, never reordered or removed, and anything that walks every type (see
+// idict.c) has to be updated to match. ff_idict's file prefix records how many types the writer
+// knew about so that a mismatch is caught rather than silently misread.
 typedef enum ff_value_type
 {
     ff_value_type_empty,
@@ -78,6 +82,9 @@ ff_value ff_value_new_point_float32(float x, float y);
 ff_value ff_value_new_point_float64(double x, double y);
 ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
 ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom);
+// Sizes and alignments are stored in the narrow fields of ff_array_span, so these refuse anything
+// that would not survive the trip and return an empty value instead of one that has silently
+// wrapped: at most UINT32_MAX items, an item size and alignment that each fit in 16 bits.
 ff_value ff_value_new_data(ff_span value);
 ff_value ff_value_new_data_array(ff_array_span value);
 ff_value ff_value_new_dict(ff_dict* value);

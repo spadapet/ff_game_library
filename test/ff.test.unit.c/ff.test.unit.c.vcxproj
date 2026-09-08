@@ -12,6 +12,7 @@
     <ClCompile Include="base\array_tests.cpp" />
     <ClCompile Include="base\dict_tests.cpp" />
     <ClCompile Include="base\hash_tests.cpp" />
+    <ClCompile Include="base\idict_tests.cpp" />
     <ClCompile Include="base\log_tests.cpp" />
     <ClCompile Include="base\string_builder_tests.cpp" />
     <ClCompile Include="base\string_tests.cpp" />
