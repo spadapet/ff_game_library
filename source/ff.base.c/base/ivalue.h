@@ -4,8 +4,6 @@
 #include "../base/string.h"
 #include "../base/value.h"
 
-typedef struct ff_arena ff_arena;
-typedef struct ff_dict ff_dict;
 typedef struct ff_idict ff_idict;
 
 typedef struct ff_ivalue
@@ -40,6 +38,6 @@ typedef struct ff_ivalue_span
     size_t count;
 } ff_ivalue_span;
 
-ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const void* base);
-ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const void* base);
-ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const void* base);
+ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const ff_idict* parent_dict);
+ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const ff_idict* parent_dict);
+ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const ff_idict* parent_dict);

@@ -547,6 +547,15 @@ namespace ff::test::base
             Assert::AreEqual<size_t>(5, ff_value_as_data(&v).size);
         }
 
+        TEST_METHOD(string_inherits_data_alignment)
+        {
+            ff_string_view src{ "hello", 5 };
+            ff_value v = ff_value_new_string(src);
+
+            // A string is built on top of a data value, so it keeps that value's alignment.
+            Assert::AreEqual<size_t>(alignof(size_t), (size_t)v.data.item_align);
+        }
+
         TEST_METHOD(string_keeps_embedded_null)
         {
             // Strings are counted, not null terminated, so an interior null is just a byte.

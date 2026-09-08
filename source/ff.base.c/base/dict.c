@@ -6,6 +6,8 @@
 #include "base/math.h"
 #include "base/value.h"
 
+static_assert(alignof(uint64_t) == alignof(ff_value), "uint64_t and ff_value must have the same alignment");
+
 static const size_t s_dict_item_size = sizeof(uint64_t) + sizeof(ff_value);
 
 static ff_value* internal_ff_dict_values(const ff_dict* dict)
@@ -15,8 +17,7 @@ static ff_value* internal_ff_dict_values(const ff_dict* dict)
 
 static void internal_ff_dict_reserve(ff_dict* dict, size_t new_capacity)
 {
-    const size_t dict_align = ff_math_max_size(alignof(uint64_t), alignof(ff_value));
-    uint64_t* new_keys = (uint64_t*)ff_arena_realloc(dict->arena, dict->keys, dict->capacity * s_dict_item_size, new_capacity * s_dict_item_size, dict_align);
+    uint64_t* new_keys = (uint64_t*)ff_arena_realloc(dict->arena, dict->keys, dict->capacity * s_dict_item_size, new_capacity * s_dict_item_size, alignof(ff_value));
 
     if (dict->count)
     {
@@ -67,6 +68,7 @@ void ff_dict_init(ff_dict* dict, ff_arena* arena)
 {
     ff_dict_init_capacity(dict, arena, 0);
 }
+
 void ff_dict_init_capacity(ff_dict* dict, ff_arena* arena, size_t initial_capacity)
 {
     FF_ASSERT(arena);

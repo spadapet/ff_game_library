@@ -6,6 +6,13 @@ static ff_string_view sv(const char* text)
     return result;
 }
 
+// Keys are counted views, so a key can contain null bytes or stop short of one.
+static ff_string_view sv_n(const char* text, size_t count)
+{
+    ff_string_view result{ text, count };
+    return result;
+}
+
 // The dict derives its values pointer instead of storing it, so tests derive it the same way.
 static ff_value* values_of(const ff_dict& dict)
 {
@@ -95,6 +102,78 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(init_overwrites_stale_fields)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // init must fully overwrite the struct, not merge with whatever was there.
+            ff_dict dict;
+            memset(&dict, 0xCD, sizeof(dict));
+            ff_dict_init(&dict, &arena);
+
+            Assert::AreEqual((size_t)0, dict.count);
+            Assert::AreEqual((size_t)0, dict.capacity);
+            Assert::IsNull(dict.keys);
+            Assert::IsTrue(dict.arena == &arena);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_capacity_one_grows_to_eight)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init_capacity(&dict, &arena, 1);
+
+            Assert::AreEqual((size_t)1, dict.capacity);
+
+            ff_value first = ff_value_new_int32(1);
+            ff_value second = ff_value_new_int32(2);
+            ff_dict_add(&dict, sv("a"), &first);
+            ff_dict_add(&dict, sv("b"), &second);
+
+            // Growth is round_up_pow2(max(capacity * 2, 8)), so 1 jumps straight to 8.
+            Assert::AreEqual((size_t)8, dict.capacity);
+            Assert::AreEqual(1, ff_dict_get(&dict, sv("a"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, sv("b"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_capacity_odd_growth_moves_overlapping_values)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // Values move from offset capacity to offset new_capacity within one block, and for
+            // small growth steps the source and destination ranges overlap.
+            ff_dict dict{};
+            ff_dict_init_capacity(&dict, &arena, 3);
+
+            char key[32];
+            for (int i = 0; i < 4; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_add(&dict, sv(key), &value);
+            }
+
+            Assert::AreEqual((size_t)8, dict.capacity);
+
+            for (int i = 0; i < 4; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value* found = ff_dict_get(&dict, sv(key));
+                Assert::IsNotNull(found);
+                Assert::AreEqual(i, found->i32);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(init_copy_of_empty_dict)
         {
             ff_arena arena{};
@@ -177,6 +256,150 @@ namespace ff::test::base
 
             Assert::AreEqual((size_t)2, copy.count);
             Assert::AreEqual(2, this->count_matches(&copy, "dup"));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_copy_uses_the_target_arena)
+        {
+            ff_arena source_arena{};
+            ff_arena_init_heap_global(&source_arena, 4096);
+
+            ff_arena copy_arena{};
+            ff_arena_init_heap_global(&copy_arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &source_arena);
+
+            ff_value value = ff_value_new_int32(7);
+            ff_dict_set(&source, sv("key"), &value);
+
+            ff_dict copy{};
+            ff_dict_init_copy(&copy, &copy_arena, &source);
+
+            Assert::IsTrue(copy.arena == &copy_arena);
+            Assert::AreEqual(7, ff_dict_get(&copy, sv("key"))->i32);
+
+            // The copy must not point back into the source arena's storage.
+            ff_arena_destroy(&source_arena);
+            Assert::AreEqual((size_t)1, copy.count);
+            Assert::AreEqual(7, ff_dict_get(&copy, sv("key"))->i32);
+
+            ff_arena_destroy(&copy_arena);
+        }
+
+        TEST_METHOD(init_copy_capacity_matches_source_count)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init_capacity(&source, &arena, 64);
+
+            char key[32];
+            for (int i = 0; i < 3; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_add(&source, sv(key), &value);
+            }
+
+            ff_dict copy{};
+            ff_dict_init_copy(&copy, &arena, &source);
+
+            // The copy is sized to the live entries, not to the source's spare capacity.
+            Assert::AreEqual((size_t)3, copy.count);
+            Assert::AreEqual((size_t)3, copy.capacity);
+
+            for (int i = 0; i < 3; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                Assert::AreEqual(i, ff_dict_get(&copy, sv(key))->i32);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_copy_skips_cleared_entries)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value a = ff_value_new_int32(1);
+            ff_value b = ff_value_new_int32(2);
+            ff_value c = ff_value_new_int32(3);
+            ff_dict_set(&source, sv("a"), &a);
+            ff_dict_set(&source, sv("b"), &b);
+            ff_dict_set(&source, sv("c"), &c);
+            Assert::IsTrue(ff_dict_clear(&source, sv("b")));
+
+            ff_dict copy{};
+            ff_dict_init_copy(&copy, &arena, &source);
+
+            Assert::AreEqual((size_t)2, copy.count);
+            Assert::AreEqual(1, ff_dict_get(&copy, sv("a"))->i32);
+            Assert::IsNull(ff_dict_get(&copy, sv("b")));
+            Assert::AreEqual(3, ff_dict_get(&copy, sv("c"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_copy_of_reset_dict_allocates_nothing)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_int32(1);
+            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_reset(&source);
+
+            // The source still owns capacity, but with no live entries there is nothing to copy.
+            ff_arena_marker marker = ff_arena_mark(&arena);
+
+            ff_dict copy{};
+            ff_dict_init_copy(&copy, &arena, &source);
+
+            Assert::AreEqual((size_t)0, copy.count);
+            Assert::AreEqual((size_t)0, copy.capacity);
+            Assert::IsNull(copy.keys);
+            Assert::IsTrue(ff_arena_mark(&arena) == marker);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_copy_result_is_a_usable_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_int32(1);
+            ff_dict_set(&source, sv("key"), &value);
+
+            ff_dict copy{};
+            ff_dict_init_copy(&copy, &arena, &source);
+
+            // The copy starts out full, so the next add has to grow it.
+            char key[32];
+            for (int i = 0; i < 10; i++)
+            {
+                sprintf_s(key, "extra%d", i);
+                ff_value extra = ff_value_new_int32(100 + i);
+                ff_dict_set(&copy, sv(key), &extra);
+            }
+
+            Assert::AreEqual((size_t)11, copy.count);
+            Assert::AreEqual(1, ff_dict_get(&copy, sv("key"))->i32);
+            Assert::AreEqual(109, ff_dict_get(&copy, sv("extra9"))->i32);
+            Assert::AreEqual((size_t)1, source.count);
 
             ff_arena_destroy(&arena);
         }
@@ -478,6 +701,31 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(get_next_resumes_after_the_given_slot_of_any_key)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            ff_value first = ff_value_new_int32(1);
+            ff_value middle = ff_value_new_int32(2);
+            ff_value last = ff_value_new_int32(3);
+            ff_dict_add(&dict, sv("target"), &first);
+            ff_dict_add(&dict, sv("other"), &middle);
+            ff_dict_add(&dict, sv("target"), &last);
+
+            // prev_value only marks a position, so passing another key's entry is still valid.
+            ff_value* found = ff_dict_get_next(&dict, sv("target"), values_of(dict) + 1);
+
+            Assert::IsNotNull(found);
+            Assert::AreEqual(3, found->i32);
+            Assert::IsTrue(found == values_of(dict) + 2);
+
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(get_next_on_empty_dict_returns_null)
         {
             ff_arena arena{};
@@ -623,6 +871,68 @@ namespace ff::test::base
             Assert::AreEqual((size_t)2, dict.count);
             Assert::AreEqual(2, values_of(dict)[0].i32);
             Assert::AreEqual(10, values_of(dict)[1].i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(set_existing_key_at_full_capacity_does_not_grow)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init_capacity(&dict, &arena, 4);
+
+            char key[32];
+            for (int i = 0; i < 4; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_add(&dict, sv(key), &value);
+            }
+
+            const uint64_t* keys = dict.keys;
+
+            // Replacing removes before it adds, so a full dict has room again.
+            ff_value replacement = ff_value_new_int32(99);
+            ff_dict_set(&dict, sv("key0"), &replacement);
+
+            Assert::AreEqual((size_t)4, dict.count);
+            Assert::AreEqual((size_t)4, dict.capacity);
+            Assert::IsTrue(dict.keys == keys);
+            Assert::AreEqual(99, ff_dict_get(&dict, sv("key0"))->i32);
+            Assert::AreEqual(3, ff_dict_get(&dict, sv("key3"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(set_new_key_at_full_capacity_grows)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init_capacity(&dict, &arena, 4);
+
+            char key[32];
+            for (int i = 0; i < 4; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_add(&dict, sv(key), &value);
+            }
+
+            ff_value extra = ff_value_new_int32(4);
+            ff_dict_set(&dict, sv("key4"), &extra);
+
+            Assert::AreEqual((size_t)5, dict.count);
+            Assert::AreEqual((size_t)8, dict.capacity);
+
+            for (int i = 0; i < 5; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                Assert::AreEqual(i, ff_dict_get(&dict, sv(key))->i32);
+            }
 
             ff_arena_destroy(&arena);
         }
@@ -977,6 +1287,72 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(stores_data_value)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            uint8_t bytes[4] = { 1, 2, 3, 4 };
+            ff_span span{ bytes, sizeof(bytes) };
+            ff_value value = ff_value_new_data(span);
+            ff_dict_set(&dict, sv("blob"), &value);
+
+            ff_span found = ff_value_as_data(ff_dict_get(&dict, sv("blob")));
+
+            Assert::AreEqual(sizeof(bytes), found.size);
+            Assert::IsTrue(found.data == bytes);
+            Assert::IsTrue(memcmp(found.data, bytes, sizeof(bytes)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(stores_array_value)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            ff_value items[2] = { ff_value_new_int32(10), ff_value_new_int32(20) };
+            ff_value_span items_span{ items, 2 };
+            ff_value value = ff_value_new_array(items_span);
+            ff_dict_set(&dict, sv("list"), &value);
+
+            ff_value_span found = ff_value_as_array(ff_dict_get(&dict, sv("list")));
+
+            Assert::AreEqual((size_t)2, found.count);
+            Assert::AreEqual(10, found.data[0].i32);
+            Assert::AreEqual(20, found.data[1].i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(stores_guid_value)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            GUID guid;
+            memset(&guid, 0xAB, sizeof(guid));
+            ff_value value = ff_value_new_guid(guid);
+            ff_dict_set(&dict, sv("id"), &value);
+
+            ff_value* found = ff_dict_get(&dict, sv("id"));
+
+            // A GUID fills the whole payload, so the type must survive the copy into the dict.
+            Assert::IsTrue(ff_value_type_guid == found->type);
+            Assert::IsTrue(memcmp(&found->guid, &guid, sizeof(guid)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(returned_pointer_allows_in_place_edit)
         {
             ff_arena arena{};
@@ -1107,6 +1483,92 @@ namespace ff::test::base
             Assert::AreEqual((size_t)2, dict.count);
             Assert::AreEqual(1, ff_dict_get(&dict, sv("key"))->i32);
             Assert::AreEqual(2, ff_dict_get(&dict, sv("KEY"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(keys_are_counted_not_null_terminated)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            const char text[] = "abc";
+            ff_value shorter = ff_value_new_int32(1);
+            ff_value longer = ff_value_new_int32(2);
+            ff_dict_set(&dict, sv_n(text, 2), &shorter);
+            ff_dict_set(&dict, sv_n(text, 3), &longer);
+
+            Assert::AreEqual((size_t)2, dict.count);
+            Assert::AreEqual(1, ff_dict_get(&dict, sv_n(text, 2))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, sv_n(text, 3))->i32);
+            Assert::IsNull(ff_dict_get(&dict, sv_n(text, 1)));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(keys_may_contain_null_bytes)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            const char embedded[] = "a\0b";
+            ff_value with_null = ff_value_new_int32(1);
+            ff_value without_null = ff_value_new_int32(2);
+            ff_dict_set(&dict, sv_n(embedded, 3), &with_null);
+            ff_dict_set(&dict, sv_n(embedded, 1), &without_null);
+
+            Assert::AreEqual((size_t)2, dict.count);
+            Assert::AreEqual(1, ff_dict_get(&dict, sv_n(embedded, 3))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, sv_n(embedded, 1))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(key_lookup_does_not_depend_on_the_key_buffer)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            char key[32];
+            sprintf_s(key, "temporary");
+            ff_value value = ff_value_new_int32(5);
+            ff_dict_set(&dict, sv(key), &value);
+
+            // Only the hash is stored, so overwriting the caller's buffer changes nothing.
+            memset(key, 0, sizeof(key));
+
+            Assert::AreEqual(5, ff_dict_get(&dict, sv("temporary"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(set_after_reset_reuses_the_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            ff_value first = ff_value_new_int32(1);
+            ff_dict_set(&dict, sv("key"), &first);
+            ff_dict_reset(&dict);
+
+            ff_value second = ff_value_new_int32(2);
+            ff_dict_set(&dict, sv("key"), &second);
+
+            Assert::AreEqual((size_t)1, dict.count);
+            Assert::AreEqual(1, this->count_matches(&dict, "key"));
+            Assert::AreEqual(2, ff_dict_get(&dict, sv("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1247,6 +1709,45 @@ namespace ff::test::base
                     Assert::IsNotNull(found);
                     Assert::AreEqual((int64_t)j * 1000000007LL, found->i64);
                 }
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(two_dicts_growing_in_one_arena_stay_independent)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict first{};
+            ff_dict_init(&first, &arena);
+
+            ff_dict second{};
+            ff_dict_init(&second, &arena);
+
+            // Interleaved growth means neither dict is reliably the last arena allocation,
+            // so both have to survive being relocated out from under each other.
+            char key[32];
+            for (int i = 0; i < 100; i++)
+            {
+                sprintf_s(key, "key%d", i);
+
+                ff_value first_value = ff_value_new_int32(i);
+                ff_dict_add(&first, sv(key), &first_value);
+
+                ff_value second_value = ff_value_new_int32(-i);
+                ff_dict_add(&second, sv(key), &second_value);
+            }
+
+            Assert::AreEqual((size_t)100, first.count);
+            Assert::AreEqual((size_t)100, second.count);
+            Assert::IsTrue(first.keys != second.keys);
+
+            for (int i = 0; i < 100; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                Assert::AreEqual(i, ff_dict_get(&first, sv(key))->i32);
+                Assert::AreEqual(-i, ff_dict_get(&second, sv(key))->i32);
             }
 
             ff_arena_destroy(&arena);
