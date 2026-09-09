@@ -135,7 +135,6 @@ ff_value ff_value_new_dict(ff_dict* value)
 
 ff_value ff_value_new_data(struct ff_span value)
 {
-    // ff_array_span's count is 32 bits, so anything larger would silently truncate.
     FF_ASSERT(value.size <= UINT32_MAX);
 
     ff_array_span span;
@@ -149,9 +148,6 @@ ff_value ff_value_new_data(struct ff_span value)
 
 ff_value ff_value_new_data_array(struct ff_array_span value)
 {
-    // No range check here: ff_array_span's own fields are already 32 and 16 bits wide, so anything
-    // too large was truncated when the caller filled the span in. The checks live in the functions
-    // below that narrow a size_t down into one of these, which is where the real value still exists.
     return (ff_value)
     {
         .data = value,
@@ -172,7 +168,6 @@ ff_value ff_value_new_string(ff_string_view value)
 
 ff_value ff_value_new_array(ff_value_span value)
 {
-    // ff_array_span's count is 32 bits, so anything larger would silently truncate.
     FF_ASSERT(value.count <= UINT32_MAX);
 
     ff_array_span span;
@@ -199,8 +194,7 @@ struct ff_span ff_value_as_data(const ff_value* value)
     {
         .data = value->data.data,
 
-        // Widened first: both fields are narrower than size_t, so multiplying them as they are would
-        // do the arithmetic in 32 bits and wrap on a large blob.
+        // Widened first: multiplying the narrow fields as-is would wrap in 32 bits.
         .size = (size_t)value->data.count * value->data.item_size,
     };
 }

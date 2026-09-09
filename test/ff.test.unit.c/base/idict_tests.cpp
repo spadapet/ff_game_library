@@ -11,6 +11,10 @@ static ff_string_view sv(const char* text)
 static constexpr size_t block_header_size = 8;
 static constexpr size_t entry_size = sizeof(uint64_t) + sizeof(ff_ivalue);
 
+// Matches the private constant in idict.c. Tests pin the format, so they carry their own copy
+// rather than the header exposing one.
+#define ff_idict_max_align 64
+
 static size_t count_of(const ff_idict* dict)
 {
     return (dict && dict->data) ? *(const uint32_t*)dict->data : 0;
