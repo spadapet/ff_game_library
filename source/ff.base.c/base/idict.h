@@ -50,7 +50,6 @@ const ff_ivalue* ff_idict_get_next(const ff_idict* dict, ff_string_view key, con
 ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena);
 // The saved bytes are used in place, so they must outlive the dict and be 64 byte aligned.
 bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool validate_hash);
-bool ff_idict_verify(ff_span saved);
 
 ff_array_span ff_ivalue_as_data(const ff_ivalue* value, const ff_idict* parent_dict);
 ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const ff_idict* parent_dict);

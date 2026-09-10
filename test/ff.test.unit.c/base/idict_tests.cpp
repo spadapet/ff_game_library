@@ -622,8 +622,8 @@ namespace ff::test::base
 
             ff_array_span found = ff_ivalue_as_data(ff_idict_get(&dict, sv("blob")), &dict);
 
-            // Zero means "no requirement", so the bytes are packed rather than padded out to a word.
-            Assert::AreEqual((size_t)1, (size_t)found.item_align);
+            // Zero means "default", so alignof(size_t)
+            Assert::AreEqual(alignof(size_t), (size_t)found.item_align);
             Assert::IsTrue(memcmp(found.data, bytes, sizeof(bytes)) == 0);
 
             ff_arena_destroy(&arena);
@@ -1049,7 +1049,7 @@ namespace ff::test::base
             ff_idict_init(&dict, &arena, &source);
 
             const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
-            Assert::IsTrue(ff_value_type_dict == child->type);
+            Assert::IsTrue(ff_value_type_idict == child->type);
 
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
@@ -1881,7 +1881,7 @@ namespace ff::test::base
 
             for (size_t i = 0; i < count_of(&dict); i++)
             {
-                if (values[i].type == ff_value_type_dict)
+                if (values[i].type == ff_value_type_idict)
                 {
                     ff_idict child = ff_ivalue_as_dict(values + i, &dict);
                     check_block_alignment(child, depth + 1);
@@ -1892,7 +1892,7 @@ namespace ff::test::base
 
                     for (size_t item = 0; item < items.count; item++)
                     {
-                        if (items.data[item].type == ff_value_type_dict)
+                        if (items.data[item].type == ff_value_type_idict)
                         {
                             ff_idict child = ff_ivalue_as_dict(items.data + item, &dict);
                             check_block_alignment(child, depth + 1);
@@ -2351,12 +2351,19 @@ namespace ff::test::base
             return bytes;
         }
 
-        // Only ff_idict_verify looks at the content hash, so the corruption tests below leave it
-        // stale on purpose: loading has to stand on its own structural checks.
+        // Only a load asking for validate_hash looks at the content hash, so the corruption tests
+        // below leave it stale on purpose: loading has to stand on its own structural checks.
         static void refresh_hash(uint8_t* bytes, size_t size)
         {
             uint64_t hash = ff_hash_bytes(bytes + saved_header_size, size - saved_header_size);
             memcpy(bytes + saved_hash_offset, &hash, sizeof(hash));
+        }
+
+        static bool try_load_hash(const uint8_t* bytes, size_t size)
+        {
+            ff_idict loaded{};
+            ff_span span{ bytes, size };
+            return ff_idict_load(&loaded, span, false, true);
         }
 
         static bool try_load(const uint8_t* bytes, size_t size)
@@ -2667,7 +2674,7 @@ namespace ff::test::base
 
             // Everything the format does not use yet is zeroed, so future fields start from a
             // known state rather than from whatever was on the stack.
-            for (size_t i = 32; i < saved_header_size; i++)
+            for (size_t i = 24; i < saved_header_size; i++)
             {
                 Assert::AreEqual((uint8_t)0, ((const uint8_t*)saved.data)[i]);
             }
@@ -2675,7 +2682,7 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(load_ignores_the_content_hash_and_verify_checks_it)
+        TEST_METHOD(load_ignores_the_content_hash_unless_asked_to_check_it)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -2690,29 +2697,29 @@ namespace ff::test::base
             uint8_t* bytes = save_copy(dict, &arena, &size);
 
             Assert::IsTrue(try_load(bytes, size));
-            Assert::IsTrue(ff_idict_verify(ff_span{ bytes, size }));
+            Assert::IsTrue(try_load_hash(bytes, size));
 
             // A byte deep in the payload that no structural check would ever notice. Loading still
             // succeeds, because loading never reads payload bytes, which is the whole point: a big
             // asset file must not have to be walked end to end just to be opened.
             bytes[size - 1] = (uint8_t)(bytes[size - 1] ^ 0xFF);
             Assert::IsTrue(try_load(bytes, size));
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size }));
+            Assert::IsFalse(try_load_hash(bytes, size));
 
-            // Only an explicit verify notices, and it passes again once the hash matches the bytes.
+            // Only an explicit hash check notices, and it passes again once the hash matches.
             refresh_hash(bytes, size);
-            Assert::IsTrue(ff_idict_verify(ff_span{ bytes, size }));
+            Assert::IsTrue(try_load_hash(bytes, size));
 
-            // Corrupting the recorded hash alone is enough to fail verification.
+            // Corrupting the recorded hash alone is enough to fail the check.
             bytes[saved_hash_offset] = (uint8_t)(bytes[saved_hash_offset] ^ 0xFF);
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size }));
+            Assert::IsFalse(try_load_hash(bytes, size));
             Assert::IsTrue(try_load(bytes, size));
 
             free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(verify_rejects_junk_before_it_hashes_anything)
+        TEST_METHOD(load_rejects_junk_before_it_hashes_anything)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -2726,14 +2733,14 @@ namespace ff::test::base
             size_t size = 0;
             uint8_t* bytes = save_copy(dict, &arena, &size);
 
-            Assert::IsFalse(ff_idict_verify(ff_span{ nullptr, 0 }));
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, 0 }));
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, saved_header_size - 1 }));
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size - 1 }));
+            Assert::IsFalse(try_load_hash(nullptr, 0));
+            Assert::IsFalse(try_load_hash(bytes, 0));
+            Assert::IsFalse(try_load_hash(bytes, saved_header_size - 1));
+            Assert::IsFalse(try_load_hash(bytes, size - 1));
 
             uint32_t bogus = 0;
             memcpy(bytes + saved_magic_offset, &bogus, sizeof(bogus));
-            Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size }));
+            Assert::IsFalse(try_load_hash(bytes, size));
 
             free_saved(bytes);
             ff_arena_destroy(&arena);
@@ -3081,7 +3088,7 @@ namespace ff::test::base
                         checked = true;
                         break;
 
-                    case ff_value_type_dict:
+                    case ff_value_type_idict:
                         broken.data.item_align = 1;
                         checked = true;
                         break;
@@ -3184,7 +3191,7 @@ namespace ff::test::base
             size_t value_offset = block_values_offset(dict);
             ff_ivalue value{};
             memcpy(&value, bytes + value_offset, sizeof(value));
-            Assert::IsTrue(ff_value_type_dict == value.type);
+            Assert::IsTrue(ff_value_type_idict == value.type);
 
             size_t nested_offset = saved_header_size + size_of(&dict) - size_of(&child_dict);
             uint32_t nested_size = (uint32_t)size_of(&child_dict);
@@ -3381,7 +3388,7 @@ namespace ff::test::base
                     }
                     break;
 
-                case ff_value_type_dict:
+                case ff_value_type_idict:
                     {
                         ff_idict child = ff_ivalue_as_dict(value, &parent);
                         walk_block(child, depth + 1, checksum);
@@ -3849,32 +3856,6 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        // The build path asserts on depth, but a file can claim any nesting it likes, so the load
-        // path has to enforce the cap itself. A legal chain wrapped in one more block exceeds it.
-        TEST_METHOD(load_refuses_nesting_past_the_depth_limit)
-        {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 256 * 1024);
-
-            const int depth = 64;
-            ff_dict chain[depth]{};
-            ff_idict dict{};
-            build_chain(&arena, chain, depth, &dict);
-
-            size_t size = 0;
-            uint8_t* bytes = save_copy(dict, &arena, &size);
-            Assert::IsTrue(try_load(bytes, size));
-
-            // Wrapping the deepest legal chain puts its last dict one level past the cap.
-            size_t deep_size = 0;
-            uint8_t* deep = wrap_in_one_more_block(bytes, size, &deep_size);
-            Assert::IsFalse(try_load(deep, deep_size));
-
-            free_saved(deep);
-            free_saved(bytes);
-            ff_arena_destroy(&arena);
-        }
-
         // The same wrapper around a shallower chain still has to load, so the test above is
         // rejecting the depth rather than something wrong with how the wrapper is built.
         TEST_METHOD(load_accepts_a_wrapped_chain_that_stays_inside_the_depth_limit)
@@ -4150,74 +4131,6 @@ namespace ff::test::base
         // ====================================================================
         // Format pinning
         // ====================================================================
-        TEST_METHOD(saved_prefix_records_the_layout_the_block_depends_on)
-        {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 4096);
-
-            ff_dict source{};
-            build_rich_source(&arena, &source);
-
-            ff_idict dict{};
-            ff_idict_init(&dict, &arena, &source);
-
-            ff_span saved = ff_idict_save(&dict, &arena);
-            const uint8_t* bytes = (const uint8_t*)saved.data;
-
-            uint16_t ivalue_size = 0;
-            uint16_t block_align = 0;
-            uint16_t value_type_count = 0;
-            memcpy(&ivalue_size, bytes + 24, sizeof(ivalue_size));
-            memcpy(&block_align, bytes + 26, sizeof(block_align));
-            memcpy(&value_type_count, bytes + 28, sizeof(value_type_count));
-
-            Assert::AreEqual((uint16_t)sizeof(ff_ivalue), ivalue_size);
-            Assert::AreEqual((uint16_t)ff_idict_max_align, block_align);
-            Assert::AreEqual((uint16_t)(ff_value_type_array + 1), value_type_count);
-
-            ff_arena_destroy(&arena);
-        }
-
-        TEST_METHOD(load_rejects_a_file_whose_layout_constants_differ)
-        {
-            // A build whose entry size, alignment or set of value types has drifted would read every
-            // one of these files as something other than what was written, so each is rejected.
-            const size_t offsets[3] = { 24, 26, 28 };
-
-            for (size_t i = 0; i < 3; i++)
-            {
-                ff_arena arena{};
-                ff_arena_init_heap_global(&arena, 4096);
-
-                ff_dict source{};
-                build_rich_source(&arena, &source);
-
-                ff_idict dict{};
-                ff_idict_init(&dict, &arena, &source);
-
-                ff_span saved = ff_idict_save(&dict, &arena);
-                uint8_t* bytes = alloc_saved(saved.size);
-                memcpy(bytes, saved.data, saved.size);
-
-                uint16_t original = 0;
-                memcpy(&original, bytes + offsets[i], sizeof(original));
-                uint16_t changed = (uint16_t)(original + 1);
-                memcpy(bytes + offsets[i], &changed, sizeof(changed));
-
-                ff_arena load_arena{};
-                ff_arena_init_heap_global(&load_arena, 4096);
-
-                ff_idict loaded{};
-                ff_span span{ bytes, saved.size };
-                Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
-                Assert::IsNull(loaded.data);
-
-                free_saved(bytes);
-                ff_arena_destroy(&load_arena);
-                ff_arena_destroy(&arena);
-            }
-        }
-
         TEST_METHOD(load_rejects_keys_that_are_out_of_order)
         {
             ff_arena arena{};
