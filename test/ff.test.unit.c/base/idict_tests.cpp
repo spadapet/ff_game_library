@@ -1923,7 +1923,7 @@ namespace ff::test::base
             ff_arena_alloc(&load_arena, 1, 1); // dirty it so nothing lines up by luck
 
             ff_idict loaded{};
-            Assert::IsTrue(ff_idict_load(&loaded, &load_arena, saved));
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, false));
             check_block_alignment(loaded, 0);
 
             ff_arena_destroy(&load_arena);
@@ -2328,12 +2328,24 @@ namespace ff::test::base
             return saved_header_size + block_header_size + count_of(&dict) * sizeof(uint64_t);
         }
 
+        // Load uses the bytes in place, so the copy has to satisfy the block alignment.
+        static uint8_t* alloc_saved(size_t size)
+        {
+            uint8_t* bytes = (uint8_t*)_aligned_malloc(size, ff_idict_max_align);
+            Assert::IsNotNull(bytes);
+            return bytes;
+        }
+
+        static void free_saved(void* bytes)
+        {
+            _aligned_free(bytes);
+        }
+
         // Saves into a mutable heap copy so a test can corrupt one field and try to load it.
         static uint8_t* save_copy(const ff_idict& dict, ff_arena* arena, size_t* size)
         {
             ff_span saved = ff_idict_save(&dict, arena);
-            uint8_t* bytes = (uint8_t*)malloc(saved.size);
-            Assert::IsNotNull(bytes);
+            uint8_t* bytes = alloc_saved(saved.size);
             memcpy(bytes, saved.data, saved.size);
             *size = saved.size;
             return bytes;
@@ -2354,7 +2366,7 @@ namespace ff::test::base
 
             ff_idict loaded{};
             ff_span span{ bytes, size };
-            bool loaded_ok = ff_idict_load(&loaded, &arena, span);
+            bool loaded_ok = ff_idict_load(&loaded, span, true, false);
 
             ff_arena_destroy(&arena);
             return loaded_ok;
@@ -2378,19 +2390,181 @@ namespace ff::test::base
             ff_arena_init_heap_global(&load_arena, 4096);
 
             ff_idict loaded{};
-            Assert::IsTrue(ff_idict_load(&loaded, &load_arena, saved));
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, false));
 
             Assert::AreEqual(count_of(&dict), count_of(&loaded));
             Assert::AreEqual(size_of(&dict), size_of(&loaded));
-            Assert::IsTrue(loaded.data != dict.data);
             Assert::IsTrue(memcmp(loaded.data, dict.data, size_of(&dict)) == 0);
             verify_rich_block(loaded);
 
-            // The loaded dict owns everything it needs, so the original can go away.
+            ff_arena_destroy(&load_arena);
             ff_arena_destroy(&arena);
+        }
+
+        // The saved bytes are aligned, so the dict points straight at them instead of a copy.
+        TEST_METHOD(load_uses_aligned_bytes_in_place)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            build_rich_source(&arena, &source);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            ff_span saved = ff_idict_save(&dict, &arena);
+            const uint8_t* saved_block = (const uint8_t*)saved.data + saved_header_size;
+            Assert::IsTrue(((uintptr_t)saved_block & (ff_idict_max_align - 1)) == 0);
+
+            ff_arena load_arena{};
+            ff_arena_init_heap_global(&load_arena, 4096);
+
+            ff_idict loaded{};
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, false));
+            Assert::IsTrue(loaded.data == saved_block);
             verify_rich_block(loaded);
 
             ff_arena_destroy(&load_arena);
+            ff_arena_destroy(&arena);
+        }
+
+        // Misaligned bytes cannot be used in place, and load never copies, so they are refused.
+        TEST_METHOD(load_rejects_misaligned_bytes)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            build_rich_source(&arena, &source);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            ff_span saved = ff_idict_save(&dict, &arena);
+
+            uint8_t* shifted = (uint8_t*)malloc(saved.size + 1);
+            Assert::IsNotNull(shifted);
+            memcpy(shifted + 1, saved.data, saved.size);
+
+            ff_idict loaded{};
+            ff_span span{ shifted + 1, saved.size };
+            Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
+            Assert::IsNull(loaded.data);
+
+            // Value validation would reject a shifted block anyway via its payload alignment
+            // checks, so this is the case that pins the block alignment check itself.
+            Assert::IsFalse(ff_idict_load(&loaded, span, false, false));
+            Assert::IsNull(loaded.data);
+
+            free(shifted);
+            ff_arena_destroy(&arena);
+        }
+
+        // Skipping value validation must not read past the block header, which is the whole point
+        // of the flag: a mapped file stays paged out until something actually asks for a value.
+        TEST_METHOD(load_without_value_validation_accepts_a_corrupt_value)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value text = ff_value_new_string(sv("hello"));
+            ff_dict_set(&source, sv("key"), &text);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+
+            // An offset far outside the block: rejected when values are checked, ignored when not.
+            uint32_t offset = 0xffffff00u;
+            memcpy(bytes + block_values_offset(dict), &offset, sizeof(offset));
+
+            Assert::IsFalse(try_load(bytes, size));
+
+            ff_arena load_arena{};
+            ff_arena_init_heap_global(&load_arena, 4096);
+
+            ff_idict loaded{};
+            ff_span span{ bytes, size };
+            Assert::IsTrue(ff_idict_load(&loaded, span, false, false));
+
+            ff_arena_destroy(&load_arena);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // The header is still checked even when values are not, so a bad block size is refused.
+        TEST_METHOD(load_without_value_validation_still_checks_the_block_header)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value marker = ff_value_new_int32(7);
+            ff_dict_set(&source, sv("key"), &marker);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+
+            uint32_t bad = (uint32_t)size;
+            memcpy(bytes + block_size_offset, &bad, sizeof(bad));
+
+            ff_arena load_arena{};
+            ff_arena_init_heap_global(&load_arena, 4096);
+
+            ff_idict loaded{};
+            ff_span span{ bytes, size };
+            Assert::IsFalse(ff_idict_load(&loaded, span, false, false));
+
+            ff_arena_destroy(&load_arena);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(load_with_hash_validation_rejects_altered_bytes)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value marker = ff_value_new_int32(7);
+            ff_dict_set(&source, sv("key"), &marker);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+
+            ff_arena load_arena{};
+            ff_arena_init_heap_global(&load_arena, 4096);
+
+            ff_idict loaded{};
+            ff_span span{ bytes, size };
+            Assert::IsTrue(ff_idict_load(&loaded, span, true, true));
+
+            // Flipping a payload byte leaves the structure valid, so only the hash can catch it.
+            bytes[block_values_offset(dict)] ^= 0xff;
+
+            ff_idict again{};
+            Assert::IsFalse(ff_idict_load(&again, span, true, true));
+            Assert::IsTrue(ff_idict_load(&again, span, true, false));
+
+            ff_arena_destroy(&load_arena);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
         }
 
         TEST_METHOD(saved_bytes_round_trip_through_a_file)
@@ -2422,8 +2596,7 @@ namespace ff::test::base
             Assert::AreEqual((long)saved.size, file_size);
             rewind(file);
 
-            uint8_t* bytes = (uint8_t*)malloc((size_t)file_size);
-            Assert::IsNotNull(bytes);
+            uint8_t* bytes = alloc_saved((size_t)file_size);
             Assert::AreEqual((size_t)file_size, fread(bytes, 1, (size_t)file_size, file));
             Assert::AreEqual(0, fclose(file));
             Assert::IsTrue(DeleteFileA(path) != 0);
@@ -2433,14 +2606,11 @@ namespace ff::test::base
 
             ff_idict loaded{};
             ff_span span{ bytes, (size_t)file_size };
-            Assert::IsTrue(ff_idict_load(&loaded, &load_arena, span));
-            verify_rich_block(loaded);
-
-            // The bytes read off disk are not the storage the dict runs from.
-            free(bytes);
+            Assert::IsTrue(ff_idict_load(&loaded, span, true, false));
             verify_rich_block(loaded);
 
             ff_arena_destroy(&load_arena);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2466,12 +2636,12 @@ namespace ff::test::base
 
             ff_idict loaded{};
             ff_span span{ bytes, size };
-            Assert::IsTrue(ff_idict_load(&loaded, &load_arena, span));
+            Assert::IsTrue(ff_idict_load(&loaded, span, true, false));
             Assert::IsTrue(is_aligned(loaded.data, ff_idict_max_align));
             verify_rich_block(loaded);
 
-            free(bytes);
             ff_arena_destroy(&load_arena);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2538,7 +2708,7 @@ namespace ff::test::base
             Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size }));
             Assert::IsTrue(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2565,7 +2735,7 @@ namespace ff::test::base
             memcpy(bytes + saved_magic_offset, &bogus, sizeof(bogus));
             Assert::IsFalse(ff_idict_verify(ff_span{ bytes, size }));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2584,7 +2754,7 @@ namespace ff::test::base
             Assert::AreEqual(saved_header_size + block_header_size, saved.size);
 
             ff_idict loaded{};
-            Assert::IsTrue(ff_idict_load(&loaded, &arena, saved));
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, false));
             Assert::AreEqual((size_t)0, count_of(&loaded));
             Assert::AreEqual(block_header_size, size_of(&loaded));
             Assert::IsNull(ff_idict_get(&loaded, sv("anything")));
@@ -2610,7 +2780,7 @@ namespace ff::test::base
             bytes[saved_magic_offset] = (uint8_t)(bytes[saved_magic_offset] ^ 0xFF);
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2632,7 +2802,7 @@ namespace ff::test::base
             memcpy(bytes + saved_version_offset, &version, sizeof(version));
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2658,7 +2828,7 @@ namespace ff::test::base
 
             Assert::IsTrue(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2686,7 +2856,7 @@ namespace ff::test::base
 
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2714,7 +2884,7 @@ namespace ff::test::base
             memcpy(bytes + block_count_offset, &count, sizeof(count));
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2746,7 +2916,7 @@ namespace ff::test::base
             memcpy(bytes + block_size_offset, &block_size, sizeof(block_size));
             Assert::IsTrue(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2771,7 +2941,7 @@ namespace ff::test::base
 
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2820,7 +2990,7 @@ namespace ff::test::base
             memcpy(bytes + value_offset, &stored, sizeof(stored));
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2848,7 +3018,139 @@ namespace ff::test::base
 
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // Each payload type pins the slice fields it is allowed to carry. A writer that disagreed
+        // would be reinterpreting the data section, so every one of them is refused.
+        TEST_METHOD(load_rejects_slice_fields_that_do_not_match_the_value_type)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 64 * 1024);
+
+            ff_dict inner{};
+            ff_dict_init(&inner, &arena);
+            ff_value leaf = ff_value_new_int32(5);
+            ff_dict_set(&inner, sv("leaf"), &leaf);
+
+            ff_value items[2];
+            items[0] = ff_value_new_int32(1);
+            items[1] = ff_value_new_int32(2);
+            ff_value_span items_span{ items, 2 };
+
+            // One entry of each payload kind, so a single saved file covers all four branches.
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value text = ff_value_new_string(sv("hello"));
+            ff_value nested = ff_value_new_dict(&inner);
+            ff_value array = ff_value_new_array(items_span);
+            ff_dict_set(&source, sv("text"), &text);
+            ff_dict_set(&source, sv("nested"), &nested);
+            ff_dict_set(&source, sv("array"), &array);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+            Assert::IsTrue(try_load(bytes, size));
+
+            // Entries are stored by key hash, so find each value rather than assuming a position.
+            size_t values_offset = block_values_offset(dict);
+            size_t count = count_of(&dict);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                size_t value_offset = values_offset + i * sizeof(ff_ivalue);
+                ff_ivalue original{};
+                memcpy(&original, bytes + value_offset, sizeof(original));
+
+                ff_ivalue broken = original;
+                bool checked = false;
+
+                switch (original.type)
+                {
+                    case ff_value_type_string:
+                        broken.data.item_size = 2;
+                        checked = true;
+                        break;
+
+                    case ff_value_type_array:
+                        broken.data.item_size = 1;
+                        checked = true;
+                        break;
+
+                    case ff_value_type_dict:
+                        broken.data.item_align = 1;
+                        checked = true;
+                        break;
+
+                    default:
+                        break;
+                }
+
+                if (checked)
+                {
+                    memcpy(bytes + value_offset, &broken, sizeof(broken));
+                    Assert::IsFalse(try_load(bytes, size));
+
+                    memcpy(bytes + value_offset, &original, sizeof(original));
+                    Assert::IsTrue(try_load(bytes, size));
+                }
+            }
+
+            // Every entry above had its slice fields restored, so the file still loads.
+            Assert::IsTrue(try_load(bytes, size));
+
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // Alignment is checked against the real address, so an offset that lands off its item's
+        // alignment inside an otherwise intact block is refused.
+        TEST_METHOD(load_rejects_a_payload_offset_that_is_not_aligned_for_its_items)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 64 * 1024);
+
+            alignas(8) static const uint64_t numbers[2] = { 11, 22 };
+            ff_array_span as{};
+            as.data = numbers;
+            as.count = 2;
+            as.item_size = sizeof(uint64_t);
+            as.item_align = alignof(uint64_t);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value blob = ff_value_new_data_array(as);
+            ff_dict_set(&source, sv("blob"), &blob);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+            Assert::IsTrue(try_load(bytes, size));
+
+            size_t value_offset = block_values_offset(dict);
+            ff_ivalue value{};
+            memcpy(&value, bytes + value_offset, sizeof(value));
+            Assert::IsTrue(ff_value_type_data == value.type);
+            Assert::AreEqual((size_t)0, (size_t)value.data.offset % alignof(uint64_t));
+
+            // The payload is 16 bytes at the front of the data section, so shifting it by four
+            // keeps it in bounds while breaking its 8 byte alignment.
+            ff_ivalue broken = value;
+            broken.data.offset = value.data.offset + 4;
+            broken.data.count = 1;
+            memcpy(bytes + value_offset, &broken, sizeof(broken));
+            Assert::IsFalse(try_load(bytes, size));
+
+            memcpy(bytes + value_offset, &value, sizeof(value));
+            Assert::IsTrue(try_load(bytes, size));
+
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2902,7 +3204,74 @@ namespace ff::test::base
             memcpy(bytes + value_offset, &value, sizeof(value));
             Assert::IsFalse(try_load(bytes, size));
 
-            free(bytes);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // A block's size counts its own header, so anything below that is corrupt. The size is
+        // otherwise only bounded from above, and 'size - header' is unsigned.
+        TEST_METHOD(a_nested_block_smaller_than_its_own_header_is_refused)        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 64 * 1024);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(7);
+            ff_dict_set(&child, sv("leaf"), &child_value);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_dict_set(&source, sv("child"), &nested);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+            Assert::IsTrue(try_load(bytes, size));
+
+            size_t nested_offset = saved_header_size + size_of(&dict) - size_of(&child_dict);
+            uint32_t nested_size = (uint32_t)size_of(&child_dict);
+
+            for (uint32_t bogus_size = 0; bogus_size < block_header_size; bogus_size++)
+            {
+                memcpy(bytes + nested_offset + 4, &bogus_size, sizeof(bogus_size));
+                Assert::IsFalse(try_load(bytes, size));
+            }
+
+            memcpy(bytes + nested_offset + 4, &nested_size, sizeof(nested_size));
+            Assert::IsTrue(try_load(bytes, size));
+
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // The root block's size must match the file exactly, so a short one is caught before it is
+        // validated. This pins that the check stays.
+        TEST_METHOD(a_root_block_smaller_than_its_own_header_is_refused)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 64 * 1024);
+
+            ff_dict source{};
+            build_rich_source(&arena, &source);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+
+            for (uint32_t bogus_size = 0; bogus_size < block_header_size; bogus_size++)
+            {
+                memcpy(bytes + saved_header_size + 4, &bogus_size, sizeof(bogus_size));
+                Assert::IsFalse(try_load(bytes, size));
+            }
+
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -2930,7 +3299,7 @@ namespace ff::test::base
 
             ff_idict loaded{};
             ff_span span{ bytes, size };
-            Assert::IsFalse(ff_idict_load(&loaded, &load_arena, span));
+            Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
 
             // A rejected file costs the caller nothing, and leaves an empty dict behind.
             Assert::IsTrue(ff_arena_mark(&load_arena) == marker);
@@ -2946,10 +3315,10 @@ namespace ff::test::base
             size_t bogus = (size_t)1 << 40;
             memcpy(bytes + value_offset, &bogus, sizeof(bogus));
 
-            Assert::IsFalse(ff_idict_load(&loaded, &load_arena, span));
+            Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
             Assert::IsTrue(ff_arena_mark(&load_arena) == marker);
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&load_arena);
             ff_arena_destroy(&arena);
         }
@@ -3039,8 +3408,7 @@ namespace ff::test::base
             size_t size = 0;
             uint8_t* clean = save_copy(dict, &arena, &size);
 
-            uint8_t* bytes = (uint8_t*)malloc(size);
-            Assert::IsNotNull(bytes);
+            uint8_t* bytes = alloc_saved(size);
 
             size_t accepted = 0;
             size_t checksum = 0;
@@ -3061,7 +3429,7 @@ namespace ff::test::base
                 ff_idict loaded{};
                 ff_span span{ bytes, size };
 
-                if (ff_idict_load(&loaded, &load_arena, span))
+                if (ff_idict_load(&loaded, span, true, false))
                 {
                     // Whatever it accepted has to be fully walkable without leaving the block.
                     accepted++;
@@ -3075,8 +3443,8 @@ namespace ff::test::base
             // still load. If nothing loaded the test would not be proving anything.
             Assert::IsTrue(accepted > 100);
 
-            free(bytes);
-            free(clean);
+            free_saved(bytes);
+            free_saved(clean);
             ff_arena_destroy(&arena);
         }
 
@@ -3385,19 +3753,13 @@ namespace ff::test::base
         // ====================================================================
         // Limits
         // ====================================================================
-        TEST_METHOD(nesting_up_to_the_depth_limit_is_allowed)
+
+        // Builds a chain of 'depth' nested dicts and returns the root.
+        static void build_chain(ff_arena* arena, ff_dict* chain, int depth, ff_idict* dict)
         {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 65536);
-
-            // The depth cap is private to idict.c, so this mirrors it. The root is depth 0, so a
-            // chain of this many dicts is the deepest legal one.
-            const int depth = 64;
-            ff_dict chain[depth]{};
-
             for (int i = depth - 1; i >= 0; i--)
             {
-                ff_dict_init(&chain[i], &arena);
+                ff_dict_init(&chain[i], arena);
 
                 ff_value marker = ff_value_new_int32(i);
                 ff_dict_set(&chain[i], sv("depth"), &marker);
@@ -3409,8 +3771,61 @@ namespace ff::test::base
                 }
             }
 
+            ff_idict_init(dict, arena, &chain[0]);
+        }
+
+        // Wraps a saved file's block in one more hand built block, adding a level of nesting that
+        // the builder would refuse to produce. The caller frees the result.
+        static uint8_t* wrap_in_one_more_block(const uint8_t* saved, size_t saved_size, size_t* out_size)
+        {
+            size_t child_size = saved_size - saved_header_size;
+            size_t wrapper_size = saved_header_size + child_size;
+            size_t total = saved_header_size + wrapper_size;
+
+            uint8_t* bytes = alloc_saved(total);
+
+            // Reuse the original prefix so magic, version and the layout fields stay valid, then
+            // point it at the wrapper instead of the block it used to describe.
+            memcpy(bytes, saved, saved_header_size);
+            uint64_t block_size = wrapper_size;
+            memcpy(bytes + saved_block_size_offset, &block_size, sizeof(block_size));
+
+            uint8_t* wrapper = bytes + saved_header_size;
+            memset(wrapper, 0, saved_header_size);
+
+            uint32_t count = 1;
+            uint32_t size = (uint32_t)wrapper_size;
+            memcpy(wrapper, &count, sizeof(count));
+            memcpy(wrapper + 4, &size, sizeof(size));
+
+            // One entry, so its key is never compared against a neighbour for sortedness.
+            uint64_t key = 0;
+            memcpy(wrapper + block_header_size, &key, sizeof(key));
+
+            ff_ivalue value{};
+            value.type = ff_value_type_dict;
+            value.data.offset = 0;
+            value.data.item_align = ff_idict_max_align;
+            memcpy(wrapper + block_header_size + sizeof(uint64_t), &value, sizeof(value));
+
+            // A one entry block puts its data section at 64, which is where the child block goes.
+            Assert::AreEqual(saved_header_size, data_start_of(1));
+            memcpy(wrapper + saved_header_size, saved + saved_header_size, child_size);
+
+            *out_size = total;
+            return bytes;
+        }
+
+        TEST_METHOD(nesting_up_to_the_depth_limit_is_allowed)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 65536);
+
+            const int depth = 64;
+            ff_dict chain[depth]{};
+
             ff_idict dict{};
-            ff_idict_init(&dict, &arena, &chain[0]);
+            build_chain(&arena, chain, depth, &dict);
 
             ff_idict current = dict;
 
@@ -3431,6 +3846,56 @@ namespace ff::test::base
                 }
             }
 
+            ff_arena_destroy(&arena);
+        }
+
+        // The build path asserts on depth, but a file can claim any nesting it likes, so the load
+        // path has to enforce the cap itself. A legal chain wrapped in one more block exceeds it.
+        TEST_METHOD(load_refuses_nesting_past_the_depth_limit)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 256 * 1024);
+
+            const int depth = 64;
+            ff_dict chain[depth]{};
+            ff_idict dict{};
+            build_chain(&arena, chain, depth, &dict);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+            Assert::IsTrue(try_load(bytes, size));
+
+            // Wrapping the deepest legal chain puts its last dict one level past the cap.
+            size_t deep_size = 0;
+            uint8_t* deep = wrap_in_one_more_block(bytes, size, &deep_size);
+            Assert::IsFalse(try_load(deep, deep_size));
+
+            free_saved(deep);
+            free_saved(bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        // The same wrapper around a shallower chain still has to load, so the test above is
+        // rejecting the depth rather than something wrong with how the wrapper is built.
+        TEST_METHOD(load_accepts_a_wrapped_chain_that_stays_inside_the_depth_limit)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 256 * 1024);
+
+            const int depth = 63;
+            ff_dict chain[depth]{};
+            ff_idict dict{};
+            build_chain(&arena, chain, depth, &dict);
+
+            size_t size = 0;
+            uint8_t* bytes = save_copy(dict, &arena, &size);
+
+            size_t deep_size = 0;
+            uint8_t* deep = wrap_in_one_more_block(bytes, size, &deep_size);
+            Assert::IsTrue(try_load(deep, deep_size));
+
+            free_saved(deep);
+            free_saved(bytes);
             ff_arena_destroy(&arena);
         }
 
@@ -3731,8 +4196,7 @@ namespace ff::test::base
                 ff_idict_init(&dict, &arena, &source);
 
                 ff_span saved = ff_idict_save(&dict, &arena);
-                uint8_t* bytes = (uint8_t*)malloc(saved.size);
-                Assert::IsNotNull(bytes);
+                uint8_t* bytes = alloc_saved(saved.size);
                 memcpy(bytes, saved.data, saved.size);
 
                 uint16_t original = 0;
@@ -3745,10 +4209,10 @@ namespace ff::test::base
 
                 ff_idict loaded{};
                 ff_span span{ bytes, saved.size };
-                Assert::IsFalse(ff_idict_load(&loaded, &load_arena, span));
+                Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
                 Assert::IsNull(loaded.data);
 
-                free(bytes);
+                free_saved(bytes);
                 ff_arena_destroy(&load_arena);
                 ff_arena_destroy(&arena);
             }
@@ -3774,8 +4238,7 @@ namespace ff::test::base
             ff_idict_init(&dict, &arena, &source);
 
             ff_span saved = ff_idict_save(&dict, &arena);
-            uint8_t* bytes = (uint8_t*)malloc(saved.size);
-            Assert::IsNotNull(bytes);
+            uint8_t* bytes = alloc_saved(saved.size);
             memcpy(bytes, saved.data, saved.size);
 
             // Swap the first two keys. Lookups binary search, so a block whose keys are not sorted
@@ -3793,10 +4256,10 @@ namespace ff::test::base
 
             ff_idict loaded{};
             ff_span span{ bytes, saved.size };
-            Assert::IsFalse(ff_idict_load(&loaded, &load_arena, span));
+            Assert::IsFalse(ff_idict_load(&loaded, span, true, false));
             Assert::IsNull(loaded.data);
 
-            free(bytes);
+            free_saved(bytes);
             ff_arena_destroy(&load_arena);
             ff_arena_destroy(&arena);
         }

@@ -7,6 +7,11 @@
 #include "base/math.h"
 #include "base/value.h"
 
+#define FF_IDICT_MAX_ALIGN 64
+#define FF_IDICT_MAGIC 0x44494646u // "FFID"
+#define FF_IDICT_VERSION 4u
+
+static_assert(sizeof(size_t) == 8, "the code assumes a 64 bit build, so the narrow persisted fields cannot overflow size_t");
 static_assert(sizeof(ff_ivalue) == sizeof(ff_value), "ff_value and ff_ivalue must stay layout-compatible");
 static_assert(sizeof(ff_array_slice) == 12, "ff_array_slice is persisted, so its size is fixed");
 static_assert(sizeof(ff_ivalue) == 24, "ff_ivalue is persisted, so its size is fixed");
@@ -16,16 +21,6 @@ static_assert(offsetof(ff_array_slice, offset) == 0, "ff_array_slice is persiste
 static_assert(offsetof(ff_array_slice, count) == 4, "ff_array_slice is persisted, so its layout is fixed");
 static_assert(offsetof(ff_array_slice, item_size) == 8, "ff_array_slice is persisted, so its layout is fixed");
 static_assert(offsetof(ff_array_slice, item_align) == 10, "ff_array_slice is persisted, so its layout is fixed");
-
-// Alignment of a block and its data section, and the strictest a value may ask for. Not public:
-// arenas and mapped files both exceed it already.
-#define ff_idict_max_align 64
-
-// Below this, scanning keys beats binary searching: a couple of cache lines vs. dependent loads.
-static const size_t s_idict_scan_limit = 16;
-
-// Nesting limit for building and loading. Also what stops a dict that contains itself.
-static const size_t s_idict_max_depth = 64;
 
 typedef struct internal_ff_idict_block
 {
@@ -38,10 +33,12 @@ static_assert(alignof(internal_ff_idict_block) <= alignof(uint64_t), "the block 
 
 static const size_t s_idict_block_header_size = sizeof(internal_ff_idict_block);
 static const size_t s_idict_entry_size = sizeof(uint64_t) + sizeof(ff_ivalue);
+static const size_t s_idict_scan_limit = 16;
+static const size_t s_idict_max_depth = 64;
 
 static size_t internal_ff_idict_data_start(size_t count)
 {
-    return ff_math_round_up(s_idict_block_header_size + count * s_idict_entry_size, ff_idict_max_align);
+    return ff_math_round_up(s_idict_block_header_size + count * s_idict_entry_size, FF_IDICT_MAX_ALIGN);
 }
 
 static size_t ff_idict_count(const ff_idict* dict)
@@ -71,8 +68,6 @@ static const void* internal_ff_idict_data(const ff_idict* dict, size_t offset)
 
     return (const uint8_t*)dict->data + ff_math_min_size(data_start, header->size) + offset;
 }
-
-// Building ------------------------------------------------------------------------
 
 // A block is written twice: once with no buffer to measure it, then into an allocation of that size.
 typedef struct internal_ff_idict_builder
@@ -155,7 +150,7 @@ static size_t internal_ff_value_payload_size(ff_value_type type)
 // Zero means no requirement. A value may not out-align the block itself.
 static size_t internal_ff_idict_data_align(size_t align)
 {
-    FF_ASSERT(!align || (ff_math_is_pow2(align) && align <= ff_idict_max_align));
+    FF_ASSERT(!align || (ff_math_is_pow2(align) && align <= FF_IDICT_MAX_ALIGN));
     return align ? align : 1;
 }
 
@@ -169,47 +164,38 @@ static void internal_ff_idict_slice(size_t offset, size_t count, size_t item_siz
     result->item_align = (uint16_t)item_align;
 }
 
-// The returned array is scratch and never lands inside the block.
-static uint32_t* internal_ff_idict_sort_order(ff_arena* arena, const uint64_t* keys, size_t count)
+typedef struct internal_ff_idict_rank
 {
-    uint32_t* order = (uint32_t*)ff_arena_alloc(arena, count * sizeof(uint32_t) * 2, alignof(uint32_t));
+    uint64_t key;
+    uint32_t index;
+} internal_ff_idict_rank;
 
-    uint32_t* scratch = order + count;
+// qsort is not stable, so the original index breaks ties and duplicate keys keep insertion order.
+static int internal_ff_idict_compare_rank(const void* left, const void* right)
+{
+    const internal_ff_idict_rank* l = (const internal_ff_idict_rank*)left;
+    const internal_ff_idict_rank* r = (const internal_ff_idict_rank*)right;
+
+    if (l->key != r->key)
+    {
+        return (l->key < r->key) ? -1 : 1;
+    }
+
+    return (l->index < r->index) ? -1 : (l->index > r->index);
+}
+
+// The returned array is scratch and never lands inside the block.
+static internal_ff_idict_rank* internal_ff_idict_sort_order(ff_arena* arena, const uint64_t* keys, size_t count)
+{
+    internal_ff_idict_rank* order = (internal_ff_idict_rank*)ff_arena_alloc(arena, count * sizeof(internal_ff_idict_rank), alignof(internal_ff_idict_rank));
 
     for (size_t i = 0; i < count; i++)
     {
-        order[i] = (uint32_t)i;
+        order[i].key = keys[i];
+        order[i].index = (uint32_t)i;
     }
 
-    // Bottom up merge sort. A tie takes from the left run, which is what keeps it stable.
-    for (size_t width = 1; width < count; width *= 2)
-    {
-        for (size_t start = 0; start < count; start += width * 2)
-        {
-            size_t mid = ff_math_min_size(start + width, count);
-            size_t end = ff_math_min_size(start + width * 2, count);
-            size_t left = start;
-            size_t right = mid;
-            size_t out = start;
-
-            while (left < mid && right < end)
-            {
-                scratch[out++] = (keys[order[right]] < keys[order[left]]) ? order[right++] : order[left++];
-            }
-
-            while (left < mid)
-            {
-                scratch[out++] = order[left++];
-            }
-
-            while (right < end)
-            {
-                scratch[out++] = order[right++];
-            }
-        }
-
-        memcpy(order, scratch, count * sizeof(uint32_t));
-    }
+    qsort(order, count, sizeof(internal_ff_idict_rank), internal_ff_idict_compare_rank);
 
     return order;
 }
@@ -238,7 +224,7 @@ static void internal_ff_idict_convert_value(internal_ff_idict_builder* builder, 
             {
                 size_t item_align = internal_ff_idict_data_align(value->data.item_align);
 
-                // Widened first: multiplying the narrow fields as-is would wrap in 32 bits.
+                // Widened first: uint32 * uint16 multiplies in 32 bit arithmetic and would wrap.
                 size_t size = (size_t)value->data.count * value->data.item_size;
 
                 // An empty payload has nothing to align, so it may not pad out the next value.
@@ -270,7 +256,7 @@ static void internal_ff_idict_convert_value(internal_ff_idict_builder* builder, 
             {
                 const ff_dict* nested = (const ff_dict*)value->data.data;
                 size_t offset = internal_ff_idict_emit_dict(builder, nested, depth + 1);
-                internal_ff_idict_slice(offset - data_offset, 0, 0, ff_idict_max_align, &result->data);
+                internal_ff_idict_slice(offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN, &result->data);
             }
             break;
 
@@ -289,29 +275,29 @@ static size_t internal_ff_idict_emit_dict(internal_ff_idict_builder* builder, co
 
     size_t entries_size = s_idict_block_header_size + count * s_idict_entry_size;
 
-    size_t block_offset = internal_ff_idict_append(builder, entries_size, ff_idict_max_align);
+    size_t block_offset = internal_ff_idict_append(builder, entries_size, FF_IDICT_MAX_ALIGN);
     size_t keys_offset = block_offset + s_idict_block_header_size;
     size_t values_offset = keys_offset + count * sizeof(uint64_t);
     size_t entries_end = block_offset + entries_size;
 
     // Pad up front so the first item appended lands in the data section, not in the padding.
-    size_t data_offset = internal_ff_idict_append(builder, 0, ff_idict_max_align);
+    size_t data_offset = internal_ff_idict_append(builder, 0, FF_IDICT_MAX_ALIGN);
     FF_ASSERT(data_offset == block_offset + internal_ff_idict_data_start(count));
 
     if (count)
     {
         // Key order, not insertion order, so the same keys and values are always the same bytes.
         ff_arena_marker marker = ff_arena_mark(builder->arena);
-        uint32_t* order = internal_ff_idict_sort_order(builder->arena, source->keys, count);
+        internal_ff_idict_rank* order = internal_ff_idict_sort_order(builder->arena, source->keys, count);
         const ff_value* values = internal_ff_dict_values(source);
 
         for (size_t rank = 0; rank < count; rank++)
         {
-            size_t index = order[rank];
+            size_t index = order[rank].index;
             ff_ivalue value;
 
             internal_ff_idict_convert_value(builder, values + index, data_offset, depth, &value);
-            internal_ff_idict_write(builder, keys_offset + rank * sizeof(uint64_t), source->keys + index, sizeof(uint64_t));
+            internal_ff_idict_write(builder, keys_offset + rank * sizeof(uint64_t), &order[rank].key, sizeof(uint64_t));
             internal_ff_idict_write(builder, values_offset + rank * sizeof(ff_ivalue), &value, sizeof(value));
         }
 
@@ -347,7 +333,7 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 
     size_t block_size = builder.size;
 
-    uint8_t* block = (uint8_t*)ff_arena_alloc(arena, block_size, ff_idict_max_align);
+    uint8_t* block = (uint8_t*)ff_arena_alloc(arena, block_size, FF_IDICT_MAX_ALIGN);
 
     ff_arena_marker emit_marker = ff_arena_mark(arena);
 
@@ -362,8 +348,6 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 
     dict->data = block;
 }
-
-// Lookup ------------------------------------------------------------------------
 
 static size_t internal_ff_idict_lower_bound(const uint64_t* keys, size_t count, uint64_t key)
 {
@@ -423,12 +407,7 @@ const ff_ivalue* ff_idict_get_next(const ff_idict* dict, ff_string_view key, con
     return (next < count && internal_ff_idict_keys(dict)[next] == ff_hash_string(key)) ? values + next : NULL;
 }
 
-// Saving and loading ------------------------------------------------------------------------
-
-#define FF_IDICT_MAGIC 0x44494646u // "FFID"
-#define FF_IDICT_VERSION 4u
-
-// Padded to ff_idict_max_align so the block lands where it must, leaving room to map it in place.
+// Padded to FF_IDICT_MAX_ALIGN so the block lands where it must, leaving room to map it in place.
 typedef struct internal_ff_idict_file
 {
     uint32_t magic;
@@ -445,22 +424,11 @@ typedef struct internal_ff_idict_file
     uint8_t reserved[32];
 } internal_ff_idict_file;
 
-static_assert(sizeof(internal_ff_idict_file) == ff_idict_max_align, "the block must follow the prefix at the alignment blocks require");
+static_assert(sizeof(internal_ff_idict_file) == FF_IDICT_MAX_ALIGN, "the block must follow the prefix at the alignment blocks require");
 
 static const uint16_t s_idict_value_type_count = (uint16_t)(ff_value_type_array + 1);
 
-static bool internal_ff_idict_mul_ok(size_t left, size_t right, size_t* result)
-{
-    if (left && right > SIZE_MAX / left)
-    {
-        return false;
-    }
-
-    *result = left * right;
-    return true;
-}
-
-static bool internal_ff_idict_validate_block(const uint8_t* block, size_t avail, size_t depth);
+static bool internal_ff_idict_validate_block(const uint8_t* block, size_t avail, size_t depth, bool validate_values);
 
 // Offsets are untrusted: nothing is dereferenced until proven in-bounds and aligned for its type.
 static bool internal_ff_idict_validate_value(const ff_ivalue* value, const uint8_t* data, size_t data_size, size_t depth)
@@ -497,10 +465,9 @@ static bool internal_ff_idict_validate_value(const ff_ivalue* value, const uint8
         case ff_value_type_data:
             {
                 size_t item_align = value->data.item_align;
-                size_t size = 0;
+                size_t size = (size_t)value->data.count * value->data.item_size;
 
-                FF_CHECK_RET_VAL(item_align && ff_math_is_pow2(item_align) && item_align <= ff_idict_max_align, false);
-                FF_CHECK_RET_VAL(internal_ff_idict_mul_ok(value->data.count, value->data.item_size, &size), false);
+                FF_CHECK_RET_VAL(item_align && ff_math_is_pow2(item_align) && item_align <= FF_IDICT_MAX_ALIGN, false);
                 FF_CHECK_RET_VAL(offset <= data_size && size <= data_size - offset, false);
 
                 // An empty payload gets no padding when written, so any address is allowed.
@@ -511,10 +478,9 @@ static bool internal_ff_idict_validate_value(const ff_ivalue* value, const uint8
         case ff_value_type_array:
             {
                 size_t count = value->data.count;
-                size_t size = 0;
+                size_t size = count * sizeof(ff_ivalue);
 
                 FF_CHECK_RET_VAL(value->data.item_size == sizeof(ff_ivalue) && value->data.item_align == alignof(ff_ivalue), false);
-                FF_CHECK_RET_VAL(internal_ff_idict_mul_ok(count, sizeof(ff_ivalue), &size), false);
                 FF_CHECK_RET_VAL(offset <= data_size && size <= data_size - offset, false);
                 FF_CHECK_RET_VAL(!size || !((uintptr_t)(data + offset) & (alignof(ff_ivalue) - 1)), false);
 
@@ -530,9 +496,9 @@ static bool internal_ff_idict_validate_value(const ff_ivalue* value, const uint8
         case ff_value_type_dict:
             {
                 FF_CHECK_RET_VAL(!value->data.count && !value->data.item_size, false);
-                FF_CHECK_RET_VAL(value->data.item_align == ff_idict_max_align, false);
+                FF_CHECK_RET_VAL(value->data.item_align == FF_IDICT_MAX_ALIGN, false);
                 FF_CHECK_RET_VAL(offset <= data_size, false);
-                FF_CHECK_RET_VAL(internal_ff_idict_validate_block(data + offset, data_size - offset, depth + 1), false);
+                FF_CHECK_RET_VAL(internal_ff_idict_validate_block(data + offset, data_size - offset, depth + 1, true), false);
             }
             break;
 
@@ -544,20 +510,26 @@ static bool internal_ff_idict_validate_value(const ff_ivalue* value, const uint8
     return true;
 }
 
-static bool internal_ff_idict_validate_block(const uint8_t* block, size_t avail, size_t depth)
+static bool internal_ff_idict_validate_block(const uint8_t* block, size_t avail, size_t depth, bool validate_values)
 {
     size_t entries_size = 0;
 
     FF_CHECK_RET_VAL(depth < s_idict_max_depth, false);
     FF_CHECK_RET_VAL(avail >= s_idict_block_header_size, false);
-    FF_CHECK_RET_VAL(!((uintptr_t)block & (ff_idict_max_align - 1)), false);
+    FF_CHECK_RET_VAL(!((uintptr_t)block & (FF_IDICT_MAX_ALIGN - 1)), false);
 
     internal_ff_idict_block header;
     memcpy(&header, block, sizeof(header));
 
-    FF_CHECK_RET_VAL(header.size <= avail, false);
-    FF_CHECK_RET_VAL(internal_ff_idict_mul_ok(header.count, s_idict_entry_size, &entries_size), false);
+    FF_CHECK_RET_VAL(header.size >= s_idict_block_header_size && header.size <= avail, false);
+    entries_size = (size_t)header.count * s_idict_entry_size;
     FF_CHECK_RET_VAL(entries_size <= (size_t)header.size - s_idict_block_header_size, false);
+
+    if (!validate_values)
+    {
+        // Nothing past the header is touched, so a mapped file stays unread until it is used.
+        return true;
+    }
 
     const uint64_t* keys = (const uint64_t*)(block + s_idict_block_header_size);
 
@@ -588,7 +560,7 @@ ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
     FF_ASSERT_RET_VAL(dict && dict->data && arena, result);
 
     size_t block_size = ff_idict_size(dict);
-    uint8_t* buffer = (uint8_t*)ff_arena_alloc(arena, sizeof(internal_ff_idict_file) + block_size, ff_idict_max_align);
+    uint8_t* buffer = (uint8_t*)ff_arena_alloc(arena, sizeof(internal_ff_idict_file) + block_size, FF_IDICT_MAX_ALIGN);
 
     internal_ff_idict_file prefix =
     {
@@ -597,7 +569,7 @@ ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
         .block_size = block_size,
         .hash = ff_hash_bytes(dict->data, block_size),
         .ivalue_size = (uint16_t)sizeof(ff_ivalue),
-        .block_align = (uint16_t)ff_idict_max_align,
+        .block_align = (uint16_t)FF_IDICT_MAX_ALIGN,
         .value_type_count = s_idict_value_type_count,
     };
 
@@ -609,7 +581,7 @@ ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
     return result;
 }
 
-static bool internal_ff_idict_read_prefix(ff_span saved, internal_ff_idict_file* prefix, size_t* block_size)
+static bool internal_ff_idict_read_prefix(ff_span saved, internal_ff_idict_file* prefix)
 {
     FF_CHECK_RET_VAL(saved.data && saved.size >= sizeof(*prefix), false);
 
@@ -618,44 +590,39 @@ static bool internal_ff_idict_read_prefix(ff_span saved, internal_ff_idict_file*
 
     FF_CHECK_RET_VAL(prefix->magic == FF_IDICT_MAGIC && prefix->version == FF_IDICT_VERSION, false);
     FF_CHECK_RET_VAL(prefix->ivalue_size == sizeof(ff_ivalue), false);
-    FF_CHECK_RET_VAL(prefix->block_align == ff_idict_max_align, false);
+    FF_CHECK_RET_VAL(prefix->block_align == FF_IDICT_MAX_ALIGN, false);
     FF_CHECK_RET_VAL(prefix->value_type_count == s_idict_value_type_count, false);
-
-    *block_size = (size_t)prefix->block_size;
-
-    // A 64 bit file being read by a 32 bit build can describe more than fits in a size_t.
-    FF_CHECK_RET_VAL(prefix->block_size == *block_size, false);
-    FF_CHECK_RET_VAL(saved.size - sizeof(*prefix) >= *block_size, false);
+    FF_CHECK_RET_VAL(saved.size - sizeof(*prefix) >= prefix->block_size, false);
 
     return true;
 }
 
-bool ff_idict_load(ff_idict* dict, ff_arena* arena, ff_span saved)
+bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool validate_hash)
 {
     FF_ASSERT_RET_VAL(dict, false);
     dict->data = NULL;
-    FF_ASSERT_RET_VAL(arena, false);
 
     internal_ff_idict_file prefix;
-    size_t block_size = 0;
 
-    FF_CHECK_RET_VAL(internal_ff_idict_read_prefix(saved, &prefix, &block_size), false);
+    FF_CHECK_RET_VAL(internal_ff_idict_read_prefix(saved, &prefix), false);
+
+    size_t block_size = (size_t)prefix.block_size;
     FF_CHECK_RET_VAL(block_size >= s_idict_block_header_size, false);
 
-    ff_arena_marker marker = ff_arena_mark(arena);
-    uint8_t* block = (uint8_t*)ff_arena_alloc(arena, block_size, ff_idict_max_align);
+    // Always used in place, so a mapped file stays paged out until something reads a value.
+    const uint8_t* block = (const uint8_t*)saved.data + sizeof(prefix);
 
-    memcpy(block, (const uint8_t*)saved.data + sizeof(prefix), block_size);
+    if (validate_hash)
+    {
+        FF_CHECK_RET_VAL(ff_hash_bytes(block, block_size) == prefix.hash, false);
+    }
 
     internal_ff_idict_block header;
     memcpy(&header, block, sizeof(header));
 
-    if (header.size != block_size || // the root block must fill the file exactly
-        !internal_ff_idict_validate_block(block, block_size, 0))
-    {
-        ff_arena_rewind(arena, marker);
-        return false;
-    }
+    // The root block must fill the file exactly.
+    FF_CHECK_RET_VAL(header.size == block_size, false);
+    FF_CHECK_RET_VAL(internal_ff_idict_validate_block(block, block_size, 0, validate_values), false);
 
     dict->data = block;
     return true;
@@ -664,11 +631,10 @@ bool ff_idict_load(ff_idict* dict, ff_arena* arena, ff_span saved)
 bool ff_idict_verify(ff_span saved)
 {
     internal_ff_idict_file prefix;
-    size_t block_size = 0;
 
-    FF_CHECK_RET_VAL(internal_ff_idict_read_prefix(saved, &prefix, &block_size), false);
+    FF_CHECK_RET_VAL(internal_ff_idict_read_prefix(saved, &prefix), false);
 
-    return ff_hash_bytes((const uint8_t*)saved.data + sizeof(prefix), block_size) == prefix.hash;
+    return ff_hash_bytes((const uint8_t*)saved.data + sizeof(prefix), (size_t)prefix.block_size) == prefix.hash;
 }
 
 ff_array_span ff_ivalue_as_data(const ff_ivalue* value, const ff_idict* parent_dict)

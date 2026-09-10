@@ -14,8 +14,7 @@ typedef struct ff_array_span
     uint16_t item_align;
 } ff_array_span;
 
-// Persisted. 'offset' is 32 bits so the layout matches in 32 and 64 bit builds, which the size
-// check alone would not catch.
+// Persisted, so every field has a fixed width.
 typedef struct ff_array_slice
 {
     uint32_t offset;

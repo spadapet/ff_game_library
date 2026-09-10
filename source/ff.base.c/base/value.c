@@ -194,7 +194,7 @@ struct ff_span ff_value_as_data(const ff_value* value)
     {
         .data = value->data.data,
 
-        // Widened first: multiplying the narrow fields as-is would wrap in 32 bits.
+        // Widened first: uint32 * uint16 multiplies in 32 bit arithmetic and would wrap.
         .size = (size_t)value->data.count * value->data.item_size,
     };
 }
