@@ -129,7 +129,16 @@ ff_value ff_value_new_dict(ff_dict* value)
     return (ff_value)
     {
         .type = ff_value_type_dict,
-        .data = { .data = value, .count = 0, .item_size = 0, .item_align = 0 },
+        .data = { .data = value },
+    };
+}
+
+ff_value ff_value_new_idict(ff_idict value)
+{
+    return (ff_value)
+    {
+        .type = ff_value_type_idict,
+        .data = { .data = value.data },
     };
 }
 
@@ -187,6 +196,15 @@ ff_dict* ff_value_as_dict(const ff_value* value)
     return (ff_dict*)value->data.data;
 }
 
+ff_idict ff_value_as_idict(const ff_value* value)
+{
+    FF_ASSERT(value->type == ff_value_type_idict);
+    return (ff_idict)
+    {
+        .data = value->data.data,
+    };
+}
+
 struct ff_span ff_value_as_data(const ff_value* value)
 {
     FF_ASSERT(value->type == ff_value_type_data || value->type == ff_value_type_string || value->type == ff_value_type_array);
@@ -197,6 +215,12 @@ struct ff_span ff_value_as_data(const ff_value* value)
         // Widened first: uint32 * uint16 multiplies in 32 bit arithmetic and would wrap.
         .size = (size_t)value->data.count * value->data.item_size,
     };
+}
+
+ff_array_span ff_value_as_data_array(const ff_value* value)
+{
+    FF_ASSERT(value->type == ff_value_type_data);
+    return value->data;
 }
 
 ff_string_view ff_value_as_string(const ff_value* value)

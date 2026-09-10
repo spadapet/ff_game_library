@@ -15,7 +15,6 @@ static_assert(sizeof(size_t) == 8, "the code assumes a 64 bit build, so the narr
 static_assert(sizeof(ff_ivalue) == sizeof(ff_value), "ff_value and ff_ivalue must stay layout-compatible");
 static_assert(sizeof(ff_array_slice) == 12, "ff_array_slice is persisted, so its size is fixed");
 static_assert(sizeof(ff_ivalue) == 24, "ff_ivalue is persisted, so its size is fixed");
-static_assert(ff_value_type_array == 17, "ff_value_type is persisted, so it may only be appended to");
 static_assert(alignof(uint64_t) == alignof(ff_ivalue), "uint64_t and ff_ivalue must have the same alignment");
 static_assert(offsetof(ff_array_slice, offset) == 0, "ff_array_slice is persisted, so its layout is fixed");
 static_assert(offsetof(ff_array_slice, count) == 4, "ff_array_slice is persisted, so its layout is fixed");
@@ -137,6 +136,7 @@ static size_t internal_ff_value_payload_size(ff_value_type type)
 
         case ff_value_type_data:
         case ff_value_type_dict:
+        case ff_value_type_idict:
         case ff_value_type_string:
         case ff_value_type_array:
             return 0;
@@ -213,49 +213,60 @@ static void internal_ff_idict_convert_value(internal_ff_idict_builder* builder, 
     {
         case ff_value_type_string:
             {
-                size_t size = value->data.count;
-                size_t offset = internal_ff_idict_append(builder, size, 1);
-                internal_ff_idict_write(builder, offset, value->data.data, size);
-                internal_ff_idict_slice(offset - data_offset, size, 1, 1, &result->data);
+                ff_string_view text = ff_value_as_string(value);
+                size_t offset = internal_ff_idict_append(builder, text.count, 1);
+                internal_ff_idict_write(builder, offset, text.data, text.count);
+                internal_ff_idict_slice(offset - data_offset, text.count, 1, 1, &result->data);
             }
             break;
 
         case ff_value_type_data:
             {
-                size_t item_align = internal_ff_idict_data_align(value->data.item_align);
+                ff_array_span span = ff_value_as_data_array(value);
+                size_t item_align = internal_ff_idict_data_align(span.item_align);
 
                 // Widened first: uint32 * uint16 multiplies in 32 bit arithmetic and would wrap.
-                size_t size = (size_t)value->data.count * value->data.item_size;
+                size_t size = (size_t)span.count * span.item_size;
 
                 // An empty payload has nothing to align, so it may not pad out the next value.
                 size_t offset = internal_ff_idict_append(builder, size, size ? item_align : 1);
-                internal_ff_idict_write(builder, offset, value->data.data, size);
-                internal_ff_idict_slice(offset - data_offset, value->data.count, value->data.item_size, item_align, &result->data);
+                internal_ff_idict_write(builder, offset, span.data, size);
+                internal_ff_idict_slice(offset - data_offset, span.count, span.item_size, item_align, &result->data);
             }
             break;
 
         case ff_value_type_array:
             {
-                size_t count = value->data.count;
-                const ff_value* items = (const ff_value*)value->data.data;
-                size_t size = count * sizeof(ff_ivalue);
+                ff_value_span items = ff_value_as_array(value);
+                size_t size = items.count * sizeof(ff_ivalue);
                 size_t offset = internal_ff_idict_append(builder, size, size ? alignof(ff_ivalue) : 1);
 
-                for (size_t i = 0; i < count; i++)
+                for (size_t i = 0; i < items.count; i++)
                 {
                     ff_ivalue item;
-                    internal_ff_idict_convert_value(builder, items + i, data_offset, depth, &item);
+                    internal_ff_idict_convert_value(builder, items.data + i, data_offset, depth, &item);
                     internal_ff_idict_write(builder, offset + i * sizeof(ff_ivalue), &item, sizeof(item));
                 }
 
-                internal_ff_idict_slice(offset - data_offset, count, sizeof(ff_ivalue), alignof(ff_ivalue), &result->data);
+                internal_ff_idict_slice(offset - data_offset, items.count, sizeof(ff_ivalue), alignof(ff_ivalue), &result->data);
             }
             break;
 
         case ff_value_type_dict:
             {
-                const ff_dict* nested = (const ff_dict*)value->data.data;
-                size_t offset = internal_ff_idict_emit_dict(builder, nested, depth + 1);
+                size_t offset = internal_ff_idict_emit_dict(builder, ff_value_as_dict(value), depth + 1);
+                internal_ff_idict_slice(offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN, &result->data);
+            }
+            break;
+
+        case ff_value_type_idict:
+            {
+                ff_idict nested = ff_value_as_idict(value);
+                size_t size = ff_idict_size(&nested);
+                size_t offset = internal_ff_idict_append(builder, size, FF_IDICT_MAX_ALIGN);
+                internal_ff_idict_write(builder, offset, nested.data, size);
+
+                result->type = ff_value_type_dict;
                 internal_ff_idict_slice(offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN, &result->data);
             }
             break;
@@ -654,7 +665,7 @@ ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const ff_idict* parent_dict)
 {
     ff_idict result = { 0 };
     FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, result);
-    FF_ASSERT_RET_VAL(value->type == ff_value_type_dict, result);
+    FF_ASSERT_RET_VAL(value->type == ff_value_type_dict || value->type == ff_value_type_idict, result);
 
     result.data = internal_ff_idict_data(parent_dict, value->data.offset);
     return result;

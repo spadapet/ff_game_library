@@ -1,38 +1,10 @@
 #pragma once
 
-#include "../base/span.h"
-#include "../base/string.h"
+#include "../base/idict.h"
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
-
-// Persisted in saved ff_idict files, so types may only be appended, never reordered or removed.
-// Anything walking every type (see idict.c) must be updated to match.
-typedef enum ff_value_type
-{
-    ff_value_type_empty,
-    ff_value_type_null,
-    ff_value_type_boolean,
-    ff_value_type_guid,
-
-    ff_value_type_int32,
-    ff_value_type_int64,
-    ff_value_type_float32,
-    ff_value_type_float64,
-
-    ff_value_type_point_int32,
-    ff_value_type_point_int64,
-    ff_value_type_point_float32,
-    ff_value_type_point_float64,
-
-    ff_value_type_rect_int32,
-    ff_value_type_rect_float32,
-
-    ff_value_type_data, // any binary data
-    ff_value_type_dict, // ff_dict*
-    ff_value_type_string, // char* (UTF-8, no null terminator)
-    ff_value_type_array, // ff_value* plus count
-} ff_value_type;
+typedef struct ff_idict ff_idict;
 
 typedef struct ff_value
 {
@@ -80,14 +52,16 @@ ff_value ff_value_new_point_float32(float x, float y);
 ff_value ff_value_new_point_float64(double x, double y);
 ff_value ff_value_new_rect_int32(int32_t left, int32_t top, int32_t right, int32_t bottom);
 ff_value ff_value_new_rect_float32(float left, float top, float right, float bottom);
-// Return an empty value rather than one that silently wrapped.
 ff_value ff_value_new_data(ff_span value);
 ff_value ff_value_new_data_array(ff_array_span value);
 ff_value ff_value_new_dict(ff_dict* value);
+ff_value ff_value_new_idict(ff_idict value);
 ff_value ff_value_new_string(ff_string_view value);
 ff_value ff_value_new_array(ff_value_span value);
 
 ff_dict* ff_value_as_dict(const ff_value* value);
+ff_idict ff_value_as_idict(const ff_value* value);
 ff_span ff_value_as_data(const ff_value* value);
+ff_array_span ff_value_as_data_array(const ff_value* value);
 ff_string_view ff_value_as_string(const ff_value* value);
 ff_value_span ff_value_as_array(const ff_value* value);

@@ -83,6 +83,9 @@
     <ClInclude Include="base\idict.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="base\value_type.h">
+      <Filter>base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">

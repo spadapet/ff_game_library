@@ -36,6 +36,7 @@
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
     <ClInclude Include="base\value.h" />
+    <ClInclude Include="base\value_type.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="platform\platform_win.h" />
   </ItemGroup>
