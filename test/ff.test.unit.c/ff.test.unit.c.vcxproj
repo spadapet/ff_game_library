@@ -17,6 +17,7 @@
     <ClCompile Include="base\string_builder_tests.cpp" />
     <ClCompile Include="base\string_tests.cpp" />
     <ClCompile Include="base\value_tests.cpp" />
+    <ClCompile Include="data_persist\json_tests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

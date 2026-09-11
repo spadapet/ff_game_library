@@ -14,4 +14,7 @@
 #include "../source/ff.base.c/base/string.h"
 #include "../source/ff.base.c/base/string_builder.h"
 #include "../source/ff.base.c/base/value.h"
+#include "../source/ff.base.c/base/value_type.h"
+#include "../source/ff.base.c/data_persist/json_persist.h"
+#include "../source/ff.base.c/data_persist/json_tokenizer.h"
 #include "../source/ff.base.c/platform/platform_win.h"

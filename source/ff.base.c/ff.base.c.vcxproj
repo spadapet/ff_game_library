@@ -18,6 +18,8 @@
     <ClCompile Include="base\string.c" />
     <ClCompile Include="base\string_builder.c" />
     <ClCompile Include="base\value.c" />
+    <ClCompile Include="data_persist\json_persist.c" />
+    <ClCompile Include="data_persist\json_tokenizer.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -37,6 +39,8 @@
     <ClInclude Include="base\string_builder.h" />
     <ClInclude Include="base\value.h" />
     <ClInclude Include="base\value_type.h" />
+    <ClInclude Include="data_persist\json_persist.h" />
+    <ClInclude Include="data_persist\json_tokenizer.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="platform\platform_win.h" />
   </ItemGroup>
