@@ -11,9 +11,11 @@ static ff_string_view sv(const char* text)
 static constexpr size_t block_header_size = 8;
 static constexpr size_t entry_size = sizeof(uint64_t) + sizeof(ff_ivalue);
 
-// Matches the private constant in idict.c. Tests pin the format, so they carry their own copy
-// rather than the header exposing one.
+// Matches the private constants in idict.c. Tests pin the format, so they carry their own copy
+// rather than the header exposing one. The root block is allocated at the max alignment so an
+// over-aligned payload can be satisfied, but a block's own sections only need the block alignment.
 #define ff_idict_max_align 64
+#define ff_idict_block_align 8
 
 static size_t count_of(const ff_idict* dict)
 {
@@ -30,10 +32,10 @@ static size_t round_up_to(size_t value, size_t align)
     return (value + align - 1) & ~(align - 1);
 }
 
-// The data section begins at the format's max alignment, measured from the start of the block.
+// The data section begins at the block's alignment, measured from the start of the block.
 static size_t data_start_of(size_t count)
 {
-    return round_up_to(block_header_size + count * entry_size, ff_idict_max_align);
+    return round_up_to(block_header_size + count * entry_size, ff_idict_block_align);
 }
 
 // The immutable dict derives everything from one block, so tests derive it the same way.
@@ -190,12 +192,13 @@ namespace ff::test::base
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            int expected = 0;
+            // Newest first, matching how ff_dict searches its own duplicates.
+            int expected = 4;
             int visited = 0;
 
             for (const ff_ivalue* value = ff_idict_get(&dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&dict, sv("dup"), value))
             {
-                Assert::AreEqual(expected++, value->i32);
+                Assert::AreEqual(expected--, value->i32);
                 visited++;
             }
 
@@ -230,7 +233,8 @@ namespace ff::test::base
 
             const ff_ivalue* last = values_of(dict) + 2;
 
-            Assert::AreEqual(2, last->i32);
+            // Stored newest first, so the final slot holds the value that was added first.
+            Assert::AreEqual(0, last->i32);
             Assert::IsNull(ff_idict_get_next(&dict, sv("dup"), last));
 
             ff_arena_destroy(&arena);
@@ -284,13 +288,13 @@ namespace ff::test::base
 
             ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
 
-            int expected = 0;
+            int expected = 30;
             int visited = 0;
 
             for (const ff_ivalue* value = ff_idict_get(&child_dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&child_dict, sv("dup"), value))
             {
                 Assert::AreEqual(expected, value->i32);
-                expected += 10;
+                expected -= 10;
                 visited++;
             }
 
@@ -1305,10 +1309,10 @@ namespace ff::test::base
             const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
-            // Every block sits on the format's max alignment, so the loose byte before it forces
-            // the nested block all the way to the next boundary.
-            Assert::AreEqual((size_t)ff_idict_max_align, (size_t)child->data.offset);
-            Assert::IsTrue(is_aligned(child_dict.data, ff_idict_max_align));
+            // Blocks sit on the block alignment, so the loose byte before this one forces it to the
+            // next 8 byte boundary. Payloads that need more still align themselves individually.
+            Assert::AreEqual((size_t)ff_idict_block_align, (size_t)child->data.offset);
+            Assert::IsTrue(is_aligned(child_dict.data, ff_idict_block_align));
             Assert::AreEqual(1, ff_idict_get(&child_dict, sv("number"))->i32);
 
             ff_arena_destroy(&arena);
@@ -1874,8 +1878,8 @@ namespace ff::test::base
         static void check_block_alignment(const ff_idict& dict, size_t depth)
         {
             Assert::IsTrue(depth < 32);
-            Assert::IsTrue(is_aligned(dict.data, ff_idict_max_align));
-            Assert::IsTrue(is_aligned(data_of(dict), ff_idict_max_align));
+            Assert::IsTrue(is_aligned(dict.data, ff_idict_block_align));
+            Assert::IsTrue(is_aligned(data_of(dict), ff_idict_block_align));
 
             const ff_ivalue* values = values_of(dict);
 
@@ -1902,7 +1906,7 @@ namespace ff::test::base
             }
         }
 
-        TEST_METHOD(every_block_and_data_section_sits_on_the_max_alignment)
+        TEST_METHOD(every_block_and_data_section_sits_on_the_block_alignment)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -2035,17 +2039,11 @@ namespace ff::test::base
             Assert::IsTrue((const void*)keys_of(dict) == (const uint8_t*)dict.data + block_header_size);
             Assert::IsTrue((const uint8_t*)values_of(dict) == (const uint8_t*)keys_of(dict) + 2 * sizeof(uint64_t));
 
-            // The data section starts on the format's max alignment rather than packed right behind
-            // the values, so the first item in it is already aligned for anything up to that.
-            Assert::IsTrue(data_of(dict) > (const uint8_t*)values_of(dict) + 2 * sizeof(ff_ivalue));
-            Assert::IsTrue(is_aligned(data_of(dict), ff_idict_max_align));
+            // The entry table is a whole number of 8 byte units, so the data section now packs
+            // directly behind the values with no padding at all.
+            Assert::IsTrue(data_of(dict) == (const uint8_t*)values_of(dict) + 2 * sizeof(ff_ivalue));
+            Assert::IsTrue(is_aligned(data_of(dict), ff_idict_block_align));
             Assert::AreEqual(data_start_of(2) + 4, size_of(&dict));
-
-            // Nothing but zeroes between the values and the data section.
-            for (const uint8_t* pad = (const uint8_t*)values_of(dict) + 2 * sizeof(ff_ivalue); pad < data_of(dict); pad++)
-            {
-                Assert::AreEqual((uint8_t)0, *pad);
-            }
 
             Assert::IsTrue(memcmp(data_of(dict), "data", 4) == 0);
 
@@ -3196,7 +3194,7 @@ namespace ff::test::base
             size_t nested_offset = saved_header_size + size_of(&dict) - size_of(&child_dict);
             uint32_t nested_size = (uint32_t)size_of(&child_dict);
             Assert::AreEqual(nested_offset, saved_header_size + data_start_of(count_of(&dict)) + value.data.offset);
-            Assert::AreEqual((size_t)0, nested_offset % ff_idict_max_align);
+            Assert::AreEqual((size_t)0, nested_offset % ff_idict_block_align);
 
             uint32_t bogus_size = nested_size + 64;
             memcpy(bytes + nested_offset + 4, &bogus_size, sizeof(bogus_size));
@@ -3677,7 +3675,7 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(duplicate_keys_keep_the_order_they_were_added_in)
+        TEST_METHOD(duplicate_keys_are_ordered_newest_first)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 8192);
@@ -3685,7 +3683,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            // Enough other keys that the duplicates are not simply left where they started.
+            // Enough other keys that the duplicates are not simply left where they started, and
+            // enough entries that the sort takes the qsort path rather than the insertion sort.
             char key[32];
 
             for (int i = 0; i < 30; i++)
@@ -3703,7 +3702,7 @@ namespace ff::test::base
 
             const ff_ivalue* found = ff_idict_get(&dict, sv("dup"));
 
-            for (int i = 0; i < 30; i++)
+            for (int i = 29; i >= 0; i--)
             {
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
@@ -3786,7 +3785,8 @@ namespace ff::test::base
         static uint8_t* wrap_in_one_more_block(const uint8_t* saved, size_t saved_size, size_t* out_size)
         {
             size_t child_size = saved_size - saved_header_size;
-            size_t wrapper_size = saved_header_size + child_size;
+            size_t child_offset = data_start_of(1);
+            size_t wrapper_size = child_offset + child_size;
             size_t total = saved_header_size + wrapper_size;
 
             uint8_t* bytes = alloc_saved(total);
@@ -3798,7 +3798,7 @@ namespace ff::test::base
             memcpy(bytes + saved_block_size_offset, &block_size, sizeof(block_size));
 
             uint8_t* wrapper = bytes + saved_header_size;
-            memset(wrapper, 0, saved_header_size);
+            memset(wrapper, 0, child_offset);
 
             uint32_t count = 1;
             uint32_t size = (uint32_t)wrapper_size;
@@ -3812,12 +3812,11 @@ namespace ff::test::base
             ff_ivalue value{};
             value.type = ff_value_type_dict;
             value.data.offset = 0;
-            value.data.item_align = ff_idict_max_align;
+            value.data.item_align = ff_idict_block_align;
             memcpy(wrapper + block_header_size + sizeof(uint64_t), &value, sizeof(value));
 
-            // A one entry block puts its data section at 64, which is where the child block goes.
-            Assert::AreEqual(saved_header_size, data_start_of(1));
-            memcpy(wrapper + saved_header_size, saved + saved_header_size, child_size);
+            // The child block starts right where this block's data section does.
+            memcpy(wrapper + child_offset, saved + saved_header_size, child_size);
 
             *out_size = total;
             return bytes;

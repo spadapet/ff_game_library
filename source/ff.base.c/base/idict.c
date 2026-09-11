@@ -8,7 +8,9 @@
 #include "base/value.h"
 
 #define FF_IDICT_MAGIC 0x44494646u // "FFID"
-#define FF_IDICT_VERSION 5u
+#define FF_IDICT_VERSION 6u
+#define FF_IDICT_MAX_ALIGN 64
+#define FF_IDICT_BLOCK_ALIGN 8
 
 typedef struct internal_ff_idict_header
 {
@@ -16,7 +18,14 @@ typedef struct internal_ff_idict_header
     uint32_t byte_size;
 } internal_ff_idict_header;
 
-typedef ff_idict_builder internal_ff_idict_builder;
+typedef struct internal_ff_idict_builder
+{
+    ff_arena* data_arena;
+    ff_arena* scratch_arena;
+    uint8_t* data;
+    size_t byte_size;
+    size_t byte_capacity;
+} internal_ff_idict_builder;
 
 static const size_t s_idict_header_size = sizeof(internal_ff_idict_header);
 static const size_t s_idict_entry_size = sizeof(uint64_t) + sizeof(ff_ivalue);
@@ -28,7 +37,7 @@ static internal_ff_idict_header* get_idict_header(const ff_idict* dict)
 
 static size_t get_idict_data_start(size_t entry_count)
 {
-    return ff_math_round_up(s_idict_header_size + entry_count * s_idict_entry_size, FF_IDICT_MAX_ALIGN);
+    return ff_math_round_up(s_idict_header_size + entry_count * s_idict_entry_size, FF_IDICT_BLOCK_ALIGN);
 }
 
 static size_t get_idict_entry_count(const ff_idict* dict)
@@ -155,7 +164,9 @@ typedef struct key_sort
     size_t index;
 } key_sort;
 
-static int key_compare_stable(const void* left, const void* right)
+// Equal keys land newest first, so a lookup, which stops at the first match, finds the one that was
+// added last. That matches how ff_dict searches its own duplicates, without dropping any entry.
+static int key_compare_newest_first(const void* left, const void* right)
 {
     const key_sort* l = (const key_sort*)left;
     const key_sort* r = (const key_sort*)right;
@@ -165,10 +176,10 @@ static int key_compare_stable(const void* left, const void* right)
         return (l->key < r->key) ? -1 : 1;
     }
 
-    return (l->index < r->index) ? -1 : (l->index > r->index);
+    return (l->index > r->index) ? -1 : (l->index < r->index);
 }
 
-static key_sort* internal_ff_idict_sort_order_ex(ff_arena* scratch_arena, const uint64_t* keys, size_t count, int (*compare)(const void*, const void*))
+static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uint64_t* keys, size_t count)
 {
     key_sort* order = ff_arena_alloc_type(scratch_arena, key_sort, count);
 
@@ -190,7 +201,7 @@ static key_sort* internal_ff_idict_sort_order_ex(ff_arena* scratch_arena, const 
             key_sort item = order[i];
             size_t j = i;
 
-            while (j && compare(&item, &order[j - 1]) < 0)
+            while (j && key_compare_newest_first(&item, &order[j - 1]) < 0)
             {
                 order[j] = order[j - 1];
                 j--;
@@ -201,15 +212,10 @@ static key_sort* internal_ff_idict_sort_order_ex(ff_arena* scratch_arena, const 
     }
     else
     {
-        qsort(order, count, sizeof(key_sort), compare);
+        qsort(order, count, sizeof(key_sort), key_compare_newest_first);
     }
 
     return order;
-}
-
-static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uint64_t* keys, size_t count)
-{
-    return internal_ff_idict_sort_order_ex(scratch_arena, keys, count, key_compare_stable);
 }
 
 static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff_dict* source);
@@ -265,7 +271,7 @@ static void build_idict_convert_value(internal_ff_idict_builder* builder, const 
         case ff_value_type_dict:
             {
                 size_t offset = build_idict_emit_dict(builder, ff_value_as_dict(value));
-                result->data = create_array_slice(offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN);
+                result->data = create_array_slice(offset - data_offset, 0, 0, FF_IDICT_BLOCK_ALIGN);
                 result->type = ff_value_type_idict;
             }
             break;
@@ -274,9 +280,9 @@ static void build_idict_convert_value(internal_ff_idict_builder* builder, const 
             {
                 ff_idict nested = ff_value_as_idict(value);
                 size_t size = get_idict_byte_size(&nested);
-                size_t offset = build_idict_append(builder, size, FF_IDICT_MAX_ALIGN);
+                size_t offset = build_idict_append(builder, size, FF_IDICT_BLOCK_ALIGN);
                 build_idict_write(builder, offset, nested.data, size);
-                result->data = create_array_slice(offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN);
+                result->data = create_array_slice(offset - data_offset, 0, 0, FF_IDICT_BLOCK_ALIGN);
             }
             break;
 
@@ -289,13 +295,13 @@ static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff
 {
     size_t count = source ? source->count : 0;
     size_t entries_size = s_idict_header_size + count * s_idict_entry_size;
-    size_t block_offset = build_idict_append(builder, entries_size, FF_IDICT_MAX_ALIGN);
+    size_t block_offset = build_idict_append(builder, entries_size, FF_IDICT_BLOCK_ALIGN);
     size_t keys_offset = block_offset + s_idict_header_size;
     size_t values_offset = keys_offset + count * sizeof(uint64_t);
     size_t entries_end = block_offset + entries_size;
 
     // Pad up front so the first item appended lands in the data section, not in the padding.
-    size_t data_offset = build_idict_append(builder, 0, FF_IDICT_MAX_ALIGN);
+    size_t data_offset = build_idict_append(builder, 0, FF_IDICT_BLOCK_ALIGN);
     FF_ASSERT(data_offset == block_offset + get_idict_data_start(count));
 
     if (count)
@@ -348,155 +354,6 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 
     FF_ASSERT(builder.byte_size == byte_size);
     dict->data = data;
-}
-
-static int key_compare_reverse(const void* left, const void* right)
-{
-    const key_sort* l = (const key_sort*)left;
-    const key_sort* r = (const key_sort*)right;
-
-    if (l->key != r->key)
-    {
-        return (l->key < r->key) ? -1 : 1;
-    }
-
-    // Equal keys land in reverse order so a lookup, which stops at the first match, finds the one
-    // that was added last. That matches ff_dict_set's last one wins without dropping any entry.
-    return (l->index > r->index) ? -1 : (l->index < r->index);
-}
-
-void ff_idict_builder_init(ff_idict_builder* builder, ff_arena* data_arena, ff_arena* scratch_arena, size_t initial_capacity)
-{
-    FF_ASSERT_RET(builder && data_arena && scratch_arena);
-
-    *builder = (ff_idict_builder)
-    {
-        .data_arena = data_arena,
-        .scratch_arena = scratch_arena,
-    };
-
-    build_idict_reserve(builder, ff_math_max_size(initial_capacity, FF_IDICT_MAX_ALIGN));
-}
-
-void ff_idict_builder_finish(ff_idict_builder* builder, ff_idict* dict)
-{
-    FF_ASSERT_RET(builder && dict);
-
-    // Hand back the tail that the last growth over reserved.
-    if (builder->byte_capacity > builder->byte_size)
-    {
-        size_t byte_size = ff_math_max_size(builder->byte_size, 1);
-        builder->data = (uint8_t*)ff_arena_realloc(builder->data_arena, builder->data, builder->byte_capacity, byte_size, FF_IDICT_MAX_ALIGN);
-        builder->byte_capacity = byte_size;
-    }
-
-    dict->data = builder->data;
-}
-
-size_t ff_idict_builder_data_offset(size_t block_offset, size_t entry_count)
-{
-    return block_offset + get_idict_data_start(entry_count);
-}
-
-size_t ff_idict_builder_open_dict(ff_idict_builder* builder, size_t entry_count)
-{
-    size_t entries_size = s_idict_header_size + entry_count * s_idict_entry_size;
-    size_t block_offset = build_idict_append(builder, entries_size, FF_IDICT_MAX_ALIGN);
-
-    // Pad up front so the first value appended lands in the data section, not in the padding.
-    size_t data_offset = build_idict_append(builder, 0, FF_IDICT_MAX_ALIGN);
-    FF_ASSERT(data_offset == ff_idict_builder_data_offset(block_offset, entry_count));
-
-    return block_offset;
-}
-
-void ff_idict_builder_set_entry(ff_idict_builder* builder, size_t block_offset, size_t entry_count, size_t index, ff_string_view key, const ff_ivalue* value)
-{
-    FF_ASSERT_RET(index < entry_count);
-
-    size_t keys_offset = block_offset + s_idict_header_size;
-    size_t values_offset = keys_offset + entry_count * sizeof(uint64_t);
-    uint64_t key_hash = ff_hash_string(key);
-
-    build_idict_write(builder, keys_offset + index * sizeof(uint64_t), &key_hash, sizeof(key_hash));
-    build_idict_write(builder, values_offset + index * sizeof(ff_ivalue), value, sizeof(*value));
-}
-
-void ff_idict_builder_close_dict(ff_idict_builder* builder, size_t block_offset, size_t entry_count)
-{
-    size_t entries_size = s_idict_header_size + entry_count * s_idict_entry_size;
-    size_t keys_offset = block_offset + s_idict_header_size;
-    size_t values_offset = keys_offset + entry_count * sizeof(uint64_t);
-
-    if (entry_count && builder->data)
-    {
-        ff_arena_marker marker = ff_arena_mark(builder->scratch_arena);
-
-        uint64_t* keys = (uint64_t*)(builder->data + keys_offset);
-        ff_ivalue* values = (ff_ivalue*)(builder->data + values_offset);
-        key_sort* order = internal_ff_idict_sort_order_ex(builder->scratch_arena, keys, entry_count, key_compare_reverse);
-
-        ff_ivalue* sorted = ff_arena_alloc_type(builder->scratch_arena, ff_ivalue, entry_count);
-        FF_ASSERT_RET(sorted);
-
-        for (size_t rank = 0; rank < entry_count; rank++)
-        {
-            sorted[rank] = values[order[rank].index];
-        }
-
-        for (size_t rank = 0; rank < entry_count; rank++)
-        {
-            keys[rank] = order[rank].key;
-        }
-
-        memcpy(values, sorted, entry_count * sizeof(ff_ivalue));
-        ff_arena_rewind(builder->scratch_arena, marker);
-    }
-
-    if (builder->byte_size == ff_idict_builder_data_offset(block_offset, entry_count))
-    {
-        // Nothing needed a data section, so drop the padding leading up to it.
-        builder->byte_size = block_offset + entries_size;
-    }
-
-    internal_ff_idict_header header;
-    header.entry_count = (uint32_t)entry_count;
-    header.byte_size = (uint32_t)(builder->byte_size - block_offset);
-    build_idict_write(builder, block_offset, &header, sizeof(header));
-}
-
-size_t ff_idict_builder_open_array(ff_idict_builder* builder, size_t item_count)
-{
-    size_t size = item_count * sizeof(ff_ivalue);
-    return build_idict_append(builder, size, size ? alignof(ff_ivalue) : 1);
-}
-
-void ff_idict_builder_set_item(ff_idict_builder* builder, size_t items_offset, size_t index, const ff_ivalue* value)
-{
-    build_idict_write(builder, items_offset + index * sizeof(ff_ivalue), value, sizeof(*value));
-}
-
-void ff_idict_builder_value(ff_idict_builder* builder, const ff_value* value, size_t data_offset, ff_ivalue* result)
-{
-    build_idict_convert_value(builder, value, data_offset, result);
-}
-
-ff_ivalue ff_idict_builder_array_value(size_t items_offset, size_t item_count, size_t data_offset)
-{
-    ff_ivalue result;
-    memset(&result, 0, sizeof(result));
-    result.type = ff_value_type_array;
-    result.data = create_array_slice(items_offset - data_offset, item_count, sizeof(ff_ivalue), alignof(ff_ivalue));
-    return result;
-}
-
-ff_ivalue ff_idict_builder_dict_value(size_t block_offset, size_t data_offset)
-{
-    ff_ivalue result;
-    memset(&result, 0, sizeof(result));
-    result.type = ff_value_type_idict;
-    result.data = create_array_slice(block_offset - data_offset, 0, 0, FF_IDICT_MAX_ALIGN);
-    return result;
 }
 
 static size_t get_idict_key_lower_bound(const uint64_t* keys, size_t count, uint64_t key)
@@ -635,7 +492,7 @@ static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t d
         case ff_value_type_idict:
             {
                 FF_CHECK_RET_VAL(!value->data.count && !value->data.item_size, false);
-                FF_CHECK_RET_VAL(value->data.item_align == FF_IDICT_MAX_ALIGN, false);
+                FF_CHECK_RET_VAL(value->data.item_align == FF_IDICT_BLOCK_ALIGN, false);
                 FF_CHECK_RET_VAL(offset <= data_size, false);
                 FF_CHECK_RET_VAL(validate_idict_data(data + offset, data_size - offset, true), false);
             }
@@ -654,7 +511,7 @@ static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate
     size_t entries_size = 0;
 
     FF_CHECK_RET_VAL(avail >= s_idict_header_size, false);
-    FF_CHECK_RET_VAL(!((uintptr_t)data & (FF_IDICT_MAX_ALIGN - 1)), false);
+    FF_CHECK_RET_VAL(!((uintptr_t)data & (FF_IDICT_BLOCK_ALIGN - 1)), false);
 
     internal_ff_idict_header header;
     memcpy(&header, data, sizeof(header));

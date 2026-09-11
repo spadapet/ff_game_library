@@ -571,7 +571,8 @@ namespace ff::test::data_persist
             ff_dict dict{};
             Assert::IsTrue(ff_json_parse(sv("{ \"a\": 1, \"a\": 2 }"), &dict, &arena, nullptr));
 
-            Assert::AreEqual((size_t)1, dict.count);
+            // Both entries are kept, and the lookup finds the one that was parsed last.
+            Assert::AreEqual((size_t)2, dict.count);
             Assert::AreEqual(2, ff_dict_get(&dict, sv("a"))->i32);
 
             ff_arena_destroy(&arena);
