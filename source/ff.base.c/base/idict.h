@@ -6,6 +6,10 @@
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
+typedef struct ff_value ff_value;
+
+// Every block, and every nested dict inside one, starts at this alignment.
+#define FF_IDICT_MAX_ALIGN 64
 
 typedef struct ff_idict
 {
@@ -45,6 +49,40 @@ typedef struct ff_ivalue_span
 } ff_ivalue_span;
 
 void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source);
+
+// Writes an idict block directly, for callers like the JSON parser that already know how many
+// entries each dict has and can emit them in one pass instead of building an ff_dict first. Every
+// offset inside a block is relative to the block, so the buffer can be grown and relocated freely
+// while it is being written.
+typedef struct ff_idict_builder
+{
+    ff_arena* data_arena; // grows the block, so the block must stay its newest allocation
+    ff_arena* scratch_arena;
+    uint8_t* data;
+    size_t byte_size;
+    size_t byte_capacity;
+} ff_idict_builder;
+
+void ff_idict_builder_init(ff_idict_builder* builder, ff_arena* data_arena, ff_arena* scratch_arena, size_t initial_capacity);
+void ff_idict_builder_finish(ff_idict_builder* builder, ff_idict* dict);
+
+// 'entry_count' must be exact. Entries are set by index in any order, then the dict is closed,
+// which sorts them by key hash. Returns the block offset that identifies this dict.
+size_t ff_idict_builder_open_dict(ff_idict_builder* builder, size_t entry_count);
+void ff_idict_builder_set_entry(ff_idict_builder* builder, size_t block_offset, size_t entry_count, size_t index, ff_string_view key, const ff_ivalue* value);
+void ff_idict_builder_close_dict(ff_idict_builder* builder, size_t block_offset, size_t entry_count);
+// The offset of a dict's data section, which every value inside that dict is relative to.
+size_t ff_idict_builder_data_offset(size_t block_offset, size_t entry_count);
+
+// Reserves room for 'item_count' items and returns their offset. Items are set by index.
+size_t ff_idict_builder_open_array(ff_idict_builder* builder, size_t item_count);
+void ff_idict_builder_set_item(ff_idict_builder* builder, size_t items_offset, size_t index, const ff_ivalue* value);
+
+// Copies any payload 'value' owns into the block. 'data_offset' is the owning dict's data offset.
+void ff_idict_builder_value(ff_idict_builder* builder, const ff_value* value, size_t data_offset, ff_ivalue* result);
+// Makes the value that refers to an already written array or nested dict.
+ff_ivalue ff_idict_builder_array_value(size_t items_offset, size_t item_count, size_t data_offset);
+ff_ivalue ff_idict_builder_dict_value(size_t block_offset, size_t data_offset);
 const ff_ivalue* ff_idict_get(const ff_idict* dict, ff_string_view key);
 const ff_ivalue* ff_idict_get_next(const ff_idict* dict, ff_string_view key, const ff_ivalue* prev_value);
 ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena);

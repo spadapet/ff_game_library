@@ -178,13 +178,28 @@ static size_t utf8_sequence_length(const char* pos, const char* end)
 
 // Only walks past the string, leaving the quotes and escapes in the token for the value conversion
 // to deal with. Escapes are checked for shape here so the conversion can trust what it scans.
-static bool skip_string(ff_json_tokenizer* tokenizer, char* ch)
+// '*escaped' is set when the string holds an escape, which is what lets a caller skip decoding.
+static bool skip_string(ff_json_tokenizer* tokenizer, char* ch, bool* escaped)
 {
     FF_CHECK_RET_VAL(*ch == '\"', false);
+    *escaped = false;
     *ch = next_char(tokenizer);
 
     while (true)
     {
+        // Plain ASCII is almost all of every real string, so it is walked without going back
+        // through the per character helpers.
+        const char* run = tokenizer->pos;
+
+        while (run < tokenizer->end && (uint8_t)*run >= ' ' && (uint8_t)*run < 0x80 &&
+            *run != '\"' && *run != '\\')
+        {
+            run++;
+        }
+
+        tokenizer->pos = run;
+        *ch = current_char(tokenizer);
+
         if (*ch == '\"')
         {
             tokenizer->pos++;
@@ -192,6 +207,7 @@ static bool skip_string(ff_json_tokenizer* tokenizer, char* ch)
         }
         else if (*ch == '\\')
         {
+            *escaped = true;
             *ch = next_char(tokenizer);
 
             switch (*ch)
@@ -224,14 +240,11 @@ static bool skip_string(ff_json_tokenizer* tokenizer, char* ch)
                     return false;
             }
         }
-        else if ((unsigned char)*ch < ' ')
-        {
-            // Includes '\0', so an unterminated string is an error rather than running off the end.
-            return false;
-        }
         else if ((unsigned char)*ch < 0x80)
         {
-            *ch = next_char(tokenizer);
+            // A control character, or '\0' for an unterminated string: both are errors rather than
+            // running off the end.
+            return false;
         }
         else
         {
@@ -249,8 +262,10 @@ static bool skip_string(ff_json_tokenizer* tokenizer, char* ch)
 }
 
 // Comments are not part of JSON, but this reader accepts them the way the C++ one did.
-static char skip_spaces_and_comments(ff_json_tokenizer* tokenizer, char ch)
+static char skip_spaces_and_comments(ff_json_tokenizer* tokenizer)
 {
+    char ch = current_char(tokenizer);
+
     while (true)
     {
         if (is_json_space(ch))
@@ -304,9 +319,10 @@ void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text)
 
 ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
 {
-    char ch = skip_spaces_and_comments(tokenizer, current_char(tokenizer));
+    char ch = skip_spaces_and_comments(tokenizer);
     ff_json_token_type type = ff_json_token_type_error;
     const char* start = tokenizer->pos;
+    bool escaped = false;
 
     switch (ch)
     {
@@ -339,7 +355,7 @@ ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
             break;
 
         case '\"':
-            if (skip_string(tokenizer, &ch))
+            if (skip_string(tokenizer, &ch, &escaped))
             {
                 type = ff_json_token_type_string;
             }
@@ -402,6 +418,7 @@ ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
     token.type = type;
     token.text.data = start;
     token.text.count = (size_t)(tokenizer->pos - start);
+    token.escaped = escaped;
     return token;
 }
 
@@ -440,15 +457,27 @@ static size_t write_utf8(char* dest, uint32_t code_point)
 
 // The tokenizer already proved the escapes are well formed, so this only has to decode them. The
 // decoded text is never longer than the quoted source, so one allocation up front is enough.
-static ff_value json_string_value(ff_string_view text, ff_arena* arena)
+static ff_string_view json_string_text(ff_string_view text, bool escaped, ff_arena* arena)
 {
-    FF_ASSERT_RET_VAL(text.count >= 2, ff_value_new_empty());
+    ff_string_view result;
+    result.data = NULL;
+    result.count = 0;
+
+    FF_ASSERT_RET_VAL(text.count >= 2, result);
+
+    if (!escaped)
+    {
+        // Nothing to decode, so the quoted text is already the answer and no copy is needed.
+        result.data = text.data + 1;
+        result.count = text.count - 2;
+        return result;
+    }
 
     const char* cur = text.data + 1;
     const char* end = text.data + text.count - 1;
 
     char* dest = ff_arena_alloc_type(arena, char, text.count);
-    FF_ASSERT_RET_VAL(dest, ff_value_new_empty());
+    FF_ASSERT_RET_VAL(dest, result);
     size_t count = 0;
 
     while (cur < end)
@@ -517,16 +546,15 @@ static ff_value json_string_value(ff_string_view text, ff_arena* arena)
                 // The tokenizer rejects anything else, so reaching here means the token is not the
                 // one that was scanned.
                 FF_DEBUG_FAIL();
-                return ff_value_new_empty();
+                return result;
         }
 
         cur += 2;
     }
 
-    ff_string_view result;
     result.data = dest;
     result.count = count;
-    return ff_value_new_string(result);
+    return result;
 }
 
 // Integers are read directly so large 64 bit values keep every digit, which going through a double
@@ -594,6 +622,18 @@ static ff_value json_number_value(ff_string_view text)
     return ff_value_new_float64(value);
 }
 
+ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena)
+{
+    ff_string_view result;
+    result.data = NULL;
+    result.count = 0;
+
+    FF_ASSERT_RET_VAL(token, result);
+    FF_CHECK_RET_VAL(token->type == ff_json_token_type_string, result);
+
+    return json_string_text(token->text, token->escaped, arena);
+}
+
 ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
 {
     FF_ASSERT_RET_VAL(token, ff_value_new_empty());
@@ -613,7 +653,22 @@ ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
             return json_number_value(token->text);
 
         case ff_json_token_type_string:
-            return json_string_value(token->text, arena);
+            {
+                ff_string_view text = json_string_text(token->text, token->escaped, arena);
+                FF_CHECK_RET_VAL(text.data, ff_value_new_empty());
+
+                if (!token->escaped)
+                {
+                    // A borrowed view points into the text being tokenized, but a value has to
+                    // outlive it, so this is the one place that always takes a copy.
+                    char* copy = ff_arena_alloc_type(arena, char, text.count ? text.count : 1);
+                    FF_ASSERT_RET_VAL(copy, ff_value_new_empty());
+                    memcpy(copy, text.data, text.count);
+                    text.data = copy;
+                }
+
+                return ff_value_new_string(text);
+            }
 
         default:
             return ff_value_new_empty();
