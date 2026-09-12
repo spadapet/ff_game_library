@@ -44,6 +44,9 @@
     <ClCompile Include="base\json.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\stream.c">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -90,6 +93,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\json.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\stream.h">
       <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>

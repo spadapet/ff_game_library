@@ -16,6 +16,7 @@
     <ClCompile Include="base\json.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
+    <ClCompile Include="base\stream.c" />
     <ClCompile Include="base\string.c" />
     <ClCompile Include="base\string_builder.c" />
     <ClCompile Include="base\value.c" />
@@ -35,6 +36,7 @@
     <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\span.h" />
+    <ClInclude Include="base\stream.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
     <ClInclude Include="base\value.h" />
