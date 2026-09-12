@@ -16,150 +16,35 @@ namespace ff::test::data_persist
             return view.count == count && ::memcmp(view.data, text, count) == 0;
         }
 
-        // Tokenize everything and return the types, so a test can state the shape it expects.
-        static size_t collect_types(const char* text, ff_json_token_type* types, size_t max_types)
+        // Wraps a single JSON value in the smallest document that can hold it, so that value level
+        // behavior can be checked through the only entry point there is.
+        static bool parse_value(const char* value_text, ff_arena* arena, ff_value* value)
         {
-            ff_json_tokenizer tokenizer{};
-            ff_json_tokenizer_init(&tokenizer, sv(text));
-            size_t count = 0;
+            char json[512];
+            ::_snprintf_s(json, sizeof(json), _TRUNCATE, "{ \"a\": %s }", value_text);
 
-            while (count < max_types)
+            ff_dict dict{};
+            if (!ff_json_parse(sv(json), &dict, arena, nullptr))
             {
-                ff_json_token token = ff_json_tokenizer_next(&tokenizer);
-                types[count++] = token.type;
-
-                if (token.type == ff_json_token_type_none || token.type == ff_json_token_type_error)
-                {
-                    break;
-                }
+                return false;
             }
 
-            return count;
+            *value = *ff_dict_get(&dict, sv("a"));
+            return true;
         }
 
-        static ff_json_token single_token(const char* text)
+        static bool value_fails(const char* value_text, ff_arena* arena)
         {
-            ff_json_tokenizer tokenizer{};
-            ff_json_tokenizer_init(&tokenizer, sv(text));
-            return ff_json_tokenizer_next(&tokenizer);
+            ff_value value{};
+            return !parse_value(value_text, arena, &value);
         }
 
-        TEST_METHOD(tokenizer_returns_none_for_empty_text)
+        static bool value_is_string(const char* value_text, ff_arena* arena, const char* expected)
         {
-            Assert::IsTrue(ff_json_token_type_none == single_token("").type);
-            Assert::IsTrue(ff_json_token_type_none == single_token("   \t\r\n  ").type);
-        }
-
-        TEST_METHOD(tokenizer_reads_punctuation)
-        {
-            ff_json_token_type types[16]{};
-            Assert::AreEqual((size_t)7, collect_types("{}[],:", types, 16));
-
-            Assert::IsTrue(ff_json_token_type_open_curly == types[0]);
-            Assert::IsTrue(ff_json_token_type_close_curly == types[1]);
-            Assert::IsTrue(ff_json_token_type_open_bracket == types[2]);
-            Assert::IsTrue(ff_json_token_type_close_bracket == types[3]);
-            Assert::IsTrue(ff_json_token_type_comma == types[4]);
-            Assert::IsTrue(ff_json_token_type_colon == types[5]);
-            Assert::IsTrue(ff_json_token_type_none == types[6]);
-        }
-
-        TEST_METHOD(tokenizer_reads_keywords)
-        {
-            Assert::IsTrue(ff_json_token_type_true == single_token("true").type);
-            Assert::IsTrue(ff_json_token_type_false == single_token("false").type);
-            Assert::IsTrue(ff_json_token_type_null == single_token("null").type);
-
-            // A prefix of a keyword is not the keyword, and neither is a longer word.
-            Assert::IsTrue(ff_json_token_type_error == single_token("tru").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("truex").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("nul").type);
-        }
-
-        TEST_METHOD(token_text_points_into_the_source)
-        {
-            const char* text = "   \"abc\"   ";
-            ff_json_tokenizer tokenizer{};
-            ff_json_tokenizer_init(&tokenizer, sv(text));
-
-            ff_json_token token = ff_json_tokenizer_next(&tokenizer);
-
-            // The token is a slice of the original buffer, not a copy, and it keeps its quotes.
-            Assert::IsTrue(token.text.data == text + 3);
-            Assert::AreEqual((size_t)5, token.text.count);
-            Assert::IsTrue(view_equals(token.text, "\"abc\""));
-        }
-
-        TEST_METHOD(tokenizer_rejects_bad_strings)
-        {
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"unterminated").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"bad \\q escape\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"short \\u12\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"bad \\uZZZZ hex\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"raw \n newline\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"trailing backslash\\").type);
-        }
-
-        TEST_METHOD(tokenizer_reads_numbers)
-        {
-            Assert::IsTrue(ff_json_token_type_number == single_token("0").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("-1").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("1.5").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("1e10").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("-1.5E-10").type);
-
-            // A number has to have digits everywhere the grammar requires them.
-            Assert::IsTrue(ff_json_token_type_error == single_token("-").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("1.").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("1e").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("1e+").type);
-        }
-
-        TEST_METHOD(tokenizer_rejects_leading_zeros)
-        {
-            // Zero stands alone, and may still start a fraction or an exponent.
-            Assert::IsTrue(ff_json_token_type_number == single_token("0").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("-0").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("0.5").type);
-            Assert::IsTrue(ff_json_token_type_number == single_token("0e1").type);
-
-            // But a zero followed by another digit is not one number.
-            Assert::IsTrue(ff_json_token_type_error == single_token("01").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("-01").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("00").type);
-        }
-
-        TEST_METHOD(tokenizer_accepts_valid_utf8_in_strings)
-        {
-            // Two, three and four byte sequences, and the highest code point there is.
-            Assert::IsTrue(ff_json_token_type_string == single_token("\"\xC3\xA9\"").type);
-            Assert::IsTrue(ff_json_token_type_string == single_token("\"\xE2\x82\xAC\"").type);
-            Assert::IsTrue(ff_json_token_type_string == single_token("\"\xF0\x9F\x98\x80\"").type);
-            Assert::IsTrue(ff_json_token_type_string == single_token("\"\xF4\x8F\xBF\xBF\"").type);
-        }
-
-        TEST_METHOD(tokenizer_rejects_invalid_utf8_in_strings)
-        {
-            // A lone continuation byte, and lead bytes that never start anything.
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\x80\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xFF\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xFE\"").type);
-
-            // Truncated sequences, including one cut off by the end of the text.
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xC3\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xE2\x82\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xF0\x9F\x98\"").type);
-
-            // Overlong encodings: these smuggle ASCII past anything that checks bytes naively.
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xC0\xAF\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xC1\xBF\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xE0\x80\xAF\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xF0\x80\x80\xAF\"").type);
-
-            // Surrogates are not encodable, and nothing exists past U+10FFFF.
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xED\xA0\x80\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xF4\x90\x80\x80\"").type);
-            Assert::IsTrue(ff_json_token_type_error == single_token("\"\xF5\x80\x80\x80\"").type);
+            ff_value value{};
+            return parse_value(value_text, arena, &value) &&
+                value.type == ff_value_type_string &&
+                view_equals(ff_value_as_string(&value), expected);
         }
 
         TEST_METHOD(parse_rejects_invalid_utf8)
@@ -179,223 +64,226 @@ namespace ff::test::data_persist
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(token_value_rejects_numbers_that_overflow_to_infinity)
+        TEST_METHOD(parse_rejects_numbers_that_overflow_to_infinity)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            // The token scans fine, but the value does not fit, and JSON cannot write infinity
+            // The number scans fine, but the value does not fit, and JSON cannot write infinity
             // back out, so it is refused rather than silently becoming inf.
-            ff_json_token token = single_token("1e400");
-            Assert::IsTrue(ff_json_token_type_number == token.type);
-            Assert::IsTrue(ff_value_type_empty == ff_json_token_value(&token, &arena).type);
-
-            token = single_token("-1e400");
-            Assert::IsTrue(ff_value_type_empty == ff_json_token_value(&token, &arena).type);
+            Assert::IsTrue(value_fails("1e400", &arena));
+            Assert::IsTrue(value_fails("-1e400", &arena));
 
             // The largest double still works, so the check is not simply rejecting big numbers.
-            token = single_token("1.7976931348623157e308");
-            Assert::IsTrue(ff_value_type_float64 == ff_json_token_value(&token, &arena).type);
+            ff_value value{};
+            Assert::IsTrue(parse_value("1.7976931348623157e308", &arena, &value));
+            Assert::IsTrue(ff_value_type_float64 == value.type);
 
             // Underflow is ordinary loss of precision, so it stays allowed.
-            token = single_token("1e-400");
-            ff_value value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("1e-400", &arena, &value));
             Assert::IsTrue(ff_value_type_float64 == value.type);
             Assert::AreEqual(0.0, value.f64);
 
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(parse_rejects_numbers_that_overflow_to_infinity)
+        TEST_METHOD(parse_rejects_bad_strings)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            ff_dict dict{};
-            Assert::IsFalse(ff_json_parse(sv("{ \"a\": 1e400 }"), &dict, &arena, nullptr));
+            Assert::IsTrue(value_fails("\"unterminated", &arena));
+            Assert::IsTrue(value_fails("\"bad \\q escape\"", &arena));
+            Assert::IsTrue(value_fails("\"short \\u12\"", &arena));
+            Assert::IsTrue(value_fails("\"bad \\uZZZZ hex\"", &arena));
+            Assert::IsTrue(value_fails("\"raw \n newline\"", &arena));
+            Assert::IsTrue(value_fails("\"trailing backslash\\", &arena));
 
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(tokenizer_skips_comments)
-        {
-            ff_json_token_type types[16]{};
-            Assert::AreEqual((size_t)3, collect_types("// line\n { /* block */ } // trailing", types, 16));
-
-            Assert::IsTrue(ff_json_token_type_open_curly == types[0]);
-            Assert::IsTrue(ff_json_token_type_close_curly == types[1]);
-            Assert::IsTrue(ff_json_token_type_none == types[2]);
-        }
-
-        TEST_METHOD(tokenizer_rejects_an_unterminated_block_comment)
-        {
-            // The '/' is put back and tokenized, so this reports an error instead of end of text.
-            Assert::IsTrue(ff_json_token_type_error == single_token("/* never ends").type);
-        }
-
-        TEST_METHOD(tokenizer_always_advances_past_an_error)
-        {
-            // An error token that consumed nothing would make any caller loop forever.
-            ff_json_tokenizer tokenizer{};
-            ff_json_tokenizer_init(&tokenizer, sv("@@"));
-
-            ff_json_token first = ff_json_tokenizer_next(&tokenizer);
-            Assert::IsTrue(ff_json_token_type_error == first.type);
-            Assert::AreEqual((size_t)1, first.text.count);
-
-            ff_json_token second = ff_json_tokenizer_next(&tokenizer);
-            Assert::IsTrue(ff_json_token_type_error == second.type);
-            Assert::IsTrue(second.text.data > first.text.data);
-        }
-
-        TEST_METHOD(token_value_converts_literals)
+        TEST_METHOD(parse_rejects_malformed_numbers)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            ff_json_token token = single_token("true");
-            ff_value value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(ff_value_type_boolean == value.type);
-            Assert::IsTrue(value.b);
+            ff_value value{};
+            Assert::IsTrue(parse_value("0", &arena, &value));
+            Assert::IsTrue(parse_value("-1", &arena, &value));
+            Assert::IsTrue(parse_value("1.5", &arena, &value));
+            Assert::IsTrue(parse_value("1e10", &arena, &value));
+            Assert::IsTrue(parse_value("-1.5E-10", &arena, &value));
 
-            token = single_token("false");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(ff_value_type_boolean == value.type);
-            Assert::IsFalse(value.b);
-
-            token = single_token("null");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(ff_value_type_null == value.type);
+            // A number has to have digits everywhere the grammar requires them.
+            Assert::IsTrue(value_fails("-", &arena));
+            Assert::IsTrue(value_fails("1.", &arena));
+            Assert::IsTrue(value_fails("1e", &arena));
+            Assert::IsTrue(value_fails("1e+", &arena));
 
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(token_value_prefers_the_narrowest_number_type)
+        TEST_METHOD(parse_rejects_leading_zeros)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            ff_json_token token = single_token("42");
-            ff_value value = ff_json_token_value(&token, &arena);
+            // Zero stands alone, and may still start a fraction or an exponent.
+            ff_value value{};
+            Assert::IsTrue(parse_value("0", &arena, &value));
+            Assert::IsTrue(parse_value("-0", &arena, &value));
+            Assert::IsTrue(parse_value("0.5", &arena, &value));
+            Assert::IsTrue(parse_value("0e1", &arena, &value));
+
+            // But a zero followed by another digit is not one number.
+            Assert::IsTrue(value_fails("01", &arena));
+            Assert::IsTrue(value_fails("-01", &arena));
+            Assert::IsTrue(value_fails("00", &arena));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_accepts_valid_utf8_in_strings)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // Two, three and four byte sequences, and the highest code point there is.
+            Assert::IsTrue(value_is_string("\"\xC3\xA9\"", &arena, "\xC3\xA9"));
+            Assert::IsTrue(value_is_string("\"\xE2\x82\xAC\"", &arena, "\xE2\x82\xAC"));
+            Assert::IsTrue(value_is_string("\"\xF0\x9F\x98\x80\"", &arena, "\xF0\x9F\x98\x80"));
+            Assert::IsTrue(value_is_string("\"\xF4\x8F\xBF\xBF\"", &arena, "\xF4\x8F\xBF\xBF"));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_rejects_invalid_utf8_in_strings)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // A lone continuation byte, and lead bytes that never start anything.
+            Assert::IsTrue(value_fails("\"\x80\"", &arena));
+            Assert::IsTrue(value_fails("\"\xFF\"", &arena));
+            Assert::IsTrue(value_fails("\"\xFE\"", &arena));
+
+            // Truncated sequences, including one cut off by the end of the string.
+            Assert::IsTrue(value_fails("\"\xC3\"", &arena));
+            Assert::IsTrue(value_fails("\"\xE2\x82\"", &arena));
+            Assert::IsTrue(value_fails("\"\xF0\x9F\x98\"", &arena));
+
+            // Overlong encodings: these smuggle ASCII past anything that checks bytes naively.
+            Assert::IsTrue(value_fails("\"\xC0\xAF\"", &arena));
+            Assert::IsTrue(value_fails("\"\xC1\xBF\"", &arena));
+            Assert::IsTrue(value_fails("\"\xE0\x80\xAF\"", &arena));
+            Assert::IsTrue(value_fails("\"\xF0\x80\x80\xAF\"", &arena));
+
+            // Surrogates are not encodable, and nothing exists past U+10FFFF.
+            Assert::IsTrue(value_fails("\"\xED\xA0\x80\"", &arena));
+            Assert::IsTrue(value_fails("\"\xF4\x90\x80\x80\"", &arena));
+            Assert::IsTrue(value_fails("\"\xF5\x80\x80\x80\"", &arena));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_unescapes_strings)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            Assert::IsTrue(value_is_string("\"plain\"", &arena, "plain"));
+            Assert::IsTrue(value_is_string(
+                "\"a\\\"b\\\\c\\/d\\be\\ff\\ng\\rh\\ti\"", &arena, "a\"b\\c/d\be\ff\ng\rh\ti"));
+            Assert::IsTrue(value_is_string("\"\"", &arena, ""));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_encodes_unicode_escapes_as_utf8)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // One byte, two bytes and three bytes of UTF-8.
+            Assert::IsTrue(value_is_string("\"\\u0041\"", &arena, "A"));
+            Assert::IsTrue(value_is_string("\"\\u00E9\"", &arena, "\xC3\xA9"));
+            Assert::IsTrue(value_is_string("\"\\u20AC\"", &arena, "\xE2\x82\xAC"));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_joins_a_surrogate_pair)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // U+1F600, which only fits as a pair in JSON and as four bytes in UTF-8.
+            Assert::IsTrue(value_is_string("\"\\uD83D\\uDE00\"", &arena, "\xF0\x9F\x98\x80"));
+
+            // A high surrogate with no low one cannot be encoded, so it becomes U+FFFD.
+            Assert::IsTrue(value_is_string("\"\\uD83D\"", &arena, "\xEF\xBF\xBD"));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(parse_prefers_the_narrowest_number_type)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_value value{};
+            Assert::IsTrue(parse_value("42", &arena, &value));
             Assert::IsTrue(ff_value_type_int32 == value.type);
             Assert::AreEqual(42, value.i32);
 
             // Past int32, but still exact as an integer.
-            token = single_token("5000000000");
-            value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("5000000000", &arena, &value));
             Assert::IsTrue(ff_value_type_int64 == value.type);
             Assert::AreEqual((int64_t)5000000000LL, value.i64);
 
             // Anything with a fraction or exponent is a double.
-            token = single_token("1.5");
-            value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("1.5", &arena, &value));
             Assert::IsTrue(ff_value_type_float64 == value.type);
             Assert::AreEqual(1.5, value.f64);
 
-            token = single_token("1e2");
-            value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("1e2", &arena, &value));
             Assert::IsTrue(ff_value_type_float64 == value.type);
             Assert::AreEqual(100.0, value.f64);
 
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(token_value_keeps_every_digit_of_a_large_integer)
+        TEST_METHOD(parse_keeps_every_digit_of_a_large_integer)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
             // Going through a double would round this, so it is read as an integer directly.
-            ff_json_token token = single_token("9223372036854775807");
-            ff_value value = ff_json_token_value(&token, &arena);
+            ff_value value{};
+            Assert::IsTrue(parse_value("9223372036854775807", &arena, &value));
             Assert::IsTrue(ff_value_type_int64 == value.type);
             Assert::AreEqual(INT64_MAX, value.i64);
 
             // INT64_MIN has no positive counterpart, so it is the one that negation can get wrong.
-            token = single_token("-9223372036854775808");
-            value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("-9223372036854775808", &arena, &value));
             Assert::IsTrue(ff_value_type_int64 == value.type);
             Assert::AreEqual(INT64_MIN, value.i64);
 
             // Past what an integer holds, so it falls back to a double.
-            token = single_token("99999999999999999999");
-            value = ff_json_token_value(&token, &arena);
+            Assert::IsTrue(parse_value("99999999999999999999", &arena, &value));
             Assert::IsTrue(ff_value_type_float64 == value.type);
 
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(token_value_unescapes_strings)
+        TEST_METHOD(parse_rejects_an_unterminated_block_comment)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
-            ff_json_token token = single_token("\"plain\"");
-            ff_value value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(ff_value_type_string == value.type);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "plain"));
-
-            token = single_token("\"a\\\"b\\\\c\\/d\\be\\ff\\ng\\rh\\ti\"");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "a\"b\\c/d\be\ff\ng\rh\ti"));
-
-            token = single_token("\"\"");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(ff_value_type_string == value.type);
-            Assert::AreEqual((size_t)0, ff_value_as_string(&value).count);
-
-            ff_arena_destroy(&arena);
-        }
-
-        TEST_METHOD(token_value_encodes_unicode_escapes_as_utf8)
-        {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 4096);
-
-            // One byte, two bytes and three bytes of UTF-8.
-            ff_json_token token = single_token("\"\\u0041\"");
-            ff_value value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "A"));
-
-            token = single_token("\"\\u00E9\"");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "\xC3\xA9"));
-
-            token = single_token("\"\\u20AC\"");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "\xE2\x82\xAC"));
-
-            ff_arena_destroy(&arena);
-        }
-
-        TEST_METHOD(token_value_joins_a_surrogate_pair)
-        {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 4096);
-
-            // U+1F600, which only fits as a pair in JSON and as four bytes in UTF-8.
-            ff_json_token token = single_token("\"\\uD83D\\uDE00\"");
-            ff_value value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "\xF0\x9F\x98\x80"));
-
-            // A high surrogate with no low one cannot be encoded, so it becomes U+FFFD.
-            token = single_token("\"\\uD83D\"");
-            value = ff_json_token_value(&token, &arena);
-            Assert::IsTrue(view_equals(ff_value_as_string(&value), "\xEF\xBF\xBD"));
-
-            ff_arena_destroy(&arena);
-        }
-
-        TEST_METHOD(token_value_is_empty_for_structural_tokens)
-        {
-            ff_arena arena{};
-            ff_arena_init_heap_global(&arena, 4096);
-
-            ff_json_token token = single_token("{");
-            Assert::IsTrue(ff_value_type_empty == ff_json_token_value(&token, &arena).type);
-
-            token = single_token("@");
-            Assert::IsTrue(ff_value_type_empty == ff_json_token_value(&token, &arena).type);
+            ff_dict dict{};
+            Assert::IsFalse(ff_json_parse(sv("{ \"a\": 1 } /* never ends"), &dict, &arena, nullptr));
+            Assert::IsFalse(ff_json_parse(sv("/* never ends"), &dict, &arena, nullptr));
 
             ff_arena_destroy(&arena);
         }
@@ -563,7 +451,7 @@ namespace ff::test::data_persist
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(parse_uses_the_last_value_for_a_repeated_key)
+        TEST_METHOD(parse_uses_the_first_value_for_a_repeated_key)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -571,9 +459,10 @@ namespace ff::test::data_persist
             ff_dict dict{};
             Assert::IsTrue(ff_json_parse(sv("{ \"a\": 1, \"a\": 2 }"), &dict, &arena, nullptr));
 
-            // Both entries are kept, and the lookup finds the one that was parsed last.
+            // Both entries are kept, and the lookup finds the one that was parsed first. This is
+            // deliberately not the JSON convention of the last value winning.
             Assert::AreEqual((size_t)2, dict.count);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("a"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, sv("a"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -807,14 +696,14 @@ namespace ff::test::data_persist
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(parse_idict_keeps_the_last_value_for_a_repeated_key)
+        TEST_METHOD(parse_idict_keeps_the_first_value_for_a_repeated_key)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_idict dict{};
             Assert::IsTrue(ff_json_parse_idict(sv("{ \"a\": 1, \"a\": 2 }"), &dict, &arena, nullptr));
-            Assert::AreEqual(2, ff_idict_get(&dict, sv("a"))->i32);
+            Assert::AreEqual(1, ff_idict_get(&dict, sv("a"))->i32);
 
             ff_arena_destroy(&arena);
         }

@@ -164,9 +164,9 @@ typedef struct key_sort
     size_t index;
 } key_sort;
 
-// Equal keys land newest first, so a lookup, which stops at the first match, finds the one that was
-// added last. That matches how ff_dict searches its own duplicates, without dropping any entry.
-static int key_compare_newest_first(const void* left, const void* right)
+// Equal keys land oldest first, so a lookup, which stops at the first match, finds the one that was
+// added first. That matches how ff_dict searches its own duplicates, without dropping any entry.
+static int key_compare_oldest_first(const void* left, const void* right)
 {
     const key_sort* l = (const key_sort*)left;
     const key_sort* r = (const key_sort*)right;
@@ -176,7 +176,7 @@ static int key_compare_newest_first(const void* left, const void* right)
         return (l->key < r->key) ? -1 : 1;
     }
 
-    return (l->index > r->index) ? -1 : (l->index < r->index);
+    return (l->index < r->index) ? -1 : (l->index > r->index);
 }
 
 static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uint64_t* keys, size_t count)
@@ -201,7 +201,7 @@ static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uin
             key_sort item = order[i];
             size_t j = i;
 
-            while (j && key_compare_newest_first(&item, &order[j - 1]) < 0)
+            while (j && key_compare_oldest_first(&item, &order[j - 1]) < 0)
             {
                 order[j] = order[j - 1];
                 j--;
@@ -212,7 +212,7 @@ static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uin
     }
     else
     {
-        qsort(order, count, sizeof(key_sort), key_compare_newest_first);
+        qsort(order, count, sizeof(key_sort), key_compare_oldest_first);
     }
 
     return order;
@@ -336,6 +336,11 @@ static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff
     return block_offset;
 }
 
+// Emitting twice is deliberate, so the second pass can allocate the exact size in one go. The
+// measure pass is not free: it runs the same code with a null buffer, so only the memcpy of each
+// payload is skipped while the key sort and the walk over every nested value still happen. Paying
+// that twice still beats growing as it writes, because an arena cannot free, so every relocation
+// abandons the previous buffer, which measured nearly double the time and memory on nested data.
 void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 {
     ff_arena_marker marker = ff_arena_mark(arena);

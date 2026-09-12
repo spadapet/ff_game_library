@@ -23,10 +23,10 @@ void ff_dict_init_capacity(ff_dict* dict, ff_arena* arena, size_t initial_capaci
 void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other);
 void ff_dict_set(ff_dict* dict, ff_string_view key, const ff_value* value);
 // Appends without looking for an existing entry, so adding is always cheap. A key added more than
-// once keeps every value, and lookups find the newest first.
+// once keeps every value, and lookups find the oldest first.
 void ff_dict_add(ff_dict* dict, ff_string_view key, const ff_value* value);
 ff_value* ff_dict_get(const ff_dict* dict, ff_string_view key);
-// Walks duplicates from newest to oldest, starting at the entry before 'prev_value'.
+// Walks duplicates from oldest to newest, starting at the entry after 'prev_value'.
 ff_value* ff_dict_get_next(const ff_dict* dict, ff_string_view key, const ff_value* prev_value);
 bool ff_dict_clear(ff_dict* dict, ff_string_view key);
 void ff_dict_reset(ff_dict* dict);

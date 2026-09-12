@@ -41,11 +41,8 @@
     <ClCompile Include="base\idict.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="data_persist\json_tokenizer.c">
-      <Filter>data_persist</Filter>
-    </ClCompile>
-    <ClCompile Include="data_persist\json_persist.c">
-      <Filter>data_persist</Filter>
+    <ClCompile Include="base\json.c">
+      <Filter>base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -92,11 +89,8 @@
     <ClInclude Include="base\value_type.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="data_persist\json_tokenizer.h">
-      <Filter>data_persist</Filter>
-    </ClInclude>
-    <ClInclude Include="data_persist\json_persist.h">
-      <Filter>data_persist</Filter>
+    <ClInclude Include="base\json.h">
+      <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -105,9 +99,6 @@
     </Filter>
     <Filter Include="platform">
       <UniqueIdentifier>{6d6dd85d-f7aa-4478-ae33-5f372f755382}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="data_persist">
-      <UniqueIdentifier>{3f2a91c4-5d7e-4b16-9c83-0a4e7d215b6f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

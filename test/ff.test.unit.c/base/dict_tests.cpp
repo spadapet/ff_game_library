@@ -477,7 +477,7 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(get_returns_last_of_duplicates)
+        TEST_METHOD(get_returns_first_of_duplicates)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -490,7 +490,7 @@ namespace ff::test::base
             ff_dict_add(&dict, sv("dup"), &one);
             ff_dict_add(&dict, sv("dup"), &two);
 
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("dup"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, sv("dup"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -673,14 +673,14 @@ namespace ff::test::base
             ff_dict_add(&dict, sv("other"), &other);
             ff_dict_add(&dict, sv("dup"), &two);
 
-            // Newest first, so the walk starts at 2 and steps back past "other" to reach 1.
+            // Oldest first, so the walk starts at 1 and steps forward past "other" to reach 2.
             ff_value* first = ff_dict_get(&dict, sv("dup"));
-            Assert::AreEqual(2, first->i32);
+            Assert::AreEqual(1, first->i32);
 
             ff_value* second = ff_dict_get_next(&dict, sv("dup"), first);
 
             Assert::IsNotNull(second);
-            Assert::AreEqual(1, second->i32);
+            Assert::AreEqual(2, second->i32);
             Assert::IsNull(ff_dict_get_next(&dict, sv("dup"), second));
 
             ff_arena_destroy(&arena);
@@ -704,7 +704,7 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(get_next_resumes_before_the_given_slot_of_any_key)
+        TEST_METHOD(get_next_resumes_after_the_given_slot_of_any_key)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 4096);
@@ -723,8 +723,8 @@ namespace ff::test::base
             ff_value* found = ff_dict_get_next(&dict, sv("target"), values_of(dict) + 1);
 
             Assert::IsNotNull(found);
-            Assert::AreEqual(1, found->i32);
-            Assert::IsTrue(found == values_of(dict));
+            Assert::AreEqual(3, found->i32);
+            Assert::IsTrue(found == values_of(dict) + 2);
 
             ff_arena_destroy(&arena);
         }
@@ -756,12 +756,12 @@ namespace ff::test::base
                 ff_dict_add(&dict, sv("dup"), &value);
             }
 
-            int expected = 19;
+            int expected = 0;
             int visited = 0;
 
             for (ff_value* value = ff_dict_get(&dict, sv("dup")); value && visited < 64; value = ff_dict_get_next(&dict, sv("dup"), value))
             {
-                Assert::AreEqual(expected--, value->i32);
+                Assert::AreEqual(expected++, value->i32);
                 visited++;
             }
 

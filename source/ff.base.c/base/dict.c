@@ -116,20 +116,18 @@ ff_value* ff_dict_get(const ff_dict* dict, ff_string_view key)
     return ff_dict_get_next(dict, key, NULL);
 }
 
-// Entries are searched newest first, so a key that was added more than once finds the one added
-// last. That gives ff_dict_add the same last one wins result that ff_dict_set gets by deleting, but
-// without the scan through every existing entry that made building a large dict quadratic.
+// Entries are searched oldest first, so a key that was added more than once finds the one added
+// first. This deliberately does not match the JSON convention of the last value winning; keys are
+// simply seen in the order they were added.
 ff_value* ff_dict_get_next(const ff_dict* dict, ff_string_view key, const ff_value* prev_value)
 {
     uint64_t key_hash = ff_hash_string(key);
     const uint64_t* keys = dict->keys;
     ff_value* values = internal_ff_dict_values(dict);
-    size_t index = prev_value ? (size_t)(prev_value - values) : dict->count;
+    size_t index = prev_value ? (size_t)(prev_value - values) + 1 : 0;
 
-    while (index)
+    for (; index < dict->count; index++)
     {
-        index--;
-
         if (keys[index] == key_hash)
         {
             return values + index;

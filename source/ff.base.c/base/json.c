@@ -1,12 +1,55 @@
 #include "pch.h"
 #include "base/arena.h"
+#include "base/array.h"
 #include "base/assert.h"
-#include "base/string.h"
+#include "base/dict.h"
+#include "base/idict.h"
+#include "base/json.h"
+#include "base/math.h"
 #include "base/value.h"
-#include "data_persist/json_tokenizer.h"
 
-// Own classifiers instead of <ctype.h>: those take an int, are undefined for negative values, and
-// depend on the locale. JSON's grammar is pure ASCII, so a locale could only get it wrong.
+// ====================================================================
+// Tokenizer
+//
+// The parser below is the only consumer, so all of this is static and has no header.
+// ====================================================================
+typedef struct ff_arena ff_arena;
+
+typedef enum ff_json_token_type
+{
+    ff_json_token_type_none, // end of text
+    ff_json_token_type_error,
+    ff_json_token_type_true,
+    ff_json_token_type_false,
+    ff_json_token_type_null,
+    ff_json_token_type_string,
+    ff_json_token_type_number,
+    ff_json_token_type_comma,
+    ff_json_token_type_colon,
+    ff_json_token_type_open_curly,
+    ff_json_token_type_close_curly,
+    ff_json_token_type_open_bracket,
+    ff_json_token_type_close_bracket,
+} ff_json_token_type;
+
+typedef struct ff_json_token
+{
+    ff_string_view text;
+    ff_json_token_type type;
+    bool escaped; // strings only: false when the quoted text is already the final text
+} ff_json_token;
+
+typedef struct ff_json_tokenizer
+{
+    const char* pos;
+    const char* end;
+} ff_json_tokenizer;
+
+static void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text);
+static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer);
+static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena);
+static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena);
+
 static bool is_json_space(char ch)
 {
     return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
@@ -27,8 +70,6 @@ static bool is_json_alpha(char ch)
     return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
 }
 
-// '\0' doubles as the end of text marker. A real null byte inside the text stops tokenizing, which
-// is fine: it is not valid in any JSON token anyway.
 static char current_char(const ff_json_tokenizer* tokenizer)
 {
     return tokenizer->pos < tokenizer->end ? *tokenizer->pos : '\0';
@@ -261,7 +302,6 @@ static bool skip_string(ff_json_tokenizer* tokenizer, char* ch, bool* escaped)
     return true;
 }
 
-// Comments are not part of JSON, but this reader accepts them the way the C++ one did.
 static char skip_spaces_and_comments(ff_json_tokenizer* tokenizer)
 {
     char ch = current_char(tokenizer);
@@ -311,13 +351,13 @@ static char skip_spaces_and_comments(ff_json_tokenizer* tokenizer)
     return ch;
 }
 
-void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text)
+static void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text)
 {
     tokenizer->pos = text.data;
     tokenizer->end = text.data + text.count;
 }
 
-ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
+static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
 {
     char ch = skip_spaces_and_comments(tokenizer);
     ff_json_token_type type = ff_json_token_type_error;
@@ -622,7 +662,7 @@ static ff_value json_number_value(ff_string_view text)
     return ff_value_new_float64(value);
 }
 
-ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena)
+static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena)
 {
     ff_string_view result;
     result.data = NULL;
@@ -634,7 +674,7 @@ ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena)
     return json_string_text(token->text, token->escaped, arena);
 }
 
-ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
+static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
 {
     FF_ASSERT_RET_VAL(token, ff_value_new_empty());
 
@@ -673,4 +713,226 @@ ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
         default:
             return ff_value_new_empty();
     }
+}
+
+typedef struct internal_ff_json_parser
+{
+    ff_json_tokenizer tokenizer;
+    ff_arena* arena;
+    const char* error_pos;
+} internal_ff_json_parser;
+
+static void parse_error(internal_ff_json_parser* parser, const ff_json_token* token)
+{
+    if (!parser->error_pos)
+    {
+        parser->error_pos = token->text.data;
+    }
+}
+
+static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* token, ff_value* result);
+
+// 'open' has already been consumed. Items land straight in a growable array, whose storage becomes
+// the array value's storage, so the values are never copied.
+static bool parse_array(internal_ff_json_parser* parser, ff_value* result)
+{
+    ff_value* items_a = ff_array_init(ff_value, parser->arena);
+    ff_json_token token = ff_json_tokenizer_next(&parser->tokenizer);
+
+    while (token.type != ff_json_token_type_close_bracket)
+    {
+        ff_value item;
+
+        if (!parse_value(parser, &token, &item))
+        {
+            return false;
+        }
+
+        ff_array_push(items_a, item);
+
+        token = ff_json_tokenizer_next(&parser->tokenizer);
+
+        if (token.type == ff_json_token_type_comma)
+        {
+            token = ff_json_tokenizer_next(&parser->tokenizer);
+
+            // A comma must be followed by another item, so a trailing one is an error.
+            if (token.type == ff_json_token_type_close_bracket)
+            {
+                parse_error(parser, &token);
+                return false;
+            }
+        }
+        else if (token.type != ff_json_token_type_close_bracket)
+        {
+            parse_error(parser, &token);
+            return false;
+        }
+    }
+
+    ff_value_span span;
+    span.data = items_a;
+    span.count = ff_array_count(items_a);
+
+    *result = ff_value_new_array(span);
+    return true;
+}
+
+// 'open' has already been consumed.
+static bool parse_object(internal_ff_json_parser* parser, ff_dict* dict)
+{
+    ff_dict_init(dict, parser->arena);
+
+    ff_json_token token = ff_json_tokenizer_next(&parser->tokenizer);
+
+    while (token.type != ff_json_token_type_close_curly)
+    {
+        if (token.type != ff_json_token_type_string)
+        {
+            parse_error(parser, &token);
+            return false;
+        }
+
+        // Only the key's hash is kept, so this takes the borrowed view, which allocates nothing
+        // unless the key has escapes. ff_json_token_value would copy the text just to throw it away.
+        ff_string_view key = ff_json_token_string(&token, parser->arena);
+
+        if (!key.data)
+        {
+            parse_error(parser, &token);
+            return false;
+        }
+
+        token = ff_json_tokenizer_next(&parser->tokenizer);
+
+        if (token.type != ff_json_token_type_colon)
+        {
+            parse_error(parser, &token);
+            return false;
+        }
+
+        ff_json_token value_token = ff_json_tokenizer_next(&parser->tokenizer);
+        ff_value value;
+
+        if (!parse_value(parser, &value_token, &value))
+        {
+            return false;
+        }
+
+        // Duplicate keys are all kept, and a lookup finds the first one that was parsed. This is a
+        // deliberate departure from the usual JSON convention of the last value winning (RFC 8259
+        // leaves the choice to the implementation). ff_dict_add avoids the scan through every
+        // existing entry that ff_dict_set needs in order to delete an earlier duplicate.
+        ff_dict_add(dict, key, &value);
+
+        token = ff_json_tokenizer_next(&parser->tokenizer);
+
+        if (token.type == ff_json_token_type_comma)
+        {
+            token = ff_json_tokenizer_next(&parser->tokenizer);
+
+            if (token.type == ff_json_token_type_close_curly)
+            {
+                parse_error(parser, &token);
+                return false;
+            }
+        }
+        else if (token.type != ff_json_token_type_close_curly)
+        {
+            parse_error(parser, &token);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* token, ff_value* result)
+{
+    if (token->type == ff_json_token_type_open_curly)
+    {
+        ff_dict* dict = ff_arena_alloc_type(parser->arena, ff_dict, 1);
+        FF_ASSERT_RET_VAL(dict, false);
+
+        FF_CHECK_RET_VAL(parse_object(parser, dict), false);
+
+        *result = ff_value_new_dict(dict);
+        return true;
+    }
+
+    if (token->type == ff_json_token_type_open_bracket)
+    {
+        return parse_array(parser, result);
+    }
+
+    *result = ff_json_token_value(token, parser->arena);
+
+    if (result->type == ff_value_type_empty)
+    {
+        parse_error(parser, token);
+        return false;
+    }
+
+    return true;
+}
+
+bool ff_json_parse(ff_string_view text, ff_dict* dict, ff_arena* arena, const char** error_pos)
+{
+    const char* ignored = NULL;
+    error_pos = error_pos ? error_pos : &ignored;
+    *error_pos = NULL;
+
+    FF_ASSERT_RET_VAL(dict && arena, false);
+
+    internal_ff_json_parser parser;
+    parser.arena = arena;
+    parser.error_pos = NULL;
+    ff_json_tokenizer_init(&parser.tokenizer, text);
+
+    ff_dict_init(dict, arena);
+
+    ff_json_token token = ff_json_tokenizer_next(&parser.tokenizer);
+
+    if (token.type != ff_json_token_type_open_curly)
+    {
+        *error_pos = token.text.data;
+        return false;
+    }
+
+    if (!parse_object(&parser, dict))
+    {
+        *error_pos = parser.error_pos;
+        return false;
+    }
+
+    // Anything after the root object means the text is not one document.
+    token = ff_json_tokenizer_next(&parser.tokenizer);
+
+    if (token.type != ff_json_token_type_none)
+    {
+        *error_pos = token.text.data;
+        return false;
+    }
+
+    return true;
+}
+
+bool ff_json_parse_idict(ff_string_view text, ff_idict* dict, ff_arena* arena, const char** error_pos)
+{
+    FF_ASSERT_RET_VAL(dict && arena, false);
+    dict->data = NULL;
+
+    ff_arena scratch;
+    ff_arena_init_heap_global(&scratch, 64 * 1024);
+
+    ff_dict source;
+    bool parsed = ff_json_parse(text, &source, &scratch, error_pos);
+    if (parsed)
+    {
+        ff_idict_init(dict, arena, &source);
+    }
+
+    ff_arena_destroy(&scratch);
+
+    return parsed;
 }

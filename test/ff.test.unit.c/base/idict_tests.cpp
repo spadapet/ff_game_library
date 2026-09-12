@@ -192,13 +192,13 @@ namespace ff::test::base
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            // Newest first, matching how ff_dict searches its own duplicates.
-            int expected = 4;
+            // Oldest first, matching how ff_dict searches its own duplicates.
+            int expected = 0;
             int visited = 0;
 
             for (const ff_ivalue* value = ff_idict_get(&dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&dict, sv("dup"), value))
             {
-                Assert::AreEqual(expected--, value->i32);
+                Assert::AreEqual(expected++, value->i32);
                 visited++;
             }
 
@@ -233,8 +233,8 @@ namespace ff::test::base
 
             const ff_ivalue* last = values_of(dict) + 2;
 
-            // Stored newest first, so the final slot holds the value that was added first.
-            Assert::AreEqual(0, last->i32);
+            // Stored oldest first, so the final slot holds the value that was added last.
+            Assert::AreEqual(2, last->i32);
             Assert::IsNull(ff_idict_get_next(&dict, sv("dup"), last));
 
             ff_arena_destroy(&arena);
@@ -288,13 +288,13 @@ namespace ff::test::base
 
             ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
 
-            int expected = 30;
+            int expected = 0;
             int visited = 0;
 
             for (const ff_ivalue* value = ff_idict_get(&child_dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&child_dict, sv("dup"), value))
             {
                 Assert::AreEqual(expected, value->i32);
-                expected -= 10;
+                expected += 10;
                 visited++;
             }
 
@@ -3675,7 +3675,7 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
-        TEST_METHOD(duplicate_keys_are_ordered_newest_first)
+        TEST_METHOD(duplicate_keys_are_ordered_oldest_first)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 8192);
@@ -3702,7 +3702,7 @@ namespace ff::test::base
 
             const ff_ivalue* found = ff_idict_get(&dict, sv("dup"));
 
-            for (int i = 29; i >= 0; i--)
+            for (int i = 0; i < 30; i++)
             {
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
