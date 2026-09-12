@@ -36,8 +36,6 @@ static bool is_read(const ff_stream* stream)
 
 static HANDLE open_file(ff_string_view path, bool write)
 {
-    // Win32 needs a null-terminated wide path. A stack-backed arena keeps the conversion off the
-    // heap for typical paths and spills only for very long ones.
     wchar_t path_stack[1024];
     ff_arena temp_arena;
     ff_arena_init_external(&temp_arena, path_stack, sizeof(path_stack), 0);
@@ -66,7 +64,6 @@ static bool ensure_write_capacity(ff_stream* stream, size_t needed)
     size_t doubled = stream->capacity * 2;
     size_t new_capacity = ff_math_round_up_pow2(ff_math_max_size(ff_math_max_size(doubled, needed), s_min_write_capacity));
 
-    // realloc may relocate the block, so re-fetch 'data'.
     uint8_t* new_data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
     FF_ASSERT_RET_VAL(new_data, false);
 
@@ -136,29 +133,31 @@ bool ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t init
     return true;
 }
 
-ff_span ff_stream_destroy(ff_stream* stream)
+ff_span ff_stream_written(const ff_stream* stream)
 {
     ff_span result = empty_span();
     FF_ASSERT_RET_VAL(stream, result);
+    FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_memory, result);
+    FF_CHECK_RET_VAL(stream->size, result);
+
+    result.data = stream->data;
+    result.size = stream->size;
+    return result;
+}
+
+void ff_stream_destroy(ff_stream* stream)
+{
+    FF_ASSERT_RET(stream);
 
     if (stream->file != INVALID_HANDLE_VALUE)
     {
         CloseHandle(stream->file);
-        stream->file = INVALID_HANDLE_VALUE;
-    }
-
-    if (stream->type == ff_stream_type_write_memory && stream->size)
-    {
-        // Arena memory, so it stays valid after the stream is destroyed.
-        result.data = stream->data;
-        result.size = stream->size;
     }
 
     init_common(stream, ff_stream_type_none);
-    return result;
 }
 
-ff_span ff_stream_read_data(ff_stream* stream, ff_arena* arena, size_t size)
+ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size)
 {
     ff_span result = empty_span();
     FF_ASSERT_RET_VAL(stream, result);
@@ -169,7 +168,6 @@ ff_span ff_stream_read_data(ff_stream* stream, ff_arena* arena, size_t size)
 
     if (stream->type == ff_stream_type_read_memory)
     {
-        // No copy needed: the caller's memory is still alive, so hand back a view into it.
         result.data = stream->data + stream->pos;
         result.size = size;
         stream->pos += size;
@@ -194,7 +192,7 @@ ff_span ff_stream_read_data(ff_stream* stream, ff_arena* arena, size_t size)
     return result;
 }
 
-bool ff_stream_write_data(ff_stream* stream, ff_span data)
+bool ff_stream_write(ff_stream* stream, ff_span data)
 {
     FF_ASSERT_RET_VAL(stream, false);
     FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_file || stream->type == ff_stream_type_write_memory, false);
