@@ -6,6 +6,7 @@
 #include "../source/ff.base.c/base/array.h"
 #include "../source/ff.base.c/base/assert.h"
 #include "../source/ff.base.c/base/dict.h"
+#include "../source/ff.base.c/base/file_map.h"
 #include "../source/ff.base.c/base/hash.h"
 #include "../source/ff.base.c/base/idict.h"
 #include "../source/ff.base.c/base/json.h"

@@ -11,6 +11,7 @@
     <ClCompile Include="base\arena_tests.cpp" />
     <ClCompile Include="base\array_tests.cpp" />
     <ClCompile Include="base\dict_tests.cpp" />
+    <ClCompile Include="base\file_map_tests.cpp" />
     <ClCompile Include="base\hash_tests.cpp" />
     <ClCompile Include="base\idict_tests.cpp" />
     <ClCompile Include="base\json_tests.cpp" />
@@ -26,6 +27,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="res\test_resources.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\test_resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\test_data.bin" />
+    <None Include="res\test_text.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\source\ff.base.c\ff.base.c.vcxproj">

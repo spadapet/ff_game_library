@@ -2434,6 +2434,63 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        // Win32 resources only guarantee 8 byte alignment, so a dict whose values need no more than
+        // that has to load from every 8 byte offset, not just the 64 byte ones that save produces.
+        TEST_METHOD(load_accepts_eight_byte_alignment_when_no_value_needs_more)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value text = ff_value_new_string(sv("resource"));
+            ff_dict_set(&source, sv("name"), &text);
+
+            ff_value i64 = ff_value_new_int64(0x0123456789abcdefLL);
+            ff_dict_set(&source, sv("big"), &i64);
+
+            ff_value f64 = ff_value_new_float64(3.5);
+            ff_dict_set(&source, sv("scale"), &f64);
+
+            int64_t numbers[4]{ 1, 2, 3, 4 };
+            ff_array_span numbers_span{};
+            numbers_span.data = numbers;
+            numbers_span.count = 4;
+            numbers_span.item_size = sizeof(numbers[0]);
+            numbers_span.item_align = alignof(int64_t);
+            ff_value numbers_value = ff_value_new_data_array(numbers_span);
+            ff_dict_set(&source, sv("numbers"), &numbers_value);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            ff_span saved = ff_idict_save(&dict, &arena);
+
+            for (size_t offset = 0; offset < ff_idict_max_align; offset += 8)
+            {
+                uint8_t* bytes = alloc_saved(saved.size + ff_idict_max_align);
+                uint8_t* shifted = bytes + offset;
+                memcpy(shifted, saved.data, saved.size);
+
+                ff_idict loaded{};
+                ff_span span{ shifted, saved.size };
+                Assert::IsTrue(ff_idict_load(&loaded, span, true, true));
+
+                const ff_ivalue* big = ff_idict_get(&loaded, sv("big"));
+                Assert::IsNotNull(big);
+                Assert::AreEqual((int64_t)0x0123456789abcdefLL, big->i64);
+
+                ff_array_span items = ff_ivalue_as_data(ff_idict_get(&loaded, sv("numbers")), &loaded);
+                Assert::AreEqual((uint32_t)4, items.count);
+                Assert::IsTrue(memcmp(items.data, numbers, sizeof(numbers)) == 0);
+
+                free_saved(bytes);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
         // Misaligned bytes cannot be used in place, and load never copies, so they are refused.
         TEST_METHOD(load_rejects_misaligned_bytes)
         {

@@ -5,28 +5,11 @@
 #include "base/stream.h"
 #include "base/string.h"
 
-static_assert(sizeof(ff_stream) == 56, "ff_stream layout changed unexpectedly");
-
 static const size_t s_min_write_capacity = 64;
 
 static void init_common(ff_stream* stream, ff_stream_type type)
 {
-    stream->type = type;
-    stream->file = INVALID_HANDLE_VALUE;
-    stream->arena = NULL;
-    stream->data = NULL;
-    stream->capacity = 0;
-    stream->size = 0;
-    stream->pos = 0;
-}
-
-static ff_span empty_span(void)
-{
-    return (ff_span)
-    {
-        .data = NULL,
-        .size = 0
-    };
+    *stream = (ff_stream){ .type = type };
 }
 
 static bool is_read(const ff_stream* stream)
@@ -41,13 +24,18 @@ static HANDLE open_file(ff_string_view path, bool write)
     ff_arena_init_external(&temp_arena, path_stack, sizeof(path_stack), 0);
 
     ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena);
-    HANDLE file = INVALID_HANDLE_VALUE;
+    HANDLE file = NULL;
 
     if (wide_path.count)
     {
         file = write
             ? CreateFileW(wide_path.data, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)
             : CreateFileW(wide_path.data, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        if (file == INVALID_HANDLE_VALUE)
+        {
+            file = NULL;
+        }
     }
 
     ff_arena_destroy(&temp_arena);
@@ -78,7 +66,7 @@ bool ff_stream_init_read_file(ff_stream* stream, ff_string_view path)
     init_common(stream, ff_stream_type_none);
 
     HANDLE file = open_file(path, false);
-    FF_CHECK_RET_VAL(file != INVALID_HANDLE_VALUE, false);
+    FF_CHECK_RET_VAL(file, false);
 
     LARGE_INTEGER file_size;
     if (!GetFileSizeEx(file, &file_size) || file_size.QuadPart < 0)
@@ -99,7 +87,7 @@ bool ff_stream_init_write_file(ff_stream* stream, ff_string_view path)
     init_common(stream, ff_stream_type_none);
 
     HANDLE file = open_file(path, true);
-    FF_CHECK_RET_VAL(file != INVALID_HANDLE_VALUE, false);
+    FF_CHECK_RET_VAL(file, false);
 
     init_common(stream, ff_stream_type_write_file);
     stream->file = file;
@@ -135,7 +123,7 @@ bool ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t init
 
 ff_span ff_stream_written(const ff_stream* stream)
 {
-    ff_span result = empty_span();
+    ff_span result = (ff_span){ 0 };
     FF_ASSERT_RET_VAL(stream, result);
     FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_memory, result);
     FF_CHECK_RET_VAL(stream->size, result);
@@ -149,7 +137,7 @@ void ff_stream_destroy(ff_stream* stream)
 {
     FF_ASSERT_RET(stream);
 
-    if (stream->file != INVALID_HANDLE_VALUE)
+    if (stream->file)
     {
         CloseHandle(stream->file);
     }
@@ -159,7 +147,7 @@ void ff_stream_destroy(ff_stream* stream)
 
 ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size)
 {
-    ff_span result = empty_span();
+    ff_span result = (ff_span){ 0 };
     FF_ASSERT_RET_VAL(stream, result);
     FF_ASSERT_RET_VAL(is_read(stream), result);
 

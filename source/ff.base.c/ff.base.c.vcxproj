@@ -11,6 +11,7 @@
     <ClCompile Include="base\array.c" />
     <ClCompile Include="base\assert.c" />
     <ClCompile Include="base\dict.c" />
+    <ClCompile Include="base\file_map.c" />
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\idict.c" />
     <ClCompile Include="base\json.c" />
@@ -30,6 +31,7 @@
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
     <ClInclude Include="base\dict.h" />
+    <ClInclude Include="base\file_map.h" />
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\idict.h" />
     <ClInclude Include="base\json.h" />

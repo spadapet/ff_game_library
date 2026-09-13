@@ -1,0 +1,5 @@
+#include "test_resources.h"
+
+FF_TEST_RES_DATA RCDATA "test_data.bin"
+FF_TEST_RES_TEXT RCDATA "test_text.txt"
+FF_TEST_RES_NAMED RCDATA "test_text.txt"

@@ -523,6 +523,14 @@ namespace ff::test::base
             Assert::AreEqual((int)ff_stream_type_none, (int)stream.type);
         }
 
+        TEST_METHOD(destroy_accepts_a_zeroed_stream)
+        {
+            ff_stream stream{};
+            ff_stream_destroy(&stream);
+
+            Assert::AreEqual((int)ff_stream_type_none, (int)stream.type);
+        }
+
         TEST_METHOD(destroy_is_idempotent)
         {
             ff_arena arena;

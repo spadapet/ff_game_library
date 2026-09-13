@@ -9,6 +9,8 @@ These apply to every project in this repo.
 - Do not add comments. Write code that explains itself through naming and structure instead.
 - The rare exception is a genuinely non-obvious constraint that would otherwise be lost, such as why a specific Win32 flag is required or why an ordering is load-bearing. If you can't point to a concrete surprise the comment is preventing, leave it out.
 - Never write comments that restate what the code does, narrate the steps of a function, label sections (e.g. `// Initialization`), or explain a well-known API.
+- Do not comment a normalization, workaround, or special case that is fully visible in the code right below it. If a reader can see `if (x == SENTINEL) { x = NULL; }`, a comment saying the sentinel is being normalized adds nothing.
+- Do not explain a change in terms of what the code used to do. Comments describe the code as it is now, not its history.
 - Don't add file-level or function-level doc-comment banners. Header declarations should stand on their own via clear names and parameter types.
 
 ## Project-specific rules

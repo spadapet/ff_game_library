@@ -50,7 +50,9 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source);
 const ff_ivalue* ff_idict_get(const ff_idict* dict, ff_string_view key);
 const ff_ivalue* ff_idict_get_next(const ff_idict* dict, ff_string_view key, const ff_ivalue* prev_value);
 ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena);
-// The saved bytes are used in place, so they must outlive the dict and be 64 byte aligned.
+// The saved bytes are used in place, so they must outlive the dict. They must be aligned to 8, or
+// to the largest item_align of any data array in the dict if that is larger. Loading fails
+// otherwise, so 8 byte aligned sources like Win32 resources work unless a value needs more.
 bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool validate_hash);
 
 ff_array_span ff_ivalue_as_data(const ff_ivalue* value, const ff_idict* parent_dict);

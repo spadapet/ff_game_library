@@ -12,6 +12,9 @@
     <ClCompile Include="base\dict_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\file_map_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\hash_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -44,5 +47,15 @@
     <Filter Include="base">
       <UniqueIdentifier>{019ebde0-26ba-4e01-9c81-66e9d9565a6f}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\test_resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="res\test_resources.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\test_data.bin" />
+    <None Include="res\test_text.txt" />
   </ItemGroup>
 </Project>
