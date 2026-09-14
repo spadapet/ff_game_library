@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
-#include "base/dict.h"
 #include "base/hash.h"
-#include "base/idict.h"
 #include "base/math.h"
-#include "base/value.h"
+#include "data/dict.h"
+#include "data/idict.h"
+#include "data/value.h"
 
 #define FF_IDICT_MAGIC 0x44494646u // "FFID"
 #define FF_IDICT_VERSION 6u
@@ -555,7 +555,7 @@ static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate
 
 ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
 {
-    FF_ASSERT_RET_VAL(dict && dict->data && arena, (ff_span) { 0 });
+    FF_ASSERT_RET_VAL(dict && dict->data && arena, ff_span_empty());
     size_t byte_size = get_idict_byte_size(dict);
     uint8_t* buffer = (uint8_t*)ff_arena_alloc(arena, sizeof(internal_ff_idict_file) + byte_size, FF_IDICT_MAX_ALIGN);
 

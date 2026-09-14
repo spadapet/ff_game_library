@@ -8,9 +8,6 @@
     <ClCompile Include="base\assert.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="platform\platform_win.c">
-      <Filter>platform</Filter>
-    </ClCompile>
     <ClCompile Include="base\log.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -18,9 +15,6 @@
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\arena.c">
-      <Filter>base</Filter>
-    </ClCompile>
-    <ClCompile Include="base\file_map.c">
       <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="base\hash.c">
@@ -32,32 +26,35 @@
     <ClCompile Include="base\string_builder.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\dict.c">
-      <Filter>base</Filter>
-    </ClCompile>
-    <ClCompile Include="base\value.c">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="base\array.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\idict.c">
+    <ClCompile Include="base\span.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\json.c">
-      <Filter>base</Filter>
+    <ClCompile Include="data\dict.c">
+      <Filter>data</Filter>
     </ClCompile>
-    <ClCompile Include="base\stream.c">
-      <Filter>base</Filter>
+    <ClCompile Include="data\file.c">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\idict.c">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\json.c">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\stream.c">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\value.c">
+      <Filter>data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="base\assert.h">
       <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="platform\platform_win.h">
-      <Filter>platform</Filter>
     </ClInclude>
     <ClInclude Include="base\log.h">
       <Filter>base</Filter>
@@ -66,9 +63,6 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\arena.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="base\file_map.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\hash.h">
@@ -83,34 +77,37 @@
     <ClInclude Include="base\string_builder.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\dict.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="base\value.h">
-      <Filter>base</Filter>
-    </ClInclude>
     <ClInclude Include="base\array.h">
       <Filter>base</Filter>
     </ClInclude>
-    <ClInclude Include="base\idict.h">
-      <Filter>base</Filter>
+    <ClInclude Include="data\dict.h">
+      <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="base\value_type.h">
-      <Filter>base</Filter>
+    <ClInclude Include="data\file.h">
+      <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="base\json.h">
-      <Filter>base</Filter>
+    <ClInclude Include="data\idict.h">
+      <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="base\stream.h">
-      <Filter>base</Filter>
+    <ClInclude Include="data\json.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\stream.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\value.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\value_type.h">
+      <Filter>data</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
       <UniqueIdentifier>{8fc7d87d-611d-4b08-91b6-8abe24948899}</UniqueIdentifier>
     </Filter>
-    <Filter Include="platform">
-      <UniqueIdentifier>{6d6dd85d-f7aa-4478-ae33-5f372f755382}</UniqueIdentifier>
+    <Filter Include="data">
+      <UniqueIdentifier>{15ca1253-78df-4583-899f-2b1b5beb3213}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

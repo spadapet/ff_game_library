@@ -10,41 +10,40 @@
     <ClCompile Include="base\arena.c" />
     <ClCompile Include="base\array.c" />
     <ClCompile Include="base\assert.c" />
-    <ClCompile Include="base\dict.c" />
-    <ClCompile Include="base\file_map.c" />
     <ClCompile Include="base\hash.c" />
-    <ClCompile Include="base\idict.c" />
-    <ClCompile Include="base\json.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
-    <ClCompile Include="base\stream.c" />
+    <ClCompile Include="base\span.c" />
     <ClCompile Include="base\string.c" />
     <ClCompile Include="base\string_builder.c" />
-    <ClCompile Include="base\value.c" />
+    <ClCompile Include="data\dict.c" />
+    <ClCompile Include="data\file.c" />
+    <ClCompile Include="data\idict.c" />
+    <ClCompile Include="data\json.c" />
+    <ClCompile Include="data\stream.c" />
+    <ClCompile Include="data\value.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="platform\platform_win.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base\arena.h" />
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
-    <ClInclude Include="base\dict.h" />
-    <ClInclude Include="base\file_map.h" />
     <ClInclude Include="base\hash.h" />
-    <ClInclude Include="base\idict.h" />
-    <ClInclude Include="base\json.h" />
     <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\span.h" />
-    <ClInclude Include="base\stream.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />
-    <ClInclude Include="base\value.h" />
-    <ClInclude Include="base\value_type.h" />
+    <ClInclude Include="data\dict.h" />
+    <ClInclude Include="data\file.h" />
+    <ClInclude Include="data\idict.h" />
+    <ClInclude Include="data\json.h" />
+    <ClInclude Include="data\stream.h" />
+    <ClInclude Include="data\value.h" />
+    <ClInclude Include="data\value_type.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="platform\platform_win.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.c.natvis" />

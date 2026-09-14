@@ -22,3 +22,7 @@ typedef struct ff_array_slice
     uint16_t item_size;
     uint16_t item_align;
 } ff_array_slice;
+
+ff_span ff_span_empty(void);
+ff_array_span ff_array_span_empty(void);
+ff_array_slice ff_array_slice_empty(void);

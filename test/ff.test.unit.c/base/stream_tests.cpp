@@ -166,7 +166,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
             Assert::AreEqual((void*)&arena, (void*)stream.arena);
             Assert::AreEqual((size_t)0, ff_stream_size(&stream));
 
@@ -190,7 +190,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 256));
+            ff_stream_init_write_memory(&stream, &arena, 256);
             Assert::IsTrue(stream.capacity >= 256);
             Assert::AreEqual((size_t)0, ff_stream_size(&stream));
 
@@ -207,7 +207,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 1));
+            ff_stream_init_write_memory(&stream, &arena, 1);
 
             const size_t chunk_count = 500;
             for (size_t i = 0; i < chunk_count; i++)
@@ -243,7 +243,7 @@ namespace ff::test::base
             }
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
             Assert::IsTrue(ff_stream_write(&stream, span_of(source, size)));
 
             ff_span result = ff_stream_written(&stream);
@@ -261,7 +261,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
 
             ff_span empty;
             empty.data = nullptr;
@@ -282,7 +282,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
             Assert::IsTrue(ff_stream_write(&stream, span_of_sz("persisted")));
             ff_span result = ff_stream_written(&stream);
             ff_stream_destroy(&stream);
@@ -302,7 +302,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream writer;
-            Assert::IsTrue(ff_stream_init_write_memory(&writer, &arena, 0));
+            ff_stream_init_write_memory(&writer, &arena, 0);
             Assert::IsTrue(ff_stream_write(&writer, span_of_sz("round trip")));
             ff_span written = ff_stream_written(&writer);
             ff_stream_destroy(&writer);
@@ -321,7 +321,7 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
             Assert::AreEqual((size_t)0, ff_stream_written(&stream).size);
 
             Assert::IsTrue(ff_stream_write(&stream, span_of_sz("abc")));
@@ -537,9 +537,8 @@ namespace ff::test::base
             ff_arena_init_heap_global(&arena, 4096);
 
             ff_stream stream;
-            Assert::IsTrue(ff_stream_init_write_memory(&stream, &arena, 0));
+            ff_stream_init_write_memory(&stream, &arena, 0);
             Assert::IsTrue(ff_stream_write(&stream, span_of_sz("data")));
-
             Assert::IsTrue(span_equals(ff_stream_written(&stream), "data"));
 
             ff_stream_destroy(&stream);
@@ -562,7 +561,7 @@ namespace ff::test::base
             ff_stream reader;
             ff_stream writer;
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
-            Assert::IsTrue(ff_stream_init_write_memory(&writer, &arena, 0));
+            ff_stream_init_write_memory(&writer, &arena, 0);
 
             for (ff_span chunk = ff_stream_read(&reader, &arena, 3); chunk.size; chunk = ff_stream_read(&reader, &arena, 3))
             {

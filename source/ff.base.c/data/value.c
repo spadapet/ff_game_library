@@ -2,7 +2,7 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/math.h"
-#include "base/value.h"
+#include "data/value.h"
 
 static_assert(sizeof(ff_value) == 24, "ff_value must stay 24 bytes");
 
@@ -211,8 +211,6 @@ struct ff_span ff_value_as_data(const ff_value* value)
     return (ff_span)
     {
         .data = value->data.data,
-
-        // Widened first: uint32 * uint16 multiplies in 32 bit arithmetic and would wrap.
         .size = (size_t)value->data.count * value->data.item_size,
     };
 }

@@ -98,10 +98,7 @@ void ff_string_builder_append_format_v(ff_string_builder* sb, ff_string_view for
     // The CRT formatters need a null-terminated format, but our format is a (maybe non-terminated)
     // string_view. Copy it into a throwaway arena backed by a stack buffer (spills to the heap only
     // if the format exceeds it). A separate arena keeps the copy independent of the output buffer.
-    char format_stack[1024];
-    ff_arena temp_arena;
-    ff_arena_init_external(&temp_arena, format_stack, sizeof(format_stack), 0);
-
+    ff_arena_declare_stack(temp_arena, 1024);
     char* format_copy = ff_arena_alloc_type(&temp_arena, char, format.count + 1);
     if (!format_copy)
     {

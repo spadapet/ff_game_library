@@ -26,10 +26,7 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
         return true;
     }
 
-    char dialog_text[1024];
-    ff_arena arena;
-    ff_arena_init_external(&arena, dialog_text, sizeof(dialog_text), 0);
-
+    ff_arena_declare_stack(arena, 1024);
     ff_string_builder sb;
     ff_string_builder_init_capacity(&sb, &arena, 0);
     ff_string_builder_append_format(&sb, FF_SVL("ASSERT: %s\r\nExpression: %s\r\nFile: %s (%u)"), text ? text : "", exp ? exp : "", file ? file : "", line);
@@ -37,9 +34,7 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
     ff_string_view message = ff_string_builder_view(&sb);
     ff_log_write(ff_log_type_debug, FF_SVL("%.*s"), FF_SV_FORMAT(message));
 
-    wchar_t dialog_text_w[1024];
-    ff_arena arena_w;
-    ff_arena_init_external(&arena_w, dialog_text_w, sizeof(dialog_text_w), 0);
+    ff_arena_declare_stack(arena_w, 1024 * sizeof(wchar_t));
     ff_wstring_view dialog_text_wv = ff_utf8_to_wide(message, &arena_w);
 
     // Only the main thread should show dialog UI

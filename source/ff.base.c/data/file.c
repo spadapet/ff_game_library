@@ -1,15 +1,12 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
-#include "base/file_map.h"
 #include "base/string.h"
+#include "data/file.h"
 
 static HANDLE open_file_read(ff_string_view path)
 {
-    wchar_t path_stack[1024];
-    ff_arena temp_arena;
-    ff_arena_init_external(&temp_arena, path_stack, sizeof(path_stack), 0);
-
+    ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
     ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena);
     HANDLE file = NULL;
 
@@ -100,17 +97,12 @@ void ff_file_map_destroy(ff_file_map* map)
 
 ff_span ff_file_map_data(const ff_file_map* map)
 {
-    ff_span result = (ff_span){ 0 };
-    FF_ASSERT_RET_VAL(map, result);
-    FF_CHECK_RET_VAL(map->size, result);
+    FF_ASSERT_RET_VAL(map, ff_span_empty());
+    FF_CHECK_RET_VAL(map->size, ff_span_empty());
 
-    result.data = map->base;
-    result.size = map->size;
-    return result;
+    return (ff_span){ .data = map->base, .size = map->size };
 }
 
-// FindResourceW takes a null terminated name, so a string view is copied into the temp arena.
-// An integer name is already a pointer sized value and must be passed through untouched.
 static const wchar_t* resource_id(ff_wstring_view view, ff_arena* arena)
 {
     if (!view.count)
@@ -128,28 +120,22 @@ static const wchar_t* resource_id(ff_wstring_view view, ff_arena* arena)
 
 ff_span ff_map_resource(HMODULE module, ff_wstring_view name, ff_wstring_view type)
 {
-    ff_span result = (ff_span){ 0 };
-    wchar_t id_stack[1024];
-    ff_arena temp_arena;
-    ff_arena_init_external(&temp_arena, id_stack, sizeof(id_stack), 0);
-
+    ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
     const wchar_t* name_id = resource_id(name, &temp_arena);
     const wchar_t* type_id = resource_id(type, &temp_arena);
 
     HRSRC found = (name_id && type_id) ? FindResourceW(module, name_id, type_id) : NULL;
     ff_arena_destroy(&temp_arena);
-    FF_CHECK_RET_VAL(found, result);
+    FF_CHECK_RET_VAL(found, ff_span_empty());
 
     DWORD size = SizeofResource(module, found);
-    FF_CHECK_RET_VAL(size, result);
+    FF_CHECK_RET_VAL(size, ff_span_empty());
 
     HGLOBAL loaded = LoadResource(module, found);
-    FF_CHECK_RET_VAL(loaded, result);
+    FF_CHECK_RET_VAL(loaded, ff_span_empty());
 
     const void* data = LockResource(loaded);
-    FF_CHECK_RET_VAL(data, result);
+    FF_CHECK_RET_VAL(data, ff_span_empty());
 
-    result.data = data;
-    result.size = size;
-    return result;
+    return (ff_span){ .data = data, .size = size };
 }

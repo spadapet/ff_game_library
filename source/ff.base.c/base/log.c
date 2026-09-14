@@ -52,10 +52,7 @@ void ff_log_write_v(ff_log_type type, ff_string_view format, va_list args)
         return;
     }
 
-    char buffer[1024];
-    ff_arena arena;
-    ff_arena_init_external(&arena, buffer, sizeof(buffer), 0);
-
+    ff_arena_declare_stack(arena, 1024);
     ff_string_builder sb;
     ff_string_builder_init(&sb, &arena);
     ff_string_builder_append(&sb, FF_SVL("["));
@@ -72,9 +69,7 @@ void ff_log_write_v(ff_log_type type, ff_string_view format, va_list args)
     }
 
 #ifdef _DEBUG
-    wchar_t wide_buffer[1024];
-    ff_arena wide_arena;
-    ff_arena_init_external(&wide_arena, wide_buffer, sizeof(wide_buffer), 0);
+    ff_arena_declare_stack(wide_arena, 1024 * sizeof(wchar_t));
     ff_wstring_view wide_line = ff_utf8_to_wide(line, &wide_arena);
     OutputDebugStringW(wide_line.data);
     ff_arena_destroy(&wide_arena);

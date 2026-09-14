@@ -2,15 +2,10 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/math.h"
-#include "base/stream.h"
 #include "base/string.h"
+#include "data/stream.h"
 
 static const size_t s_min_write_capacity = 64;
-
-static void init_common(ff_stream* stream, ff_stream_type type)
-{
-    *stream = (ff_stream){ .type = type };
-}
 
 static bool is_read(const ff_stream* stream)
 {
@@ -19,10 +14,7 @@ static bool is_read(const ff_stream* stream)
 
 static HANDLE open_file(ff_string_view path, bool write)
 {
-    wchar_t path_stack[1024];
-    ff_arena temp_arena;
-    ff_arena_init_external(&temp_arena, path_stack, sizeof(path_stack), 0);
-
+    ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
     ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena);
     HANDLE file = NULL;
 
@@ -42,29 +34,25 @@ static HANDLE open_file(ff_string_view path, bool write)
     return file;
 }
 
-static bool ensure_write_capacity(ff_stream* stream, size_t needed)
+static void ensure_write_capacity(ff_stream* stream, size_t needed)
 {
-    if (needed <= stream->capacity)
+    if (needed > stream->capacity)
     {
-        return true;
+        size_t doubled = stream->capacity * 2;
+        size_t new_capacity = ff_math_round_up_pow2(ff_math_max_size(ff_math_max_size(doubled, needed), s_min_write_capacity));
+        stream->data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
+        stream->capacity = new_capacity;
     }
+}
 
-    size_t doubled = stream->capacity * 2;
-    size_t new_capacity = ff_math_round_up_pow2(ff_math_max_size(ff_math_max_size(doubled, needed), s_min_write_capacity));
-
-    uint8_t* new_data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
-    FF_ASSERT_RET_VAL(new_data, false);
-
-    stream->data = new_data;
-    stream->capacity = new_capacity;
-    return true;
+ff_stream ff_stream_none(void)
+{
+    return (ff_stream){ .type = ff_stream_type_none };
 }
 
 bool ff_stream_init_read_file(ff_stream* stream, ff_string_view path)
 {
-    FF_ASSERT_RET_VAL(stream, false);
-    init_common(stream, ff_stream_type_none);
-
+    *stream = ff_stream_none();
     HANDLE file = open_file(path, false);
     FF_CHECK_RET_VAL(file, false);
 
@@ -75,128 +63,113 @@ bool ff_stream_init_read_file(ff_stream* stream, ff_string_view path)
         FF_DEBUG_FAIL_RET_VAL(false);
     }
 
-    init_common(stream, ff_stream_type_read_file);
-    stream->file = file;
-    stream->size = (size_t)file_size.QuadPart;
+    *stream = (ff_stream)
+    {
+        .type = ff_stream_type_read_file,
+        .file = file,
+        .size = (size_t)file_size.QuadPart,
+    };
+
     return true;
 }
 
 bool ff_stream_init_write_file(ff_stream* stream, ff_string_view path)
 {
-    FF_ASSERT_RET_VAL(stream, false);
-    init_common(stream, ff_stream_type_none);
-
+    *stream = ff_stream_none();
     HANDLE file = open_file(path, true);
     FF_CHECK_RET_VAL(file, false);
 
-    init_common(stream, ff_stream_type_write_file);
-    stream->file = file;
+    *stream = (ff_stream){ .type = ff_stream_type_write_file, .file = file };
     return true;
 }
 
 void ff_stream_init_read_memory(ff_stream* stream, ff_span span)
 {
-    FF_ASSERT_RET(stream);
-
-    init_common(stream, ff_stream_type_read_memory);
-    stream->data = (uint8_t*)span.data;
-    stream->size = span.data ? span.size : 0;
+    *stream = (ff_stream)
+    {
+        .type = ff_stream_type_read_memory,
+        .data = (uint8_t*)span.data,
+        .size = span.data ? span.size : 0,
+    };
 }
 
-bool ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t initial_capacity)
+void ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t initial_capacity)
 {
-    FF_ASSERT_RET_VAL(stream, false);
-    init_common(stream, ff_stream_type_none);
-    FF_ASSERT_RET_VAL(arena, false);
-
-    init_common(stream, ff_stream_type_write_memory);
-    stream->arena = arena;
-
-    if (initial_capacity && !ensure_write_capacity(stream, initial_capacity))
+    *stream = (ff_stream)
     {
-        init_common(stream, ff_stream_type_none);
-        return false;
-    }
+        .type = ff_stream_type_write_memory,
+        .arena = arena,
+    };
 
-    return true;
+    if (initial_capacity)
+    {
+        ensure_write_capacity(stream, initial_capacity);
+    }
 }
 
 ff_span ff_stream_written(const ff_stream* stream)
 {
-    ff_span result = (ff_span){ 0 };
-    FF_ASSERT_RET_VAL(stream, result);
-    FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_memory, result);
-    FF_CHECK_RET_VAL(stream->size, result);
+    FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_memory, ff_span_empty());
+    FF_CHECK_RET_VAL(stream->size, ff_span_empty());
 
-    result.data = stream->data;
-    result.size = stream->size;
-    return result;
+    return (ff_span)
+    {
+        .data = stream->data,
+        .size = stream->size,
+    };
 }
 
 void ff_stream_destroy(ff_stream* stream)
 {
-    FF_ASSERT_RET(stream);
-
     if (stream->file)
     {
         CloseHandle(stream->file);
     }
 
-    init_common(stream, ff_stream_type_none);
+    *stream = ff_stream_none();
 }
 
 ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size)
 {
-    ff_span result = (ff_span){ 0 };
-    FF_ASSERT_RET_VAL(stream, result);
-    FF_ASSERT_RET_VAL(is_read(stream), result);
-
+    FF_ASSERT_RET_VAL(is_read(stream), ff_span_empty());
     size = ff_math_min_size(size, stream->size - stream->pos);
-    FF_CHECK_RET_VAL(size, result);
+    FF_CHECK_RET_VAL(size, ff_span_empty());
 
     if (stream->type == ff_stream_type_read_memory)
     {
-        result.data = stream->data + stream->pos;
-        result.size = size;
+        ff_span result = { .data = stream->data + stream->pos, .size = size };
         stream->pos += size;
         return result;
     }
 
-    FF_ASSERT_RET_VAL(arena, result);
-    FF_ASSERT_RET_VAL(size <= MAXDWORD, result);
-
     uint8_t* dest = ff_arena_alloc_type(arena, uint8_t, size);
-    FF_ASSERT_RET_VAL(dest, result);
-
     DWORD read = 0;
     if (!ReadFile(stream->file, dest, (DWORD)size, &read, NULL))
     {
-        FF_DEBUG_FAIL_RET_VAL(result);
+        FF_DEBUG_FAIL_RET_VAL(ff_span_empty());
     }
 
     stream->pos += read;
-    result.data = dest;
-    result.size = read;
-    return result;
+    return (ff_span)
+    {
+        .data = dest,
+        .size = read,
+    };
 }
 
 bool ff_stream_write(ff_stream* stream, ff_span data)
 {
-    FF_ASSERT_RET_VAL(stream, false);
     FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_file || stream->type == ff_stream_type_write_memory, false);
     FF_CHECK_RET_VAL(data.size, true);
     FF_ASSERT_RET_VAL(data.data, false);
 
     if (stream->type == ff_stream_type_write_memory)
     {
-        FF_CHECK_RET_VAL(ensure_write_capacity(stream, stream->size + data.size), false);
-
+        ensure_write_capacity(stream, stream->size + data.size);
         memcpy(stream->data + stream->size, data.data, data.size);
         stream->size += data.size;
         return true;
     }
-
-    FF_ASSERT_RET_VAL(data.size <= MAXDWORD, false);
 
     DWORD written = 0;
     if (!WriteFile(stream->file, data.data, (DWORD)data.size, &written, NULL) || written != data.size)
@@ -222,7 +195,6 @@ size_t ff_stream_pos(const ff_stream* stream)
 
 bool ff_stream_seek(ff_stream* stream, size_t pos)
 {
-    FF_ASSERT_RET_VAL(stream, false);
     FF_ASSERT_RET_VAL(is_read(stream), false);
 
     pos = ff_math_min_size(pos, stream->size);

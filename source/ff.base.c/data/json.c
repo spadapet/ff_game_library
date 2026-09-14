@@ -2,18 +2,11 @@
 #include "base/arena.h"
 #include "base/array.h"
 #include "base/assert.h"
-#include "base/dict.h"
-#include "base/idict.h"
-#include "base/json.h"
 #include "base/math.h"
-#include "base/value.h"
-
-// ====================================================================
-// Tokenizer
-//
-// The parser below is the only consumer, so all of this is static and has no header.
-// ====================================================================
-typedef struct ff_arena ff_arena;
+#include "data/dict.h"
+#include "data/idict.h"
+#include "data/json.h"
+#include "data/value.h"
 
 typedef enum ff_json_token_type
 {

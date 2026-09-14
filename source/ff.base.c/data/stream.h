@@ -25,10 +25,11 @@ typedef struct ff_stream
     size_t pos;
 } ff_stream;
 
+ff_stream ff_stream_none(void);
 bool ff_stream_init_read_file(ff_stream* stream, ff_string_view path);
 bool ff_stream_init_write_file(ff_stream* stream, ff_string_view path);
 void ff_stream_init_read_memory(ff_stream* stream, ff_span span);
-bool ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t initial_capacity);
+void ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t initial_capacity);
 ff_span ff_stream_written(const ff_stream* stream);
 void ff_stream_destroy(ff_stream* stream);
 

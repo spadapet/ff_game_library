@@ -53,3 +53,8 @@ ff_arena_marker ff_arena_mark(const ff_arena* arena);
 
 #define ff_arena_alloc_type(arena, type, count) (type*)ff_arena_alloc((arena), sizeof(type) * (count), alignof(type))
 #define ff_arena_realloc_type(arena, type, start, count, new_count) (type*)ff_arena_realloc((arena), (start), sizeof(type) * (count), sizeof(type) * (new_count), alignof(type))
+
+#define ff_arena_declare_stack(arena, size) \
+    uint8_t arena##_buffer[size]; \
+    ff_arena arena; \
+    ff_arena_init_external(&arena, arena##_buffer, sizeof(arena##_buffer), 0)

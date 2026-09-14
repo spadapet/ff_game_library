@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
-#include "base/dict.h"
 #include "base/hash.h"
 #include "base/math.h"
-#include "base/value.h"
+#include "data/dict.h"
+#include "data/value.h"
 
 static_assert(alignof(uint64_t) == alignof(ff_value), "uint64_t and ff_value must have the same alignment");
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/idict.h"
+#include "../data/idict.h"
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;

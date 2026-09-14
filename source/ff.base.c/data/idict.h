@@ -2,7 +2,7 @@
 
 #include "../base/span.h"
 #include "../base/string.h"
-#include "../base/value_type.h"
+#include "../data/value_type.h"
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
