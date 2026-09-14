@@ -139,3 +139,64 @@ ff_span ff_map_resource(HMODULE module, ff_wstring_view name, ff_wstring_view ty
 
     return (ff_span){ .data = data, .size = size };
 }
+
+ff_string_view ff_file_module_path(HINSTANCE module, ff_arena* arena)
+{
+    DWORD buffer_size = MAX_PATH;
+    wchar_t* buffer = ff_arena_alloc_type(arena, wchar_t, buffer_size);
+
+    while (true)
+    {
+        DWORD length = GetModuleFileNameW(module, buffer, buffer_size);
+        if (!length)
+        {
+            return ff_string_view_empty();
+        }
+
+        if (length < buffer_size)
+        {
+            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena);
+        }
+
+        buffer_size *= 2;
+        buffer = ff_arena_alloc_type(arena, wchar_t, buffer_size);
+    }
+}
+
+ff_string_view ff_file_temp_path(ff_arena* arena)
+{
+    DWORD buffer_size = MAX_PATH;
+    wchar_t* buffer = ff_arena_alloc_type(arena, wchar_t, buffer_size);
+
+    while (true)
+    {
+        DWORD length = GetTempPathW(buffer_size, buffer);
+        if (!length)
+        {
+            return ff_string_view_empty();
+        }
+
+        if (length < buffer_size)
+        {
+            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena);
+        }
+
+        buffer_size *= 2;
+        buffer = ff_arena_alloc_type(arena, wchar_t, buffer_size);
+        FF_ASSERT_RET_VAL(buffer, ff_string_view_empty());
+    }
+}
+
+ff_string_view ff_file_user_local_path(ff_arena* arena)
+{
+    wchar_t* path = NULL;
+    HRESULT hr = SHGetKnownFolderPath(&FOLDERID_LocalAppData, KF_FLAG_CREATE, NULL, &path);
+    if (FAILED(hr) || !path)
+    {
+        return ff_string_view_empty();
+    }
+
+    ff_string_view result = ff_wide_to_utf8(ff_wz_view(path), arena);
+    CoTaskMemFree(path);
+    return result;
+}
