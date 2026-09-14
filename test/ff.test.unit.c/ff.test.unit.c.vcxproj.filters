@@ -39,9 +39,11 @@
     <ClCompile Include="base\json_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_globals_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="res\test_resources.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -50,9 +52,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\test_resources.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="res\test_resources.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\test_data.bin" />

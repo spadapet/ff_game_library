@@ -50,6 +50,9 @@
     <ClCompile Include="data\value.c">
       <Filter>data</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_globals.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -101,6 +104,9 @@
     <ClInclude Include="data\value_type.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="dx12\dx12_globals.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -108,6 +114,9 @@
     </Filter>
     <Filter Include="data">
       <UniqueIdentifier>{15ca1253-78df-4583-899f-2b1b5beb3213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dx12">
+      <UniqueIdentifier>{463fd0d6-5543-4abf-980e-1de3e025b78f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

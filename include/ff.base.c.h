@@ -19,3 +19,5 @@
 #include "../source/ff.base.c/data/stream.h"
 #include "../source/ff.base.c/data/value.h"
 #include "../source/ff.base.c/data/value_type.h"
+
+#include "../source/ff.base.c/dx12/dx12_globals.h"
