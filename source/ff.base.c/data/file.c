@@ -7,7 +7,7 @@
 static HANDLE open_file_read(ff_string_view path)
 {
     ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
-    ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena);
+    ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena, true);
     HANDLE file = NULL;
 
     if (wide_path.count)
@@ -155,7 +155,7 @@ ff_string_view ff_file_module_path(HINSTANCE module, ff_arena* arena)
 
         if (length < buffer_size)
         {
-            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena);
+            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena, false);
         }
 
         buffer_size *= 2;
@@ -178,12 +178,11 @@ ff_string_view ff_file_temp_path(ff_arena* arena)
 
         if (length < buffer_size)
         {
-            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena);
+            return ff_wide_to_utf8((ff_wstring_view){ .data = buffer, .count = length }, arena, false);
         }
 
+        buffer = ff_arena_realloc_type(arena, wchar_t, buffer, buffer_size, buffer_size * 2);
         buffer_size *= 2;
-        buffer = ff_arena_alloc_type(arena, wchar_t, buffer_size);
-        FF_ASSERT_RET_VAL(buffer, ff_string_view_empty());
     }
 }
 
@@ -196,7 +195,7 @@ ff_string_view ff_file_user_local_path(ff_arena* arena)
         return ff_string_view_empty();
     }
 
-    ff_string_view result = ff_wide_to_utf8(ff_wz_view(path), arena);
+    ff_string_view result = ff_wide_to_utf8(ff_wz_view(path), arena, false);
     CoTaskMemFree(path);
     return result;
 }

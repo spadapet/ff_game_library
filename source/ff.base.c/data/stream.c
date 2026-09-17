@@ -12,14 +12,41 @@ static bool is_read(const ff_stream* stream)
     return stream->type == ff_stream_type_read_file || stream->type == ff_stream_type_read_memory;
 }
 
+// Each parent is terminated in place and restored, so no copy of the path is needed. Failures are
+// ignored since CreateFileW reports whatever actually went wrong.
+static void create_parent_directories(wchar_t* path, size_t count)
+{
+    size_t i = (count >= 2 && path[1] == L':') ? 2 : 0;
+
+    while (i < count && path[i] == L'\\')
+    {
+        i++;
+    }
+
+    for (; i < count; i++)
+    {
+        if (path[i] == L'\\')
+        {
+            path[i] = 0;
+            CreateDirectory(path, NULL);
+            path[i] = L'\\';
+        }
+    }
+}
+
 static HANDLE open_file(ff_string_view path, bool write)
 {
     ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
-    ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena);
+    ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena, true);
     HANDLE file = NULL;
 
     if (wide_path.count)
     {
+        if (write)
+        {
+            create_parent_directories((wchar_t*)wide_path.data, wide_path.count);
+        }
+
         file = write
             ? CreateFileW(wide_path.data, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)
             : CreateFileW(wide_path.data, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);

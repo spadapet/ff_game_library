@@ -1,4 +1,345 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <Type Name="ff_string_view">
+    <DisplayString Condition="data == nullptr">null</DisplayString>
+    <DisplayString Condition="count == 0">""</DisplayString>
+    <DisplayString>{data,[count]s8}</DisplayString>
+    <StringView>data,[count]s8</StringView>
+    <Expand>
+      <Item Name="[count]" ExcludeView="simple">count</Item>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_wstring_view">
+    <DisplayString Condition="data == nullptr">null</DisplayString>
+    <DisplayString Condition="count == 0">L""</DisplayString>
+    <DisplayString>{data,[count]su}</DisplayString>
+    <StringView>data,[count]su</StringView>
+    <Expand>
+      <Item Name="[count]" ExcludeView="simple">count</Item>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_string_builder">
+    <DisplayString Condition="count == 0">""</DisplayString>
+    <DisplayString>{data,[count]s8}</DisplayString>
+    <StringView>data,[count]s8</StringView>
+    <Expand>
+      <Item Name="[count]">count</Item>
+      <Item Name="[capacity]">capacity</Item>
+      <Item Name="[arena]">arena</Item>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_span">
+    <DisplayString Condition="data == nullptr">empty</DisplayString>
+    <DisplayString>{{ {size} bytes }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">size</Item>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>(const unsigned char*)data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_array_span">
+    <DisplayString Condition="data == nullptr">empty</DisplayString>
+    <DisplayString>{{ {count} x {item_size} bytes }}</DisplayString>
+    <Expand>
+      <Item Name="[count]">count</Item>
+      <Item Name="[item_size]">item_size</Item>
+      <Item Name="[item_align]">item_align</Item>
+      <Item Name="[as string]" Condition="item_size == 1">(const char*)data,[count]s8</Item>
+      <Synthetic Name="[bytes]">
+        <DisplayString>{{ {count * item_size} bytes }}</DisplayString>
+        <Expand>
+          <ArrayItems>
+            <Size>count * item_size</Size>
+            <ValuePointer>(const unsigned char*)data</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_array_slice">
+    <DisplayString Condition="count == 0">empty</DisplayString>
+    <DisplayString>{{ +{offset}, {count} x {item_size} bytes }}</DisplayString>
+    <Expand>
+      <Item Name="[offset]">offset</Item>
+      <Item Name="[count]">count</Item>
+      <Item Name="[item_size]">item_size</Item>
+      <Item Name="[item_align]">item_align</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_value">
+    <DisplayString Condition="type == ff_value_type_empty">empty</DisplayString>
+    <DisplayString Condition="type == ff_value_type_null">null</DisplayString>
+    <DisplayString Condition="type == ff_value_type_boolean">{b}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_guid">{guid}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_int32">{i32} (int32)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_int64">{i64} (int64)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_float32">{f32} (float32)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_float64">{f64} (float64)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_int32">({point_i32[0]}, {point_i32[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_int64">({point_i64[0]}, {point_i64[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_float32">({point_f32[0]}, {point_f32[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_float64">({point_f64[0]}, {point_f64[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_rect_int32">({rect_i32[0]}, {rect_i32[1]})-({rect_i32[2]}, {rect_i32[3]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_rect_float32">({rect_f32[0]}, {rect_f32[1]})-({rect_f32[2]}, {rect_f32[3]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_string">{(const char*)data.data,[data.count]s8}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_data">{{ data, {data.count} x {data.item_size} bytes }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_dict">{*(ff_dict*)data.data}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_idict">{{ idict }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_array">{{ array, {data.count} values }}</DisplayString>
+    <DisplayString>{{ bad type {type} }}</DisplayString>
+    <StringView Condition="type == ff_value_type_string">(const char*)data.data,[data.count]s8</StringView>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[bool]" Condition="type == ff_value_type_boolean">b</Item>
+      <Item Name="[guid]" Condition="type == ff_value_type_guid">guid</Item>
+      <Item Name="[int32]" Condition="type == ff_value_type_int32">i32</Item>
+      <Item Name="[int64]" Condition="type == ff_value_type_int64">i64</Item>
+      <Item Name="[float32]" Condition="type == ff_value_type_float32">f32</Item>
+      <Item Name="[float64]" Condition="type == ff_value_type_float64">f64</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_int32">point_i32</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_int64">point_i64</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_float32">point_f32</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_float64">point_f64</Item>
+      <Item Name="[rect]" Condition="type == ff_value_type_rect_int32">rect_i32</Item>
+      <Item Name="[rect]" Condition="type == ff_value_type_rect_float32">rect_f32</Item>
+      <Item Name="[string]" Condition="type == ff_value_type_string">(const char*)data.data,[data.count]s8</Item>
+      <Item Name="[dict]" Condition="type == ff_value_type_dict">*(ff_dict*)data.data</Item>
+      <Item Name="[data]" Condition="type == ff_value_type_data">data</Item>
+      <Item Name="[idict]" Condition="type == ff_value_type_idict">data.data</Item>
+      <ArrayItems Condition="type == ff_value_type_array">
+        <Size>data.count</Size>
+        <ValuePointer>(ff_value*)data.data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_value_span">
+    <DisplayString Condition="count == 0">empty</DisplayString>
+    <DisplayString>{{ {count} values }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_dict">
+    <DisplayString Condition="count == 0">empty</DisplayString>
+    <DisplayString>{{ {count} values }}</DisplayString>
+    <Expand>
+      <Item Name="[count]">count</Item>
+      <Item Name="[capacity]">capacity</Item>
+      <Item Name="[arena]">arena</Item>
+      <IndexListItems>
+        <Size>count</Size>
+        <ValueNode>((ff_value*)(keys + capacity))[$i]</ValueNode>
+      </IndexListItems>
+      <Synthetic Name="[key hashes]">
+        <DisplayString>{{ {count} hashes }}</DisplayString>
+        <Expand>
+          <ArrayItems>
+            <Size>count</Size>
+            <ValuePointer>keys</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_idict">
+    <DisplayString Condition="data == nullptr">empty</DisplayString>
+    <DisplayString>{{ idict {data} }}</DisplayString>
+    <Expand>
+      <Item Name="[data]">data</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_ivalue">
+    <DisplayString Condition="type == ff_value_type_empty">empty</DisplayString>
+    <DisplayString Condition="type == ff_value_type_null">null</DisplayString>
+    <DisplayString Condition="type == ff_value_type_boolean">{b}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_guid">{guid}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_int32">{i32} (int32)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_int64">{i64} (int64)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_float32">{f32} (float32)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_float64">{f64} (float64)</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_int32">({point_i32[0]}, {point_i32[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_int64">({point_i64[0]}, {point_i64[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_float32">({point_f32[0]}, {point_f32[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_point_float64">({point_f64[0]}, {point_f64[1]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_rect_int32">({rect_i32[0]}, {rect_i32[1]})-({rect_i32[2]}, {rect_i32[3]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_rect_float32">({rect_f32[0]}, {rect_f32[1]})-({rect_f32[2]}, {rect_f32[3]})</DisplayString>
+    <DisplayString Condition="type == ff_value_type_string">{{ string, {data.count} chars at +{data.offset} }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_array">{{ array, {data.count} values at +{data.offset} }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_idict">{{ idict at +{data.offset} }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_dict">{{ dict at +{data.offset} }}</DisplayString>
+    <DisplayString Condition="type == ff_value_type_data">{{ data, {data.count} x {data.item_size} bytes at +{data.offset} }}</DisplayString>
+    <DisplayString>{{ bad type {type} }}</DisplayString>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[bool]" Condition="type == ff_value_type_boolean">b</Item>
+      <Item Name="[guid]" Condition="type == ff_value_type_guid">guid</Item>
+      <Item Name="[int32]" Condition="type == ff_value_type_int32">i32</Item>
+      <Item Name="[int64]" Condition="type == ff_value_type_int64">i64</Item>
+      <Item Name="[float32]" Condition="type == ff_value_type_float32">f32</Item>
+      <Item Name="[float64]" Condition="type == ff_value_type_float64">f64</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_int32">point_i32</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_int64">point_i64</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_float32">point_f32</Item>
+      <Item Name="[point]" Condition="type == ff_value_type_point_float64">point_f64</Item>
+      <Item Name="[rect]" Condition="type == ff_value_type_rect_int32">rect_i32</Item>
+      <Item Name="[rect]" Condition="type == ff_value_type_rect_float32">rect_f32</Item>
+      <Item Name="[slice]" Condition="type &gt;= ff_value_type_data">data</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_ivalue_span">
+    <DisplayString Condition="count == 0">empty</DisplayString>
+    <DisplayString>{{ {count} values }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>count</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_arena">
+    <DisplayString Condition="type == internal_ff_arena_type_heap_global">{{ heap global, {(size_t)(end - next)} bytes free }}</DisplayString>
+    <DisplayString Condition="type == internal_ff_arena_type_heap_local">{{ heap local, {(size_t)(end - next)} bytes free }}</DisplayString>
+    <DisplayString Condition="type == internal_ff_arena_type_virtual_memory">{{ virtual memory, {(size_t)(end - next)} bytes free }}</DisplayString>
+    <DisplayString>{{ {(size_t)(end - next)} bytes free }}</DisplayString>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[free]">(size_t)(end - next)</Item>
+      <Item Name="[next]">next</Item>
+      <Item Name="[end]">end</Item>
+      <Item Name="[grow_buffer_size]">grow_buffer_size</Item>
+      <Item Name="[max_buffer_size]">max_buffer_size</Item>
+      <Item Name="[heap]">heap</Item>
+      <Synthetic Name="[buffers]">
+        <DisplayString Condition="buffer == nullptr">none</DisplayString>
+        <DisplayString>{*buffer}</DisplayString>
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>buffer</HeadPointer>
+            <NextPointer>next</NextPointer>
+            <ValueNode>this</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+      <Synthetic Name="[spare buffers]">
+        <DisplayString Condition="spare == nullptr">none</DisplayString>
+        <DisplayString>{*spare}</DisplayString>
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>spare</HeadPointer>
+            <NextPointer>next</NextPointer>
+            <ValueNode>this</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="internal_ff_arena_buffer">
+    <DisplayString>{{ {type}, {(size_t)(reserve_end - start)} bytes reserved }}</DisplayString>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[committed]">(size_t)(end - start)</Item>
+      <Item Name="[reserved]">(size_t)(reserve_end - start)</Item>
+      <Item Name="[start]">start</Item>
+      <Item Name="[end]">end</Item>
+      <Item Name="[reserve_end]">reserve_end</Item>
+      <Item Name="[next]">next</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="internal_ff_array_header">
+    <DisplayString>{{ count={count}, capacity={capacity}, {item_size} bytes each }}</DisplayString>
+    <Expand>
+      <Item Name="[count]">count</Item>
+      <Item Name="[capacity]">capacity</Item>
+      <Item Name="[item_size]">item_size</Item>
+      <Item Name="[item_align]">item_align</Item>
+      <Item Name="[arena]">arena</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_stream">
+    <DisplayString Condition="type == ff_stream_type_none">none</DisplayString>
+    <DisplayString>{{ {type}, pos={pos}, size={size} }}</DisplayString>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[pos]">pos</Item>
+      <Item Name="[size]">size</Item>
+      <Item Name="[capacity]">capacity</Item>
+      <Item Name="[file]">file</Item>
+      <Item Name="[arena]">arena</Item>
+      <ArrayItems Condition="data != nullptr">
+        <Size>size</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_file_map">
+    <DisplayString Condition="base == nullptr">unmapped</DisplayString>
+    <DisplayString>{{ mapped, {size} bytes }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">size</Item>
+      <Item Name="[base]">base</Item>
+      <Item Name="[file]">file</Item>
+      <Item Name="[mapping]">mapping</Item>
+      <ArrayItems Condition="base != nullptr">
+        <Size>size</Size>
+        <ValuePointer>(unsigned char*)base</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_hash_data">
+    <DisplayString>{{ total={total}, seed={seed,x} }}</DisplayString>
+    <Expand>
+      <Item Name="[seed]">seed</Item>
+      <Item Name="[total]">total</Item>
+      <Item Name="[buffer_size]">buffer_size</Item>
+      <ArrayItems>
+        <Size>buffer_size</Size>
+        <ValuePointer>buffer</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_log_sink_data">
+    <DisplayString Condition="sink == nullptr">no sink</DisplayString>
+    <DisplayString>{{ {sink}, cookie={cookie} }}</DisplayString>
+    <Expand>
+      <Item Name="[sink]">sink</Item>
+      <Item Name="[cookie]">cookie</Item>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

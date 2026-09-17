@@ -100,13 +100,6 @@ void ff_string_builder_append_format_v(ff_string_builder* sb, ff_string_view for
     // if the format exceeds it). A separate arena keeps the copy independent of the output buffer.
     ff_arena_declare_stack(temp_arena, 1024);
     char* format_copy = ff_arena_alloc_type(&temp_arena, char, format.count + 1);
-    if (!format_copy)
-    {
-        FF_ASSERT(format_copy);
-        ff_arena_destroy(&temp_arena);
-        return;
-    }
-
     memcpy(format_copy, format.data, format.count);
     format_copy[format.count] = '\0';
 

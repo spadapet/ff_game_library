@@ -8,9 +8,10 @@ static size_t captured_size; // bytes stored in captured_text (capped to its cap
 static size_t captured_full_size; // full delivered text.size (uncapped)
 static int captured_calls;
 
-static void test_sink(ff_log_type type, ff_string_view text)
+static void test_sink(ff_log_type type, ff_string_view text, void* cookie)
 {
 	(void)type;
+	(void)cookie;
 	captured_calls++;
 	captured_full_size = text.count;
 	captured_size = (text.count < sizeof(::captured_text)) ? text.count : sizeof(::captured_text);
@@ -106,19 +107,19 @@ namespace ff::test::base
 		// ====================================================================
 		TEST_METHOD(sink_install_returns_previous)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 
 			// Installing 'prev' returns the sink we just installed, and restores the original.
-			Assert::IsTrue(ff_log_set_sink(prev) == &test_sink);
+			Assert::IsTrue(ff_log_set_sink(prev).sink == &test_sink);
 		}
 
 		TEST_METHOD(sink_nullptr_disables_sink)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, true);
 
-			ff_log_set_sink(nullptr);
+			ff_log_set_sink((ff_log_sink_data){ .sink = nullptr, .cookie = nullptr });
 			reset_capture();
 
 			ff_log_write(ff_log_type_normal, FF_SVL("no sink"));
@@ -133,7 +134,7 @@ namespace ff::test::base
 		// ====================================================================
 		TEST_METHOD(write_formats_line_with_prefix)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, true);
 			reset_capture();
@@ -149,7 +150,7 @@ namespace ff::test::base
 
 		TEST_METHOD(write_uses_type_name_prefix)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_debug);
 			ff_log_set_type_enabled(ff_log_type_debug, true);
 			reset_capture();
@@ -163,7 +164,7 @@ namespace ff::test::base
 
 		TEST_METHOD(write_applies_printf_args)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, true);
 			reset_capture();
@@ -177,7 +178,7 @@ namespace ff::test::base
 
 		TEST_METHOD(write_v_formats_like_write)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, true);
 			reset_capture();
@@ -191,7 +192,7 @@ namespace ff::test::base
 
 		TEST_METHOD(write_long_message_is_not_truncated)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, true);
 			reset_capture();
@@ -212,7 +213,7 @@ namespace ff::test::base
 		// ====================================================================
 		TEST_METHOD(write_disabled_type_is_noop)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			bool old = ff_log_get_type_enabled(ff_log_type_normal);
 			ff_log_set_type_enabled(ff_log_type_normal, false);
 			reset_capture();
@@ -226,7 +227,7 @@ namespace ff::test::base
 
 		TEST_METHOD(write_none_type_is_noop_by_default)
 		{
-			ff_log_sink_func prev = ff_log_set_sink(&test_sink);
+			ff_log_sink_data prev = ff_log_set_sink((ff_log_sink_data){ .sink = &test_sink, .cookie = nullptr });
 			reset_capture();
 
 			// 'none' is disabled by default.

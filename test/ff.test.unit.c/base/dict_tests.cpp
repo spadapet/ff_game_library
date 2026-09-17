@@ -1,18 +1,5 @@
 #include "pch.h"
 
-static ff_string_view sv(const char* text)
-{
-    ff_string_view result{ text, strlen(text) };
-    return result;
-}
-
-// Keys are counted views, so a key can contain null bytes or stop short of one.
-static ff_string_view sv_n(const char* text, size_t count)
-{
-    ff_string_view result{ text, count };
-    return result;
-}
-
 // The dict derives its values pointer instead of storing it, so tests derive it the same way.
 static ff_value* values_of(const ff_dict& dict)
 {
@@ -92,7 +79,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             Assert::IsTrue(dict.keys == keys);
@@ -132,13 +119,13 @@ namespace ff::test::base
 
             ff_value first = ff_value_new_int32(1);
             ff_value second = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("a"), &first);
-            ff_dict_add(&dict, sv("b"), &second);
+            ff_dict_add(&dict, FF_SVL("a"), &first);
+            ff_dict_add(&dict, FF_SVL("b"), &second);
 
             // Growth is round_up_pow2(max(capacity * 2, 8)), so 1 jumps straight to 8.
             Assert::AreEqual((size_t)8, dict.capacity);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv("a"))->i32);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("b"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL("a"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("b"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -158,7 +145,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             Assert::AreEqual((size_t)8, dict.capacity);
@@ -166,7 +153,7 @@ namespace ff::test::base
             for (int i = 0; i < 4; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
             }
@@ -186,7 +173,7 @@ namespace ff::test::base
             ff_dict_init_copy(&copy, &arena, &source);
 
             Assert::AreEqual((size_t)0, copy.count);
-            Assert::IsNull(ff_dict_get(&copy, sv("anything")));
+            Assert::IsNull(ff_dict_get(&copy, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -201,16 +188,16 @@ namespace ff::test::base
 
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
-            ff_dict_set(&source, sv("one"), &one);
-            ff_dict_set(&source, sv("two"), &two);
+            ff_dict_set(&source, FF_SVL("one"), &one);
+            ff_dict_set(&source, FF_SVL("two"), &two);
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &arena, &source);
 
             Assert::AreEqual((size_t)2, copy.count);
             Assert::IsTrue(values_of(copy) != values_of(source));
-            Assert::AreEqual(1, ff_dict_get(&copy, sv("one"))->i32);
-            Assert::AreEqual(2, ff_dict_get(&copy, sv("two"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&copy, FF_SVL("one"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&copy, FF_SVL("two"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -224,16 +211,16 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value original = ff_value_new_int32(10);
-            ff_dict_set(&source, sv("key"), &original);
+            ff_dict_set(&source, FF_SVL("key"), &original);
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &arena, &source);
 
             ff_value changed = ff_value_new_int32(20);
-            ff_dict_set(&source, sv("key"), &changed);
+            ff_dict_set(&source, FF_SVL("key"), &changed);
 
-            Assert::AreEqual(20, ff_dict_get(&source, sv("key"))->i32);
-            Assert::AreEqual(10, ff_dict_get(&copy, sv("key"))->i32);
+            Assert::AreEqual(20, ff_dict_get(&source, FF_SVL("key"))->i32);
+            Assert::AreEqual(10, ff_dict_get(&copy, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -248,8 +235,8 @@ namespace ff::test::base
 
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
-            ff_dict_add(&source, sv("dup"), &one);
-            ff_dict_add(&source, sv("dup"), &two);
+            ff_dict_add(&source, FF_SVL("dup"), &one);
+            ff_dict_add(&source, FF_SVL("dup"), &two);
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &arena, &source);
@@ -272,18 +259,18 @@ namespace ff::test::base
             ff_dict_init(&source, &source_arena);
 
             ff_value value = ff_value_new_int32(7);
-            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &copy_arena, &source);
 
             Assert::IsTrue(copy.arena == &copy_arena);
-            Assert::AreEqual(7, ff_dict_get(&copy, sv("key"))->i32);
+            Assert::AreEqual(7, ff_dict_get(&copy, FF_SVL("key"))->i32);
 
             // The copy must not point back into the source arena's storage.
             ff_arena_destroy(&source_arena);
             Assert::AreEqual((size_t)1, copy.count);
-            Assert::AreEqual(7, ff_dict_get(&copy, sv("key"))->i32);
+            Assert::AreEqual(7, ff_dict_get(&copy, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&copy_arena);
         }
@@ -301,7 +288,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&source, sv(key), &value);
+                ff_dict_add(&source, ff_sz_view(key), &value);
             }
 
             ff_dict copy{};
@@ -314,7 +301,7 @@ namespace ff::test::base
             for (int i = 0; i < 3; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::AreEqual(i, ff_dict_get(&copy, sv(key))->i32);
+                Assert::AreEqual(i, ff_dict_get(&copy, ff_sz_view(key))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -331,18 +318,18 @@ namespace ff::test::base
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
             ff_value c = ff_value_new_int32(3);
-            ff_dict_set(&source, sv("a"), &a);
-            ff_dict_set(&source, sv("b"), &b);
-            ff_dict_set(&source, sv("c"), &c);
-            Assert::IsTrue(ff_dict_clear(&source, sv("b")));
+            ff_dict_set(&source, FF_SVL("a"), &a);
+            ff_dict_set(&source, FF_SVL("b"), &b);
+            ff_dict_set(&source, FF_SVL("c"), &c);
+            Assert::IsTrue(ff_dict_clear(&source, FF_SVL("b")));
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &arena, &source);
 
             Assert::AreEqual((size_t)2, copy.count);
-            Assert::AreEqual(1, ff_dict_get(&copy, sv("a"))->i32);
-            Assert::IsNull(ff_dict_get(&copy, sv("b")));
-            Assert::AreEqual(3, ff_dict_get(&copy, sv("c"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&copy, FF_SVL("a"))->i32);
+            Assert::IsNull(ff_dict_get(&copy, FF_SVL("b")));
+            Assert::AreEqual(3, ff_dict_get(&copy, FF_SVL("c"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -356,7 +343,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_set(&source, FF_SVL("key"), &value);
             ff_dict_reset(&source);
 
             // The source still owns capacity, but with no live entries there is nothing to copy.
@@ -382,7 +369,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_dict copy{};
             ff_dict_init_copy(&copy, &arena, &source);
@@ -393,12 +380,12 @@ namespace ff::test::base
             {
                 sprintf_s(key, "extra%d", i);
                 ff_value extra = ff_value_new_int32(100 + i);
-                ff_dict_set(&copy, sv(key), &extra);
+                ff_dict_set(&copy, ff_sz_view(key), &extra);
             }
 
             Assert::AreEqual((size_t)11, copy.count);
-            Assert::AreEqual(1, ff_dict_get(&copy, sv("key"))->i32);
-            Assert::AreEqual(109, ff_dict_get(&copy, sv("extra9"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&copy, FF_SVL("key"))->i32);
+            Assert::AreEqual(109, ff_dict_get(&copy, FF_SVL("extra9"))->i32);
             Assert::AreEqual((size_t)1, source.count);
 
             ff_arena_destroy(&arena);
@@ -415,9 +402,9 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(42);
-            ff_dict_add(&dict, sv("answer"), &value);
+            ff_dict_add(&dict, FF_SVL("answer"), &value);
 
-            ff_value* found = ff_dict_get(&dict, sv("answer"));
+            ff_value* found = ff_dict_get(&dict, FF_SVL("answer"));
 
             Assert::IsNotNull(found);
             Assert::IsTrue(ff_value_type_int32 == found->type);
@@ -436,9 +423,9 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_add(&dict, sv("present"), &value);
+            ff_dict_add(&dict, FF_SVL("present"), &value);
 
-            Assert::IsNull(ff_dict_get(&dict, sv("missing")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("missing")));
 
             ff_arena_destroy(&arena);
         }
@@ -451,7 +438,7 @@ namespace ff::test::base
             ff_dict dict{};
             ff_dict_init(&dict, &arena);
 
-            Assert::IsNull(ff_dict_get(&dict, sv("missing")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("missing")));
 
             ff_arena_destroy(&arena);
         }
@@ -467,9 +454,9 @@ namespace ff::test::base
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
             ff_value three = ff_value_new_int32(3);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("dup"), &two);
-            ff_dict_add(&dict, sv("dup"), &three);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
+            ff_dict_add(&dict, FF_SVL("dup"), &three);
 
             Assert::AreEqual((size_t)3, dict.count);
             Assert::AreEqual(3, this->count_matches(&dict, "dup"));
@@ -487,10 +474,10 @@ namespace ff::test::base
 
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("dup"), &two);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
 
-            Assert::AreEqual(1, ff_dict_get(&dict, sv("dup"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL("dup"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -504,7 +491,7 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_add(&dict, sv("key"), &value);
+            ff_dict_add(&dict, FF_SVL("key"), &value);
 
             Assert::AreEqual((size_t)1, dict.count);
             Assert::AreEqual((size_t)8, dict.capacity);
@@ -527,7 +514,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             Assert::AreEqual((size_t)9, dict.count);
@@ -549,7 +536,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             Assert::AreEqual((size_t)40, dict.count);
@@ -557,7 +544,7 @@ namespace ff::test::base
             for (int i = 0; i < 40; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
             }
@@ -578,13 +565,13 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             Assert::AreEqual((size_t)6, dict.count);
             Assert::AreEqual((size_t)16, dict.capacity);
-            Assert::AreEqual(0, ff_dict_get(&dict, sv("key0"))->i32);
-            Assert::AreEqual(5, ff_dict_get(&dict, sv("key5"))->i32);
+            Assert::AreEqual(0, ff_dict_get(&dict, FF_SVL("key0"))->i32);
+            Assert::AreEqual(5, ff_dict_get(&dict, FF_SVL("key5"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -600,12 +587,12 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_add(&dict, sv("key"), &value);
+            ff_dict_add(&dict, FF_SVL("key"), &value);
 
-            ff_value* first = ff_dict_get(&dict, sv("key"));
+            ff_value* first = ff_dict_get(&dict, FF_SVL("key"));
             Assert::IsNotNull(first);
             Assert::IsTrue(first == values_of(dict));
-            Assert::IsNull(ff_dict_get_next(&dict, sv("key"), first));
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("key"), first));
 
             ff_arena_destroy(&arena);
         }
@@ -621,14 +608,14 @@ namespace ff::test::base
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
             ff_value four = ff_value_new_int32(4);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("dup"), &two);
-            ff_dict_add(&dict, sv("dup"), &four);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
+            ff_dict_add(&dict, FF_SVL("dup"), &four);
 
             int visited = 0;
             int sum = 0;
 
-            for (ff_value* value = ff_dict_get(&dict, sv("dup")); value && visited < 16; value = ff_dict_get_next(&dict, sv("dup"), value))
+            for (ff_value* value = ff_dict_get(&dict, FF_SVL("dup")); value && visited < 16; value = ff_dict_get_next(&dict, FF_SVL("dup"), value))
             {
                 visited++;
                 sum += value->i32;
@@ -650,10 +637,10 @@ namespace ff::test::base
 
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("dup"), &two);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
 
-            Assert::IsTrue(ff_dict_get_next(&dict, sv("dup"), nullptr) == ff_dict_get(&dict, sv("dup")));
+            Assert::IsTrue(ff_dict_get_next(&dict, FF_SVL("dup"), nullptr) == ff_dict_get(&dict, FF_SVL("dup")));
 
             ff_arena_destroy(&arena);
         }
@@ -669,19 +656,19 @@ namespace ff::test::base
             ff_value one = ff_value_new_int32(1);
             ff_value other = ff_value_new_int32(99);
             ff_value two = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("other"), &other);
-            ff_dict_add(&dict, sv("dup"), &two);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("other"), &other);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
 
             // Oldest first, so the walk starts at 1 and steps forward past "other" to reach 2.
-            ff_value* first = ff_dict_get(&dict, sv("dup"));
+            ff_value* first = ff_dict_get(&dict, FF_SVL("dup"));
             Assert::AreEqual(1, first->i32);
 
-            ff_value* second = ff_dict_get_next(&dict, sv("dup"), first);
+            ff_value* second = ff_dict_get_next(&dict, FF_SVL("dup"), first);
 
             Assert::IsNotNull(second);
             Assert::AreEqual(2, second->i32);
-            Assert::IsNull(ff_dict_get_next(&dict, sv("dup"), second));
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("dup"), second));
 
             ff_arena_destroy(&arena);
         }
@@ -696,10 +683,10 @@ namespace ff::test::base
 
             ff_value first = ff_value_new_int32(1);
             ff_value last = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("a"), &first);
-            ff_dict_add(&dict, sv("b"), &last);
+            ff_dict_add(&dict, FF_SVL("a"), &first);
+            ff_dict_add(&dict, FF_SVL("b"), &last);
 
-            Assert::IsNull(ff_dict_get_next(&dict, sv("b"), values_of(dict) + 1));
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("b"), values_of(dict) + 1));
 
             ff_arena_destroy(&arena);
         }
@@ -715,12 +702,12 @@ namespace ff::test::base
             ff_value first = ff_value_new_int32(1);
             ff_value middle = ff_value_new_int32(2);
             ff_value last = ff_value_new_int32(3);
-            ff_dict_add(&dict, sv("target"), &first);
-            ff_dict_add(&dict, sv("other"), &middle);
-            ff_dict_add(&dict, sv("target"), &last);
+            ff_dict_add(&dict, FF_SVL("target"), &first);
+            ff_dict_add(&dict, FF_SVL("other"), &middle);
+            ff_dict_add(&dict, FF_SVL("target"), &last);
 
             // prev_value only marks a position, so passing another key's entry is still valid.
-            ff_value* found = ff_dict_get_next(&dict, sv("target"), values_of(dict) + 1);
+            ff_value* found = ff_dict_get_next(&dict, FF_SVL("target"), values_of(dict) + 1);
 
             Assert::IsNotNull(found);
             Assert::AreEqual(3, found->i32);
@@ -737,7 +724,7 @@ namespace ff::test::base
             ff_dict dict{};
             ff_dict_init(&dict, &arena);
 
-            Assert::IsNull(ff_dict_get_next(&dict, sv("key"), nullptr));
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("key"), nullptr));
 
             ff_arena_destroy(&arena);
         }
@@ -753,13 +740,13 @@ namespace ff::test::base
             for (int i = 0; i < 20; i++)
             {
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv("dup"), &value);
+                ff_dict_add(&dict, FF_SVL("dup"), &value);
             }
 
             int expected = 0;
             int visited = 0;
 
-            for (ff_value* value = ff_dict_get(&dict, sv("dup")); value && visited < 64; value = ff_dict_get_next(&dict, sv("dup"), value))
+            for (ff_value* value = ff_dict_get(&dict, FF_SVL("dup")); value && visited < 64; value = ff_dict_get_next(&dict, FF_SVL("dup"), value))
             {
                 Assert::AreEqual(expected++, value->i32);
                 visited++;
@@ -782,10 +769,10 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(7);
-            ff_dict_set(&dict, sv("key"), &value);
+            ff_dict_set(&dict, FF_SVL("key"), &value);
 
             Assert::AreEqual((size_t)1, dict.count);
-            Assert::AreEqual(7, ff_dict_get(&dict, sv("key"))->i32);
+            Assert::AreEqual(7, ff_dict_get(&dict, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -800,11 +787,11 @@ namespace ff::test::base
 
             ff_value first = ff_value_new_int32(1);
             ff_value second = ff_value_new_int32(2);
-            ff_dict_set(&dict, sv("key"), &first);
-            ff_dict_set(&dict, sv("key"), &second);
+            ff_dict_set(&dict, FF_SVL("key"), &first);
+            ff_dict_set(&dict, FF_SVL("key"), &second);
 
             Assert::AreEqual((size_t)1, dict.count);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("key"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -820,13 +807,13 @@ namespace ff::test::base
             ff_value one = ff_value_new_int32(1);
             ff_value two = ff_value_new_int32(2);
             ff_value final_value = ff_value_new_int32(3);
-            ff_dict_add(&dict, sv("dup"), &one);
-            ff_dict_add(&dict, sv("dup"), &two);
-            ff_dict_set(&dict, sv("dup"), &final_value);
+            ff_dict_add(&dict, FF_SVL("dup"), &one);
+            ff_dict_add(&dict, FF_SVL("dup"), &two);
+            ff_dict_set(&dict, FF_SVL("dup"), &final_value);
 
             Assert::AreEqual((size_t)1, dict.count);
             Assert::AreEqual(1, this->count_matches(&dict, "dup"));
-            Assert::AreEqual(3, ff_dict_get(&dict, sv("dup"))->i32);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("dup"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -843,15 +830,15 @@ namespace ff::test::base
             ff_value b = ff_value_new_int32(2);
             ff_value c = ff_value_new_int32(3);
             ff_value b2 = ff_value_new_int32(20);
-            ff_dict_set(&dict, sv("a"), &a);
-            ff_dict_set(&dict, sv("b"), &b);
-            ff_dict_set(&dict, sv("c"), &c);
-            ff_dict_set(&dict, sv("b"), &b2);
+            ff_dict_set(&dict, FF_SVL("a"), &a);
+            ff_dict_set(&dict, FF_SVL("b"), &b);
+            ff_dict_set(&dict, FF_SVL("c"), &c);
+            ff_dict_set(&dict, FF_SVL("b"), &b2);
 
             Assert::AreEqual((size_t)3, dict.count);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv("a"))->i32);
-            Assert::AreEqual(20, ff_dict_get(&dict, sv("b"))->i32);
-            Assert::AreEqual(3, ff_dict_get(&dict, sv("c"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL("a"))->i32);
+            Assert::AreEqual(20, ff_dict_get(&dict, FF_SVL("b"))->i32);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("c"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -867,9 +854,9 @@ namespace ff::test::base
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
             ff_value a2 = ff_value_new_int32(10);
-            ff_dict_set(&dict, sv("a"), &a);
-            ff_dict_set(&dict, sv("b"), &b);
-            ff_dict_set(&dict, sv("a"), &a2);
+            ff_dict_set(&dict, FF_SVL("a"), &a);
+            ff_dict_set(&dict, FF_SVL("b"), &b);
+            ff_dict_set(&dict, FF_SVL("a"), &a2);
 
             Assert::AreEqual((size_t)2, dict.count);
             Assert::AreEqual(2, values_of(dict)[0].i32);
@@ -891,20 +878,20 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             const uint64_t* keys = dict.keys;
 
             // Replacing removes before it adds, so a full dict has room again.
             ff_value replacement = ff_value_new_int32(99);
-            ff_dict_set(&dict, sv("key0"), &replacement);
+            ff_dict_set(&dict, FF_SVL("key0"), &replacement);
 
             Assert::AreEqual((size_t)4, dict.count);
             Assert::AreEqual((size_t)4, dict.capacity);
             Assert::IsTrue(dict.keys == keys);
-            Assert::AreEqual(99, ff_dict_get(&dict, sv("key0"))->i32);
-            Assert::AreEqual(3, ff_dict_get(&dict, sv("key3"))->i32);
+            Assert::AreEqual(99, ff_dict_get(&dict, FF_SVL("key0"))->i32);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("key3"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -922,11 +909,11 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             ff_value extra = ff_value_new_int32(4);
-            ff_dict_set(&dict, sv("key4"), &extra);
+            ff_dict_set(&dict, FF_SVL("key4"), &extra);
 
             Assert::AreEqual((size_t)5, dict.count);
             Assert::AreEqual((size_t)8, dict.capacity);
@@ -934,7 +921,7 @@ namespace ff::test::base
             for (int i = 0; i < 5; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::AreEqual(i, ff_dict_get(&dict, sv(key))->i32);
+                Assert::AreEqual(i, ff_dict_get(&dict, ff_sz_view(key))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -951,11 +938,11 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&dict, sv("key"), &value);
+            ff_dict_set(&dict, FF_SVL("key"), &value);
 
-            Assert::IsTrue(ff_dict_clear(&dict, sv("key")));
+            Assert::IsTrue(ff_dict_clear(&dict, FF_SVL("key")));
             Assert::AreEqual((size_t)0, dict.count);
-            Assert::IsNull(ff_dict_get(&dict, sv("key")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("key")));
 
             ff_arena_destroy(&arena);
         }
@@ -969,9 +956,9 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&dict, sv("key"), &value);
+            ff_dict_set(&dict, FF_SVL("key"), &value);
 
-            Assert::IsFalse(ff_dict_clear(&dict, sv("other")));
+            Assert::IsFalse(ff_dict_clear(&dict, FF_SVL("other")));
             Assert::AreEqual((size_t)1, dict.count);
 
             ff_arena_destroy(&arena);
@@ -985,7 +972,7 @@ namespace ff::test::base
             ff_dict dict{};
             ff_dict_init(&dict, &arena);
 
-            Assert::IsFalse(ff_dict_clear(&dict, sv("key")));
+            Assert::IsFalse(ff_dict_clear(&dict, FF_SVL("key")));
             Assert::AreEqual((size_t)0, dict.count);
 
             ff_arena_destroy(&arena);
@@ -1002,10 +989,10 @@ namespace ff::test::base
             for (int i = 0; i < 5; i++)
             {
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv("dup"), &value);
+                ff_dict_add(&dict, FF_SVL("dup"), &value);
             }
 
-            Assert::IsTrue(ff_dict_clear(&dict, sv("dup")));
+            Assert::IsTrue(ff_dict_clear(&dict, FF_SVL("dup")));
             Assert::AreEqual((size_t)0, dict.count);
             Assert::AreEqual(0, this->count_matches(&dict, "dup"));
 
@@ -1025,21 +1012,21 @@ namespace ff::test::base
             ff_value b = ff_value_new_int32(2);
             ff_value dup2 = ff_value_new_int32(200);
             ff_value c = ff_value_new_int32(3);
-            ff_dict_add(&dict, sv("a"), &a);
-            ff_dict_add(&dict, sv("dup"), &dup1);
-            ff_dict_add(&dict, sv("b"), &b);
-            ff_dict_add(&dict, sv("dup"), &dup2);
-            ff_dict_add(&dict, sv("c"), &c);
+            ff_dict_add(&dict, FF_SVL("a"), &a);
+            ff_dict_add(&dict, FF_SVL("dup"), &dup1);
+            ff_dict_add(&dict, FF_SVL("b"), &b);
+            ff_dict_add(&dict, FF_SVL("dup"), &dup2);
+            ff_dict_add(&dict, FF_SVL("c"), &c);
 
-            Assert::IsTrue(ff_dict_clear(&dict, sv("dup")));
+            Assert::IsTrue(ff_dict_clear(&dict, FF_SVL("dup")));
 
             Assert::AreEqual((size_t)3, dict.count);
             Assert::AreEqual(1, values_of(dict)[0].i32);
             Assert::AreEqual(2, values_of(dict)[1].i32);
             Assert::AreEqual(3, values_of(dict)[2].i32);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv("a"))->i32);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("b"))->i32);
-            Assert::AreEqual(3, ff_dict_get(&dict, sv("c"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL("a"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("b"))->i32);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("c"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1055,11 +1042,11 @@ namespace ff::test::base
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
             ff_value c = ff_value_new_int32(3);
-            ff_dict_add(&dict, sv("a"), &a);
-            ff_dict_add(&dict, sv("b"), &b);
-            ff_dict_add(&dict, sv("c"), &c);
+            ff_dict_add(&dict, FF_SVL("a"), &a);
+            ff_dict_add(&dict, FF_SVL("b"), &b);
+            ff_dict_add(&dict, FF_SVL("c"), &c);
 
-            Assert::IsTrue(ff_dict_clear(&dict, sv("a")));
+            Assert::IsTrue(ff_dict_clear(&dict, FF_SVL("a")));
 
             Assert::AreEqual((size_t)2, dict.count);
             Assert::AreEqual(2, values_of(dict)[0].i32);
@@ -1078,14 +1065,14 @@ namespace ff::test::base
 
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("a"), &a);
-            ff_dict_add(&dict, sv("b"), &b);
+            ff_dict_add(&dict, FF_SVL("a"), &a);
+            ff_dict_add(&dict, FF_SVL("b"), &b);
 
-            Assert::IsTrue(ff_dict_clear(&dict, sv("b")));
+            Assert::IsTrue(ff_dict_clear(&dict, FF_SVL("b")));
 
             Assert::AreEqual((size_t)1, dict.count);
             Assert::AreEqual(1, values_of(dict)[0].i32);
-            Assert::IsNull(ff_dict_get(&dict, sv("b")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("b")));
 
             ff_arena_destroy(&arena);
         }
@@ -1103,13 +1090,13 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             for (int i = 0; i < 10; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::IsTrue(ff_dict_clear(&dict, sv(key)));
+                Assert::IsTrue(ff_dict_clear(&dict, ff_sz_view(key)));
             }
 
             Assert::AreEqual((size_t)0, dict.count);
@@ -1126,17 +1113,17 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value first = ff_value_new_int32(1);
-            ff_dict_add(&dict, sv("key"), &first);
+            ff_dict_add(&dict, FF_SVL("key"), &first);
             size_t capacity = dict.capacity;
 
-            ff_dict_clear(&dict, sv("key"));
+            ff_dict_clear(&dict, FF_SVL("key"));
 
             ff_value second = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("key"), &second);
+            ff_dict_add(&dict, FF_SVL("key"), &second);
 
             Assert::AreEqual((size_t)1, dict.count);
             Assert::AreEqual(capacity, dict.capacity);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("key"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1157,7 +1144,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             const ff_value* values = values_of(dict);
@@ -1168,7 +1155,7 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, dict.count);
             Assert::AreEqual(capacity, dict.capacity);
             Assert::IsTrue(values_of(dict) == values);
-            Assert::IsNull(ff_dict_get(&dict, sv("key0")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("key0")));
 
             ff_arena_destroy(&arena);
         }
@@ -1182,16 +1169,16 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value first = ff_value_new_int32(1);
-            ff_dict_add(&dict, sv("old"), &first);
+            ff_dict_add(&dict, FF_SVL("old"), &first);
 
             ff_dict_reset(&dict);
 
             ff_value second = ff_value_new_int32(2);
-            ff_dict_add(&dict, sv("new"), &second);
+            ff_dict_add(&dict, FF_SVL("new"), &second);
 
             Assert::AreEqual((size_t)1, dict.count);
-            Assert::IsNull(ff_dict_get(&dict, sv("old")));
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("new"))->i32);
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("old")));
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("new"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1228,20 +1215,20 @@ namespace ff::test::base
             ff_value point_value = ff_value_new_point_int32(3, 4);
             ff_value rect_value = ff_value_new_rect_float32(1.0f, 2.0f, 3.0f, 4.0f);
 
-            ff_dict_set(&dict, sv("null"), &null_value);
-            ff_dict_set(&dict, sv("bool"), &bool_value);
-            ff_dict_set(&dict, sv("int64"), &int64_value);
-            ff_dict_set(&dict, sv("float64"), &float64_value);
-            ff_dict_set(&dict, sv("point"), &point_value);
-            ff_dict_set(&dict, sv("rect"), &rect_value);
+            ff_dict_set(&dict, FF_SVL("null"), &null_value);
+            ff_dict_set(&dict, FF_SVL("bool"), &bool_value);
+            ff_dict_set(&dict, FF_SVL("int64"), &int64_value);
+            ff_dict_set(&dict, FF_SVL("float64"), &float64_value);
+            ff_dict_set(&dict, FF_SVL("point"), &point_value);
+            ff_dict_set(&dict, FF_SVL("rect"), &rect_value);
 
-            Assert::IsTrue(ff_value_type_null == ff_dict_get(&dict, sv("null"))->type);
-            Assert::IsTrue(ff_dict_get(&dict, sv("bool"))->b);
-            Assert::AreEqual((int64_t)1234567890123LL, ff_dict_get(&dict, sv("int64"))->i64);
-            Assert::AreEqual(2.5, ff_dict_get(&dict, sv("float64"))->f64);
-            Assert::AreEqual(3, ff_dict_get(&dict, sv("point"))->point_i32[0]);
-            Assert::AreEqual(4, ff_dict_get(&dict, sv("point"))->point_i32[1]);
-            Assert::AreEqual(4.0f, ff_dict_get(&dict, sv("rect"))->rect_f32[3]);
+            Assert::IsTrue(ff_value_type_null == ff_dict_get(&dict, FF_SVL("null"))->type);
+            Assert::IsTrue(ff_dict_get(&dict, FF_SVL("bool"))->b);
+            Assert::AreEqual((int64_t)1234567890123LL, ff_dict_get(&dict, FF_SVL("int64"))->i64);
+            Assert::AreEqual(2.5, ff_dict_get(&dict, FF_SVL("float64"))->f64);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("point"))->point_i32[0]);
+            Assert::AreEqual(4, ff_dict_get(&dict, FF_SVL("point"))->point_i32[1]);
+            Assert::AreEqual(4.0f, ff_dict_get(&dict, FF_SVL("rect"))->rect_f32[3]);
 
             ff_arena_destroy(&arena);
         }
@@ -1254,10 +1241,10 @@ namespace ff::test::base
             ff_dict dict{};
             ff_dict_init(&dict, &arena);
 
-            ff_value value = ff_value_new_string(sv("hello"));
-            ff_dict_set(&dict, sv("greeting"), &value);
+            ff_value value = ff_value_new_string(FF_SVL("hello"));
+            ff_dict_set(&dict, FF_SVL("greeting"), &value);
 
-            ff_string_view text = ff_value_as_string(ff_dict_get(&dict, sv("greeting")));
+            ff_string_view text = ff_value_as_string(ff_dict_get(&dict, FF_SVL("greeting")));
 
             Assert::AreEqual((size_t)5, text.count);
             Assert::IsTrue(memcmp(text.data, "hello", 5) == 0);
@@ -1274,18 +1261,18 @@ namespace ff::test::base
             ff_dict_init(&inner, &arena);
 
             ff_value inner_value = ff_value_new_int32(99);
-            ff_dict_set(&inner, sv("inner_key"), &inner_value);
+            ff_dict_set(&inner, FF_SVL("inner_key"), &inner_value);
 
             ff_dict outer{};
             ff_dict_init(&outer, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&outer, sv("child"), &nested);
+            ff_dict_set(&outer, FF_SVL("child"), &nested);
 
-            ff_dict* found = ff_value_as_dict(ff_dict_get(&outer, sv("child")));
+            ff_dict* found = ff_value_as_dict(ff_dict_get(&outer, FF_SVL("child")));
 
             Assert::IsTrue(found == &inner);
-            Assert::AreEqual(99, ff_dict_get(found, sv("inner_key"))->i32);
+            Assert::AreEqual(99, ff_dict_get(found, FF_SVL("inner_key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1301,9 +1288,9 @@ namespace ff::test::base
             uint8_t bytes[4] = { 1, 2, 3, 4 };
             ff_span span{ bytes, sizeof(bytes) };
             ff_value value = ff_value_new_data(span);
-            ff_dict_set(&dict, sv("blob"), &value);
+            ff_dict_set(&dict, FF_SVL("blob"), &value);
 
-            ff_span found = ff_value_as_data(ff_dict_get(&dict, sv("blob")));
+            ff_span found = ff_value_as_data(ff_dict_get(&dict, FF_SVL("blob")));
 
             Assert::AreEqual(sizeof(bytes), found.size);
             Assert::IsTrue(found.data == bytes);
@@ -1323,9 +1310,9 @@ namespace ff::test::base
             ff_value items[2] = { ff_value_new_int32(10), ff_value_new_int32(20) };
             ff_value_span items_span{ items, 2 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&dict, sv("list"), &value);
+            ff_dict_set(&dict, FF_SVL("list"), &value);
 
-            ff_value_span found = ff_value_as_array(ff_dict_get(&dict, sv("list")));
+            ff_value_span found = ff_value_as_array(ff_dict_get(&dict, FF_SVL("list")));
 
             Assert::AreEqual((size_t)2, found.count);
             Assert::AreEqual(10, found.data[0].i32);
@@ -1345,9 +1332,9 @@ namespace ff::test::base
             GUID guid;
             memset(&guid, 0xAB, sizeof(guid));
             ff_value value = ff_value_new_guid(guid);
-            ff_dict_set(&dict, sv("id"), &value);
+            ff_dict_set(&dict, FF_SVL("id"), &value);
 
-            ff_value* found = ff_dict_get(&dict, sv("id"));
+            ff_value* found = ff_dict_get(&dict, FF_SVL("id"));
 
             // A GUID fills the whole payload, so the type must survive the copy into the dict.
             Assert::IsTrue(ff_value_type_guid == found->type);
@@ -1365,11 +1352,11 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&dict, sv("key"), &value);
+            ff_dict_set(&dict, FF_SVL("key"), &value);
 
-            ff_dict_get(&dict, sv("key"))->i32 = 5;
+            ff_dict_get(&dict, FF_SVL("key"))->i32 = 5;
 
-            Assert::AreEqual(5, ff_dict_get(&dict, sv("key"))->i32);
+            Assert::AreEqual(5, ff_dict_get(&dict, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1392,7 +1379,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_set(&dict, sv(key), &value);
+                ff_dict_set(&dict, ff_sz_view(key), &value);
             }
 
             Assert::AreEqual((size_t)total, dict.count);
@@ -1400,7 +1387,7 @@ namespace ff::test::base
             for (int i = 0; i < total; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
             }
@@ -1422,13 +1409,13 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_set(&dict, sv(key), &value);
+                ff_dict_set(&dict, ff_sz_view(key), &value);
             }
 
             for (int i = 0; i < 100; i += 2)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::IsTrue(ff_dict_clear(&dict, sv(key)));
+                Assert::IsTrue(ff_dict_clear(&dict, ff_sz_view(key)));
             }
 
             Assert::AreEqual((size_t)50, dict.count);
@@ -1436,7 +1423,7 @@ namespace ff::test::base
             for (int i = 0; i < 100; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
 
                 if (i % 2 == 0)
                 {
@@ -1461,11 +1448,11 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&dict, sv(""), &value);
+            ff_dict_set(&dict, FF_SVL(""), &value);
 
-            Assert::IsNotNull(ff_dict_get(&dict, sv("")));
-            Assert::AreEqual(1, ff_dict_get(&dict, sv(""))->i32);
-            Assert::IsNull(ff_dict_get(&dict, sv("other")));
+            Assert::IsNotNull(ff_dict_get(&dict, FF_SVL("")));
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL(""))->i32);
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("other")));
 
             ff_arena_destroy(&arena);
         }
@@ -1480,12 +1467,12 @@ namespace ff::test::base
 
             ff_value lower = ff_value_new_int32(1);
             ff_value upper = ff_value_new_int32(2);
-            ff_dict_set(&dict, sv("key"), &lower);
-            ff_dict_set(&dict, sv("KEY"), &upper);
+            ff_dict_set(&dict, FF_SVL("key"), &lower);
+            ff_dict_set(&dict, FF_SVL("KEY"), &upper);
 
             Assert::AreEqual((size_t)2, dict.count);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv("key"))->i32);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("KEY"))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, FF_SVL("key"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("KEY"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1501,13 +1488,13 @@ namespace ff::test::base
             const char text[] = "abc";
             ff_value shorter = ff_value_new_int32(1);
             ff_value longer = ff_value_new_int32(2);
-            ff_dict_set(&dict, sv_n(text, 2), &shorter);
-            ff_dict_set(&dict, sv_n(text, 3), &longer);
+            ff_dict_set(&dict, ff_string_view{ text, 2 }, &shorter);
+            ff_dict_set(&dict, ff_string_view{ text, 3 }, &longer);
 
             Assert::AreEqual((size_t)2, dict.count);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv_n(text, 2))->i32);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv_n(text, 3))->i32);
-            Assert::IsNull(ff_dict_get(&dict, sv_n(text, 1)));
+            Assert::AreEqual(1, ff_dict_get(&dict, ff_string_view{ text, 2 })->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, ff_string_view{ text, 3 })->i32);
+            Assert::IsNull(ff_dict_get(&dict, ff_string_view{ text, 1 }));
 
             ff_arena_destroy(&arena);
         }
@@ -1523,12 +1510,12 @@ namespace ff::test::base
             const char embedded[] = "a\0b";
             ff_value with_null = ff_value_new_int32(1);
             ff_value without_null = ff_value_new_int32(2);
-            ff_dict_set(&dict, sv_n(embedded, 3), &with_null);
-            ff_dict_set(&dict, sv_n(embedded, 1), &without_null);
+            ff_dict_set(&dict, ff_string_view{ embedded, 3 }, &with_null);
+            ff_dict_set(&dict, ff_string_view{ embedded, 1 }, &without_null);
 
             Assert::AreEqual((size_t)2, dict.count);
-            Assert::AreEqual(1, ff_dict_get(&dict, sv_n(embedded, 3))->i32);
-            Assert::AreEqual(2, ff_dict_get(&dict, sv_n(embedded, 1))->i32);
+            Assert::AreEqual(1, ff_dict_get(&dict, ff_string_view{ embedded, 3 })->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, ff_string_view{ embedded, 1 })->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1544,12 +1531,12 @@ namespace ff::test::base
             char key[32];
             sprintf_s(key, "temporary");
             ff_value value = ff_value_new_int32(5);
-            ff_dict_set(&dict, sv(key), &value);
+            ff_dict_set(&dict, ff_sz_view(key), &value);
 
             // Only the hash is stored, so overwriting the caller's buffer changes nothing.
             memset(key, 0, sizeof(key));
 
-            Assert::AreEqual(5, ff_dict_get(&dict, sv("temporary"))->i32);
+            Assert::AreEqual(5, ff_dict_get(&dict, FF_SVL("temporary"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1563,15 +1550,15 @@ namespace ff::test::base
             ff_dict_init(&dict, &arena);
 
             ff_value first = ff_value_new_int32(1);
-            ff_dict_set(&dict, sv("key"), &first);
+            ff_dict_set(&dict, FF_SVL("key"), &first);
             ff_dict_reset(&dict);
 
             ff_value second = ff_value_new_int32(2);
-            ff_dict_set(&dict, sv("key"), &second);
+            ff_dict_set(&dict, FF_SVL("key"), &second);
 
             Assert::AreEqual((size_t)1, dict.count);
             Assert::AreEqual(1, this->count_matches(&dict, "key"));
-            Assert::AreEqual(2, ff_dict_get(&dict, sv("key"))->i32);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("key"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1631,14 +1618,14 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             const uint64_t* keys = dict.keys;
             Assert::AreEqual((size_t)8, dict.capacity);
 
             ff_value extra = ff_value_new_int32(8);
-            ff_dict_add(&dict, sv("key8"), &extra);
+            ff_dict_add(&dict, FF_SVL("key8"), &extra);
 
             Assert::AreEqual((size_t)16, dict.capacity);
             Assert::IsTrue(dict.keys == keys);
@@ -1646,7 +1633,7 @@ namespace ff::test::base
             for (int i = 0; i < 9; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
             }
@@ -1667,14 +1654,14 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
             }
 
             const uint64_t* keys = dict.keys;
             Assert::IsNotNull(ff_arena_alloc(&arena, 64, 8));
 
             ff_value extra = ff_value_new_int32(8);
-            ff_dict_add(&dict, sv("key8"), &extra);
+            ff_dict_add(&dict, FF_SVL("key8"), &extra);
 
             Assert::AreEqual((size_t)16, dict.capacity);
             Assert::IsTrue(dict.keys != keys);
@@ -1682,7 +1669,7 @@ namespace ff::test::base
             for (int i = 0; i < 9; i++)
             {
                 sprintf_s(key, "key%d", i);
-                ff_value* found = ff_dict_get(&dict, sv(key));
+                ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
             }
@@ -1703,12 +1690,12 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int64((int64_t)i * 1000000007LL);
-                ff_dict_add(&dict, sv(key), &value);
+                ff_dict_add(&dict, ff_sz_view(key), &value);
 
                 for (int j = 0; j <= i; j++)
                 {
                     sprintf_s(key, "key%d", j);
-                    ff_value* found = ff_dict_get(&dict, sv(key));
+                    ff_value* found = ff_dict_get(&dict, ff_sz_view(key));
                     Assert::IsNotNull(found);
                     Assert::AreEqual((int64_t)j * 1000000007LL, found->i64);
                 }
@@ -1736,10 +1723,10 @@ namespace ff::test::base
                 sprintf_s(key, "key%d", i);
 
                 ff_value first_value = ff_value_new_int32(i);
-                ff_dict_add(&first, sv(key), &first_value);
+                ff_dict_add(&first, ff_sz_view(key), &first_value);
 
                 ff_value second_value = ff_value_new_int32(-i);
-                ff_dict_add(&second, sv(key), &second_value);
+                ff_dict_add(&second, ff_sz_view(key), &second_value);
             }
 
             Assert::AreEqual((size_t)100, first.count);
@@ -1749,8 +1736,8 @@ namespace ff::test::base
             for (int i = 0; i < 100; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::AreEqual(i, ff_dict_get(&first, sv(key))->i32);
-                Assert::AreEqual(-i, ff_dict_get(&second, sv(key))->i32);
+                Assert::AreEqual(i, ff_dict_get(&first, ff_sz_view(key))->i32);
+                Assert::AreEqual(-i, ff_dict_get(&second, ff_sz_view(key))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -1761,7 +1748,7 @@ namespace ff::test::base
         {
             int visited = 0;
 
-            for (ff_value* value = ff_dict_get(dict, sv(key)); value && visited < 1024; value = ff_dict_get_next(dict, sv(key), value))
+            for (ff_value* value = ff_dict_get(dict, ff_sz_view(key)); value && visited < 1024; value = ff_dict_get_next(dict, ff_sz_view(key), value))
             {
                 visited++;
             }

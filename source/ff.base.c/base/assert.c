@@ -35,7 +35,7 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
     ff_log_write(ff_log_type_debug, FF_SVL("%.*s"), FF_SV_FORMAT(message));
 
     ff_arena_declare_stack(arena_w, 1024 * sizeof(wchar_t));
-    ff_wstring_view dialog_text_wv = ff_utf8_to_wide(message, &arena_w);
+    ff_wstring_view dialog_text_w = ff_utf8_to_wide(message, &arena_w, true);
 
     // Only the main thread should show dialog UI
     bool ignored = true;
@@ -45,7 +45,7 @@ bool ff_internal_assert_core(const char* exp, const char* text, const char* file
     {
         ignored = false;
     }
-    else if (MessageBoxW(NULL, dialog_text_wv.data, L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
+    else if (MessageBoxW(NULL, dialog_text_w.data, L"Assertion failure", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
     {
         ignored = false;
     }

@@ -18,11 +18,11 @@ static log_info s_log_types[ff_log_type_count] =
     { .name = FF_SVL_INIT("ff/debug"), .enabled = DEBUG }, // debug
 };
 
-static ff_log_sink_func s_log_sink = NULL;
+static ff_log_sink_data s_log_sink = { 0 };
 
-ff_log_sink_func ff_log_set_sink(ff_log_sink_func sink)
+ff_log_sink_data ff_log_set_sink(ff_log_sink_data sink)
 {
-    ff_log_sink_func old_sink = s_log_sink;
+    ff_log_sink_data old_sink = s_log_sink;
     s_log_sink = sink;
     return old_sink;
 }
@@ -63,14 +63,14 @@ void ff_log_write_v(ff_log_type type, ff_string_view format, va_list args)
 
     ff_string_view line = ff_string_builder_view(&sb);
 
-    if (s_log_sink)
+    if (s_log_sink.sink)
     {
-        s_log_sink(type, line);
+        s_log_sink.sink(type, line, s_log_sink.cookie);
     }
 
 #ifdef _DEBUG
     ff_arena_declare_stack(wide_arena, 1024 * sizeof(wchar_t));
-    ff_wstring_view wide_line = ff_utf8_to_wide(line, &wide_arena);
+    ff_wstring_view wide_line = ff_utf8_to_wide(line, &wide_arena, true);
     OutputDebugStringW(wide_line.data);
     ff_arena_destroy(&wide_arena);
 #endif

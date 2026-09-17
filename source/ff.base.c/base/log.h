@@ -11,8 +11,15 @@ typedef enum
     ff_log_type_count,
 } ff_log_type;
 
-typedef void (*ff_log_sink_func)(ff_log_type type, ff_string_view text);
-ff_log_sink_func ff_log_set_sink(ff_log_sink_func sink);
+typedef void (*ff_log_sink_func)(ff_log_type type, ff_string_view text, void* cookie);
+
+typedef struct ff_log_sink_data
+{
+    ff_log_sink_func sink;
+    void* cookie;
+} ff_log_sink_data;
+
+ff_log_sink_data ff_log_set_sink(ff_log_sink_data sink);
 
 ff_string_view ff_log_get_type_name(ff_log_type type);
 bool ff_log_get_type_enabled(ff_log_type type);

@@ -54,7 +54,7 @@ ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena)
     DXGI_ADAPTER_DESC desc = { 0 };
     FF_CHECK_HR_RET_VAL(IDXGIAdapter3_GetDesc(adapter, &desc), result);
 
-    return ff_wide_to_utf8(ff_wz_view(desc.Description), arena);
+    return ff_wide_to_utf8(ff_wz_view(desc.Description), arena, false);
 }
 
 static uint64_t get_adapters_hash(IDXGIFactory6* factory)
@@ -120,7 +120,7 @@ static size_t enum_adapters(IDXGIAdapter3** adapters, size_t max_adapters)
 
         ff_arena_declare_stack(name_arena, 256);
         ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Adapter[%u] = %.*s"), (unsigned int)count,
-            FF_SV_FORMAT(ff_wide_to_utf8(ff_wz_view(desc.Description), &name_arena)));
+            FF_SV_FORMAT(ff_wide_to_utf8(ff_wz_view(desc.Description), &name_arena, false)));
         ff_arena_destroy(&name_arena);
 
         adapters[count++] = adapter;

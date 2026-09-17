@@ -503,6 +503,49 @@ namespace ff::test::base
             delete_temp_file(path);
         }
 
+        TEST_METHOD(write_file_creates_missing_directories)
+        {
+            char temp_dir[MAX_PATH];
+            DWORD temp_len = ::GetTempPathA((DWORD)std::size(temp_dir), temp_dir);
+            Assert::IsTrue(temp_len > 0 && temp_len < std::size(temp_dir));
+
+            char root_buffer[MAX_PATH];
+            int root_count = ::_snprintf_s(root_buffer, std::size(root_buffer), _TRUNCATE, "%sff_stream_test_dirs_%lu", temp_dir, ::GetCurrentProcessId());
+            Assert::IsTrue(root_count > 0);
+
+            char path_buffer[MAX_PATH];
+            int path_count = ::_snprintf_s(path_buffer, std::size(path_buffer), _TRUNCATE, "%s\\one\\two\\three\\nested.bin", root_buffer);
+            Assert::IsTrue(path_count > 0);
+
+            ff_string_view path;
+            path.data = path_buffer;
+            path.count = (size_t)path_count;
+
+            ff_stream writer;
+            Assert::IsTrue(ff_stream_init_write_file(&writer, path));
+            Assert::IsTrue(ff_stream_write(&writer, span_of_sz("nested")));
+            ff_stream_destroy(&writer);
+
+            ff_arena arena;
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_stream reader;
+            Assert::IsTrue(ff_stream_init_read_file(&reader, path));
+            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 100), "nested"));
+            ff_stream_destroy(&reader);
+
+            ff_arena_destroy(&arena);
+
+            ::DeleteFileA(path_buffer);
+            ::_snprintf_s(path_buffer, std::size(path_buffer), _TRUNCATE, "%s\\one\\two\\three", root_buffer);
+            ::RemoveDirectoryA(path_buffer);
+            ::_snprintf_s(path_buffer, std::size(path_buffer), _TRUNCATE, "%s\\one\\two", root_buffer);
+            ::RemoveDirectoryA(path_buffer);
+            ::_snprintf_s(path_buffer, std::size(path_buffer), _TRUNCATE, "%s\\one", root_buffer);
+            ::RemoveDirectoryA(path_buffer);
+            ::RemoveDirectoryA(root_buffer);
+        }
+
         TEST_METHOD(read_missing_file_fails)
         {
             char path_buffer[MAX_PATH];

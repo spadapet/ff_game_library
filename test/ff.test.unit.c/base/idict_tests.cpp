@@ -1,11 +1,4 @@
 #include "pch.h"
-
-static ff_string_view sv(const char* text)
-{
-    ff_string_view result{ text, strlen(text) };
-    return result;
-}
-
 // Every block begins with its own entry count and byte size. Neither is part of the public API, so
 // tests read them out of the block the same way the implementation does.
 static constexpr size_t block_header_size = 8;
@@ -88,7 +81,7 @@ namespace ff::test::base
 
             Assert::AreEqual((size_t)0, count_of(&dict));
             Assert::AreEqual(block_header_size, size_of(&dict));
-            Assert::IsNull(ff_idict_get(&dict, sv("anything")));
+            Assert::IsNull(ff_idict_get(&dict, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -102,7 +95,7 @@ namespace ff::test::base
             ff_idict_init(&dict, &arena, nullptr);
 
             Assert::AreEqual((size_t)0, count_of(&dict));
-            Assert::IsNull(ff_idict_get(&dict, sv("anything")));
+            Assert::IsNull(ff_idict_get(&dict, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -130,28 +123,28 @@ namespace ff::test::base
             ff_value rect_value = ff_value_new_rect_float32(1.0f, 2.0f, 3.0f, 4.0f);
             ff_value guid_value = ff_value_new_guid(guid);
 
-            ff_dict_set(&source, sv("null"), &null_value);
-            ff_dict_set(&source, sv("bool"), &bool_value);
-            ff_dict_set(&source, sv("int32"), &int32_value);
-            ff_dict_set(&source, sv("int64"), &int64_value);
-            ff_dict_set(&source, sv("float64"), &float64_value);
-            ff_dict_set(&source, sv("point"), &point_value);
-            ff_dict_set(&source, sv("rect"), &rect_value);
-            ff_dict_set(&source, sv("guid"), &guid_value);
+            ff_dict_set(&source, FF_SVL("null"), &null_value);
+            ff_dict_set(&source, FF_SVL("bool"), &bool_value);
+            ff_dict_set(&source, FF_SVL("int32"), &int32_value);
+            ff_dict_set(&source, FF_SVL("int64"), &int64_value);
+            ff_dict_set(&source, FF_SVL("float64"), &float64_value);
+            ff_dict_set(&source, FF_SVL("point"), &point_value);
+            ff_dict_set(&source, FF_SVL("rect"), &rect_value);
+            ff_dict_set(&source, FF_SVL("guid"), &guid_value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
             Assert::AreEqual((size_t)8, count_of(&dict));
-            Assert::IsTrue(ff_value_type_null == ff_idict_get(&dict, sv("null"))->type);
-            Assert::IsTrue(ff_idict_get(&dict, sv("bool"))->b);
-            Assert::AreEqual(-5, ff_idict_get(&dict, sv("int32"))->i32);
-            Assert::AreEqual((int64_t)1234567890123LL, ff_idict_get(&dict, sv("int64"))->i64);
-            Assert::AreEqual(2.5, ff_idict_get(&dict, sv("float64"))->f64);
-            Assert::AreEqual(3, ff_idict_get(&dict, sv("point"))->point_i32[0]);
-            Assert::AreEqual(4, ff_idict_get(&dict, sv("point"))->point_i32[1]);
-            Assert::AreEqual(4.0f, ff_idict_get(&dict, sv("rect"))->rect_f32[3]);
-            Assert::IsTrue(memcmp(&ff_idict_get(&dict, sv("guid"))->guid, &guid, sizeof(guid)) == 0);
+            Assert::IsTrue(ff_value_type_null == ff_idict_get(&dict, FF_SVL("null"))->type);
+            Assert::IsTrue(ff_idict_get(&dict, FF_SVL("bool"))->b);
+            Assert::AreEqual(-5, ff_idict_get(&dict, FF_SVL("int32"))->i32);
+            Assert::AreEqual((int64_t)1234567890123LL, ff_idict_get(&dict, FF_SVL("int64"))->i64);
+            Assert::AreEqual(2.5, ff_idict_get(&dict, FF_SVL("float64"))->f64);
+            Assert::AreEqual(3, ff_idict_get(&dict, FF_SVL("point"))->point_i32[0]);
+            Assert::AreEqual(4, ff_idict_get(&dict, FF_SVL("point"))->point_i32[1]);
+            Assert::AreEqual(4.0f, ff_idict_get(&dict, FF_SVL("rect"))->rect_f32[3]);
+            Assert::IsTrue(memcmp(&ff_idict_get(&dict, FF_SVL("guid"))->guid, &guid, sizeof(guid)) == 0);
 
             ff_arena_destroy(&arena);
         }
@@ -165,12 +158,12 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value value = ff_value_new_int32(1);
-            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            Assert::IsNull(ff_idict_get(&dict, sv("missing")));
+            Assert::IsNull(ff_idict_get(&dict, FF_SVL("missing")));
 
             ff_arena_destroy(&arena);
         }
@@ -186,7 +179,7 @@ namespace ff::test::base
             for (int i = 0; i < 5; i++)
             {
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&source, sv("dup"), &value);
+                ff_dict_add(&source, FF_SVL("dup"), &value);
             }
 
             ff_idict dict{};
@@ -196,7 +189,7 @@ namespace ff::test::base
             int expected = 0;
             int visited = 0;
 
-            for (const ff_ivalue* value = ff_idict_get(&dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&dict, sv("dup"), value))
+            for (const ff_ivalue* value = ff_idict_get(&dict, FF_SVL("dup")); value && visited < 32; value = ff_idict_get_next(&dict, FF_SVL("dup"), value))
             {
                 Assert::AreEqual(expected++, value->i32);
                 visited++;
@@ -211,7 +204,7 @@ namespace ff::test::base
         {
             ff_idict dict{};
 
-            Assert::IsNull(ff_idict_get_next(&dict, sv("anything"), nullptr));
+            Assert::IsNull(ff_idict_get_next(&dict, FF_SVL("anything"), nullptr));
         }
 
         TEST_METHOD(get_next_past_the_last_match_returns_null)
@@ -225,7 +218,7 @@ namespace ff::test::base
             for (int i = 0; i < 3; i++)
             {
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&source, sv("dup"), &value);
+                ff_dict_add(&source, FF_SVL("dup"), &value);
             }
 
             ff_idict dict{};
@@ -235,7 +228,7 @@ namespace ff::test::base
 
             // Stored oldest first, so the final slot holds the value that was added last.
             Assert::AreEqual(2, last->i32);
-            Assert::IsNull(ff_idict_get_next(&dict, sv("dup"), last));
+            Assert::IsNull(ff_idict_get_next(&dict, FF_SVL("dup"), last));
 
             ff_arena_destroy(&arena);
         }
@@ -250,15 +243,15 @@ namespace ff::test::base
 
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
-            ff_dict_set(&source, sv("a"), &a);
-            ff_dict_set(&source, sv("b"), &b);
+            ff_dict_set(&source, FF_SVL("a"), &a);
+            ff_dict_set(&source, FF_SVL("b"), &b);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
             // "a" lives before "b", so resuming at "b" can never find it again.
-            Assert::IsNull(ff_idict_get_next(&dict, sv("a"), values_of(dict) + 1));
-            Assert::IsNotNull(ff_idict_get_next(&dict, sv("b"), values_of(dict) + 0));
+            Assert::IsNull(ff_idict_get_next(&dict, FF_SVL("a"), values_of(dict) + 1));
+            Assert::IsNotNull(ff_idict_get_next(&dict, FF_SVL("b"), values_of(dict) + 0));
 
             ff_arena_destroy(&arena);
         }
@@ -274,24 +267,24 @@ namespace ff::test::base
             for (int i = 0; i < 4; i++)
             {
                 ff_value value = ff_value_new_int32(i * 10);
-                ff_dict_add(&inner, sv("dup"), &value);
+                ff_dict_add(&inner, FF_SVL("dup"), &value);
             }
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             int expected = 0;
             int visited = 0;
 
-            for (const ff_ivalue* value = ff_idict_get(&child_dict, sv("dup")); value && visited < 32; value = ff_idict_get_next(&child_dict, sv("dup"), value))
+            for (const ff_ivalue* value = ff_idict_get(&child_dict, FF_SVL("dup")); value && visited < 32; value = ff_idict_get_next(&child_dict, FF_SVL("dup"), value))
             {
                 Assert::AreEqual(expected, value->i32);
                 expected += 10;
@@ -314,13 +307,13 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value value = ff_value_new_string(sv("hello world"));
-            ff_dict_set(&source, sv("greeting"), &value);
+            ff_value value = ff_value_new_string(FF_SVL("hello world"));
+            ff_dict_set(&source, FF_SVL("greeting"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, sv("greeting")), &dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("greeting")), &dict);
 
             Assert::AreEqual((size_t)11, text.count);
             Assert::IsTrue(memcmp(text.data, "hello world", 11) == 0);
@@ -337,13 +330,13 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             char buffer[] = "temporary";
-            ff_value value = ff_value_new_string(sv(buffer));
-            ff_dict_set(&source, sv("key"), &value);
+            ff_value value = ff_value_new_string(ff_sz_view(buffer));
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, sv("key")), &dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("key")), &dict);
 
             // The block owns a copy, so it does not alias the caller's buffer.
             Assert::IsTrue(text.data != buffer);
@@ -364,13 +357,13 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value value = ff_value_new_string(sv(""));
-            ff_dict_set(&source, sv("key"), &value);
+            ff_value value = ff_value_new_string(FF_SVL(""));
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, sv("key")), &dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("key")), &dict);
 
             Assert::AreEqual((size_t)0, text.count);
 
@@ -385,10 +378,10 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value first = ff_value_new_string(sv("abc"));
-            ff_value second = ff_value_new_string(sv("de"));
-            ff_dict_set(&source, sv("first"), &first);
-            ff_dict_set(&source, sv("second"), &second);
+            ff_value first = ff_value_new_string(FF_SVL("abc"));
+            ff_value second = ff_value_new_string(FF_SVL("de"));
+            ff_dict_set(&source, FF_SVL("first"), &first);
+            ff_dict_set(&source, FF_SVL("second"), &second);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -418,19 +411,19 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_set(&inner, sv(key), &value);
+                ff_dict_set(&inner, ff_sz_view(key), &value);
             }
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
+            const ff_ivalue* child = ff_idict_get(&dict, FF_SVL("child"));
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
             // A nested dict is described by its offset alone; everything else comes from its block.
@@ -442,7 +435,7 @@ namespace ff::test::base
             for (int i = 0; i < count; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::AreEqual(i, ff_idict_get(&child_dict, sv(key))->i32);
+                Assert::AreEqual(i, ff_idict_get(&child_dict, ff_sz_view(key))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -461,12 +454,12 @@ namespace ff::test::base
             ff_string_view raw_view{ raw, sizeof(raw) - 1 };
 
             ff_value value = ff_value_new_string(raw_view);
-            ff_dict_set(&source, sv("key"), &value);
+            ff_dict_set(&source, FF_SVL("key"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, sv("key")), &dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("key")), &dict);
 
             Assert::AreEqual(sizeof(raw) - 1, text.count);
             Assert::IsTrue(memcmp(text.data, raw, text.count) == 0);
@@ -489,12 +482,12 @@ namespace ff::test::base
             uint8_t bytes[5] = { 1, 2, 3, 4, 5 };
             ff_span span{ bytes, sizeof(bytes) };
             ff_value value = ff_value_new_data(span);
-            ff_dict_set(&source, sv("blob"), &value);
+            ff_dict_set(&source, FF_SVL("blob"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* found = ff_idict_get(&dict, sv("blob"));
+            const ff_ivalue* found = ff_idict_get(&dict, FF_SVL("blob"));
 
             Assert::IsTrue(ff_value_type_data == found->type);
             Assert::AreEqual((size_t)5, (size_t)found->data.count);
@@ -513,8 +506,8 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             // A one byte string first, so an unaligned data item would be caught.
-            ff_value text = ff_value_new_string(sv("x"));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("x"));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             double numbers[3] = { 1.5, 2.5, 3.5 };
             ff_array_span as{};
@@ -524,12 +517,12 @@ namespace ff::test::base
             as.item_align = alignof(double);
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("numbers"), &value);
+            ff_dict_set(&source, FF_SVL("numbers"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* found = ff_idict_get(&dict, sv("numbers"));
+            const ff_ivalue* found = ff_idict_get(&dict, FF_SVL("numbers"));
             const double* stored = (const double*)(data_of(dict) + found->data.offset);
 
             Assert::AreEqual((size_t)alignof(double), (size_t)found->data.item_align);
@@ -556,12 +549,12 @@ namespace ff::test::base
             as.item_align = 64;
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("wide"), &value);
+            ff_dict_set(&source, FF_SVL("wide"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* found = ff_idict_get(&dict, sv("wide"));
+            const ff_ivalue* found = ff_idict_get(&dict, FF_SVL("wide"));
 
             // The whole block has to be allocated strictly enough for its strictest item.
             Assert::IsTrue(is_aligned(dict.data, 64));
@@ -586,12 +579,12 @@ namespace ff::test::base
             as.item_align = alignof(double);
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("empty"), &value);
+            ff_dict_set(&source, FF_SVL("empty"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&dict, sv("empty")), &dict);
+            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("empty")), &dict);
 
             Assert::AreEqual((size_t)0, (size_t)found.count);
             Assert::AreEqual((size_t)sizeof(double), (size_t)found.item_size);
@@ -608,8 +601,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("x"));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("x"));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             uint8_t bytes[2] = { 1, 2 };
             ff_array_span as{};
@@ -619,12 +612,12 @@ namespace ff::test::base
             as.item_align = 0;
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("blob"), &value);
+            ff_dict_set(&source, FF_SVL("blob"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&dict, sv("blob")), &dict);
+            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("blob")), &dict);
 
             // Zero means "default", so alignof(size_t)
             Assert::AreEqual(alignof(size_t), (size_t)found.item_align);
@@ -654,17 +647,17 @@ namespace ff::test::base
 
             as.data = &first_byte;
             ff_value first = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("first"), &first);
+            ff_dict_set(&source, FF_SVL("first"), &first);
 
             as.data = &second_byte;
             ff_value second = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("second"), &second);
+            ff_dict_set(&source, FF_SVL("second"), &second);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* first_value = ff_idict_get(&dict, sv("first"));
-            const ff_ivalue* second_value = ff_idict_get(&dict, sv("second"));
+            const ff_ivalue* first_value = ff_idict_get(&dict, FF_SVL("first"));
+            const ff_ivalue* second_value = ff_idict_get(&dict, FF_SVL("second"));
 
             Assert::AreEqual((size_t)0, (size_t)first_value->data.offset % 8);
             Assert::AreEqual((size_t)0, (size_t)second_value->data.offset % 8);
@@ -692,8 +685,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("x"));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("x"));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             uint64_t number = 0x1122334455667788ULL;
             ff_array_span as{};
@@ -703,12 +696,12 @@ namespace ff::test::base
             as.item_align = alignof(uint64_t);
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("number"), &value);
+            ff_dict_set(&source, FF_SVL("number"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* number_value = ff_idict_get(&dict, sv("number"));
+            const ff_ivalue* number_value = ff_idict_get(&dict, FF_SVL("number"));
             ff_array_span found = ff_ivalue_as_data(number_value, &dict);
 
             Assert::AreEqual((size_t)0, (size_t)number_value->data.offset % alignof(uint64_t));
@@ -738,12 +731,12 @@ namespace ff::test::base
 
             ff_value_span items_span{ items, 3 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
 
             Assert::AreEqual((size_t)3, found.count);
             Assert::IsTrue(is_aligned(found.data, alignof(ff_ivalue)));
@@ -764,12 +757,12 @@ namespace ff::test::base
 
             ff_value_span items_span{ nullptr, 0 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
 
             Assert::AreEqual((size_t)0, (size_t)found.count);
 
@@ -786,18 +779,18 @@ namespace ff::test::base
 
             ff_value items[2] =
             {
-                ff_value_new_string(sv("first")),
-                ff_value_new_string(sv("second")),
+                ff_value_new_string(FF_SVL("first")),
+                ff_value_new_string(FF_SVL("second")),
             };
 
             ff_value_span items_span{ items, 2 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
 
             // Array items are not a block of their own, so their offsets are relative to this dict.
             ff_string_view first = ff_ivalue_as_string(found.data + 0, &dict);
@@ -825,17 +818,17 @@ namespace ff::test::base
             ff_value outer_items[2] =
             {
                 ff_value_new_array(inner_span),
-                ff_value_new_string(sv("tail")),
+                ff_value_new_string(FF_SVL("tail")),
             };
 
             ff_value_span outer_span{ outer_items, 2 };
             ff_value value = ff_value_new_array(outer_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span outer = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span outer = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             ff_ivalue_span inner = ff_ivalue_as_array(outer.data + 0, &dict);
 
             Assert::AreEqual((size_t)2, inner.count);
@@ -857,12 +850,12 @@ namespace ff::test::base
             ff_value items[3] = { ff_value_new_int32(1), ff_value_new_int32(2), ff_value_new_int32(3) };
             ff_value_span items_span{ items, 3 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* found = ff_idict_get(&dict, sv("list"));
+            const ff_ivalue* found = ff_idict_get(&dict, FF_SVL("list"));
 
             Assert::AreEqual((size_t)3, (size_t)found->data.count);
             Assert::AreEqual((size_t)sizeof(ff_ivalue), (size_t)found->data.item_size);
@@ -897,19 +890,19 @@ namespace ff::test::base
 
             ff_value items[3] =
             {
-                ff_value_new_string(sv("odd")),
+                ff_value_new_string(FF_SVL("odd")),
                 ff_value_new_data_array(first_span),
                 ff_value_new_data_array(second_span),
             };
 
             ff_value_span items_span{ items, 3 };
             ff_value value = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &value);
+            ff_dict_set(&source, FF_SVL("list"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             ff_array_span doubles = ff_ivalue_as_data(found.data + 1, &dict);
             ff_array_span wide = ff_ivalue_as_data(found.data + 2, &dict);
 
@@ -938,10 +931,10 @@ namespace ff::test::base
                 ff_dict_init(&inner[i], &arena);
 
                 sprintf_s(texts[i], "child %d text", i);
-                ff_value text = ff_value_new_string(sv(texts[i]));
+                ff_value text = ff_value_new_string(ff_sz_view(texts[i]));
                 ff_value number = ff_value_new_int32(i * 3);
-                ff_dict_set(&inner[i], sv("text"), &text);
-                ff_dict_set(&inner[i], sv("number"), &number);
+                ff_dict_set(&inner[i], FF_SVL("text"), &text);
+                ff_dict_set(&inner[i], FF_SVL("number"), &number);
 
                 items[i] = ff_value_new_dict(&inner[i]);
             }
@@ -951,12 +944,12 @@ namespace ff::test::base
 
             ff_value_span items_span{ items, count };
             ff_value list = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &list);
+            ff_dict_set(&source, FF_SVL("list"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             Assert::AreEqual((size_t)count, found.count);
 
             const uint8_t* previous_end = nullptr;
@@ -965,10 +958,10 @@ namespace ff::test::base
             {
                 // Each item is its own block, so it resolves against itself and not the outer dict.
                 ff_idict item_dict = ff_ivalue_as_dict(found.data + i, &dict);
-                ff_string_view text = ff_ivalue_as_string(ff_idict_get(&item_dict, sv("text")), &item_dict);
+                ff_string_view text = ff_ivalue_as_string(ff_idict_get(&item_dict, FF_SVL("text")), &item_dict);
 
                 Assert::AreEqual((size_t)2, count_of(&item_dict));
-                Assert::AreEqual(i * 3, ff_idict_get(&item_dict, sv("number"))->i32);
+                Assert::AreEqual(i * 3, ff_idict_get(&item_dict, FF_SVL("number"))->i32);
                 Assert::AreEqual(strlen(texts[i]), text.count);
                 Assert::IsTrue(memcmp(text.data, texts[i], text.count) == 0);
 
@@ -995,7 +988,7 @@ namespace ff::test::base
             for (int i = 0; i < count; i++)
             {
                 sprintf_s(texts[i], 32, "item %d of the big array", i);
-                items[i] = ff_value_new_string(sv(texts[i]));
+                items[i] = ff_value_new_string(ff_sz_view(texts[i]));
             }
 
             ff_dict source{};
@@ -1003,13 +996,13 @@ namespace ff::test::base
 
             ff_value_span items_span{ items, count };
             ff_value list = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &list);
+            ff_dict_set(&source, FF_SVL("list"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
             // Writing item slots while the block keeps growing under them must not lose any of them.
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             Assert::AreEqual((size_t)count, found.count);
 
             for (int i = 0; i < count; i++)
@@ -1037,35 +1030,35 @@ namespace ff::test::base
             ff_dict_init(&inner, &arena);
 
             ff_value inner_number = ff_value_new_int32(99);
-            ff_value inner_text = ff_value_new_string(sv("deep"));
-            ff_dict_set(&inner, sv("number"), &inner_number);
-            ff_dict_set(&inner, sv("text"), &inner_text);
+            ff_value inner_text = ff_value_new_string(FF_SVL("deep"));
+            ff_dict_set(&inner, FF_SVL("number"), &inner_number);
+            ff_dict_set(&inner, FF_SVL("text"), &inner_text);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
             ff_value sibling = ff_value_new_int32(1);
-            ff_dict_set(&source, sv("child"), &nested);
-            ff_dict_set(&source, sv("sibling"), &sibling);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("sibling"), &sibling);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
+            const ff_ivalue* child = ff_idict_get(&dict, FF_SVL("child"));
             Assert::IsTrue(ff_value_type_idict == child->type);
 
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
             Assert::AreEqual((size_t)2, count_of(&child_dict));
-            Assert::AreEqual(99, ff_idict_get(&child_dict, sv("number"))->i32);
+            Assert::AreEqual(99, ff_idict_get(&child_dict, FF_SVL("number"))->i32);
 
             // The nested string resolves against the nested block, not the outer one.
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, sv("text")), &child_dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("text")), &child_dict);
             Assert::AreEqual((size_t)4, text.count);
             Assert::IsTrue(memcmp(text.data, "deep", 4) == 0);
 
-            Assert::AreEqual(1, ff_idict_get(&dict, sv("sibling"))->i32);
+            Assert::AreEqual(1, ff_idict_get(&dict, FF_SVL("sibling"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1078,19 +1071,19 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value inner_value = ff_value_new_string(sv("payload"));
-            ff_dict_set(&inner, sv("text"), &inner_value);
+            ff_value inner_value = ff_value_new_string(FF_SVL("payload"));
+            ff_dict_set(&inner, FF_SVL("text"), &inner_value);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
+            const ff_ivalue* child = ff_idict_get(&dict, FF_SVL("child"));
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
             // The nested block carries its own count and size, so the value only needs an offset.
@@ -1120,16 +1113,16 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             Assert::AreEqual((size_t)0, count_of(&child_dict));
             Assert::AreEqual(block_header_size, size_of(&child_dict));
-            Assert::IsNull(ff_idict_get(&child_dict, sv("anything")));
+            Assert::IsNull(ff_idict_get(&child_dict, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -1143,15 +1136,15 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(nullptr);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             Assert::AreEqual((size_t)0, count_of(&child_dict));
-            Assert::IsNull(ff_idict_get(&child_dict, sv("anything")));
+            Assert::IsNull(ff_idict_get(&child_dict, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -1172,13 +1165,13 @@ namespace ff::test::base
 
                 // Each name needs its own buffer: a string value points at the caller's bytes.
                 sprintf_s(names[i], "level%d", i);
-                ff_value marker = ff_value_new_string(sv(names[i]));
-                ff_dict_set(&levels[i], sv("name"), &marker);
+                ff_value marker = ff_value_new_string(ff_sz_view(names[i]));
+                ff_dict_set(&levels[i], FF_SVL("name"), &marker);
 
                 if (i + 1 < depth)
                 {
                     ff_value child = ff_value_new_dict(&levels[i + 1]);
-                    ff_dict_set(&levels[i], sv("child"), &child);
+                    ff_dict_set(&levels[i], FF_SVL("child"), &child);
                 }
             }
 
@@ -1189,12 +1182,12 @@ namespace ff::test::base
             for (int i = 0; i < depth; i++)
             {
                 sprintf_s(key, "level%d", i);
-                ff_string_view name = ff_ivalue_as_string(ff_idict_get(&current, sv("name")), &current);
+                ff_string_view name = ff_ivalue_as_string(ff_idict_get(&current, FF_SVL("name")), &current);
 
                 Assert::AreEqual(strlen(key), name.count);
                 Assert::IsTrue(memcmp(name.data, key, name.count) == 0);
 
-                const ff_ivalue* child = ff_idict_get(&current, sv("child"));
+                const ff_ivalue* child = ff_idict_get(&current, FF_SVL("child"));
                 if (i + 1 < depth)
                 {
                     Assert::IsNotNull(child);
@@ -1217,8 +1210,8 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value inner_value = ff_value_new_string(sv("in array"));
-            ff_dict_set(&inner, sv("text"), &inner_value);
+            ff_value inner_value = ff_value_new_string(FF_SVL("in array"));
+            ff_dict_set(&inner, FF_SVL("text"), &inner_value);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
@@ -1231,16 +1224,16 @@ namespace ff::test::base
 
             ff_value_span items_span{ items, 2 };
             ff_value list = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("list"), &list);
+            ff_dict_set(&source, FF_SVL("list"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             ff_idict item_dict = ff_ivalue_as_dict(found.data + 0, &dict);
 
             Assert::AreEqual((size_t)1, count_of(&item_dict));
-            Assert::AreEqual((size_t)8, ff_ivalue_as_string(ff_idict_get(&item_dict, sv("text")), &item_dict).count);
+            Assert::AreEqual((size_t)8, ff_ivalue_as_string(ff_idict_get(&item_dict, FF_SVL("text")), &item_dict).count);
             Assert::AreEqual(7, found.data[1].i32);
 
             ff_arena_destroy(&arena);
@@ -1254,22 +1247,22 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value items[2] = { ff_value_new_string(sv("a")), ff_value_new_int32(2) };
+            ff_value items[2] = { ff_value_new_string(FF_SVL("a")), ff_value_new_int32(2) };
             ff_value_span items_span{ items, 2 };
             ff_value list = ff_value_new_array(items_span);
-            ff_dict_set(&inner, sv("list"), &list);
+            ff_dict_set(&inner, FF_SVL("list"), &list);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&child_dict, sv("list")), &child_dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&child_dict, FF_SVL("list")), &child_dict);
 
             // Everything reachable from the nested dict resolves against the nested block.
             Assert::AreEqual((size_t)2, found.count);
@@ -1292,28 +1285,28 @@ namespace ff::test::base
             ff_dict_init(&inner, &arena);
 
             ff_value inner_value = ff_value_new_int32(1);
-            ff_dict_set(&inner, sv("number"), &inner_value);
+            ff_dict_set(&inner, FF_SVL("number"), &inner_value);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             // One loose byte first, so the nested block has to be pushed to the next aligned offset.
-            ff_value text = ff_value_new_string(sv("x"));
+            ff_value text = ff_value_new_string(FF_SVL("x"));
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("text"), &text);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("text"), &text);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
+            const ff_ivalue* child = ff_idict_get(&dict, FF_SVL("child"));
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
             // Blocks sit on the block alignment, so the loose byte before this one forces it to the
             // next 8 byte boundary. Payloads that need more still align themselves individually.
             Assert::AreEqual((size_t)ff_idict_block_align, (size_t)child->data.offset);
             Assert::IsTrue(is_aligned(child_dict.data, ff_idict_block_align));
-            Assert::AreEqual(1, ff_idict_get(&child_dict, sv("number"))->i32);
+            Assert::AreEqual(1, ff_idict_get(&child_dict, FF_SVL("number"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -1326,25 +1319,25 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value inner_value = ff_value_new_string(sv("payload"));
-            ff_dict_set(&inner, sv("text"), &inner_value);
+            ff_value inner_value = ff_value_new_string(FF_SVL("payload"));
+            ff_dict_set(&inner, FF_SVL("text"), &inner_value);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             // The sibling's bytes land after the nested block and must not be counted as part of it.
             ff_value nested = ff_value_new_dict(&inner);
-            ff_value sibling = ff_value_new_string(sv("a much longer sibling string"));
-            ff_dict_set(&source, sv("child"), &nested);
-            ff_dict_set(&source, sv("sibling"), &sibling);
+            ff_value sibling = ff_value_new_string(FF_SVL("a much longer sibling string"));
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("sibling"), &sibling);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             Assert::AreEqual(data_start_of(1) + 7, size_of(&child_dict));
-            Assert::AreEqual((size_t)28, ff_ivalue_as_string(ff_idict_get(&dict, sv("sibling")), &dict).count);
+            Assert::AreEqual((size_t)28, ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("sibling")), &dict).count);
 
             ff_arena_destroy(&arena);
         }
@@ -1359,27 +1352,27 @@ namespace ff::test::base
             ff_dict_init(&first, &arena);
             ff_dict_init(&second, &arena);
 
-            ff_value first_text = ff_value_new_string(sv("aaa"));
-            ff_dict_set(&first, sv("text"), &first_text);
+            ff_value first_text = ff_value_new_string(FF_SVL("aaa"));
+            ff_dict_set(&first, FF_SVL("text"), &first_text);
 
-            ff_value second_text = ff_value_new_string(sv("bbbbbbbbb"));
+            ff_value second_text = ff_value_new_string(FF_SVL("bbbbbbbbb"));
             ff_value second_number = ff_value_new_int32(42);
-            ff_dict_set(&second, sv("text"), &second_text);
-            ff_dict_set(&second, sv("number"), &second_number);
+            ff_dict_set(&second, FF_SVL("text"), &second_text);
+            ff_dict_set(&second, FF_SVL("number"), &second_number);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value a = ff_value_new_dict(&first);
             ff_value b = ff_value_new_dict(&second);
-            ff_dict_set(&source, sv("a"), &a);
-            ff_dict_set(&source, sv("b"), &b);
+            ff_dict_set(&source, FF_SVL("a"), &a);
+            ff_dict_set(&source, FF_SVL("b"), &b);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict a_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("a")), &dict);
-            ff_idict b_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("b")), &dict);
+            ff_idict a_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("a")), &dict);
+            ff_idict b_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("b")), &dict);
 
             Assert::AreEqual((size_t)1, count_of(&a_dict));
             Assert::AreEqual((size_t)2, count_of(&b_dict));
@@ -1387,9 +1380,9 @@ namespace ff::test::base
             Assert::AreEqual(data_start_of(2) + 9, size_of(&b_dict));
 
             // The same key in each block resolves to that block's own bytes.
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&a_dict, sv("text")), &a_dict).data, "aaa", 3) == 0);
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&b_dict, sv("text")), &b_dict).data, "bbbbbbbbb", 9) == 0);
-            Assert::IsNull(ff_idict_get(&a_dict, sv("number")));
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&a_dict, FF_SVL("text")), &a_dict).data, "aaa", 3) == 0);
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&b_dict, FF_SVL("text")), &b_dict).data, "bbbbbbbbb", 9) == 0);
+            Assert::IsNull(ff_idict_get(&a_dict, FF_SVL("number")));
 
             const uint8_t* a_start = (const uint8_t*)a_dict.data;
             const uint8_t* b_start = (const uint8_t*)b_dict.data;
@@ -1416,24 +1409,24 @@ namespace ff::test::base
             as.item_align = 64;
 
             // A stray byte inside the nested block too, so nothing lines up by accident.
-            ff_value inner_text = ff_value_new_string(sv("z"));
+            ff_value inner_text = ff_value_new_string(FF_SVL("z"));
             ff_value inner_wide = ff_value_new_data_array(as);
-            ff_dict_set(&inner, sv("text"), &inner_text);
-            ff_dict_set(&inner, sv("wide"), &inner_wide);
+            ff_dict_set(&inner, FF_SVL("text"), &inner_text);
+            ff_dict_set(&inner, FF_SVL("wide"), &inner_wide);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value outer_text = ff_value_new_string(sv("pad"));
+            ff_value outer_text = ff_value_new_string(FF_SVL("pad"));
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("pad"), &outer_text);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("pad"), &outer_text);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
-            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&child_dict, sv("wide")), &child_dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+            ff_array_span found = ff_ivalue_as_data(ff_idict_get(&child_dict, FF_SVL("wide")), &child_dict);
 
             // Padding is computed on absolute offsets, so the nested item is still 64 byte aligned
             // even though its recorded offset is relative to the nested block.
@@ -1453,32 +1446,32 @@ namespace ff::test::base
             ff_dict leaf{};
             ff_dict_init(&leaf, &arena);
 
-            ff_value leaf_text = ff_value_new_string(sv("found me"));
-            ff_dict_set(&leaf, sv("leaf"), &leaf_text);
+            ff_value leaf_text = ff_value_new_string(FF_SVL("found me"));
+            ff_dict_set(&leaf, FF_SVL("leaf"), &leaf_text);
 
             ff_dict middle{};
             ff_dict_init(&middle, &arena);
 
-            ff_value items[2] = { ff_value_new_dict(&leaf), ff_value_new_string(sv("tail")) };
+            ff_value items[2] = { ff_value_new_dict(&leaf), ff_value_new_string(FF_SVL("tail")) };
             ff_value_span items_span{ items, 2 };
             ff_value list = ff_value_new_array(items_span);
-            ff_dict_set(&middle, sv("list"), &list);
+            ff_dict_set(&middle, FF_SVL("list"), &list);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&middle);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict middle_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&middle_dict, sv("list")), &middle_dict);
+            ff_idict middle_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&middle_dict, FF_SVL("list")), &middle_dict);
 
             // The array belongs to the middle block; the item is a block of its own again.
             ff_idict leaf_dict = ff_ivalue_as_dict(found.data + 0, &middle_dict);
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&leaf_dict, sv("leaf")), &leaf_dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&leaf_dict, FF_SVL("leaf")), &leaf_dict);
 
             Assert::AreEqual((size_t)2, found.count);
             Assert::AreEqual((size_t)8, text.count);
@@ -1497,7 +1490,7 @@ namespace ff::test::base
             ff_dict_init(&grandchild, &arena);
 
             ff_value grandchild_number = ff_value_new_int64(-77);
-            ff_dict_set(&grandchild, sv("number"), &grandchild_number);
+            ff_dict_set(&grandchild, FF_SVL("number"), &grandchild_number);
 
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
@@ -1509,50 +1502,50 @@ namespace ff::test::base
             as.item_size = sizeof(double);
             as.item_align = alignof(double);
 
-            ff_value array_items[2] = { ff_value_new_boolean(true), ff_value_new_string(sv("odd")) };
+            ff_value array_items[2] = { ff_value_new_boolean(true), ff_value_new_string(FF_SVL("odd")) };
             ff_value_span array_span{ array_items, 2 };
 
             ff_value inner_scalar = ff_value_new_int32(3);
-            ff_value inner_string = ff_value_new_string(sv("inner string"));
+            ff_value inner_string = ff_value_new_string(FF_SVL("inner string"));
             ff_value inner_data = ff_value_new_data_array(as);
             ff_value inner_array = ff_value_new_array(array_span);
             ff_value inner_dict = ff_value_new_dict(&grandchild);
 
-            ff_dict_set(&inner, sv("scalar"), &inner_scalar);
-            ff_dict_set(&inner, sv("string"), &inner_string);
-            ff_dict_set(&inner, sv("data"), &inner_data);
-            ff_dict_set(&inner, sv("array"), &inner_array);
-            ff_dict_set(&inner, sv("dict"), &inner_dict);
+            ff_dict_set(&inner, FF_SVL("scalar"), &inner_scalar);
+            ff_dict_set(&inner, FF_SVL("string"), &inner_string);
+            ff_dict_set(&inner, FF_SVL("data"), &inner_data);
+            ff_dict_set(&inner, FF_SVL("array"), &inner_array);
+            ff_dict_set(&inner, FF_SVL("dict"), &inner_dict);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
             Assert::AreEqual((size_t)5, count_of(&child_dict));
-            Assert::AreEqual(3, ff_idict_get(&child_dict, sv("scalar"))->i32);
+            Assert::AreEqual(3, ff_idict_get(&child_dict, FF_SVL("scalar"))->i32);
 
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, sv("string")), &child_dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("string")), &child_dict);
             Assert::AreEqual((size_t)12, text.count);
             Assert::IsTrue(memcmp(text.data, "inner string", 12) == 0);
 
-            ff_array_span data = ff_ivalue_as_data(ff_idict_get(&child_dict, sv("data")), &child_dict);
+            ff_array_span data = ff_ivalue_as_data(ff_idict_get(&child_dict, FF_SVL("data")), &child_dict);
             Assert::IsTrue(is_aligned(data.data, alignof(double)));
             Assert::AreEqual(0.75, ((const double*)data.data)[1]);
 
-            ff_ivalue_span array = ff_ivalue_as_array(ff_idict_get(&child_dict, sv("array")), &child_dict);
+            ff_ivalue_span array = ff_ivalue_as_array(ff_idict_get(&child_dict, FF_SVL("array")), &child_dict);
             Assert::AreEqual((size_t)2, array.count);
             Assert::IsTrue(array.data[0].b);
             Assert::AreEqual((size_t)3, ff_ivalue_as_string(array.data + 1, &child_dict).count);
 
-            ff_idict grandchild_dict = ff_ivalue_as_dict(ff_idict_get(&child_dict, sv("dict")), &child_dict);
+            ff_idict grandchild_dict = ff_ivalue_as_dict(ff_idict_get(&child_dict, FF_SVL("dict")), &child_dict);
             Assert::AreEqual((size_t)1, count_of(&grandchild_dict));
-            Assert::AreEqual((int64_t)-77, ff_idict_get(&grandchild_dict, sv("number"))->i64);
+            Assert::AreEqual((int64_t)-77, ff_idict_get(&grandchild_dict, FF_SVL("number"))->i64);
 
             ff_arena_destroy(&arena);
         }
@@ -1576,22 +1569,22 @@ namespace ff::test::base
                 ff_dict_init(&child[s], &arena);
 
                 sprintf_s(child_names[s], "child %d", s);
-                ff_value child_name = ff_value_new_string(sv(child_names[s]));
-                ff_dict_set(&child[s], sv("name"), &child_name);
+                ff_value child_name = ff_value_new_string(ff_sz_view(child_names[s]));
+                ff_dict_set(&child[s], FF_SVL("name"), &child_name);
 
                 for (int g = 0; g < grandkids; g++)
                 {
                     ff_dict_init(&grand[s][g], &arena);
 
                     sprintf_s(grand_names[s][g], "grand %d.%d", s, g);
-                    ff_value grand_name = ff_value_new_string(sv(grand_names[s][g]));
+                    ff_value grand_name = ff_value_new_string(ff_sz_view(grand_names[s][g]));
                     ff_value depth = ff_value_new_int32(s * 10 + g);
-                    ff_dict_set(&grand[s][g], sv("name"), &grand_name);
-                    ff_dict_set(&grand[s][g], sv("depth"), &depth);
+                    ff_dict_set(&grand[s][g], FF_SVL("name"), &grand_name);
+                    ff_dict_set(&grand[s][g], FF_SVL("depth"), &depth);
 
                     sprintf_s(key, "kid%d", g);
                     ff_value kid = ff_value_new_dict(&grand[s][g]);
-                    ff_dict_set(&child[s], sv(key), &kid);
+                    ff_dict_set(&child[s], ff_sz_view(key), &kid);
                 }
             }
 
@@ -1602,7 +1595,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "child%d", s);
                 ff_value value = ff_value_new_dict(&child[s]);
-                ff_dict_set(&source, sv(key), &value);
+                ff_dict_set(&source, ff_sz_view(key), &value);
             }
 
             ff_idict dict{};
@@ -1614,8 +1607,8 @@ namespace ff::test::base
             for (int s = 0; s < siblings; s++)
             {
                 sprintf_s(key, "child%d", s);
-                ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv(key)), &dict);
-                ff_string_view child_name = ff_ivalue_as_string(ff_idict_get(&child_dict, sv("name")), &child_dict);
+                ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, ff_sz_view(key)), &dict);
+                ff_string_view child_name = ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("name")), &child_dict);
 
                 Assert::AreEqual((size_t)(1 + grandkids), count_of(&child_dict));
                 Assert::AreEqual(strlen(child_names[s]), child_name.count);
@@ -1628,10 +1621,10 @@ namespace ff::test::base
                 for (int g = 0; g < grandkids; g++)
                 {
                     sprintf_s(key, "kid%d", g);
-                    ff_idict grand_dict = ff_ivalue_as_dict(ff_idict_get(&child_dict, sv(key)), &child_dict);
-                    ff_string_view grand_name = ff_ivalue_as_string(ff_idict_get(&grand_dict, sv("name")), &grand_dict);
+                    ff_idict grand_dict = ff_ivalue_as_dict(ff_idict_get(&child_dict, ff_sz_view(key)), &child_dict);
+                    ff_string_view grand_name = ff_ivalue_as_string(ff_idict_get(&grand_dict, FF_SVL("name")), &grand_dict);
 
-                    Assert::AreEqual(s * 10 + g, ff_idict_get(&grand_dict, sv("depth"))->i32);
+                    Assert::AreEqual(s * 10 + g, ff_idict_get(&grand_dict, FF_SVL("depth"))->i32);
                     Assert::AreEqual(strlen(grand_names[s][g]), grand_name.count);
                     Assert::IsTrue(memcmp(grand_name.data, grand_names[s][g], grand_name.count) == 0);
 
@@ -1667,10 +1660,10 @@ namespace ff::test::base
             ff_dict_init(&middle, &arena);
             ff_dict_init(&last, &arena);
 
-            ff_value first_text = ff_value_new_string(sv("aaa"));
-            ff_value last_text = ff_value_new_string(sv("ccc"));
-            ff_dict_set(&first, sv("text"), &first_text);
-            ff_dict_set(&last, sv("text"), &last_text);
+            ff_value first_text = ff_value_new_string(FF_SVL("aaa"));
+            ff_value last_text = ff_value_new_string(FF_SVL("ccc"));
+            ff_dict_set(&first, FF_SVL("text"), &first_text);
+            ff_dict_set(&last, FF_SVL("text"), &last_text);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
@@ -1678,23 +1671,23 @@ namespace ff::test::base
             ff_value a = ff_value_new_dict(&first);
             ff_value b = ff_value_new_dict(&middle);
             ff_value c = ff_value_new_dict(&last);
-            ff_dict_set(&source, sv("a"), &a);
-            ff_dict_set(&source, sv("b"), &b);
-            ff_dict_set(&source, sv("c"), &c);
+            ff_dict_set(&source, FF_SVL("a"), &a);
+            ff_dict_set(&source, FF_SVL("b"), &b);
+            ff_dict_set(&source, FF_SVL("c"), &c);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict a_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("a")), &dict);
-            ff_idict b_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("b")), &dict);
-            ff_idict c_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("c")), &dict);
+            ff_idict a_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("a")), &dict);
+            ff_idict b_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("b")), &dict);
+            ff_idict c_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("c")), &dict);
 
             // A zero sized block in the middle must not swallow or shift its neighbours.
             Assert::AreEqual((size_t)0, count_of(&b_dict));
             Assert::AreEqual(block_header_size, size_of(&b_dict));
-            Assert::IsNull(ff_idict_get(&b_dict, sv("text")));
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&a_dict, sv("text")), &a_dict).data, "aaa", 3) == 0);
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&c_dict, sv("text")), &c_dict).data, "ccc", 3) == 0);
+            Assert::IsNull(ff_idict_get(&b_dict, FF_SVL("text")));
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&a_dict, FF_SVL("text")), &a_dict).data, "aaa", 3) == 0);
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&c_dict, FF_SVL("text")), &c_dict).data, "ccc", 3) == 0);
 
             ff_arena_destroy(&arena);
         }
@@ -1707,30 +1700,30 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value keep = ff_value_new_string(sv("keep"));
-            ff_value drop = ff_value_new_string(sv("this one goes away"));
-            ff_dict_set(&inner, sv("keep"), &keep);
-            ff_dict_set(&inner, sv("drop"), &drop);
+            ff_value keep = ff_value_new_string(FF_SVL("keep"));
+            ff_value drop = ff_value_new_string(FF_SVL("this one goes away"));
+            ff_dict_set(&inner, FF_SVL("keep"), &keep);
+            ff_dict_set(&inner, FF_SVL("drop"), &drop);
 
-            Assert::IsTrue(ff_dict_clear(&inner, sv("drop")));
+            Assert::IsTrue(ff_dict_clear(&inner, FF_SVL("drop")));
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* child = ff_idict_get(&dict, sv("child"));
+            const ff_ivalue* child = ff_idict_get(&dict, FF_SVL("child"));
             ff_idict child_dict = ff_ivalue_as_dict(child, &dict);
 
             // Clearing compacts the source, so the block carries neither the key nor the bytes.
             Assert::AreEqual((size_t)1, count_of(&child_dict));
             Assert::AreEqual(data_start_of(1) + 4, size_of(&child_dict));
-            Assert::IsNull(ff_idict_get(&child_dict, sv("drop")));
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&child_dict, sv("keep")), &child_dict).data, "keep", 4) == 0);
+            Assert::IsNull(ff_idict_get(&child_dict, FF_SVL("drop")));
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("keep")), &child_dict).data, "keep", 4) == 0);
 
             ff_arena_destroy(&arena);
         }
@@ -1756,8 +1749,8 @@ namespace ff::test::base
                     ff_dict_init(&leaf[o][i], &arena);
 
                     sprintf_s(texts[o][i], "leaf %d.%d", o, i);
-                    ff_value text = ff_value_new_string(sv(texts[o][i]));
-                    ff_dict_set(&leaf[o][i], sv("text"), &text);
+                    ff_value text = ff_value_new_string(ff_sz_view(texts[o][i]));
+                    ff_dict_set(&leaf[o][i], FF_SVL("text"), &text);
 
                     leaf_values[o][i] = ff_value_new_dict(&leaf[o][i]);
                 }
@@ -1766,7 +1759,7 @@ namespace ff::test::base
 
                 ff_value_span leaf_span{ leaf_values[o], inner };
                 ff_value list = ff_value_new_array(leaf_span);
-                ff_dict_set(&middle[o], sv("list"), &list);
+                ff_dict_set(&middle[o], FF_SVL("list"), &list);
 
                 middle_values[o] = ff_value_new_dict(&middle[o]);
             }
@@ -1776,26 +1769,26 @@ namespace ff::test::base
 
             ff_value_span middle_span{ middle_values, outer };
             ff_value list = ff_value_new_array(middle_span);
-            ff_dict_set(&source, sv("list"), &list);
+            ff_dict_set(&source, FF_SVL("list"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict);
+            ff_ivalue_span found = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
             Assert::AreEqual((size_t)outer, found.count);
 
             for (int o = 0; o < outer; o++)
             {
                 // Array items resolve against the owning dict, but each dict item is a block again.
                 ff_idict middle_dict = ff_ivalue_as_dict(found.data + o, &dict);
-                ff_ivalue_span leaf_span = ff_ivalue_as_array(ff_idict_get(&middle_dict, sv("list")), &middle_dict);
+                ff_ivalue_span leaf_span = ff_ivalue_as_array(ff_idict_get(&middle_dict, FF_SVL("list")), &middle_dict);
 
                 Assert::AreEqual((size_t)inner, leaf_span.count);
 
                 for (int i = 0; i < inner; i++)
                 {
                     ff_idict leaf_dict = ff_ivalue_as_dict(leaf_span.data + i, &middle_dict);
-                    ff_string_view text = ff_ivalue_as_string(ff_idict_get(&leaf_dict, sv("text")), &leaf_dict);
+                    ff_string_view text = ff_ivalue_as_string(ff_idict_get(&leaf_dict, FF_SVL("text")), &leaf_dict);
 
                     Assert::AreEqual(strlen(texts[o][i]), text.count);
                     Assert::IsTrue(memcmp(text.data, texts[o][i], text.count) == 0);
@@ -1825,10 +1818,10 @@ namespace ff::test::base
                     ff_dict_init(&leaf[o][i], &arena);
 
                     sprintf_s(texts[o][i], "cell %d.%d", o, i);
-                    ff_value text = ff_value_new_string(sv(texts[o][i]));
+                    ff_value text = ff_value_new_string(ff_sz_view(texts[o][i]));
                     ff_value number = ff_value_new_int32(o * 100 + i);
-                    ff_dict_set(&leaf[o][i], sv("text"), &text);
-                    ff_dict_set(&leaf[o][i], sv("number"), &number);
+                    ff_dict_set(&leaf[o][i], FF_SVL("text"), &text);
+                    ff_dict_set(&leaf[o][i], FF_SVL("number"), &number);
 
                     leaf_values[o][i] = ff_value_new_dict(&leaf[o][i]);
                 }
@@ -1842,12 +1835,12 @@ namespace ff::test::base
 
             ff_value_span outer_span{ inner_arrays, outer };
             ff_value list = ff_value_new_array(outer_span);
-            ff_dict_set(&source, sv("grid"), &list);
+            ff_dict_set(&source, FF_SVL("grid"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_ivalue_span rows = ff_ivalue_as_array(ff_idict_get(&dict, sv("grid")), &dict);
+            ff_ivalue_span rows = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("grid")), &dict);
             Assert::AreEqual((size_t)outer, rows.count);
 
             for (int o = 0; o < outer; o++)
@@ -1859,9 +1852,9 @@ namespace ff::test::base
                 for (int i = 0; i < inner; i++)
                 {
                     ff_idict cell = ff_ivalue_as_dict(cells.data + i, &dict);
-                    ff_string_view text = ff_ivalue_as_string(ff_idict_get(&cell, sv("text")), &cell);
+                    ff_string_view text = ff_ivalue_as_string(ff_idict_get(&cell, FF_SVL("text")), &cell);
 
-                    Assert::AreEqual(o * 100 + i, ff_idict_get(&cell, sv("number"))->i32);
+                    Assert::AreEqual(o * 100 + i, ff_idict_get(&cell, FF_SVL("number"))->i32);
                     Assert::AreEqual(strlen(texts[o][i]), text.count);
                     Assert::IsTrue(memcmp(text.data, texts[o][i], text.count) == 0);
                 }
@@ -1952,32 +1945,32 @@ namespace ff::test::base
             ff_dict_init(&inner, &arena);
 
             // Odd sized junk before and after each wide value, so nothing can line up by accident.
-            ff_value inner_a = ff_value_new_string(sv("q"));
+            ff_value inner_a = ff_value_new_string(FF_SVL("q"));
             ff_value inner_wide = ff_value_new_data_array(as);
-            ff_value inner_b = ff_value_new_string(sv("qqq"));
-            ff_dict_set(&inner, sv("a"), &inner_a);
-            ff_dict_set(&inner, sv("wide"), &inner_wide);
-            ff_dict_set(&inner, sv("b"), &inner_b);
+            ff_value inner_b = ff_value_new_string(FF_SVL("qqq"));
+            ff_dict_set(&inner, FF_SVL("a"), &inner_a);
+            ff_dict_set(&inner, FF_SVL("wide"), &inner_wide);
+            ff_dict_set(&inner, FF_SVL("b"), &inner_b);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value outer_a = ff_value_new_string(sv("zz"));
+            ff_value outer_a = ff_value_new_string(FF_SVL("zz"));
             ff_value outer_wide = ff_value_new_data_array(as);
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("a"), &outer_a);
-            ff_dict_set(&source, sv("wide"), &outer_wide);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("a"), &outer_a);
+            ff_dict_set(&source, FF_SVL("wide"), &outer_wide);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_array_span outer_found = ff_ivalue_as_data(ff_idict_get(&dict, sv("wide")), &dict);
+            ff_array_span outer_found = ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("wide")), &dict);
             Assert::IsTrue(is_aligned(outer_found.data, ff_idict_max_align));
             Assert::IsTrue(memcmp(outer_found.data, wide, sizeof(wide)) == 0);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
-            ff_array_span inner_found = ff_ivalue_as_data(ff_idict_get(&child_dict, sv("wide")), &child_dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+            ff_array_span inner_found = ff_ivalue_as_data(ff_idict_get(&child_dict, FF_SVL("wide")), &child_dict);
             Assert::IsTrue(is_aligned(inner_found.data, ff_idict_max_align));
             Assert::IsTrue(memcmp(inner_found.data, wide, sizeof(wide)) == 0);
 
@@ -1996,7 +1989,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value number = ff_value_new_int32(7);
-            ff_dict_set(&source, sv("number"), &number);
+            ff_dict_set(&source, FF_SVL("number"), &number);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2008,13 +2001,13 @@ namespace ff::test::base
             ff_idict copy = dict;
             Assert::AreEqual(count_of(&dict), count_of(&copy));
             Assert::AreEqual(size_of(&dict), size_of(&copy));
-            Assert::AreEqual(7, ff_idict_get(&copy, sv("number"))->i32);
+            Assert::AreEqual(7, ff_idict_get(&copy, FF_SVL("number"))->i32);
 
             // A dict that was never built answers as an empty one instead of crashing.
             ff_idict empty{};
             Assert::AreEqual((size_t)0, count_of(&empty));
             Assert::AreEqual((size_t)0, size_of(&empty));
-            Assert::IsNull(ff_idict_get(&empty, sv("number")));
+            Assert::IsNull(ff_idict_get(&empty, FF_SVL("number")));
 
             ff_arena_destroy(&arena);
         }
@@ -2028,9 +2021,9 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value number = ff_value_new_int32(1);
-            ff_value text = ff_value_new_string(sv("data"));
-            ff_dict_set(&source, sv("number"), &number);
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("data"));
+            ff_dict_set(&source, FF_SVL("number"), &number);
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2060,14 +2053,14 @@ namespace ff::test::base
 
             ff_value a = ff_value_new_int32(1);
             ff_value b = ff_value_new_int32(2);
-            ff_dict_set(&source, sv("a"), &a);
-            ff_dict_set(&source, sv("b"), &b);
+            ff_dict_set(&source, FF_SVL("a"), &a);
+            ff_dict_set(&source, FF_SVL("b"), &b);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            Assert::AreEqual(ff_hash_string(sv("a")), keys_of(dict)[0]);
-            Assert::AreEqual(ff_hash_string(sv("b")), keys_of(dict)[1]);
+            Assert::AreEqual(ff_hash_string(FF_SVL("a")), keys_of(dict)[0]);
+            Assert::AreEqual(ff_hash_string(FF_SVL("b")), keys_of(dict)[1]);
 
             ff_arena_destroy(&arena);
         }
@@ -2085,7 +2078,7 @@ namespace ff::test::base
                 char key[32];
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_set(&source, sv(key), &value);
+                ff_dict_set(&source, ff_sz_view(key), &value);
             }
 
             ff_idict dict{};
@@ -2104,8 +2097,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("hello"));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("hello"));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             ff_arena_marker marker = ff_arena_mark(&arena);
 
@@ -2133,26 +2126,26 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &source_arena);
 
-            ff_value inner_value = ff_value_new_string(sv("nested"));
-            ff_dict_set(&inner, sv("text"), &inner_value);
+            ff_value inner_value = ff_value_new_string(FF_SVL("nested"));
+            ff_dict_set(&inner, FF_SVL("text"), &inner_value);
 
             ff_dict source{};
             ff_dict_init(&source, &source_arena);
 
             ff_value nested = ff_value_new_dict(&inner);
             ff_value number = ff_value_new_int32(5);
-            ff_dict_set(&source, sv("child"), &nested);
-            ff_dict_set(&source, sv("number"), &number);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("number"), &number);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
             ff_arena_destroy(&source_arena);
 
-            Assert::AreEqual(5, ff_idict_get(&dict, sv("number"))->i32);
+            Assert::AreEqual(5, ff_idict_get(&dict, FF_SVL("number"))->i32);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
-            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, sv("text")), &child_dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("text")), &child_dict);
 
             Assert::AreEqual((size_t)6, text.count);
             Assert::IsTrue(memcmp(text.data, "nested", 6) == 0);
@@ -2175,23 +2168,23 @@ namespace ff::test::base
             ff_dict* grand = (ff_dict*)ff_arena_alloc(arena, sizeof(ff_dict), alignof(ff_dict));
             ff_dict_init(grand, arena);
 
-            ff_value grand_text = ff_value_new_string(sv("grandchild"));
+            ff_value grand_text = ff_value_new_string(FF_SVL("grandchild"));
             ff_value grand_number = ff_value_new_int64(-9);
-            ff_dict_set(grand, sv("text"), &grand_text);
-            ff_dict_set(grand, sv("number"), &grand_number);
+            ff_dict_set(grand, FF_SVL("text"), &grand_text);
+            ff_dict_set(grand, FF_SVL("number"), &grand_number);
 
             ff_dict* child = (ff_dict*)ff_arena_alloc(arena, sizeof(ff_dict), alignof(ff_dict));
             ff_dict_init(child, arena);
 
             ff_value* items = (ff_value*)ff_arena_alloc(arena, 2 * sizeof(ff_value), alignof(ff_value));
             items[0] = ff_value_new_dict(grand);
-            items[1] = ff_value_new_string(sv("in array"));
+            items[1] = ff_value_new_string(FF_SVL("in array"));
 
             ff_value_span items_span{ items, 2 };
             ff_value list = ff_value_new_array(items_span);
             ff_value flag = ff_value_new_boolean(true);
-            ff_dict_set(child, sv("list"), &list);
-            ff_dict_set(child, sv("flag"), &flag);
+            ff_dict_set(child, FF_SVL("list"), &list);
+            ff_dict_set(child, FF_SVL("flag"), &flag);
 
             ff_array_span wide_span{};
             wide_span.data = wide;
@@ -2207,44 +2200,44 @@ namespace ff::test::base
 
             ff_dict_init(source, arena);
 
-            ff_value pad = ff_value_new_string(sv("x"));
+            ff_value pad = ff_value_new_string(FF_SVL("x"));
             ff_value blob = ff_value_new_data_array(wide_span);
             ff_value nums = ff_value_new_data_array(number_span);
             ff_value nested = ff_value_new_dict(child);
             ff_value number = ff_value_new_int32(7);
 
-            ff_dict_set(source, sv("pad"), &pad);
-            ff_dict_set(source, sv("blob"), &blob);
-            ff_dict_set(source, sv("nums"), &nums);
-            ff_dict_set(source, sv("child"), &nested);
-            ff_dict_set(source, sv("number"), &number);
+            ff_dict_set(source, FF_SVL("pad"), &pad);
+            ff_dict_set(source, FF_SVL("blob"), &blob);
+            ff_dict_set(source, FF_SVL("nums"), &nums);
+            ff_dict_set(source, FF_SVL("child"), &nested);
+            ff_dict_set(source, FF_SVL("number"), &number);
         }
 
         static void verify_rich_block(const ff_idict& dict)
         {
             Assert::AreEqual((size_t)5, count_of(&dict));
-            Assert::AreEqual(7, ff_idict_get(&dict, sv("number"))->i32);
-            Assert::AreEqual((size_t)1, ff_ivalue_as_string(ff_idict_get(&dict, sv("pad")), &dict).count);
+            Assert::AreEqual(7, ff_idict_get(&dict, FF_SVL("number"))->i32);
+            Assert::AreEqual((size_t)1, ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("pad")), &dict).count);
 
-            ff_array_span blob = ff_ivalue_as_data(ff_idict_get(&dict, sv("blob")), &dict);
+            ff_array_span blob = ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("blob")), &dict);
             Assert::IsTrue(is_aligned(blob.data, 64));
             Assert::AreEqual((uint8_t)2, ((const uint8_t*)blob.data)[1]);
 
-            ff_array_span nums = ff_ivalue_as_data(ff_idict_get(&dict, sv("nums")), &dict);
+            ff_array_span nums = ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("nums")), &dict);
             Assert::IsTrue(is_aligned(nums.data, alignof(double)));
             Assert::AreEqual(2.5, ((const double*)nums.data)[2]);
 
-            ff_idict child = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
             Assert::AreEqual((size_t)2, count_of(&child));
-            Assert::IsTrue(ff_idict_get(&child, sv("flag"))->b);
+            Assert::IsTrue(ff_idict_get(&child, FF_SVL("flag"))->b);
 
-            ff_ivalue_span list = ff_ivalue_as_array(ff_idict_get(&child, sv("list")), &child);
+            ff_ivalue_span list = ff_ivalue_as_array(ff_idict_get(&child, FF_SVL("list")), &child);
             Assert::AreEqual((size_t)2, list.count);
             Assert::AreEqual((size_t)8, ff_ivalue_as_string(list.data + 1, &child).count);
 
             ff_idict grand = ff_ivalue_as_dict(list.data + 0, &child);
-            Assert::AreEqual((int64_t)-9, ff_idict_get(&grand, sv("number"))->i64);
-            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&grand, sv("text")), &grand).data, "grandchild", 10) == 0);
+            Assert::AreEqual((int64_t)-9, ff_idict_get(&grand, FF_SVL("number"))->i64);
+            Assert::IsTrue(memcmp(ff_ivalue_as_string(ff_idict_get(&grand, FF_SVL("text")), &grand).data, "grandchild", 10) == 0);
         }
 
         TEST_METHOD(block_survives_being_moved_to_another_buffer)
@@ -2444,14 +2437,14 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("resource"));
-            ff_dict_set(&source, sv("name"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("resource"));
+            ff_dict_set(&source, FF_SVL("name"), &text);
 
             ff_value i64 = ff_value_new_int64(0x0123456789abcdefLL);
-            ff_dict_set(&source, sv("big"), &i64);
+            ff_dict_set(&source, FF_SVL("big"), &i64);
 
             ff_value f64 = ff_value_new_float64(3.5);
-            ff_dict_set(&source, sv("scale"), &f64);
+            ff_dict_set(&source, FF_SVL("scale"), &f64);
 
             int64_t numbers[4]{ 1, 2, 3, 4 };
             ff_array_span numbers_span{};
@@ -2460,7 +2453,7 @@ namespace ff::test::base
             numbers_span.item_size = sizeof(numbers[0]);
             numbers_span.item_align = alignof(int64_t);
             ff_value numbers_value = ff_value_new_data_array(numbers_span);
-            ff_dict_set(&source, sv("numbers"), &numbers_value);
+            ff_dict_set(&source, FF_SVL("numbers"), &numbers_value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2477,11 +2470,11 @@ namespace ff::test::base
                 ff_span span{ shifted, saved.size };
                 Assert::IsTrue(ff_idict_load(&loaded, span, true, true));
 
-                const ff_ivalue* big = ff_idict_get(&loaded, sv("big"));
+                const ff_ivalue* big = ff_idict_get(&loaded, FF_SVL("big"));
                 Assert::IsNotNull(big);
                 Assert::AreEqual((int64_t)0x0123456789abcdefLL, big->i64);
 
-                ff_array_span items = ff_ivalue_as_data(ff_idict_get(&loaded, sv("numbers")), &loaded);
+                ff_array_span items = ff_ivalue_as_data(ff_idict_get(&loaded, FF_SVL("numbers")), &loaded);
                 Assert::AreEqual((uint32_t)4, items.count);
                 Assert::IsTrue(memcmp(items.data, numbers, sizeof(numbers)) == 0);
 
@@ -2533,8 +2526,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("hello"));
-            ff_dict_set(&source, sv("key"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("hello"));
+            ff_dict_set(&source, FF_SVL("key"), &text);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2570,7 +2563,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value marker = ff_value_new_int32(7);
-            ff_dict_set(&source, sv("key"), &marker);
+            ff_dict_set(&source, FF_SVL("key"), &marker);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2602,7 +2595,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value marker = ff_value_new_int32(7);
-            ff_dict_set(&source, sv("key"), &marker);
+            ff_dict_set(&source, FF_SVL("key"), &marker);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -2819,7 +2812,7 @@ namespace ff::test::base
             Assert::IsTrue(ff_idict_load(&loaded, saved, true, false));
             Assert::AreEqual((size_t)0, count_of(&loaded));
             Assert::AreEqual(block_header_size, size_of(&loaded));
-            Assert::IsNull(ff_idict_get(&loaded, sv("anything")));
+            Assert::IsNull(ff_idict_get(&loaded, FF_SVL("anything")));
 
             ff_arena_destroy(&arena);
         }
@@ -2902,8 +2895,8 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv("hello"));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL("hello"));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3023,7 +3016,7 @@ namespace ff::test::base
             as.item_align = alignof(uint32_t);
 
             ff_value value = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("data"), &value);
+            ff_dict_set(&source, FF_SVL("data"), &value);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3065,7 +3058,7 @@ namespace ff::test::base
             ff_dict_init(&source, &arena);
 
             ff_value number = ff_value_new_int32(1);
-            ff_dict_set(&source, sv("number"), &number);
+            ff_dict_set(&source, FF_SVL("number"), &number);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3094,7 +3087,7 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
             ff_value leaf = ff_value_new_int32(5);
-            ff_dict_set(&inner, sv("leaf"), &leaf);
+            ff_dict_set(&inner, FF_SVL("leaf"), &leaf);
 
             ff_value items[2];
             items[0] = ff_value_new_int32(1);
@@ -3104,12 +3097,12 @@ namespace ff::test::base
             // One entry of each payload kind, so a single saved file covers all four branches.
             ff_dict source{};
             ff_dict_init(&source, &arena);
-            ff_value text = ff_value_new_string(sv("hello"));
+            ff_value text = ff_value_new_string(FF_SVL("hello"));
             ff_value nested = ff_value_new_dict(&inner);
             ff_value array = ff_value_new_array(items_span);
-            ff_dict_set(&source, sv("text"), &text);
-            ff_dict_set(&source, sv("nested"), &nested);
-            ff_dict_set(&source, sv("array"), &array);
+            ff_dict_set(&source, FF_SVL("text"), &text);
+            ff_dict_set(&source, FF_SVL("nested"), &nested);
+            ff_dict_set(&source, FF_SVL("array"), &array);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3186,7 +3179,7 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
             ff_value blob = ff_value_new_data_array(as);
-            ff_dict_set(&source, sv("blob"), &blob);
+            ff_dict_set(&source, FF_SVL("blob"), &blob);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3224,19 +3217,19 @@ namespace ff::test::base
             ff_dict inner{};
             ff_dict_init(&inner, &arena);
 
-            ff_value inner_text = ff_value_new_string(sv("payload"));
-            ff_dict_set(&inner, sv("text"), &inner_text);
+            ff_value inner_text = ff_value_new_string(FF_SVL("payload"));
+            ff_dict_set(&inner, FF_SVL("text"), &inner_text);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
             ff_value nested = ff_value_new_dict(&inner);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             size_t size = 0;
             uint8_t* bytes = save_copy(dict, &arena, &size);
@@ -3279,17 +3272,17 @@ namespace ff::test::base
             ff_dict child{};
             ff_dict_init(&child, &arena);
             ff_value child_value = ff_value_new_int32(7);
-            ff_dict_set(&child, sv("leaf"), &child_value);
+            ff_dict_set(&child, FF_SVL("leaf"), &child_value);
 
             ff_dict source{};
             ff_dict_init(&source, &arena);
             ff_value nested = ff_value_new_dict(&child);
-            ff_dict_set(&source, sv("child"), &nested);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv("child")), &dict);
+            ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
 
             size_t size = 0;
             uint8_t* bytes = save_copy(dict, &arena, &size);
@@ -3531,8 +3524,8 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 sprintf_s(texts[i], "value number %d padded out to move the block", i);
-                ff_value value = ff_value_new_string(sv(texts[i]));
-                ff_dict_set(&source, sv(key), &value);
+                ff_value value = ff_value_new_string(ff_sz_view(texts[i]));
+                ff_dict_set(&source, ff_sz_view(key), &value);
             }
 
             ff_idict dict{};
@@ -3545,7 +3538,7 @@ namespace ff::test::base
                 sprintf_s(key, "key%d", i);
                 sprintf_s(text, "value number %d padded out to move the block", i);
 
-                const ff_ivalue* found = ff_idict_get(&dict, sv(key));
+                const ff_ivalue* found = ff_idict_get(&dict, ff_sz_view(key));
                 Assert::IsNotNull(found);
 
                 ff_string_view stored = ff_ivalue_as_string(found, &dict);
@@ -3577,14 +3570,14 @@ namespace ff::test::base
                 ff_dict_init(&inner[i], &arena);
 
                 sprintf_s(texts[i], "child text %d", i);
-                ff_value child_text = ff_value_new_string(sv(texts[i]));
+                ff_value child_text = ff_value_new_string(ff_sz_view(texts[i]));
                 ff_value child_number = ff_value_new_int32(i);
-                ff_dict_set(&inner[i], sv("text"), &child_text);
-                ff_dict_set(&inner[i], sv("number"), &child_number);
+                ff_dict_set(&inner[i], FF_SVL("text"), &child_text);
+                ff_dict_set(&inner[i], FF_SVL("number"), &child_number);
 
                 sprintf_s(key, "child%d", i);
                 ff_value child = ff_value_new_dict(&inner[i]);
-                ff_dict_set(&source, sv(key), &child);
+                ff_dict_set(&source, ff_sz_view(key), &child);
             }
 
             ff_idict dict{};
@@ -3595,11 +3588,11 @@ namespace ff::test::base
                 sprintf_s(key, "child%d", i);
                 sprintf_s(text, "child text %d", i);
 
-                ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, sv(key)), &dict);
-                ff_string_view stored = ff_ivalue_as_string(ff_idict_get(&child_dict, sv("text")), &child_dict);
+                ff_idict child_dict = ff_ivalue_as_dict(ff_idict_get(&dict, ff_sz_view(key)), &dict);
+                ff_string_view stored = ff_ivalue_as_string(ff_idict_get(&child_dict, FF_SVL("text")), &child_dict);
 
                 Assert::AreEqual((size_t)2, count_of(&child_dict));
-                Assert::AreEqual(i, ff_idict_get(&child_dict, sv("number"))->i32);
+                Assert::AreEqual(i, ff_idict_get(&child_dict, FF_SVL("number"))->i32);
                 Assert::AreEqual(strlen(text), stored.count);
                 Assert::IsTrue(memcmp(stored.data, text, stored.count) == 0);
             }
@@ -3624,7 +3617,7 @@ namespace ff::test::base
             {
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&source, sv(key), &value);
+                ff_dict_add(&source, ff_sz_view(key), &value);
             }
 
             ff_idict dict{};
@@ -3640,7 +3633,7 @@ namespace ff::test::base
             for (int i = 0; i < 40; i++)
             {
                 sprintf_s(key, "key%d", i);
-                Assert::AreEqual(i, ff_idict_get(&dict, sv(key))->i32);
+                Assert::AreEqual(i, ff_idict_get(&dict, ff_sz_view(key))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -3669,19 +3662,19 @@ namespace ff::test::base
             {
                 ff_value inner_a = ff_value_new_int32(order_a[i]);
                 ff_value inner_b = ff_value_new_int32(order_b[i]);
-                ff_dict_set(&nested_a, sv(names[order_a[i]]), &inner_a);
-                ff_dict_set(&nested_b, sv(names[order_b[i]]), &inner_b);
+                ff_dict_set(&nested_a, ff_sz_view(names[order_a[i]]), &inner_a);
+                ff_dict_set(&nested_b, ff_sz_view(names[order_b[i]]), &inner_b);
 
-                ff_value text_a = ff_value_new_string(sv(names[order_a[i]]));
-                ff_value text_b = ff_value_new_string(sv(names[order_b[i]]));
-                ff_dict_set(&source_a, sv(names[order_a[i]]), &text_a);
-                ff_dict_set(&source_b, sv(names[order_b[i]]), &text_b);
+                ff_value text_a = ff_value_new_string(ff_sz_view(names[order_a[i]]));
+                ff_value text_b = ff_value_new_string(ff_sz_view(names[order_b[i]]));
+                ff_dict_set(&source_a, ff_sz_view(names[order_a[i]]), &text_a);
+                ff_dict_set(&source_b, ff_sz_view(names[order_b[i]]), &text_b);
             }
 
             ff_value child_a = ff_value_new_dict(&nested_a);
             ff_value child_b = ff_value_new_dict(&nested_b);
-            ff_dict_set(&source_a, sv("child"), &child_a);
-            ff_dict_set(&source_b, sv("child"), &child_b);
+            ff_dict_set(&source_a, FF_SVL("child"), &child_a);
+            ff_dict_set(&source_b, FF_SVL("child"), &child_b);
 
             ff_idict dict_a{};
             ff_idict dict_b{};
@@ -3709,7 +3702,7 @@ namespace ff::test::base
 
             ff_value dirty{};
             memset(&dirty, 0xCD, sizeof(dirty));
-            dirty = ff_value_new_string(sv("scribble"));
+            dirty = ff_value_new_string(FF_SVL("scribble"));
             dirty.type = ff_value_type_int32;
             dirty.i32 = 7;
 
@@ -3717,8 +3710,8 @@ namespace ff::test::base
             ff_dict source_dirty{};
             ff_dict_init(&source_clean, &arena);
             ff_dict_init(&source_dirty, &arena);
-            ff_dict_set(&source_clean, sv("n"), &clean);
-            ff_dict_set(&source_dirty, sv("n"), &dirty);
+            ff_dict_set(&source_clean, FF_SVL("n"), &clean);
+            ff_dict_set(&source_dirty, FF_SVL("n"), &dirty);
 
             ff_idict dict_clean{};
             ff_idict dict_dirty{};
@@ -3727,7 +3720,7 @@ namespace ff::test::base
 
             Assert::AreEqual(size_of(&dict_clean), size_of(&dict_dirty));
             Assert::IsTrue(memcmp(dict_clean.data, dict_dirty.data, size_of(&dict_clean)) == 0);
-            Assert::AreEqual(7, ff_idict_get(&dict_dirty, sv("n"))->i32);
+            Assert::AreEqual(7, ff_idict_get(&dict_dirty, FF_SVL("n"))->i32);
 
             ff_arena_destroy(&arena);
         }
@@ -3748,22 +3741,22 @@ namespace ff::test::base
             {
                 sprintf_s(key, "other%d", i);
                 ff_value filler = ff_value_new_int32(-1);
-                ff_dict_add(&source, sv(key), &filler);
+                ff_dict_add(&source, ff_sz_view(key), &filler);
 
                 ff_value dup = ff_value_new_int32(i);
-                ff_dict_add(&source, sv("dup"), &dup);
+                ff_dict_add(&source, FF_SVL("dup"), &dup);
             }
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
-            const ff_ivalue* found = ff_idict_get(&dict, sv("dup"));
+            const ff_ivalue* found = ff_idict_get(&dict, FF_SVL("dup"));
 
             for (int i = 0; i < 30; i++)
             {
                 Assert::IsNotNull(found);
                 Assert::AreEqual(i, found->i32);
-                found = ff_idict_get_next(&dict, sv("dup"), found);
+                found = ff_idict_get_next(&dict, FF_SVL("dup"), found);
             }
 
             Assert::IsNull(found);
@@ -3792,7 +3785,7 @@ namespace ff::test::base
                 {
                     sprintf_s(key, "k%d", i);
                     ff_value value = ff_value_new_int32(i);
-                    ff_dict_add(&source, sv(key), &value);
+                    ff_dict_add(&source, ff_sz_view(key), &value);
                 }
 
                 ff_idict dict{};
@@ -3801,12 +3794,12 @@ namespace ff::test::base
                 for (int i = 0; i < count; i++)
                 {
                     sprintf_s(key, "k%d", i);
-                    const ff_ivalue* found = ff_idict_get(&dict, sv(key));
+                    const ff_ivalue* found = ff_idict_get(&dict, ff_sz_view(key));
                     Assert::IsNotNull(found);
                     Assert::AreEqual(i, found->i32);
                 }
 
-                Assert::IsNull(ff_idict_get(&dict, sv("absent")));
+                Assert::IsNull(ff_idict_get(&dict, FF_SVL("absent")));
                 ff_arena_destroy(&round_arena);
             }
 
@@ -3825,12 +3818,12 @@ namespace ff::test::base
                 ff_dict_init(&chain[i], arena);
 
                 ff_value marker = ff_value_new_int32(i);
-                ff_dict_set(&chain[i], sv("depth"), &marker);
+                ff_dict_set(&chain[i], FF_SVL("depth"), &marker);
 
                 if (i + 1 < depth)
                 {
                     ff_value child = ff_value_new_dict(&chain[i + 1]);
-                    ff_dict_set(&chain[i], sv("child"), &child);
+                    ff_dict_set(&chain[i], FF_SVL("child"), &child);
                 }
             }
 
@@ -3894,9 +3887,9 @@ namespace ff::test::base
 
             for (int i = 0; i < depth; i++)
             {
-                Assert::AreEqual(i, ff_idict_get(&current, sv("depth"))->i32);
+                Assert::AreEqual(i, ff_idict_get(&current, FF_SVL("depth"))->i32);
 
-                const ff_ivalue* child = ff_idict_get(&current, sv("child"));
+                const ff_ivalue* child = ff_idict_get(&current, FF_SVL("child"));
 
                 if (i + 1 < depth)
                 {
@@ -3947,16 +3940,16 @@ namespace ff::test::base
             ff_dict source{};
             ff_dict_init(&source, &arena);
 
-            ff_value text = ff_value_new_string(sv(""));
-            ff_dict_set(&source, sv("text"), &text);
+            ff_value text = ff_value_new_string(FF_SVL(""));
+            ff_dict_set(&source, FF_SVL("text"), &text);
 
             ff_span empty_span{};
             ff_value blob = ff_value_new_data(empty_span);
-            ff_dict_set(&source, sv("blob"), &blob);
+            ff_dict_set(&source, FF_SVL("blob"), &blob);
 
             ff_value_span empty_items{};
             ff_value list = ff_value_new_array(empty_items);
-            ff_dict_set(&source, sv("list"), &list);
+            ff_dict_set(&source, FF_SVL("list"), &list);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
@@ -3968,9 +3961,9 @@ namespace ff::test::base
 
             Assert::AreEqual((size_t)0, data_size_of(dict));
 
-            const uint8_t* text_data = (const uint8_t*)ff_ivalue_as_string(ff_idict_get(&dict, sv("text")), &dict).data;
-            const uint8_t* blob_data = (const uint8_t*)ff_ivalue_as_data(ff_idict_get(&dict, sv("blob")), &dict).data;
-            const uint8_t* list_data = (const uint8_t*)ff_ivalue_as_array(ff_idict_get(&dict, sv("list")), &dict).data;
+            const uint8_t* text_data = (const uint8_t*)ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("text")), &dict).data;
+            const uint8_t* blob_data = (const uint8_t*)ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("blob")), &dict).data;
+            const uint8_t* list_data = (const uint8_t*)ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict).data;
 
             Assert::IsTrue(text_data >= start && text_data <= end);
             Assert::IsTrue(blob_data >= start && blob_data <= end);
@@ -3996,7 +3989,7 @@ namespace ff::test::base
             empty.item_align = ff_idict_max_align;
 
             ff_value blob = ff_value_new_data_array(empty);
-            ff_dict_set(&source, sv("a_empty"), &blob);
+            ff_dict_set(&source, FF_SVL("a_empty"), &blob);
 
             uint8_t bytes[3] = { 1, 2, 3 };
             ff_array_span filled{};
@@ -4006,13 +3999,13 @@ namespace ff::test::base
             filled.item_align = 1;
 
             ff_value real = ff_value_new_data_array(filled);
-            ff_dict_set(&source, sv("b_real"), &real);
+            ff_dict_set(&source, FF_SVL("b_real"), &real);
 
             ff_idict dict{};
             ff_idict_init(&dict, &arena, &source);
 
             Assert::AreEqual((size_t)3, data_size_of(dict));
-            Assert::IsTrue(memcmp(ff_ivalue_as_data(ff_idict_get(&dict, sv("b_real")), &dict).data, bytes, sizeof(bytes)) == 0);
+            Assert::IsTrue(memcmp(ff_ivalue_as_data(ff_idict_get(&dict, FF_SVL("b_real")), &dict).data, bytes, sizeof(bytes)) == 0);
 
             ff_arena_destroy(&arena);
         }
@@ -4065,13 +4058,13 @@ namespace ff::test::base
                     char key[32];
                     sprintf_s(key, "key%d", k);
                     ff_value value = ff_value_new_int32(i * 100 + k);
-                    ff_dict_add(&chain[i], sv(key), &value);
+                    ff_dict_add(&chain[i], ff_sz_view(key), &value);
                 }
 
                 if (i + 1 < depth)
                 {
                     ff_value child = ff_value_new_dict(&chain[i + 1]);
-                    ff_dict_set(&chain[i], sv("child"), &child);
+                    ff_dict_set(&chain[i], FF_SVL("child"), &child);
                 }
             }
 
@@ -4089,11 +4082,11 @@ namespace ff::test::base
 
             for (int i = 0; i < depth; i++)
             {
-                Assert::AreEqual(i * 100 + 7, ff_idict_get(&current, sv("key7"))->i32);
+                Assert::AreEqual(i * 100 + 7, ff_idict_get(&current, FF_SVL("key7"))->i32);
 
                 if (i + 1 < depth)
                 {
-                    current = ff_ivalue_as_dict(ff_idict_get(&current, sv("child")), &current);
+                    current = ff_ivalue_as_dict(ff_idict_get(&current, FF_SVL("child")), &current);
                 }
             }
 
@@ -4129,13 +4122,13 @@ namespace ff::test::base
                     char key[32];
                     sprintf_s(key, "key%d", k);
                     ff_value value = ff_value_new_int32(i * 1000 + k);
-                    ff_dict_add(&children[i], sv(key), &value);
+                    ff_dict_add(&children[i], ff_sz_view(key), &value);
                 }
 
                 char name[32];
                 sprintf_s(name, "child%d", i);
                 ff_value child = ff_value_new_dict(&children[i]);
-                ff_dict_add(&source, sv(name), &child);
+                ff_dict_add(&source, ff_sz_view(name), &child);
             }
 
             // The buffer is big enough that the build never has to grow it, and is poisoned first so
@@ -4175,8 +4168,8 @@ namespace ff::test::base
             {
                 char name[32];
                 sprintf_s(name, "child%d", i);
-                ff_idict child = ff_ivalue_as_dict(ff_idict_get(&dict, sv(name)), &dict);
-                Assert::AreEqual(i * 1000 + 7, ff_idict_get(&child, sv("key7"))->i32);
+                ff_idict child = ff_ivalue_as_dict(ff_idict_get(&dict, ff_sz_view(name)), &dict);
+                Assert::AreEqual(i * 1000 + 7, ff_idict_get(&child, FF_SVL("key7"))->i32);
             }
 
             ff_arena_destroy(&arena);
@@ -4200,7 +4193,7 @@ namespace ff::test::base
                 char key[32];
                 sprintf_s(key, "key%d", i);
                 ff_value value = ff_value_new_int32(i);
-                ff_dict_add(&source, sv(key), &value);
+                ff_dict_add(&source, ff_sz_view(key), &value);
             }
 
             ff_idict dict{};
@@ -4234,3 +4227,4 @@ namespace ff::test::base
         }
     };
 }
+
