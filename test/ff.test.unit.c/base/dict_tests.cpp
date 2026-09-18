@@ -1743,6 +1743,1286 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        // ====================================================================
+        // From idict
+        // ====================================================================
+        TEST_METHOD(init_from_empty_idict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)0, dict.count);
+            Assert::IsTrue(dict.arena == &arena);
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("anything")));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(init_from_zeroed_idict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_idict immutable{};
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)0, dict.count);
+            Assert::IsTrue(dict.arena == &arena);
+
+            ff_value added = ff_value_new_int32(7);
+            ff_dict_set(&dict, FF_SVL("added"), &added);
+            Assert::AreEqual(7, ff_dict_get(&dict, FF_SVL("added"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(scalars_round_trip_back_to_a_mutable_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            GUID guid;
+            memset(&guid, 0xCD, sizeof(guid));
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value null_value = ff_value_new_null();
+            ff_value bool_value = ff_value_new_boolean(true);
+            ff_value int32_value = ff_value_new_int32(-5);
+            ff_value int64_value = ff_value_new_int64(1234567890123LL);
+            ff_value float32_value = ff_value_new_float32(1.5f);
+            ff_value float64_value = ff_value_new_float64(2.5);
+            ff_value point_value = ff_value_new_point_int32(3, 4);
+            ff_value rect_value = ff_value_new_rect_float32(1.0f, 2.0f, 3.0f, 4.0f);
+            ff_value guid_value = ff_value_new_guid(guid);
+
+            ff_dict_set(&source, FF_SVL("null"), &null_value);
+            ff_dict_set(&source, FF_SVL("bool"), &bool_value);
+            ff_dict_set(&source, FF_SVL("int32"), &int32_value);
+            ff_dict_set(&source, FF_SVL("int64"), &int64_value);
+            ff_dict_set(&source, FF_SVL("float32"), &float32_value);
+            ff_dict_set(&source, FF_SVL("float64"), &float64_value);
+            ff_dict_set(&source, FF_SVL("point"), &point_value);
+            ff_dict_set(&source, FF_SVL("rect"), &rect_value);
+            ff_dict_set(&source, FF_SVL("guid"), &guid_value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)9, dict.count);
+            Assert::IsTrue(ff_value_type_null == ff_dict_get(&dict, FF_SVL("null"))->type);
+            Assert::IsTrue(ff_dict_get(&dict, FF_SVL("bool"))->b);
+            Assert::AreEqual(-5, ff_dict_get(&dict, FF_SVL("int32"))->i32);
+            Assert::AreEqual((int64_t)1234567890123LL, ff_dict_get(&dict, FF_SVL("int64"))->i64);
+            Assert::AreEqual(1.5f, ff_dict_get(&dict, FF_SVL("float32"))->f32);
+            Assert::AreEqual(2.5, ff_dict_get(&dict, FF_SVL("float64"))->f64);
+            Assert::AreEqual(3, ff_dict_get(&dict, FF_SVL("point"))->point_i32[0]);
+            Assert::AreEqual(4, ff_dict_get(&dict, FF_SVL("point"))->point_i32[1]);
+            Assert::AreEqual(4.0f, ff_dict_get(&dict, FF_SVL("rect"))->rect_f32[3]);
+            Assert::IsTrue(memcmp(&ff_dict_get(&dict, FF_SVL("guid"))->guid, &guid, sizeof(guid)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(string_round_trips_back_to_a_mutable_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value text = ff_value_new_string(FF_SVL("hello world"));
+            ff_value empty = ff_value_new_string(ff_string_view_empty());
+            ff_dict_set(&source, FF_SVL("text"), &text);
+            ff_dict_set(&source, FF_SVL("empty"), &empty);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_string_view result = ff_value_as_string(ff_dict_get(&dict, FF_SVL("text")));
+            Assert::AreEqual((size_t)11, result.count);
+            Assert::IsTrue(memcmp(result.data, "hello world", 11) == 0);
+            Assert::AreEqual((size_t)0, ff_value_as_string(ff_dict_get(&dict, FF_SVL("empty"))).count);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(data_round_trips_back_with_its_alignment)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            alignas(16) uint8_t bytes[32];
+            for (size_t i = 0; i < std::size(bytes); i++)
+            {
+                bytes[i] = (uint8_t)(i * 3);
+            }
+
+            ff_array_span span{};
+            span.data = bytes;
+            span.count = 2;
+            span.item_size = 16;
+            span.item_align = 16;
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_data_array(span);
+            ff_dict_set(&source, FF_SVL("data"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_array_span result = ff_value_as_data_array(ff_dict_get(&dict, FF_SVL("data")));
+            Assert::AreEqual((uint32_t)2, result.count);
+            Assert::AreEqual((uint16_t)16, result.item_size);
+            Assert::AreEqual((uint16_t)16, result.item_align);
+            Assert::IsTrue(((uintptr_t)result.data & 15) == 0);
+            Assert::IsTrue(memcmp(result.data, bytes, sizeof(bytes)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(array_round_trips_back_to_a_mutable_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_value items[3];
+            items[0] = ff_value_new_int32(10);
+            items[1] = ff_value_new_string(FF_SVL("middle"));
+            items[2] = ff_value_new_float64(0.25);
+
+            ff_value_span span{};
+            span.data = items;
+            span.count = std::size(items);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value array_value = ff_value_new_array(span);
+            ff_dict_set(&source, FF_SVL("array"), &array_value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value_span result = ff_value_as_array(ff_dict_get(&dict, FF_SVL("array")));
+            Assert::AreEqual((size_t)3, result.count);
+            Assert::AreEqual(10, result.data[0].i32);
+            Assert::AreEqual(0.25, result.data[2].f64);
+
+            ff_string_view middle = ff_value_as_string(&result.data[1]);
+            Assert::AreEqual((size_t)6, middle.count);
+            Assert::IsTrue(memcmp(middle.data, "middle", 6) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(nested_dict_becomes_a_mutable_child_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(42);
+            ff_value child_text = ff_value_new_string(FF_SVL("inner"));
+            ff_dict_set(&child, FF_SVL("answer"), &child_value);
+            ff_dict_set(&child, FF_SVL("text"), &child_text);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value* found = ff_dict_get(&dict, FF_SVL("child"));
+            Assert::IsTrue(ff_value_type_dict == found->type);
+
+            ff_dict* result = ff_value_as_dict(found);
+            Assert::AreEqual((size_t)2, result->count);
+            Assert::AreEqual(42, ff_dict_get(result, FF_SVL("answer"))->i32);
+            Assert::AreEqual((size_t)5, ff_value_as_string(ff_dict_get(result, FF_SVL("text"))).count);
+
+            // The child came back mutable, so it accepts new entries like any other dict.
+            ff_value added = ff_value_new_int32(1);
+            ff_dict_set(result, FF_SVL("added"), &added);
+            Assert::AreEqual((size_t)3, result->count);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(deeply_nested_dicts_round_trip_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict level3{};
+            ff_dict_init(&level3, &arena);
+            ff_value deepest = ff_value_new_int32(3);
+            ff_dict_set(&level3, FF_SVL("depth"), &deepest);
+
+            ff_dict level2{};
+            ff_dict_init(&level2, &arena);
+            ff_value level3_value = ff_value_new_dict(&level3);
+            ff_dict_set(&level2, FF_SVL("next"), &level3_value);
+
+            ff_dict level1{};
+            ff_dict_init(&level1, &arena);
+            ff_value level2_value = ff_value_new_dict(&level2);
+            ff_dict_set(&level1, FF_SVL("next"), &level2_value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &level1);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_dict* second = ff_value_as_dict(ff_dict_get(&dict, FF_SVL("next")));
+            ff_dict* third = ff_value_as_dict(ff_dict_get(second, FF_SVL("next")));
+            Assert::AreEqual(3, ff_dict_get(third, FF_SVL("depth"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(dict_inside_an_array_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(9);
+            ff_dict_set(&child, FF_SVL("inner"), &child_value);
+
+            ff_value items[1];
+            items[0] = ff_value_new_dict(&child);
+
+            ff_value_span span{};
+            span.data = items;
+            span.count = std::size(items);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value array_value = ff_value_new_array(span);
+            ff_dict_set(&source, FF_SVL("array"), &array_value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value_span result = ff_value_as_array(ff_dict_get(&dict, FF_SVL("array")));
+            Assert::AreEqual((size_t)1, result.count);
+
+            ff_dict* nested = ff_value_as_dict(&result.data[0]);
+            Assert::AreEqual(9, ff_dict_get(nested, FF_SVL("inner"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(duplicate_keys_keep_their_order_when_coming_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value first = ff_value_new_int32(1);
+            ff_value second = ff_value_new_int32(2);
+            ff_value third = ff_value_new_int32(3);
+            ff_dict_add(&source, FF_SVL("dup"), &first);
+            ff_dict_add(&source, FF_SVL("dup"), &second);
+            ff_dict_add(&source, FF_SVL("dup"), &third);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)3, dict.count);
+
+            ff_value* value = ff_dict_get(&dict, FF_SVL("dup"));
+            Assert::AreEqual(1, value->i32);
+            value = ff_dict_get_next(&dict, FF_SVL("dup"), value);
+            Assert::AreEqual(2, value->i32);
+            value = ff_dict_get_next(&dict, FF_SVL("dup"), value);
+            Assert::AreEqual(3, value->i32);
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("dup"), value));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(result_outlives_the_immutable_source_bytes)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+
+            {
+                ff_arena source_arena{};
+                ff_arena_init_heap_global(&source_arena, 4096);
+
+                ff_dict child{};
+                ff_dict_init(&child, &source_arena);
+                ff_value child_value = ff_value_new_string(FF_SVL("nested text"));
+                ff_dict_set(&child, FF_SVL("text"), &child_value);
+
+                ff_dict source{};
+                ff_dict_init(&source, &source_arena);
+                ff_value text = ff_value_new_string(FF_SVL("top text"));
+                ff_value nested = ff_value_new_dict(&child);
+                ff_dict_set(&source, FF_SVL("text"), &text);
+                ff_dict_set(&source, FF_SVL("child"), &nested);
+
+                ff_idict immutable{};
+                ff_idict_init(&immutable, &source_arena, &source);
+
+                ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+                ff_arena_destroy(&source_arena);
+            }
+
+            ff_string_view text = ff_value_as_string(ff_dict_get(&dict, FF_SVL("text")));
+            Assert::AreEqual((size_t)8, text.count);
+            Assert::IsTrue(memcmp(text.data, "top text", 8) == 0);
+
+            ff_dict* child = ff_value_as_dict(ff_dict_get(&dict, FF_SVL("child")));
+            ff_string_view nested_text = ff_value_as_string(ff_dict_get(child, FF_SVL("text")));
+            Assert::AreEqual((size_t)11, nested_text.count);
+            Assert::IsTrue(memcmp(nested_text.data, "nested text", 11) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(round_trip_through_idict_and_back_is_stable)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(7);
+            ff_dict_set(&child, FF_SVL("leaf"), &child_value);
+
+            ff_value items[2];
+            items[0] = ff_value_new_string(FF_SVL("one"));
+            items[1] = ff_value_new_int32(2);
+
+            ff_value_span span{};
+            span.data = items;
+            span.count = std::size(items);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_value array_value = ff_value_new_array(span);
+            ff_value scalar = ff_value_new_int64(99);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("array"), &array_value);
+            ff_dict_set(&source, FF_SVL("scalar"), &scalar);
+
+            ff_idict first{};
+            ff_idict_init(&first, &arena, &source);
+
+            ff_dict mutable_again{};
+            ff_dict_init_from_idict(&mutable_again, &arena, &first);
+
+            ff_idict second{};
+            ff_idict_init(&second, &arena, &mutable_again);
+
+            // Rebuilding from the recovered dict must produce the same block, byte for byte.
+            size_t first_size = ((const uint32_t*)first.data)[1];
+            size_t second_size = ((const uint32_t*)second.data)[1];
+            Assert::AreEqual(first_size, second_size);
+            Assert::IsTrue(memcmp(first.data, second.data, first_size) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(everything_including_nested_structs_lives_in_the_given_arena)
+        {
+            ff_arena source_arena{};
+            ff_arena_init_heap_global(&source_arena, 4096);
+
+            ff_dict grandchild{};
+            ff_dict_init(&grandchild, &source_arena);
+            ff_value leaf = ff_value_new_string(FF_SVL("leaf text"));
+            ff_dict_set(&grandchild, FF_SVL("leaf"), &leaf);
+
+            ff_value items[1];
+            items[0] = ff_value_new_dict(&grandchild);
+
+            ff_value_span span{};
+            span.data = items;
+            span.count = std::size(items);
+
+            ff_dict child{};
+            ff_dict_init(&child, &source_arena);
+            ff_value array_value = ff_value_new_array(span);
+            ff_dict_set(&child, FF_SVL("array"), &array_value);
+
+            ff_dict source{};
+            ff_dict_init(&source, &source_arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &source_arena, &source);
+
+            // A dedicated arena over a stack buffer, so every copy has to land inside these bytes.
+            alignas(64) uint8_t buffer[4096];
+            ff_arena arena{};
+            ff_arena_init_external(&arena, buffer, std::size(buffer), 0);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_arena_destroy(&source_arena);
+
+            const uint8_t* low = buffer;
+            const uint8_t* high = buffer + std::size(buffer);
+
+            Assert::IsTrue((const uint8_t*)dict.keys >= low && (const uint8_t*)dict.keys < high);
+
+            ff_value* child_value = ff_dict_get(&dict, FF_SVL("child"));
+            ff_dict* child_result = ff_value_as_dict(child_value);
+            Assert::IsTrue((const uint8_t*)child_result >= low && (const uint8_t*)child_result < high);
+            Assert::IsTrue(child_result->arena == &arena);
+
+            ff_value_span array_result = ff_value_as_array(ff_dict_get(child_result, FF_SVL("array")));
+            Assert::IsTrue((const uint8_t*)array_result.data >= low && (const uint8_t*)array_result.data < high);
+
+            ff_dict* grandchild_result = ff_value_as_dict(&array_result.data[0]);
+            Assert::IsTrue((const uint8_t*)grandchild_result >= low && (const uint8_t*)grandchild_result < high);
+            Assert::IsTrue(grandchild_result->arena == &arena);
+
+            ff_string_view text = ff_value_as_string(ff_dict_get(grandchild_result, FF_SVL("leaf")));
+            Assert::IsTrue((const uint8_t*)text.data >= low && (const uint8_t*)text.data < high);
+            Assert::AreEqual((size_t)9, text.count);
+            Assert::IsTrue(memcmp(text.data, "leaf text", 9) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(every_remaining_scalar_type_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value empty_value = ff_value_new_empty();
+            ff_value point_i64 = ff_value_new_point_int64(-9000000000LL, 9000000000LL);
+            ff_value point_f32 = ff_value_new_point_float32(1.25f, -2.5f);
+            ff_value point_f64 = ff_value_new_point_float64(-0.125, 4096.5);
+            ff_value rect_i32 = ff_value_new_rect_int32(-1, -2, 3, 4);
+
+            ff_dict_set(&source, FF_SVL("empty"), &empty_value);
+            ff_dict_set(&source, FF_SVL("point_i64"), &point_i64);
+            ff_dict_set(&source, FF_SVL("point_f32"), &point_f32);
+            ff_dict_set(&source, FF_SVL("point_f64"), &point_f64);
+            ff_dict_set(&source, FF_SVL("rect_i32"), &rect_i32);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)5, dict.count);
+            Assert::IsTrue(ff_value_type_empty == ff_dict_get(&dict, FF_SVL("empty"))->type);
+
+            ff_value* found = ff_dict_get(&dict, FF_SVL("point_i64"));
+            Assert::AreEqual((int64_t)-9000000000LL, found->point_i64[0]);
+            Assert::AreEqual((int64_t)9000000000LL, found->point_i64[1]);
+
+            found = ff_dict_get(&dict, FF_SVL("point_f32"));
+            Assert::AreEqual(1.25f, found->point_f32[0]);
+            Assert::AreEqual(-2.5f, found->point_f32[1]);
+
+            found = ff_dict_get(&dict, FF_SVL("point_f64"));
+            Assert::AreEqual(-0.125, found->point_f64[0]);
+            Assert::AreEqual(4096.5, found->point_f64[1]);
+
+            found = ff_dict_get(&dict, FF_SVL("rect_i32"));
+            Assert::AreEqual(-1, found->rect_i32[0]);
+            Assert::AreEqual(-2, found->rect_i32[1]);
+            Assert::AreEqual(3, found->rect_i32[2]);
+            Assert::AreEqual(4, found->rect_i32[3]);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(unused_union_bytes_do_not_come_back_with_a_scalar)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            // An int32 only owns its first four bytes, so the rest must come back zeroed no matter
+            // what the caller's stack happened to hold.
+            ff_value scratch;
+            memset(&scratch, 0xEE, sizeof(scratch));
+            scratch = ff_value_new_int32(5);
+            ff_dict_set(&source, FF_SVL("int32"), &scratch);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value expected;
+            memset(&expected, 0, sizeof(expected));
+            expected.i32 = 5;
+            expected.type = ff_value_type_int32;
+
+            Assert::IsTrue(memcmp(ff_dict_get(&dict, FF_SVL("int32")), &expected, sizeof(expected)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(empty_payloads_round_trip_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict empty_child{};
+            ff_dict_init(&empty_child, &arena);
+
+            ff_value_span empty_span{};
+            ff_array_span empty_data{};
+            empty_data.item_size = 4;
+            empty_data.item_align = 4;
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value empty_string = ff_value_new_string(ff_string_view_empty());
+            ff_value empty_array = ff_value_new_array(empty_span);
+            ff_value empty_data_value = ff_value_new_data_array(empty_data);
+            ff_value empty_dict = ff_value_new_dict(&empty_child);
+
+            ff_dict_set(&source, FF_SVL("string"), &empty_string);
+            ff_dict_set(&source, FF_SVL("array"), &empty_array);
+            ff_dict_set(&source, FF_SVL("data"), &empty_data_value);
+            ff_dict_set(&source, FF_SVL("dict"), &empty_dict);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)4, dict.count);
+            Assert::AreEqual((size_t)0, ff_value_as_string(ff_dict_get(&dict, FF_SVL("string"))).count);
+            Assert::AreEqual((size_t)0, ff_value_as_array(ff_dict_get(&dict, FF_SVL("array"))).count);
+            Assert::AreEqual((uint32_t)0, ff_value_as_data_array(ff_dict_get(&dict, FF_SVL("data"))).count);
+
+            ff_dict* child_result = ff_value_as_dict(ff_dict_get(&dict, FF_SVL("dict")));
+            Assert::AreEqual((size_t)0, child_result->count);
+            Assert::IsTrue(child_result->arena == &arena);
+
+            // An empty recovered child is still a usable dict, not an inert husk.
+            ff_value added = ff_value_new_int32(1);
+            ff_dict_set(child_result, FF_SVL("added"), &added);
+            Assert::AreEqual(1, ff_dict_get(child_result, FF_SVL("added"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(string_bytes_come_back_verbatim)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            // Embedded nulls and high bytes must survive, since the count is what defines the text.
+            const char raw[] = { 'a', '\0', (char)0xFF, 'b', '\0', (char)0x80 };
+
+            ff_string_view text;
+            text.data = raw;
+            text.count = sizeof(raw);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_string(text);
+            ff_dict_set(&source, FF_SVL("raw"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_string_view result = ff_value_as_string(ff_dict_get(&dict, FF_SVL("raw")));
+            Assert::AreEqual(sizeof(raw), result.count);
+            Assert::IsTrue(memcmp(result.data, raw, sizeof(raw)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(max_aligned_data_comes_back_aligned)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            alignas(64) uint8_t bytes[64];
+            for (size_t i = 0; i < std::size(bytes); i++)
+            {
+                bytes[i] = (uint8_t)(i + 1);
+            }
+
+            ff_array_span span{};
+            span.data = bytes;
+            span.count = 1;
+            span.item_size = 64;
+            span.item_align = 64;
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_data_array(span);
+            ff_dict_set(&source, FF_SVL("wide"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_array_span result = ff_value_as_data_array(ff_dict_get(&dict, FF_SVL("wide")));
+            Assert::AreEqual((uint16_t)64, result.item_align);
+            Assert::IsTrue(((uintptr_t)result.data & 63) == 0);
+            Assert::IsTrue(memcmp(result.data, bytes, sizeof(bytes)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(byte_data_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            const uint8_t bytes[5] = { 1, 2, 3, 4, 5 };
+
+            ff_span span{};
+            span.data = bytes;
+            span.size = sizeof(bytes);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_data(span);
+            ff_dict_set(&source, FF_SVL("bytes"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_span result = ff_value_as_data(ff_dict_get(&dict, FF_SVL("bytes")));
+            Assert::AreEqual(sizeof(bytes), result.size);
+            Assert::IsTrue(memcmp(result.data, bytes, sizeof(bytes)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(array_of_arrays_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_value inner_items[2];
+            inner_items[0] = ff_value_new_int32(1);
+            inner_items[1] = ff_value_new_string(FF_SVL("deep"));
+
+            ff_value_span inner_span{};
+            inner_span.data = inner_items;
+            inner_span.count = std::size(inner_items);
+
+            ff_value outer_items[2];
+            outer_items[0] = ff_value_new_array(inner_span);
+            outer_items[1] = ff_value_new_int32(2);
+
+            ff_value_span outer_span{};
+            outer_span.data = outer_items;
+            outer_span.count = std::size(outer_items);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_array(outer_span);
+            ff_dict_set(&source, FF_SVL("outer"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value_span outer = ff_value_as_array(ff_dict_get(&dict, FF_SVL("outer")));
+            Assert::AreEqual((size_t)2, outer.count);
+            Assert::AreEqual(2, outer.data[1].i32);
+
+            ff_value_span inner = ff_value_as_array(&outer.data[0]);
+            Assert::AreEqual((size_t)2, inner.count);
+            Assert::AreEqual(1, inner.data[0].i32);
+
+            ff_string_view text = ff_value_as_string(&inner.data[1]);
+            Assert::AreEqual((size_t)4, text.count);
+            Assert::IsTrue(memcmp(text.data, "deep", 4) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(array_of_data_keeps_each_item_aligned_coming_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            alignas(16) uint8_t first[16];
+            alignas(16) uint8_t second[16];
+            memset(first, 0x11, sizeof(first));
+            memset(second, 0x22, sizeof(second));
+
+            ff_array_span first_span{};
+            first_span.data = first;
+            first_span.count = 1;
+            first_span.item_size = 16;
+            first_span.item_align = 16;
+
+            ff_array_span second_span{};
+            second_span.data = second;
+            second_span.count = 1;
+            second_span.item_size = 16;
+            second_span.item_align = 16;
+
+            ff_value items[2];
+            items[0] = ff_value_new_data_array(first_span);
+            items[1] = ff_value_new_data_array(second_span);
+
+            ff_value_span span{};
+            span.data = items;
+            span.count = std::size(items);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_array(span);
+            ff_dict_set(&source, FF_SVL("array"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value_span result = ff_value_as_array(ff_dict_get(&dict, FF_SVL("array")));
+            Assert::AreEqual((size_t)2, result.count);
+
+            ff_array_span first_result = ff_value_as_data_array(&result.data[0]);
+            ff_array_span second_result = ff_value_as_data_array(&result.data[1]);
+
+            Assert::IsTrue(((uintptr_t)first_result.data & 15) == 0);
+            Assert::IsTrue(((uintptr_t)second_result.data & 15) == 0);
+            Assert::IsTrue(memcmp(first_result.data, first, sizeof(first)) == 0);
+            Assert::IsTrue(memcmp(second_result.data, second, sizeof(second)) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(an_idict_value_inside_the_source_comes_back_as_a_mutable_dict)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict inner_source{};
+            ff_dict_init(&inner_source, &arena);
+            ff_value inner_value = ff_value_new_int32(11);
+            ff_dict_set(&inner_source, FF_SVL("inner"), &inner_value);
+
+            ff_idict inner{};
+            ff_idict_init(&inner, &arena, &inner_source);
+
+            // The source holds an already-immutable dict, which the block stores as an idict value.
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_idict(inner);
+            ff_dict_set(&source, FF_SVL("nested"), &nested);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value* found = ff_dict_get(&dict, FF_SVL("nested"));
+            Assert::IsTrue(ff_value_type_dict == found->type);
+
+            ff_dict* result = ff_value_as_dict(found);
+            Assert::AreEqual(11, ff_dict_get(result, FF_SVL("inner"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(changing_the_result_does_not_touch_the_source_block)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(1);
+            ff_dict_set(&child, FF_SVL("keep"), &child_value);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_value text = ff_value_new_string(FF_SVL("original"));
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("text"), &text);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            size_t block_size = ((const uint32_t*)immutable.data)[1];
+            uint8_t* snapshot = (uint8_t*)ff_arena_alloc(&arena, block_size, 64);
+            memcpy(snapshot, immutable.data, block_size);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_value replacement = ff_value_new_string(FF_SVL("changed"));
+            ff_dict_set(&dict, FF_SVL("text"), &replacement);
+            ff_dict_clear(&dict, FF_SVL("child"));
+
+            ff_value added = ff_value_new_int32(99);
+            ff_dict_set(&dict, FF_SVL("added"), &added);
+
+            Assert::IsTrue(memcmp(immutable.data, snapshot, block_size) == 0);
+            Assert::IsNotNull(ff_idict_get(&immutable, FF_SVL("child")));
+            Assert::IsNotNull(ff_idict_get(&immutable, FF_SVL("text")));
+            Assert::IsNull(ff_idict_get(&immutable, FF_SVL("added")));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(sibling_results_are_independent_of_each_other)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_int32(1);
+            ff_dict_set(&child, FF_SVL("value"), &child_value);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict first{};
+            ff_dict second{};
+            ff_dict_init_from_idict(&first, &arena, &immutable);
+            ff_dict_init_from_idict(&second, &arena, &immutable);
+
+            ff_dict* first_child = ff_value_as_dict(ff_dict_get(&first, FF_SVL("child")));
+            ff_dict* second_child = ff_value_as_dict(ff_dict_get(&second, FF_SVL("child")));
+
+            // Each conversion builds its own copy, so the two children are not the same object.
+            Assert::IsFalse(first_child == second_child);
+
+            ff_value changed = ff_value_new_int32(2);
+            ff_dict_set(first_child, FF_SVL("value"), &changed);
+
+            Assert::AreEqual(2, ff_dict_get(first_child, FF_SVL("value"))->i32);
+            Assert::AreEqual(1, ff_dict_get(second_child, FF_SVL("value"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(a_loaded_block_converts_back_and_survives_the_bytes)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict dict{};
+
+            {
+                ff_arena source_arena{};
+                ff_arena_init_heap_global(&source_arena, 4096);
+
+                ff_dict child{};
+                ff_dict_init(&child, &source_arena);
+                ff_value leaf = ff_value_new_string(FF_SVL("from disk"));
+                ff_dict_set(&child, FF_SVL("leaf"), &leaf);
+
+                ff_dict source{};
+                ff_dict_init(&source, &source_arena);
+                ff_value nested = ff_value_new_dict(&child);
+                ff_value number = ff_value_new_int64(1234);
+                ff_dict_set(&source, FF_SVL("child"), &nested);
+                ff_dict_set(&source, FF_SVL("number"), &number);
+
+                ff_idict built{};
+                ff_idict_init(&built, &source_arena, &source);
+
+                ff_span saved = ff_idict_save(&built, &source_arena);
+
+                ff_idict loaded{};
+                Assert::IsTrue(ff_idict_load(&loaded, saved, true, true));
+
+                ff_dict_init_from_idict(&dict, &arena, &loaded);
+
+                ff_arena_destroy(&source_arena);
+            }
+
+            Assert::AreEqual((int64_t)1234, ff_dict_get(&dict, FF_SVL("number"))->i64);
+
+            ff_dict* child = ff_value_as_dict(ff_dict_get(&dict, FF_SVL("child")));
+            ff_string_view text = ff_value_as_string(ff_dict_get(child, FF_SVL("leaf")));
+            Assert::AreEqual((size_t)9, text.count);
+            Assert::IsTrue(memcmp(text.data, "from disk", 9) == 0);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(many_entries_round_trip_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            char key[32];
+            for (int i = 0; i < 200; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_set(&source, ff_sz_view(key), &value);
+            }
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual((size_t)200, dict.count);
+            Assert::IsTrue(dict.capacity >= dict.count);
+
+            for (int i = 0; i < 200; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                Assert::AreEqual(i, ff_dict_get(&dict, ff_sz_view(key))->i32);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(result_keys_stay_sorted_like_the_block)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            char key[32];
+            for (int i = 0; i < 40; i++)
+            {
+                sprintf_s(key, "key%d", i);
+                ff_value value = ff_value_new_int32(i);
+                ff_dict_set(&source, ff_sz_view(key), &value);
+            }
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            // The block stores entries sorted by key hash, and the copy keeps that order.
+            for (size_t i = 1; i < dict.count; i++)
+            {
+                Assert::IsTrue(dict.keys[i - 1] <= dict.keys[i]);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(a_missing_key_still_misses_after_coming_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value value = ff_value_new_int32(1);
+            ff_dict_set(&source, FF_SVL("present"), &value);
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::IsNotNull(ff_dict_get(&dict, FF_SVL("present")));
+            Assert::IsNull(ff_dict_get(&dict, FF_SVL("absent")));
+            Assert::IsNull(ff_dict_get_next(&dict, FF_SVL("present"), ff_dict_get(&dict, FF_SVL("present"))));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(a_deep_chain_of_nested_dicts_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 16384);
+
+            constexpr int depth = 16;
+
+            ff_dict* levels = (ff_dict*)ff_arena_alloc(&arena, sizeof(ff_dict) * depth, alignof(ff_dict));
+            ff_dict_init(&levels[depth - 1], &arena);
+
+            ff_value deepest = ff_value_new_int32(depth - 1);
+            ff_dict_set(&levels[depth - 1], FF_SVL("depth"), &deepest);
+
+            for (int i = depth - 2; i >= 0; i--)
+            {
+                ff_dict_init(&levels[i], &arena);
+                ff_value nested = ff_value_new_dict(&levels[i + 1]);
+                ff_dict_set(&levels[i], FF_SVL("next"), &nested);
+            }
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &levels[0]);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            ff_dict* walk = &dict;
+            for (int i = 0; i < depth - 1; i++)
+            {
+                walk = ff_value_as_dict(ff_dict_get(walk, FF_SVL("next")));
+                Assert::IsTrue(walk->arena == &arena);
+            }
+
+            Assert::AreEqual(depth - 1, ff_dict_get(walk, FF_SVL("depth"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(a_dict_holding_every_kind_of_value_round_trips_back)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 8192);
+
+            GUID guid;
+            memset(&guid, 0x5A, sizeof(guid));
+
+            const uint8_t bytes[4] = { 9, 8, 7, 6 };
+
+            ff_span byte_span{};
+            byte_span.data = bytes;
+            byte_span.size = sizeof(bytes);
+
+            ff_value items[2];
+            items[0] = ff_value_new_string(FF_SVL("item"));
+            items[1] = ff_value_new_boolean(false);
+
+            ff_value_span array_span{};
+            array_span.data = items;
+            array_span.count = std::size(items);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value child_value = ff_value_new_float32(0.5f);
+            ff_dict_set(&child, FF_SVL("inner"), &child_value);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+
+            ff_value values[] =
+            {
+                ff_value_new_empty(),
+                ff_value_new_null(),
+                ff_value_new_boolean(true),
+                ff_value_new_guid(guid),
+                ff_value_new_int32(-1),
+                ff_value_new_int64(-2),
+                ff_value_new_float32(3.5f),
+                ff_value_new_float64(4.5),
+                ff_value_new_point_int32(1, 2),
+                ff_value_new_point_int64(3, 4),
+                ff_value_new_point_float32(5.5f, 6.5f),
+                ff_value_new_point_float64(7.5, 8.5),
+                ff_value_new_rect_int32(1, 2, 3, 4),
+                ff_value_new_rect_float32(5.5f, 6.5f, 7.5f, 8.5f),
+                ff_value_new_data(byte_span),
+                ff_value_new_string(FF_SVL("text")),
+                ff_value_new_array(array_span),
+                ff_value_new_dict(&child),
+            };
+
+            char key[32];
+            for (size_t i = 0; i < std::size(values); i++)
+            {
+                sprintf_s(key, "key%zu", i);
+                ff_dict_set(&source, ff_sz_view(key), &values[i]);
+            }
+
+            ff_idict immutable{};
+            ff_idict_init(&immutable, &arena, &source);
+
+            ff_dict dict{};
+            ff_dict_init_from_idict(&dict, &arena, &immutable);
+
+            Assert::AreEqual(std::size(values), dict.count);
+
+            Assert::IsTrue(ff_value_type_empty == ff_dict_get(&dict, FF_SVL("key0"))->type);
+            Assert::IsTrue(ff_value_type_null == ff_dict_get(&dict, FF_SVL("key1"))->type);
+            Assert::IsTrue(ff_dict_get(&dict, FF_SVL("key2"))->b);
+            Assert::IsTrue(memcmp(&ff_dict_get(&dict, FF_SVL("key3"))->guid, &guid, sizeof(guid)) == 0);
+            Assert::AreEqual(-1, ff_dict_get(&dict, FF_SVL("key4"))->i32);
+            Assert::AreEqual((int64_t)-2, ff_dict_get(&dict, FF_SVL("key5"))->i64);
+            Assert::AreEqual(3.5f, ff_dict_get(&dict, FF_SVL("key6"))->f32);
+            Assert::AreEqual(4.5, ff_dict_get(&dict, FF_SVL("key7"))->f64);
+            Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("key8"))->point_i32[1]);
+            Assert::AreEqual((int64_t)4, ff_dict_get(&dict, FF_SVL("key9"))->point_i64[1]);
+            Assert::AreEqual(6.5f, ff_dict_get(&dict, FF_SVL("key10"))->point_f32[1]);
+            Assert::AreEqual(8.5, ff_dict_get(&dict, FF_SVL("key11"))->point_f64[1]);
+            Assert::AreEqual(4, ff_dict_get(&dict, FF_SVL("key12"))->rect_i32[3]);
+            Assert::AreEqual(8.5f, ff_dict_get(&dict, FF_SVL("key13"))->rect_f32[3]);
+
+            ff_span data_result = ff_value_as_data(ff_dict_get(&dict, FF_SVL("key14")));
+            Assert::AreEqual(sizeof(bytes), data_result.size);
+            Assert::IsTrue(memcmp(data_result.data, bytes, sizeof(bytes)) == 0);
+
+            Assert::AreEqual((size_t)4, ff_value_as_string(ff_dict_get(&dict, FF_SVL("key15"))).count);
+
+            ff_value_span array_result = ff_value_as_array(ff_dict_get(&dict, FF_SVL("key16")));
+            Assert::AreEqual((size_t)2, array_result.count);
+            Assert::IsFalse(array_result.data[1].b);
+
+            ff_dict* child_result = ff_value_as_dict(ff_dict_get(&dict, FF_SVL("key17")));
+            Assert::AreEqual(0.5f, ff_dict_get(child_result, FF_SVL("inner"))->f32);
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(a_full_round_trip_of_every_kind_of_value_is_stable)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 8192);
+
+            const uint8_t bytes[4] = { 1, 2, 3, 4 };
+
+            ff_span byte_span{};
+            byte_span.data = bytes;
+            byte_span.size = sizeof(bytes);
+
+            ff_value items[2];
+            items[0] = ff_value_new_string(FF_SVL("item"));
+            items[1] = ff_value_new_int32(5);
+
+            ff_value_span array_span{};
+            array_span.data = items;
+            array_span.count = std::size(items);
+
+            ff_dict grandchild{};
+            ff_dict_init(&grandchild, &arena);
+            ff_value leaf = ff_value_new_float64(1.5);
+            ff_dict_set(&grandchild, FF_SVL("leaf"), &leaf);
+
+            ff_dict child{};
+            ff_dict_init(&child, &arena);
+            ff_value nested_child = ff_value_new_dict(&grandchild);
+            ff_value child_array = ff_value_new_array(array_span);
+            ff_dict_set(&child, FF_SVL("grandchild"), &nested_child);
+            ff_dict_set(&child, FF_SVL("array"), &child_array);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value nested = ff_value_new_dict(&child);
+            ff_value data_value = ff_value_new_data(byte_span);
+            ff_value text = ff_value_new_string(FF_SVL("top"));
+            ff_value number = ff_value_new_int64(42);
+            ff_dict_set(&source, FF_SVL("child"), &nested);
+            ff_dict_set(&source, FF_SVL("data"), &data_value);
+            ff_dict_set(&source, FF_SVL("text"), &text);
+            ff_dict_set(&source, FF_SVL("number"), &number);
+
+            ff_idict first{};
+            ff_idict_init(&first, &arena, &source);
+
+            // Converting back and forth repeatedly must reach a fixed point, not drift.
+            ff_idict current = first;
+            for (int pass = 0; pass < 3; pass++)
+            {
+                ff_dict recovered{};
+                ff_dict_init_from_idict(&recovered, &arena, &current);
+
+                ff_idict rebuilt{};
+                ff_idict_init(&rebuilt, &arena, &recovered);
+
+                size_t first_size = ((const uint32_t*)first.data)[1];
+                size_t rebuilt_size = ((const uint32_t*)rebuilt.data)[1];
+
+                Assert::AreEqual(first_size, rebuilt_size);
+                Assert::IsTrue(memcmp(first.data, rebuilt.data, first_size) == 0);
+
+                current = rebuilt;
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
     private:
         int count_matches(const ff_dict* dict, const char* key)
         {

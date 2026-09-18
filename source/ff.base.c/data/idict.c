@@ -361,6 +361,107 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
     dict->data = data;
 }
 
+// Defined in dict.c and deliberately kept out of dict.h. The keys in a block are already hashes, so
+// rebuilding needs to add by hash, but no caller outside this file has a reason to bypass hashing.
+void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value);
+
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena);
+
+static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
+{
+    size_t count = (source && source->data) ? get_idict_entry_count(source) : 0;
+    ff_dict_init_capacity(dict, arena, count);
+    FF_CHECK_RET(count);
+
+    const uint64_t* keys = get_idict_keys(source);
+    const ff_ivalue* values = get_idict_values(source);
+
+    // The entries are already sorted oldest first within a key, and add appends without searching,
+    // so the duplicate order that ff_dict_get_next walks is preserved.
+    for (size_t i = 0; i < count; i++)
+    {
+        ff_value value = convert_ivalue_to_value(values + i, source, arena);
+        internal_ff_dict_add_hash(dict, keys[i], &value);
+    }
+}
+
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena)
+{
+    switch (value->type)
+    {
+        case ff_value_type_string:
+            {
+                ff_string_view text = ff_ivalue_as_string(value, parent_dict);
+                ff_string_view result = ff_string_view_empty();
+
+                if (text.count)
+                {
+                    char* copy = ff_arena_alloc_type(arena, char, text.count);
+                    memcpy(copy, text.data, text.count);
+                    result.data = copy;
+                    result.count = text.count;
+                }
+
+                return ff_value_new_string(result);
+            }
+
+        case ff_value_type_data:
+            {
+                ff_array_span span = ff_ivalue_as_data(value, parent_dict);
+                size_t size = (size_t)span.count * span.item_size;
+                ff_array_span result = span;
+                result.data = size ? ff_arena_alloc(arena, size, span.item_align) : NULL;
+
+                if (size)
+                {
+                    memcpy((void*)result.data, span.data, size);
+                }
+
+                return ff_value_new_data_array(result);
+            }
+
+        case ff_value_type_array:
+            {
+                ff_ivalue_span items = ff_ivalue_as_array(value, parent_dict);
+                ff_value_span result;
+                result.data = items.count ? ff_arena_alloc_type(arena, ff_value, items.count) : NULL;
+                result.count = items.count;
+
+                for (size_t i = 0; i < items.count; i++)
+                {
+                    result.data[i] = convert_ivalue_to_value(items.data + i, parent_dict, arena);
+                }
+
+                return ff_value_new_array(result);
+            }
+
+        case ff_value_type_dict:
+        case ff_value_type_idict:
+            {
+                ff_idict nested = ff_ivalue_as_dict(value, parent_dict);
+                ff_dict* child = ff_arena_alloc_type(arena, ff_dict, 1);
+                build_dict_from_idict(child, arena, &nested);
+                return ff_value_new_dict(child);
+            }
+
+        default:
+            {
+                // Every remaining type keeps its payload inline, so the shared prefix is the value.
+                ff_value result;
+                memset(&result, 0, sizeof(result));
+                memcpy(&result, value, get_value_payload_size(value->type));
+                result.type = value->type;
+                return result;
+            }
+    }
+}
+
+void ff_dict_init_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
+{
+    FF_ASSERT(arena);
+    build_dict_from_idict(dict, arena, source);
+}
+
 static size_t get_idict_key_lower_bound(const uint64_t* keys, size_t count, uint64_t key)
 {
     if (count <= 16)

@@ -23,7 +23,7 @@ static void internal_ff_dict_reserve(ff_dict* dict, size_t new_capacity)
     dict->capacity = new_capacity;
 }
 
-static void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value)
+void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value)
 {
     if (dict->count == dict->capacity)
     {
