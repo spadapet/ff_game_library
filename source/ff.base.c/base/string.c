@@ -31,6 +31,30 @@ ff_span ff_wstring_view_span(ff_wstring_view str)
     return (ff_span) { .data = str.data, .size = str.count * sizeof(wchar_t) };
 }
 
+ff_string_view ff_string_copy(ff_string_view str, ff_arena* arena)
+{
+    if (str.count)
+    {
+        char* copy = ff_arena_alloc_type(arena, char, str.count);
+        memcpy(copy, str.data, str.count);
+        str.data = copy;
+    }
+
+    return str;
+}
+
+ff_wstring_view ff_wstring_copy(ff_wstring_view str, ff_arena* arena)
+{
+    if (str.count)
+    {
+        wchar_t* copy = ff_arena_alloc_type(arena, wchar_t, str.count);
+        memcpy(copy, str.data, str.count * sizeof(wchar_t));
+        str.data = copy;
+    }
+
+    return str;
+}
+
 ff_string_view ff_sz_view(const char* sz)
 {
     return (ff_string_view)

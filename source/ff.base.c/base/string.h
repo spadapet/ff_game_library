@@ -37,6 +37,8 @@ ff_string_view ff_string_view_empty(void);
 ff_wstring_view ff_wstring_view_empty(void);
 ff_span ff_string_view_span(ff_string_view str);
 ff_span ff_wstring_view_span(ff_wstring_view str);
+ff_string_view ff_string_copy(ff_string_view str, ff_arena* arena);
+ff_wstring_view ff_wstring_copy(ff_wstring_view str, ff_arena* arena);
 
 ff_string_view ff_sz_view(const char* sz);
 ff_wstring_view ff_wz_view(const wchar_t* sz);

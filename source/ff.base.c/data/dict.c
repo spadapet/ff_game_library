@@ -103,12 +103,19 @@ void ff_dict_set(ff_dict* dict, ff_string_view key, const ff_value* value)
 {
     uint64_t key_hash = ff_hash_string(key);
     internal_ff_dict_clear_hash(dict, key_hash);
-    internal_ff_dict_add_hash(dict, key_hash, value);
+
+    if (value)
+    {
+        internal_ff_dict_add_hash(dict, key_hash, value);
+    }
 }
 
 void ff_dict_add(ff_dict* dict, ff_string_view key, const ff_value* value)
 {
-    internal_ff_dict_add_hash(dict, ff_hash_string(key), value);
+    if (value)
+    {
+        internal_ff_dict_add_hash(dict, ff_hash_string(key), value);
+    }
 }
 
 ff_value* ff_dict_get(const ff_dict* dict, ff_string_view key)

@@ -157,20 +157,41 @@ void ff_stream_destroy(ff_stream* stream)
     *stream = ff_stream_none();
 }
 
-ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size)
+ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size, size_t align)
 {
     FF_ASSERT_RET_VAL(is_read(stream), ff_span_empty());
+    FF_ASSERT_RET_VAL(align && ff_math_is_pow2(align), ff_span_empty());
     size = ff_math_min_size(size, stream->size - stream->pos);
     FF_CHECK_RET_VAL(size, ff_span_empty());
 
     if (stream->type == ff_stream_type_read_memory)
     {
-        ff_span result = { .data = stream->data + stream->pos, .size = size };
+        const uint8_t* source = stream->data + stream->pos;
         stream->pos += size;
-        return result;
+
+        if (!((uintptr_t)source & (align - 1)))
+        {
+            return (ff_span)
+            {
+                .data = source,
+                .size = size,
+            };
+        }
+
+        FF_ASSERT_RET_VAL(arena, ff_span_empty());
+
+        void* copy = ff_arena_alloc(arena, size, align);
+        FF_CHECK_RET_VAL(copy, ff_span_empty());
+        memcpy(copy, source, size);
+
+        return (ff_span)
+        {
+            .data = copy,
+            .size = size,
+        };
     }
 
-    uint8_t* dest = ff_arena_alloc_type(arena, uint8_t, size);
+    uint8_t* dest = (uint8_t*)ff_arena_alloc(arena, size, align);
     DWORD read = 0;
     if (!ReadFile(stream->file, dest, (DWORD)size, &read, NULL))
     {

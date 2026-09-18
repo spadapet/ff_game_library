@@ -33,7 +33,7 @@ void ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t init
 ff_span ff_stream_written(const ff_stream* stream);
 void ff_stream_destroy(ff_stream* stream);
 
-ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size);
+ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size, size_t align);
 bool ff_stream_write(ff_stream* stream, ff_span data);
 size_t ff_stream_size(const ff_stream* stream);
 size_t ff_stream_pos(const ff_stream* stream);

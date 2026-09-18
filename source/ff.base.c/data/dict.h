@@ -23,6 +23,7 @@ void ff_dict_init(ff_dict* dict, ff_arena* arena);
 void ff_dict_init_capacity(ff_dict* dict, ff_arena* arena, size_t initial_capacity);
 void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other);
 void ff_dict_init_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source);
+ff_idict ff_idict_empty(void);
 void ff_dict_set(ff_dict* dict, ff_string_view key, const ff_value* value);
 void ff_dict_add(ff_dict* dict, ff_string_view key, const ff_value* value);
 ff_value* ff_dict_get(const ff_dict* dict, ff_string_view key);

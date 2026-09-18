@@ -17,6 +17,7 @@
 #include "../source/ff.base.c/data/file.h"
 #include "../source/ff.base.c/data/idict.h"
 #include "../source/ff.base.c/data/json.h"
+#include "../source/ff.base.c/data/settings.h"
 #include "../source/ff.base.c/data/stream.h"
 #include "../source/ff.base.c/data/value.h"
 #include "../source/ff.base.c/data/value_type.h"

@@ -17,7 +17,11 @@ int main()
     ff_string_builder sb;
     ff_string_builder_init(&sb, &arena);
     ff_string_builder_append_format(&sb, FF_SVL("%.*s\\%.*s\\log.txt"), FF_SV_FORMAT(user_path), FF_SV_FORMAT(app_name));
-    ff_string_view log_path = ff_string_builder_view(&sb);
+    ff_string_view log_path = ff_string_copy(ff_string_builder_view(&sb), &arena);
+
+    ff_string_builder_reset(&sb);
+    ff_string_builder_append_format(&sb, FF_SVL("%.*s\\%.*s\\settings.bin"), FF_SV_FORMAT(user_path), FF_SV_FORMAT(app_name));
+    ff_string_view settings_path = ff_string_copy(ff_string_builder_view(&sb), &arena);
 
     ff_log_sink_data old_log_sink = { 0 };
     ff_stream log_stream;
@@ -27,7 +31,7 @@ int main()
         old_log_sink = ff_log_set_sink((ff_log_sink_data) { .sink = log_sink, .cookie = &log_stream });
     }
 
-    ff_arena_reset(&arena);
+    ff_settings_init(settings_path);
 
     ff_dx12_init_params params = ff_dx12_init_params_default();
     if (ff_dx12_init(&params))
@@ -36,6 +40,7 @@ int main()
         ff_dx12_destroy();
     }
 
+    ff_settings_destroy();
     ff_log_set_sink(old_log_sink);
     ff_stream_destroy(&log_stream);
     ff_arena_destroy(&arena);

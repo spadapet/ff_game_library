@@ -9,7 +9,6 @@
 
 #define FF_IDICT_MAGIC 0x44494646u // "FFID"
 #define FF_IDICT_VERSION 6u
-#define FF_IDICT_MAX_ALIGN 64
 #define FF_IDICT_BLOCK_ALIGN 8
 
 typedef struct internal_ff_idict_header
@@ -343,6 +342,12 @@ static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff
 // abandons the previous buffer, which measured nearly double the time and memory on nested data.
 void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 {
+    if (!source)
+    {
+        *dict = ff_idict_empty();
+        return;
+    }
+
     ff_arena_marker marker = ff_arena_mark(arena);
     internal_ff_idict_builder builder = { .scratch_arena = arena };
     build_idict_emit_dict(&builder, source); // measure size first
@@ -460,6 +465,11 @@ void ff_dict_init_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* sou
 {
     FF_ASSERT(arena);
     build_dict_from_idict(dict, arena, source);
+}
+
+ff_idict ff_idict_empty(void)
+{
+    return (ff_idict){ .data = NULL };
 }
 
 static size_t get_idict_key_lower_bound(const uint64_t* keys, size_t count, uint64_t key)
@@ -689,7 +699,7 @@ static bool idict_read_prefix(ff_span saved, internal_ff_idict_file* prefix)
 
 bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool validate_hash)
 {
-    *dict = (ff_idict) { 0 };
+    *dict = ff_idict_empty();
 
     internal_ff_idict_file prefix;
     FF_CHECK_RET_VAL(idict_read_prefix(saved, &prefix), false);

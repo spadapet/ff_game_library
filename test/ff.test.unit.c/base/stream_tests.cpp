@@ -71,7 +71,7 @@ namespace ff::test::base
             Assert::AreEqual((size_t)11, ff_stream_size(&stream));
             Assert::AreEqual((size_t)0, ff_stream_pos(&stream));
 
-            ff_span data = ff_stream_read(&stream, nullptr, 11);
+            ff_span data = ff_stream_read(&stream, nullptr, 11, 1);
             Assert::IsTrue(span_equals(data, "hello world"));
             Assert::AreEqual((size_t)11, ff_stream_pos(&stream));
 
@@ -85,7 +85,7 @@ namespace ff::test::base
 
             ff_stream stream;
             ff_stream_init_read_memory(&stream, span_of(source, 6));
-            ff_span data = ff_stream_read(&stream, nullptr, 3);
+            ff_span data = ff_stream_read(&stream, nullptr, 3, 1);
 
             Assert::AreEqual((void*)source, (void*)data.data);
             ff_stream_destroy(&stream);
@@ -98,20 +98,56 @@ namespace ff::test::base
             ff_stream stream;
             ff_stream_init_read_memory(&stream, span_of(source, 10));
 
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 4), "0123"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 4, 1), "0123"));
             Assert::AreEqual((size_t)4, ff_stream_pos(&stream));
 
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 4), "4567"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 4, 1), "4567"));
             Assert::AreEqual((size_t)8, ff_stream_pos(&stream));
 
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 100), "89"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 100, 1), "89"));
             Assert::AreEqual((size_t)10, ff_stream_pos(&stream));
 
-            ff_span eof = ff_stream_read(&stream, nullptr, 1);
+            ff_span eof = ff_stream_read(&stream, nullptr, 1, 1);
             Assert::AreEqual((size_t)0, eof.size);
             Assert::AreEqual((size_t)10, ff_stream_pos(&stream));
 
             ff_stream_destroy(&stream);
+        }
+
+        TEST_METHOD(read_memory_aligned_stays_in_place)
+        {
+            alignas(64) char source[128];
+            ::memcpy(source, "file contents", 13);
+
+            ff_stream stream;
+            ff_stream_init_read_memory(&stream, span_of(source, std::size(source)));
+
+            ff_span data = ff_stream_read(&stream, nullptr, 13, 64);
+            Assert::IsTrue(span_equals(data, "file contents"));
+            Assert::IsTrue(data.data == source);
+
+            ff_stream_destroy(&stream);
+        }
+
+        TEST_METHOD(read_memory_misaligned_copies_into_arena)
+        {
+            alignas(64) char buffer[128];
+            ::memcpy(buffer + 1, "file contents", 13);
+
+            ff_arena arena;
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_stream stream;
+            ff_stream_init_read_memory(&stream, span_of(buffer + 1, 13));
+
+            ff_span data = ff_stream_read(&stream, &arena, 13, 64);
+            Assert::IsTrue(span_equals(data, "file contents"));
+            Assert::IsTrue(data.data != buffer + 1);
+            Assert::AreEqual((size_t)0, (size_t)((uintptr_t)data.data & 63));
+            Assert::AreEqual((size_t)13, ff_stream_pos(&stream));
+
+            ff_stream_destroy(&stream);
+            ff_arena_destroy(&arena);
         }
 
         TEST_METHOD(read_memory_empty)
@@ -123,7 +159,7 @@ namespace ff::test::base
             ff_stream stream;
             ff_stream_init_read_memory(&stream, empty);
             Assert::AreEqual((size_t)0, ff_stream_size(&stream));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 10).size);
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 10, 1).size);
 
             ff_stream_destroy(&stream);
         }
@@ -134,7 +170,7 @@ namespace ff::test::base
 
             ff_stream stream;
             ff_stream_init_read_memory(&stream, span_of(source, 4));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 0).size);
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 0, 1).size);
             Assert::AreEqual((size_t)0, ff_stream_pos(&stream));
 
             ff_stream_destroy(&stream);
@@ -149,14 +185,14 @@ namespace ff::test::base
 
             Assert::IsTrue(ff_stream_seek(&stream, 6));
             Assert::AreEqual((size_t)6, ff_stream_pos(&stream));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 2), "67"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 2, 1), "67"));
 
             Assert::IsTrue(ff_stream_seek(&stream, 0));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 2), "01"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, nullptr, 2, 1), "01"));
 
             Assert::IsTrue(ff_stream_seek(&stream, 1000));
             Assert::AreEqual((size_t)10, ff_stream_pos(&stream));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 1).size);
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, nullptr, 1, 1).size);
 
             ff_stream_destroy(&stream);
         }
@@ -310,7 +346,7 @@ namespace ff::test::base
             ff_stream reader;
             ff_stream_init_read_memory(&reader, written);
             Assert::AreEqual((size_t)10, ff_stream_size(&reader));
-            Assert::IsTrue(span_equals(ff_stream_read(&reader, nullptr, 10), "round trip"));
+            Assert::IsTrue(span_equals(ff_stream_read(&reader, nullptr, 10, 1), "round trip"));
             ff_stream_destroy(&reader);
 
             ff_arena_destroy(&arena);
@@ -347,13 +383,142 @@ namespace ff::test::base
             Assert::AreEqual((size_t)13, ff_stream_size(&stream));
             Assert::AreEqual((size_t)0, ff_stream_pos(&stream));
 
-            ff_span data = ff_stream_read(&stream, &arena, 13);
+            ff_span data = ff_stream_read(&stream, &arena, 13, 1);
             Assert::IsTrue(span_equals(data, "file contents"));
             Assert::AreEqual((size_t)13, ff_stream_pos(&stream));
 
             ff_stream_destroy(&stream);
             ff_arena_destroy(&arena);
             delete_temp_file(path);
+        }
+
+        TEST_METHOD(read_file_honors_requested_alignment)
+        {
+            char path_buffer[MAX_PATH];
+            ff_string_view path = write_temp_file(path_buffer, std::size(path_buffer), "align", "file contents");
+
+            for (size_t align = 1; align <= 64; align *= 2)
+            {
+                for (size_t pad = 0; pad < align; pad++)
+                {
+                    ff_arena arena;
+                    ff_arena_init_heap_global(&arena, 4096);
+
+                    if (pad)
+                    {
+                        ff_arena_alloc(&arena, pad, 1);
+                    }
+
+                    ff_stream stream;
+                    Assert::IsTrue(ff_stream_init_read_file(&stream, path));
+
+                    ff_span data = ff_stream_read(&stream, &arena, 13, align);
+                    Assert::IsTrue(span_equals(data, "file contents"));
+                    Assert::AreEqual((size_t)0, (size_t)((uintptr_t)data.data & (align - 1)));
+
+                    ff_stream_destroy(&stream);
+                    ff_arena_destroy(&arena);
+                }
+            }
+
+            delete_temp_file(path);
+        }
+
+        // An idict read back from a file is mapped in place, so the read must land on an aligned
+        // address no matter what the arena happened to allocate beforehand.
+        TEST_METHOD(idict_survives_file_round_trip_at_any_arena_offset)
+        {
+            char path_buffer[MAX_PATH];
+            ff_string_view path = temp_path(path_buffer, std::size(path_buffer), "idict_align");
+
+            ff_arena arena;
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source;
+            ff_dict_init(&source, &arena);
+            ff_value value = ff_value_new_int32(4242);
+            ff_dict_set(&source, FF_SVL("volume"), &value);
+
+            ff_idict dict;
+            ff_idict_init(&dict, &arena, &source);
+            ff_span saved = ff_idict_save(&dict, &arena);
+
+            ff_stream writer;
+            Assert::IsTrue(ff_stream_init_write_file(&writer, path));
+            Assert::IsTrue(ff_stream_write(&writer, saved));
+            ff_stream_destroy(&writer);
+
+            for (size_t pad = 0; pad < FF_IDICT_MAX_ALIGN; pad++)
+            {
+                ff_arena load_arena;
+                ff_arena_init_heap_global(&load_arena, 4096);
+
+                if (pad)
+                {
+                    ff_arena_alloc(&load_arena, pad, 1);
+                }
+
+                ff_stream reader;
+                Assert::IsTrue(ff_stream_init_read_file(&reader, path));
+
+                ff_span read = ff_stream_read(&reader, &load_arena, ff_stream_size(&reader), FF_IDICT_MAX_ALIGN);
+
+                ff_idict loaded;
+                Assert::IsTrue(ff_idict_load(&loaded, read, true, true));
+
+                const ff_ivalue* found = ff_idict_get(&loaded, FF_SVL("volume"));
+                Assert::IsNotNull(found);
+                Assert::AreEqual(4242, found->i32);
+
+                ff_stream_destroy(&reader);
+                ff_arena_destroy(&load_arena);
+            }
+
+            ff_arena_destroy(&arena);
+            delete_temp_file(path);
+        }
+
+        // A memory stream must be just as usable as a file stream here, which means honoring the
+        // requested alignment even when the caller's bytes sit at a misaligned address.
+        TEST_METHOD(idict_survives_memory_round_trip_at_any_offset)
+        {
+            ff_arena arena;
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source;
+            ff_dict_init(&source, &arena);
+            ff_value value = ff_value_new_int32(4242);
+            ff_dict_set(&source, FF_SVL("volume"), &value);
+
+            ff_idict dict;
+            ff_idict_init(&dict, &arena, &source);
+            ff_span saved = ff_idict_save(&dict, &arena);
+
+            for (size_t pad = 0; pad < FF_IDICT_MAX_ALIGN; pad++)
+            {
+                ff_arena load_arena;
+                ff_arena_init_heap_global(&load_arena, 4096);
+
+                uint8_t* shifted = (uint8_t*)ff_arena_alloc(&load_arena, saved.size + FF_IDICT_MAX_ALIGN, FF_IDICT_MAX_ALIGN) + pad;
+                ::memcpy(shifted, saved.data, saved.size);
+
+                ff_stream reader;
+                ff_stream_init_read_memory(&reader, span_of(shifted, saved.size));
+
+                ff_span read = ff_stream_read(&reader, &load_arena, saved.size, FF_IDICT_MAX_ALIGN);
+
+                ff_idict loaded;
+                Assert::IsTrue(ff_idict_load(&loaded, read, true, true));
+
+                const ff_ivalue* found = ff_idict_get(&loaded, FF_SVL("volume"));
+                Assert::IsNotNull(found);
+                Assert::AreEqual(4242, found->i32);
+
+                ff_stream_destroy(&reader);
+                ff_arena_destroy(&load_arena);
+            }
+
+            ff_arena_destroy(&arena);
         }
 
         TEST_METHOD(read_file_in_chunks)
@@ -366,11 +531,11 @@ namespace ff::test::base
 
             ff_stream stream;
             Assert::IsTrue(ff_stream_init_read_file(&stream, path));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 4), "0123"));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 4), "4567"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 4, 1), "0123"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 4, 1), "4567"));
 
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 100), "89"));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 1).size);
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 100, 1), "89"));
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 1, 1).size);
 
             ff_stream_destroy(&stream);
             ff_arena_destroy(&arena);
@@ -390,14 +555,14 @@ namespace ff::test::base
 
             Assert::IsTrue(ff_stream_seek(&stream, 5));
             Assert::AreEqual((size_t)5, ff_stream_pos(&stream));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 3), "567"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 3, 1), "567"));
 
             Assert::IsTrue(ff_stream_seek(&stream, 0));
-            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 3), "012"));
+            Assert::IsTrue(span_equals(ff_stream_read(&stream, &arena, 3, 1), "012"));
 
             Assert::IsTrue(ff_stream_seek(&stream, 999));
             Assert::AreEqual((size_t)10, ff_stream_pos(&stream));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 1).size);
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 1, 1).size);
 
             ff_stream_destroy(&stream);
             ff_arena_destroy(&arena);
@@ -415,7 +580,7 @@ namespace ff::test::base
             ff_stream stream;
             Assert::IsTrue(ff_stream_init_read_file(&stream, path));
             Assert::AreEqual((size_t)0, ff_stream_size(&stream));
-            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 10).size);
+            Assert::AreEqual((size_t)0, ff_stream_read(&stream, &arena, 10, 1).size);
 
             ff_stream_destroy(&stream);
             ff_arena_destroy(&arena);
@@ -445,7 +610,7 @@ namespace ff::test::base
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
             Assert::AreEqual(std::size(source), ff_stream_size(&reader));
 
-            ff_span data = ff_stream_read(&reader, &arena, std::size(source));
+            ff_span data = ff_stream_read(&reader, &arena, std::size(source), 1);
             Assert::AreEqual(std::size(source), data.size);
             Assert::AreEqual(0, ::memcmp(data.data, source, std::size(source)));
 
@@ -473,7 +638,7 @@ namespace ff::test::base
 
             ff_stream reader;
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
-            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 13), "one two three"));
+            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 13, 1), "one two three"));
             ff_stream_destroy(&reader);
 
             ff_arena_destroy(&arena);
@@ -496,7 +661,7 @@ namespace ff::test::base
             ff_stream reader;
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
             Assert::AreEqual((size_t)5, ff_stream_size(&reader));
-            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 100), "short"));
+            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 100, 1), "short"));
             ff_stream_destroy(&reader);
 
             ff_arena_destroy(&arena);
@@ -531,7 +696,7 @@ namespace ff::test::base
 
             ff_stream reader;
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
-            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 100), "nested"));
+            Assert::IsTrue(span_equals(ff_stream_read(&reader, &arena, 100, 1), "nested"));
             ff_stream_destroy(&reader);
 
             ff_arena_destroy(&arena);
@@ -606,7 +771,7 @@ namespace ff::test::base
             Assert::IsTrue(ff_stream_init_read_file(&reader, path));
             ff_stream_init_write_memory(&writer, &arena, 0);
 
-            for (ff_span chunk = ff_stream_read(&reader, &arena, 3); chunk.size; chunk = ff_stream_read(&reader, &arena, 3))
+            for (ff_span chunk = ff_stream_read(&reader, &arena, 3, 1); chunk.size; chunk = ff_stream_read(&reader, &arena, 3, 1))
             {
                 Assert::IsTrue(ff_stream_write(&writer, chunk));
             }

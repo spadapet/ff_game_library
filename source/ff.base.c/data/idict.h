@@ -8,6 +8,9 @@ typedef struct ff_arena ff_arena;
 typedef struct ff_dict ff_dict;
 typedef struct ff_value ff_value;
 
+// ff_idict_load maps the saved bytes in place, so the buffer passed to it must have at least this alignment.
+#define FF_IDICT_MAX_ALIGN 64
+
 typedef struct ff_idict
 {
     const void* data;
