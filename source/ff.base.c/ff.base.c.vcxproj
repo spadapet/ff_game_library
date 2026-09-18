@@ -13,6 +13,7 @@
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
+    <ClCompile Include="base\signal.c" />
     <ClCompile Include="base\span.c" />
     <ClCompile Include="base\string.c" />
     <ClCompile Include="base\string_builder.c" />
@@ -34,6 +35,7 @@
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
+    <ClInclude Include="base\signal.h" />
     <ClInclude Include="base\span.h" />
     <ClInclude Include="base\string.h" />
     <ClInclude Include="base\string_builder.h" />

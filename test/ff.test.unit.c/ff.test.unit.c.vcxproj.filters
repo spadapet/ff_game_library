@@ -30,6 +30,9 @@
     <ClCompile Include="base\string_builder_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\signal_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\string_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>

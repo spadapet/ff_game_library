@@ -29,6 +29,9 @@
     <ClCompile Include="base\array.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\signal.c">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\span.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -72,6 +75,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\math.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\signal.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="base\span.h">
