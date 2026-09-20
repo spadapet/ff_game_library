@@ -160,6 +160,21 @@ namespace ff::test::base
         }
     }
 
+    struct move_other_state
+    {
+        ff_signal* target;
+        ff_signal_connection* other;
+        counter* other_state;
+        int calls;
+    };
+
+    static void move_other_handler(void* args, void* cookie)
+    {
+        move_other_state* state = (move_other_state*)cookie;
+        state->calls++;
+        ff_signal_connect(state->target, state->other, count_handler, state->other_state);
+    }
+
     struct destroy_signal_state
     {
         ff_signal* signal;
@@ -475,6 +490,139 @@ namespace ff::test::base
 
             ff_signal_connection_destroy(&a);
             ff_signal_connection_destroy(&b);
+            ff_signal_destroy(&second);
+        }
+
+        // Connect is the only call needed to reuse a connection, so destroy does not have to be
+        // paired with a fresh init before reconnecting.
+        TEST_METHOD(connection_can_be_reconnected_without_being_reinitialized)
+        {
+            ff_signal signal;
+            ff_signal_init(&signal);
+
+            counter state{};
+            ff_signal_connection connection;
+            ff_signal_connection_init(&connection);
+
+            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connection_destroy(&connection);
+            Assert::IsFalse(ff_signal_connection_connected(&connection));
+
+            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_notify(&signal, nullptr);
+
+            Assert::AreEqual(1, state.calls);
+            Assert::AreEqual((size_t)1, ff_signal_count(&signal));
+
+            ff_signal_connection_destroy(&connection);
+            ff_signal_destroy(&signal);
+        }
+
+        TEST_METHOD(connecting_the_same_connection_twice_does_not_duplicate_it)
+        {
+            ff_signal signal;
+            ff_signal_init(&signal);
+
+            counter state{};
+            ff_signal_connection connection;
+            ff_signal_connection_init(&connection);
+
+            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connect(&signal, &connection, count_handler, &state);
+
+            Assert::AreEqual((size_t)1, ff_signal_count(&signal));
+
+            ff_signal_notify(&signal, nullptr);
+            Assert::AreEqual(1, state.calls);
+
+            ff_signal_connection_destroy(&connection);
+            ff_signal_destroy(&signal);
+        }
+
+        // Reconnecting replaces the handler and cookie, so a move can also retarget the callback.
+        TEST_METHOD(reconnecting_replaces_the_handler_and_cookie)
+        {
+            ff_signal signal;
+            ff_signal_init(&signal);
+
+            counter first_state{};
+            counter second_state{};
+            ff_signal_connection connection;
+            ff_signal_connection_init(&connection);
+
+            ff_signal_connect(&signal, &connection, count_handler, &first_state);
+            ff_signal_connect(&signal, &connection, count_handler, &second_state);
+
+            ff_signal_notify(&signal, nullptr);
+
+            Assert::AreEqual(0, first_state.calls);
+            Assert::AreEqual(1, second_state.calls);
+
+            ff_signal_connection_destroy(&connection);
+            ff_signal_destroy(&signal);
+        }
+
+        // Moving a connection to another signal mid-notify must not resurrect it in this walk,
+        // and the destination must still deliver on its own next notify.
+        TEST_METHOD(handler_moving_a_connection_to_another_signal_during_notify)
+        {
+            ff_signal source;
+            ff_signal target;
+            ff_signal_init(&source);
+            ff_signal_init(&target);
+
+            counter moved_state{};
+            ff_signal_connection mover;
+            ff_signal_connection moved;
+            ff_signal_connection_init(&mover);
+            ff_signal_connection_init(&moved);
+
+            move_other_state state{};
+            state.target = &target;
+            state.other = &moved;
+            state.other_state = &moved_state;
+
+            ff_signal_connect(&source, &mover, move_other_handler, &state);
+            ff_signal_connect(&source, &moved, count_handler, &moved_state);
+
+            ff_signal_notify(&source, nullptr);
+
+            Assert::AreEqual(1, state.calls);
+            Assert::AreEqual(0, moved_state.calls);
+            Assert::AreEqual((size_t)1, ff_signal_count(&source));
+            Assert::AreEqual((size_t)1, ff_signal_count(&target));
+
+            ff_signal_notify(&target, nullptr);
+            Assert::AreEqual(1, moved_state.calls);
+
+            ff_signal_connection_destroy(&mover);
+            ff_signal_connection_destroy(&moved);
+            ff_signal_destroy(&source);
+            ff_signal_destroy(&target);
+        }
+
+        // A connection that outlives its signal must be reusable on a brand new signal.
+        TEST_METHOD(connection_can_be_connected_to_a_new_signal_after_its_signal_died)
+        {
+            counter state{};
+            ff_signal_connection connection;
+            ff_signal_connection_init(&connection);
+
+            ff_signal first;
+            ff_signal_init(&first);
+            ff_signal_connect(&first, &connection, count_handler, &state);
+            ff_signal_destroy(&first);
+
+            Assert::IsFalse(ff_signal_connection_connected(&connection));
+
+            ff_signal second;
+            ff_signal_init(&second);
+            ff_signal_connect(&second, &connection, count_handler, &state);
+            ff_signal_notify(&second, nullptr);
+
+            Assert::AreEqual(1, state.calls);
+
+            ff_signal_connection_destroy(&connection);
             ff_signal_destroy(&second);
         }
 

@@ -6,6 +6,11 @@ static void log_sink(ff_log_type type, ff_string_view text, void* cookie)
     ff_stream_write(log_stream, ff_string_view_span(text));
 }
 
+static void on_save(void* args, void* cookie)
+{
+    ff_log_write(ff_log_type_normal, FF_SVL("Settings saved."));
+}
+
 int main()
 {
     ff_arena arena;
@@ -33,6 +38,10 @@ int main()
 
     ff_settings_init(settings_path);
 
+    ff_signal_connection save_connection;
+    ff_signal_connection_init(&save_connection);
+    ff_signal_connect(ff_settings_save_signal(), &save_connection, on_save, NULL);
+
     ff_dx12_init_params params = ff_dx12_init_params_default();
     if (ff_dx12_init(&params))
     {
@@ -40,6 +49,7 @@ int main()
         ff_dx12_destroy();
     }
 
+    ff_signal_connection_destroy(&save_connection);
     ff_settings_destroy();
     ff_log_set_sink(old_log_sink);
     ff_stream_destroy(&log_stream);
