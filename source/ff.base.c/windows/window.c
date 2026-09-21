@@ -9,6 +9,7 @@
 #include "windows/window.h"
 
 #define FF_WM_FULL_SCREEN (WM_USER + 0)
+#define FF_KEY_WAS_DOWN 0x40000000
 
 typedef struct window_state
 {
@@ -169,6 +170,15 @@ static bool load_window_state(window_state* state)
     return true;
 }
 
+static void fit_to_monitor(HWND hwnd)
+{
+    RECT monitor_rect;
+    FF_CHECK_RET(get_monitor_rect(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitor_rect));
+    SetWindowPos(hwnd, NULL, monitor_rect.left, monitor_rect.top,
+        monitor_rect.right - monitor_rect.left, monitor_rect.bottom - monitor_rect.top,
+        SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+}
+
 static void apply_full_screen(HWND hwnd, bool full_screen)
 {
     FF_CHECK_RET(is_full_screen_style(hwnd) != full_screen);
@@ -189,11 +199,7 @@ static void apply_full_screen(HWND hwnd, bool full_screen)
 
     if (full_screen)
     {
-        RECT monitor_rect;
-        FF_CHECK_RET(get_monitor_rect(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitor_rect));
-        SetWindowPos(hwnd, NULL, monitor_rect.left, monitor_rect.top,
-            monitor_rect.right - monitor_rect.left, monitor_rect.bottom - monitor_rect.top,
-            SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        fit_to_monitor(hwnd);
     }
     else
     {
@@ -226,8 +232,22 @@ static void handle_message(ff_window_message* message)
 
         case WM_CREATE:
             s_main_window = message->hwnd;
-            ff_signal_connection_init(&s_save_connection);
-            ff_signal_connect(ff_settings_save_signal(), &s_save_connection, &save_window_state, NULL);
+            ff_signal_connection_init_and_connect(&s_save_connection, ff_settings_save_signal(), &save_window_state, NULL);
+            break;
+
+        case WM_DISPLAYCHANGE:
+            if (is_full_screen_style(message->hwnd))
+            {
+                fit_to_monitor(message->hwnd);
+
+                HMONITOR monitor = MonitorFromWindow(message->hwnd, MONITOR_DEFAULTTONULL);
+                RECT monitor_rect;
+                if (s_has_full_screen_state && monitor && get_monitor_rect(monitor, &monitor_rect))
+                {
+                    s_full_screen_state.monitor_rect = monitor_rect;
+                    s_full_screen_state.monitor_dpi = monitor_dpi(monitor);
+                }
+            }
             break;
 
         case WM_GETMINMAXINFO:
@@ -255,7 +275,7 @@ static void handle_message(ff_window_message* message)
             break;
 
         case WM_KEYDOWN:
-            if (message->wp == VK_F11 && !(message->lp & 0x40000000)) // wasn't already down
+            if (message->wp == VK_F11 && !(message->lp & FF_KEY_WAS_DOWN))
             {
                 ff_window_set_full_screen(!ff_window_full_screen());
             }
@@ -265,7 +285,7 @@ static void handle_message(ff_window_message* message)
         case WM_SYSKEYDOWN:
             if (message->wp == VK_RETURN)
             {
-                if (message->msg == WM_SYSKEYDOWN)
+                if (message->msg == WM_SYSKEYDOWN && !(message->lp & FF_KEY_WAS_DOWN))
                 {
                     ff_window_set_full_screen(!ff_window_full_screen());
                 }
@@ -284,6 +304,7 @@ static void handle_message(ff_window_message* message)
             if (message->hwnd == s_main_window)
             {
                 s_main_window = NULL;
+                s_has_full_screen_state = false;
                 PostQuitMessage(0);
             }
             break;
@@ -396,14 +417,23 @@ ff_signal* ff_window_message_signal(void)
 
 int ff_window_message_loop(void)
 {
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0) > 0)
+    while (true)
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+        MSG msg;
+        switch (GetMessage(&msg, NULL, 0, 0))
+        {
+            case FALSE:
+                (int)msg.wParam;
 
-    return (int)msg.wParam;
+            case -1:
+                FF_DEBUG_FAIL_RET_VAL(0);
+
+            default:
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                break;
+        }
+    }
 }
 
 bool ff_window_full_screen(void)

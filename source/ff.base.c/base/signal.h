@@ -21,4 +21,5 @@ void ff_signal_connect(ff_signal* signal, ff_signal_connection* connection, ff_s
 void ff_signal_notify(ff_signal* signal, void* args);
 
 void ff_signal_connection_init(ff_signal_connection* connection);
+void ff_signal_connection_init_and_connect(ff_signal_connection* connection, ff_signal* signal, ff_signal_func func, void* cookie);
 void ff_signal_connection_destroy(ff_signal_connection* connection);

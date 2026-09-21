@@ -219,8 +219,7 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
-            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
             Assert::AreEqual((size_t)1, ff_signal_count(&signal));
             Assert::IsTrue(ff_signal_connection_connected(&connection));
@@ -242,8 +241,7 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
-            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
             for (int i = 0; i < 5; i++)
             {
@@ -270,8 +268,7 @@ namespace ff::test::base
             {
                 entries[i].log = &log;
                 entries[i].id = i;
-                ff_signal_connection_init(&connections[i]);
-                ff_signal_connect(&signal, &connections[i], order_handler, &entries[i]);
+                ff_signal_connection_init_and_connect(&connections[i], &signal, order_handler, &entries[i]);
             }
 
             ff_signal_notify(&signal, nullptr);
@@ -296,10 +293,8 @@ namespace ff::test::base
             counter second{};
             ff_signal_connection a;
             ff_signal_connection b;
-            ff_signal_connection_init(&a);
-            ff_signal_connection_init(&b);
-            ff_signal_connect(&signal, &a, count_handler, &first);
-            ff_signal_connect(&signal, &b, count_handler, &second);
+            ff_signal_connection_init_and_connect(&a, &signal, count_handler, &first);
+            ff_signal_connection_init_and_connect(&b, &signal, count_handler, &second);
 
             ff_signal_notify(&signal, nullptr);
             ff_signal_connection_destroy(&a);
@@ -330,8 +325,7 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
-            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
             ff_signal_connection_destroy(&connection);
             ff_signal_connection_destroy(&connection);
@@ -363,8 +357,7 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
-            ff_signal_connect(&signal, &connection, count_handler, &state);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
             ff_signal_destroy(&signal);
 
@@ -384,8 +377,7 @@ namespace ff::test::base
 
             for (int i = 0; i < 8; i++)
             {
-                ff_signal_connection_init(&connections[i]);
-                ff_signal_connect(&signal, &connections[i], count_handler, &states[i]);
+                ff_signal_connection_init_and_connect(&connections[i], &signal, count_handler, &states[i]);
             }
 
             ff_signal_destroy(&signal);
@@ -404,14 +396,12 @@ namespace ff::test::base
 
             counter first{};
             ff_signal_connection a;
-            ff_signal_connection_init(&a);
-            ff_signal_connect(&signal, &a, count_handler, &first);
+            ff_signal_connection_init_and_connect(&a, &signal, count_handler, &first);
             ff_signal_destroy(&signal);
 
             counter second{};
             ff_signal_connection b;
-            ff_signal_connection_init(&b);
-            ff_signal_connect(&signal, &b, count_handler, &second);
+            ff_signal_connection_init_and_connect(&b, &signal, count_handler, &second);
             ff_signal_notify(&signal, nullptr);
 
             Assert::AreEqual(0, first.calls);
@@ -428,7 +418,7 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
             ff_signal_connect(&signal, &connection, count_handler, &state);
             ff_signal_connection_destroy(&connection);
@@ -452,9 +442,8 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
+            ff_signal_connection_init_and_connect(&connection, &first, count_handler, &state);
 
-            ff_signal_connect(&first, &connection, count_handler, &state);
             ff_signal_connect(&second, &connection, count_handler, &state);
 
             Assert::AreEqual((size_t)0, ff_signal_count(&first));
@@ -482,10 +471,8 @@ namespace ff::test::base
             counter second_state{};
             ff_signal_connection a;
             ff_signal_connection b;
-            ff_signal_connection_init(&a);
-            ff_signal_connection_init(&b);
-            ff_signal_connect(&first, &a, count_handler, &first_state);
-            ff_signal_connect(&second, &b, count_handler, &second_state);
+            ff_signal_connection_init_and_connect(&a, &first, count_handler, &first_state);
+            ff_signal_connection_init_and_connect(&b, &second, count_handler, &second_state);
 
             ff_signal_notify(&first, nullptr);
 
@@ -511,9 +498,8 @@ namespace ff::test::base
 
             counter state{};
             ff_signal_connection connection;
-            ff_signal_connection_init(&connection);
+            ff_signal_connection_init_and_connect(&connection, &signal, count_handler, &state);
 
-            ff_signal_connect(&signal, &connection, count_handler, &state);
             ff_signal_connection_destroy(&connection);
             Assert::IsFalse(ff_signal_connection_connected(&connection));
 

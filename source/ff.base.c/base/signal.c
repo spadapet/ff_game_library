@@ -58,6 +58,12 @@ void ff_signal_connection_init(ff_signal_connection* connection)
     link_to_self(connection);
 }
 
+void ff_signal_connection_init_and_connect(ff_signal_connection* connection, ff_signal* signal, ff_signal_func func, void* cookie)
+{
+    ff_signal_connection_init(connection);
+    ff_signal_connect(signal, connection, func, cookie);
+}
+
 void ff_signal_connection_destroy(ff_signal_connection* connection)
 {
     FF_ASSERT_RET(connection);

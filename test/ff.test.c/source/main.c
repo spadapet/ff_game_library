@@ -39,8 +39,7 @@ int main()
     ff_settings_init(settings_path);
 
     ff_signal_connection save_connection;
-    ff_signal_connection_init(&save_connection);
-    ff_signal_connect(ff_settings_save_signal(), &save_connection, on_save, NULL);
+    ff_signal_connection_init_and_connect(&save_connection, ff_settings_save_signal(), on_save, NULL);
 
     ff_dx12_init_params params = ff_dx12_init_params_default();
     if (ff_dx12_init(&params))
