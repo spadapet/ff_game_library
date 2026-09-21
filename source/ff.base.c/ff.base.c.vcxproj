@@ -28,6 +28,8 @@
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="windows\module.c" />
+    <ClCompile Include="windows\thread.c" />
     <ClCompile Include="windows\window.c" />
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +53,8 @@
     <ClInclude Include="data\value_type.h" />
     <ClInclude Include="dx12\dx12_globals.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="windows\module.h" />
+    <ClInclude Include="windows\thread.h" />
     <ClInclude Include="windows\window.h" />
   </ItemGroup>
   <ItemGroup>

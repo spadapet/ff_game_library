@@ -62,6 +62,12 @@
     <ClCompile Include="windows\window.c">
       <Filter>windows</Filter>
     </ClCompile>
+    <ClCompile Include="windows\module.c">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="windows\thread.c">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -123,6 +129,12 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="windows\window.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\module.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\thread.h">
       <Filter>windows</Filter>
     </ClInclude>
   </ItemGroup>

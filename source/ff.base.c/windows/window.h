@@ -14,12 +14,12 @@ typedef struct ff_window_message
     bool handled;
 } ff_window_message;
 
-HWND ff_window_create_main(ff_string_view title);
+HWND ff_window_main_init(ff_string_view title);
 HWND ff_window_main(void);
-void ff_window_show(void);
+void ff_window_main_show(void);
+bool ff_window_main_is_full_screen(void);
+void ff_window_main_set_full_screen(bool value);
+ff_signal* ff_window_main_signal(void); // Notified with ff_window_message for every HWND message for the main window.
 
-ff_signal* ff_window_message_signal(void);
-int ff_window_message_loop(void);
-
-bool ff_window_full_screen(void);
-void ff_window_set_full_screen(bool value);
+HWND ff_window_create_message(void);
+int ff_window_handle_messages(void);
