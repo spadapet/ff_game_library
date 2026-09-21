@@ -14,6 +14,9 @@
 #define COBJMACROS // COM interfaces are called through their C macros, not C++ vtable syntax
 #include <Windows.h>
 #include <shlobj.h>
+#include <shellscalingapi.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+
+#pragma comment(lib, "shcore.lib")
 #endif
