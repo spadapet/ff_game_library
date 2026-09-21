@@ -28,6 +28,7 @@
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="windows\window.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base\arena.h" />
@@ -50,6 +51,7 @@
     <ClInclude Include="data\value_type.h" />
     <ClInclude Include="dx12\dx12_globals.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="windows\window.h" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="base.c.natvis" />

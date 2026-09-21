@@ -84,31 +84,31 @@ void ff_signal_notify(ff_signal* signal, void* args)
 {
     ensure_linked(&signal->head);
 
-    // The end sentinel bounds the walk to the handlers connected right now, so a handler that
-    // reconnects itself or connects a new handler can't be revisited in this same notify.
     ff_signal_connection end;
     ff_signal_connection_init(&end);
     insert_node_before(&signal->head, &end);
 
-    // The cursor is a real list member, so handlers may connect or disconnect anything,
-    // including themselves or their neighbors, without dislodging the walk. Destroying the
-    // whole signal unlinks the cursor along with everything else, which ends the walk.
     ff_signal_connection cursor;
     ff_signal_connection_init(&cursor);
     insert_node_before(signal->head.next, &cursor);
 
-    while (cursor.next != &cursor && cursor.next != &end)
+    __try
     {
-        ff_signal_connection* connection = cursor.next;
-        unlink_node(&cursor);
-        insert_node_before(connection->next, &cursor);
-
-        if (connection->func)
+        while (cursor.next != &cursor && cursor.next != &end)
         {
-            connection->func(args, connection->cookie);
+            ff_signal_connection* connection = cursor.next;
+            unlink_node(&cursor);
+            insert_node_before(connection->next, &cursor);
+
+            if (connection->func)
+            {
+                connection->func(args, connection->cookie);
+            }
         }
     }
-
-    unlink_node(&cursor);
-    unlink_node(&end);
+    __finally
+    {
+        unlink_node(&cursor);
+        unlink_node(&end);
+    }
 }

@@ -18,7 +18,7 @@ static log_info s_log_types[ff_log_type_count] =
     { .name = FF_SVL_INIT("ff/debug"), .enabled = DEBUG }, // debug
 };
 
-static ff_log_sink_data s_log_sink = { 0 };
+static ff_log_sink_data s_log_sink;
 
 ff_log_sink_data ff_log_set_sink(ff_log_sink_data sink)
 {

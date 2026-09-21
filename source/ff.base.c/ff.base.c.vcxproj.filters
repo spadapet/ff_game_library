@@ -59,6 +59,9 @@
     <ClCompile Include="data\settings.c">
       <Filter>data</Filter>
     </ClCompile>
+    <ClCompile Include="windows\window.c">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -119,6 +122,9 @@
     <ClInclude Include="data\settings.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="windows\window.h">
+      <Filter>windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -129,6 +135,9 @@
     </Filter>
     <Filter Include="dx12">
       <UniqueIdentifier>{463fd0d6-5543-4abf-980e-1de3e025b78f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{11053313-4aef-46a7-b4fe-69e569f48d02}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

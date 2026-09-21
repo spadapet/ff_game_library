@@ -29,6 +29,15 @@ namespace ff::test::base
         return connection->next && connection->next != connection;
     }
 
+    struct signal_test_exception
+    {
+    };
+
+    static void throw_handler(void* /*args*/, void* /*cookie*/)
+    {
+        throw signal_test_exception{};
+    }
+
     struct counter
     {
         int calls;
@@ -900,6 +909,51 @@ namespace ff::test::base
                 Assert::AreEqual(7, states[i].last_value);
             }
 
+            ff_signal_destroy(&signal);
+        }
+
+        // A C++ caller's handler can throw straight through ff_signal_notify. The notify's
+        // sentinels live on its stack frame, so if the unwind left them in the list the next
+        // notify would walk into a dead frame and hang.
+        TEST_METHOD(handler_throwing_out_of_notify_leaves_the_signal_usable)
+        {
+            ff_signal signal;
+            ff_signal_init(&signal);
+
+            ff_signal_connection throwing;
+            ff_signal_connection_init(&throwing);
+            ff_signal_connect(&signal, &throwing, &throw_handler, nullptr);
+
+            counter state{};
+            ff_signal_connection normal;
+            ff_signal_connection_init(&normal);
+            ff_signal_connect(&signal, &normal, &count_handler, &state);
+
+            for (int i = 0; i < 3; i++)
+            {
+                bool caught = false;
+                try
+                {
+                    ff_signal_notify(&signal, nullptr);
+                }
+                catch (const signal_test_exception&)
+                {
+                    caught = true;
+                }
+
+                Assert::IsTrue(caught);
+            }
+
+            ff_signal_connection_destroy(&throwing);
+
+            state = counter{};
+            int value = 5;
+            ff_signal_notify(&signal, &value);
+
+            Assert::AreEqual(1, state.calls);
+            Assert::AreEqual(5, state.last_value);
+
+            ff_signal_connection_destroy(&normal);
             ff_signal_destroy(&signal);
         }
     };

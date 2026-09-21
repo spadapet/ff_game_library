@@ -7,8 +7,8 @@
 
 #ifdef _DEBUG
 
-static long s_handling_assert = 0;
-static ff_assert_listener_func s_assert_listener = NULL;
+static long s_handling_assert;
+static ff_assert_listener_func s_assert_listener;
 
 bool ff_internal_assert_core(const char* exp, const char* text, const char* file, unsigned int line)
 {
