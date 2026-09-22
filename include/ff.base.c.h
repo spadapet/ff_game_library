@@ -25,5 +25,6 @@
 #include "../source/ff.base.c/dx12/dx12_globals.h"
 
 #include "../source/ff.base.c/windows/module.h"
+#include "../source/ff.base.c/windows/task.h"
 #include "../source/ff.base.c/windows/thread.h"
 #include "../source/ff.base.c/windows/window.h"

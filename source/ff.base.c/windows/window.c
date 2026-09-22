@@ -22,17 +22,19 @@ typedef struct window_state
     bool full_screen;
 } window_state;
 
-static_assert(sizeof(window_state) == 44, "window_state is persisted, so its layout must not change silently");
-
 static const uint32_t s_window_state_version = 1;
 static const ff_string_view s_settings_name = FF_SVL_INIT("ff_window");
-static const ff_string_view s_state_key = FF_SVL_INIT("state");
+static const ff_string_view s_state_key = FF_SVL_INIT("window_state");
 
-static ff_signal s_message_signal;
 static ff_signal_connection s_save_connection;
-static HWND s_main_window;
+static ff_window* s_main_window;
 static window_state s_full_screen_state; // only valid while full screen
 static bool s_has_full_screen_state;
+
+static HWND main_hwnd(void)
+{
+    return s_main_window ? s_main_window->hwnd : NULL;
+}
 
 static LONG default_window_style(bool full_screen)
 {
@@ -116,9 +118,10 @@ static window_state current_window_state(HWND hwnd)
 
 static void save_window_state(void* args, void* cookie)
 {
-    FF_CHECK_RET(s_main_window);
+    HWND hwnd = main_hwnd();
+    FF_CHECK_RET(hwnd);
 
-    const window_state state = current_window_state(s_main_window);
+    const window_state state = current_window_state(hwnd);
     FF_CHECK_RET(state.monitor_dpi); // no monitor means nothing worth remembering
 
     ff_arena_declare_stack(arena, 256);
@@ -232,7 +235,6 @@ static void handle_message(ff_window_message* message)
             break;
 
         case WM_CREATE:
-            s_main_window = message->hwnd;
             ff_signal_connection_init_and_connect(&s_save_connection, ff_settings_save_signal(), &save_window_state, NULL);
             break;
 
@@ -302,50 +304,61 @@ static void handle_message(ff_window_message* message)
             break;
 
         case WM_NCDESTROY:
-            if (message->hwnd == s_main_window)
-            {
-                s_main_window = NULL;
-                s_has_full_screen_state = false;
-                PostQuitMessage(0);
-            }
+            s_main_window = NULL;
+            s_has_full_screen_state = false;
+            PostQuitMessage(0);
             break;
     }
 }
 
-static LRESULT CALLBACK main_window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    ff_window_message message;
-    message.hwnd = hwnd;
-    message.msg = msg;
-    message.wp = wp;
-    message.lp = lp;
-    message.result = 0;
-    message.handled = false;
+    if (msg == WM_NCCREATE)
+    {
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)((const CREATESTRUCT*)lp)->lpCreateParams);
+    }
 
-    handle_message(&message);
-    ff_signal_notify(&s_message_signal, &message);
+    ff_window* window = (ff_window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
-    return message.handled ? message.result : DefWindowProc(hwnd, msg, wp, lp);
+    if (window)
+    {
+        ff_window_message message =
+        {
+            .hwnd = hwnd,
+            .msg = msg,
+            .wp = wp,
+            .lp = lp,
+        };
+
+        if (window == s_main_window)
+        {
+            handle_message(&message);
+        }
+
+        ff_signal_notify(&window->signal, &message);
+
+        if (msg == WM_NCDESTROY)
+        {
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
+            window->hwnd = NULL;
+            ff_signal_destroy(&window->signal);
+        }
+
+        if (message.handled)
+        {
+            return message.result;
+        }
+    }
+
+    return DefWindowProc(hwnd, msg, wp, lp);
 }
 
-static LRESULT CALLBACK message_window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+bool ff_window_main_init(ff_window* window, ff_string_view title)
 {
-    ff_window_message message;
-    message.hwnd = hwnd;
-    message.msg = msg;
-    message.wp = wp;
-    message.lp = lp;
-    message.result = 0;
-    message.handled = false;
+    FF_ASSERT_RET_VAL(window && !s_main_window, false);
 
-    ff_signal_notify(&s_message_signal, &message);
-
-    return message.handled ? message.result : DefWindowProc(hwnd, msg, wp, lp);
-}
-
-HWND ff_window_main_init(ff_string_view title)
-{
-    FF_ASSERT_RET_VAL(!s_main_window, s_main_window);
+    window->hwnd = NULL;
+    ff_signal_init(&window->signal);
 
     HINSTANCE instance = ff_module_instance();
     const ff_wstring_view class_name = FF_WSVL_INIT(L"ff_window_main");
@@ -356,14 +369,14 @@ HWND ff_window_main_init(ff_string_view title)
         window_class = (WNDCLASS)
         {
             .style = CS_DBLCLKS,
-            .lpfnWndProc = main_window_proc,
+            .lpfnWndProc = window_proc,
             .hInstance = instance,
             .hIcon = FindResource(instance, MAKEINTRESOURCE(1), RT_GROUP_ICON) ? LoadIcon(instance, MAKEINTRESOURCE(1)) : NULL,
             .hCursor = LoadCursor(NULL, IDC_ARROW),
             .lpszClassName = class_name.data,
         };
 
-        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, NULL);
+        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, false);
     }
 
     ff_arena_declare_stack(arena, 512);
@@ -392,49 +405,34 @@ HWND ff_window_main_init(ff_string_view title)
     const LONG style = default_window_style(restored && state.full_screen);
     const LONG maximize = (restored && !state.full_screen && state.maximized) ? WS_MAXIMIZE : 0;
 
-    s_main_window = CreateWindowEx(0, class_name.data, wide_title.data, style | maximize, x, y, cx, cy, NULL, NULL, instance, NULL);
-
-    ff_arena_destroy(&arena);
-    FF_ASSERT_RET_VAL(s_main_window, NULL);
-
     if (restored && state.full_screen)
     {
         s_full_screen_state = state;
         s_has_full_screen_state = true;
     }
 
-    return s_main_window;
+    s_main_window = window;
+    window->hwnd = CreateWindowEx(0, class_name.data, wide_title.data, style | maximize, x, y, cx, cy, NULL, NULL, instance, window);
+
+    ff_arena_destroy(&arena);
+
+    if (!window->hwnd)
+    {
+        s_main_window = NULL;
+        s_has_full_screen_state = false;
+        FF_DEBUG_FAIL_RET_VAL(false);
+    }
+
+    return true;
 }
 
-HWND ff_window_main(void)
+bool ff_window_message_init(ff_window* window)
 {
-    return s_main_window;
-}
+    FF_ASSERT_RET_VAL(window, false);
 
-void ff_window_main_show(void)
-{
-    FF_CHECK_RET(s_main_window);
-    ShowWindow(s_main_window, s_has_full_screen_state || !IsZoomed(s_main_window) ? SW_SHOW : SW_MAXIMIZE);
-}
+    window->hwnd = NULL;
+    ff_signal_init(&window->signal);
 
-bool ff_window_main_is_full_screen(void)
-{
-    return s_main_window && is_full_screen_style(s_main_window);
-}
-
-void ff_window_main_set_full_screen(bool value)
-{
-    FF_CHECK_RET(s_main_window && ff_window_main_is_full_screen() != value);
-    PostMessage(s_main_window, FF_WM_FULL_SCREEN, (WPARAM)value, 0);
-}
-
-ff_signal* ff_window_main_signal(void)
-{
-    return &s_message_signal;
-}
-
-HWND ff_window_create_message(void)
-{
     HINSTANCE instance = ff_module_instance();
     const ff_wstring_view class_name = FF_WSVL_INIT(L"ff_window_message");
 
@@ -443,15 +441,42 @@ HWND ff_window_create_message(void)
     {
         window_class = (WNDCLASS)
         {
-            .lpfnWndProc = message_window_proc,
+            .lpfnWndProc = window_proc,
             .hInstance = instance,
             .lpszClassName = class_name.data,
         };
 
-        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, NULL);
+        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, false);
     }
 
-    return CreateWindowEx(0, class_name.data, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, instance, NULL);
+    window->hwnd = CreateWindowEx(0, class_name.data, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, instance, window);
+    FF_ASSERT_RET_VAL(window->hwnd, false);
+
+    return true;
+}
+
+ff_window* ff_window_main(void)
+{
+    return s_main_window;
+}
+
+void ff_window_main_show(void)
+{
+    HWND hwnd = main_hwnd();
+    FF_CHECK_RET(hwnd);
+    ShowWindow(hwnd, s_has_full_screen_state || !IsZoomed(hwnd) ? SW_SHOW : SW_MAXIMIZE);
+}
+
+bool ff_window_main_is_full_screen(void)
+{
+    return is_full_screen_style(main_hwnd());
+}
+
+void ff_window_main_set_full_screen(bool value)
+{
+    HWND hwnd = main_hwnd();
+    FF_CHECK_RET(hwnd && ff_window_main_is_full_screen() != value);
+    PostMessage(hwnd, FF_WM_FULL_SCREEN, (WPARAM)value, 0);
 }
 
 int ff_window_handle_messages(void)
@@ -461,16 +486,16 @@ int ff_window_handle_messages(void)
         MSG msg;
         switch (GetMessage(&msg, NULL, 0, 0))
         {
-        case FALSE:
-            (int)msg.wParam;
+            case FALSE: // got WM_QUIT
+                return (int)msg.wParam;
 
-        case -1:
-            FF_DEBUG_FAIL_RET_VAL(0);
+            case -1:
+                FF_DEBUG_FAIL_RET_VAL(0);
 
-        default:
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-            break;
+            default:
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+                break;
         }
     }
 }

@@ -68,6 +68,9 @@
     <ClCompile Include="windows\thread.c">
       <Filter>windows</Filter>
     </ClCompile>
+    <ClCompile Include="windows\task.c">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -135,6 +138,9 @@
       <Filter>windows</Filter>
     </ClInclude>
     <ClInclude Include="windows\thread.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="windows\task.h">
       <Filter>windows</Filter>
     </ClInclude>
   </ItemGroup>
