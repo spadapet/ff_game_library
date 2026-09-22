@@ -18,6 +18,8 @@
     <ClCompile Include="base\log_tests.cpp" />
     <ClCompile Include="base\signal_tests.cpp" />
     <ClCompile Include="base\stream_tests.cpp" />
+    <ClCompile Include="base\task_tests.cpp" />
+    <ClCompile Include="base\thread_tests.cpp" />
     <ClCompile Include="base\string_builder_tests.cpp" />
     <ClCompile Include="base\string_tests.cpp" />
     <ClCompile Include="base\value_tests.cpp" />
