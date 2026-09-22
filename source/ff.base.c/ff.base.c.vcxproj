@@ -7,6 +7,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
+    <ClCompile Include="app\app.c" />
     <ClCompile Include="base\arena.c" />
     <ClCompile Include="base\array.c" />
     <ClCompile Include="base\assert.c" />
@@ -22,6 +23,7 @@
     <ClCompile Include="data\idict.c" />
     <ClCompile Include="data\json.c" />
     <ClCompile Include="data\settings.c" />
+    <ClCompile Include="data\compression.c" />
     <ClCompile Include="data\stream.c" />
     <ClCompile Include="data\value.c" />
     <ClCompile Include="dx12\dx12_globals.c" />
@@ -34,6 +36,7 @@
     <ClCompile Include="windows\window.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\app.h" />
     <ClInclude Include="base\arena.h" />
     <ClInclude Include="base\array.h" />
     <ClInclude Include="base\assert.h" />
@@ -49,6 +52,7 @@
     <ClInclude Include="data\idict.h" />
     <ClInclude Include="data\json.h" />
     <ClInclude Include="data\settings.h" />
+    <ClInclude Include="data\compression.h" />
     <ClInclude Include="data\stream.h" />
     <ClInclude Include="data\value.h" />
     <ClInclude Include="data\value_type.h" />

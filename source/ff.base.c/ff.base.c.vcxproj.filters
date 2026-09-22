@@ -47,6 +47,9 @@
     <ClCompile Include="data\json.c">
       <Filter>data</Filter>
     </ClCompile>
+    <ClCompile Include="data\compression.c">
+      <Filter>data</Filter>
+    </ClCompile>
     <ClCompile Include="data\stream.c">
       <Filter>data</Filter>
     </ClCompile>
@@ -70,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="windows\task.c">
       <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="app\app.c">
+      <Filter>app</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -116,6 +122,9 @@
     <ClInclude Include="data\json.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="data\compression.h">
+      <Filter>data</Filter>
+    </ClInclude>
     <ClInclude Include="data\stream.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -143,6 +152,9 @@
     <ClInclude Include="windows\task.h">
       <Filter>windows</Filter>
     </ClInclude>
+    <ClInclude Include="app\app.h">
+      <Filter>app</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -156,6 +168,9 @@
     </Filter>
     <Filter Include="windows">
       <UniqueIdentifier>{11053313-4aef-46a7-b4fe-69e569f48d02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app">
+      <UniqueIdentifier>{26f84247-d1a2-4411-84ce-6d14532f4a86}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

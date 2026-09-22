@@ -10,6 +10,7 @@
   <ItemGroup>
     <ClCompile Include="base\arena_tests.cpp" />
     <ClCompile Include="base\array_tests.cpp" />
+    <ClCompile Include="base\compression_tests.cpp" />
     <ClCompile Include="base\dict_tests.cpp" />
     <ClCompile Include="base\file_map_tests.cpp" />
     <ClCompile Include="base\hash_tests.cpp" />

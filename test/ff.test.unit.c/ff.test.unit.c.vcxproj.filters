@@ -9,6 +9,9 @@
     <ClCompile Include="base\array_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\compression_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\dict_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>

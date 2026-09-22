@@ -2,6 +2,8 @@
 
 #include "../source/ff.base.c/pch.h"
 
+#include "../source/ff.base.c/app/app.h"
+
 #include "../source/ff.base.c/base/arena.h"
 #include "../source/ff.base.c/base/array.h"
 #include "../source/ff.base.c/base/assert.h"
@@ -13,6 +15,7 @@
 #include "../source/ff.base.c/base/string.h"
 #include "../source/ff.base.c/base/string_builder.h"
 
+#include "../source/ff.base.c/data/compression.h"
 #include "../source/ff.base.c/data/dict.h"
 #include "../source/ff.base.c/data/file.h"
 #include "../source/ff.base.c/data/idict.h"
