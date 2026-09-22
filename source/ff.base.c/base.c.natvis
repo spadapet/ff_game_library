@@ -342,4 +342,102 @@
     </Expand>
   </Type>
 
+  <Type Name="ff_signal_connection">
+    <DisplayString Condition="func == nullptr">disconnected</DisplayString>
+    <DisplayString>{{ {func}, cookie={cookie} }}</DisplayString>
+    <Expand>
+      <Item Name="[func]">func</Item>
+      <Item Name="[cookie]">cookie</Item>
+      <Item Name="[prev]">prev</Item>
+      <Item Name="[next]">next</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_signal">
+    <DisplayString Condition="head.next == &amp;head">no connections</DisplayString>
+    <DisplayString Condition="head.next == nullptr">uninitialized</DisplayString>
+    <DisplayString>{{ connected }}</DisplayString>
+    <Expand>
+      <!-- The head is a sentinel in a circular list, so stopping on it avoids looping forever. -->
+      <CustomListItems>
+        <Variable Name="node" InitialValue="head.next" />
+        <Loop>
+          <Break Condition="node == &amp;head || node == nullptr" />
+          <Item>*node</Item>
+          <Exec>node = node->next</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_window">
+    <DisplayString Condition="hwnd == nullptr">no window</DisplayString>
+    <DisplayString>{{ hwnd={hwnd} }}</DisplayString>
+    <Expand>
+      <Item Name="[hwnd]">hwnd</Item>
+      <Item Name="[signal]">signal</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_window_message">
+    <DisplayString Condition="handled">{{ msg={msg} handled, result={result} }}</DisplayString>
+    <DisplayString>{{ msg={msg} }}</DisplayString>
+    <Expand>
+      <Item Name="[hwnd]">hwnd</Item>
+      <Item Name="[msg]">msg</Item>
+      <Item Name="[wp]">wp</Item>
+      <Item Name="[lp]">lp</Item>
+      <Item Name="[result]">result</Item>
+      <Item Name="[handled]">handled</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_dispatch">
+    <DisplayString Condition="destroyed">destroyed</DisplayString>
+    <DisplayString Condition="type == ff_dispatch_type_main">{{ main, thread={thread_id} }}</DisplayString>
+    <DisplayString Condition="type == ff_dispatch_type_game">{{ game, thread={thread_id} }}</DisplayString>
+    <DisplayString>{{ thread={thread_id} }}</DisplayString>
+    <Expand>
+      <Item Name="[type]">type</Item>
+      <Item Name="[thread_id]">thread_id</Item>
+      <Item Name="[running]">running</Item>
+      <Item Name="[posted]">posted</Item>
+      <Item Name="[destroyed]">destroyed</Item>
+      <Item Name="[entries]">entries_a</Item>
+      <Synthetic Name="[queued]">
+        <!-- ff_array keeps its count in a header just before the data. -->
+        <DisplayString Condition="entries_a == nullptr">none</DisplayString>
+        <DisplayString>{{ {((internal_ff_array_header*)entries_a)[-1].count} queued }}</DisplayString>
+        <Expand>
+          <ArrayItems Condition="entries_a != nullptr">
+            <Size>((internal_ff_array_header*)entries_a)[-1].count</Size>
+            <ValuePointer>entries_a</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+      <Item Name="[running entries]">running_entries_a</Item>
+      <Item Name="[window]">window</Item>
+      <Item Name="[arena]">arena</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="internal_ff_dispatch_entry">
+    <DisplayString Condition="func == nullptr">barrier</DisplayString>
+    <DisplayString Condition="done != nullptr">{{ {func}, cookie={cookie}, sent }}</DisplayString>
+    <DisplayString>{{ {func}, cookie={cookie} }}</DisplayString>
+    <Expand>
+      <Item Name="[func]">func</Item>
+      <Item Name="[cookie]">cookie</Item>
+      <Item Name="[done]" Condition="done != nullptr">*done</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="ff_dx12_init_params">
+    <DisplayString>{{ gpu={gpu_preference}, feature_level={feature_level} }}</DisplayString>
+    <Expand>
+      <Item Name="[gpu_preference]">gpu_preference</Item>
+      <Item Name="[feature_level]">feature_level</Item>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>

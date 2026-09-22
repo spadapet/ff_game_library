@@ -19,7 +19,6 @@ typedef struct ff_dispatch
     ff_window window;
     ff_signal_connection connection;
     CRITICAL_SECTION mutex;
-    HANDLE flushed_event;
     ff_arena arena;
     internal_ff_dispatch_entry* entries_a;
     internal_ff_dispatch_entry* running_entries_a;
@@ -38,6 +37,6 @@ ff_dispatch* ff_dispatch_get_game(void);
 ff_dispatch* ff_dispatch_get_current(void);
 
 void ff_dispatch_post(ff_dispatch* dispatch, ff_dispatch_func func, void* cookie);
-void ff_dispatch_send(ff_dispatch* dispatch, ff_dispatch_func func, void* cookie);
+void ff_dispatch_send(ff_dispatch* dispatch, ff_dispatch_func func, void* cookie); // use null func as a barrier
 void ff_dispatch_flush(ff_dispatch* dispatch);
 bool ff_dispatch_is_current(const ff_dispatch* dispatch);

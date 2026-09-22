@@ -10,6 +10,8 @@
 //   * Memory reaches a steady state instead of growing once per flush.
 //   * The main/game dispatchers are cached at init and cleared on destroy, and the "current"
 //     dispatcher is per-thread.
+//   * Send returns as soon as its own entry has run, not when the whole queue drains, and a
+//     null func acts as a barrier for work already queued.
 
 namespace ff::test::base
 {
@@ -407,6 +409,190 @@ namespace ff::test::base
 
             ::CloseHandle(thread);
             ::CloseHandle(done);
+            ff_dispatch_destroy(&dispatch);
+        }
+
+        TEST_METHOD(send_returns_before_later_work_runs)
+        {
+            static ff_dispatch dispatch;
+            Assert::IsTrue(ff_dispatch_init(&dispatch, ff_dispatch_type_none));
+
+            static const long tail_count = 5;
+            static volatile long tail_ran;
+            static long tail_ran_at_send_return;
+            static HANDLE sent;
+            tail_ran = 0;
+            tail_ran_at_send_return = -1;
+            sent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+
+            // The tail entries are slow so that "send returned early" is observable: a send that
+            // waited for the whole flush could only return after all of them had run.
+            HANDLE thread = ::CreateThread(nullptr, 0, [](void*) -> DWORD
+            {
+                ff_dispatch_send(&dispatch, [](void*)
+                {
+                    for (long i = 0; i < tail_count; i++)
+                    {
+                        ff_dispatch_post(&dispatch, [](void*)
+                        {
+                            ::Sleep(100);
+                            ::InterlockedIncrement(&tail_ran);
+                        }, nullptr);
+                    }
+                }, nullptr);
+
+                tail_ran_at_send_return = (long)tail_ran;
+                ::SetEvent(sent);
+                return 0;
+            }, nullptr, 0, nullptr);
+
+            Assert::IsNotNull(thread);
+
+            while (::WaitForSingleObject(sent, 1) != WAIT_OBJECT_0)
+            {
+                pump_messages();
+                ff_dispatch_flush(&dispatch);
+            }
+
+            Assert::AreEqual(WAIT_OBJECT_0, ::WaitForSingleObject(thread, 20000));
+            Assert::IsTrue(tail_ran_at_send_return < tail_count);
+
+            pump_messages();
+            ff_dispatch_flush(&dispatch);
+            Assert::AreEqual(tail_count, (long)tail_ran);
+
+            ::CloseHandle(thread);
+            ::CloseHandle(sent);
+            ff_dispatch_destroy(&dispatch);
+        }
+
+        TEST_METHOD(send_null_func_waits_for_queued_work)
+        {
+            static ff_dispatch dispatch;
+            Assert::IsTrue(ff_dispatch_init(&dispatch, ff_dispatch_type_none));
+
+            static long ran;
+            static long ran_at_barrier;
+            static HANDLE done;
+            ran = 0;
+            ran_at_barrier = -1;
+            done = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+
+            for (long i = 0; i < 20; i++)
+            {
+                ff_dispatch_post(&dispatch, [](void*) { ran++; }, nullptr);
+            }
+
+            HANDLE thread = ::CreateThread(nullptr, 0, [](void*) -> DWORD
+            {
+                // A null func is a barrier: everything queued ahead of it has run by the time
+                // this returns.
+                ff_dispatch_send(&dispatch, nullptr, nullptr);
+                ran_at_barrier = ran;
+                ::SetEvent(done);
+                return 0;
+            }, nullptr, 0, nullptr);
+
+            Assert::IsNotNull(thread);
+
+            while (::WaitForSingleObject(done, 1) != WAIT_OBJECT_0)
+            {
+                pump_messages();
+                ff_dispatch_flush(&dispatch);
+            }
+
+            Assert::AreEqual(WAIT_OBJECT_0, ::WaitForSingleObject(thread, 20000));
+            Assert::AreEqual(20l, ran_at_barrier);
+
+            ::CloseHandle(thread);
+            ::CloseHandle(done);
+            ff_dispatch_destroy(&dispatch);
+        }
+
+        TEST_METHOD(send_null_func_on_current_thread_is_a_no_op)
+        {
+            ff_dispatch dispatch;
+            Assert::IsTrue(ff_dispatch_init(&dispatch, ff_dispatch_type_none));
+
+            ff_dispatch_send(&dispatch, nullptr, nullptr);
+
+            ff_dispatch_destroy(&dispatch);
+        }
+
+        TEST_METHOD(send_after_destroy_does_not_block)
+        {
+            static ff_dispatch dispatch;
+            Assert::IsTrue(ff_dispatch_init(&dispatch, ff_dispatch_type_none));
+            ff_dispatch_destroy(&dispatch);
+
+            static long ran;
+            static HANDLE done;
+            ran = 0;
+            done = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+
+            // A destroyed dispatcher runs the entry inline, which still has to release the
+            // waiter or this thread would hang forever.
+            HANDLE thread = ::CreateThread(nullptr, 0, [](void*) -> DWORD
+            {
+                ff_dispatch_send(&dispatch, [](void*) { ran++; }, nullptr);
+                ff_dispatch_send(&dispatch, nullptr, nullptr);
+                ::SetEvent(done);
+                return 0;
+            }, nullptr, 0, nullptr);
+
+            Assert::IsNotNull(thread);
+            Assert::AreEqual(WAIT_OBJECT_0, ::WaitForSingleObject(done, 20000));
+            Assert::AreEqual(WAIT_OBJECT_0, ::WaitForSingleObject(thread, 20000));
+            Assert::AreEqual(1l, ran);
+
+            ::CloseHandle(thread);
+            ::CloseHandle(done);
+        }
+
+        TEST_METHOD(many_threads_sending)
+        {
+            static ff_dispatch dispatch;
+            Assert::IsTrue(ff_dispatch_init(&dispatch, ff_dispatch_type_none));
+
+            static volatile long ran;
+            ran = 0;
+
+            static const long thread_count = 8;
+            static const long per_thread = 200;
+
+            HANDLE threads[thread_count];
+
+            for (long i = 0; i < thread_count; i++)
+            {
+                threads[i] = ::CreateThread(nullptr, 0, [](void*) -> DWORD
+                {
+                    for (long j = 0; j < per_thread; j++)
+                    {
+                        ff_dispatch_send(&dispatch, [](void*) { ::InterlockedIncrement(&ran); }, nullptr);
+                    }
+
+                    return 0;
+                }, nullptr, 0, nullptr);
+
+                Assert::IsNotNull(threads[i]);
+            }
+
+            DWORD wait = WAIT_TIMEOUT;
+
+            while ((wait = ::WaitForMultipleObjects(thread_count, threads, TRUE, 1)) == WAIT_TIMEOUT)
+            {
+                pump_messages();
+                ff_dispatch_flush(&dispatch);
+            }
+
+            Assert::AreEqual(WAIT_OBJECT_0, wait);
+            Assert::AreEqual(thread_count * per_thread, (long)ran);
+
+            for (long i = 0; i < thread_count; i++)
+            {
+                ::CloseHandle(threads[i]);
+            }
+
             ff_dispatch_destroy(&dispatch);
         }
 

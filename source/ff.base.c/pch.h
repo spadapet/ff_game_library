@@ -19,4 +19,5 @@
 #include <dxgi1_6.h>
 
 #pragma comment(lib, "shcore.lib")
+#pragma comment(lib, "synchronization.lib")
 #endif
