@@ -65,7 +65,7 @@
     <ClCompile Include="windows\module.c">
       <Filter>windows</Filter>
     </ClCompile>
-    <ClCompile Include="windows\thread.c">
+    <ClCompile Include="windows\dispatch.c">
       <Filter>windows</Filter>
     </ClCompile>
     <ClCompile Include="windows\task.c">
@@ -137,7 +137,7 @@
     <ClInclude Include="windows\module.h">
       <Filter>windows</Filter>
     </ClInclude>
-    <ClInclude Include="windows\thread.h">
+    <ClInclude Include="windows\dispatch.h">
       <Filter>windows</Filter>
     </ClInclude>
     <ClInclude Include="windows\task.h">

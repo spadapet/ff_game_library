@@ -26,5 +26,5 @@
 
 #include "../source/ff.base.c/windows/module.h"
 #include "../source/ff.base.c/windows/task.h"
-#include "../source/ff.base.c/windows/thread.h"
+#include "../source/ff.base.c/windows/dispatch.h"
 #include "../source/ff.base.c/windows/window.h"

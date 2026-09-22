@@ -27,12 +27,6 @@
     <ClCompile Include="base\stream_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="base\task_tests.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
-    <ClCompile Include="base\thread_tests.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="base\string_builder_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -48,22 +42,50 @@
     <ClCompile Include="base\json_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="dx12\dx12_globals_tests.cpp" />
+    <ClCompile Include="dx12\dx12_globals_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="base\dispatch_tests.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="base\task_tests.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="base\window_tests.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="res\test_resources.h" />
+    <ClInclude Include="res\test_resources.h">
+      <Filter>res</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
       <UniqueIdentifier>{019ebde0-26ba-4e01-9c81-66e9d9565a6f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dx12">
+      <UniqueIdentifier>{3192bc87-816d-4970-ad37-efbf4222b8d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{c1e414db-1a9d-48cd-bc61-82eddd2e2f8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{709ad9c2-7483-4a28-add5-e9db816f5fd4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="res\test_resources.rc" />
+    <None Include="res\test_data.bin">
+      <Filter>res</Filter>
+    </None>
+    <None Include="res\test_text.txt">
+      <Filter>res</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\test_data.bin" />
-    <None Include="res\test_text.txt" />
+    <ResourceCompile Include="res\test_resources.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
