@@ -7,14 +7,12 @@ namespace ff::test::dx12
     public:
         TEST_METHOD_CLEANUP(cleanup)
         {
-            ff_dx12_residency_destroy();
             ff_dx12_destroy();
         }
 
         TEST_METHOD(init_and_destroy_data_updates_the_list)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsTrue(ff_dx12_residency_init());
 
             ID3D12Heap* heap = nullptr;
             D3D12_HEAP_DESC desc{};
@@ -35,7 +33,6 @@ namespace ff::test::dx12
         TEST_METHOD(make_resident_marks_non_resident_data_resident)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsTrue(ff_dx12_residency_init());
 
             ID3D12Heap* heap = nullptr;
             D3D12_HEAP_DESC desc{};
@@ -70,7 +67,6 @@ namespace ff::test::dx12
         TEST_METHOD(make_resident_runs_without_crashing_under_real_budget)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsTrue(ff_dx12_residency_init());
 
             const size_t heap_count = 4;
             ID3D12Heap* heaps[heap_count]{};

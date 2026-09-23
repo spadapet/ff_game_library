@@ -5,6 +5,7 @@
 #include "base/log.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_residency.h"
 
 // Embedding the link dependencies here keeps them with the code that needs them, and they
 // automatically flow to anything that links this static library.
@@ -329,6 +330,8 @@ static bool init_d3d(bool for_reset)
 
 static void destroy_d3d(void)
 {
+    ff_dx12_residency_destroy();
+
     if (s_video_memory_change_event)
     {
         IDXGIAdapter3_UnregisterVideoMemoryBudgetChangeNotification(s_adapter, s_video_memory_change_cookie);
@@ -367,7 +370,7 @@ bool ff_dx12_init(const ff_dx12_init_params* params)
     s_gpu_preference = params->gpu_preference;
     s_feature_level = params->feature_level;
 
-    if (!init_dxgi(false) || !init_d3d(false))
+    if (!init_dxgi(false) || !init_d3d(false) || !ff_dx12_residency_init())
     {
         ff_dx12_destroy();
         return false;

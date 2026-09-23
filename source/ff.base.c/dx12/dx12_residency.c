@@ -14,7 +14,7 @@ static ff_dx12_residency_data* s_pageable_front;
 static ff_dx12_residency_data* s_pageable_back;
 static uint32_t s_usage_counter;
 static ff_dx12_fence s_residency_fence;
-static size_t s_residency_ref_count;
+static bool s_residency_initialized;
 
 static void list_add_front(ff_dx12_residency_data* data)
 {
@@ -60,22 +60,18 @@ static void list_remove(ff_dx12_residency_data* data)
 
 bool ff_dx12_residency_init(void)
 {
-    if (s_residency_ref_count++ == 0)
-    {
-        FF_ASSERT_RET_VAL(ff_dx12_fence_init(&s_residency_fence, FF_SVL("residency"), 1), false);
-    }
-
+    FF_CHECK_RET_VAL(!s_residency_initialized, true);
+    FF_ASSERT_RET_VAL(ff_dx12_fence_init(&s_residency_fence, FF_SVL("residency"), 1), false);
+    s_residency_initialized = true;
     return true;
 }
 
 void ff_dx12_residency_destroy(void)
 {
-    FF_CHECK_RET(s_residency_ref_count);
-
-    if (--s_residency_ref_count == 0)
-    {
-        ff_dx12_fence_destroy(&s_residency_fence);
-    }
+    FF_CHECK_RET(s_residency_initialized);
+    FF_ASSERT_RET(!s_pageable_front && !s_pageable_back);
+    ff_dx12_fence_destroy(&s_residency_fence);
+    s_residency_initialized = false;
 }
 
 void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_string_view name, ID3D12Pageable* pageable, uint64_t size, bool resident)

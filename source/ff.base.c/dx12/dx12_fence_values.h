@@ -5,7 +5,6 @@
 #define FF_DX12_FENCE_VALUES_MAX 4
 
 // Fixed-capacity set of fence_values, deduped by fence pointer (keeps the max value per fence).
-// Matches the old stack_vector<fence_value, 4> semantics: no heap/arena allocation.
 typedef struct ff_dx12_fence_values
 {
     ff_dx12_fence_value values[FF_DX12_FENCE_VALUES_MAX];

@@ -28,8 +28,7 @@ void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_string_view na
 void ff_dx12_residency_data_destroy(ff_dx12_residency_data* data);
 
 // Global lifecycle for the residency subsystem (the singleton fence used to signal
-// make-resident completion). Callers (tests, app init) must call these explicitly, matching
-// ff_dx12_init/ff_dx12_destroy.
+// make-resident completion). ff_dx12_init/ff_dx12_destroy own this lifecycle.
 bool ff_dx12_residency_init(void);
 void ff_dx12_residency_destroy(void);
 
