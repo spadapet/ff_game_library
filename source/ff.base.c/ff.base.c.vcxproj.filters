@@ -59,6 +59,24 @@
     <ClCompile Include="dx12\dx12_globals.c">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_fence.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_fence_values.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_residency.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_heap.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_mem_range.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_mem_allocator.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="data\settings.c">
       <Filter>data</Filter>
     </ClCompile>
@@ -135,6 +153,24 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_globals.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_fence.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_fence_values.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_residency.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_heap.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_mem_range.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_mem_allocator.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="data\settings.h">

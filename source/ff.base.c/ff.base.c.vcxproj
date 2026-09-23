@@ -27,6 +27,12 @@
     <ClCompile Include="data\stream.c" />
     <ClCompile Include="data\value.c" />
     <ClCompile Include="dx12\dx12_globals.c" />
+    <ClCompile Include="dx12\dx12_fence.c" />
+    <ClCompile Include="dx12\dx12_fence_values.c" />
+    <ClCompile Include="dx12\dx12_residency.c" />
+    <ClCompile Include="dx12\dx12_heap.c" />
+    <ClCompile Include="dx12\dx12_mem_range.c" />
+    <ClCompile Include="dx12\dx12_mem_allocator.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -57,6 +63,12 @@
     <ClInclude Include="data\value.h" />
     <ClInclude Include="data\value_type.h" />
     <ClInclude Include="dx12\dx12_globals.h" />
+    <ClInclude Include="dx12\dx12_fence.h" />
+    <ClInclude Include="dx12\dx12_fence_values.h" />
+    <ClInclude Include="dx12\dx12_residency.h" />
+    <ClInclude Include="dx12\dx12_heap.h" />
+    <ClInclude Include="dx12\dx12_mem_range.h" />
+    <ClInclude Include="dx12\dx12_mem_allocator.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="windows\module.h" />
     <ClInclude Include="windows\task.h" />
