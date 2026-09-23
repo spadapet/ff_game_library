@@ -25,6 +25,8 @@
 #include "../source/ff.base.c/data/value.h"
 #include "../source/ff.base.c/data/value_type.h"
 
+#include "../source/ff.base.c/dx12/dx12_descriptor_allocator.h"
+#include "../source/ff.base.c/dx12/dx12_descriptor_range.h"
 #include "../source/ff.base.c/dx12/dx12_fence.h"
 #include "../source/ff.base.c/dx12/dx12_fence_values.h"
 #include "../source/ff.base.c/dx12/dx12_globals.h"
@@ -32,6 +34,9 @@
 #include "../source/ff.base.c/dx12/dx12_mem_allocator.h"
 #include "../source/ff.base.c/dx12/dx12_mem_range.h"
 #include "../source/ff.base.c/dx12/dx12_residency.h"
+#include "../source/ff.base.c/dx12/dx12_resource_state.h"
+#include "../source/ff.base.c/dx12/dx12_resource_tracker.h"
+#include "../source/ff.base.c/dx12/dx12_resource.h"
 
 #include "../source/ff.base.c/windows/module.h"
 #include "../source/ff.base.c/windows/task.h"

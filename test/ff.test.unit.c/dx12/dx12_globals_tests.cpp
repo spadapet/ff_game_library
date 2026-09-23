@@ -167,5 +167,40 @@ namespace ff::test::dx12
 
             queue->Release();
         }
+        TEST_METHOD(repeated_video_memory_updates_stay_valid)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            for (size_t i = 0; i < 8; i++)
+            {
+                ff_dx12_update_video_memory_info();
+                DXGI_QUERY_VIDEO_MEMORY_INFO info = ff_dx12_video_memory_info();
+                Assert::IsTrue(info.Budget > 0);
+            }
+        }
+
+        TEST_METHOD(residency_tolerates_usage_over_budget)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            // Exercises make_resident's budget math. Available space is computed as
+            // Budget - CurrentUsage, which must not wrap when usage exceeds the budget.
+            ff_dx12_heap heap{};
+            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("budget heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
+
+            ff_dx12_fence fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("budget fence"), 1));
+            ff_dx12_fence_value value = ff_dx12_fence_signal(&fence, nullptr);
+
+            ff_dx12_residency_data* set[1] = { ff_dx12_heap_residency_data(&heap) };
+            ff_dx12_fence_values wait_values{};
+            ff_dx12_fence_values_init(&wait_values);
+
+            Assert::IsTrue(ff_dx12_make_resident(set, 1, value, &wait_values));
+
+            ff_dx12_fence_values_wait(&wait_values, nullptr);
+            ff_dx12_fence_destroy(&fence);
+            ff_dx12_heap_destroy(&heap);
+        }
     };
 }

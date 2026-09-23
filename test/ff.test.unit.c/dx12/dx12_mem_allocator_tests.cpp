@@ -192,15 +192,53 @@ namespace ff::test::dx12
 
             ff_dx12_mem_range range1 = ff_dx12_mem_allocator_alloc_bytes(&allocator, 512, 0);
             Assert::IsTrue(ff_dx12_mem_range_valid(&range1));
-            Assert::AreEqual((size_t)1, ff_array_count(allocator.buffers_a));
+            Assert::AreEqual((size_t)1, allocator.buffers_count);
 
             // Bigger than the first heap forces growth into a second buffer.
             ff_dx12_mem_range range2 = ff_dx12_mem_allocator_alloc_bytes(&allocator, 4096, 0);
             Assert::IsTrue(ff_dx12_mem_range_valid(&range2));
-            Assert::IsTrue(ff_array_count(allocator.buffers_a) >= 1);
+            Assert::IsTrue(allocator.buffers_count >= 1);
 
             ff_dx12_mem_range_free(&range1);
             ff_dx12_mem_range_free(&range2);
+            ff_dx12_mem_allocator_destroy(&allocator);
+        }
+
+        TEST_METHOD(buffer_owners_stay_valid_as_the_allocator_grows)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            // Buffers used to live in a relocatable ff_array, so growing the allocator left
+            // every previously handed-out range pointing at freed or shifted memory.
+            ff_dx12_mem_allocator allocator{};
+            ff_dx12_mem_allocator_init(&allocator, 1024, 0, ff_dx12_heap_usage_gpu_buffers, false);
+
+            const size_t count = 8;
+            ff_dx12_mem_range ranges[count]{};
+            ff_dx12_mem_buffer* owners[count]{};
+
+            for (size_t i = 0; i < count; i++)
+            {
+                // Each request is larger than the current heap, so every one forces a new buffer.
+                ranges[i] = ff_dx12_mem_allocator_alloc_bytes(&allocator, (uint64_t)1024 << i, 0);
+                Assert::IsTrue(ff_dx12_mem_range_valid(&ranges[i]));
+                owners[i] = ranges[i].owner;
+            }
+
+            Assert::IsTrue(allocator.buffers_count > 1);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(owners[i] == ranges[i].owner);
+                Assert::IsTrue(ff_dx12_mem_range_heap(&ranges[i]) == &owners[i]->heap);
+                Assert::IsTrue(ff_dx12_heap_size(&owners[i]->heap) >= ranges[i].size);
+            }
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_mem_range_free(&ranges[i]);
+            }
+
             ff_dx12_mem_allocator_destroy(&allocator);
         }
 
@@ -224,6 +262,38 @@ namespace ff::test::dx12
 
             ff_dx12_mem_range_free(&buffer_range);
             ff_dx12_mem_range_free(&texture_range);
+            ff_dx12_mem_allocator_destroy(&allocator);
+            ff_dx12_fence_destroy(&fence);
+        }
+        TEST_METHOD(ring_allocator_survives_many_distinct_fence_values)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_mem_allocator allocator{};
+            ff_dx12_mem_allocator_init(&allocator, 64 * 1024, 0, ff_dx12_heap_usage_upload, true);
+
+            ff_dx12_fence fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("many values fence"), 1));
+
+            // Distinct fence values defeat range coalescing, so the fixed ring range list fills up.
+            // The allocator must keep succeeding by moving on to another buffer.
+            const size_t count = FF_DX12_MEM_RING_RANGES_MAX * 2;
+            ff_dx12_mem_range ranges[count]{};
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_value value = ff_dx12_fence_signal_later(&fence);
+                ranges[i] = ff_dx12_mem_allocator_ring_alloc_buffer(&allocator, 256, value);
+                Assert::IsTrue(ff_dx12_mem_range_valid(&ranges[i]));
+            }
+
+            ff_dx12_fence_signal(&fence, nullptr);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_mem_range_free(&ranges[i]);
+            }
+
             ff_dx12_mem_allocator_destroy(&allocator);
             ff_dx12_fence_destroy(&fence);
         }

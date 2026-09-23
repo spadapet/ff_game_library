@@ -26,6 +26,7 @@ typedef struct ff_dx12_mem_ring_range
 typedef struct ff_dx12_mem_buffer
 {
     ff_dx12_mem_buffer_type type;
+    struct ff_dx12_mem_buffer* next;
     ff_dx12_heap heap;
 
     union
@@ -60,15 +61,21 @@ ff_dx12_heap* ff_dx12_mem_buffer_heap(ff_dx12_mem_buffer* buffer);
 bool ff_dx12_mem_buffer_frame_complete(ff_dx12_mem_buffer* buffer);
 ff_dx12_mem_range ff_dx12_mem_buffer_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t size, uint64_t align, ff_dx12_fence_value fence_value);
 
-#define FF_DX12_MEM_ALLOCATOR_BUFFERS_MAX 0 // unused; buffers array grows via ff_array
+#define FF_DX12_MEM_ALLOCATOR_BUFFERS_MAX 0 // unused; buffers are an arena-allocated linked list
 
 // Outer allocator-of-buffers: doubles heap size on growth (capped by max_size, 0 = unbounded for
-// long-term allocation), and prunes empty buffers on frame_complete. Wraps a growable ff_array
-// of buffers, matching the old std::vector<unique_ptr<mem_buffer_base>>.
+// long-term allocation), and prunes empty buffers on frame_complete.
+//
+// Buffers must have stable addresses because every ff_dx12_mem_range handed out points back at
+// its owning buffer, so they are arena-allocated nodes in a linked list rather than elements of
+// a relocatable array. 'buffers' is ordered newest-first, so the head is the newest (largest)
+// buffer that allocation tries before growing.
 typedef struct ff_dx12_mem_allocator
 {
     ff_arena arena;
-    ff_dx12_mem_buffer* buffers_a;
+    ff_dx12_mem_buffer* buffers;
+    ff_dx12_mem_buffer* buffers_free;
+    size_t buffers_count;
     ff_dx12_heap_usage usage;
     uint64_t initial_size;
     uint64_t max_size;

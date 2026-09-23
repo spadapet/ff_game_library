@@ -285,7 +285,9 @@ static ff_dx12_mem_range ring_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t s
     }
     else
     {
-        FF_ASSERT_RET_VAL(buffer->u.ring.ranges_count < FF_DX12_MEM_RING_RANGES_MAX, ((ff_dx12_mem_range) { 0 }));
+        // A full range list means this buffer is out of room for now, which the allocator
+        // already handles by creating another buffer. Don't assert on it.
+        FF_CHECK_RET_VAL(buffer->u.ring.ranges_count < FF_DX12_MEM_RING_RANGES_MAX, ((ff_dx12_mem_range) { 0 }));
         ff_dx12_mem_ring_range new_range = { .start = allocated_start, .size = allocated_size, .fence_value = fence_value };
         ring_push_back(buffer, new_range);
     }
@@ -359,17 +361,34 @@ void ff_dx12_mem_allocator_init(ff_dx12_mem_allocator* allocator, uint64_t initi
         : 0;
 
     ff_arena_init_heap_local(&allocator->arena, 0);
-    allocator->buffers_a = ff_array_init(ff_dx12_mem_buffer, &allocator->arena);
+}
+
+static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator)
+{
+    ff_dx12_mem_buffer* buffer = allocator->buffers_free;
+
+    if (buffer)
+    {
+        allocator->buffers_free = buffer->next;
+    }
+    else
+    {
+        buffer = ff_arena_alloc_type(&allocator->arena, ff_dx12_mem_buffer, 1);
+    }
+
+    return buffer;
 }
 
 void ff_dx12_mem_allocator_destroy(ff_dx12_mem_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
 
-    size_t count = ff_array_count(allocator->buffers_a);
-    for (size_t i = 0; i < count; i++)
+    for (ff_dx12_mem_buffer* buffer = allocator->buffers; buffer; )
     {
-        ff_dx12_mem_buffer_destroy(&allocator->buffers_a[i]);
+        // destroy zeroes the buffer, including 'next', so read the link first.
+        ff_dx12_mem_buffer* next = buffer->next;
+        ff_dx12_mem_buffer_destroy(buffer);
+        buffer = next;
     }
 
     ff_arena_destroy(&allocator->arena);
@@ -380,20 +399,20 @@ static ff_dx12_mem_range allocator_alloc_bytes(ff_dx12_mem_allocator* allocator,
 {
     // Single-threaded v1: the old code took buffers_mutex here.
     ff_dx12_mem_range range = { 0 };
-    size_t count = ff_array_count(allocator->buffers_a);
+    ff_dx12_mem_buffer* newest = allocator->buffers;
 
-    if (count)
+    if (newest)
     {
-        range = ff_dx12_mem_buffer_alloc_bytes(&allocator->buffers_a[count - 1], size, align, fence_value);
+        range = ff_dx12_mem_buffer_alloc_bytes(newest, size, align, fence_value);
     }
 
     if (!ff_dx12_mem_range_valid(&range))
     {
         uint64_t heap_size = ff_math_max_size(ff_math_round_up_pow2((size_t)size), (size_t)allocator->initial_size);
 
-        if (count)
+        if (newest)
         {
-            uint64_t last_heap_size = ff_dx12_heap_size(&allocator->buffers_a[count - 1].heap);
+            uint64_t last_heap_size = ff_dx12_heap_size(&newest->heap);
 
             if (allocator->max_size)
             {
@@ -415,17 +434,29 @@ static ff_dx12_mem_range allocator_alloc_bytes(ff_dx12_mem_allocator* allocator,
             name = ff_string_copy((ff_string_view) { .data = buffer, .count = (size_t)ff_math_max_int(0, written) }, &name_arena);
         }
 
-        size_t new_index = ff_array_count(allocator->buffers_a);
-        ff_array_resize(allocator->buffers_a, new_index + 1);
-
-        bool ok = allocator->ring
-            ? ff_dx12_mem_buffer_init_ring(&allocator->buffers_a[new_index], &allocator->arena, name, heap_size, allocator->usage)
-            : ff_dx12_mem_buffer_init_free_list(&allocator->buffers_a[new_index], &allocator->arena, name, heap_size, allocator->usage);
+        ff_dx12_mem_buffer* new_buffer = allocator_new_buffer(allocator);
+        bool ok = new_buffer && (allocator->ring
+            ? ff_dx12_mem_buffer_init_ring(new_buffer, &allocator->arena, name, heap_size, allocator->usage)
+            : ff_dx12_mem_buffer_init_free_list(new_buffer, &allocator->arena, name, heap_size, allocator->usage));
 
         ff_arena_destroy(&name_arena);
-        FF_ASSERT_RET_VAL(ok, ((ff_dx12_mem_range) { 0 }));
 
-        range = ff_dx12_mem_buffer_alloc_bytes(&allocator->buffers_a[new_index], size, align, fence_value);
+        if (!ok)
+        {
+            if (new_buffer)
+            {
+                new_buffer->next = allocator->buffers_free;
+                allocator->buffers_free = new_buffer;
+            }
+
+            FF_DEBUG_FAIL_RET_VAL(((ff_dx12_mem_range) { 0 }));
+        }
+
+        new_buffer->next = allocator->buffers;
+        allocator->buffers = new_buffer;
+        allocator->buffers_count++;
+
+        range = ff_dx12_mem_buffer_alloc_bytes(new_buffer, size, align, fence_value);
     }
 
     FF_ASSERT(ff_dx12_mem_range_valid(&range));
@@ -437,24 +468,28 @@ void ff_dx12_mem_allocator_frame_complete(ff_dx12_mem_allocator* allocator)
     FF_CHECK_RET(allocator);
 
     // Single-threaded v1: the old code took buffers_mutex here.
-    size_t count = ff_array_count(allocator->buffers_a);
-    for (size_t i = 0; i < count; )
+    //
+    // The newest buffer (the list head) is always kept so the allocator kept at least one heap
+    // warm, matching the old "count > 1" rule. Pruned nodes go on buffers_free for reuse so the
+    // arena doesn't grow every time a buffer is recycled.
+    ff_dx12_mem_buffer** link = &allocator->buffers;
+
+    while (*link)
     {
-        if (!ff_dx12_mem_buffer_frame_complete(&allocator->buffers_a[i]) && count > 1)
+        ff_dx12_mem_buffer* buffer = *link;
+
+        if (!ff_dx12_mem_buffer_frame_complete(buffer) && allocator->buffers_count > 1)
         {
-            ff_dx12_mem_buffer_destroy(&allocator->buffers_a[i]);
+            *link = buffer->next;
+            ff_dx12_mem_buffer_destroy(buffer);
+            allocator->buffers_count--;
 
-            for (size_t j = i; j + 1 < count; j++)
-            {
-                allocator->buffers_a[j] = allocator->buffers_a[j + 1];
-            }
-
-            count--;
-            ff_array_resize(allocator->buffers_a, count);
+            buffer->next = allocator->buffers_free;
+            allocator->buffers_free = buffer;
         }
         else
         {
-            i++;
+            link = &buffer->next;
         }
     }
 }

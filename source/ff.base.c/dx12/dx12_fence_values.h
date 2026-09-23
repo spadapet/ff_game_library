@@ -2,7 +2,7 @@
 
 #include "dx12_fence.h"
 
-#define FF_DX12_FENCE_VALUES_MAX 4
+#define FF_DX12_FENCE_VALUES_MAX 8
 
 // Fixed-capacity set of fence_values, deduped by fence pointer (keeps the max value per fence).
 typedef struct ff_dx12_fence_values

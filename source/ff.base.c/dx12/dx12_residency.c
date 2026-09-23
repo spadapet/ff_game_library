@@ -118,7 +118,11 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
 
     ff_dx12_fence_value resident_fence_value = ff_dx12_fence_signal_later(&s_residency_fence);
     DXGI_QUERY_VIDEO_MEMORY_INFO memory_info = ff_dx12_video_memory_info();
-    const uint64_t available_space = memory_info.Budget - memory_info.CurrentUsage;
+    // CurrentUsage routinely exceeds Budget when the GPU is oversubscribed, and unsigned
+    // subtraction would wrap to a huge value there, disabling eviction exactly when it matters.
+    const uint64_t available_space = (memory_info.Budget > memory_info.CurrentUsage)
+        ? memory_info.Budget - memory_info.CurrentUsage
+        : 0;
     const uint32_t new_usage_counter = ++s_usage_counter;
 
     for (size_t i = 0; i < residency_set_count; i++)
@@ -168,12 +172,18 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
         {
             if (data->resident)
             {
+                // Stop batching rather than returning: state mutated below must stay consistent
+                // with the Evict call, so bail before touching this entry at all.
+                if (make_evicted_count == MAX_RESIDENCY_BATCH)
+                {
+                    break;
+                }
+
                 data->resident = false;
                 data->resident_value = (ff_dx12_fence_value){ 0 };
 
                 ff_dx12_fence_values_add_all(&wait_to_evict, &data->keep_resident);
 
-                FF_ASSERT_RET_VAL(make_evicted_count < MAX_RESIDENCY_BATCH, false);
                 make_evicted[make_evicted_count++] = data->pageable;
                 make_evicted_size += data->size;
                 delta_resident_size -= ff_math_min_size((size_t)data->size, (size_t)delta_resident_size);

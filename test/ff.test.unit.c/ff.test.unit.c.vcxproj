@@ -33,6 +33,10 @@
     <ClCompile Include="dx12\dx12_mem_allocator_tests.cpp" />
     <ClCompile Include="dx12\dx12_mem_range_tests.cpp" />
     <ClCompile Include="dx12\dx12_residency_tests.cpp" />
+    <ClCompile Include="dx12\dx12_descriptor_allocator_tests.cpp" />
+    <ClCompile Include="dx12\dx12_resource_state_tests.cpp" />
+    <ClCompile Include="dx12\dx12_resource_tracker_tests.cpp" />
+    <ClCompile Include="dx12\dx12_resource_tests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

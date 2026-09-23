@@ -124,5 +124,43 @@ namespace ff::test::dx12
             ff_dx12_fence_destroy(&fence_a);
             ff_dx12_fence_destroy(&fence_b);
         }
+        TEST_METHOD(batch_wait_skips_null_fences_without_abandoning_the_rest)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_fence fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("fence"), 1));
+
+            ff_dx12_fence_value real = ff_dx12_fence_signal(&fence, nullptr);
+            ff_dx12_fence_value values[3] = { ff_dx12_fence_value{}, real, ff_dx12_fence_value{} };
+            ff_dx12_fence_wait_value_array(values, 3, nullptr);
+
+            Assert::IsTrue(ff_dx12_fence_value_complete(real));
+
+            ff_dx12_fence_destroy(&fence);
+        }
+
+        TEST_METHOD(batch_wait_handles_more_fences_than_the_batch_size)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t count = 20;
+            ff_dx12_fence fences[count]{};
+            ff_dx12_fence_value values[count]{};
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("fence"), 1));
+                values[i] = ff_dx12_fence_signal(&fences[i], nullptr);
+            }
+
+            ff_dx12_fence_wait_value_array(values, count, nullptr);
+            Assert::IsTrue(ff_dx12_fence_value_array_complete(values, count));
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+        }
     };
 }

@@ -34,7 +34,20 @@ void ff_dx12_fence_values_add(ff_dx12_fence_values* values, ff_dx12_fence_value 
         }
     }
 
-    FF_ASSERT_RET(values->count < FF_DX12_FENCE_VALUES_MAX);
+    if (values->count == FF_DX12_FENCE_VALUES_MAX)
+    {
+        // Dropping a value would skip a needed GPU sync, so over-synchronize instead: block on the
+        // oldest entry to free a slot. Callers dedupe by fence, so this is rare.
+        ff_dx12_fence_value_wait(values->values[0], NULL);
+
+        for (size_t i = 1; i < values->count; i++)
+        {
+            values->values[i - 1] = values->values[i];
+        }
+
+        values->count--;
+    }
+
     values->values[values->count++] = value;
 }
 

@@ -154,6 +154,8 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
                 state, NULL, &IID_ID3D12Resource, (void**)&heap->cpu_resource)) ||
             FAILED(ID3D12Resource_Map(heap->cpu_resource, 0, NULL, &heap->cpu_data)))
         {
+            heap->cpu_data = NULL;
+            ff_dx12_heap_destroy(heap);
             FF_DEBUG_FAIL_MSG_RET_VAL("failed to create or map cpu heap resource", false);
         }
     }

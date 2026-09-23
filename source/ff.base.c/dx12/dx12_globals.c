@@ -24,6 +24,7 @@ static DXGI_GPU_PREFERENCE s_gpu_preference;
 static D3D_FEATURE_LEVEL s_feature_level;
 static uint64_t s_adapters_hash;
 static bool s_supports_create_heap_not_resident;
+static bool s_supports_bindless;
 static bool s_simulate_device_invalid;
 
 static HANDLE s_video_memory_change_event;
@@ -173,10 +174,21 @@ static ID3D12Device6* create_device(void)
         ID3D12Device8_Release(device8);
     }
 
+    // Bindless (ResourceDescriptorHeap[] in HLSL) needs unbounded descriptor arrays from
+    // resource binding tier 3 plus dynamic resource indexing from shader model 6.6.
+    D3D12_FEATURE_DATA_D3D12_OPTIONS options = { 0 };
+    D3D12_FEATURE_DATA_SHADER_MODEL shader_model = { .HighestShaderModel = D3D_SHADER_MODEL_6_6 };
+    s_supports_bindless =
+        SUCCEEDED(ID3D12Device6_CheckFeatureSupport(device, D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options))) &&
+        options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3 &&
+        SUCCEEDED(ID3D12Device6_CheckFeatureSupport(device, D3D12_FEATURE_SHADER_MODEL, &shader_model, sizeof(shader_model))) &&
+        shader_model.HighestShaderModel >= D3D_SHADER_MODEL_6_6;
+
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] D3D12CreateDevice succeeded, node count: %u"),
         (unsigned int)ID3D12Device6_GetNodeCount(device));
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] - supports non-resident heaps: %d"),
         (int)s_supports_create_heap_not_resident);
+    ff_log_write(ff_log_type_debug, FF_SVL("[dx12] - supports bindless: %d"), (int)s_supports_bindless);
 
     return device;
 }
@@ -251,6 +263,12 @@ void ff_dx12_update_video_memory_info(void)
     {
         s_video_memory_info = query_video_memory_info(s_adapter);
 
+        if (s_video_memory_change_event)
+        {
+            // Manual-reset event, so without this it stays signaled and every later poll
+            // reports a budget change that already happened.
+            ResetEvent(s_video_memory_change_event);
+        }
         ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Video memory budget: %llu bytes, usage: %llu bytes"),
             (unsigned long long)s_video_memory_info.Budget,
             (unsigned long long)s_video_memory_info.CurrentUsage);
@@ -312,6 +330,11 @@ static bool init_d3d(bool for_reset)
 
     // Video memory tracking for residency
     {
+        // Must query before the event exists. The event is manual-reset and starts unsignaled,
+        // so an update with it already created would take the "no change yet" path and leave
+        // the budget at zero until the first notification fires.
+        ff_dx12_update_video_memory_info();
+
         s_video_memory_change_event = CreateEventW(NULL, TRUE, FALSE, NULL);
 
         if (s_video_memory_change_event && FAILED(IDXGIAdapter3_RegisterVideoMemoryBudgetChangeNotificationEvent(
@@ -321,8 +344,6 @@ static bool init_d3d(bool for_reset)
             s_video_memory_change_event = NULL;
             s_video_memory_change_cookie = 0;
         }
-
-        ff_dx12_update_video_memory_info();
     }
 
     return true;
@@ -342,6 +363,7 @@ static void destroy_d3d(void)
 
     s_video_memory_info = (DXGI_QUERY_VIDEO_MEMORY_INFO){ 0 };
     s_supports_create_heap_not_resident = false;
+    s_supports_bindless = false;
     s_simulate_device_invalid = false;
 
     if (s_adapter)
@@ -426,6 +448,11 @@ void ff_dx12_device_fatal_error(ff_string_view reason)
 bool ff_dx12_supports_create_heap_not_resident(void)
 {
     return s_supports_create_heap_not_resident;
+}
+
+bool ff_dx12_supports_bindless(void)
+{
+    return s_supports_bindless;
 }
 
 bool ff_dx12_factory_current(void)

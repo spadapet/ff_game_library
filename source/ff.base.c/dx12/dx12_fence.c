@@ -181,6 +181,35 @@ bool ff_dx12_fence_value_complete(ff_dx12_fence_value value)
 
 #define MAX_BATCH_FENCES 16
 
+static void wait_batch(ff_dx12_fence** fences, uint64_t* values, size_t count, ID3D12CommandQueue* queue)
+{
+    FF_CHECK_RET(count);
+
+    if (queue)
+    {
+        for (size_t i = 0; i < count; i++)
+        {
+            ff_dx12_fence_wait(fences[i], values[i], queue);
+        }
+    }
+    else
+    {
+        ID3D12Fence* dx12_fences[MAX_BATCH_FENCES];
+        for (size_t i = 0; i < count; i++)
+        {
+            dx12_fences[i] = fences[i]->fence;
+        }
+
+        ID3D12Device6_SetEventOnMultipleFenceCompletion(ff_dx12_device(), dx12_fences, values,
+            (UINT)count, D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL, NULL);
+
+        for (size_t i = 0; i < count; i++)
+        {
+            FF_VERIFY(ff_dx12_fence_complete(fences[i], values[i]));
+        }
+    }
+}
+
 void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, ID3D12CommandQueue* queue)
 {
     FF_CHECK_RET(values || !count);
@@ -192,9 +221,8 @@ void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, I
     for (size_t i = 0; i < count; i++)
     {
         ff_dx12_fence_value value = values[i];
-        FF_CHECK_RET(value.fence);
 
-        if (ff_dx12_fence_value_complete(value))
+        if (!value.fence || ff_dx12_fence_value_complete(value))
         {
             continue;
         }
@@ -212,36 +240,21 @@ void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, I
 
         if (!found)
         {
-            FF_ASSERT_RET(actual_count < MAX_BATCH_FENCES);
+            // Dropping a wait would let the GPU read memory that is still in flight, so flush
+            // the fences gathered so far rather than skipping any once the batch is full.
+            if (actual_count == MAX_BATCH_FENCES)
+            {
+                wait_batch(actual_fences, actual_values, actual_count, queue);
+                actual_count = 0;
+            }
+
             actual_fences[actual_count] = value.fence;
             actual_values[actual_count] = value.value;
             actual_count++;
         }
     }
 
-    if (queue)
-    {
-        for (size_t i = 0; i < actual_count; i++)
-        {
-            ff_dx12_fence_wait(actual_fences[i], actual_values[i], queue);
-        }
-    }
-    else if (actual_count)
-    {
-        ID3D12Fence* fences[MAX_BATCH_FENCES];
-        for (size_t i = 0; i < actual_count; i++)
-        {
-            fences[i] = actual_fences[i]->fence;
-        }
-
-        ID3D12Device6_SetEventOnMultipleFenceCompletion(ff_dx12_device(), fences, actual_values,
-            (UINT)actual_count, D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL, NULL);
-
-        for (size_t i = 0; i < actual_count; i++)
-        {
-            FF_VERIFY(ff_dx12_fence_complete(actual_fences[i], actual_values[i]));
-        }
-    }
+    wait_batch(actual_fences, actual_values, actual_count, queue);
 }
 
 bool ff_dx12_fence_value_array_complete(ff_dx12_fence_value* values, size_t count)

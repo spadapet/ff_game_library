@@ -24,6 +24,10 @@ bool ff_dx12_device_valid(void);
 void ff_dx12_device_fatal_error(ff_string_view reason);
 bool ff_dx12_supports_create_heap_not_resident(void);
 
+// Resource binding tier 3 plus shader model 6.6, which is what ResourceDescriptorHeap[] indexing
+// requires. The renderer picks bindless or classic descriptor tables based on this.
+bool ff_dx12_supports_bindless(void);
+
 // Adapter list changes (like a GPU being added or removed) make the factory stale.
 bool ff_dx12_factory_current(void);
 uint64_t ff_dx12_adapters_hash(void);

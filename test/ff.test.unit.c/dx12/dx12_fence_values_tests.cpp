@@ -105,5 +105,34 @@ namespace ff::test::dx12
             ff_dx12_fence_destroy(&fence_a);
             ff_dx12_fence_destroy(&fence_b);
         }
+        TEST_METHOD(overflow_waits_out_the_oldest_instead_of_dropping)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t count = FF_DX12_FENCE_VALUES_MAX + 3;
+            ff_dx12_fence fences[count]{};
+            ff_dx12_fence_values values{};
+            ff_dx12_fence_values_init(&values);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("fence"), 1));
+                ff_dx12_fence_values_add(&values, ff_dx12_fence_signal(&fences[i], nullptr));
+            }
+
+            Assert::AreEqual((size_t)FF_DX12_FENCE_VALUES_MAX, values.count);
+
+            for (size_t i = 0; i < values.count; i++)
+            {
+                Assert::IsNotNull(values.values[i].fence);
+            }
+
+            Assert::AreEqual((void*)&fences[count - 1], (void*)values.values[values.count - 1].fence);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+        }
     };
 }
