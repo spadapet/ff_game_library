@@ -426,7 +426,7 @@ void* ff_arena_realloc(ff_arena* arena, const void* start, size_t size, size_t n
     uint8_t* old_start = (uint8_t*)start;
 
     // In-place: if this block's end touches the bump pointer it's the most-recent alloc, so resize by moving 'next' - but only if it already satisfies the requested alignment.
-    if (old_start + size == arena->next && !((uintptr_t)old_start & (align - 1)))
+    if (old_start && old_start + size == arena->next && !((uintptr_t)old_start & (align - 1)))
     {
         if (new_size <= size)
         {

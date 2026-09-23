@@ -37,7 +37,7 @@
     <Project Path="source/ff.resource.build/ff.resource.build.vcxproj" Id="cbabf708-3dca-4933-8d94-188536af1ec2" />
   </Folder>
   <Folder Name="/test/">
-    <Project Path="test/ff.test.c/ff.test.c.vcxproj" />
+    <Project Path="test/ff.test.c/ff.test.c.vcxproj" Id="d820b715-1edd-45ed-8000-068ea989d559" />
     <Project Path="test/ff.test.console/ff.test.console.vcxproj" Id="94ef3680-8599-4d2d-b0a6-5455208a84c0" />
     <Project Path="test/ff.test.unit.c/ff.test.unit.c.vcxproj" Id="59fc162a-acf0-491a-8f0f-771d9a9a2158" />
     <Project Path="test/ff.test.unit/ff.test.unit.vcxproj" Id="3cdc3451-f711-4ec0-96ea-1767804b2df0" />
