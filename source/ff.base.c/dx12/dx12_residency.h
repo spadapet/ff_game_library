@@ -24,7 +24,9 @@ typedef struct ff_dx12_residency_data
 
 // pageable is not ref-counted here; the owner (for example ff_dx12_heap) must keep it alive for
 // at least as long as this residency_data.
-void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_string_view name, ID3D12Pageable* pageable, uint64_t size, bool resident);
+// arena backs the keep_resident set, which grows with the number of executes referencing this
+// pageable. It must outlive the residency_data.
+void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_arena* arena, ff_string_view name, ID3D12Pageable* pageable, uint64_t size, bool resident);
 void ff_dx12_residency_data_destroy(ff_dx12_residency_data* data);
 
 // Global lifecycle for the residency subsystem (the singleton fence used to signal

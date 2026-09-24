@@ -86,6 +86,15 @@
     <ClCompile Include="dx12\dx12_resource.c">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_queue.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_commands.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_object_cache.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_mem_range.c">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -195,6 +204,15 @@
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_resource.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_queue.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_commands.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_object_cache.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_mem_range.h">

@@ -8,6 +8,10 @@ typedef struct ff_dx12_fence
     wchar_t name[64];
     uint64_t completed_value;
     uint64_t next_value;
+
+    // The queue that signals this fence, if any. A queue is always ordered against itself, so
+    // asking it to wait on its own fence would block forever on a signal that can't be reached.
+    ID3D12CommandQueue* owner_queue;
 } ff_dx12_fence;
 
 // A fence_value stores a raw pointer to the fence that produced it, not a ref-counted wrapper.
@@ -21,6 +25,10 @@ typedef struct ff_dx12_fence_value
 } ff_dx12_fence_value;
 
 bool ff_dx12_fence_init(ff_dx12_fence* fence, ff_string_view name, uint64_t initial_value);
+
+// Records which queue signals this fence, so that same-queue waits can be skipped instead of
+// deadlocking. Must be set before the fence is signaled on that queue.
+void ff_dx12_fence_set_owner_queue(ff_dx12_fence* fence, ID3D12CommandQueue* queue);
 void ff_dx12_fence_destroy(ff_dx12_fence* fence);
 
 bool ff_dx12_fence_valid(const ff_dx12_fence* fence);

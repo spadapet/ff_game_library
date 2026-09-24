@@ -5,6 +5,8 @@
 #include "base/log.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_mem_range.h"
+#include "dx12/dx12_queue.h"
 #include "dx12/dx12_residency.h"
 
 // Embedding the link dependencies here keeps them with the code that needs them, and they
@@ -30,6 +32,27 @@ static bool s_simulate_device_invalid;
 static HANDLE s_video_memory_change_event;
 static DWORD s_video_memory_change_cookie;
 static DXGI_QUERY_VIDEO_MEMORY_INFO s_video_memory_info;
+
+static ff_dx12_queue s_direct_queue;
+static ff_dx12_queue s_copy_queue;
+static ff_dx12_queue s_compute_queue;
+static uint64_t s_frame_count;
+
+// Resources whose GPU work hasn't retired yet. Nodes are arena-allocated and recycled through
+// s_keep_alive_free, so the list never grows without bound as long as it keeps getting drained.
+typedef struct ff_dx12_keep_alive_node
+{
+    struct ff_dx12_keep_alive_node* next;
+    ID3D12Resource* resource;
+    ff_dx12_mem_range mem_range;
+    ff_dx12_fence_values fence_values;
+} ff_dx12_keep_alive_node;
+
+static ff_arena s_keep_alive_arena;
+static bool s_keep_alive_arena_valid;
+static ff_dx12_keep_alive_node* s_keep_alive_head;
+static ff_dx12_keep_alive_node* s_keep_alive_tail;
+static ff_dx12_keep_alive_node* s_keep_alive_free;
 
 static bool debug_layer_wanted(void)
 {
@@ -349,8 +372,222 @@ static bool init_d3d(bool for_reset)
     return true;
 }
 
+static void keep_alive_node_release(ff_dx12_keep_alive_node* node)
+{
+    if (node->resource)
+    {
+        ID3D12Resource_Release(node->resource);
+        node->resource = NULL;
+    }
+
+    ff_dx12_mem_range_free(&node->mem_range);
+    ff_dx12_fence_values_clear(&node->fence_values);
+}
+
+void ff_dx12_flush_keep_alive(void)
+{
+    // Entries are pushed in roughly fence order, so stopping at the first incomplete one keeps
+    // this O(1) amortized instead of scanning the whole list every frame.
+    while (s_keep_alive_head && ff_dx12_fence_values_complete(&s_keep_alive_head->fence_values))
+    {
+        ff_dx12_keep_alive_node* node = s_keep_alive_head;
+        s_keep_alive_head = node->next;
+
+        if (!s_keep_alive_head)
+        {
+            s_keep_alive_tail = NULL;
+        }
+
+        keep_alive_node_release(node);
+
+        node->next = s_keep_alive_free;
+        s_keep_alive_free = node;
+    }
+}
+
+void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
+    const ff_dx12_fence_values* fence_values)
+{
+    if (!s_keep_alive_arena_valid)
+    {
+        ff_arena_init_heap_local(&s_keep_alive_arena, 4096);
+        s_keep_alive_arena_valid = true;
+    }
+
+    ff_dx12_keep_alive_node pending = { 0 };
+    pending.resource = resource;
+
+    if (mem_range)
+    {
+        pending.mem_range = *mem_range;
+    }
+
+    // Deep copy: the caller's set may have spilled into an arena that dies with the caller, and
+    // this node outlives it. Re-adding rebuilds the spill against the keep-alive arena.
+    ff_dx12_fence_values_init_arena(&pending.fence_values, &s_keep_alive_arena);
+
+    if (fence_values)
+    {
+        ff_dx12_fence_values_add_all(&pending.fence_values, fence_values);
+    }
+
+    // Nothing in flight, so skip the list entirely and release right now.
+    if (ff_dx12_fence_values_complete(&pending.fence_values))
+    {
+        keep_alive_node_release(&pending);
+        return;
+    }
+
+    ff_dx12_keep_alive_node* node = s_keep_alive_free;
+    if (node)
+    {
+        s_keep_alive_free = node->next;
+    }
+    else
+    {
+        node = ff_arena_alloc_type(&s_keep_alive_arena, ff_dx12_keep_alive_node, 1);
+    }
+
+    if (!node)
+    {
+        // Can't defer, so fall back to blocking rather than leaking the resource.
+        ff_dx12_fence_values_wait(&pending.fence_values, NULL);
+        keep_alive_node_release(&pending);
+        FF_DEBUG_FAIL_RET();
+    }
+
+    *node = pending;
+    node->next = NULL;
+
+    if (s_keep_alive_tail)
+    {
+        s_keep_alive_tail->next = node;
+    }
+    else
+    {
+        s_keep_alive_head = node;
+    }
+
+    s_keep_alive_tail = node;
+}
+
+static void keep_alive_destroy(void)
+{
+    // Everything still queued has to be released now, so wait out whatever is left in flight.
+    for (ff_dx12_keep_alive_node* node = s_keep_alive_head; node; node = node->next)
+    {
+        ff_dx12_fence_values_wait(&node->fence_values, NULL);
+        keep_alive_node_release(node);
+    }
+
+    s_keep_alive_head = NULL;
+    s_keep_alive_tail = NULL;
+    s_keep_alive_free = NULL;
+
+    if (s_keep_alive_arena_valid)
+    {
+        ff_arena_destroy(&s_keep_alive_arena);
+        s_keep_alive_arena_valid = false;
+    }
+}
+
+ff_dx12_queue* ff_dx12_direct_queue(void)
+{
+    if (!ff_dx12_queue_valid(&s_direct_queue))
+    {
+        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_direct_queue, FF_SVL("Direct queue"), D3D12_COMMAND_LIST_TYPE_DIRECT), NULL);
+    }
+
+    return &s_direct_queue;
+}
+
+ff_dx12_queue* ff_dx12_copy_queue(void)
+{
+    if (!ff_dx12_queue_valid(&s_copy_queue))
+    {
+        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_copy_queue, FF_SVL("Copy queue"), D3D12_COMMAND_LIST_TYPE_COPY), NULL);
+    }
+
+    return &s_copy_queue;
+}
+
+ff_dx12_queue* ff_dx12_compute_queue(void)
+{
+    if (!ff_dx12_queue_valid(&s_compute_queue))
+    {
+        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_compute_queue, FF_SVL("Compute queue"), D3D12_COMMAND_LIST_TYPE_COMPUTE), NULL);
+    }
+
+    return &s_compute_queue;
+}
+
+ff_dx12_queue* ff_dx12_queue_from_type(D3D12_COMMAND_LIST_TYPE type)
+{
+    switch (type)
+    {
+        case D3D12_COMMAND_LIST_TYPE_COPY:
+            return ff_dx12_copy_queue();
+
+        case D3D12_COMMAND_LIST_TYPE_COMPUTE:
+            return ff_dx12_compute_queue();
+
+        default:
+            return ff_dx12_direct_queue();
+    }
+}
+
+void ff_dx12_wait_for_idle(void)
+{
+    if (ff_dx12_queue_valid(&s_copy_queue))
+    {
+        ff_dx12_queue_wait_for_idle(&s_copy_queue);
+    }
+
+    if (ff_dx12_queue_valid(&s_compute_queue))
+    {
+        ff_dx12_queue_wait_for_idle(&s_compute_queue);
+    }
+
+    if (ff_dx12_queue_valid(&s_direct_queue))
+    {
+        ff_dx12_queue_wait_for_idle(&s_direct_queue);
+    }
+
+    ff_dx12_flush_keep_alive();
+}
+
+void ff_dx12_frame_started(void)
+{
+    ff_dx12_flush_keep_alive();
+    ff_dx12_update_video_memory_info();
+}
+
+void ff_dx12_frame_complete(void)
+{
+    s_frame_count++;
+}
+
+uint64_t ff_dx12_frame_count(void)
+{
+    return s_frame_count;
+}
+
 static void destroy_d3d(void)
 {
+    // Queues must go before residency so that wait_for_idle can still retire GPU work, and the
+    // keep-alive list must be drained after that so nothing outlives its residency_data.
+    if (ff_dx12_queue_valid(&s_direct_queue) || ff_dx12_queue_valid(&s_copy_queue) || ff_dx12_queue_valid(&s_compute_queue))
+    {
+        ff_dx12_wait_for_idle();
+    }
+
+    ff_dx12_queue_destroy(&s_direct_queue);
+    ff_dx12_queue_destroy(&s_copy_queue);
+    ff_dx12_queue_destroy(&s_compute_queue);
+
+    keep_alive_destroy();
+    s_frame_count = 0;
+
     ff_dx12_residency_destroy();
 
     if (s_video_memory_change_event)

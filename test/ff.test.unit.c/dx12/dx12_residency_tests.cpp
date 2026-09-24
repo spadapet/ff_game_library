@@ -5,9 +5,17 @@ namespace ff::test::dx12
     TEST_CLASS(dx12_residency_tests)
     {
     public:
+        ff_arena arena{};
+
+        TEST_METHOD_INITIALIZE(setup)
+        {
+            ff_arena_init_heap_local(&this->arena, 0);
+        }
+
         TEST_METHOD_CLEANUP(cleanup)
         {
             ff_dx12_destroy();
+            ff_arena_destroy(&this->arena);
         }
 
         TEST_METHOD(init_and_destroy_data_updates_the_list)
@@ -22,7 +30,7 @@ namespace ff::test::dx12
             Assert::IsTrue(SUCCEEDED(ff_dx12_device()->CreateHeap(&desc, IID_PPV_ARGS(&heap))));
 
             ff_dx12_residency_data data{};
-            ff_dx12_residency_data_init(&data, FF_SVL("residency test heap"), (ID3D12Pageable*)heap, desc.SizeInBytes, true);
+            ff_dx12_residency_data_init(&data, &this->arena, FF_SVL("residency test heap"), (ID3D12Pageable*)heap, desc.SizeInBytes, true);
             Assert::IsTrue(data.resident);
             Assert::AreEqual((uint64_t)desc.SizeInBytes, data.size);
 
@@ -42,7 +50,7 @@ namespace ff::test::dx12
             Assert::IsTrue(SUCCEEDED(ff_dx12_device()->CreateHeap(&desc, IID_PPV_ARGS(&heap))));
 
             ff_dx12_residency_data data{};
-            ff_dx12_residency_data_init(&data, FF_SVL("non resident heap"), (ID3D12Pageable*)heap, desc.SizeInBytes, false);
+            ff_dx12_residency_data_init(&data, &this->arena, FF_SVL("non resident heap"), (ID3D12Pageable*)heap, desc.SizeInBytes, false);
             Assert::IsFalse(data.resident);
 
             ff_dx12_fence commands_fence{};
@@ -81,7 +89,7 @@ namespace ff::test::dx12
                 desc.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
                 Assert::IsTrue(SUCCEEDED(ff_dx12_device()->CreateHeap(&desc, IID_PPV_ARGS(&heaps[i]))));
 
-                ff_dx12_residency_data_init(&datas[i], FF_SVL("multi heap"), (ID3D12Pageable*)heaps[i], desc.SizeInBytes, false);
+                ff_dx12_residency_data_init(&datas[i], &this->arena, FF_SVL("multi heap"), (ID3D12Pageable*)heaps[i], desc.SizeInBytes, false);
                 set[i] = &datas[i];
             }
 

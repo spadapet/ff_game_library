@@ -103,7 +103,7 @@ static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name
     ff_arena_destroy(&name_arena);
 
     ff_arena_init_heap_local(&resource->arena, 0);
-    ff_dx12_fence_values_init(&resource->global_reads);
+    ff_dx12_fence_values_init_arena(&resource->global_reads, &resource->arena);
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)desc->MipLevels);
 
@@ -172,7 +172,7 @@ bool ff_dx12_resource_init_committed(ff_dx12_resource* resource, ff_string_view 
 
     D3D12_RESOURCE_ALLOCATION_INFO alloc_info;
     ID3D12Device6_GetResourceAllocationInfo(ff_dx12_device(), &alloc_info, 0, 1, &resource->desc);
-    ff_dx12_residency_data_init(&resource->residency_data, name, (ID3D12Pageable*)resource->resource,
+    ff_dx12_residency_data_init(&resource->residency_data, &resource->arena, name, (ID3D12Pageable*)resource->resource,
         alloc_info.SizeInBytes, starts_resident);
     resource->has_residency_data = true;
 
@@ -200,29 +200,33 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
     FF_CHECK_RET(resource);
     FF_ASSERT(!resource->tracker);
 
-    // The old code handed the resource to a keep-alive list that released it once these fences
-    // completed. Until that list exists (it needs the queue from milestone 3), block here so the
-    // GPU can never read a released resource or a recycled mem_range.
-    ff_dx12_fence_values_add(&resource->global_reads, resource->global_write);
-    resource->global_write = (ff_dx12_fence_value){ 0 };
-    ff_dx12_fence_values_wait(&resource->global_reads, NULL);
+    // The GPU may still have commands referencing this resource, so hand the pieces that need a
+    // deferred release to the keep-alive list rather than releasing them here. It releases them
+    // once these fences retire, or immediately when they already have.
+    ff_dx12_fence_values pending;
+    ff_dx12_fence_values_init_arena(&pending, &resource->arena);
+    ff_dx12_fence_values_add_all(&pending, &resource->global_reads);
+    ff_dx12_fence_values_add(&pending, resource->global_write);
 
+    ff_dx12_fence_values_clear(&resource->global_reads);
+    resource->global_write = (ff_dx12_fence_value){ 0 };
+
+    // The residency_data is an intrusive node in the global pageable list and lives inside this
+    // struct, so it can't be deferred; unregistering it now is safe because it only governs
+    // eviction, and the pageable itself stays alive until the deferred Release runs.
     if (resource->has_residency_data)
     {
         ff_dx12_residency_data_destroy(&resource->residency_data);
         resource->has_residency_data = false;
     }
 
-    if (resource->resource)
-    {
-        ID3D12Resource_Release(resource->resource);
-        resource->resource = NULL;
-    }
+    ff_dx12_keep_alive_resource(
+        resource->resource,
+        (resource->kind == ff_dx12_resource_kind_placed) ? &resource->mem_range : NULL,
+        &pending);
 
-    if (resource->kind == ff_dx12_resource_kind_placed)
-    {
-        ff_dx12_mem_range_free(&resource->mem_range);
-    }
+    resource->resource = NULL;
+    resource->mem_range = (ff_dx12_mem_range){ 0 };
 
     ff_arena_destroy(&resource->arena);
     *resource = (ff_dx12_resource){ 0 };

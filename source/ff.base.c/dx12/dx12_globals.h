@@ -36,3 +36,29 @@ DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void);
 void ff_dx12_update_video_memory_info(void);
 
 ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena);
+
+typedef struct ff_dx12_queue ff_dx12_queue;
+typedef struct ff_dx12_mem_range ff_dx12_mem_range;
+typedef struct ff_dx12_residency_data ff_dx12_residency_data;
+typedef struct ff_dx12_fence_values ff_dx12_fence_values;
+
+ff_dx12_queue* ff_dx12_direct_queue(void);
+ff_dx12_queue* ff_dx12_copy_queue(void);
+ff_dx12_queue* ff_dx12_compute_queue(void);
+ff_dx12_queue* ff_dx12_queue_from_type(D3D12_COMMAND_LIST_TYPE type);
+
+void ff_dx12_wait_for_idle(void);
+
+// Frame lifecycle. frame_started drains the keep-alive list and refreshes the video memory
+// budget; frame_complete advances the frame counter.
+void ff_dx12_frame_started(void);
+void ff_dx12_frame_complete(void);
+uint64_t ff_dx12_frame_count(void);
+
+// Defers releasing an ID3D12Resource (and freeing its mem_range) until the GPU work named by
+// 'fence_values' has retired. When that work is already complete the release happens immediately
+// with no bookkeeping. Anything queued here is released by ff_dx12_flush_keep_alive, which runs
+// from frame_started and wait_for_idle.
+void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
+    const ff_dx12_fence_values* fence_values);
+void ff_dx12_flush_keep_alive(void);

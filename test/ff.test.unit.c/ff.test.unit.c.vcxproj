@@ -26,7 +26,11 @@
     <ClCompile Include="base\string_tests.cpp" />
     <ClCompile Include="base\value_tests.cpp" />
     <ClCompile Include="base\window_tests.cpp" />
+    <ClCompile Include="dx12\dx12_commands_tests.cpp" />
     <ClCompile Include="dx12\dx12_fence_tests.cpp" />
+    <ClCompile Include="dx12\dx12_frame_tests.cpp" />
+    <ClCompile Include="dx12\dx12_object_cache_tests.cpp" />
+    <ClCompile Include="dx12\dx12_queue_tests.cpp" />
     <ClCompile Include="dx12\dx12_fence_values_tests.cpp" />
     <ClCompile Include="dx12\dx12_globals_tests.cpp" />
     <ClCompile Include="dx12\dx12_heap_tests.cpp" />

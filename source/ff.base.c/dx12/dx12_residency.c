@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/arena.h"
+#include "base/array.h"
 #include "base/assert.h"
 #include "base/log.h"
 #include "base/math.h"
@@ -8,7 +9,6 @@
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_residency.h"
 
-#define MAX_RESIDENCY_BATCH 256
 
 static ff_dx12_residency_data* s_pageable_front;
 static ff_dx12_residency_data* s_pageable_back;
@@ -74,7 +74,7 @@ void ff_dx12_residency_destroy(void)
     s_residency_initialized = false;
 }
 
-void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_string_view name, ID3D12Pageable* pageable, uint64_t size, bool resident)
+void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_arena* arena, ff_string_view name, ID3D12Pageable* pageable, uint64_t size, bool resident)
 {
     FF_ASSERT_RET(data && pageable);
 
@@ -82,6 +82,7 @@ void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_string_view na
     data->pageable = pageable;
     data->size = size;
     data->resident = resident;
+    ff_dx12_fence_values_init_arena(&data->keep_resident, arena);
 
     ff_arena_declare_stack(name_arena, 256);
     ff_wstring_view wide_name = ff_utf8_to_wide(name, &name_arena, true);
@@ -106,12 +107,13 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
 {
     FF_ASSERT_RET_VAL(residency_set || !residency_set_count, false);
     FF_ASSERT_RET_VAL(wait_values, false);
-    FF_ASSERT_RET_VAL(residency_set_count <= MAX_RESIDENCY_BATCH, false);
 
-    ID3D12Pageable* make_resident[MAX_RESIDENCY_BATCH];
-    ID3D12Pageable* make_evicted[MAX_RESIDENCY_BATCH];
-    size_t make_resident_count = 0;
-    size_t make_evicted_count = 0;
+    uint8_t batch_buffer[4096];
+    ff_arena batch_arena;
+    ff_arena_init_external(&batch_arena, batch_buffer, sizeof(batch_buffer), 4096);
+
+    ID3D12Pageable** make_resident = ff_array_init(ID3D12Pageable*, &batch_arena);
+    ID3D12Pageable** make_evicted = ff_array_init(ID3D12Pageable*, &batch_arena);
     uint64_t make_resident_size = 0;
     uint64_t make_evicted_size = 0;
     bool make_resident_succeeded = true;
@@ -132,8 +134,7 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
 
         if (!data->resident)
         {
-            FF_ASSERT_RET_VAL(make_resident_count < MAX_RESIDENCY_BATCH, false);
-            make_resident[make_resident_count++] = data->pageable;
+            ff_array_push(make_resident, data->pageable);
             make_resident_size += data->size;
 
             data->resident = true;
@@ -162,7 +163,7 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
     // Evict LRU until below budget.
     {
         ff_dx12_fence_values wait_to_evict;
-        ff_dx12_fence_values_init(&wait_to_evict);
+        ff_dx12_fence_values_init_arena(&wait_to_evict, &batch_arena);
         uint64_t delta_resident_size = make_resident_size;
 
         // Single-threaded v1: the old code took pageable_mutex here.
@@ -172,19 +173,12 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
         {
             if (data->resident)
             {
-                // Stop batching rather than returning: state mutated below must stay consistent
-                // with the Evict call, so bail before touching this entry at all.
-                if (make_evicted_count == MAX_RESIDENCY_BATCH)
-                {
-                    break;
-                }
-
                 data->resident = false;
                 data->resident_value = (ff_dx12_fence_value){ 0 };
 
                 ff_dx12_fence_values_add_all(&wait_to_evict, &data->keep_resident);
 
-                make_evicted[make_evicted_count++] = data->pageable;
+                ff_array_push(make_evicted, data->pageable);
                 make_evicted_size += data->size;
                 delta_resident_size -= ff_math_min_size((size_t)data->size, (size_t)delta_resident_size);
 
@@ -200,6 +194,9 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
 
         ff_dx12_fence_values_wait(&wait_to_evict, NULL);
     }
+
+    const size_t make_evicted_count = ff_array_count(make_evicted);
+    const size_t make_resident_count = ff_array_count(make_resident);
 
     if (make_evicted_count)
     {
@@ -255,6 +252,8 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
             data->resident_value = (ff_dx12_fence_value){ 0 };
         }
     }
+
+    ff_arena_destroy(&batch_arena);
 
     return make_resident_succeeded;
 }

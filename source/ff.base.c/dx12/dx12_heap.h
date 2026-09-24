@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../base/arena.h"
 #include "dx12_residency.h"
 
 typedef enum ff_dx12_heap_usage
@@ -22,6 +23,7 @@ typedef struct ff_dx12_heap
     uint64_t size;
     ff_dx12_heap_usage usage;
     ff_dx12_residency_data residency_data;
+    ff_arena arena;
 } ff_dx12_heap;
 
 bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage);

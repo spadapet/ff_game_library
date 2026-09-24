@@ -37,6 +37,9 @@
 #include "../source/ff.base.c/dx12/dx12_resource_state.h"
 #include "../source/ff.base.c/dx12/dx12_resource_tracker.h"
 #include "../source/ff.base.c/dx12/dx12_resource.h"
+#include "../source/ff.base.c/dx12/dx12_queue.h"
+#include "../source/ff.base.c/dx12/dx12_commands.h"
+#include "../source/ff.base.c/dx12/dx12_object_cache.h"
 
 #include "../source/ff.base.c/windows/module.h"
 #include "../source/ff.base.c/windows/task.h"

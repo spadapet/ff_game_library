@@ -69,6 +69,7 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
     FF_ASSERT_RET_VAL(heap, false);
 
     *heap = (ff_dx12_heap){ 0 };
+    ff_arena_init_heap_local(&heap->arena, 0);
     heap->size = size;
     heap->usage = usage;
 
@@ -133,7 +134,7 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
     ID3D12Device6_SetResidencyPriority(ff_dx12_device(), 1, &pageable, &priority);
     ID3D12Heap_SetName(heap->heap, heap->name);
 
-    ff_dx12_residency_data_init(&heap->residency_data, name, pageable, size, starts_resident);
+    ff_dx12_residency_data_init(&heap->residency_data, &heap->arena, name, pageable, size, starts_resident);
 
     if (ff_dx12_heap_cpu_usage(heap))
     {
@@ -186,5 +187,6 @@ void ff_dx12_heap_destroy(ff_dx12_heap* heap)
         heap->heap = NULL;
     }
 
+    ff_arena_destroy(&heap->arena);
     heap->size = 0;
 }

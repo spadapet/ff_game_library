@@ -26,6 +26,12 @@ bool ff_dx12_fence_init(ff_dx12_fence* fence, ff_string_view name, uint64_t init
     return true;
 }
 
+void ff_dx12_fence_set_owner_queue(ff_dx12_fence* fence, ID3D12CommandQueue* queue)
+{
+    FF_CHECK_RET(fence);
+    fence->owner_queue = queue;
+}
+
 void ff_dx12_fence_destroy(ff_dx12_fence* fence)
 {
     FF_CHECK_RET(fence);
@@ -38,6 +44,7 @@ void ff_dx12_fence_destroy(ff_dx12_fence* fence)
 
     fence->completed_value = 0;
     fence->next_value = 0;
+    fence->owner_queue = NULL;
 }
 
 bool ff_dx12_fence_valid(const ff_dx12_fence* fence)
@@ -87,11 +94,15 @@ ff_dx12_fence_value ff_dx12_fence_signal_later(ff_dx12_fence* fence)
 void ff_dx12_fence_wait(ff_dx12_fence* fence, uint64_t value, ID3D12CommandQueue* queue)
 {
     FF_CHECK_RET(fence);
+
+    // A queue is already ordered against its own work, so waiting on its own fence would block
+    // on a signal that can never be reached from ahead of it in the same queue.
+    FF_CHECK_RET(!queue || queue != fence->owner_queue);
+
     FF_CHECK_RET(ff_dx12_fence_valid(fence) && !ff_dx12_fence_complete(fence, value));
 
     if (queue)
     {
-        // The v1 fence has no owning-queue field; callers must not enqueue a same-queue wait before its signal.
         ID3D12CommandQueue_Wait(queue, fence->fence, value);
     }
     else
@@ -223,6 +234,11 @@ void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, I
         ff_dx12_fence_value value = values[i];
 
         if (!value.fence || ff_dx12_fence_value_complete(value))
+        {
+            continue;
+        }
+
+        if (queue && queue == value.fence->owner_queue)
         {
             continue;
         }

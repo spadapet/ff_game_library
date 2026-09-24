@@ -10,7 +10,8 @@ typedef enum ff_dx12_descriptor_buffer_type
     ff_dx12_descriptor_buffer_type_ring,
 } ff_dx12_descriptor_buffer_type;
 
-#define FF_DX12_DESCRIPTOR_RING_RANGES_MAX 64
+// Initial ring range capacity; grows by doubling when a frame submits more distinct fences.
+#define FF_DX12_DESCRIPTOR_RING_RANGES_MIN 64
 
 typedef struct ff_dx12_descriptor_free_range
 {
@@ -51,19 +52,23 @@ typedef struct ff_dx12_descriptor_buffer
 
         struct
         {
-            // Fixed-capacity circular buffer of in-flight ranges: bounded by frames-in-flight,
-            // not by run time, so it never needs to grow.
-            ff_dx12_descriptor_ring_range ranges[FF_DX12_DESCRIPTOR_RING_RANGES_MAX];
+            // Circular buffer of in-flight ranges. Usually bounded by frames-in-flight, but a
+            // frame that submits many command lists contributes one distinct fence each, so it
+            // grows rather than blocking: the entries can be signal_later values that the caller
+            // hasn't signaled yet, and waiting on one of those would deadlock.
+            ff_dx12_descriptor_ring_range* ranges;
+            size_t ranges_capacity;
             size_t ranges_head;
             size_t ranges_count;
             size_t allocated_range_count;
+            ff_arena* arena;
         } ring;
     } u;
 } ff_dx12_descriptor_buffer;
 
 bool ff_dx12_descriptor_buffer_init_free_list(ff_dx12_descriptor_buffer* buffer, ff_arena* arena,
     ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count);
-bool ff_dx12_descriptor_buffer_init_ring(ff_dx12_descriptor_buffer* buffer,
+bool ff_dx12_descriptor_buffer_init_ring(ff_dx12_descriptor_buffer* buffer, ff_arena* arena,
     ID3D12DescriptorHeap* descriptor_heap, size_t start, size_t count);
 void ff_dx12_descriptor_buffer_destroy(ff_dx12_descriptor_buffer* buffer);
 

@@ -38,6 +38,9 @@
     <ClCompile Include="dx12\dx12_resource_state.c" />
     <ClCompile Include="dx12\dx12_resource_tracker.c" />
     <ClCompile Include="dx12\dx12_resource.c" />
+    <ClCompile Include="dx12\dx12_queue.c" />
+    <ClCompile Include="dx12\dx12_commands.c" />
+    <ClCompile Include="dx12\dx12_object_cache.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -79,6 +82,9 @@
     <ClInclude Include="dx12\dx12_resource_state.h" />
     <ClInclude Include="dx12\dx12_resource_tracker.h" />
     <ClInclude Include="dx12\dx12_resource.h" />
+    <ClInclude Include="dx12\dx12_queue.h" />
+    <ClInclude Include="dx12\dx12_commands.h" />
+    <ClInclude Include="dx12\dx12_object_cache.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="windows\module.h" />
     <ClInclude Include="windows\task.h" />

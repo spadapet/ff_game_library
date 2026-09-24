@@ -263,9 +263,10 @@ namespace ff::test::dx12
             ff_dx12_fence fence{};
             Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("range list fence"), 1));
 
-            // A distinct fence value per allocation prevents coalescing, so the fixed range list
-            // fills long before the descriptors run out.
-            for (size_t i = 0; i < FF_DX12_DESCRIPTOR_RING_RANGES_MAX * 2; i++)
+            // A distinct fence value per allocation prevents coalescing, so the range list grows
+            // past its initial capacity long before the descriptors run out. Ranges are reclaimed
+            // when the ring wraps and needs the descriptor space back, not when a slot list fills.
+            for (size_t i = 0; i < FF_DX12_DESCRIPTOR_RING_RANGES_MIN * 2; i++)
             {
                 ff_dx12_fence_value value = ff_dx12_fence_signal(&fence, nullptr);
                 ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 1, value);
@@ -273,9 +274,43 @@ namespace ff::test::dx12
                 ff_dx12_descriptor_range_free(&range);
             }
 
-            Assert::IsTrue(allocator.ring.u.ring.ranges_count <= FF_DX12_DESCRIPTOR_RING_RANGES_MAX);
+            Assert::IsTrue(allocator.ring.u.ring.ranges_count <= allocator.ring.u.ring.ranges_capacity);
+            Assert::IsTrue(allocator.ring.u.ring.ranges_count <= allocator.ring.descriptor_count);
 
             ff_dx12_fence_destroy(&fence);
+            ff_dx12_gpu_descriptor_allocator_destroy(&allocator);
+        }
+        TEST_METHOD(ring_grows_past_the_initial_range_list_with_unsignaled_fences)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_gpu_descriptor_allocator allocator{};
+            const size_t ring_size = FF_DX12_DESCRIPTOR_RING_RANGES_MIN * 4;
+            Assert::IsTrue(ff_dx12_gpu_descriptor_allocator_init(&allocator,
+                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 8, ring_size));
+
+            const size_t count = FF_DX12_DESCRIPTOR_RING_RANGES_MIN + 4;
+            ff_dx12_fence fences[FF_DX12_DESCRIPTOR_RING_RANGES_MIN + 4]{};
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("ring fence"), 1));
+
+                // A distinct never-signaled value per range, so no range is reclaimable. Blocking
+                // to free a range slot here would wait forever on a signal that never comes.
+                ff_dx12_fence_value value = ff_dx12_fence_signal_later(&fences[i]);
+                ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 1, value);
+                Assert::IsTrue(ff_dx12_descriptor_range_valid(&range));
+                ff_dx12_descriptor_range_free(&range);
+            }
+
+            Assert::IsTrue(allocator.ring.u.ring.ranges_capacity > FF_DX12_DESCRIPTOR_RING_RANGES_MIN);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+
             ff_dx12_gpu_descriptor_allocator_destroy(&allocator);
         }
     };

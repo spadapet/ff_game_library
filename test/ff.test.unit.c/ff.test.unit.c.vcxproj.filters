@@ -63,6 +63,18 @@
     <ClCompile Include="dx12\dx12_fence_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_commands_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_frame_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_object_cache_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_queue_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_fence_values_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>

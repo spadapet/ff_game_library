@@ -25,15 +25,15 @@ namespace ff::test::dx12
 
             ff_dx12_fence_values_add(&values, low);
             Assert::AreEqual((size_t)1, values.count);
-            Assert::AreEqual((uint64_t)5, values.values[0].value);
+            Assert::AreEqual((uint64_t)5, ff_dx12_fence_values_data(&values)[0].value);
 
             ff_dx12_fence_values_add(&values, high);
             Assert::AreEqual((size_t)1, values.count);
-            Assert::AreEqual((uint64_t)9, values.values[0].value);
+            Assert::AreEqual((uint64_t)9, ff_dx12_fence_values_data(&values)[0].value);
 
             ff_dx12_fence_values_add(&values, low);
             Assert::AreEqual((size_t)1, values.count);
-            Assert::AreEqual((uint64_t)9, values.values[0].value);
+            Assert::AreEqual((uint64_t)9, ff_dx12_fence_values_data(&values)[0].value);
 
             ff_dx12_fence_destroy(&fence);
         }
@@ -105,12 +105,49 @@ namespace ff::test::dx12
             ff_dx12_fence_destroy(&fence_a);
             ff_dx12_fence_destroy(&fence_b);
         }
-        TEST_METHOD(overflow_waits_out_the_oldest_instead_of_dropping)
+        TEST_METHOD(overflow_grows_instead_of_dropping_or_blocking)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            const size_t count = FF_DX12_FENCE_VALUES_MAX + 3;
+            const size_t count = FF_DX12_FENCE_VALUES_INLINE_MAX + 3;
             ff_dx12_fence fences[count]{};
+
+            ff_arena arena{};
+            ff_arena_init_heap_local(&arena, 0);
+
+            ff_dx12_fence_values values{};
+            ff_dx12_fence_values_init_arena(&values, &arena);
+
+            // signal_later values are never signaled here. The old fixed-capacity set blocked on
+            // the oldest entry to make room, which deadlocked on exactly this shape.
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("fence"), 1));
+                ff_dx12_fence_values_add(&values, ff_dx12_fence_signal_later(&fences[i]));
+            }
+
+            Assert::AreEqual(count, values.count);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::AreEqual((void*)&fences[i], (void*)ff_dx12_fence_values_data(&values)[i].fence);
+            }
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(overflow_without_an_arena_reuses_completed_slots)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t count = FF_DX12_FENCE_VALUES_INLINE_MAX + 3;
+            ff_dx12_fence fences[count]{};
+
             ff_dx12_fence_values values{};
             ff_dx12_fence_values_init(&values);
 
@@ -120,14 +157,8 @@ namespace ff::test::dx12
                 ff_dx12_fence_values_add(&values, ff_dx12_fence_signal(&fences[i], nullptr));
             }
 
-            Assert::AreEqual((size_t)FF_DX12_FENCE_VALUES_MAX, values.count);
-
-            for (size_t i = 0; i < values.count; i++)
-            {
-                Assert::IsNotNull(values.values[i].fence);
-            }
-
-            Assert::AreEqual((void*)&fences[count - 1], (void*)values.values[values.count - 1].fence);
+            Assert::IsTrue(values.count <= FF_DX12_FENCE_VALUES_INLINE_MAX);
+            Assert::IsTrue(ff_dx12_fence_values_complete(&values));
 
             for (size_t i = 0; i < count; i++)
             {

@@ -290,6 +290,148 @@ One real bug surfaced in `globals`:
 Covered by the existing `video_memory_info_has_a_budget` test, which asserts a
 non-zero budget immediately after init.
 
+## Milestone 3 (complete)
+
+`dx12_queue`, `dx12_commands`, `dx12_object_cache`, plus the queues, frame
+lifecycle, and keep-alive list in `dx12_globals`. 33 new tests; 792 pass.
+
+Deliberate divergences from the legacy C++:
+
+- **No thread pool.** The old code reset command lists on a `ff::thread_pool`
+  task and gated cache hand-out on a `win_event`. The port resets inline right
+  after `ExecuteCommandLists`, so the event, `wait_for_tasks()`, and every mutex
+  disappear.
+- **`ff_dx12_commands` is a handle, not an owner.** The `ff_dx12_command_cache`
+  lives in queue-owned arena memory with a stable address; `commands` points at
+  it. The old code moved a `std::unique_ptr` in and out.
+- **Keep-alive doesn't defer `residency_data`.** `ff_dx12_residency_data` is an
+  intrusive node in the global pageable list, so deferring it would leave a
+  dangling node there. It's destroyed inline in `ff_dx12_resource_destroy`;
+  that's safe because it only governs eviction, and the underlying pageable
+  stays alive through the deferred `Release`.
+- **`keep_alive_destroy` blocks.** At shutdown anything still queued has to be
+  released, so it waits out each node's fence values.
+- **The object cache is in-memory only.** The old code also persisted compiled
+  pipelines to an on-disk `ID3D12PipelineLibrary` and resolved named shader
+  blobs through the resource system. Both need shader delivery, so they land
+  with that milestone.
+- **`root_srv` uses a real `|`.** The C++ wrote
+  `static_cast<D3D12_RESOURCE_STATES>(a, b)`, a comma expression that silently
+  discards the first flag. Intentional bug fix.
+
+## Sixth review pass: milestone 3 against the legacy C++
+
+Four real bugs, all found by running the new tests rather than by reading:
+
+- **Same-queue fence waits deadlocked.** Recording two state transitions on one
+  resource in a single command list made `prepare_state` add that list's own
+  fence to `wait_before_execute`, and `execute` then asked the queue to wait on
+  a fence only that same queue could signal — from behind the wait. The GPU hung
+  and the test host died. The legacy fence carried an owning `queue*` and
+  skipped waits where `queue == this->queue_`; the port had no such field, with
+  only a comment saying callers must not do this. `ff_dx12_fence` now has
+  `owner_queue`, set by `ff_dx12_queue_init` for the idle fence and by
+  `command_cache_acquire` for each cache fence, and both wait paths skip
+  same-queue waits.
+- **Residency silently dropped work past 256 pageables.** `ff_dx12_make_resident`
+  had a fixed `MAX_RESIDENCY_BATCH` of 256 and returned `false` when the set was
+  larger — and `false` makes `execute_many` skip `ExecuteCommandLists` entirely,
+  so a command list touching 257+ resources was silently never submitted. The
+  make-resident and evict lists are now arena-backed `ff_array`s with no cap.
+- **`execute_many` capped at 32 commands and 256 residency entries.** Anything
+  past the cap was dropped after an assert. The legacy used growable
+  `stack_vector`s. All the scratch arrays now come from a stack-backed arena
+  sized to the actual count.
+- **Signaling many command lists blocked on an unsignaled fence.** `execute_many`
+  gathered per-cache fence values into an `ff_dx12_fence_values`, which is
+  fixed-capacity and, on overflow, CPU-blocks on its oldest entry to free a
+  slot. Since every cache owns a distinct fence, a batch of more than 8 lists
+  overflowed and blocked on a fence this very call hadn't signaled yet. Each
+  value is now signaled directly; no dedup is needed because the fences are
+  already distinct.
+
+### REQUIRED milestone 4 follow-ups
+
+Three legacy behaviors have no counterpart yet because they depend on types that
+don't exist until milestone 4. None can be dropped:
+
+- **`SetDescriptorHeaps` is never called.** The old `commands` constructor bound
+  the GPU view and sampler heaps on every non-COPY list. The port has the
+  `ff_dx12_gpu_descriptor_allocator` type but no global instances to bind, so
+  nothing calls it. Shader-visible descriptor access and
+  `SetGraphicsRootDescriptorTable` will not work until milestone 4 adds
+  `ff_dx12_gpu_view_descriptors()` / `ff_dx12_gpu_sampler_descriptors()` and
+  binds them from `command_cache_acquire` and `command_cache_reset_lists`.
+- **`ff_dx12_commands_targets` transitions whole resources.** The legacy passed
+  each target's `target_array_start/size` and `target_mip_start/mip_size`; the C
+  API takes a bare `ff_dx12_resource*` and passes `0, 0, 0, 0`. Correct while a
+  target is a whole resource, wrong once targets are slices or mips. The target
+  wrapper type in milestone 4 must carry those four values through.
+- **Upload-heap vertex/index buffers lose their residency.** When a buffer had
+  no resource (CPU-mapped upload heap), the legacy called `keep_resident` on it.
+  The C API takes `ff_dx12_resource**`, so that case can't be expressed and no
+  residency is added. The buffer wrapper in milestone 4 needs to call
+  `ff_dx12_commands_keep_resident` for the heap-backed case.
+
+## Seventh review pass: array limits and arena lifetimes
+
+An audit of every fixed-size array in the port, asking two questions per cap:
+what happens on overflow, and which arena does the data live in for how long.
+
+Two more deadlocks of the same family as the milestone 3 bugs, both found by
+writing a test that forces the overflow path:
+
+- **`ff_dx12_fence_values` blocked on an unsignaled fence (real deadlock,
+  reproduced).** The legacy type was `ff::stack_vector<fence_value, 4>`, which
+  spills to the heap and never blocks. The port made it a hard 8-entry array
+  whose overflow path CPU-waits on `values[0]` to free a slot. That is fatal for
+  `resource->global_reads`, which accumulates one *distinct* fence per command
+  list that reads the resource: a resource read by 9 lists blocks inside
+  `prepare_state` on a `signal_later` value that `execute_many` has not signaled
+  yet and cannot signal, because it is still recording. One resource read by 9
+  command lists hung the test host.
+  The set is now inline-8 spilling into an arena, matching the `resource_state`
+  pattern. It never blocks: it first drops entries the GPU has already passed
+  (always safe, and enough in steady state), then grows. Every long-lived set
+  got an arena whose lifetime covers it: `global_reads` and the destroy-time
+  `pending` use the resource arena, `commands->wait_before_execute` and
+  `execute_many`'s local use the queue and temp arenas, `residency_data`'s
+  `keep_resident` uses the owning resource or heap arena (`ff_dx12_heap` gained
+  an arena for this), and the keep-alive node *deep copies* rather than
+  shallow-copying, since it outlives the resource arena it came from.
+
+- **The GPU descriptor ring blocked on an unsignaled fence.** Same shape:
+  `FF_DX12_DESCRIPTOR_RING_RANGES_MAX` was 64, and the overflow path waited on
+  `ring_front` to reclaim a range slot. A frame submitting more than 64 command
+  lists gives each range a distinct unsignaled fence, so that wait never
+  returns. The range list now grows by doubling out of the allocator arena
+  (`FF_DX12_DESCRIPTOR_RING_RANGES_MIN`). The *other* wait in that function is
+  correct and stays: it reclaims descriptor space when the ring wraps, which
+  genuinely does require the GPU to finish.
+
+Caps that were checked and are fine, with the reason each is sound:
+
+- `MAX_BATCH_FENCES` (16) in `wait_batch` — overflow *flushes* the batch
+  gathered so far and starts a new one, so no wait is ever dropped.
+- `FF_DX12_MEM_RING_RANGES_MAX` (64) — a full range list returns an invalid
+  range, and `allocator_alloc_bytes` responds by creating another buffer. Never
+  blocks, never drops.
+- `FF_DX12_RESOURCE_STATE_INLINE_MAX` (8) — already spills to the resource arena
+  via `reserve_entries`.
+- `FF_DX12_RESIDENCY_SET_MIN` (256) — grows by doubling, kept ≤50% full.
+- `MAX_ADAPTERS` (16) — a genuine hardware bound, and every adapter is released.
+- Fixed `wchar_t name[64]` / `name[128]` buffers — all `_TRUNCATE`, and names are
+  diagnostic only.
+
+Arena growth was audited for unbounded accumulation. All the long-lived arenas
+are bounded by a high-water mark rather than by run time: `queue->arena` recycles
+allocator and cache nodes through free lists, `s_keep_alive_arena` recycles nodes
+through `s_keep_alive_free`, the mem and descriptor allocators recycle buffers
+through `buffers_free`, and `resource_tracker` resets its arena per frame. The
+newly arena-backed fence value sets inherit the same property: they are reset by
+`clear` and reuse their spilled block, so each one converges on the largest
+number of distinct fences it has ever held.
+
 ## Bindless groundwork
 
 The eventual bindless renderer (for better AMD performance) needs
