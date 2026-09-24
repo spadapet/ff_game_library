@@ -2,6 +2,7 @@
 #include "base/assert.h"
 #include "base/string.h"
 #include "dx12/dx12_commands.h"
+#include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_residency.h"
@@ -73,6 +74,40 @@ bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_d
     }
 
     return true;
+}
+
+void ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_data* data)
+{
+    FF_CHECK_RET(set && data && set->slots && set->count);
+
+    const size_t index = residency_set_slot(set->slots, set->capacity, data);
+    FF_CHECK_RET(set->slots[index] == data);
+
+    set->slots[index] = NULL;
+    set->count--;
+
+    // Clearing a slot breaks the linear probe chain behind it, so reinsert the rest of the run.
+    for (size_t i = (index + 1) & (set->capacity - 1); set->slots[i]; i = (i + 1) & (set->capacity - 1))
+    {
+        ff_dx12_residency_data* moved = set->slots[i];
+        set->slots[i] = NULL;
+        set->slots[residency_set_slot(set->slots, set->capacity, moved)] = moved;
+    }
+}
+
+void ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency_data* data)
+{
+    FF_CHECK_RET(queue && data);
+
+    for (ff_dx12_command_cache* cache = queue->caches_in_use; cache; cache = cache->next)
+    {
+        ff_dx12_residency_set_remove(&cache->residency_set, data);
+    }
+
+    for (ff_dx12_command_cache* cache = queue->caches; cache; cache = cache->next)
+    {
+        ff_dx12_residency_set_remove(&cache->residency_set, data);
+    }
 }
 
 static size_t residency_set_gather(const ff_dx12_residency_set* set, ff_dx12_residency_data** out, size_t out_max, size_t out_count)
@@ -391,11 +426,37 @@ bool ff_dx12_queue_new_commands(ff_dx12_queue* queue, ff_dx12_commands* commands
     ff_dx12_command_cache* cache = command_cache_acquire(queue);
     FF_ASSERT_RET_VAL(cache, false);
 
+    // Shader-visible descriptors only resolve against the currently bound heaps, and Reset drops
+    // the binding, so it has to be re-established for every commands object. Copy lists can't
+    // bind descriptor heaps at all.
+    if (queue->type != D3D12_COMMAND_LIST_TYPE_COPY)
+    {
+        ff_dx12_gpu_descriptor_allocator* view_allocator = ff_dx12_gpu_view_descriptors();
+        ff_dx12_gpu_descriptor_allocator* sampler_allocator = ff_dx12_gpu_sampler_descriptors();
+
+        if (view_allocator && sampler_allocator)
+        {
+            ID3D12DescriptorHeap* heaps[2] =
+            {
+                ff_dx12_gpu_descriptor_allocator_heap(view_allocator),
+                ff_dx12_gpu_descriptor_allocator_heap(sampler_allocator),
+            };
+
+            if (heaps[0] && heaps[1])
+            {
+                ID3D12GraphicsCommandList1_SetDescriptorHeaps(cache->list, 2, heaps);
+            }
+        }
+    }
+
     *commands = (ff_dx12_commands){ 0 };
     commands->queue = queue;
     commands->cache = cache;
     commands->type = queue->type;
     ff_dx12_fence_values_init_arena(&commands->wait_before_execute, &queue->arena);
+
+    cache->next = queue->caches_in_use;
+    queue->caches_in_use = cache;
 
     return true;
 }
@@ -492,6 +553,16 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
         if (!cache)
         {
             break;
+        }
+
+        for (ff_dx12_command_cache** it = &queue->caches_in_use; *it; it = &(*it)->next)
+        {
+            if (*it == cache)
+            {
+                *it = cache->next;
+                cache->next = NULL;
+                break;
+            }
         }
 
         // list_before carries the barriers that must run ahead of the recorded work.

@@ -97,6 +97,11 @@ void ff_dx12_residency_data_destroy(ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(data && data->pageable);
 
+    // This node lives inside the resource that is being destroyed, but command lists that already
+    // referenced the resource hold raw pointers to it in their residency sets. Those would be
+    // dereferenced at execute time, so scrub them before the storage goes away.
+    ff_dx12_forget_residency_data(data);
+
     // Single-threaded v1: the old code took pageable_mutex here.
     list_remove(data);
     *data = (ff_dx12_residency_data){ 0 };
@@ -173,6 +178,15 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
         {
             if (data->resident)
             {
+                // Evicting means blocking until the GPU is done with this pageable. If any of its
+                // keep_resident values were only reserved and not yet submitted (the common case
+                // for work being executed right now), that wait can never complete, so leave this
+                // one resident and look further up the LRU list instead.
+                if (!ff_dx12_fence_values_wait_is_pending(&data->keep_resident))
+                {
+                    continue;
+                }
+
                 data->resident = false;
                 data->resident_value = (ff_dx12_fence_value){ 0 };
 
@@ -228,6 +242,13 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
         else
         {
             make_resident_succeeded = SUCCEEDED(ID3D12Device6_MakeResident(ff_dx12_device(), (UINT)make_resident_count, make_resident));
+
+            if (make_resident_succeeded)
+            {
+                // MakeResident is synchronous, so nothing will ever signal resident_fence_value on the GPU.
+                // Leaving it unsignaled would make a later make_resident push a dead value into wait_values.
+                ff_dx12_fence_signal_value(&s_residency_fence, resident_fence_value.value, NULL);
+            }
         }
 
         if (!make_resident_succeeded)

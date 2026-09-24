@@ -34,7 +34,11 @@
     <ClCompile Include="dx12\dx12_mem_range.c" />
     <ClCompile Include="dx12\dx12_mem_allocator.c" />
     <ClCompile Include="dx12\dx12_descriptor_range.c" />
+    <ClCompile Include="dx12\dx12_buffer.c" />
+    <ClCompile Include="dx12\dx12_depth.c" />
     <ClCompile Include="dx12\dx12_descriptor_allocator.c" />
+    <ClCompile Include="dx12\dx12_target_texture.c" />
+    <ClCompile Include="dx12\dx12_texture.c" />
     <ClCompile Include="dx12\dx12_resource_state.c" />
     <ClCompile Include="dx12\dx12_resource_tracker.c" />
     <ClCompile Include="dx12\dx12_resource.c" />
@@ -78,7 +82,11 @@
     <ClInclude Include="dx12\dx12_mem_range.h" />
     <ClInclude Include="dx12\dx12_mem_allocator.h" />
     <ClInclude Include="dx12\dx12_descriptor_range.h" />
+    <ClInclude Include="dx12\dx12_buffer.h" />
+    <ClInclude Include="dx12\dx12_depth.h" />
     <ClInclude Include="dx12\dx12_descriptor_allocator.h" />
+    <ClInclude Include="dx12\dx12_target_texture.h" />
+    <ClInclude Include="dx12\dx12_texture.h" />
     <ClInclude Include="dx12\dx12_resource_state.h" />
     <ClInclude Include="dx12\dx12_resource_tracker.h" />
     <ClInclude Include="dx12\dx12_resource.h" />

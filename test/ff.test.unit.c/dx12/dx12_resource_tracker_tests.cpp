@@ -270,5 +270,147 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_destroy(&tracker);
             ff_dx12_resource_destroy(&resource);
         }
+
+        // The close() path below resolves first-transition barriers against the previous
+        // command list. It is only reachable through a real execute, so these drive it end
+        // to end rather than calling the tracker directly.
+
+        TEST_METHOD(many_resolved_barriers_in_one_close)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t count = 200;
+            static ff_dx12_resource resources[count];
+            memset(resources, 0, sizeof(resources));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+
+            ff_dx12_commands first{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &first));
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_resource_init_committed(&resources[i], FF_SVL("barrier tex"), &desc, nullptr));
+                ff_dx12_commands_resource_state(&first, &resources[i], D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            }
+
+            ff_dx12_fence_value v1 = ff_dx12_queue_execute(ff_dx12_direct_queue(), &first);
+            ff_dx12_fence_value_wait(v1, nullptr);
+
+            // Textures don't decay from COPY_DEST, so every one of these resolves to a real
+            // barrier emitted from a single close().
+            ff_dx12_commands second{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &second));
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_commands_resource_state(&second, &resources[i], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            }
+
+            ff_dx12_fence_value v2 = ff_dx12_queue_execute(ff_dx12_direct_queue(), &second);
+            ff_dx12_fence_value_wait(v2, nullptr);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_resource_state_entry state =
+                    ff_dx12_resource_state_get(ff_dx12_resource_global_state(&resources[i]), 0, nullptr);
+                Assert::AreEqual((int)D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, (int)state.state);
+
+                ff_dx12_resource_destroy(&resources[i]);
+            }
+
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+        }
+
+        // 4 array slices x 4 mips is past the 8 entry inline state storage, so the state
+        // has to spill into the arena while staying divergent across a close().
+        TEST_METHOD(divergent_subresources_resolve_across_two_command_lists)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc(4, 4);
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("diverge"), &desc, nullptr));
+
+            const size_t subs = ff_dx12_resource_sub_resource_size(&resource);
+            Assert::AreEqual((size_t)16, subs);
+
+            ff_dx12_commands a{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &a));
+
+            for (size_t i = 0; i < subs; i++)
+            {
+                ff_dx12_commands_resource_state_sub_index(&a, &resource,
+                    (i & 1) ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_COPY_SOURCE, i);
+            }
+
+            ff_dx12_commands b{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &b));
+
+            for (size_t i = 0; i < subs; i++)
+            {
+                ff_dx12_commands_resource_state_sub_index(&b, &resource,
+                    (i & 1) ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COPY_DEST, i);
+            }
+
+            ff_dx12_commands* both[] = { &a, &b };
+            ff_dx12_queue_execute_many(ff_dx12_direct_queue(), both, 2);
+            ff_dx12_wait_for_idle();
+
+            ff_dx12_resource_state* global = ff_dx12_resource_global_state(&resource);
+            for (size_t i = 0; i < subs; i++)
+            {
+                ff_dx12_resource_state_entry state = ff_dx12_resource_state_get(global, i, nullptr);
+                Assert::AreEqual(
+                    (int)((i & 1) ? D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_COPY_DEST),
+                    (int)state.state);
+            }
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+        }
+
+        // A whole-resource transition resolved against a divergent previous state has to be
+        // split back into per-subresource barriers instead of staying ALL_SUBRESOURCES.
+        TEST_METHOD(all_subresources_barrier_splits_against_divergent_previous_state)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc(2, 4);
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("split"), &desc, nullptr));
+
+            const size_t subs = ff_dx12_resource_sub_resource_size(&resource);
+
+            ff_dx12_commands a{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &a));
+
+            for (size_t i = 0; i < subs; i++)
+            {
+                ff_dx12_commands_resource_state_sub_index(&a, &resource,
+                    (i < subs / 2) ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_COPY_SOURCE, i);
+            }
+
+            ff_dx12_commands b{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &b));
+            ff_dx12_commands_resource_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+
+            ff_dx12_commands* both[] = { &a, &b };
+            ff_dx12_queue_execute_many(ff_dx12_direct_queue(), both, 2);
+            ff_dx12_wait_for_idle();
+
+            ff_dx12_resource_state* global = ff_dx12_resource_global_state(&resource);
+            for (size_t i = 0; i < subs; i++)
+            {
+                ff_dx12_resource_state_entry state = ff_dx12_resource_state_get(global, i, nullptr);
+                Assert::AreEqual((int)D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, (int)state.state);
+            }
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+        }
     };
 }

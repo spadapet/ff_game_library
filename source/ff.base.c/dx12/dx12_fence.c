@@ -72,6 +72,11 @@ ff_dx12_fence_value ff_dx12_fence_signal_value(ff_dx12_fence* fence, uint64_t va
     {
         fence->next_value = value + 1;
 
+        if (value > fence->signaled_value)
+        {
+            fence->signaled_value = value;
+        }
+
         if (queue)
         {
             ID3D12CommandQueue_Signal(queue, fence->fence, value);
@@ -150,8 +155,18 @@ bool ff_dx12_fence_complete(ff_dx12_fence* fence, uint64_t value)
     return value <= fence->completed_value;
 }
 
-bool ff_dx12_fence_value_valid(ff_dx12_fence_value value)
+bool ff_dx12_fence_wait_is_pending(ff_dx12_fence* fence, uint64_t value)
 {
+    FF_ASSERT_RET_VAL(fence, false);
+    return ff_dx12_fence_complete(fence, value) || value <= fence->signaled_value;
+}
+
+bool ff_dx12_fence_value_wait_is_pending(ff_dx12_fence_value value)
+{
+    return !value.fence || ff_dx12_fence_wait_is_pending(value.fence, value.value);
+}
+
+bool ff_dx12_fence_value_valid(ff_dx12_fence_value value){
     return value.fence != NULL;
 }
 

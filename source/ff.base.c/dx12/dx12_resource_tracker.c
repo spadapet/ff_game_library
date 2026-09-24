@@ -339,6 +339,27 @@ void ff_dx12_resource_tracker_state(ff_dx12_resource_tracker* tracker, ff_dx12_r
     }
 }
 
+void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource)
+{
+    FF_CHECK_RET(tracker && resource && tracker->entries_a);
+
+    ff_dx12_resource_tracker_entry* entry = find_entry(tracker, resource);
+    FF_CHECK_RET(entry);
+
+    // Held-back first barriers are dropped along with the entry: they were never recorded, and
+    // there is no longer a wrapper whose global state they could be resolved against.
+    const size_t count = ff_array_count(tracker->entries_a);
+    const size_t index = (size_t)(entry - tracker->entries_a);
+
+    tracker->entries_a[index] = tracker->entries_a[count - 1];
+    ff_array_resize(tracker->entries_a, count - 1);
+
+    ff_dx12_resource_set_tracker(resource, NULL);
+
+    // Removing from an open-addressed map would break probe chains, so rebuild it instead.
+    index_map_rebuild(tracker, tracker->index_map_size);
+}
+
 void ff_dx12_resource_tracker_uav(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource)
 {
     FF_ASSERT_RET(tracker && ff_dx12_resource_valid(resource));

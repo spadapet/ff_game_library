@@ -41,6 +41,30 @@ typedef struct ff_dx12_queue ff_dx12_queue;
 typedef struct ff_dx12_mem_range ff_dx12_mem_range;
 typedef struct ff_dx12_residency_data ff_dx12_residency_data;
 typedef struct ff_dx12_fence_values ff_dx12_fence_values;
+typedef struct ff_dx12_mem_allocator ff_dx12_mem_allocator;
+typedef struct ff_dx12_cpu_descriptor_allocator ff_dx12_cpu_descriptor_allocator;
+typedef struct ff_dx12_gpu_descriptor_allocator ff_dx12_gpu_descriptor_allocator;
+
+// Shared memory allocators. The first three hand out transient per-frame ranges keyed on a fence
+// value; the last three are long-lived free-list allocators. All are created on first use and
+// destroyed with the device.
+ff_dx12_mem_allocator* ff_dx12_upload_allocator(void);
+ff_dx12_mem_allocator* ff_dx12_readback_allocator(void);
+ff_dx12_mem_allocator* ff_dx12_dynamic_buffer_allocator(void);
+ff_dx12_mem_allocator* ff_dx12_static_buffer_allocator(void);
+ff_dx12_mem_allocator* ff_dx12_texture_allocator(void);
+ff_dx12_mem_allocator* ff_dx12_target_allocator(void);
+
+// Staging (non-shader-visible) descriptors, one allocator per heap type.
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_buffer_descriptors(void);
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_sampler_descriptors(void);
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_target_descriptors(void);
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_depth_descriptors(void);
+
+// Shader-visible descriptors. Only one heap of each type can be bound at a time, so these are the
+// heaps that every non-copy command list binds through SetDescriptorHeaps.
+ff_dx12_gpu_descriptor_allocator* ff_dx12_gpu_view_descriptors(void);
+ff_dx12_gpu_descriptor_allocator* ff_dx12_gpu_sampler_descriptors(void);
 
 ff_dx12_queue* ff_dx12_direct_queue(void);
 ff_dx12_queue* ff_dx12_copy_queue(void);
@@ -49,11 +73,19 @@ ff_dx12_queue* ff_dx12_queue_from_type(D3D12_COMMAND_LIST_TYPE type);
 
 void ff_dx12_wait_for_idle(void);
 
+// Scrubs residency data out of every queue's command caches. Called when the data is destroyed
+// while command lists may still reference it, since the data lives inside the dying resource.
+void ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
+
 // Frame lifecycle. frame_started drains the keep-alive list and refreshes the video memory
 // budget; frame_complete advances the frame counter.
 void ff_dx12_frame_started(void);
 void ff_dx12_frame_complete(void);
 uint64_t ff_dx12_frame_count(void);
+
+// Largest power-of-two sample count at or below 'sample_count' that the device actually supports
+// for 'format'. Always at least 1.
+size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 
 // Defers releasing an ID3D12Resource (and freeing its mem_range) until the GPU work named by
 // 'fence_values' has retired. When that work is already complete the release happens immediately

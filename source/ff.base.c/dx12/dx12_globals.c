@@ -3,8 +3,11 @@
 #include "base/assert.h"
 #include "base/hash.h"
 #include "base/log.h"
+#include "base/math.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_descriptor_allocator.h"
+#include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_mem_range.h"
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_residency.h"
@@ -18,6 +21,17 @@
 // Max adapters enumerated in one pass. Way more than any real machine has, and it keeps
 // adapter handling on the stack instead of needing a dynamic array.
 #define MAX_ADAPTERS 16
+
+typedef enum ff_dx12_mem_allocator_index
+{
+    ff_dx12_mem_allocator_upload,
+    ff_dx12_mem_allocator_readback,
+    ff_dx12_mem_allocator_dynamic_buffer,
+    ff_dx12_mem_allocator_static_buffer,
+    ff_dx12_mem_allocator_texture,
+    ff_dx12_mem_allocator_target,
+    ff_dx12_mem_allocator_count,
+} ff_dx12_mem_allocator_index;
 
 static IDXGIFactory6* s_factory;
 static IDXGIAdapter3* s_adapter;
@@ -53,6 +67,20 @@ static bool s_keep_alive_arena_valid;
 static ff_dx12_keep_alive_node* s_keep_alive_head;
 static ff_dx12_keep_alive_node* s_keep_alive_tail;
 static ff_dx12_keep_alive_node* s_keep_alive_free;
+
+// Shared allocators, created on first use. Each has an explicit valid flag because a zeroed
+// allocator is indistinguishable from an initialized one that hasn't allocated anything yet.
+#define FF_DX12_ONE_MEG (1024ull * 1024ull)
+
+static ff_dx12_mem_allocator s_mem_allocators[ff_dx12_mem_allocator_count];
+static bool s_mem_allocator_valid[ff_dx12_mem_allocator_count];
+
+static ff_dx12_cpu_descriptor_allocator s_cpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+static bool s_cpu_descriptor_allocator_valid[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+
+// Only CBV_SRV_UAV and SAMPLER can be shader visible, so the other two slots stay unused.
+static ff_dx12_gpu_descriptor_allocator s_gpu_descriptor_allocators[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+static bool s_gpu_descriptor_allocator_valid[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 
 static bool debug_layer_wanted(void)
 {
@@ -450,9 +478,15 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
 
     if (!node)
     {
-        // Can't defer, so fall back to blocking rather than leaking the resource.
-        ff_dx12_fence_values_wait(&pending.fence_values, NULL);
-        keep_alive_node_release(&pending);
+        // Can't defer, so fall back to blocking rather than leaking the resource. Only safe for
+        // fence values that were actually submitted; an unsubmitted one would hang forever, so
+        // leak it instead. Reaching here at all means arena allocation failed.
+        if (ff_dx12_fence_values_wait_is_pending(&pending.fence_values))
+        {
+            ff_dx12_fence_values_wait(&pending.fence_values, NULL);
+            keep_alive_node_release(&pending);
+        }
+
         FF_DEBUG_FAIL_RET();
     }
 
@@ -536,6 +570,167 @@ ff_dx12_queue* ff_dx12_queue_from_type(D3D12_COMMAND_LIST_TYPE type)
     }
 }
 
+static ff_dx12_mem_allocator* get_mem_allocator(ff_dx12_mem_allocator_index index)
+{
+    if (!s_mem_allocator_valid[index])
+    {
+        // Sizes match the old C++ globals. The ring allocators ignore max_size.
+        static const struct
+        {
+            uint64_t initial_size;
+            uint64_t max_size;
+            ff_dx12_heap_usage usage;
+            bool ring;
+        } s_params[ff_dx12_mem_allocator_count] =
+        {
+            [ff_dx12_mem_allocator_upload] = { .initial_size = FF_DX12_ONE_MEG, .usage = ff_dx12_heap_usage_upload, .ring = true },
+            [ff_dx12_mem_allocator_readback] = { .initial_size = FF_DX12_ONE_MEG, .usage = ff_dx12_heap_usage_readback, .ring = true },
+            [ff_dx12_mem_allocator_dynamic_buffer] = { .initial_size = FF_DX12_ONE_MEG, .usage = ff_dx12_heap_usage_gpu_buffers, .ring = true },
+            [ff_dx12_mem_allocator_static_buffer] = { .initial_size = FF_DX12_ONE_MEG, .max_size = FF_DX12_ONE_MEG * 32, .usage = ff_dx12_heap_usage_gpu_buffers },
+            [ff_dx12_mem_allocator_texture] = { .initial_size = FF_DX12_ONE_MEG * 4, .max_size = FF_DX12_ONE_MEG * 64, .usage = ff_dx12_heap_usage_gpu_textures },
+            [ff_dx12_mem_allocator_target] = { .initial_size = FF_DX12_ONE_MEG * 16, .max_size = FF_DX12_ONE_MEG * 128, .usage = ff_dx12_heap_usage_gpu_targets },
+        };
+
+        ff_dx12_mem_allocator_init(&s_mem_allocators[index], s_params[index].initial_size,
+            s_params[index].max_size, s_params[index].usage, s_params[index].ring);
+        s_mem_allocator_valid[index] = true;
+    }
+
+    return &s_mem_allocators[index];
+}
+
+ff_dx12_mem_allocator* ff_dx12_upload_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_upload);
+}
+
+ff_dx12_mem_allocator* ff_dx12_readback_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_readback);
+}
+
+ff_dx12_mem_allocator* ff_dx12_dynamic_buffer_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_dynamic_buffer);
+}
+
+ff_dx12_mem_allocator* ff_dx12_static_buffer_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_static_buffer);
+}
+
+ff_dx12_mem_allocator* ff_dx12_texture_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_texture);
+}
+
+ff_dx12_mem_allocator* ff_dx12_target_allocator(void)
+{
+    return get_mem_allocator(ff_dx12_mem_allocator_target);
+}
+
+static ff_dx12_cpu_descriptor_allocator* get_cpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t bucket_size)
+{
+    if (!s_cpu_descriptor_allocator_valid[type])
+    {
+        ff_dx12_cpu_descriptor_allocator_init(&s_cpu_descriptor_allocators[type], type, bucket_size);
+        s_cpu_descriptor_allocator_valid[type] = true;
+    }
+
+    return &s_cpu_descriptor_allocators[type];
+}
+
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_buffer_descriptors(void)
+{
+    return get_cpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256);
+}
+
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_sampler_descriptors(void)
+{
+    return get_cpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 32);
+}
+
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_target_descriptors(void)
+{
+    return get_cpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
+}
+
+ff_dx12_cpu_descriptor_allocator* ff_dx12_cpu_depth_descriptors(void)
+{
+    return get_cpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 32);
+}
+
+static ff_dx12_gpu_descriptor_allocator* get_gpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE type, size_t pinned_size, size_t ring_size)
+{
+    if (!s_gpu_descriptor_allocator_valid[type])
+    {
+        FF_ASSERT_RET_VAL(ff_dx12_gpu_descriptor_allocator_init(
+            &s_gpu_descriptor_allocators[type], type, pinned_size, ring_size), NULL);
+        s_gpu_descriptor_allocator_valid[type] = true;
+    }
+
+    return &s_gpu_descriptor_allocators[type];
+}
+
+ff_dx12_gpu_descriptor_allocator* ff_dx12_gpu_view_descriptors(void)
+{
+    // Hardware max is 1,000,000, so there is plenty of room to grow this later.
+    return get_gpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, 7936);
+}
+
+ff_dx12_gpu_descriptor_allocator* ff_dx12_gpu_sampler_descriptors(void)
+{
+    // Hardware max is 2048.
+    return get_gpu_descriptors(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, 1920);
+}
+
+static void destroy_allocators(void)
+{
+    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
+    {
+        if (s_mem_allocator_valid[i])
+        {
+            ff_dx12_mem_allocator_destroy(&s_mem_allocators[i]);
+            s_mem_allocator_valid[i] = false;
+        }
+    }
+
+    for (size_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
+    {
+        if (s_cpu_descriptor_allocator_valid[i])
+        {
+            ff_dx12_cpu_descriptor_allocator_destroy(&s_cpu_descriptor_allocators[i]);
+            s_cpu_descriptor_allocator_valid[i] = false;
+        }
+
+        if (s_gpu_descriptor_allocator_valid[i])
+        {
+            ff_dx12_gpu_descriptor_allocator_destroy(&s_gpu_descriptor_allocators[i]);
+            s_gpu_descriptor_allocator_valid[i] = false;
+        }
+    }
+}
+
+void ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
+{
+    FF_CHECK_RET(data);
+
+    if (ff_dx12_queue_valid(&s_copy_queue))
+    {
+        ff_dx12_queue_forget_residency_data(&s_copy_queue, data);
+    }
+
+    if (ff_dx12_queue_valid(&s_compute_queue))
+    {
+        ff_dx12_queue_forget_residency_data(&s_compute_queue, data);
+    }
+
+    if (ff_dx12_queue_valid(&s_direct_queue))
+    {
+        ff_dx12_queue_forget_residency_data(&s_direct_queue, data);
+    }
+}
+
 void ff_dx12_wait_for_idle(void)
 {
     if (ff_dx12_queue_valid(&s_copy_queue))
@@ -565,11 +760,43 @@ void ff_dx12_frame_started(void)
 void ff_dx12_frame_complete(void)
 {
     s_frame_count++;
+
+    // The old code drove this through a frame_complete signal that each allocator subscribed to.
+    // Here globals owns the allocators, so it retires their in-flight ranges directly.
+    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
+    {
+        if (s_mem_allocator_valid[i])
+        {
+            ff_dx12_mem_allocator_frame_complete(&s_mem_allocators[i]);
+        }
+    }
 }
 
 uint64_t ff_dx12_frame_count(void)
 {
     return s_frame_count;
+}
+
+size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+{
+    size_t fixed_sample_count = sample_count ? ff_math_round_up_pow2(sample_count) : 1;
+
+    while (fixed_sample_count > 1)
+    {
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS levels = { 0 };
+        levels.Format = format;
+        levels.SampleCount = (UINT)fixed_sample_count;
+
+        if (SUCCEEDED(ID3D12Device6_CheckFeatureSupport(ff_dx12_device(),
+            D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &levels, sizeof(levels))) && levels.NumQualityLevels)
+        {
+            break;
+        }
+
+        fixed_sample_count /= 2;
+    }
+
+    return ff_math_max_size(fixed_sample_count, 1);
 }
 
 static void destroy_d3d(void)
@@ -587,6 +814,10 @@ static void destroy_d3d(void)
 
     keep_alive_destroy();
     s_frame_count = 0;
+
+    // Allocators own heaps and descriptor heaps, and every heap registers residency data, so they
+    // have to go after the keep-alive drain but before residency shuts down.
+    destroy_allocators();
 
     ff_dx12_residency_destroy();
 

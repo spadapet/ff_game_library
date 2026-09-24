@@ -74,14 +74,13 @@ Items 2-6 above: fence, residency, heap, mem_range, mem_allocator.
   each function, replacing the old virtual `mem_buffer_base` hierarchy.
   Same for `ff_dx12_mem_range`'s owner dispatch.
 
-## Future milestones (3-5)
+## Future milestones (3-6)
 
-Milestone 3: command queues/lists, object cache.
-Milestone 4: concrete buffer/texture/depth/target resource types.
-Milestone 5: shader delivery + draw device (the high-level rendering API).
-
-These are listed for roadmap completeness only; no implementation work has
-started on them yet.
+Milestone 3: command queues/lists, object cache. (complete)
+Milestone 4: concrete buffer/texture/depth/target resource types. (complete)
+Milestone 5: swap chain / `target_window`, image decoding for textures.
+Milestone 6: shader delivery + draw device (the high-level rendering API).
+Milestone 7: bindless renderer on top of the classic one.
 
 ## Milestone 2 (complete)
 
@@ -350,7 +349,7 @@ Four real bugs, all found by running the new tests rather than by reading:
   value is now signaled directly; no dedup is needed because the fences are
   already distinct.
 
-### REQUIRED milestone 4 follow-ups
+### REQUIRED milestone 4 follow-ups (all resolved in milestone 4)
 
 Three legacy behaviors have no counterpart yet because they depend on types that
 don't exist until milestone 4. None can be dropped:
@@ -432,6 +431,94 @@ newly arena-backed fence value sets inherit the same property: they are reset by
 `clear` and reuse their spilled block, so each one converges on the largest
 number of distinct fences it has ever held.
 
+## Eighth review pass: timing, deadlocks, and missing functionality
+
+A full inventory of every CPU-blocking wait site in the dx12 sources, plus a
+function-by-function diff of every ported module against the legacy C++.
+
+### A fence value that nobody ever signals (fixed)
+
+`ff_dx12_make_resident` takes `resident_fence_value` from
+`ff_dx12_fence_signal_later(&s_residency_fence)` and stores it in
+`data->resident_value` for every newly resident allocation. That value is only
+ever signaled on the GPU by `ID3D12Device3::EnqueueMakeResident`. On the
+fallback path, where the device does not expose `ID3D12Device3` and the code
+calls the synchronous `ID3D12Device6::MakeResident` instead, no signal was ever
+issued, so the value stayed permanently incomplete.
+
+The hang shows up on a *later* call. That call sees the data already resident
+with an incomplete `resident_value`, decides it is "still becoming resident
+from a different call", and adds the dead value to `wait_values`.
+`ff_dx12_queue_execute_many` then waits on it with the command queue, which
+blocks the queue forever on a signal that has no source.
+
+`s_residency_fence` is now signaled directly on the CPU after a successful
+synchronous `MakeResident`, which matches the fact that the residency work is
+already finished by the time that call returns. The legacy C++ has the same
+hole; this is a fix rather than a port error.
+
+### Verified sound
+
+The other wait inside `make_resident`, on `wait_to_evict`, is safe. The
+eviction loop only visits data whose `usage_counter` is not the counter just
+assigned, so nothing in the current residency set can contribute, and
+`commands_fence_value` is only added to `keep_resident` after the wait. A
+later call that evicts that data can block on the caller's command fence, but
+that fence is signaled by an `execute_many` that has already submitted, so it
+always makes progress.
+
+A separate audit compared every public function in the ported legacy modules
+(fence, fence values, heap, mem allocator and range, descriptor allocator and
+range, residency, resource, resource state, resource tracker, globals, queue,
+queues, commands, object cache) against its C counterpart. No ported function
+drops a fence signal or wait, skips a residency or state bookkeeping step, or
+reorders side effects. The only absent legacy entry points are
+`resource_tracker::resource_moved`, which has no meaning now that resources are
+non-movable structs, and the `resource::update_buffer` / `readback_buffer` /
+`update_texture` / `readback_texture` convenience wrappers, whose underlying
+`commands` primitives are all present and which belong with the buffer and
+texture wrapper types in a later milestone.
+
+## Ninth review pass: resource state transitions
+
+A line-by-line comparison of `dx12_resource_state.c` and `dx12_resource_tracker.c`
+against `resource_state.cpp` and `resource_tracker.cpp`, plus the arena and array
+growth paths underneath them.
+
+### The transition logic is faithful
+
+`allow_promotion`, `allow_decay`, and `needs_transition` match the legacy
+predicates exactly, including the "common to a single write state" power-of-two
+check and the copy-queue and simultaneous-access decay shortcuts. `set`, `get`,
+`merge`, `all_same`, and the `assert_type_change` table are equivalent, and the
+deferred `check_all_same` collapse behaves the same as the old
+`std::vector::resize(1)`. `close` resolves first barriers, splits an
+`ALL_SUBRESOURCES` barrier when the previous state has diverged, merges forward,
+and decays into global state in the same order as the original.
+
+The C version also differs harmlessly in one spot: the old `close` patched
+`StateBefore` and `Subresource` directly on the `first_barriers` entry through a
+reference, while the port copies into a local `resolved` first. Both are correct,
+since every iteration reassigns both fields before pushing and the list is
+cleared immediately afterward, but the copy makes the split case easier to follow.
+
+### Growth paths are sound
+
+`ff_arena_declare_stack` passes `grow_buffer_size` of 0, which
+`ff_arena_init_external` treats as "default to the external size" rather than
+"never grow", so the 1024 byte barrier arena in `close` spills to the heap
+instead of failing. Confirmed by resolving 200 barriers through one `close`.
+`ff_array_push` doubles through `ff_arena_realloc`, and the inline-8 state
+storage spills into the owning arena, so neither has a fixed ceiling.
+
+### Test coverage gap closed
+
+`ff_dx12_resource_tracker_close` had no direct coverage at all, which is
+notable given it holds the subtlest logic in the module. Three tests now drive
+it through a real execute: 200 resolved barriers in one close, 16 divergent
+subresources spilling past inline storage across two command lists, and a
+whole-resource barrier splitting against a divergent previous state.
+
 ## Bindless groundwork
 
 The eventual bindless renderer (for better AMD performance) needs
@@ -450,3 +537,177 @@ a persistent bindless table; going bindless mainly means sizing it much
 larger (order 1M CBV_SRV_UAV descriptors) and having views write into it
 once instead of per-frame. Classic and bindless paths can share the same
 allocator, so milestone 3 can proceed with normal descriptor tables.
+
+## Milestone 4 (complete)
+
+Concrete wrapper types, all 8 files added to the vcxproj/filters and the 4
+public headers to `include/ff.base.c.h`.
+
+Scope decision: `ff_dx12_texture` is GPU-only. The legacy texture depends on
+DirectXTex `ScratchImage` for CPU-side image data and mip generation, and
+ff.base.c has no image codec, so image decoding moves to milestone 5 along
+with `target_window` / the swap chain. Uploads go through
+`ff_dx12_texture_update` / `ff_dx12_commands_update_texture` instead.
+
+Landed first, because every milestone 4 type depends on them and they had
+never been ported:
+
+- The 12 global allocators in `dx12_globals.c` (6 mem, 6 descriptor), created
+  lazily, with sizes matching the legacy exactly. `frame_complete` is called
+  on them directly from `ff_dx12_frame_complete` instead of through a signal.
+- `destroy_allocators()` sits in `destroy_d3d` after the keep-alive drain and
+  before `ff_dx12_residency_destroy`. That ordering is load-bearing: heaps back
+  deferred releases, and every heap registers residency data.
+- `ff_dx12_fix_sample_count`. The legacy halving loop never updates
+  `levels.SampleCount`, so it re-tests the same value forever; the C version
+  rebuilds the feature-data struct each iteration.
+
+Two required follow-ups from the milestone 3 review also landed:
+`SetDescriptorHeaps` for non-COPY lists in `ff_dx12_queue_new_commands`, and
+target sub-ranges via `ff_dx12_target_range` on `ff_dx12_commands_targets`.
+The third (upload-heap residency for vertex/index buffers) is moot in the C
+design: every `ff_dx12_buffer` kind owns a real `ff_dx12_resource`, and
+`ff_dx12_commands_update_buffer` already calls `keep_resident` on the upload
+range, with `ff_dx12_buffer_residency_data` available for view callers.
+
+Types: `ff_dx12_depth`, `ff_dx12_texture`, `ff_dx12_target_texture` (borrows
+its texture; the texture must outlive it), and `ff_dx12_buffer` (one tagged
+struct with `gpu_static` / `gpu` / `cpu` kinds).
+
+`ff_dx12_buffer_update` keeps the legacy hash-skip with the 0x10000 cutoff but
+adds a size check to the skip condition, since the legacy compared the hash
+alone. Growth doubles and does not preserve old contents, because `map`
+overwrites them anyway.
+
+### Bugs found by the milestone 4 tests
+
+1. Ring mem ranges are retired by fence and never explicitly freed, so
+   `allocated_range_count` was always non-zero at teardown and tripped the leak
+   assert in `ff_dx12_mem_buffer_destroy`. `ff_dx12_mem_allocator_destroy` now
+   clears the ring bookkeeping outright. It must not call `frame_complete` to
+   do this: queues are destroyed before allocators, so the fences are already
+   gone.
+
+2. New pattern: intrusive-node struct copy. `ff_dx12_resource` embeds an
+   `ff_dx12_residency_data` node that lives in a global doubly-linked list, so
+   building a resource in a local and assigning it into its final home leaves
+   the list pointing at the dead local. Always `destroy` then `init` in place.
+   This bit `dx12_buffer.c` and `dx12_depth.c`; the symptom was the
+   `!s_pageable_front` assert firing far away in `ff_dx12_residency_destroy`.
+
+3. Destroying a resource while a command list still referenced it (any buffer
+   or depth resize mid-frame) tripped the `!resource->tracker` assert and left
+   the tracker holding a dangling wrapper pointer. Added
+   `ff_dx12_resource_tracker_forget`, called from `ff_dx12_resource_destroy`.
+   Only the tracker's pointer back to the wrapper has to go: the recorded
+   barriers name the `ID3D12Resource`, which outlives this via keep-alive.
+
+20 milestone 4 tests; full suite at 818 passing, zero skipped.
+
+## Tenth review pass: GPU lifetime, ordering, and mid-frame CPU blocking
+
+Driven by three questions: can memory ever be released while the GPU is using
+it, does anything block the CPU on the GPU mid-frame, and is the legacy
+thread-pool command list reset still needed.
+
+### The unsubmitted-fence deadlock class
+
+`ff_dx12_fence_signal_later` reserves a fence value without submitting it.
+Nothing signals that value until the owning command list is executed, so a CPU
+block on it can never be satisfied. Three places blocked on values that could
+be in that state.
+
+`ff_dx12_fence` now tracks `signaled_value`, and
+`ff_dx12_fence_value_wait_is_pending` / `ff_dx12_fence_values_wait_is_pending`
+report whether a CPU wait can ever complete. Fixed sites:
+
+- `ff_dx12_descriptor_buffer_alloc_ring` blocked to reclaim ring space held by
+  a range whose fence had only been reserved. Now it fails the allocation
+  quietly (out of room is a normal condition) instead of hanging. This matches
+  what the mem ring allocator already did.
+- Residency eviction blocked on a pageable's `keep_resident` values. Candidates
+  whose values aren't submitted are now skipped, leaving them resident and
+  moving further up the LRU list rather than hanging.
+- The keep-alive fallback (only reachable on arena allocation failure) blocked
+  before releasing. It now leaks rather than hangs when the values aren't
+  submitted.
+
+### Use-after-free: residency data outliving its resource
+
+`ff_dx12_residency_data` is embedded in `ff_dx12_resource`, and every command
+list that touches a resource stores a raw pointer to it in its residency set.
+Destroying a resource mid-recording left those sets pointing into freed memory,
+which `ff_dx12_make_resident` then dereferenced at execute time. This crashed
+the test host in two new tests.
+
+Fixed with `ff_dx12_residency_set_remove` /
+`ff_dx12_queue_forget_residency_data` / `ff_dx12_forget_residency_data`, called
+from `ff_dx12_residency_data_destroy`. Removal reinserts the rest of the probe
+run, since clearing a slot in an open-addressed table breaks the chain behind
+it. This required a `caches_in_use` list on the queue: caches handed out to a
+live `ff_dx12_commands` were previously unreachable from the queue.
+
+This is the same shape as the milestone 4 tracker bug. The general rule: any
+raw pointer *into* an `ff_dx12_resource` held by a command list must be
+scrubbed when the resource dies, because only the `ID3D12Resource` itself is
+kept alive by the keep-alive list.
+
+### Descriptor ring leak assert
+
+`ff_dx12_descriptor_buffer_destroy` asserted `allocated_range_count == 0`, but
+descriptor ring ranges are retired by fence and never explicitly freed, exactly
+like the mem ring. The assert is now replaced by clearing the bookkeeping.
+
+### Is the thread-pool command list reset still needed?
+
+No, not at present. The legacy `queue::execute` posted allocator and list
+`Reset` to `ff::thread_pool` and gated hand-out on a per-cache event, with
+`wait_for_tasks` draining it. The C port resets inline.
+
+Measured in Release with `measure_command_list_reset_cost`: the whole
+`ff_dx12_queue_execute` (close, residency, ExecuteCommandLists, signal, and
+both `Reset` calls) averages **6.8 us**, worst case 47.8 us over 256
+iterations. That is far below a frame budget, so moving it off the render
+thread would add synchronization for no gain.
+
+Worth revisiting if either becomes true: many command lists are executed per
+frame (cost is per list), or allocators start holding large recorded lists,
+since `ID3D12CommandAllocator::Reset` cost scales with what was recorded into
+it. `windows/task.h` already provides the thread pool if it is needed later.
+
+### New tests
+
+`dx12_lifetime_tests` (14 tests) covers resource destroy while recording,
+repeated resize mid-recording for buffers and depth, destroy before execute,
+64 buffers destroyed in one list, allocator recycling across 32 executes,
+upload ring reuse across 48 frames, two lists sharing a resource,
+textures destroyed mid-recording, frame_complete ordering, and device destroy
+with work still in flight. `dx12_reset_timing_tests` measures the reset cost.
+
+Full suite: 832 passing, zero skipped.
+
+## Eleventh review pass
+
+Targeted at destroy paths whose asserts can skip real cleanup, and at the "raw pointer into a
+dying resource" pattern that produced the last three bugs.
+
+### Ring buffers pruned mid-run leaked a heap (fixed)
+
+`ff_dx12_mem_allocator_frame_complete` prunes a ring `ff_dx12_mem_buffer` once its ranges retire,
+but upload callers never call `free_range`, so `allocated_range_count` is normally non-zero.
+`ff_dx12_mem_buffer_destroy` asserted that count was zero and returned early through the assert
+handler, skipping `ff_dx12_heap_destroy`. The heap's residency node stayed in the global pageable
+list, and teardown then tripped the `!s_pageable_front && !s_pageable_back` assert in
+`ff_dx12_residency_destroy`.
+
+Ring ranges retire by fence rather than by an explicit free, so the count is expected state, not a
+leak. `ff_dx12_mem_buffer_destroy` now clears the ring bookkeeping itself. The duplicate clearing
+loop in `ff_dx12_mem_allocator_destroy` was removed as redundant. This mirrors the same fix already
+applied to `ff_dx12_descriptor_buffer_destroy`.
+
+This only reproduced once the test was strengthened to assert `buffer_count > 1` and
+`outstanding > 0`; the original version allocated against already-signaled fences, so the ring
+reused a single heap and never pruned. A passing test that never reaches the code it names is
+worse than no test.
+
+Full suite: 844 passing, zero skipped.

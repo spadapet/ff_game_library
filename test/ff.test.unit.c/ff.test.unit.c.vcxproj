@@ -39,6 +39,10 @@
     <ClCompile Include="dx12\dx12_residency_tests.cpp" />
     <ClCompile Include="dx12\dx12_descriptor_allocator_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_state_tests.cpp" />
+    <ClCompile Include="dx12\dx12_lifetime_deep_tests.cpp" />
+    <ClCompile Include="dx12\dx12_lifetime_tests.cpp" />
+    <ClCompile Include="dx12\dx12_reset_timing_tests.cpp" />
+    <ClCompile Include="dx12\dx12_milestone4_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_tracker_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_tests.cpp" />
     <ClCompile Include="pch.cpp">

@@ -25,6 +25,13 @@ typedef struct ff_dx12_residency_set
 void ff_dx12_residency_set_clear(ff_dx12_residency_set* set);
 bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_dx12_residency_data* data);
 
+// Drops residency data that is being destroyed while command lists still reference it. The
+// pointer is into the dying resource, so leaving it in a set would be a use-after-free at execute.
+void ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_data* data);
+
+// Removes the data from every command cache currently recording on this queue.
+void ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency_data* data);
+
 // The per-command-list state that outlives an ff_dx12_commands and gets recycled by the queue.
 // Nodes are arena-allocated and never freed individually, so their addresses are stable and an
 // ff_dx12_commands can point at one.
@@ -71,6 +78,11 @@ typedef struct ff_dx12_queue
     ff_dx12_fence idle_fence;
 
     ff_dx12_command_cache* caches;
+
+    // Caches handed out to a live ff_dx12_commands. They're not in the recycle list, but a
+    // resource destroyed mid-recording still has to be scrubbed out of their residency sets.
+    ff_dx12_command_cache* caches_in_use;
+
     ff_dx12_queue_allocator_list allocators;
     ff_dx12_queue_allocator_list allocators_before;
     ff_dx12_queue_allocator_node* allocator_nodes_free;

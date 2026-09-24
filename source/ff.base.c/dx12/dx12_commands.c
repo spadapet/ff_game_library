@@ -276,7 +276,7 @@ void ff_dx12_commands_root_uav(ff_dx12_commands* commands, size_t index, ff_dx12
 }
 
 void ff_dx12_commands_targets(ff_dx12_commands* commands, ff_dx12_resource** targets,
-    const D3D12_CPU_DESCRIPTOR_HANDLE* target_views, size_t count,
+    const D3D12_CPU_DESCRIPTOR_HANDLE* target_views, const ff_dx12_target_range* target_ranges, size_t count,
     ff_dx12_resource* depth, const D3D12_CPU_DESCRIPTOR_HANDLE* depth_view)
 {
     FF_CHECK_RET(ff_dx12_commands_valid(commands));
@@ -286,7 +286,10 @@ void ff_dx12_commands_targets(ff_dx12_commands* commands, ff_dx12_resource** tar
     for (size_t i = 0; i < count; i++)
     {
         FF_CHECK_RET(targets[i]);
-        ff_dx12_commands_resource_state(commands, targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET, 0, 0, 0, 0);
+
+        ff_dx12_target_range range = target_ranges ? target_ranges[i] : (ff_dx12_target_range){ 0 };
+        ff_dx12_commands_resource_state(commands, targets[i], D3D12_RESOURCE_STATE_RENDER_TARGET,
+            range.array_start, range.array_size, range.mip_start, range.mip_size);
     }
 
     if (depth)

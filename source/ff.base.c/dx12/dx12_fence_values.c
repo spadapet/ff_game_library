@@ -157,8 +157,24 @@ void ff_dx12_fence_values_wait(ff_dx12_fence_values* values, ID3D12CommandQueue*
     ff_dx12_fence_values_clear(values);
 }
 
-bool ff_dx12_fence_values_complete(ff_dx12_fence_values* values)
+bool ff_dx12_fence_values_wait_is_pending(ff_dx12_fence_values* values)
 {
+    FF_ASSERT_RET_VAL(values, false);
+
+    ff_dx12_fence_value* data = ff_dx12_fence_values_data(values);
+
+    for (size_t i = 0; i < values->count; i++)
+    {
+        if (!ff_dx12_fence_value_wait_is_pending(data[i]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool ff_dx12_fence_values_complete(ff_dx12_fence_values* values){
     FF_ASSERT_RET_VAL(values, false);
 
     ff_dx12_fence_value* data = ff_dx12_fence_values_data(values);

@@ -198,7 +198,16 @@ bool ff_dx12_resource_init_external(ff_dx12_resource* resource, ff_string_view n
 void ff_dx12_resource_destroy(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
-    FF_ASSERT(!resource->tracker);
+
+    // A resource can be destroyed while a command list that referenced it is still recording,
+    // which happens whenever a buffer or depth buffer is resized mid-frame. The recorded barriers
+    // name the ID3D12Resource, which outlives this through the keep-alive list, so the tracker
+    // only has to drop its pointer back to this wrapper.
+    if (resource->tracker)
+    {
+        ff_dx12_resource_tracker_forget(resource->tracker, resource);
+        FF_ASSERT(!resource->tracker);
+    }
 
     // The GPU may still have commands referencing this resource, so hand the pieces that need a
     // deferred release to the keep-alive list rather than releasing them here. It releases them

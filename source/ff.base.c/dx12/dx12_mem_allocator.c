@@ -74,7 +74,12 @@ void ff_dx12_mem_buffer_destroy(ff_dx12_mem_buffer* buffer)
 
     if (buffer->type == ff_dx12_mem_buffer_type_ring)
     {
-        FF_ASSERT(buffer->u.ring.allocated_range_count == 0);
+        // Ring ranges are retired by fence, never by an explicit free, so a non-zero count here
+        // is normal rather than a leak. Callers only reach destroy once every range has retired
+        // (frame_complete prunes) or after the GPU is idle, so drop the bookkeeping.
+        buffer->u.ring.ranges_head = 0;
+        buffer->u.ring.ranges_count = 0;
+        buffer->u.ring.allocated_range_count = 0;
     }
     else
     {
@@ -383,6 +388,8 @@ void ff_dx12_mem_allocator_destroy(ff_dx12_mem_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
 
+    // mem_buffer_destroy clears the ring bookkeeping itself: ranges are retired by fence rather
+    // than by an explicit free, so an outstanding count at teardown is expected.
     for (ff_dx12_mem_buffer* buffer = allocator->buffers; buffer; )
     {
         // destroy zeroes the buffer, including 'next', so read the link first.

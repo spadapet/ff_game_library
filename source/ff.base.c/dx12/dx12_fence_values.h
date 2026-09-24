@@ -37,4 +37,7 @@ void ff_dx12_fence_values_add_all(ff_dx12_fence_values* values, const ff_dx12_fe
 
 void ff_dx12_fence_values_signal(ff_dx12_fence_values* values, ID3D12CommandQueue* queue);
 void ff_dx12_fence_values_wait(ff_dx12_fence_values* values, ID3D12CommandQueue* queue);
+
+// True when every value has actually been signaled, so a CPU wait on the set can complete.
+bool ff_dx12_fence_values_wait_is_pending(ff_dx12_fence_values* values);
 bool ff_dx12_fence_values_complete(ff_dx12_fence_values* values);

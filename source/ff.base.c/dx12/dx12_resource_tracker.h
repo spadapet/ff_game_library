@@ -49,3 +49,8 @@ void ff_dx12_resource_tracker_state(ff_dx12_resource_tracker* tracker, ff_dx12_r
     D3D12_RESOURCE_STATES state, size_t array_start, size_t array_size, size_t mip_start, size_t mip_size);
 void ff_dx12_resource_tracker_uav(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource);
 void ff_dx12_resource_tracker_alias(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource_before, ff_dx12_resource* resource_after);
+
+// Drops a resource that is being destroyed while a command list still references it. The already
+// recorded barriers keep naming the underlying ID3D12Resource, which stays alive through the
+// keep-alive list, so only the tracker's pointer back to the wrapper has to go away.
+void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource);

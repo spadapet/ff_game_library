@@ -58,8 +58,20 @@ void ff_dx12_commands_root_cbv(ff_dx12_commands* commands, size_t index, ff_dx12
 void ff_dx12_commands_root_srv(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset, bool ps_access, bool non_ps_access);
 void ff_dx12_commands_root_uav(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset);
 
+// Sub-range of a target resource. All-zero means the whole resource, which is what a plain
+// texture target uses; a slice or mip target fills these in so that state transitions only touch
+// the subresources actually being rendered to.
+typedef struct ff_dx12_target_range
+{
+    size_t array_start;
+    size_t array_size;
+    size_t mip_start;
+    size_t mip_size;
+} ff_dx12_target_range;
+
+// target_ranges may be NULL, which transitions each target as a whole resource.
 void ff_dx12_commands_targets(ff_dx12_commands* commands, ff_dx12_resource** targets,
-    const D3D12_CPU_DESCRIPTOR_HANDLE* target_views, size_t count,
+    const D3D12_CPU_DESCRIPTOR_HANDLE* target_views, const ff_dx12_target_range* target_ranges, size_t count,
     ff_dx12_resource* depth, const D3D12_CPU_DESCRIPTOR_HANDLE* depth_view);
 void ff_dx12_commands_viewports(ff_dx12_commands* commands, const D3D12_VIEWPORT* viewports, size_t count);
 // rects of NULL means infinite scissor rects, matching the old default.

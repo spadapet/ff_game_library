@@ -9,6 +9,11 @@ typedef struct ff_dx12_fence
     uint64_t completed_value;
     uint64_t next_value;
 
+    // Highest value actually signaled (CPU or queue). Values handed out by
+    // ff_dx12_fence_signal_later are reserved but not yet submitted, so a CPU block on one of
+    // those can never be satisfied. Tracking this lets those waits be rejected instead of hanging.
+    uint64_t signaled_value;
+
     // The queue that signals this fence, if any. A queue is always ordered against itself, so
     // asking it to wait on its own fence would block forever on a signal that can't be reached.
     ID3D12CommandQueue* owner_queue;
@@ -41,6 +46,11 @@ ff_dx12_fence_value ff_dx12_fence_signal_later(ff_dx12_fence* fence);
 void ff_dx12_fence_wait(ff_dx12_fence* fence, uint64_t value, ID3D12CommandQueue* queue);
 bool ff_dx12_fence_set_event(ff_dx12_fence* fence, uint64_t value, HANDLE handle);
 bool ff_dx12_fence_complete(ff_dx12_fence* fence, uint64_t value);
+
+// True when the value has actually been signaled, so a CPU wait on it can eventually complete.
+// A value reserved by ff_dx12_fence_signal_later but not yet submitted is not pending.
+bool ff_dx12_fence_wait_is_pending(ff_dx12_fence* fence, uint64_t value);
+bool ff_dx12_fence_value_wait_is_pending(ff_dx12_fence_value value);
 
 bool ff_dx12_fence_value_valid(ff_dx12_fence_value value);
 void ff_dx12_fence_value_signal(ff_dx12_fence_value value, ID3D12CommandQueue* queue);

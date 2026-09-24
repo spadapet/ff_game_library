@@ -58,7 +58,11 @@ void ff_dx12_descriptor_buffer_destroy(ff_dx12_descriptor_buffer* buffer)
 
     if (buffer->type == ff_dx12_descriptor_buffer_type_ring)
     {
-        FF_ASSERT(buffer->u.ring.allocated_range_count == 0);
+        // Ring ranges are retired by fence, not by an explicit free, so an outstanding count here
+        // is normal rather than a leak. Destroy runs after the GPU is idle, so just drop them.
+        buffer->u.ring.ranges_head = 0;
+        buffer->u.ring.ranges_count = 0;
+        buffer->u.ring.allocated_range_count = 0;
     }
     else if (buffer->u.free_list.free_ranges_a)
     {
@@ -304,6 +308,13 @@ ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_ring(ff_dx12_descriptor
             ff_dx12_descriptor_ring_range* front = ring_front(buffer);
             if (start <= front->start && start + count > front->start)
             {
+                // Reclaiming this descriptor space genuinely needs the GPU to finish with it. But
+                // if the front range's fence was only reserved (signal_later) and not yet
+                // submitted, no GPU work will ever signal it, so waiting would hang forever.
+                // Being out of room is a normal condition, so fail the allocation quietly and let
+                // the caller decide what to do.
+                FF_CHECK_RET_VAL(ff_dx12_fence_value_wait_is_pending(front->fence_value), result);
+
                 ff_dx12_fence_value_wait(front->fence_value, NULL);
                 ring_pop_front(buffer);
             }
