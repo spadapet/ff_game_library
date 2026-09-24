@@ -7,27 +7,44 @@ allocation, `ff_string_view` parameters.
 
 ## Roadmap (20 items, dependency order)
 
+Items 1-18 are complete. Items 19-20 are milestone 6.
+
 1. `dx12-math-types` - covered by existing `base/math.h` (`ff_math_round_up`,
-   `ff_math_round_up_pow2`), no separate module needed.
-2. `dx12-fence` - `ff_dx12_fence` / `ff_dx12_fence_value`.
-3. `dx12-residency` - `ff_dx12_residency_data`, MRU/LRU list, `ff_dx12_make_resident`.
-4. `dx12-heap` - `ff_dx12_heap`, usage enum, CPU mapping.
-5. `dx12-mem-range` - `ff_dx12_mem_range`, tagged owner dispatch.
-6. `dx12-mem-allocator` - ring + free-list buffers, outer growing allocator.
-7. `dx12-descriptor-range` - `ff_dx12_descriptor_range`, explicit free.
-8. `dx12-descriptor-allocator` - CPU free-list buckets + GPU pinned/ring.
-9. `dx12-resource-state` - `ff_dx12_resource_state`, per-subresource states.
-10. `dx12-resource-tracker` - `ff_dx12_resource_tracker`, barrier batching.
-11. `dx12-resource` - `ff_dx12_resource` (placed/committed/external).
-12. `dx12-queue` (future, milestone 3)
-13. `dx12-commands` (future, milestone 3)
-14. `dx12-object-cache` (future, milestone 3)
-15. `dx12-buffer` (future, milestone 4)
-16. `dx12-texture` (future, milestone 4)
-17. `dx12-depth` (future, milestone 4)
-18. `dx12-target` (future, milestone 4)
-19. `dx12-shader-delivery` (future, milestone 5)
-20. `dx12-draw-device` (future, milestone 5)
+   `ff_math_round_up_pow2`), no separate module needed. (complete)
+2. `dx12-fence` - `ff_dx12_fence` / `ff_dx12_fence_value`. (complete)
+3. `dx12-residency` - `ff_dx12_residency_data`, MRU/LRU list, `ff_dx12_make_resident`. (complete)
+4. `dx12-heap` - `ff_dx12_heap`, usage enum, CPU mapping. (complete)
+5. `dx12-mem-range` - `ff_dx12_mem_range`, tagged owner dispatch. (complete)
+6. `dx12-mem-allocator` - ring + free-list buffers, outer growing allocator. (complete)
+7. `dx12-descriptor-range` - `ff_dx12_descriptor_range`, explicit free. (complete)
+8. `dx12-descriptor-allocator` - CPU free-list buckets + GPU pinned/ring. (complete)
+9. `dx12-resource-state` - `ff_dx12_resource_state`, per-subresource states. (complete)
+10. `dx12-resource-tracker` - `ff_dx12_resource_tracker`, barrier batching. (complete)
+11. `dx12-resource` - `ff_dx12_resource` (placed/committed/external). (complete)
+12. `dx12-queue` - `ff_dx12_queue`, allocator/list pooling. (complete, milestone 3)
+13. `dx12-commands` - `ff_dx12_commands`. (complete, milestone 3)
+14. `dx12-object-cache` - root signatures, PSOs. (complete, milestone 3)
+15. `dx12-buffer` - `ff_dx12_buffer`. (complete, milestone 4)
+16. `dx12-texture` - `ff_dx12_texture`. (complete, milestone 4)
+17. `dx12-depth` - `ff_dx12_depth`. (complete, milestone 4)
+18. `dx12-target` - `ff_dx12_target_texture`. (complete, milestone 4)
+19. `dx12-shader-delivery` - milestone 6.
+20. `dx12-draw-device` - milestone 6.
+
+## Milestone status
+
+- Milestone 1: fence, residency, heap, mem_range, mem_allocator. (complete)
+- Milestone 2: descriptor_range/allocator, resource_state, resource_tracker,
+  resource. (complete)
+- Milestone 3: command queues/lists, object cache. (complete)
+- Milestone 4: concrete buffer/texture/depth/target resource types. (complete)
+- Milestone 5: swap chain / `target_window`, image decoding for textures. (next)
+- Milestone 6: shader delivery + draw device (the high-level rendering API).
+- Milestone 7: bindless renderer on top of the classic one.
+
+Twelve review passes have been run against the completed milestones; each is
+recorded below. Full suite: 847 passing, zero skipped. See "Current state and
+next steps" at the end for what milestone 5 needs.
 
 ## Milestone 1 (complete)
 
@@ -54,33 +71,31 @@ Items 2-6 above: fence, residency, heap, mem_range, mem_allocator.
   mutex (`pageable_mutex`, `completed_value_mutex`, `ranges_mutex`,
   `buffers_mutex`) has a one-line comment noting the removed lock, so
   real threading support can find them later.
-- **Arena-growth bounding strategy, per collection:**
-  - `ff_dx12_fence_value` batch helpers, `ff_dx12_fence_values` (max 4
-	entries), and residency's per-call scratch arrays (256 pageables) use
-	fixed-capacity C arrays. These are bounded by frame-local batch sizes,
-	not by run time or frame count.
+- **Arena-growth bounding strategy, per collection.** Several of these were
+  revised by later review passes; the current state is:
+  - `ff_dx12_fence_value` batch helpers and residency's per-call scratch
+	arrays (256 pageables) use fixed-capacity C arrays, bounded by
+	frame-local batch sizes rather than by run time or frame count.
+  - `ff_dx12_fence_values` was originally a fixed 4- then 8-entry array. The
+	second and eighth review passes showed that overflowing it caused a real
+	deadlock, so it is now inline-8 spilling into an arena and never blocks.
   - The ring buffer's in-flight range bookkeeping uses a fixed-capacity
 	circular buffer (64 entries) since it's naturally bounded by
-	frames-in-flight.
+	frames-in-flight. Overflow returns an invalid range, which makes the
+	outer allocator create another buffer; it never blocks or drops work.
   - The free-list buffer's free-range bookkeeping uses `ff_array` (arena
 	growable) since fragmentation-bounded free lists are a reasonable use
 	of a growable array - this is bounded by fragmentation/allocation
 	count, not by elapsed time.
-  - The outer `ff_dx12_mem_allocator`'s array of buffers also uses
-	`ff_array`, matching old `std::vector<unique_ptr<mem_buffer_base>>`;
-	bounded by heap-doubling count, not time.
+  - The outer `ff_dx12_mem_allocator`'s buffers were an `ff_array`, but
+	`ff_dx12_mem_range` points back at its owning buffer, so a relocating
+	array was unsound. They are now an arena-allocated intrusive linked list
+	(`buffers` / `buffers_free` / `buffers_count`) with stable addresses,
+	ordered newest-first and pruned on `frame_complete`.
 - **Tagged structs, no vtables.** `ff_dx12_mem_buffer` is one struct with an
   enum discriminant (`ring` / `free_list`) and switch-based dispatch in
   each function, replacing the old virtual `mem_buffer_base` hierarchy.
   Same for `ff_dx12_mem_range`'s owner dispatch.
-
-## Future milestones (3-6)
-
-Milestone 3: command queues/lists, object cache. (complete)
-Milestone 4: concrete buffer/texture/depth/target resource types. (complete)
-Milestone 5: swap chain / `target_window`, image decoding for textures.
-Milestone 6: shader delivery + draw device (the high-level rendering API).
-Milestone 7: bindless renderer on top of the classic one.
 
 ## Milestone 2 (complete)
 
@@ -237,14 +252,13 @@ One real bug surfaced in `resource`:
   release only happened once that GPU work retired. Destroying a resource
   while the GPU still had commands referencing it was therefore a GPU-side
   use-after-free, and for placed resources the `mem_range` could be handed to
-  a new resource while still in flight. Destroy now blocks on those fences.
-  The non-blocking keep-alive list needs the queue from milestone 3; this is
-  the conservative interim behavior.
+  a new resource while still in flight. Destroy blocked on those fences as an
+  interim fix; the non-blocking keep-alive list replaced that in milestone 3.
 
-### REQUIRED milestone 3 follow-up: keep-alive list
+### REQUIRED milestone 3 follow-up: keep-alive list (done)
 
-Do not consider milestone 3 done until this lands. `ff_dx12_resource_destroy`
-currently blocks the CPU, which is correct but stalls. The replacement:
+Landed in milestone 3. `ff_dx12_resource_destroy` no longer blocks. The design
+as built:
 
 - A global list of arena-allocated nodes, each capturing only the fields that
   need deferred release: `ID3D12Resource*`, `mem_range`, `residency_data`, plus
@@ -261,6 +275,12 @@ currently blocks the CPU, which is correct but stalls. The replacement:
 
 See `dx12_globals.cpp` `flush_keep_alive` (:156), `keep_alive_resource` (:662),
 and the call sites at `frame_started` (:613) / `wait_for_idle` (:654).
+
+Both drain call sites exist in the C port (`ff_dx12_frame_started` and
+`ff_dx12_wait_for_idle` in `dx12_globals.c`). Note that `keep_alive_destroy` is
+a third, different case: it runs after the queues that own the fences are
+destroyed, so it must release without consulting fence values at all. See the
+twelfth review pass.
 
 ## Fifth review pass: remaining modules diffed against the legacy C++
 
@@ -536,7 +556,7 @@ The GPU allocator's pinned free-list region is already the right shape for
 a persistent bindless table; going bindless mainly means sizing it much
 larger (order 1M CBV_SRV_UAV descriptors) and having views write into it
 once instead of per-frame. Classic and bindless paths can share the same
-allocator, so milestone 3 can proceed with normal descriptor tables.
+allocator, so the classic renderer can proceed with normal descriptor tables.
 
 ## Milestone 4 (complete)
 
@@ -711,3 +731,72 @@ reused a single heap and never pruned. A passing test that never reaches the cod
 worse than no test.
 
 Full suite: 844 passing, zero skipped.
+
+## Twelfth review pass
+
+### keep_alive_destroy consulted fences that were already destroyed (fixed)
+
+`destroy_d3d` runs `wait_for_idle`, then destroys the three queues, then calls
+`keep_alive_destroy`. That last function looped over every queued node and called
+`ff_dx12_fence_values_wait` on it, which reads through `ff_dx12_fence_value::fence` into fences
+that the queue destroy had already torn down.
+
+Two separate problems in one line:
+
+1. A use-after-free on the fence objects, since the queues own them and are gone by then.
+2. A node can name a `signal_later` value that was never submitted, when a command list records a
+   barrier against a resource and is then never executed. `ff_dx12_resource_destroy` hands
+   `global_write` to the keep-alive list, so that unsatisfiable value ends up in a node. Waiting on
+   it could never return.
+
+`wait_for_idle` already ran, so the GPU is idle and nothing in the list is still referenced. The
+loop now releases every node outright without consulting any fence.
+
+An intermediate attempt that guarded with `ff_dx12_fence_values_wait_is_pending` was wrong for the
+same underlying reason: it still dereferences the destroyed fence. At this point in teardown the
+fence values carry no usable information at all.
+
+Covered by three ordering tests in `dx12_lifetime_deep_tests`: list destroyed before the resource,
+resource destroyed before the list, and a list that is never executed at all (the reproducer).
+
+Full suite: 847 passing, zero skipped.
+
+## Current state and next steps
+
+Milestones 1-4 are complete and committed. The suite is 847 passing, zero
+skipped, across 19 dx12 test files in `test/ff.test.unit.c/dx12/`.
+
+### What milestone 5 needs
+
+Swap chain / `target_window` plus image decoding for textures:
+
+- `ff_dx12_target_window`: `IDXGISwapChain4`, per-backbuffer `ff_dx12_resource`
+  wrapping an external (swap-chain-owned) resource, RTV descriptors, resize and
+  full-screen handling. The back buffers are `ff_dx12_resource_kind_external`,
+  which already exists.
+- Frame pacing: the swap chain is where `ff_dx12_frame_started` /
+  `ff_dx12_frame_complete` actually get driven from, and where the
+  frames-in-flight fence waiting belongs. This is the one place a CPU wait on
+  the GPU is correct, and it must happen at frame boundaries, never mid-frame.
+- Image decoding for `ff_dx12_texture`, deferred from milestone 4. ff.base.c has
+  no image codec; WIC is the natural Win32-only choice, and it replaces the
+  legacy DirectXTex `ScratchImage` dependency including mip generation.
+
+### Review guidance for new subsystems
+
+Three of the last four bugs were in teardown and destroy ordering rather than in
+steady-state rendering, so any new subsystem should be checked against:
+
+- **Raw pointers into a resource held by something longer-lived.** Only the
+  `ID3D12Resource` is protected by keep-alive. Every other back-pointer must be
+  scrubbed on destroy (`resource_tracker_forget`, `residency_set_remove`).
+- **CPU waits on fence values that were never submitted.** `signal_later`
+  reserves a value that nothing signals until the list executes. Use
+  `ff_dx12_fence_value_wait_is_pending` before any CPU block. `_complete` is not
+  sufficient: an unsubmitted value is neither complete nor waitable.
+- **Teardown order.** After the queues are destroyed, fence values are dangling
+  and carry no information; do not read them.
+- **Fixed-capacity arrays.** The overflow path must degrade safely (return
+  invalid, or grow), never silently drop GPU work or block.
+- **Vacuous tests.** Assert that a test actually reaches the state it names; a
+  passing test that never exercises its target is worse than no test.

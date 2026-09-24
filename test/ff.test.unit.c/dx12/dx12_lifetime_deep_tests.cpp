@@ -6,9 +6,90 @@ namespace ff::test::dx12
     TEST_CLASS(dx12_lifetime_deep_tests)
     {
     public:
+        static D3D12_RESOURCE_DESC buffer_desc(UINT64 size = 1024)
+        {
+            D3D12_RESOURCE_DESC desc{};
+            desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            desc.Width = size;
+            desc.Height = 1;
+            desc.DepthOrArraySize = 1;
+            desc.MipLevels = 1;
+            desc.Format = DXGI_FORMAT_UNKNOWN;
+            desc.SampleDesc.Count = 1;
+            desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+            return desc;
+        }
+
         TEST_METHOD_CLEANUP(cleanup)
         {
             ff_dx12_destroy();
+        }
+
+        // A resource whose state was prepared on a command list that never executes holds a
+        // signal_later fence value that nothing will ever signal. Destroying it hands that value
+        // to the keep-alive list, and teardown must not block on it forever.
+        TEST_METHOD(abandoned_command_list_does_not_hang_keep_alive)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            ff_dx12_resource resource{};
+            D3D12_RESOURCE_DESC desc = buffer_desc(1024);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("keep_alive_test"),
+                &desc, nullptr));
+
+            // Records a barrier and stamps global_write with an unsubmitted fence value.
+            ff_dx12_commands_resource_state(&commands, &resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+
+            // Destroy executes the still-open list, so the value does get submitted.
+            ff_dx12_commands_destroy(&commands);
+            ff_dx12_resource_destroy(&resource);
+        }
+
+        // The dangerous ordering: the resource is destroyed while the list that referenced it is
+        // still open, so global_write names a fence value that has not been submitted. Teardown
+        // must not block on it.
+        TEST_METHOD(resource_destroyed_before_its_command_list_executes)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            ff_dx12_resource resource{};
+            D3D12_RESOURCE_DESC desc = buffer_desc(1024);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("keep_alive_test2"),
+                &desc, nullptr));
+
+            ff_dx12_commands_resource_state(&commands, &resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_commands_destroy(&commands);
+        }
+
+        // A command list that is never destroyed at all leaves global_write naming a value that
+        // nothing ever signals. ff_dx12_destroy must still tear down rather than block forever.
+        TEST_METHOD(resource_with_never_executed_list_does_not_hang_teardown)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            ff_dx12_resource resource{};
+            D3D12_RESOURCE_DESC desc = buffer_desc(1024);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("keep_alive_test3"),
+                &desc, nullptr));
+
+            ff_dx12_commands_resource_state(&commands, &resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+
+            // The list is intentionally abandoned; only the resource is destroyed.
+            ff_dx12_resource_destroy(&resource);
         }
 
         // frame_complete prunes ring buffers whose ranges have all retired. A buffer can still

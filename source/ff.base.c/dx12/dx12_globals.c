@@ -507,10 +507,11 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
 
 static void keep_alive_destroy(void)
 {
-    // Everything still queued has to be released now, so wait out whatever is left in flight.
+    // Runs after the queues, and therefore their fences, are already destroyed, so the fence
+    // values in these nodes must not be consulted at all. The GPU is idle by this point
+    // (wait_for_idle ran first), so everything still queued is safe to release outright.
     for (ff_dx12_keep_alive_node* node = s_keep_alive_head; node; node = node->next)
     {
-        ff_dx12_fence_values_wait(&node->fence_values, NULL);
         keep_alive_node_release(node);
     }
 
