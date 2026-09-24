@@ -38,13 +38,14 @@ Items 1-18 are complete. Items 19-20 are milestone 6.
   resource. (complete)
 - Milestone 3: command queues/lists, object cache. (complete)
 - Milestone 4: concrete buffer/texture/depth/target resource types. (complete)
-- Milestone 5: swap chain / `target_window`, image decoding for textures. (next)
+- Milestone 5: swap chain / `target_window`. (complete; image decoding for
+  textures deferred to a later milestone)
 - Milestone 6: shader delivery + draw device (the high-level rendering API).
 - Milestone 7: bindless renderer on top of the classic one.
 
 Twelve review passes have been run against the completed milestones; each is
-recorded below. Full suite: 847 passing, zero skipped. See "Current state and
-next steps" at the end for what milestone 5 needs.
+recorded below. Full suite: 857 passing, zero skipped. See "Current state and
+next steps" at the end for what remains.
 
 ## Milestone 1 (complete)
 
@@ -761,26 +762,156 @@ resource destroyed before the list, and a list that is never executed at all (th
 
 Full suite: 847 passing, zero skipped.
 
+## Milestone 5: swap chain (`ff_dx12_target_window`)
+
+Implemented in `dx12_target_window.h` / `dx12_target_window.c`, covered by ten
+tests in `test/ff.test.unit.c/dx12/dx12_target_window_tests.cpp`. Full suite:
+857 passing, zero skipped.
+
+### Scope
+
+The milestone was narrowed to the swap chain alone. Image decoding for
+`ff_dx12_texture` is a genuinely separable piece with no shared code (ff.base.c
+still has no image codec; WIC is the natural Win32-only replacement for the
+legacy DirectXTex `ScratchImage`, including mip generation), and the swap chain
+is the critical path to putting anything on screen. Decoding moves to a later
+milestone.
+
+### What was built
+
+- `ff_dx12_target_window`: `IDXGISwapChain4` created with
+  `CreateSwapChainForHwnd` on the direct command queue, `FLIP_DISCARD`,
+  `FF_DX12_TARGET_WINDOW_BUFFER_COUNT` (2) back buffers, and
+  `FRAME_LATENCY_WAITABLE_OBJECT`.
+- Each back buffer is an `ff_dx12_resource` built with
+  `ff_dx12_resource_init_external`, so the existing state tracker, residency and
+  barrier machinery apply to them unchanged. RTVs come from the shared
+  `ff_dx12_cpu_target_descriptors` allocator.
+- `MakeWindowAssociation(..., DXGI_MWA_NO_WINDOW_CHANGES)`. Full screen in this
+  library is borderless and driven by window style in
+  `source/ff.base.c/windows/window.c`, not DXGI exclusive full screen, so DXGI
+  must never react to alt-enter itself.
+- Frame pacing ported faithfully from the legacy ladder: four stages
+  `{latency 1, vsync}, {1, no vsync}, {2, vsync}, {2, no vsync}`, EMA over a
+  window of 16 with alpha 1/16, good/bad thresholds 58/54 fps, two good windows
+  to improve, one window ignored after a resize. Pacing resets on resize, and a
+  latency change re-acquires the frame-latency waitable handle.
+
+### The load-bearing ordering constraint: resize vs. the keep-alive list
+
+`IDXGISwapChain::ResizeBuffers` fails unless every reference to the back buffers
+has been released. But `ff_dx12_resource_destroy` does not release the
+`ID3D12Resource`; it queues the release onto the global keep-alive list, which
+is only drained by `ff_dx12_flush_keep_alive`. So `set_size` must call
+`ff_dx12_wait_for_idle()` (which retires GPU work *and* flushes keep-alive)
+**before** `destroy_back_buffers`. Without that drain the debug layer reports a
+live-reference error, which with `SetBreakOnSeverity(ERROR)` kills the test host
+outright.
+
+This is the swap chain's instance of the general rule that deferred release is
+invisible at the call site, and it is the reason resize is the only operation
+here that blocks the CPU on the GPU. It happens at a frame boundary during an
+explicit resize, never mid-frame.
+
+The frame-latency wait in `end_render` runs *before* `ExecuteCommandLists` and
+`Present`, so it paces the CPU at the frame boundary rather than stalling in the
+middle of building a frame.
+
+### Bugs found by self-review before the code was committed
+
+- `create_back_buffers` partial failure destroyed uninitialized entries.
+  Replaced the `bool back_buffers_valid` flag with a `size_t
+  back_buffers_created` count, incremented only after a successful init, so the
+  error path and `destroy` both unwind exactly what exists.
+- `ff_dx12_target_window_valid` accepted a partial back-buffer count; it now
+  requires the full count.
+- `set_size` early-returned `true` whenever the requested size matched the
+  current size, which was wrong if an earlier failure had left the buffers
+  missing at that same size. It now also requires the object to be fully built.
+
+### Bug found by a subsequent review pass
+
+`end_render` discarded the result of `update_pacing`, which calls
+`apply_latency`, which can call `ff_dx12_device_fatal_error` when
+`SetMaximumFrameLatency` fails. A device-fatal failure raised through that path
+was therefore reported to the caller as a successful present, delaying the
+device rebuild indefinitely. `update_pacing` now returns `bool`, and
+`end_render` returns false if pacing failed, if `Present` returned
+`DEVICE_RESET`/`DEVICE_REMOVED`, or if `ff_dx12_device_valid()` has gone false
+for any other reason.
+
+### Verifying the tests are not vacuous
+
+The resize drain was fault-injected by removing the `wait_for_idle` call.
+`present_then_resize_repeatedly` failed as expected, but
+`resize_releases_back_buffers` still passed, because it never rendered and so
+had nothing pending in keep-alive. It was strengthened to render before each
+resize; both now fail without the drain and pass with it. This technique has
+now caught two real gaps (the eleventh-pass ring prune and this one) and should
+be applied to every test that guards an ordering constraint.
+
+### Not ported
+
+- Window-message-driven resize (`WM_SIZE`, `WM_ENTERSIZEMOVE`,
+  `WM_EXITSIZEMOVE` deferring the resize until the drag ends). The C port
+  exposes `set_size` and expects the caller to drive it; connecting that to
+  `ff_window`'s signals is a follow-up.
+- Display rotation. The legacy called `IDXGISwapChain::SetRotation` from a
+  `rotation` field on its size type. `ff.base.c`'s window layer has no rotation
+  concept at all, so there is nothing to plumb through yet; rotated displays get
+  identity rotation. Add it alongside rotation support in `ff_window`.
+- Device reset (`before_reset` / `reset`). The legacy relied on
+  `device_child_base`, and the C port has no global device-child registry yet.
+
 ## Current state and next steps
 
-Milestones 1-4 are complete and committed. The suite is 847 passing, zero
-skipped, across 19 dx12 test files in `test/ff.test.unit.c/dx12/`.
+Milestones 1-5 are complete. The suite is 857 passing, zero skipped, across 20
+dx12 test files in `test/ff.test.unit.c/dx12/`.
 
-### What milestone 5 needs
+### The `ff.test.c` sample
 
-Swap chain / `target_window` plus image decoding for textures:
+`test/ff.test.c/main.c` is now a real end-to-end consumer of the stack: it
+creates the main window, initializes DX12 and a swap chain plus a small
+CPU-updated texture, and runs a `PeekMessage` loop that clears the back buffer
+to black, uploads the texture, and `CopyTextureRegion`s it to a moving position
+on the back buffer. No shaders are involved yet, so this works today and will
+keep working as a smoke test once the draw device lands.
 
-- `ff_dx12_target_window`: `IDXGISwapChain4`, per-backbuffer `ff_dx12_resource`
-  wrapping an external (swap-chain-owned) resource, RTV descriptors, resize and
-  full-screen handling. The back buffers are `ff_dx12_resource_kind_external`,
-  which already exists.
-- Frame pacing: the swap chain is where `ff_dx12_frame_started` /
-  `ff_dx12_frame_complete` actually get driven from, and where the
-  frames-in-flight fence waiting belongs. This is the one place a CPU wait on
-  the GPU is correct, and it must happen at frame boundaries, never mid-frame.
-- Image decoding for `ff_dx12_texture`, deferred from milestone 4. ff.base.c has
-  no image codec; WIC is the natural Win32-only choice, and it replaces the
-  legacy DirectXTex `ScratchImage` dependency including mip generation.
+It is wired to the window through `ff_window`'s `ff_signal`, which is also the
+first real use of the deferred-resize pattern that `target_window` itself does
+not implement: `WM_SIZE` records a pending size, `WM_ENTERSIZEMOVE` /
+`WM_EXITSIZEMOVE` coalesce the flood of sizes from an edge drag into one resize
+at the end, and the resize is applied from the loop rather than from inside the
+window proc. Graphics are torn down from `WM_DESTROY`, which is the last message
+where the `HWND` is still valid and therefore the last point at which the swap
+chain can legally be destroyed.
+
+Two bugs were found and fixed in the sample itself:
+
+- **Busy-spin when nothing is rendered.** Presenting is what paces the loop, via
+  the frame-latency waitable. Any path that skips presenting (a minimized window
+  has a 1x1 client area, and a failed device has no valid target) skipped the
+  only blocking call, and the loop then burned a full core. Measured at 4.56 CPU
+  seconds per 5 seconds of wall time while minimized. `render_frame` now reports
+  whether it presented, and the loop calls `WaitMessage` when it did not;
+  re-measured at 0.
+- **Resize failure was discarded.** `set_size` failing leaves the swap chain
+  with no back buffers and nothing retries it, so the app would idle forever in
+  a permanently non-rendering state. The sample now shuts down instead.
+
+The loop also exits rather than idling if the device becomes invalid, since
+rebuilding a lost device belongs in the renderer and not in the sample.
+
+Verified by running it: 700 frames across live edge-resizing, a
+minimize/restore cycle, and a clean exit with no debug-layer complaints.
+
+Remaining before a renderer can draw real geometry:
+
+- Window-message-driven resize inside `target_window` itself, rather than only
+  in the sample.
+- Image decoding for `ff_dx12_texture` via WIC (deferred from milestone 4).
+- Milestone 6: plain-C math types, shader delivery, and the batched
+  `draw_device` renderer.
 
 ### Review guidance for new subsystems
 

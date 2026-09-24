@@ -99,6 +99,9 @@
     <ClCompile Include="dx12\dx12_lifetime_deep_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_target_window_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_lifetime_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>

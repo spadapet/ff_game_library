@@ -40,6 +40,7 @@
     <ClCompile Include="dx12\dx12_descriptor_allocator_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_state_tests.cpp" />
     <ClCompile Include="dx12\dx12_lifetime_deep_tests.cpp" />
+    <ClCompile Include="dx12\dx12_target_window_tests.cpp" />
     <ClCompile Include="dx12\dx12_lifetime_tests.cpp" />
     <ClCompile Include="dx12\dx12_reset_timing_tests.cpp" />
     <ClCompile Include="dx12\dx12_milestone4_tests.cpp" />

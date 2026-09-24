@@ -38,6 +38,7 @@
     <ClCompile Include="dx12\dx12_depth.c" />
     <ClCompile Include="dx12\dx12_descriptor_allocator.c" />
     <ClCompile Include="dx12\dx12_target_texture.c" />
+    <ClCompile Include="dx12\dx12_target_window.c" />
     <ClCompile Include="dx12\dx12_texture.c" />
     <ClCompile Include="dx12\dx12_resource_state.c" />
     <ClCompile Include="dx12\dx12_resource_tracker.c" />
@@ -86,6 +87,7 @@
     <ClInclude Include="dx12\dx12_depth.h" />
     <ClInclude Include="dx12\dx12_descriptor_allocator.h" />
     <ClInclude Include="dx12\dx12_target_texture.h" />
+    <ClInclude Include="dx12\dx12_target_window.h" />
     <ClInclude Include="dx12\dx12_texture.h" />
     <ClInclude Include="dx12\dx12_resource_state.h" />
     <ClInclude Include="dx12\dx12_resource_tracker.h" />

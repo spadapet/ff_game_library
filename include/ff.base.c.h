@@ -44,6 +44,7 @@
 #include "../source/ff.base.c/dx12/dx12_texture.h"
 #include "../source/ff.base.c/dx12/dx12_depth.h"
 #include "../source/ff.base.c/dx12/dx12_target_texture.h"
+#include "../source/ff.base.c/dx12/dx12_target_window.h"
 
 #include "../source/ff.base.c/windows/module.h"
 #include "../source/ff.base.c/windows/task.h"
