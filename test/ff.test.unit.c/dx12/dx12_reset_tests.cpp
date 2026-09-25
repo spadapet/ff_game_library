@@ -127,7 +127,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
 
             // Force the SRV to exist so the reset has a view to re-create.
-            D3D12_CPU_DESCRIPTOR_HANDLE view_before = ff_dx12_texture_view(&texture);
+            D3D12_CPU_DESCRIPTOR_HANDLE view_before = ff_dx12_texture_view_handle(&texture);
             Assert::AreNotEqual((size_t)0, (size_t)view_before.ptr);
 
 
@@ -366,7 +366,7 @@ namespace ff::test::dx12
             ff_dx12_texture_params params = ff_dx12_texture_params_default(64, 64);
             Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
 
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&texture).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&texture).ptr);
 
             ff_dx12_descriptor_buffer* owner = texture.view.owner;
             const size_t start = texture.view.start;
@@ -375,7 +375,7 @@ namespace ff::test::dx12
 
             Assert::IsTrue(owner == texture.view.owner);
             Assert::AreEqual(start, texture.view.start);
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&texture).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&texture).ptr);
 
             ff_dx12_texture_destroy(&texture);
         }
@@ -458,7 +458,7 @@ namespace ff::test::dx12
             const float clear[4]{ 0, 0, 0, 1 };
             params.optimized_clear_color = clear;
             Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&texture).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&texture).ptr);
 
             ff_dx12_target_texture target{};
             Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 0, 0, 0));
@@ -694,8 +694,8 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_texture_init(&a, &params));
             Assert::IsTrue(ff_dx12_texture_init(&b, &params));
 
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&a).ptr);
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&b).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&a).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&b).ptr);
 
             Assert::IsTrue(ff_dx12_reset_device(true));
             ff_dx12_texture_destroy(&a);
@@ -703,7 +703,7 @@ namespace ff::test::dx12
 
             Assert::IsTrue(ff_dx12_texture_valid(&b));
             Assert::AreEqual((size_t)2, ff_dx12_resource_reset_count(&b.resource));
-            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view(&b).ptr);
+            Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_handle(&b).ptr);
 
             ff_dx12_texture_destroy(&b);
         }

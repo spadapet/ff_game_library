@@ -243,7 +243,7 @@ namespace ff::test::dx12
                 ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
                 Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
 
-                D3D12_CPU_DESCRIPTOR_HANDLE view = ff_dx12_texture_view(&texture);
+                D3D12_CPU_DESCRIPTOR_HANDLE view = ff_dx12_texture_view_handle(&texture);
                 Assert::IsTrue(view.ptr != 0);
 
                 ff_dx12_texture_destroy(&texture);
@@ -305,7 +305,7 @@ namespace ff::test::dx12
                 ff_dx12_texture texture{};
                 ff_dx12_texture_params params = ff_dx12_texture_params_default(16, 16);
                 Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
-                Assert::IsTrue(ff_dx12_texture_view(&texture).ptr != 0);
+                Assert::IsTrue(ff_dx12_texture_view_handle(&texture).ptr != 0);
 
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
 

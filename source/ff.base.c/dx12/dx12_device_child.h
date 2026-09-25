@@ -19,6 +19,7 @@ typedef enum ff_dx12_device_child_type
     ff_dx12_device_child_type_resource,
     ff_dx12_device_child_type_buffer,
     ff_dx12_device_child_type_texture,
+    ff_dx12_device_child_type_texture_view,
     ff_dx12_device_child_type_depth,
     ff_dx12_device_child_type_target_texture,
     ff_dx12_device_child_type_target_window,

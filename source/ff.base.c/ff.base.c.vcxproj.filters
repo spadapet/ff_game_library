@@ -98,6 +98,9 @@
     <ClCompile Include="dx12\dx12_texture.c">
       <Filter>dx12</Filter>
     </ClCompile>
+        <ClCompile Include="dx12\dx12_texture_view.c">
+          <Filter>dx12</Filter>
+        </ClCompile>
     <ClCompile Include="dx12\dx12_resource_state.c">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -105,6 +108,9 @@
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\dx12_resource.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_pacing.c">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\dx12_queue.c">
@@ -239,6 +245,9 @@
     <ClInclude Include="dx12\dx12_texture.h">
       <Filter>dx12</Filter>
     </ClInclude>
+        <ClInclude Include="dx12\dx12_texture_view.h">
+          <Filter>dx12</Filter>
+        </ClInclude>
     <ClInclude Include="dx12\dx12_resource_state.h">
       <Filter>dx12</Filter>
     </ClInclude>
@@ -246,6 +255,9 @@
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_resource.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_pacing.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_queue.h">

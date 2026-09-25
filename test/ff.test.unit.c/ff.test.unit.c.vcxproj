@@ -46,6 +46,8 @@
     <ClCompile Include="dx12\dx12_milestone4_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_tracker_tests.cpp" />
     <ClCompile Include="dx12\dx12_reset_tests.cpp" />
+    <ClCompile Include="dx12\dx12_pacing_tests.cpp" />
+    <ClCompile Include="dx12\dx12_texture_view_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_tests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

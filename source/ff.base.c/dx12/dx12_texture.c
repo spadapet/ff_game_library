@@ -135,7 +135,7 @@ ff_dx12_resource* ff_dx12_texture_resource(ff_dx12_texture* texture)
     return &texture->resource;
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view(ff_dx12_texture* texture)
+D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_handle(ff_dx12_texture* texture)
 {
     FF_ASSERT_RET_VAL(ff_dx12_texture_valid(texture), (D3D12_CPU_DESCRIPTOR_HANDLE){ 0 });
 

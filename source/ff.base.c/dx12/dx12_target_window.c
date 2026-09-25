@@ -6,16 +6,6 @@
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_target_window.h"
 
-static const ff_dx12_pacing_stage s_pacing_stages[FF_DX12_PACING_STAGE_COUNT] =
-{
-    { .latency = 1, .vsync = true },
-    { .latency = 1, .vsync = false },
-    { .latency = 2, .vsync = true },
-    { .latency = 2, .vsync = false },
-};
-
-static const double s_seconds_per_update = 1.0 / 60.0;
-
 static int64_t perf_counter(void)
 {
     LARGE_INTEGER value;
@@ -39,14 +29,32 @@ static double perf_frequency(void)
 
 uint32_t ff_dx12_target_window_pacing_latency(const ff_dx12_target_window* target)
 {
-    FF_ASSERT_RET_VAL(target && target->pacing.stage < FF_DX12_PACING_STAGE_COUNT, 1);
-    return s_pacing_stages[target->pacing.stage].latency;
+    FF_ASSERT_RET_VAL(target, 1);
+    return internal_ff_dx12_pacing_latency(&target->pacing);
 }
 
 bool ff_dx12_target_window_pacing_vsync(const ff_dx12_target_window* target)
 {
-    FF_ASSERT_RET_VAL(target && target->pacing.stage < FF_DX12_PACING_STAGE_COUNT, true);
-    return s_pacing_stages[target->pacing.stage].vsync;
+    FF_ASSERT_RET_VAL(target, true);
+    return internal_ff_dx12_pacing_vsync(&target->pacing);
+}
+
+double ff_dx12_target_window_pacing_average_seconds(const ff_dx12_target_window* target)
+{
+    FF_ASSERT_RET_VAL(target, 0.0);
+    return target->pacing.average_seconds;
+}
+
+uint64_t ff_dx12_target_window_pacing_late_frames(const ff_dx12_target_window* target)
+{
+    FF_ASSERT_RET_VAL(target, 0);
+    return target->pacing.total_late_frames;
+}
+
+size_t ff_dx12_target_window_pacing_stage(const ff_dx12_target_window* target)
+{
+    FF_ASSERT_RET_VAL(target, 0);
+    return target->pacing.stage;
 }
 
 DXGI_FORMAT ff_dx12_target_window_format(void)
@@ -56,10 +64,7 @@ DXGI_FORMAT ff_dx12_target_window_format(void)
 
 static void reset_pacing(ff_dx12_target_window* target)
 {
-    target->pacing.average = s_seconds_per_update;
-    target->pacing.last_tick = 0;
-    target->pacing.count = 0;
-    target->pacing.stage = 0;
+    internal_ff_dx12_pacing_init(&target->pacing, internal_ff_dx12_pacing_refresh_seconds(target->hwnd));
 }
 
 static void close_latency_handle(ff_dx12_target_window* target)
@@ -285,9 +290,12 @@ bool ff_dx12_target_window_set_size(ff_dx12_target_window* target, size_t width,
         return false;
     }
 
-    // Resizing invalidates the pacing history, since frame times across a resize say nothing about
-    // how the new size performs.
-    reset_pacing(target);
+    // Resizing invalidates the in-flight measurements, since frame times spanning a resize say
+    // nothing about how the new size performs. The learned stage is kept: a machine that could not
+    // hold stage 0 a moment ago is unlikely to manage it now that it has more pixels to fill.
+    // The monitor may also have changed, so re-read its refresh rate.
+    target->pacing.refresh_seconds = internal_ff_dx12_pacing_refresh_seconds(target->hwnd);
+    internal_ff_dx12_pacing_interrupt(&target->pacing);
 
     return apply_latency(target) && create_back_buffers(target);
 }
@@ -384,49 +392,27 @@ bool ff_dx12_target_window_begin_render(ff_dx12_target_window* target, ff_dx12_c
 
 static bool update_pacing(ff_dx12_target_window* target)
 {
-    const size_t ema_window = 16;
-    const double ema_alpha = 1.0 / (double)ema_window;
-    const double good_fps = 58.0;
-    const double bad_fps = 54.0;
-    const size_t window_count_to_improve = 2;
-    const size_t window_count_ignore_after_resize = 1;
-
     const int64_t now = perf_counter();
     const int64_t last = target->pacing.last_tick;
     target->pacing.last_tick = now;
 
-    // The first frame after init or a resize has no previous tick to measure against.
+    // The first frame after init, a resize or a reset has no previous tick to measure against.
     FF_CHECK_RET_VAL(last, true);
 
-    const double frame_time = (double)(now - last) / perf_frequency();
-    target->pacing.average = target->pacing.average * (1.0 - ema_alpha) + frame_time * ema_alpha;
+    double frame_seconds = (double)(now - last) / perf_frequency();
 
-    // Only reconsider the stage once per window of frames, so one slow frame can't move it.
-    FF_CHECK_RET_VAL(!(++target->pacing.count % ema_window), true);
-
-    const size_t window_count = target->pacing.count / ema_window;
-    const uint32_t before_latency = ff_dx12_target_window_pacing_latency(target);
-
-    if (target->pacing.average <= (1.0 / good_fps) && target->pacing.stage > 0 &&
-        window_count >= window_count_to_improve)
+    // After a missed vblank the latency handle is already signaled, so the following frame does
+    // not block and is measured back-to-back with this one. That is the tail of one long frame,
+    // not a genuinely fast frame, and feeding it in as-is is what made the old ladder see
+    // above-refresh frame rates and oscillate. Charge it at the refresh interval instead.
+    if (frame_seconds < target->pacing.refresh_seconds)
     {
-        target->pacing.stage--;
-    }
-    else if (target->pacing.average >= (1.0 / bad_fps) &&
-        (target->pacing.stage > 0 || window_count > window_count_ignore_after_resize))
-    {
-        if (target->pacing.stage + 1 < FF_DX12_PACING_STAGE_COUNT)
-        {
-            target->pacing.stage++;
-        }
+        frame_seconds = target->pacing.refresh_seconds;
     }
 
-    if (before_latency != ff_dx12_target_window_pacing_latency(target))
-    {
-        return apply_latency(target);
-    }
+    FF_CHECK_RET_VAL(internal_ff_dx12_pacing_add_frame(&target->pacing, frame_seconds), true);
 
-    return true;
+    return apply_latency(target);
 }
 
 bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_commands* commands)

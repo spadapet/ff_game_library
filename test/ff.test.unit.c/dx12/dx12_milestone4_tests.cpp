@@ -154,12 +154,12 @@ namespace ff::test::dx12
             // No SRV until it's asked for.
             Assert::IsFalse(ff_dx12_descriptor_range_valid(&texture.view));
 
-            const D3D12_CPU_DESCRIPTOR_HANDLE view = ff_dx12_texture_view(&texture);
+            const D3D12_CPU_DESCRIPTOR_HANDLE view = ff_dx12_texture_view_handle(&texture);
             Assert::IsTrue(view.ptr != 0);
             Assert::IsTrue(ff_dx12_descriptor_range_valid(&texture.view));
 
             // A second call reuses the same descriptor instead of leaking a new one.
-            Assert::AreEqual(view.ptr, ff_dx12_texture_view(&texture).ptr);
+            Assert::AreEqual(view.ptr, ff_dx12_texture_view_handle(&texture).ptr);
 
             ff_dx12_texture_destroy(&texture);
             ff_dx12_wait_for_idle();

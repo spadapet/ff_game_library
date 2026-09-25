@@ -13,6 +13,7 @@
 #include "dx12/dx12_target_texture.h"
 #include "dx12/dx12_target_window.h"
 #include "dx12/dx12_texture.h"
+#include "dx12/dx12_texture_view.h"
 
 static uint64_t s_reset_count;
 static bool s_resetting;
@@ -40,6 +41,7 @@ static void child_before_reset(ff_dx12_device_child* child)
         // The rest own no GPU object of their own: their resource and their descriptor range are
         // both rebuilt in place by other passes, so there is nothing to release here.
         case ff_dx12_device_child_type_texture:
+        case ff_dx12_device_child_type_texture_view:
         case ff_dx12_device_child_type_depth:
         case ff_dx12_device_child_type_target_texture:
             break;
@@ -62,6 +64,9 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
 
         case ff_dx12_device_child_type_texture:
             return internal_ff_dx12_texture_reset((ff_dx12_texture*)child->owner);
+
+        case ff_dx12_device_child_type_texture_view:
+            return internal_ff_dx12_texture_view_reset((ff_dx12_texture_view*)child->owner);
 
         case ff_dx12_device_child_type_depth:
             return internal_ff_dx12_depth_reset((ff_dx12_depth*)child->owner);

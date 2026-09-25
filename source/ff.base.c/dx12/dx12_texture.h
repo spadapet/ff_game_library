@@ -49,7 +49,8 @@ DXGI_FORMAT ff_dx12_texture_format(const ff_dx12_texture* texture);
 D3D12_CLEAR_VALUE ff_dx12_texture_optimized_clear_value(const ff_dx12_texture* texture);
 ff_dx12_resource* ff_dx12_texture_resource(ff_dx12_texture* texture);
 
-D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view(ff_dx12_texture* texture);
+// The SRV over the whole texture. ff_dx12_texture_view covers sub-ranges.
+D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_handle(ff_dx12_texture* texture);
 
 // Copies a tightly packed block of pixels into one subresource at (dest_x, dest_y). The data is
 // staged through the shared upload allocator, so it may be freed as soon as this returns.

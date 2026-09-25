@@ -42,9 +42,11 @@
     <ClCompile Include="dx12\dx12_target_texture.c" />
     <ClCompile Include="dx12\dx12_target_window.c" />
     <ClCompile Include="dx12\dx12_texture.c" />
+    <ClCompile Include="dx12\dx12_texture_view.c" />
     <ClCompile Include="dx12\dx12_resource_state.c" />
     <ClCompile Include="dx12\dx12_resource_tracker.c" />
     <ClCompile Include="dx12\dx12_resource.c" />
+    <ClCompile Include="dx12\dx12_pacing.c" />
     <ClCompile Include="dx12\dx12_queue.c" />
     <ClCompile Include="dx12\dx12_commands.c" />
     <ClCompile Include="dx12\dx12_object_cache.c" />
@@ -93,9 +95,11 @@
     <ClInclude Include="dx12\dx12_target_texture.h" />
     <ClInclude Include="dx12\dx12_target_window.h" />
     <ClInclude Include="dx12\dx12_texture.h" />
+    <ClInclude Include="dx12\dx12_texture_view.h" />
     <ClInclude Include="dx12\dx12_resource_state.h" />
     <ClInclude Include="dx12\dx12_resource_tracker.h" />
     <ClInclude Include="dx12\dx12_resource.h" />
+    <ClInclude Include="dx12\dx12_pacing.h" />
     <ClInclude Include="dx12\dx12_queue.h" />
     <ClInclude Include="dx12\dx12_commands.h" />
     <ClInclude Include="dx12\dx12_object_cache.h" />

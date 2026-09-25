@@ -111,6 +111,12 @@
     <ClCompile Include="dx12\dx12_milestone4_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+        <ClCompile Include="dx12\dx12_pacing_tests.cpp">
+          <Filter>dx12</Filter>
+        </ClCompile>
+        <ClCompile Include="dx12\dx12_texture_view_tests.cpp">
+          <Filter>dx12</Filter>
+        </ClCompile>
     <ClCompile Include="dx12\dx12_resource_tracker_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>

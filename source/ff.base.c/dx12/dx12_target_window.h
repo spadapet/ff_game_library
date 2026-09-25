@@ -3,19 +3,10 @@
 #include "dx12_commands.h"
 #include "dx12_descriptor_range.h"
 #include "dx12_device_child.h"
+#include "dx12_pacing.h"
 #include "dx12_resource.h"
 
 #define FF_DX12_TARGET_WINDOW_BUFFER_COUNT 2
-
-// Frame pacing ladder. Each stage trades latency and vsync for a more forgiving frame budget, so
-// stage 0 is the best-looking and the last stage is the most tolerant of a slow GPU.
-typedef struct ff_dx12_pacing_stage
-{
-    uint32_t latency;
-    bool vsync;
-} ff_dx12_pacing_stage;
-
-#define FF_DX12_PACING_STAGE_COUNT 4
 
 // A swap chain and its back buffers, presented to one window. The back buffers are external
 // resources: the swap chain owns the memory, and this only holds references plus the render target
@@ -37,13 +28,7 @@ typedef struct ff_dx12_target_window
     size_t width;
     size_t height;
 
-    struct
-    {
-        double average;
-        int64_t last_tick;
-        size_t count;
-        size_t stage;
-    } pacing;
+    ff_dx12_pacing pacing;
 } ff_dx12_target_window;
 
 bool ff_dx12_target_window_init(ff_dx12_target_window* target, HWND hwnd);
@@ -81,6 +66,13 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
 
 uint32_t ff_dx12_target_window_pacing_latency(const ff_dx12_target_window* target);
 bool ff_dx12_target_window_pacing_vsync(const ff_dx12_target_window* target);
+
+// Measured average frame time in seconds, and the number of frames that overran the refresh
+// interval since init. Both are for diagnostics and tests; the ladder does not steer on the
+// average.
+double ff_dx12_target_window_pacing_average_seconds(const ff_dx12_target_window* target);
+uint64_t ff_dx12_target_window_pacing_late_frames(const ff_dx12_target_window* target);
+size_t ff_dx12_target_window_pacing_stage(const ff_dx12_target_window* target);
 
 // Device reset. before_reset drops the back buffers, the latency handle and the swap chain
 // itself: a swap chain is bound to the command queue it was created with, so it cannot outlive

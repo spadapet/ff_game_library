@@ -5,9 +5,28 @@ Porting `source/ff.application/graphics/dx12/` (and `dxgi/`) into
 COBJMACROS COM calls, POD structs, explicit init/destroy, `ff_arena`
 allocation, `ff_string_view` parameters.
 
-## Roadmap (20 items, dependency order)
+## Roadmap (24 items, dependency order)
 
-Items 1-18 are complete. Items 19-20 are milestone 6.
+Items 1-19 are complete. Items 20-24 are milestone 6 and later.
+
+The roadmap was re-checked against the old `source/ff.application/graphics/`
+tree after device reset landed, because the original 20 items were written from
+the `dx12/` folder alone and missed things that live in `dxgi/`, `types/`, and
+`resource/`. What came out of that comparison:
+
+- `dx12/texture_view` was genuinely missing and is now item 19. Sprites need
+  sub-range views, so it is a prerequisite for the renderer rather than
+  something to defer.
+- `dxgi/format_util`, `dx12/gpu_event`, and `types/color` are real but small.
+  They get pulled in as the code that needs them is written, not as milestones
+  of their own.
+- `dxgi/sprite_data` is deliberately left as late as possible.
+- Palette support is required eventually, so `dxgi/palette_base` and
+  `resource/palette_data` / `palette_cycle` get pulled in when the renderer
+  reaches the palette path.
+- Out of scope for now, and not on the roadmap at all: `resource/animation*`,
+  `sprite_font`, `sprite_optimizer`, `png_image`, and all of `write/`
+  (DirectWrite). These are content and text layers, not the graphics engine.
 
 1. `dx12-math-types` - covered by existing `base/math.h` (`ff_math_round_up`,
    `ff_math_round_up_pow2`), no separate module needed. (complete)
@@ -28,8 +47,17 @@ Items 1-18 are complete. Items 19-20 are milestone 6.
 16. `dx12-texture` - `ff_dx12_texture`. (complete, milestone 4)
 17. `dx12-depth` - `ff_dx12_depth`. (complete, milestone 4)
 18. `dx12-target` - `ff_dx12_target_texture`. (complete, milestone 4)
-19. `dx12-shader-delivery` - milestone 6.
-20. `dx12-draw-device` - milestone 6.
+19. `dx12-texture-view` - `ff_dx12_texture_view`, a sub-range SRV over an
+    `ff_dx12_texture`. (complete, milestone 6)
+20. `png-decode` - simple libpng decoding into an arena, no DirectXTex.
+    Milestone 6.
+21. `dx12-math-types` - `ff_color`, `ff_matrix`, `ff_matrix_stack`,
+    `ff_transform`, `ff_viewport` in plain C. Milestone 6.
+22. `dx12-shader-delivery` - milestone 6.
+23. `dx12-draw-device-state` - root signatures, PSO permutations, constant
+    buffers, and the state stacks. Milestone 6.
+24. `dx12-draw-device-batching` - instance buckets, transparency ordering, and
+    the `draw_*` entry points. Milestone 7.
 
 ## Milestone status
 
@@ -41,11 +69,12 @@ Items 1-18 are complete. Items 19-20 are milestone 6.
 - Milestone 5: swap chain / `target_window`. (complete; image decoding for
   textures deferred to a later milestone)
 - Device reset: `dx12_device_child` registry + `dx12_reset`. (complete)
-- Milestone 6: shader delivery + draw device (the high-level rendering API).
-- Milestone 7: bindless renderer on top of the classic one.
+- Milestone 6: texture views, math types, shader delivery, and the draw
+  device's state layer (root signatures, PSOs, constants).
+- Milestone 7: the batching renderer on top of milestone 6, then bindless.
 
 Twelve review passes have been run against the completed milestones; each is
-recorded below. Full suite: 884 passing, zero skipped. See "Current state and
+recorded below. Full suite: 894 passing, zero skipped. See "Current state and
 next steps" at the end for what remains.
 
 ## Milestone 1 (complete)
@@ -1047,9 +1076,9 @@ area that a reset test proved nothing by checking only "it still works".
 
 ## Current state and next steps
 
-Milestones 1-5 and device reset are complete. The suite is 884 passing, zero
-skipped, across 21 dx12 test files in `test/ff.test.unit.c/dx12/`, stable over
-four consecutive full runs.
+Milestones 1-5 and device reset are complete. The suite is 915 passing, zero
+skipped, across 22 dx12 test files in `test/ff.test.unit.c/dx12/`, stable over
+two consecutive full runs.
 
 ### The `ff.test.c` sample
 
@@ -1088,15 +1117,155 @@ rebuilding a lost device belongs in the renderer and not in the sample.
 Verified by running it: 700 frames across live edge-resizing, a
 minimize/restore cycle, and a clean exit with no debug-layer complaints.
 
-Remaining before a renderer can draw real geometry:
+Remaining before a renderer can draw real geometry: see "Milestone 6" below.
 
-- Window-message-driven resize inside `target_window` itself, rather than only
-  in the sample.
-- Image decoding for `ff_dx12_texture` via WIC (deferred from milestone 4).
-- Milestone 6: plain-C math types, shader delivery, and the batched
-  `draw_device` renderer.
+## Milestone 6: texture views, math types, shaders, draw state
 
-### Review guidance for new subsystems
+The old renderer is `dxgi/draw_util.cpp` (1118 lines) plus
+`dx12/draw_device.cpp` (981 lines). That is too much for one milestone, so it is
+split: milestone 6 builds everything the renderer needs to issue a single
+textured draw, and milestone 7 adds the batching that makes it fast. The split
+point is deliberate, because everything in milestone 6 is independently
+testable, while the batching is only meaningful once a draw works end to end.
+
+### 6a. `ff_dx12_texture_view` (complete)
+
+A sub-range SRV: `array_start` / `array_count` / `mip_start` / `mip_count` over
+an `ff_dx12_texture`. `ff_dx12_texture` already has a whole-resource SRV, and
+`ff_dx12_resource_create_shader_view` already takes the four range arguments, so
+this is mostly a device child that owns one descriptor range.
+
+What was built, and how it differs from the old `texture_view.cpp`:
+
+- A count of 0 means "the rest", resolved at init against the texture rather
+  than stored as 0, so the struct never holds a value that needs interpreting.
+  Init asserts both starts are in range and neither count runs past the end.
+- The descriptor is allocated lazily on first `ff_dx12_texture_view_cpu_handle`,
+  matching `ff_dx12_texture`, since a view can be created up front and never
+  sampled.
+- **The reset hook rewrites the SRV in place rather than freeing the range.**
+  The old `reset()` freed the descriptor and let the next use reallocate. That
+  is correct but pointless churn here: the CPU descriptor allocators survive a
+  reset with their buffers and indices intact (the load-bearing invariant that
+  `destroy_d3d(for_reset=true)` is built around), so the slot is still valid and
+  only its contents are stale. This matches `internal_ff_dx12_texture_reset`.
+- The old class held a `shared_ptr` to the texture; in C it is a raw
+  `ff_dx12_texture*`, so the texture must outlive every view of it.
+- Registered as `ff_dx12_device_child_type_texture_view`, placed immediately
+  after `_texture` in the enum so a view is reset after the texture it reads.
+
+Two naming collisions came out of this, both resolved by renaming rather than
+by picking a worse type name: `ff_dx12_texture_view` was already a *function* on
+texture, so that became `ff_dx12_texture_view_handle` (13 call sites), and the
+sub-range accessor is `ff_dx12_texture_view_cpu_handle`.
+
+**The tests were vacuous on the first attempt, again.** All ten passed with the
+reset hook stubbed out to `return true`. Two reasons: the raw
+`D3D12_CPU_DESCRIPTOR_HANDLE` cannot be compared across a reset at all (the heap
+is rebuilt at a new address, so the handle legitimately changes, and the first
+version of the test asserted it stayed equal and failed for the wrong reason),
+and a descriptor that is never refreshed still reads as a perfectly valid
+handle. The fix was `ff_dx12_texture_view_reset_count`, incremented only when
+the SRV is actually rewritten, plus asserting on `view.view.start` as the stable
+slot identity. With those, stubbing the hook fails 2 of the 10.
+
+10 tests in `dx12_texture_view_tests.cpp`; suite at 894.
+
+### 6a-2. Simple PNG decoding
+
+Done right after `texture_view`, and deliberately not later. Everything it needs
+already exists: `ff_dx12_texture_update` and the upload allocator are built and
+exercised, `ff_file_map_init` supplies the bytes, and `ff.base.c.vcxproj`
+already has a `ProjectReference` to `ff.vendor.libpng.vcxproj` that nothing uses
+yet (`data/compression.c` already links zlib the same way). Nothing later in
+milestone 6 makes this easier, and doing it first pays off twice: `ff.test.c`
+stops uploading a procedural gradient and starts uploading a real image, where a
+wrong row pitch or swapped channel is obvious on screen instead of plausible,
+and when sprites first draw there is only one new thing being debugged.
+
+**DirectXTex is not an option.** The old `png_image.cpp` returns
+`DirectX::ScratchImage`, which drags in a C++ library this project cannot
+reference. The C port decodes into an arena buffer instead and hands that
+straight to `ff_dx12_texture_update`. Compressed/block formats are the real
+reason the old code wanted DirectXTex; that problem is deferred until something
+actually needs BCn, and will be solved without DirectXTex.
+
+Scope for the first version, kept deliberately narrow:
+
+- 8-bit RGB and RGBA, non-interlaced, decoded to `R8G8B8A8_UNORM`. libpng's
+  transform calls (`png_set_expand`, `png_set_strip_16`, `png_set_gray_to_rgb`,
+  `png_set_add_alpha`) normalize most other inputs into that one path cheaply,
+  so accepting them is close to free; interlacing is the one case worth
+  rejecting outright rather than half-supporting.
+- Output goes into a caller-supplied `ff_arena`, following the house pattern:
+  the row pointer array libpng needs is a temporary that can come from an
+  `ff_arena_init_external` over a stack buffer for typical heights, spilling
+  only for very tall images.
+- No mip generation, no format conversion beyond the above, no premultiply. The
+  caller decides what to do with the pixels.
+- **No palette support in this version.** The old reader has a whole second half
+  for it (`has_palette`, `palette_`, `trans_palette`, `trans_color`, and a
+  separate palette image returned alongside the pixels). Indexed PNGs are the
+  input format for the palette renderer, so that path gets pulled in with the
+  rest of the palette work rather than guessed at now. Until then an indexed PNG
+  is either expanded to RGBA by `png_set_expand` or rejected; expanding is the
+  simpler choice and keeps the narrow path honest.
+
+libpng error handling is the one genuinely non-obvious part: it reports errors
+by `longjmp` to a `setjmp` the caller installs, so the decode function owns a
+`setjmp` and must make sure every arena and libpng struct it created is cleaned
+up on that path as well as the normal one.
+
+WIC was considered as an alternative and rejected: it flattens indexed PNGs,
+which loses exactly the palette data the renderer will need later, and it adds a
+COM boundary. libpng is already referenced and already gives the palette.
+
+### 6b. Math types, pulled in as needed
+
+`ff_color`, `ff_matrix` (4x4), `ff_matrix_stack`, `ff_transform`, `ff_viewport`.
+The old `types/` versions total roughly 460 lines and are pure value types, so
+they port almost directly once the operator overloads become named functions.
+`matrix_stack` is the one with real behaviour: the old `draw_base` exposes
+`world_matrix_stack()`, and the renderer pushes and pops around nested draws.
+
+### 6c. Shader delivery
+
+The old path is `object_cache::shader(resource_provider, name)`, backed by a
+global resource provider that no longer exists for C code. The HLSL sources are
+in `source/ff.application/assets/shaders/`: `vs_sprite`, `vs_line`,
+`vs_triangle`, `vs_rectangle`, `vs_circle`, `ps_sprite`, `ps_color`, plus
+`data.hlsli` and `functions.hlsli`.
+
+The replacement is compiled `.cso` blobs loaded from disk next to the
+executable, looked up by name. This keeps the object cache's existing shape: it
+already memoizes root signatures and PSOs, and a shader blob cache is the same
+pattern. Loading from disk rather than embedding keeps the build simple now and
+can be swapped for embedded blobs later without changing callers.
+
+### 6d. Draw device state layer
+
+Root signature (VS constants 0 and 1, PS constants 0, sampler table, texture
+table, palette tables), the PSO permutation matrix, and the three constant
+buffer layouts (`vs_constants_0`, `vs_constants_1`, `ps_constants_0`). The old
+code keys PSO permutations off a `state_t` flag set that includes
+`target_palette`, which selects a different pixel shader.
+
+Also in scope here, pulled in only as the code needs them:
+
+- `format_util` - `color_format`, `palette_format`, `has_alpha`,
+  `supports_pre_multiplied_alpha`, `fix_format`. `parse_format` is only needed
+  once assets are loaded by name, so it can wait.
+- `gpu_event` / PIX markers on `ff_dx12_commands` (`begin_event` / `end_event`).
+  Worth doing early in this milestone rather than late, because it is the main
+  tool for debugging everything after it.
+
+Deferred to milestone 7 or later: `sprite_data` (as late as possible), the
+palette stack (`palette_base`, `palette_data`, `palette_cycle`, pulled in when
+the renderer reaches the palette path), `render_targets`, WIC image decoding,
+and window-message-driven resize inside `target_window` rather than only in the
+sample.
+
+## Review guidance for new subsystems
 
 Three of the last four bugs were in teardown and destroy ordering rather than in
 steady-state rendering, so any new subsystem should be checked against:
@@ -1114,3 +1283,90 @@ steady-state rendering, so any new subsystem should be checked against:
   invalid, or grow), never silently drop GPU work or block.
 - **Vacuous tests.** Assert that a test actually reaches the state it names; a
   passing test that never exercises its target is worse than no test.
+
+## Frame pacing rework (`ff_dx12_pacing`)
+
+The legacy C++ `target_window::update_pacing` was ported faithfully, bugs and
+all. A Release benchmark of `ff.test.c` exposed them: across three 20-second
+runs the hitch rate was 0.17%, 2.0% and 60.5%. In the bad run the ladder latched
+at a median of 24.6ms for the full 20 seconds and never recovered, with the
+reported frame rate oscillating between 56 and 71 fps.
+
+Three defects in the original algorithm:
+
+1. **Stale EMA across a stage change.** `pacing.average` and `pacing.count` were
+   never reset when the stage changed, so the new stage was judged on 16 frames
+   measured under the old one. With `good_fps` 58 / `bad_fps` 54 and an average
+   near 24ms, the demote test kept re-triggering and the climb-down test could
+   never pass. This is what made the ladder latch.
+2. **Catch-up frames measured as fast frames.** After a missed vblank the
+   latency waitable object is already signaled, so the next frame does not block
+   and is timed back-to-back with the previous one. That is the tail of one long
+   frame, not a fast frame. Feeding it in produced above-refresh frame rates on
+   a 60Hz display and fed the oscillation.
+3. **Steering on an average.** An average cannot distinguish a steady 16.7ms
+   from an alternating 33ms/0.1ms pair that averages the same, which is exactly
+   the pattern defect 2 produces.
+
+The logic now lives in `dx12_pacing.{c,h}` as a pure state machine over
+`ff_dx12_pacing`, separated from the swap chain so it can be unit tested with
+synthetic frame times. `dx12_target_window.c` keeps only the tick measurement,
+the catch-up clamp, and `apply_latency`.
+
+What changed:
+
+- **Count late frames, do not average.** A frame is late when it exceeds the
+  refresh interval by half. The stage moves on how many frames missed, which an
+  average cannot express.
+- **Reseed the average on every stage change** and skip half a window of frames
+  afterwards, since `SetMaximumFrameLatency` does not take effect until the
+  pipeline drains to the new depth.
+- **Clamp catch-up frames** to the refresh interval in `update_pacing`.
+- **Demote only after two consecutive over-budget windows.** Dropping vsync is
+  visible to the player and must require a sustained problem.
+- **Exponential promote back-off, capped at 64 windows.** Each premature
+  promotion doubles the clean windows required next time, so a machine that
+  cannot hold a stage settles instead of flapping forever.
+- **Generous late-frame budget of a quarter window.** This was tuned from
+  measurement, not guessed. A budget of 1 frame in 16 caused repeated
+  demotions against a ~1% background rate of OS scheduling stalls, which
+  dropping vsync cannot fix. Trading away vsync for a stall the ladder has no
+  influence over is strictly a loss.
+- **Refresh rate read from the monitor** via `EnumDisplaySettingsW` instead of a
+  hardcoded 60Hz, so the ladder behaves on 120Hz and 144Hz displays. Re-read on
+  resize, since the window may have moved to another monitor.
+- **Resize keeps the learned stage** and only discards in-flight measurements. A
+  device reset still resets the stage fully, because that is a new device.
+
+The stage order is unchanged and deliberate: vsync is given up before latency.
+An extra frame of display latency is far more damaging to a fast action game
+than tearing, so latency 1 is held as long as possible.
+
+Result on a 60Hz display, Release, 60 seconds: 59.70 fps, median 16.665ms, p99
+16.998ms, 0.502% frames over 20ms, 0.023 CPU cores, and zero stage transitions.
+
+### Verifying the tests are not vacuous
+
+All four guards were confirmed to fail the suite when individually disabled:
+
+| Guard disabled | Tests that failed |
+| --- | --- |
+| Reseeding the average on a stage change | `average_is_not_carried_across_a_stage_change` |
+| Exponential promote back-off | `alternating_load_does_not_oscillate_forever`, `promotion_requires_more_evidence_after_a_failed_attempt` |
+| Post-change skip frames | `frames_right_after_an_interrupt_are_ignored` |
+| Two-window demote hysteresis | `a_single_bad_window_does_not_demote` |
+
+### Benchmark mode in `ff.test.c`
+
+The sample takes an optional "seconds to run" argument and exits with a summary,
+so pacing can be measured non-interactively. It reports median/p99/max frame
+time, a count of frames over 20ms, and CPU consumption as *cores used* from
+`GetProcessTimes`. Percentiles alone are misleading here: one hitch stays in the
+512-frame ring for 512 frames and makes a single event look sustained, which is
+why the raw long-frame count is reported alongside them.
+
+The cores metric is the one that proves the CPU is genuinely blocking on the
+latency handle rather than spinning. It was validated by injecting a 2ms busy
+spin per frame: the reading moved from 0.012 to 0.177 cores while the frame rate
+stayed at 60. Note that `ff_log_type_debug` is disabled in Release, so the
+sample enables it explicitly.
