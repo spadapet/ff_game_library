@@ -30,6 +30,12 @@
     <ClCompile Include="base\log_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\math_types_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\png_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\stream_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>

@@ -18,7 +18,9 @@
     <ClCompile Include="base\idict_tests.cpp" />
     <ClCompile Include="base\json_tests.cpp" />
     <ClCompile Include="base\log_tests.cpp" />
+    <ClCompile Include="base\math_types_tests.cpp" />
     <ClCompile Include="base\signal_tests.cpp" />
+    <ClCompile Include="base\png_tests.cpp" />
     <ClCompile Include="base\stream_tests.cpp" />
     <ClCompile Include="base\task_tests.cpp" />
     <ClCompile Include="base\dispatch_tests.cpp" />

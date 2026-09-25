@@ -885,11 +885,117 @@ be applied to every test that guards an ordering constraint.
 - Window-message-driven resize (`WM_SIZE`, `WM_ENTERSIZEMOVE`,
   `WM_EXITSIZEMOVE` deferring the resize until the drag ends). The C port
   exposes `set_size` and expects the caller to drive it; connecting that to
-  `ff_window`'s signals is a follow-up.
-- Display rotation. The legacy called `IDXGISwapChain::SetRotation` from a
-  `rotation` field on its size type. `ff.base.c`'s window layer has no rotation
-  concept at all, so there is nothing to plumb through yet; rotated displays get
-  identity rotation. Add it alongside rotation support in `ff_window`.
+  `ff_window`'s signals is a follow-up. `ff.test.c` does this itself for now,
+  and that implementation is the model for the eventual built-in version.
+- Display rotation. See "Display rotation and DPI" below for the full design;
+  the short version is that rotated displays currently get identity rotation,
+  and the types added in milestone 6b carry a rotation field so support can be
+  added later without reshaping any API.
+
+## Display rotation and DPI
+
+Neither is supported yet, and neither blocks anything. This section exists so
+that the decision is a deliberate deferral with a known implementation path
+rather than something rediscovered later.
+
+### Current state
+
+Resize is complete and verified: `ff_dx12_target_window_set_size` waits for
+idle, drops every back buffer reference (draining the keep-alive list, since
+`ResizeBuffers` fails while any reference survives), resizes, and rebuilds.
+Minimize is handled by clamping the zero-sized client area to 1x1, and a
+previous failure that left the buffers missing still forces a rebuild rather
+than hitting the same-size early-out. This was exercised against the running
+sample across four resizes plus minimize, restore, and maximize, with pacing
+holding stage 0 throughout.
+
+DPI is handled far enough to be correct: `window.c` responds to `WM_DPICHANGED`
+by moving the window to the suggested rect, and since everything renders in
+physical pixels, `GetClientRect` already returns post-DPI pixels and the swap
+chain is always the right size. What is missing is a `dpi_scale` concept, which
+only matters once there is a *logical* coordinate system — the legacy used
+`dpi_scale` exclusively for logical/scaled conversions and never for buffer
+sizing.
+
+Rotation is entirely absent.
+
+### Why doing rotation ourselves is faster than letting the OS do it
+
+When the display is rotated and the swap chain presents unrotated buffers, the
+composition path has to rotate the image on the way to the scanout hardware.
+That is an extra full-screen read-modify-write per frame, and it is pure
+overhead: the same pixels, moved, for no visual gain. Rotating in the view
+matrix instead costs *nothing* — the vertices are already being transformed by
+a matrix, so folding a rotation into it is free. The legacy code understood
+this, which is why `get_rotate_matrix` exists as a 4x2 table rather than
+relying on DXGI alone.
+
+This matters more in full screen, and for a specific reason worth writing down:
+
+> `SetRotation` only works for flip-model swap chains presented in **windowed**
+> mode. In full-screen mode it does not fail, but the swap chain must be set to
+> `DXGI_MODE_ROTATION_IDENTITY` or `Present` itself fails.
+
+So in true full screen, handling rotation in the view matrix is not an
+optimization, it is the only option. Windowed mode is where the OS *can* do it
+for you, and where doing it yourself saves the composition pass and lets the
+presented buffer stay in the scanout orientation, which is the one most likely
+to hit an efficient direct-flip / overlay path instead of falling back to
+composition.
+
+One caveat specific to this codebase: full screen here is a **borderless
+`WS_POPUP` window** (`default_window_style` in `window.c`), and
+`SetFullscreenState` is never called — so DXGI still considers it windowed and
+`SetRotation` remains legal. The full-screen restriction above therefore does
+not bite today. It becomes real only if exclusive full screen is ever added,
+and the performance argument applies either way.
+
+### What full support requires
+
+Split across the window layer and the graphics layer:
+
+1. **A size type carrying rotation and DPI.** The legacy `ff::window_size` is
+   just three fields — `logical_pixel_size` (the client rect in pixels),
+   `dpi_scale` (dpi / 96), and `rotation` (a `DMDO_*` value) — plus helpers.
+   The key helper is `physical_pixel_size()`, which **swaps width and height
+   when the rotation is 90 or 270**.
+2. **Querying the rotation.** `MonitorFromWindow` -> `GetMonitorInfo` ->
+   `EnumDisplaySettingsW(ENUM_CURRENT_SETTINGS)` -> `DEVMODE.dmDisplayOrientation`.
+   `dx12_pacing.c` already calls `EnumDisplaySettingsW` on the same `DEVMODE`
+   for the refresh rate, so the query is already proven here.
+3. **Sizing the swap chain to the physical size,** i.e. swapped for 90/270.
+   This is required by `DXGI_SCALING_NONE`, which the port already uses: the
+   buffer must match the output exactly.
+4. **Calling `SetRotation`** on every size change, with the legacy's
+   counter-clockwise mapping: `DMDO_DEFAULT` -> `IDENTITY`, `DMDO_90` ->
+   `ROTATE270`, `DMDO_180` -> `ROTATE180`, `DMDO_270` -> `ROTATE90`. Note the
+   90/270 inversion — the DXGI value describes how the *buffer* is rotated to
+   reach the display, which is the opposite of the display's own orientation.
+5. **Folding the rotation into the view matrix,** which is where the efficiency
+   actually comes from. The legacy table is four orthographic-to-NDC matrices
+   (mapping `[0..w] x [0..h]` to `[-1..1] x [1..-1]`) with the rotation baked
+   in, paired with an `ignore_rotation` variant of each that is just the
+   unrotated matrix. `ignore_rotation` means "draw as if the display were not
+   rotated", and is what an offscreen intermediate that will itself be rotated
+   later needs.
+6. **Handling `WM_DPICHANGED`** beyond repositioning, once `dpi_scale` exists.
+
+### What milestone 6b does about it now
+
+Nothing functional. The only requirement is that the types added in 6b leave
+room, because retrofitting a field is cheap while reshaping every call site is
+not:
+
+- The size/viewport type carries `rotation` and `dpi_scale` fields from the
+  start, even though `rotation` is always `DMDO_DEFAULT` and `dpi_scale` is
+  always 1.0 today.
+- Anything computing a view matrix goes through one function that takes the
+  size type, so the rotation table has exactly one place to land later.
+- That function takes an `ignore_rotation`-style parameter, or is shaped so one
+  can be added without touching callers.
+
+Until then, a rotated display renders upright and correct — the OS composition
+pass handles it — just with a cost that will be reclaimed when this is done.
 
 ## Device reset (complete)
 
@@ -1076,9 +1182,9 @@ area that a reset test proved nothing by checking only "it still works".
 
 ## Current state and next steps
 
-Milestones 1-5 and device reset are complete. The suite is 915 passing, zero
-skipped, across 22 dx12 test files in `test/ff.test.unit.c/dx12/`, stable over
-two consecutive full runs.
+Milestones 1-5, device reset, PNG decoding (6a-2), and the math types (6b) are
+complete. The suite is 983 passing, zero skipped, stable across full runs in
+Debug, with Release building warning-free.
 
 ### The `ff.test.c` sample
 
@@ -1203,13 +1309,20 @@ Scope for the first version, kept deliberately narrow:
   only for very tall images.
 - No mip generation, no format conversion beyond the above, no premultiply. The
   caller decides what to do with the pixels.
-- **No palette support in this version.** The old reader has a whole second half
-  for it (`has_palette`, `palette_`, `trans_palette`, `trans_color`, and a
-  separate palette image returned alongside the pixels). Indexed PNGs are the
-  input format for the palette renderer, so that path gets pulled in with the
-  rest of the palette work rather than guessed at now. Until then an indexed PNG
-  is either expanded to RGBA by `png_set_expand` or rejected; expanding is the
-  simpler choice and keeps the narrow path honest.
+- **Palette support was included after all**, against the original plan for this
+  section. The deferral reasoning was that indexed PNGs are the palette
+  renderer's input format and that path should be designed with the rest of the
+  palette work. In practice the libpng side of it is small — read `PLTE` and
+  `tRNS`, and use `png_set_packing` for sub-byte indexes — and skipping it would
+  have meant coming back to rewrite the transform setup, since the expand path
+  and the keep-indexes path are mutually exclusive choices made before
+  `png_read_update_info`. `ff_png_decode` takes a `keep_palette` flag: when it
+  is false an indexed PNG is expanded to RGBA exactly as described above, and
+  when it is true the raw indexes and a 256-entry RGBA palette are returned
+  **in addition to** the expanded pixels, so a caller that does not care about
+  palettes never has to know which path ran. What is still deferred is
+  everything above the decoder: the separate palette texture, palette remapping,
+  and `trans_color` for non-indexed images.
 
 libpng error handling is the one genuinely non-obvious part: it reports errors
 by `longjmp` to a `setjmp` the caller installs, so the decode function owns a
@@ -1220,13 +1333,172 @@ WIC was considered as an alternative and rejected: it flattens indexed PNGs,
 which loses exactly the palette data the renderer will need later, and it adds a
 COM boundary. libpng is already referenced and already gives the palette.
 
-### 6b. Math types, pulled in as needed
+**Status: done.** `data/png.{c,h}` with 20 tests in `base/png_tests.cpp`. No
+project or include-path changes were needed beyond adding the files —
+`build/cpp.targets` already puts `vendor` and `vendor\libpng_inc` on the include
+path, so `#include <libpng/png.h>` resolved and the unused libpng
+`ProjectReference` linked on the first try.
 
-`ff_color`, `ff_matrix` (4x4), `ff_matrix_stack`, `ff_transform`, `ff_viewport`.
-The old `types/` versions total roughly 460 lines and are pure value types, so
-they port almost directly once the operator overloads become named functions.
+The tests build their PNG inputs with libpng's *writer* at test time rather than
+checking in binary fixtures, so every case is decoding a genuinely well-formed
+file. Coverage: RGB, RGBA, gray, gray+alpha, 16-bit strip, indexed both with and
+without `keep_palette`, 4-bit packed indexes, `tRNS` palette alpha, agreement
+between the index output and the RGBA output, tight row packing, the row array
+spilling past the stack arena, interlace rejection, and four malformed-input
+cases (non-PNG, empty, truncated, corrupt) that exercise the `longjmp` cleanup,
+plus a 500-iteration failure loop that would show a leaked png struct.
+
+Five separate faults were injected one at a time to confirm the tests are not
+vacuous — dropping the interlace rejection, the `tRNS` alpha, `png_set_packing`,
+`png_set_gray_to_rgb`, and `png_set_strip_16`. Each was caught, and only by the
+tests that specifically target it.
+
+One thing worth recording: the first test run crashed the test host with
+"libpng error: No IDATs written into file". That was a bug in the *test's*
+encoder, not the decoder — writing an interlaced PNG requires looping over the
+passes returned by `png_set_interlace_handling`, not a single pass over the
+rows.
+
+**`ff.test.c` now loads a real PNG.** The procedural gradient is gone; the
+sample maps `assets/sprite.png` (256x256 RGBA) next to the executable via
+`ff_file_module_path`, decodes it into a long-lived arena once at startup, and
+uploads it to the texture. The texture size now comes from the image rather
+than a `SPRITE_SIZE` constant, so the decoded dimensions are load-bearing.
+
+The decoder emits RGBA and the swap chain is `B8G8R8A8_UNORM`, so the sample
+swizzles red and blue after decoding rather than introducing a second texture
+format. That swizzle is the one piece of this that a screenshot can catch and a
+unit test cannot.
+
+Verified by screen capture rather than by eye: the rendered sprite was compared
+pixel-for-pixel against the source PNG and matched exactly, **0 of 65536 pixels
+differing**. Removing the swizzle as a fault injection made **all 65536**
+differ, which confirms the comparison is actually testing something. A wrong row
+pitch or a half-uploaded image would fail the same check.
+
+Pacing was unaffected by the switch to a real texture: 30 s at 59.67 fps,
+median 16.674 ms, p99 18.470 ms, 0.558% of frames over 20 ms, and the ladder
+stayed at stage 0 (one frame of latency, vsync on) with zero transitions.
+
+### 6b. Math types, pulled in as needed — DONE
+
+Implemented. `base/point.h` and `base/rect.h` hold the generally useful geometry
+types; `dx12/dx12_color.{h,c}` and `dx12/dx12_matrix.{h,c}` hold the types only
+the DX12 renderer will ever use. 48 tests in
+`test/ff.test.unit.c/base/math_types_tests.cpp`, suite now 983.
+
+Because the tests compile as C++, they use DirectXMath as an independent oracle
+for the hand-written matrix code: identity, translation, scaling, multiply, and
+transpose are each asserted against the `XMMatrix*` equivalent, and the view
+matrix is checked against the legacy `translate * scale * rotate_0` composition
+copied from `draw_util.cpp`. The C library itself stays DirectXMath-free, since
+those headers are C++ only.
+
+Three faults were injected and each was caught by exactly the tests written for
+it: transposing the multiply result (4 failures), dropping the palette
+index-zero transparency rule (exactly the 2 transparency tests, with the other
+2 palette tests correctly unaffected), and relaxing `ff_rect_float_intersects`
+to `<=` (only `touching_rects_do_not_intersect`).
+
+`ff_dx12_target_size` carries `rotation` and `dpi_scale` today even though they
+are always `ff_dx12_rotation_none` and `1.0`, and `ff_dx12_view_matrix` already
+takes `ignore_rotation` and indexes the full 4x2 rotation table. The rotation
+work is therefore additive: the table is populated and tested, and nothing
+reads a real orientation yet.
+
+The original list here was `ff_color`, `ff_matrix`, `ff_matrix_stack`,
+`ff_transform`, `ff_viewport` — copied from the old `types/` folder rather than
+derived from what the renderer consumes. Auditing the actual usage cut it down,
+and added one type that was missing from the list entirely.
+
+**Required before anything can draw:**
+
+- **`ff_point_float` / `ff_rect_float`.** Not on the original list, and the
+  biggest real gap: `ff.base.c` has no geometry types at all (only the
+  `ff_value` variants for serialization). Every draw entry point in the legacy
+  `draw_base` is expressed in points and rects, so these are unavoidable and
+  come first. Plain PODs, a handful of inline helpers.
+
+  Decided: these are **structs with named fields**, not bare `float[2]` /
+  `float[4]` arrays. The `ff_value` array members look like precedent but are
+  not — they live inside a union and are never passed or returned, and every
+  constructor takes scalars. In C an array can't be returned or assigned, and an
+  array parameter decays to a pointer so the size is unenforced and a point can
+  be passed where a rect is expected. Named fields also settle the real
+  `left/top/right/bottom` vs `x/y/width/height` ambiguity, which the legacy code
+  resolves as the former. Layout and cost are identical either way.
+- **`ff_color`.** Needed per vertex and per sprite instance. The legacy type is
+  a tagged union of an RGBA float4 and a `{palette index, alpha}` pair, which is
+  how a palette sprite gets its color through the same field as an RGBA one.
+  Since palette support is in scope, the union is worth keeping; what can go is
+  the operator overloading and the pile of named constant accessors
+  (`color_white()` and friends), which become a few `static const` values or
+  simple constructors.
+- **`ff_matrix` (4x4).** Required by the shader interface, not by convenience:
+  `data.hlsli` declares `matrix projection_` in `vertex_shader_constants_0` and
+  `matrix model_[128]` in `vertex_shader_constants_1`. Needs little more than a
+  4x4 float struct, identity, multiply, and transpose (constants are stored
+  transposed for HLSL column-major).
+- **A view matrix builder.** One function, per the rotation notes above.
+
+**Deferred, with reasons:**
+
+- **`ff_transform`.** Looks essential but is not, because the sprite path never
+  sends a matrix per sprite. `draw_util.cpp:340-348` writes
+  position/rotation/scale straight into the instance buffer as `pos_rot` and a
+  scaled rect — the GPU does the work. So what milestone 7 needs is the
+  *instance layout*, and `ff_transform` is only a convenience struct for
+  callers. Worth adding when the draw API is designed, not before.
+- **`ff_pixel_transform`.** The fixed-point twin of `ff_transform`, for callers
+  that want pixel-snapped positions. It depends on a `ff_fixed_int` type that
+  does not exist in `ff.base.c` either. Real value for a 2D game, but purely
+  additive: it converts to `ff_transform` at the boundary. Defer until sprites
+  draw and pixel snapping is actually wanted.
+- **`ff_matrix_stack`.** Its only consumer in the whole legacy engine is
+  `animation.cpp` (push/transform/pop around nested animations), which is
+  explicitly out of scope. The renderer reaches it through
+  `world_matrix_stack()`, but a single current world matrix covers every
+  non-animation case; the stack is what nested animations need. The legacy
+  version also carries two `ff::signal`s for change notification, used to flush
+  batches. Defer the whole thing, and when it arrives, note that the matrix
+  *cache* (`world_matrix_to_index`, mapping distinct matrices to slots in
+  `model_[128]`) is the part the renderer actually depends on — that belongs
+  with milestone 7 batching regardless of whether a stack exists.
+- **`ff_viewport`.** Verified unused by any engine code: the only references in
+  the entire repo are its own implementation, one unit test, and one perf
+  sample. It is letterboxing math (fit an aspect ratio into a target with
+  padding) — genuinely useful for a fixed-resolution game, and about 30 lines,
+  but nothing needs it to draw. Note that this is *not* the type that carries
+  `rotation`/`dpi_scale` from the rotation notes; that is the target size type,
+  which is a separate thing.
+
+So the actual 6b scope is: point/rect, color, a 4x4 matrix, and one view matrix
+function. That is meaningfully less than the original list, and the deferred
+items are additive rather than structural — none of them change the shape of
+what gets built first.
+
 `matrix_stack` is the one with real behaviour: the old `draw_base` exposes
 `world_matrix_stack()`, and the renderer pushes and pops around nested draws.
+Deferred as described above.
+
+**Design constraint carried in from "Display rotation and DPI" above.**
+Rotation is not being implemented here, but 6b is where the types that would
+have to change are defined, so they are shaped to absorb it later:
+
+- The **target size type** — not `ff_viewport`, which is a different thing and
+  is deferred — carries `rotation` and `dpi_scale` fields from the start.
+  `rotation` is always `DMDO_DEFAULT` and `dpi_scale` always 1.0 for now, and
+  nothing reads them. Adding a field later is cheap; changing the shape of every
+  call site is not.
+- Every view matrix is built by a single function taking that size type, so the
+  rotation table lands in exactly one place when it arrives.
+- That function takes an `ignore_rotation` parameter (unused for now) or is
+  shaped so one can be added without touching callers. The legacy needed this
+  for offscreen intermediates that are rotated later.
+
+The legacy rotation table is four orthographic-to-NDC matrices with the
+rotation baked in, so the eventual change is a table lookup in that one
+function rather than new work at any call site.
 
 ### 6c. Shader delivery
 

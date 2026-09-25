@@ -23,6 +23,12 @@
     <ClCompile Include="base\math.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_color.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_matrix.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="base\string_builder.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -48,6 +54,9 @@
       <Filter>data</Filter>
     </ClCompile>
     <ClCompile Include="data\compression.c">
+      <Filter>data</Filter>
+    </ClCompile>
+    <ClCompile Include="data\png.c">
       <Filter>data</Filter>
     </ClCompile>
     <ClCompile Include="data\stream.c">
@@ -167,6 +176,18 @@
     <ClInclude Include="base\math.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="base\point.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\rect.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_color.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_matrix.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
     <ClInclude Include="base\signal.h">
       <Filter>base</Filter>
     </ClInclude>
@@ -192,6 +213,9 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\compression.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\png.h">
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\stream.h">

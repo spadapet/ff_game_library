@@ -36,7 +36,43 @@ These apply to every project in this repo.
 - Add a `static_assert` on `sizeof` for structs whose layout matters, following `value.c` and `string_builder.c`.
 - Add new .c/.h files to both `ff.base.c.vcxproj` and `ff.base.c.vcxproj.filters`, and add public headers to `include/ff.base.c.h`.
 
+#### Headers and includes
+
+- `pch.h` is force-included everywhere and already provides `<stdint.h>`, `<stdbool.h>`, `<stdalign.h>`, `<stdio.h>`, `<stdlib.h>`, `<math.h>`, `<intrin.h>`, plus `<Windows.h>`, `<d3d12.h>`, and `<dxgi1_6.h>`. Don't re-include those in individual files.
+- Headers start with `#pragma once` and no include guard.
+- Prefer a forward `typedef struct ff_foo ff_foo;` over including another header, the way `arena.h` and `string.h` do for each other's types. Include only when a field's full layout is genuinely needed.
+- `COBJMACROS` is defined, so COM interfaces are called through their C macros: `ID3D12Resource_Release(x)`, not `x->Release()` or `x->lpVtbl->Release(x)`.
+
+#### Data structure conventions
+
+- A pointer plus a count travels as `ff_span` (bytes), `ff_array_span`, or `ff_array_slice` from `span.h`. Don't invent a new pair of parameters when one of those fits.
+- For a growable array, use the `ff_array_*` macros in `array.h` (`ff_array_init`, `ff_array_push`, `ff_array_count`). The array is arena-allocated and carries its own count and capacity in a header behind the pointer, so a plain `T*` is the array. Because `ff_array_push` can reallocate, never hold a second pointer into an array across a push.
+- Return small POD structs by value rather than taking an out-param. C can't return arrays, so a fixed-size array typedef is not an acceptable substitute for a struct; array parameters also silently decay to pointers and lose their size. Use a struct with named fields whenever values are passed or returned, and reserve raw arrays for members *inside* a struct that are indexed rather than named (e.g. a 4x4 matrix as `float m[16]`).
+- Give geometry and similar value types an explicit type suffix (`ff_point_float`, `ff_rect_int`) rather than overloading one name, since C has no overloading or templates.
+
+#### Enums, tagged types, and polymorphism
+
+- There is no vtable-based polymorphism. Where the old C++ code used a virtual base, embed a struct tagged with an enum and `switch` on the tag; `dx12_device_child.h` is the reference for this. Keep an `_count` member last in such enums.
+- If an enum's order is load-bearing (for example, priority that must match teardown order), that is exactly the kind of non-obvious constraint a comment is allowed to record.
+
+#### Arenas
+
+- `ff_arena_declare_stack(name, size)` declares both the stack buffer and the arena in one step; prefer it to hand-rolling a buffer plus `ff_arena_init_external`.
+- Use `ff_arena_alloc_type` / `ff_arena_realloc_type` instead of calling `ff_arena_alloc` with a manual `sizeof` and `alignof`.
+- There is no per-allocation free. An arena is freed all at once, so the owner of the arena decides the lifetime of everything in it. Functions that return arena-allocated data must document which arena parameter it came from through the parameter name and ordering, not a comment.
+
+#### Win32 and naming
+
+- File and folder names are lower-case with underscores, grouped by area (`base/`, `data/`, `dx12/`, `windows/`). The `dx12/` files all carry a `dx12_` filename prefix and an `ff_dx12_` symbol prefix.
+- Place a type by who can use it, not by what it is: generally useful types go in `base/` (e.g. `ff_point_float`, `ff_rect_float`), while types only the DX12 renderer will ever consume go in `dx12/` (e.g. `ff_color`, `ff_matrix`), even when they look like general-purpose math.
+- Prefer the wide (`W`) Win32 entry points directly; there is no `TCHAR` usage.
+- Win32 handles that must be released have an explicit `destroy` that tolerates a zeroed struct, so partially-constructed objects can always be torn down on the failure path.
+
 Tests for this project live in `test/ff.test.unit.c/` and are C++ (MSVC CppUnitTest) wrapping the C headers via `extern "C"`. Test files go in `test/ff.test.unit.c/base/`, use `TEST_CLASS` / `TEST_METHOD` inside `namespace ff::test::base`, and must be added to both `ff.test.unit.c.vcxproj` and its `.filters`.
+
+Because the tests compile as C++, any public header has to be valid in both languages. `string.h` shows the pattern: `FF_SVL` has separate `__cplusplus` and C definitions because compound literals and designated initializers aren't spelled the same way in both. Keep new public headers free of C-only syntax in declarations, and if a macro must expand to an initializer, give it both forms.
+
+There is no `.sln`; build individual `.vcxproj` files with MSBuild. Warnings are errors, so a clean build produces no output. A unit test reported as "Skipped" with no result usually means the test host crashed rather than that the test was filtered out.
 
 ### ff.base2
 

@@ -14,6 +14,8 @@
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
+    <ClCompile Include="dx12\dx12_color.c" />
+    <ClCompile Include="dx12\dx12_matrix.c" />
     <ClCompile Include="base\signal.c" />
     <ClCompile Include="base\span.c" />
     <ClCompile Include="base\string.c" />
@@ -24,6 +26,7 @@
     <ClCompile Include="data\json.c" />
     <ClCompile Include="data\settings.c" />
     <ClCompile Include="data\compression.c" />
+    <ClCompile Include="data\png.c" />
     <ClCompile Include="data\stream.c" />
     <ClCompile Include="data\value.c" />
     <ClCompile Include="dx12\dx12_globals.c" />
@@ -66,6 +69,10 @@
     <ClInclude Include="base\hash.h" />
     <ClInclude Include="base\log.h" />
     <ClInclude Include="base\math.h" />
+    <ClInclude Include="base\point.h" />
+    <ClInclude Include="base\rect.h" />
+    <ClInclude Include="dx12\dx12_color.h" />
+    <ClInclude Include="dx12\dx12_matrix.h" />
     <ClInclude Include="base\signal.h" />
     <ClInclude Include="base\span.h" />
     <ClInclude Include="base\string.h" />
@@ -76,6 +83,7 @@
     <ClInclude Include="data\json.h" />
     <ClInclude Include="data\settings.h" />
     <ClInclude Include="data\compression.h" />
+    <ClInclude Include="data\png.h" />
     <ClInclude Include="data\stream.h" />
     <ClInclude Include="data\value.h" />
     <ClInclude Include="data\value_type.h" />

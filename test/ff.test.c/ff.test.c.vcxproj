@@ -19,6 +19,13 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <SampleAsset Include="assets\*.png" />
+  </ItemGroup>
+  <Target Name="CopySampleAssets" AfterTargets="Build"
+          Inputs="@(SampleAsset)" Outputs="@(SampleAsset->'$(OutDir)assets\%(Filename)%(Extension)')">
+    <Copy SourceFiles="@(SampleAsset)" DestinationFolder="$(OutDir)assets" SkipUnchangedFiles="true" />
+  </Target>
+  <ItemGroup>
     <ProjectReference Include="..\..\source\ff.base.c\ff.base.c.vcxproj">
       <Project>{9acbc255-a76a-495d-9d2f-e6f39d8d3312}</Project>
     </ProjectReference>

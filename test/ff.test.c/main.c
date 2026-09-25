@@ -1,8 +1,8 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 static const ff_string_view s_app_name = FF_SVL_INIT("ff.test.c");
+static const ff_string_view s_sprite_file = FF_SVL_INIT("assets\\sprite.png");
 
-#define SPRITE_SIZE 64
 #define STATS_HISTORY 512
 
 // Rolling frame-time and CPU statistics, so the sample can demonstrate that presenting really is
@@ -156,7 +156,11 @@ typedef struct test_app
     frame_stats stats;
 
     uint64_t frame;
-    uint32_t pixels[SPRITE_SIZE * SPRITE_SIZE];
+
+    ff_arena sprite_arena;
+    uint32_t* sprite_pixels;
+    size_t sprite_width;
+    size_t sprite_height;
 } test_app;
 
 static void destroy_graphics(test_app* app)
@@ -182,7 +186,7 @@ static bool init_graphics(test_app* app)
         return false;
     }
 
-    ff_dx12_texture_params params = ff_dx12_texture_params_default(SPRITE_SIZE, SPRITE_SIZE);
+    ff_dx12_texture_params params = ff_dx12_texture_params_default(app->sprite_width, app->sprite_height);
     params.format = ff_dx12_target_window_format();
 
     if (!ff_dx12_texture_init(&app->sprite, &params))
@@ -194,22 +198,86 @@ static bool init_graphics(test_app* app)
     return true;
 }
 
-// A moving diagonal gradient, so a stale or never-updated frame is obvious on screen.
-static void update_sprite_pixels(test_app* app)
+// The decoded pixels only have to be uploaded when the texture is new, since nothing animates
+// them any more. A device reset recreates the texture, so this runs again from init_graphics.
+static bool upload_sprite(test_app* app, ff_dx12_commands* commands)
 {
-    const uint32_t phase = (uint32_t)(app->frame * 3);
+    return ff_dx12_texture_update(&app->sprite, commands, 0, 0, 0, 0,
+        app->sprite_pixels, app->sprite_width, app->sprite_height,
+        app->sprite_width * sizeof(uint32_t));
+}
 
-    for (size_t y = 0; y < SPRITE_SIZE; y++)
+// The swap chain is BGRA and the decoder always produces RGBA, so red and blue are exchanged
+// here rather than asking for a second texture format. A miss shows up immediately on screen.
+static void swizzle_rgba_to_bgra(uint32_t* pixels, size_t count)
+{
+    for (size_t i = 0; i < count; i++)
     {
-        for (size_t x = 0; x < SPRITE_SIZE; x++)
-        {
-            const uint32_t b = (uint32_t)((x * 4 + phase) & 0xFF);
-            const uint32_t g = (uint32_t)((y * 4 + phase) & 0xFF);
-            const uint32_t r = (uint32_t)(((x + y) * 2 + phase) & 0xFF);
-
-            app->pixels[y * SPRITE_SIZE + x] = 0xFF000000u | (r << 16) | (g << 8) | b;
-        }
+        const uint32_t value = pixels[i];
+        pixels[i] = (value & 0xFF00FF00u) | ((value & 0x00FF0000u) >> 16) | ((value & 0x000000FFu) << 16);
     }
+}
+
+// Assets sit next to the executable rather than the working directory, so the sample behaves the
+// same whether it is launched from the IDE or a shell.
+static ff_string_view asset_path(ff_string_view file_name, ff_arena* arena)
+{
+    const ff_string_view module_path = ff_file_module_path(NULL, arena);
+    FF_CHECK_RET_VAL(module_path.count, ff_string_view_empty());
+
+    size_t dir_count = module_path.count;
+
+    while (dir_count && module_path.data[dir_count - 1] != '\\' && module_path.data[dir_count - 1] != '/')
+    {
+        dir_count--;
+    }
+
+    ff_string_builder sb;
+    ff_string_builder_init(&sb, arena);
+
+    ff_string_view dir;
+    dir.data = module_path.data;
+    dir.count = dir_count;
+
+    ff_string_builder_append(&sb, dir);
+    ff_string_builder_append(&sb, file_name);
+
+    return ff_string_builder_copy_to(&sb, arena);
+}
+
+static bool load_sprite(test_app* app)
+{
+    ff_arena_init_heap_local(&app->sprite_arena, 0);
+
+    ff_arena_declare_stack(path_arena, 1024);
+    const ff_string_view path = asset_path(s_sprite_file, &path_arena);
+
+    ff_file_map map;
+    const bool mapped = path.count && ff_file_map_init(&map, path);
+
+    if (!mapped)
+    {
+        ff_log_write(ff_log_type_debug, FF_SVL("Can't open sprite: %.*s"), (int)path.count, path.data);
+    }
+
+    ff_arena_destroy(&path_arena);
+    FF_CHECK_RET_VAL(mapped, false);
+
+    ff_png_image image;
+    const bool decoded = ff_png_decode(ff_file_map_data(&map), &app->sprite_arena, false, &image);
+    ff_file_map_destroy(&map);
+
+    FF_CHECK_RET_VAL(decoded, false);
+
+    app->sprite_pixels = (uint32_t*)image.pixels;
+    app->sprite_width = image.width;
+    app->sprite_height = image.height;
+
+    swizzle_rgba_to_bgra(app->sprite_pixels, (size_t)image.width * (size_t)image.height);
+
+    ff_log_write(ff_log_type_debug, FF_SVL("Loaded sprite: %ux%u"), image.width, image.height);
+
+    return true;
 }
 
 // Returns false when nothing was drawn, which is the signal for the caller to idle instead of
@@ -220,9 +288,7 @@ static bool render_frame(test_app* app)
 
     const size_t width = ff_dx12_target_window_width(&app->target);
     const size_t height = ff_dx12_target_window_height(&app->target);
-    FF_CHECK_RET_VAL(width >= SPRITE_SIZE && height >= SPRITE_SIZE, false);
-
-    update_sprite_pixels(app);
+    FF_CHECK_RET_VAL(width >= app->sprite_width && height >= app->sprite_height, false);
 
     ff_dx12_frame_started();
 
@@ -237,15 +303,20 @@ static bool render_frame(test_app* app)
     bool presented = false;
 
     if (ff_dx12_target_window_begin_render(&app->target, &commands, black) &&
-        ff_dx12_texture_update(&app->sprite, &commands, 0, 0, 0, 0,
-            app->pixels, SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE * sizeof(uint32_t)))
+        upload_sprite(app, &commands))
     {
-        const size_t max_x = width - SPRITE_SIZE;
-        const size_t max_y = height - SPRITE_SIZE;
+        const size_t max_x = width - app->sprite_width;
+        const size_t max_y = height - app->sprite_height;
         const size_t dest_x = max_x ? (size_t)(app->frame % max_x) : 0;
         const size_t dest_y = max_y ? (size_t)((app->frame / 2) % max_y) : 0;
 
-        const D3D12_RECT source_rect = { .left = 0, .top = 0, .right = SPRITE_SIZE, .bottom = SPRITE_SIZE };
+        const D3D12_RECT source_rect =
+        {
+            .left = 0,
+            .top = 0,
+            .right = (LONG)app->sprite_width,
+            .bottom = (LONG)app->sprite_height,
+        };
 
         ff_dx12_commands_copy_texture(&commands,
             ff_dx12_target_window_resource(&app->target), 0, dest_x, dest_y,
@@ -448,9 +519,21 @@ int main(int argc, char** argv)
 
     ff_signal_connection_init_and_connect(&app.window_connection, &app.window->signal, &on_window_message, &app);
 
+    // The sprite has to be decoded before the texture is created, since its size comes from the
+    // image rather than a constant.
+    if (!load_sprite(&app))
+    {
+        ff_log_write(ff_log_type_debug, FF_SVL("Failed to load the sprite"));
+        ff_signal_connection_destroy(&app.window_connection);
+        ff_arena_destroy(&app.sprite_arena);
+        ff_app_destroy();
+        return 1;
+    }
+
     if (!init_graphics(&app))
     {
         ff_signal_connection_destroy(&app.window_connection);
+        ff_arena_destroy(&app.sprite_arena);
         ff_app_destroy();
         return 1;
     }
@@ -498,6 +581,7 @@ int main(int argc, char** argv)
     // Normally WM_DESTROY already did this; it still runs if the loop exited another way.
     destroy_graphics(&app);
     ff_signal_connection_destroy(&app.window_connection);
+    ff_arena_destroy(&app.sprite_arena);
 
     ff_log_write(ff_log_type_debug, FF_SVL("Rendered %llu frames"), (unsigned long long)app.frame);
 
