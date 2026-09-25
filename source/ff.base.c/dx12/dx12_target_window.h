@@ -2,6 +2,7 @@
 
 #include "dx12_commands.h"
 #include "dx12_descriptor_range.h"
+#include "dx12_device_child.h"
 #include "dx12_resource.h"
 
 #define FF_DX12_TARGET_WINDOW_BUFFER_COUNT 2
@@ -24,6 +25,7 @@ typedef struct ff_dx12_target_window
     HWND hwnd;
     IDXGISwapChain4* swap_chain;
     HANDLE latency_handle;
+    ff_dx12_device_child device_child;
 
     ff_dx12_resource back_buffers[FF_DX12_TARGET_WINDOW_BUFFER_COUNT];
 
@@ -79,3 +81,9 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
 
 uint32_t ff_dx12_target_window_pacing_latency(const ff_dx12_target_window* target);
 bool ff_dx12_target_window_pacing_vsync(const ff_dx12_target_window* target);
+
+// Device reset. before_reset drops the back buffers, the latency handle and the swap chain
+// itself: a swap chain is bound to the command queue it was created with, so it cannot outlive
+// the device. reset rebuilds it at the window's current client size.
+void internal_ff_dx12_target_window_before_reset(ff_dx12_target_window* target);
+bool internal_ff_dx12_target_window_reset(ff_dx12_target_window* target);

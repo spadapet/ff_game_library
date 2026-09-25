@@ -95,3 +95,9 @@ ff_dx12_mem_range ff_dx12_mem_allocator_alloc_bytes(ff_dx12_mem_allocator* alloc
 // Ring allocator front-ends, with CBV vs texture placement alignment baked in.
 ff_dx12_mem_range ff_dx12_mem_allocator_ring_alloc_buffer(ff_dx12_mem_allocator* allocator, uint64_t size, ff_dx12_fence_value fence_value);
 ff_dx12_mem_range ff_dx12_mem_allocator_ring_alloc_texture(ff_dx12_mem_allocator* allocator, uint64_t size, ff_dx12_fence_value fence_value);
+
+// Device reset. Buffers and their offsets are preserved so that every outstanding mem_range stays
+// valid; only the underlying heaps are rebuilt. In-flight ring bookkeeping is dropped, since the
+// fence values naming it belong to queues that no longer exist.
+void internal_ff_dx12_mem_allocator_before_reset(ff_dx12_mem_allocator* allocator);
+bool internal_ff_dx12_mem_allocator_reset(ff_dx12_mem_allocator* allocator);

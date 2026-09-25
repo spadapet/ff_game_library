@@ -7,9 +7,12 @@
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_descriptor_allocator.h"
+#include "dx12/dx12_device_child.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_mem_range.h"
 #include "dx12/dx12_queue.h"
+#include "dx12/dx12_reset.h"
+#include "dx12/dx12_resource.h"
 #include "dx12/dx12_residency.h"
 
 // Embedding the link dependencies here keeps them with the code that needs them, and they
@@ -800,11 +803,16 @@ size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count)
     return ff_math_max_size(fixed_sample_count, 1);
 }
 
-static void destroy_d3d(void)
+static void destroy_d3d(bool for_reset)
 {
     // Queues must go before residency so that wait_for_idle can still retire GPU work, and the
     // keep-alive list must be drained after that so nothing outlives its residency_data.
-    if (ff_dx12_queue_valid(&s_direct_queue) || ff_dx12_queue_valid(&s_copy_queue) || ff_dx12_queue_valid(&s_compute_queue))
+    //
+    // The wait is skipped only when the device is already lost: its queues can never make progress
+    // again, so waiting would hang forever, and the driver has already retired the work. When the
+    // device is still healthy (a forced or adapter-change reset) the GPU really is still running,
+    // and releasing resources without draining it first would pull them out from under it.
+    if (ff_dx12_device_valid() && (ff_dx12_queue_valid(&s_direct_queue) || ff_dx12_queue_valid(&s_copy_queue) || ff_dx12_queue_valid(&s_compute_queue)))
     {
         ff_dx12_wait_for_idle();
     }
@@ -816,9 +824,16 @@ static void destroy_d3d(void)
     keep_alive_destroy();
     s_frame_count = 0;
 
-    // Allocators own heaps and descriptor heaps, and every heap registers residency data, so they
-    // have to go after the keep-alive drain but before residency shuts down.
-    destroy_allocators();
+    // On a reset the allocators are deliberately kept: their buffers and buckets hold the
+    // offsets and indices that every outstanding mem_range and descriptor_range points at, so
+    // destroying them would dangle every one of those. dx12_reset.c has already released just the
+    // GPU objects inside them through their before_reset hooks.
+    if (!for_reset)
+    {
+        // Allocators own heaps and descriptor heaps, and every heap registers residency data, so
+        // they have to go after the keep-alive drain but before residency shuts down.
+        destroy_allocators();
+    }
 
     ff_dx12_residency_destroy();
 
@@ -870,9 +885,89 @@ bool ff_dx12_init(const ff_dx12_init_params* params)
     return true;
 }
 
+bool internal_ff_dx12_init_dxgi(bool for_reset)
+{
+    return init_dxgi(for_reset);
+}
+
+void internal_ff_dx12_destroy_dxgi(void)
+{
+    destroy_dxgi();
+}
+
+bool internal_ff_dx12_init_d3d(bool for_reset)
+{
+    return init_d3d(for_reset);
+}
+
+void internal_ff_dx12_destroy_d3d(bool for_reset)
+{
+    destroy_d3d(for_reset);
+}
+
+void internal_ff_dx12_clear_fatal_error(void)
+{
+    s_simulate_device_invalid = false;
+}
+
+void internal_ff_dx12_allocators_before_reset(void)
+{
+    // Only allocators that were actually created are touched; the lazy accessors must not be used
+    // here, since creating an allocator against a dying device would immediately fail.
+    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
+    {
+        if (s_mem_allocator_valid[i])
+        {
+            internal_ff_dx12_mem_allocator_before_reset(&s_mem_allocators[i]);
+        }
+    }
+
+    for (size_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
+    {
+        if (s_cpu_descriptor_allocator_valid[i])
+        {
+            internal_ff_dx12_cpu_descriptor_allocator_before_reset(&s_cpu_descriptor_allocators[i]);
+        }
+
+        if (s_gpu_descriptor_allocator_valid[i])
+        {
+            internal_ff_dx12_gpu_descriptor_allocator_before_reset(&s_gpu_descriptor_allocators[i]);
+        }
+    }
+}
+
+bool internal_ff_dx12_allocators_reset(void)
+{
+    bool result = true;
+
+    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
+    {
+        if (s_mem_allocator_valid[i])
+        {
+            result = internal_ff_dx12_mem_allocator_reset(&s_mem_allocators[i]) && result;
+        }
+    }
+
+    for (size_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
+    {
+        if (s_cpu_descriptor_allocator_valid[i])
+        {
+            result = internal_ff_dx12_cpu_descriptor_allocator_reset(&s_cpu_descriptor_allocators[i]) && result;
+        }
+
+        if (s_gpu_descriptor_allocator_valid[i])
+        {
+            result = internal_ff_dx12_gpu_descriptor_allocator_reset(&s_gpu_descriptor_allocators[i]) && result;
+        }
+    }
+
+    return result;
+}
+
 void ff_dx12_destroy(void)
 {
-    destroy_d3d();
+    internal_ff_dx12_reset_shutdown();
+    destroy_d3d(false);
     destroy_dxgi();
 
     s_gpu_preference = (DXGI_GPU_PREFERENCE)0;

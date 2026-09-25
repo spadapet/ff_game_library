@@ -34,6 +34,11 @@ static bool buffer_init_resource(ff_dx12_buffer* buffer, size_t size)
     FF_ASSERT_RET_VAL(ff_dx12_resource_init_committed(&buffer->resource, FF_SVL("Buffer"), &desc, NULL), false);
     buffer->has_resource = true;
 
+    if (!buffer->device_child.registered)
+    {
+        ff_dx12_add_device_child(&buffer->device_child, buffer, ff_dx12_device_child_type_buffer);
+    }
+
     return true;
 }
 
@@ -59,6 +64,19 @@ bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_dx12_buffer_type 
     }
 
     buffer->cpu_size = size;
+
+    // Keep a CPU copy so a device reset can re-upload the contents into the rebuilt resource.
+    // The gpu kind deliberately doesn't do this: its owner rewrites it every frame anyway.
+    buffer->cpu_data = ff_arena_alloc_type(&buffer->arena, uint8_t, size);
+
+    if (!buffer->cpu_data)
+    {
+        ff_dx12_buffer_destroy(buffer);
+        FF_DEBUG_FAIL_RET_VAL(false);
+    }
+
+    memcpy(buffer->cpu_data, data, size);
+    buffer->cpu_capacity = size;
 
     ff_dx12_mem_range upload = ff_dx12_mem_allocator_ring_alloc_buffer(
         ff_dx12_upload_allocator(), size, ff_dx12_commands_next_fence_value(commands));
@@ -105,6 +123,8 @@ bool ff_dx12_buffer_init_cpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type)
 void ff_dx12_buffer_destroy(ff_dx12_buffer* buffer)
 {
     FF_CHECK_RET(buffer);
+
+    ff_dx12_remove_device_child(&buffer->device_child);
 
     // A range still held by map was never handed to the GPU, so it can be freed right away.
     ff_dx12_mem_range_free(&buffer->mapped_range);
@@ -241,7 +261,10 @@ void ff_dx12_buffer_unmap(ff_dx12_buffer* buffer, ff_dx12_commands* commands)
     }
 
     FF_ASSERT_RET(commands && buffer->has_resource);
-    FF_ASSERT_RET(ff_dx12_mem_range_valid(&buffer->mapped_range));
+
+    // A device reset between map and unmap drops the range, since the memory behind it is gone.
+    // The write the caller made is lost either way, so there is nothing left to copy.
+    FF_CHECK_RET(ff_dx12_mem_range_valid(&buffer->mapped_range));
 
     ff_dx12_commands_update_buffer(commands, &buffer->resource, 0, &buffer->mapped_range);
 
@@ -334,4 +357,47 @@ D3D12_INDEX_BUFFER_VIEW ff_dx12_buffer_index_view(const ff_dx12_buffer* buffer, 
     };
 
     return view;
+}
+
+void internal_ff_dx12_buffer_before_reset(ff_dx12_buffer* buffer)
+{
+    FF_CHECK_RET(buffer);
+
+    // The range is not freed back to the ring: the ring's allocated_range_count is zeroed by the
+    // allocator's own before_reset, so returning it would underflow the count. Forgetting it is
+    // correct because the heap it points into is being released either way.
+    buffer->mapped_range = (ff_dx12_mem_range){ 0 };
+}
+
+bool internal_ff_dx12_buffer_reset(ff_dx12_buffer* buffer, ff_dx12_commands* commands)
+{
+    FF_ASSERT_RET_VAL(buffer, false);
+
+    // The resource was already rebuilt by the resource pass; only its contents are missing.
+    FF_CHECK_RET_VAL(buffer->has_resource && ff_dx12_resource_valid(&buffer->resource), false);
+
+    buffer->version++;
+    buffer->data_hash = 0;
+
+    if (buffer->kind != ff_dx12_buffer_kind_gpu_static)
+    {
+        return true;
+    }
+
+    FF_ASSERT_RET_VAL(buffer->cpu_data && buffer->cpu_size, false);
+
+    // Only a static buffer needs to re-upload, so the command list is required here rather than at
+    // the top: a failure to open one shouldn't fail every other buffer in the walk.
+    FF_ASSERT_RET_VAL(commands, false);
+
+    ff_dx12_mem_range upload = ff_dx12_mem_allocator_ring_alloc_buffer(
+        ff_dx12_upload_allocator(), buffer->cpu_size, ff_dx12_commands_next_fence_value(commands));
+
+    void* upload_data = ff_dx12_mem_range_cpu_data(&upload);
+    FF_ASSERT_RET_VAL(ff_dx12_mem_range_valid(&upload) && upload_data, false);
+
+    memcpy(upload_data, buffer->cpu_data, buffer->cpu_size);
+    ff_dx12_commands_update_buffer(commands, &buffer->resource, 0, &upload);
+
+    return true;
 }

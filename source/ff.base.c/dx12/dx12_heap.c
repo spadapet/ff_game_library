@@ -64,20 +64,8 @@ ff_dx12_residency_data* ff_dx12_heap_residency_data(ff_dx12_heap* heap)
     return heap ? &heap->residency_data : NULL;
 }
 
-bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
+static bool heap_create_gpu_objects(ff_dx12_heap* heap, ff_string_view name)
 {
-    FF_ASSERT_RET_VAL(heap, false);
-
-    *heap = (ff_dx12_heap){ 0 };
-    ff_arena_init_heap_local(&heap->arena, 0);
-    heap->size = size;
-    heap->usage = usage;
-
-    ff_arena_declare_stack(name_arena, 256);
-    ff_wstring_view wide_name = ff_utf8_to_wide(name, &name_arena, true);
-    wcsncpy_s(heap->name, _countof(heap->name), wide_name.data, _TRUNCATE);
-    ff_arena_destroy(&name_arena);
-
     D3D12_HEAP_PROPERTIES props = heap_properties(D3D12_HEAP_TYPE_DEFAULT);
     D3D12_RESIDENCY_PRIORITY priority = D3D12_RESIDENCY_PRIORITY_NORMAL;
     D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_NONE;
@@ -90,7 +78,7 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
         starts_resident = false;
     }
 
-    switch (usage)
+    switch (heap->usage)
     {
         case ff_dx12_heap_usage_upload:
             props = heap_properties(D3D12_HEAP_TYPE_UPLOAD);
@@ -123,7 +111,7 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
     }
 
     D3D12_HEAP_DESC desc = { 0 };
-    desc.SizeInBytes = size;
+    desc.SizeInBytes = heap->size;
     desc.Properties = props;
     desc.Alignment = alignment;
     desc.Flags = flags;
@@ -134,20 +122,20 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
     ID3D12Device6_SetResidencyPriority(ff_dx12_device(), 1, &pageable, &priority);
     ID3D12Heap_SetName(heap->heap, heap->name);
 
-    ff_dx12_residency_data_init(&heap->residency_data, &heap->arena, name, pageable, size, starts_resident);
+    ff_dx12_residency_data_init(&heap->residency_data, &heap->arena, name, pageable, heap->size, starts_resident);
 
     if (ff_dx12_heap_cpu_usage(heap))
     {
         D3D12_RESOURCE_DESC buffer_desc = { 0 };
         buffer_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        buffer_desc.Width = size;
+        buffer_desc.Width = heap->size;
         buffer_desc.Height = 1;
         buffer_desc.DepthOrArraySize = 1;
         buffer_desc.MipLevels = 1;
         buffer_desc.SampleDesc.Count = 1;
         buffer_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-        D3D12_RESOURCE_STATES state = (usage == ff_dx12_heap_usage_upload)
+        D3D12_RESOURCE_STATES state = (heap->usage == ff_dx12_heap_usage_upload)
             ? D3D12_RESOURCE_STATE_GENERIC_READ
             : D3D12_RESOURCE_STATE_COPY_DEST;
 
@@ -156,12 +144,70 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, f
             FAILED(ID3D12Resource_Map(heap->cpu_resource, 0, NULL, &heap->cpu_data)))
         {
             heap->cpu_data = NULL;
-            ff_dx12_heap_destroy(heap);
             FF_DEBUG_FAIL_MSG_RET_VAL("failed to create or map cpu heap resource", false);
         }
     }
 
     return true;
+}
+
+bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
+{
+    FF_ASSERT_RET_VAL(heap, false);
+
+    *heap = (ff_dx12_heap){ 0 };
+    ff_arena_init_heap_local(&heap->arena, 0);
+    heap->size = size;
+    heap->usage = usage;
+
+    ff_arena_declare_stack(name_arena, 256);
+    ff_wstring_view wide_name = ff_utf8_to_wide(name, &name_arena, true);
+    wcsncpy_s(heap->name, _countof(heap->name), wide_name.data, _TRUNCATE);
+    ff_arena_destroy(&name_arena);
+
+    if (!heap_create_gpu_objects(heap, name))
+    {
+        ff_dx12_heap_destroy(heap);
+        return false;
+    }
+
+    return true;
+}
+
+void internal_ff_dx12_heap_before_reset(ff_dx12_heap* heap)
+{
+    FF_CHECK_RET(heap);
+
+    if (heap->cpu_resource)
+    {
+        if (heap->cpu_data)
+        {
+            ID3D12Resource_Unmap(heap->cpu_resource, 0, NULL);
+            heap->cpu_data = NULL;
+        }
+
+        ID3D12Resource_Release(heap->cpu_resource);
+        heap->cpu_resource = NULL;
+    }
+
+    if (heap->heap)
+    {
+        ff_dx12_residency_data_destroy(&heap->residency_data);
+        ID3D12Heap_Release(heap->heap);
+        heap->heap = NULL;
+    }
+}
+
+bool internal_ff_dx12_heap_reset(ff_dx12_heap* heap)
+{
+    FF_ASSERT_RET_VAL(heap && !heap->heap, false);
+
+    ff_arena_declare_stack(name_arena, 256);
+    ff_string_view name = ff_wide_to_utf8(ff_wz_view(heap->name), &name_arena, true);
+    const bool result = heap_create_gpu_objects(heap, name);
+    ff_arena_destroy(&name_arena);
+
+    return result;
 }
 
 void ff_dx12_heap_destroy(ff_dx12_heap* heap)

@@ -30,6 +30,8 @@
     <ClCompile Include="dx12\dx12_fence.c" />
     <ClCompile Include="dx12\dx12_fence_values.c" />
     <ClCompile Include="dx12\dx12_residency.c" />
+    <ClCompile Include="dx12\dx12_device_child.c" />
+    <ClCompile Include="dx12\dx12_reset.c" />
     <ClCompile Include="dx12\dx12_heap.c" />
     <ClCompile Include="dx12\dx12_mem_range.c" />
     <ClCompile Include="dx12\dx12_mem_allocator.c" />
@@ -79,6 +81,8 @@
     <ClInclude Include="dx12\dx12_fence.h" />
     <ClInclude Include="dx12\dx12_fence_values.h" />
     <ClInclude Include="dx12\dx12_residency.h" />
+    <ClInclude Include="dx12\dx12_device_child.h" />
+    <ClInclude Include="dx12\dx12_reset.h" />
     <ClInclude Include="dx12\dx12_heap.h" />
     <ClInclude Include="dx12\dx12_mem_range.h" />
     <ClInclude Include="dx12\dx12_mem_allocator.h" />

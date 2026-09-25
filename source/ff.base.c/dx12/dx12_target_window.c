@@ -209,12 +209,16 @@ bool ff_dx12_target_window_init(ff_dx12_target_window* target, HWND hwnd)
         return false;
     }
 
+    ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_window);
+
     return true;
 }
 
 void ff_dx12_target_window_destroy(ff_dx12_target_window* target)
 {
     FF_CHECK_RET(target);
+
+    ff_dx12_remove_device_child(&target->device_child);
 
     // The GPU may still be presenting from these buffers, and the swap chain is about to go away,
     // so everything has to be retired before the references are dropped.
@@ -447,4 +451,43 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
 
     return paced && ff_dx12_device_valid() &&
         hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
+}
+
+void internal_ff_dx12_target_window_before_reset(ff_dx12_target_window* target)
+{
+    FF_CHECK_RET(target);
+
+    // No wait_for_idle here. The device is being torn down precisely because it can no longer
+    // make progress, so waiting on its queues could block forever. Dropping the references is
+    // safe for the same reason: the device dying is what retires the work.
+    destroy_back_buffers(target);
+    close_latency_handle(target);
+    reset_pacing(target);
+
+    if (target->swap_chain)
+    {
+        IDXGISwapChain4_Release(target->swap_chain);
+        target->swap_chain = NULL;
+    }
+}
+
+bool internal_ff_dx12_target_window_reset(ff_dx12_target_window* target)
+{
+    FF_ASSERT_RET_VAL(target && target->hwnd, false);
+    FF_ASSERT_RET_VAL(!target->swap_chain, false);
+
+    // The descriptor range survives the reset, but a destroyed window means there is nothing to
+    // present to and no size to query.
+    FF_CHECK_RET_VAL(IsWindow(target->hwnd), false);
+
+    RECT rect = { 0 };
+    GetClientRect(target->hwnd, &rect);
+
+    // Forces a full rebuild rather than the early-out in set_size, since the swap chain is gone
+    // even though the recorded size may be unchanged.
+    target->width = 0;
+    target->height = 0;
+
+    return ff_dx12_target_window_set_size(target,
+        (size_t)(rect.right - rect.left), (size_t)(rect.bottom - rect.top));
 }

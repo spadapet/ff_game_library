@@ -68,6 +68,12 @@
     <ClCompile Include="dx12\dx12_residency.c">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_device_child.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_reset.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_heap.c">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -201,6 +207,12 @@
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_residency.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_device_child.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_reset.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_heap.h">

@@ -40,11 +40,12 @@ Items 1-18 are complete. Items 19-20 are milestone 6.
 - Milestone 4: concrete buffer/texture/depth/target resource types. (complete)
 - Milestone 5: swap chain / `target_window`. (complete; image decoding for
   textures deferred to a later milestone)
+- Device reset: `dx12_device_child` registry + `dx12_reset`. (complete)
 - Milestone 6: shader delivery + draw device (the high-level rendering API).
 - Milestone 7: bindless renderer on top of the classic one.
 
 Twelve review passes have been run against the completed milestones; each is
-recorded below. Full suite: 857 passing, zero skipped. See "Current state and
+recorded below. Full suite: 880 passing, zero skipped. See "Current state and
 next steps" at the end for what remains.
 
 ## Milestone 1 (complete)
@@ -180,10 +181,10 @@ found three real bugs, all fixed with regression tests.
 - Smaller: `gpu_descriptor_allocator_init` ignored its buffer init results,
   and `descriptor_buffer_destroy` asserted on a never-initialized free list.
 
-Still open (accepted for now): `descriptor_buffer_set_heap(NULL)` clears
-`allocated_range_count` while ranges are outstanding, so their later free
-asserts. That only happens on the device-reset path, which milestone 1
-deliberately deferred.
+Resolved by the reset-review pass below: `descriptor_buffer_set_heap(NULL)` and
+the mem allocator's `before_reset` both clear ring bookkeeping while ranges are
+outstanding. The only range that actually outlived a reset was a buffer's
+`mapped_range`, which `internal_ff_dx12_buffer_before_reset` now drops.
 
 ## Second review pass: fixed-capacity arrays
 
@@ -860,13 +861,146 @@ be applied to every test that guards an ordering constraint.
   `rotation` field on its size type. `ff.base.c`'s window layer has no rotation
   concept at all, so there is nothing to plumb through yet; rotated displays get
   identity rotation. Add it alongside rotation support in `ff_window`.
-- Device reset (`before_reset` / `reset`). The legacy relied on
-  `device_child_base`, and the C port has no global device-child registry yet.
+
+## Device reset (complete)
+
+`ff_dx12_reset_device(bool force)` in `dx12_reset.c`, backed by the
+`ff_dx12_device_child` registry in `dx12_device_child.c`.
+
+### Design decisions
+
+- **A tagged intrusive registry, not a vtable.** The legacy `device_child_base`
+  was a C++ abstract class. The C port registers an `ff_dx12_device_child` node
+  embedded in each owner, carrying a `type` enum and an `owner` pointer, and
+  `dx12_reset.c` dispatches with a `switch`. No function pointers, no dynamic
+  allocation, and the whole reset sequence is readable in one file.
+- **The type enum value *is* the reset priority.** One enum orders both passes:
+  teardown walks it in reverse (target_window first, so it drops its back
+  buffers before the resource pass sees them) and rebuild walks it forward.
+- **Reset only when needed.** Mirrors the legacy `reset_device`. A stale DXGI
+  factory (`!ff_dx12_factory_current()`) only rebuilds DXGI; the device is reset
+  on top of that only when the adapter hash actually changed, when the device is
+  invalid, or when the caller passes `force`. A healthy device is left alone.
+- **Allocators survive a reset.** `ff_dx12_mem_range.owner` and
+  `ff_dx12_descriptor_range.owner` are raw pointers held by user objects across
+  a reset, so destroying the allocators would dangle every outstanding range.
+  `destroy_d3d(for_reset=true)` skips `destroy_allocators()`, and each
+  allocator's `before_reset`/`reset` swaps only the `ID3D12Heap` /
+  `ID3D12DescriptorHeap` inside, preserving every offset and index.
+  `internal_ff_dx12_allocators_before_reset`/`_reset` walk the
+  `s_*_allocator_valid[]` flags so a lazy accessor never creates an allocator
+  against a dying device.
+- **No keep-alive during reset.** `before_reset` releases GPU objects
+  immediately. Deferring them would keep references that block the device from
+  being released, and every fence value naming work on the old device is about
+  to become meaningless anyway.
+- **One command list for the whole rebuild.** Buffers re-upload their contents,
+  so a single `ff_dx12_commands` is opened on the copy queue for the entire
+  rebuild walk and executed once after it.
+- **Mid-walk add and remove are safe.** `reset_begin` marks every registered
+  child `pending_reset`; `walk_next` skips unmarked nodes, so a child created
+  during the reset is skipped by all three passes and starts clean.
+  `remove_device_child` advances the single `s_walk_cursor` off a dying node
+  before unlinking it. A generation counter does not work here because there are
+  multiple passes and the first would consume the stamp.
+
+### Bugs found while building it
+
+- **`wait_for_idle` was skipped on every reset (the important one).**
+  `destroy_d3d` keyed the drain off `!for_reset`, on the assumption that a reset
+  means a dead device whose queues can never signal. That only holds when the
+  device is *actually lost*. On a forced or adapter-change reset the GPU is
+  still executing, and since `before_reset` releases immediately, resources were
+  being pulled out from under running work. Symptoms were wildly varied and all
+  downstream: descriptor free-list asserts, a residency list holding stack
+  addresses from a previous test, access violations in `reset_begin`. The
+  correct predicate is `ff_dx12_device_valid()`, applied both in `destroy_d3d`
+  and at the top of the reset body.
+- **`s_reset_count` leaked across `ff_dx12_destroy`.** A file-static counter in
+  a test host that runs many tests in one process made every reset-count
+  assertion after the first fail. `internal_ff_dx12_reset_shutdown()` now clears
+  it and is called first from `ff_dx12_destroy`.
+
+### Verifying the tests are not vacuous
+
+Two fault injections were run against `dx12_reset_tests.cpp`. Stubbing
+`child_reset` to return `true` without doing anything failed the committed-
+resource and texture-view tests and crashed the host on the third. Flipping
+`destroy_d3d`'s allocator guard to destroy allocators during a reset crashed the
+host immediately, confirming the "allocators must survive" invariant is
+genuinely load-bearing and genuinely covered.
+
+One test assumption had to be corrected: comparing `ID3D12Resource*` before and
+after a reset is not a valid "it was rebuilt" check, because the allocator
+legitimately reuses the freed address. `ff_dx12_resource_reset_count()` is the
+reliable signal, and that intermittent-failure-only-in-the-full-suite behaviour
+was the test's fault, not the library's.
+
+### Still open
+
+- `ff_dx12_object_cache` holds root signatures and PSOs, which are device-bound,
+  and has no reset hook yet.
+- Whether the queues can be destroyed and lazily recreated across a reset is
+  unverified: `ff_dx12_fence.owner_queue` and `ff_dx12_fence_value.fence` are
+  both raw pointers.
+- `ff.test.c` exits on device loss rather than calling `ff_dx12_reset_device`.
+
+## Reset review pass: cross-object resets
+
+The first reset implementation was reviewed again specifically for what happens
+when many objects reset at once, rather than one at a time. Eight cross-object
+tests were added first (placed-resource ranges, descriptor ranges, a borrowed
+`target_texture`, static-buffer re-upload, all six child kinds together, GPU
+pinned and ring descriptors, and back-to-back resets with a destroy in between).
+Those all passed, which narrowed the search to state that *outlives* a reset.
+
+### Bugs found and fixed
+
+- **A mapped buffer across a reset corrupted the ring allocator (the bad one).**
+  `ff_dx12_buffer_map` parks a ring `mem_range` in `mapped_range`, but
+  `internal_ff_dx12_mem_allocator_before_reset` zeroes the ring's
+  `allocated_range_count`. Destroying the buffer afterward then freed a range
+  the ring no longer knew about, tripping `FF_ASSERT(allocated_range_count > 0)`
+  and underflowing the counter to `SIZE_MAX`. The repro killed the test host
+  outright. Worse, the mapped CPU pointer was verified to be byte-identical
+  after the reset even though `internal_ff_dx12_heap_before_reset` had already
+  `Unmap`ped and released the resource behind it, so a write through it landed
+  in freed memory and `unmap` would submit a copy from it. Fixed by adding
+  `internal_ff_dx12_buffer_before_reset`, which drops `mapped_range` without
+  freeing it (freeing is what underflows), and by relaxing `unmap` to a
+  `FF_CHECK_RET` so a map interrupted by a reset is a no-op rather than an
+  assert.
+- **The reset arena grew on every reset.** `internal_ff_dx12_resource_reset`
+  re-initializes `global_state` into `resource->arena`, abandoning the previous
+  spilled overflow block. For a resource whose subresource states have diverged
+  past `FF_DX12_RESOURCE_STATE_INLINE_MAX`, that leaks a block per reset.
+  `before_reset` now calls `ff_arena_reset` once every arena consumer is torn
+  down, then re-seeds `global_reads`.
+- **`internal_ff_dx12_buffer_reset` asserted on a NULL command list.** It took
+  `FF_ASSERT_RET_VAL(buffer && commands, false)` at the top, but `dx12_reset.c`
+  passes NULL whenever `ff_dx12_queue_new_commands` fails. That turned one
+  failure into a failed assert for every buffer in the walk. The `commands`
+  check moved below the `kind != gpu_static` early-out, since only a static
+  buffer re-uploads.
+- **Texture, depth, and `target_texture` resets swallowed failures.** All three
+  returned `void`, so a failed view creation never reached `dx12_reset.c`'s
+  `result` and the reset still logged "all children rebuilt". They now return
+  `bool`.
+
+### Fault injection
+
+Both of the memory bugs have a regression test that was confirmed to fail
+without its fix: removing the `mapped_range` clear fails
+`destroying_a_mapped_buffer_after_a_reset`, and removing the `ff_arena_reset`
+fails `repeated_resets_do_not_grow_a_resource_arena`. The arena test needed a
+forced state divergence to be non-vacuous; the first version passed either way
+because nothing had spilled out of inline storage.
 
 ## Current state and next steps
 
-Milestones 1-5 are complete. The suite is 857 passing, zero skipped, across 20
-dx12 test files in `test/ff.test.unit.c/dx12/`.
+Milestones 1-5 and device reset are complete. The suite is 880 passing, zero
+skipped, across 21 dx12 test files in `test/ff.test.unit.c/dx12/`, stable over
+four consecutive full runs.
 
 ### The `ff.test.c` sample
 

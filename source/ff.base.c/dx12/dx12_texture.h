@@ -29,6 +29,7 @@ ff_dx12_texture_params ff_dx12_texture_params_default(size_t width, size_t heigh
 typedef struct ff_dx12_texture
 {
     ff_dx12_resource resource;
+    ff_dx12_device_child device_child;
 
     // Allocated on first use by ff_dx12_texture_view, because a texture that is only ever a
     // render target never needs an SRV.
@@ -55,3 +56,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view(ff_dx12_texture* texture);
 bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands,
     size_t array_index, size_t mip_index, size_t dest_x, size_t dest_y,
     const void* data, size_t width, size_t height, size_t row_pitch);
+
+// Device reset: re-creates the SRV against the rebuilt resource, keeping the same descriptor
+// slot. There is no before_reset because the resource handles its own teardown. The pixels are
+// not restored; this layer never keeps a CPU copy, so the owner has to re-upload them.
+bool internal_ff_dx12_texture_reset(ff_dx12_texture* texture);

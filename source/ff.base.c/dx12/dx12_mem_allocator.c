@@ -528,3 +528,38 @@ ff_dx12_mem_range ff_dx12_mem_allocator_ring_alloc_texture(ff_dx12_mem_allocator
 
     return allocator_alloc_bytes(allocator, size, align, fence_value);
 }
+
+void internal_ff_dx12_mem_allocator_before_reset(ff_dx12_mem_allocator* allocator)
+{
+    FF_CHECK_RET(allocator);
+
+    // The buffer list and every free-list/offset is left untouched, so outstanding mem_ranges keep
+    // pointing at the same buffer at the same offset. Only the heap behind each one is released.
+    for (ff_dx12_mem_buffer* buffer = allocator->buffers; buffer; buffer = buffer->next)
+    {
+        if (buffer->type == ff_dx12_mem_buffer_type_ring)
+        {
+            // The in-flight ranges are keyed on fences owned by queues that are being destroyed,
+            // so they can never be retired normally. The device dying is what retires them.
+            buffer->u.ring.ranges_head = 0;
+            buffer->u.ring.ranges_count = 0;
+            buffer->u.ring.allocated_range_count = 0;
+        }
+
+        internal_ff_dx12_heap_before_reset(&buffer->heap);
+    }
+}
+
+bool internal_ff_dx12_mem_allocator_reset(ff_dx12_mem_allocator* allocator)
+{
+    FF_ASSERT_RET_VAL(allocator, false);
+
+    bool result = true;
+
+    for (ff_dx12_mem_buffer* buffer = allocator->buffers; buffer; buffer = buffer->next)
+    {
+        result = internal_ff_dx12_heap_reset(&buffer->heap) && result;
+    }
+
+    return result;
+}

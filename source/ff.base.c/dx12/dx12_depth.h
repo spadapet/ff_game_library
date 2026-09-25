@@ -11,6 +11,7 @@ typedef struct ff_dx12_commands ff_dx12_commands;
 typedef struct ff_dx12_depth
 {
     ff_dx12_resource resource;
+    ff_dx12_device_child device_child;
     ff_dx12_descriptor_range view;
 } ff_dx12_depth;
 
@@ -34,3 +35,6 @@ void ff_dx12_depth_clear(ff_dx12_depth* depth, ff_dx12_commands* commands, float
 void ff_dx12_depth_clear_depth(ff_dx12_depth* depth, ff_dx12_commands* commands, float depth_value);
 void ff_dx12_depth_clear_stencil(ff_dx12_depth* depth, ff_dx12_commands* commands, uint8_t stencil_value);
 void ff_dx12_depth_discard(ff_dx12_depth* depth, ff_dx12_commands* commands);
+
+// Device reset: re-creates the DSV against the rebuilt resource, keeping the same descriptor slot.
+bool internal_ff_dx12_depth_reset(ff_dx12_depth* depth);

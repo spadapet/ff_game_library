@@ -36,3 +36,9 @@ uint64_t ff_dx12_heap_size(const ff_dx12_heap* heap);
 ff_dx12_heap_usage ff_dx12_heap_get_usage(const ff_dx12_heap* heap);
 bool ff_dx12_heap_cpu_usage(const ff_dx12_heap* heap);
 ff_dx12_residency_data* ff_dx12_heap_residency_data(ff_dx12_heap* heap);
+
+// Device reset. The heap is rebuilt in place at the same size and usage, so every mem_range
+// carved out of it keeps its offset and stays valid. before_reset must run while the old device
+// is alive; reset runs against the new one.
+void internal_ff_dx12_heap_before_reset(ff_dx12_heap* heap);
+bool internal_ff_dx12_heap_reset(ff_dx12_heap* heap);

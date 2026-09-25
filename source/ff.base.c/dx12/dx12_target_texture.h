@@ -9,6 +9,7 @@
 typedef struct ff_dx12_target_texture
 {
     ff_dx12_texture* texture;
+    ff_dx12_device_child device_child;
     ff_dx12_descriptor_range view;
 
     // The sub-range this target renders to. A target always covers exactly one mip level, which
@@ -42,3 +43,6 @@ void ff_dx12_target_texture_discard(ff_dx12_target_texture* target, ff_dx12_comm
 // clear_color of NULL discards the previous contents instead of clearing them.
 bool ff_dx12_target_texture_begin_render(ff_dx12_target_texture* target, ff_dx12_commands* commands, const float* clear_color);
 bool ff_dx12_target_texture_end_render(ff_dx12_target_texture* target, ff_dx12_commands* commands);
+
+// Device reset: re-creates the RTV against the rebuilt texture, keeping the same descriptor slot.
+bool internal_ff_dx12_target_texture_reset(ff_dx12_target_texture* target);

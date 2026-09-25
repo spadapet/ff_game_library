@@ -62,14 +62,20 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     char name[64];
     _snprintf_s(name, _countof(name), _TRUNCATE, "Texture %d", s_texture_counter++);
 
-    return ff_dx12_resource_init_committed(&texture->resource, ff_sz_view(name), &desc,
-        params->optimized_clear_color ? &clear_value : NULL);
-}
+    if (!ff_dx12_resource_init_committed(&texture->resource, ff_sz_view(name), &desc,
+        params->optimized_clear_color ? &clear_value : NULL))
+    {
+        return false;
+    }
 
+    ff_dx12_add_device_child(&texture->device_child, texture, ff_dx12_device_child_type_texture);
+    return true;
+}
 void ff_dx12_texture_destroy(ff_dx12_texture* texture)
 {
     FF_CHECK_RET(texture);
 
+    ff_dx12_remove_device_child(&texture->device_child);
     ff_dx12_descriptor_range_free(&texture->view);
     ff_dx12_resource_destroy(&texture->resource);
 
@@ -181,6 +187,19 @@ bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands
 
     const size_t sub_index = mip_index + array_index * ff_dx12_texture_mip_count(texture);
     ff_dx12_commands_update_texture(commands, &texture->resource, sub_index, dest_x, dest_y, &upload, &layout);
+
+    return true;
+}
+
+bool internal_ff_dx12_texture_reset(ff_dx12_texture* texture)
+{
+    FF_ASSERT_RET_VAL(texture && ff_dx12_resource_valid(&texture->resource), false);
+
+    if (ff_dx12_descriptor_range_valid(&texture->view))
+    {
+        ff_dx12_resource_create_shader_view(&texture->resource,
+            ff_dx12_descriptor_range_cpu_handle(&texture->view, 0), 0, 0, 0, 0);
+    }
 
     return true;
 }

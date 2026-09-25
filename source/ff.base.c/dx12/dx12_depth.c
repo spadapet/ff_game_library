@@ -73,6 +73,8 @@ bool ff_dx12_depth_init(ff_dx12_depth* depth, size_t width, size_t height, size_
 
     depth_create_view(depth);
 
+    ff_dx12_add_device_child(&depth->device_child, depth, ff_dx12_device_child_type_depth);
+
     return true;
 }
 
@@ -80,6 +82,7 @@ void ff_dx12_depth_destroy(ff_dx12_depth* depth)
 {
     FF_CHECK_RET(depth);
 
+    ff_dx12_remove_device_child(&depth->device_child);
     ff_dx12_descriptor_range_free(&depth->view);
     ff_dx12_resource_destroy(&depth->resource);
 
@@ -173,4 +176,11 @@ void ff_dx12_depth_discard(ff_dx12_depth* depth, ff_dx12_commands* commands)
 {
     FF_CHECK_RET(ff_dx12_depth_valid(depth) && commands);
     ff_dx12_commands_discard_depth(commands, &depth->resource);
+}
+
+bool internal_ff_dx12_depth_reset(ff_dx12_depth* depth)
+{
+    FF_ASSERT_RET_VAL(ff_dx12_depth_valid(depth), false);
+    depth_create_view(depth);
+    return true;
 }

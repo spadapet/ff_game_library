@@ -27,6 +27,7 @@
 
 #include "../source/ff.base.c/dx12/dx12_descriptor_allocator.h"
 #include "../source/ff.base.c/dx12/dx12_descriptor_range.h"
+#include "../source/ff.base.c/dx12/dx12_device_child.h"
 #include "../source/ff.base.c/dx12/dx12_fence.h"
 #include "../source/ff.base.c/dx12/dx12_fence_values.h"
 #include "../source/ff.base.c/dx12/dx12_globals.h"
@@ -45,6 +46,7 @@
 #include "../source/ff.base.c/dx12/dx12_depth.h"
 #include "../source/ff.base.c/dx12/dx12_target_texture.h"
 #include "../source/ff.base.c/dx12/dx12_target_window.h"
+#include "../source/ff.base.c/dx12/dx12_reset.h"
 
 #include "../source/ff.base.c/windows/module.h"
 #include "../source/ff.base.c/windows/task.h"

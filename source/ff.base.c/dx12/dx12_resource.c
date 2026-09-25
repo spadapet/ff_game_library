@@ -107,6 +107,8 @@ static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)desc->MipLevels);
 
+    ff_dx12_add_device_child(&resource->device_child, resource, ff_dx12_device_child_type_resource);
+
     return true;
 }
 
@@ -198,6 +200,8 @@ bool ff_dx12_resource_init_external(ff_dx12_resource* resource, ff_string_view n
 void ff_dx12_resource_destroy(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
+
+    ff_dx12_remove_device_child(&resource->device_child);
 
     // A resource can be destroyed while a command list that referenced it is still recording,
     // which happens whenever a buffer or depth buffer is resized mid-frame. The recorded barriers
@@ -366,4 +370,117 @@ void ff_dx12_resource_create_target_view(ff_dx12_resource* resource, D3D12_CPU_D
     }
 
     ID3D12Device6_CreateRenderTargetView(ff_dx12_device(), resource->resource, &view_desc, view);
+}
+
+void internal_ff_dx12_resource_before_reset(ff_dx12_resource* resource)
+{
+    FF_CHECK_RET(resource);
+
+    if (resource->tracker)
+    {
+        ff_dx12_resource_tracker_forget(resource->tracker, resource);
+        FF_ASSERT(!resource->tracker);
+    }
+
+    // Unlike destroy, nothing is deferred to the keep-alive list. The device itself is going
+    // away, so every fence value naming GPU work on it is about to become meaningless, and the
+    // keep-alive list would be holding references that block the device from being released.
+    ff_dx12_fence_values_clear(&resource->global_reads);
+    resource->global_write = (ff_dx12_fence_value){ 0 };
+
+    if (resource->has_residency_data)
+    {
+        ff_dx12_residency_data_destroy(&resource->residency_data);
+        resource->has_residency_data = false;
+    }
+
+    if (resource->resource)
+    {
+        ID3D12Resource_Release(resource->resource);
+        resource->resource = NULL;
+    }
+
+    // Every arena consumer is now torn down, so the arena is rewound rather than left holding the
+    // old spilled blocks. Without this, re-initializing global_state in the reset pass abandons
+    // its previous overflow allocation and the arena grows on every reset.
+    ff_arena_reset(&resource->arena);
+    ff_dx12_fence_values_init_arena(&resource->global_reads, &resource->arena);
+
+    // A placed resource keeps its mem_range: the heap behind it is rebuilt in place by the
+    // allocator, so the range stays valid and the resource lands at the same offset again.
+}
+
+bool internal_ff_dx12_resource_reset(ff_dx12_resource* resource)
+{
+    FF_ASSERT_RET_VAL(resource, false);
+    FF_ASSERT_RET_VAL(!resource->resource, false);
+
+    resource->reset_count++;
+
+    D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON;
+
+    // Recreate in COMMON rather than in whatever state the old device left behind. Per-subresource
+    // states may have diverged, and a resource can only be created in one state, so the tracking
+    // is re-initialized to match what is actually being created.
+    ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
+        ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)resource->desc.MipLevels);
+
+    switch (resource->kind)
+    {
+        case ff_dx12_resource_kind_external:
+            // The swap chain owns the memory and its owner recreates it, so there is nothing to
+            // rebuild here. Reporting success keeps the reset walk going.
+            return true;
+
+        case ff_dx12_resource_kind_placed:
+        {
+            ff_dx12_heap* heap = ff_dx12_mem_range_heap(&resource->mem_range);
+            FF_ASSERT_RET_VAL(heap && heap->heap, false);
+
+            FF_ASSERT_HR_RET_VAL(ID3D12Device6_CreatePlacedResource(ff_dx12_device(), heap->heap,
+                resource->mem_range.start, &resource->desc, initial_state, clear_value_or_null(resource),
+                &IID_ID3D12Resource, (void**)&resource->resource), false);
+        } break;
+
+        case ff_dx12_resource_kind_committed:
+        {
+            D3D12_HEAP_PROPERTIES props = { 0 };
+            props.Type = D3D12_HEAP_TYPE_DEFAULT;
+            props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+            props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+            props.CreationNodeMask = 1;
+            props.VisibleNodeMask = 1;
+
+            D3D12_HEAP_FLAGS heap_flags = D3D12_HEAP_FLAG_NONE;
+            bool starts_resident = true;
+
+            if (ff_dx12_supports_create_heap_not_resident())
+            {
+                heap_flags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED | D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
+                starts_resident = false;
+            }
+
+            FF_ASSERT_HR_RET_VAL(ID3D12Device6_CreateCommittedResource(ff_dx12_device(), &props, heap_flags,
+                &resource->desc, initial_state, clear_value_or_null(resource),
+                &IID_ID3D12Resource, (void**)&resource->resource), false);
+
+            D3D12_RESOURCE_ALLOCATION_INFO alloc_info;
+            ID3D12Device6_GetResourceAllocationInfo(ff_dx12_device(), &alloc_info, 0, 1, &resource->desc);
+            ff_dx12_residency_data_init(&resource->residency_data, &resource->arena,
+                ff_string_view_empty(), (ID3D12Pageable*)resource->resource, alloc_info.SizeInBytes, starts_resident);
+            wcsncpy_s(resource->residency_data.name, _countof(resource->residency_data.name), resource->name, _TRUNCATE);
+            resource->has_residency_data = true;
+        } break;
+
+        default:
+            FF_DEBUG_FAIL_RET_VAL(false);
+    }
+
+    ID3D12Resource_SetName(resource->resource, resource->name);
+    return true;
+}
+
+size_t ff_dx12_resource_reset_count(const ff_dx12_resource* resource)
+{
+    return resource ? resource->reset_count : 0;
 }

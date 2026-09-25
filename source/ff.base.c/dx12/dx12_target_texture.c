@@ -33,6 +33,8 @@ bool ff_dx12_target_texture_init(ff_dx12_target_texture* target, ff_dx12_texture
         ff_dx12_descriptor_range_cpu_handle(&target->view, 0),
         target->array_start, target->array_count, target->mip_level);
 
+    ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_texture);
+
     return true;
 }
 
@@ -40,6 +42,7 @@ void ff_dx12_target_texture_destroy(ff_dx12_target_texture* target)
 {
     FF_CHECK_RET(target);
 
+    ff_dx12_remove_device_child(&target->device_child);
     ff_dx12_descriptor_range_free(&target->view);
     *target = (ff_dx12_target_texture){ 0 };
 }
@@ -141,6 +144,19 @@ bool ff_dx12_target_texture_end_render(ff_dx12_target_texture* target, ff_dx12_c
 
     ff_dx12_commands_resource_state(commands, ff_dx12_target_texture_resource(target),
         D3D12_RESOURCE_STATE_COMMON, 0, 0, 0, 0);
+
+    return true;
+}
+
+bool internal_ff_dx12_target_texture_reset(ff_dx12_target_texture* target)
+{
+    // The borrowed texture is reset in an earlier pass, so a texture that failed to rebuild leaves
+    // this target invalid rather than aliasing a stale resource.
+    FF_ASSERT_RET_VAL(ff_dx12_target_texture_valid(target), false);
+
+    ff_dx12_resource_create_target_view(ff_dx12_texture_resource(target->texture),
+        ff_dx12_descriptor_range_cpu_handle(&target->view, 0),
+        target->array_start, target->array_count, target->mip_level);
 
     return true;
 }

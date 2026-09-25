@@ -104,6 +104,7 @@ typedef struct ff_dx12_gpu_descriptor_allocator
 {
     ff_arena arena;
     ID3D12DescriptorHeap* descriptor_heap;
+    D3D12_DESCRIPTOR_HEAP_TYPE type;
     ff_dx12_descriptor_buffer pinned;
     ff_dx12_descriptor_buffer ring;
 } ff_dx12_gpu_descriptor_allocator;
@@ -114,3 +115,11 @@ void ff_dx12_gpu_descriptor_allocator_destroy(ff_dx12_gpu_descriptor_allocator* 
 ID3D12DescriptorHeap* ff_dx12_gpu_descriptor_allocator_heap(ff_dx12_gpu_descriptor_allocator* allocator);
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc(ff_dx12_gpu_descriptor_allocator* allocator, size_t count, ff_dx12_fence_value fence_value);
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc_pinned(ff_dx12_gpu_descriptor_allocator* allocator, size_t count);
+
+// Device reset. Bucket structure and descriptor indices are preserved so that every outstanding
+// descriptor_range stays valid; only the ID3D12DescriptorHeap objects are rebuilt. The descriptors
+// written into them are not restored: their owners re-create their views in their own reset.
+void internal_ff_dx12_cpu_descriptor_allocator_before_reset(ff_dx12_cpu_descriptor_allocator* allocator);
+bool internal_ff_dx12_cpu_descriptor_allocator_reset(ff_dx12_cpu_descriptor_allocator* allocator);
+void internal_ff_dx12_gpu_descriptor_allocator_before_reset(ff_dx12_gpu_descriptor_allocator* allocator);
+bool internal_ff_dx12_gpu_descriptor_allocator_reset(ff_dx12_gpu_descriptor_allocator* allocator);
