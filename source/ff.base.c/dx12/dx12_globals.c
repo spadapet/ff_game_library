@@ -45,6 +45,7 @@ static uint64_t s_adapters_hash;
 static bool s_supports_create_heap_not_resident;
 static bool s_supports_bindless;
 static bool s_simulate_device_invalid;
+static bool s_simulate_factory_stale;
 
 static HANDLE s_video_memory_change_event;
 static DWORD s_video_memory_change_cookie;
@@ -340,6 +341,7 @@ static bool init_dxgi(bool for_reset)
     FF_ASSERT_HR_RET_VAL(CreateDXGIFactory2(flags, &IID_IDXGIFactory6, (void**)&s_factory), false);
 
     s_adapters_hash = get_adapters_hash(s_factory);
+    s_simulate_factory_stale = false;
     return true;
 }
 
@@ -1021,7 +1023,12 @@ bool ff_dx12_supports_bindless(void)
 
 bool ff_dx12_factory_current(void)
 {
-    return s_factory && IDXGIFactory6_IsCurrent(s_factory) != FALSE;
+    return !s_simulate_factory_stale && s_factory && IDXGIFactory6_IsCurrent(s_factory) != FALSE;
+}
+
+void ff_dx12_simulate_factory_stale(void)
+{
+    s_simulate_factory_stale = true;
 }
 
 uint64_t ff_dx12_adapters_hash(void)

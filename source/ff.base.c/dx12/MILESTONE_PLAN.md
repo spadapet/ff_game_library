@@ -45,7 +45,7 @@ Items 1-18 are complete. Items 19-20 are milestone 6.
 - Milestone 7: bindless renderer on top of the classic one.
 
 Twelve review passes have been run against the completed milestones; each is
-recorded below. Full suite: 880 passing, zero skipped. See "Current state and
+recorded below. Full suite: 884 passing, zero skipped. See "Current state and
 next steps" at the end for what remains.
 
 ## Milestone 1 (complete)
@@ -938,8 +938,6 @@ was the test's fault, not the library's.
 
 ### Still open
 
-- `ff_dx12_object_cache` holds root signatures and PSOs, which are device-bound,
-  and has no reset hook yet.
 - Whether the queues can be destroyed and lazily recreated across a reset is
   unverified: `ff_dx12_fence.owner_queue` and `ff_dx12_fence_value.fence` are
   both raw pointers.
@@ -996,9 +994,60 @@ fails `repeated_resets_do_not_grow_a_resource_arena`. The arena test needed a
 forced state divergence to be non-vacuous; the first version passed either way
 because nothing had spilled out of inline storage.
 
+## Reset review pass: object cache and reset gating
+
+A third review pass covered `dx12_resource.c` line by line and diffed the C
+reset path against the legacy `ff::dx12::reset_device`. Three fixes came out of
+it.
+
+**`global_state` dangled after the arena rewind.**
+`internal_ff_dx12_resource_before_reset` rewinds the resource arena and was
+re-seeding only `global_reads`. `ff_dx12_resource_state` also allocates from
+that arena for its per-subresource overflow, so the rewind left
+`global_state.overflow` pointing at reclaimed memory, readable by anything that
+touched the resource between `before_reset` and the reset pass, including a
+`destroy` on a resource whose reset failed. Both consumers are now re-seeded
+immediately after the rewind.
+
+**A stale DXGI factory forced a full device reset.**
+`reset_needed` returned true whenever `IsCurrent()` was false, and that fed the
+`force || needed` gate, so any stale factory tore down the device and every GPU
+resource. The legacy C++ only sets `force` when the adapter *hash* actually
+changed; a stale factory on its own rebuilds DXGI and nothing else. `IsCurrent()`
+goes false for benign reasons such as display topology and mode changes, so this
+was throwing away the whole device routinely. `reset_needed` now reports only
+`!ff_dx12_device_valid()` and `dxgi_stale` is a pure out-param.
+`ff_dx12_simulate_factory_stale` was added as a test hook, mirroring the
+existing `s_simulate_device_invalid` precedent, and is cleared whenever the
+factory is recreated.
+
+**`ff_dx12_object_cache` is now a device child.**
+It memoizes `ID3D12RootSignature` and `ID3D12PipelineState`, both device-owned,
+in 64-bucket hash tables, and is caller-created and unbounded, which is exactly
+the registry's criterion. Because it is a pure memo keyed by a hash of the
+caller's desc, it needs no reset pass: `before_reset` releases everything and
+empties both bucket arrays, and it refills lazily on the next miss against the
+new device. Freed entries are pushed onto `entries_free`, so repeated
+empty/refill cycles never grow its arena.
+
+Residency across a reset was re-checked and is correct: every `residency_data`
+is unregistered by its owner's `before_reset` (resources directly, heaps through
+the mem allocator's buffer walk), and `ff_dx12_residency_destroy` asserts the
+pageable list is empty, so a missed unregistration would fail loudly rather than
+leave fence values pointing at destroyed queues.
+
+Four tests were added: three in `dx12_object_cache_tests.cpp` and
+`a_stale_factory_alone_rebuilds_dxgi_but_not_the_device` in
+`dx12_reset_tests.cpp`. All four were fault-injection verified. The first three
+object-cache tests were vacuous on the first attempt: they only asserted the
+cache still returned a working object, which it does either way since a stale
+entry is still a readable pointer. They needed `ff_dx12_object_cache_size` as a
+direct observable of "the buckets are empty". This is the second time in this
+area that a reset test proved nothing by checking only "it still works".
+
 ## Current state and next steps
 
-Milestones 1-5 and device reset are complete. The suite is 880 passing, zero
+Milestones 1-5 and device reset are complete. The suite is 884 passing, zero
 skipped, across 21 dx12 test files in `test/ff.test.unit.c/dx12/`, stable over
 four consecutive full runs.
 

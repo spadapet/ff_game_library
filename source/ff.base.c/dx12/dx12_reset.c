@@ -5,6 +5,7 @@
 #include "dx12/dx12_depth.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_object_cache.h"
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_reset.h"
 #include "dx12/dx12_residency.h"
@@ -30,6 +31,10 @@ static void child_before_reset(ff_dx12_device_child* child)
 
         case ff_dx12_device_child_type_buffer:
             internal_ff_dx12_buffer_before_reset((ff_dx12_buffer*)child->owner);
+            break;
+
+        case ff_dx12_device_child_type_object_cache:
+            internal_ff_dx12_object_cache_before_reset((ff_dx12_object_cache*)child->owner);
             break;
 
         // The rest own no GPU object of their own: their resource and their descriptor range are
@@ -67,24 +72,22 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
         case ff_dx12_device_child_type_target_window:
             return internal_ff_dx12_target_window_reset((ff_dx12_target_window*)child->owner);
 
+        // Nothing to rebuild: the cache was emptied in before_reset and refills on demand against
+        // the new device.
+        case ff_dx12_device_child_type_object_cache:
+            return true;
+
         default:
             FF_DEBUG_FAIL_MSG_RET_VAL("unhandled device child type", false);
     }
 }
 
-// True when the graphics stack needs to be rebuilt. Checked before anything is torn down, so a
-// healthy device costs only these two queries.
+// True when the device itself has to be rebuilt. A stale DXGI factory is reported separately,
+// because on its own it only means the adapter list may have changed: the factory is rebuilt and
+// the new adapter hash decides whether the device goes with it.
 static bool reset_needed(bool* out_dxgi_stale)
 {
     *out_dxgi_stale = !ff_dx12_factory_current();
-
-    if (*out_dxgi_stale)
-    {
-        // A stale factory on its own only means the adapter list may have changed. Whether the
-        // device has to go with it is decided after the factory is rebuilt and the new adapter
-        // hash can be compared.
-        return true;
-    }
 
     return !ff_dx12_device_valid();
 }

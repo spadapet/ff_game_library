@@ -54,6 +54,32 @@ namespace ff::test::dx12
             ff_dx12_resource_destroy(&resource);
         }
 
+        TEST_METHOD(a_stale_factory_alone_rebuilds_dxgi_but_not_the_device)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = texture_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("stale factory"), &desc, nullptr));
+
+            ID3D12Resource* before_object = resource.resource;
+            const uint64_t before_count = ff_dx12_device_reset_count();
+            const uint64_t before_hash = ff_dx12_adapters_hash();
+
+            ff_dx12_simulate_factory_stale();
+            Assert::IsFalse(ff_dx12_factory_current());
+            Assert::IsTrue(ff_dx12_reset_device(false));
+
+            Assert::IsTrue(ff_dx12_factory_current());
+            Assert::AreEqual(before_hash, ff_dx12_adapters_hash());
+
+            Assert::AreEqual(before_count, ff_dx12_device_reset_count());
+            Assert::AreEqual((size_t)0, ff_dx12_resource_reset_count(&resource));
+            Assert::IsTrue(before_object == resource.resource);
+
+            ff_dx12_resource_destroy(&resource);
+        }
+
         TEST_METHOD(forced_reset_rebuilds_a_committed_resource)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

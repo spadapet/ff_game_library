@@ -3,6 +3,7 @@
 #include "base/hash.h"
 #include "base/log.h"
 #include "base/string.h"
+#include "dx12/dx12_device_child.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_object_cache.h"
 
@@ -183,17 +184,52 @@ void ff_dx12_object_cache_init(ff_dx12_object_cache* cache)
 
     *cache = (ff_dx12_object_cache){ 0 };
     ff_arena_init_heap_local(&cache->arena, 4096);
+    ff_dx12_add_device_child(&cache->device_child, cache, ff_dx12_device_child_type_object_cache);
 }
 
 void ff_dx12_object_cache_destroy(ff_dx12_object_cache* cache)
 {
     FF_CHECK_RET(cache);
 
+    ff_dx12_remove_device_child(&cache->device_child);
+
     buckets_release(cache, cache->root_signatures, true);
     buckets_release(cache, cache->pipeline_states, true);
 
     cache->entries_free = NULL;
     ff_arena_destroy(&cache->arena);
+}
+
+size_t ff_dx12_object_cache_size(const ff_dx12_object_cache* cache)
+{
+    FF_ASSERT_RET_VAL(cache, 0);
+
+    size_t count = 0;
+
+    for (size_t i = 0; i < FF_DX12_OBJECT_CACHE_BUCKETS; i++)
+    {
+        for (const ff_dx12_object_cache_entry* entry = cache->root_signatures[i]; entry; entry = entry->next)
+        {
+            count++;
+        }
+
+        for (const ff_dx12_object_cache_entry* entry = cache->pipeline_states[i]; entry; entry = entry->next)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+void internal_ff_dx12_object_cache_before_reset(ff_dx12_object_cache* cache)
+{
+    FF_CHECK_RET(cache);
+
+    // The freed entries go back on entries_free rather than to the arena, so the arena never grows
+    // across a reset even though every bucket is emptied.
+    buckets_release(cache, cache->root_signatures, true);
+    buckets_release(cache, cache->pipeline_states, true);
 }
 
 ID3D12RootSignature* ff_dx12_object_cache_root_signature(ff_dx12_object_cache* cache, const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* desc)

@@ -403,8 +403,13 @@ void internal_ff_dx12_resource_before_reset(ff_dx12_resource* resource)
     // Every arena consumer is now torn down, so the arena is rewound rather than left holding the
     // old spilled blocks. Without this, re-initializing global_state in the reset pass abandons
     // its previous overflow allocation and the arena grows on every reset.
+    //
+    // Both consumers are re-seeded immediately: the rewind invalidated global_state's overflow
+    // pointer, and the resource can be read (or destroyed) before the reset pass reaches it.
     ff_arena_reset(&resource->arena);
     ff_dx12_fence_values_init_arena(&resource->global_reads, &resource->arena);
+    ff_dx12_resource_state_init(&resource->global_state, &resource->arena, D3D12_RESOURCE_STATE_COMMON,
+        ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)resource->desc.MipLevels);
 
     // A placed resource keeps its mem_range: the heap behind it is rebuilt in place by the
     // allocator, so the range stays valid and the resource lands at the same offset again.

@@ -32,6 +32,10 @@ bool ff_dx12_supports_bindless(void);
 bool ff_dx12_factory_current(void);
 uint64_t ff_dx12_adapters_hash(void);
 
+// Testing hook: makes the next reset take the stale-factory path without needing real hardware
+// to change. Cleared when the factory is recreated.
+void ff_dx12_simulate_factory_stale(void);
+
 DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void);
 void ff_dx12_update_video_memory_info(void);
 

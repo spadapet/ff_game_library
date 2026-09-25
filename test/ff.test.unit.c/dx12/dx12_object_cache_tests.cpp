@@ -211,5 +211,95 @@ namespace ff::test::dx12
             ff_dx12_object_cache_destroy(&a);
             ff_dx12_object_cache_destroy(&b);
         }
+
+        // Root signatures are owned by the device, so a reset has to drop every cached object.
+        // Holding one across a reset would hand callers a pointer to a dead device's object.
+        TEST_METHOD(reset_empties_the_cache_and_it_refills)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_object_cache cache{};
+            ff_dx12_object_cache_init(&cache);
+
+            D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = empty_root_signature_desc(D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            ID3D12RootSignature* before = ff_dx12_object_cache_root_signature(&cache, &desc);
+            Assert::IsNotNull(before);
+
+            // The cache knows this object before the reset and must not after it.
+            Assert::AreEqual((size_t)1, ff_dx12_object_cache_size(&cache));
+
+            Assert::IsTrue(ff_dx12_reset_device(true));
+
+            Assert::AreEqual((size_t)0, ff_dx12_object_cache_size(&cache));
+
+            // Refills against the new device rather than returning a stale entry.
+            ID3D12RootSignature* after = ff_dx12_object_cache_root_signature(&cache, &desc);
+            Assert::IsNotNull(after);
+            Assert::IsTrue(after == ff_dx12_object_cache_root_signature(&cache, &desc));
+            Assert::AreEqual((size_t)1, ff_dx12_object_cache_size(&cache));
+
+            ff_dx12_object_cache_destroy(&cache);
+        }
+
+        // The entry structs are recycled through entries_free, so repeatedly emptying and
+        // refilling the cache must not grow its arena.
+        TEST_METHOD(repeated_resets_do_not_grow_the_cache_arena)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_object_cache cache{};
+            ff_dx12_object_cache_init(&cache);
+
+            auto fill = [&cache]()
+            {
+                for (size_t i = 0; i < 16; i++)
+                {
+                    D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = empty_root_signature_desc(
+                        (i & 1) ? D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+                                : D3D12_ROOT_SIGNATURE_FLAG_NONE);
+                    desc.Desc_1_1.NumStaticSamplers = 0;
+                    Assert::IsNotNull(ff_dx12_object_cache_root_signature(&cache, &desc));
+                }
+            };
+
+            fill();
+            Assert::IsTrue(ff_dx12_reset_device(true));
+            Assert::AreEqual((size_t)0, ff_dx12_object_cache_size(&cache));
+            fill();
+            const ff_arena_marker after_first = ff_arena_mark(&cache.arena);
+            const size_t filled_size = ff_dx12_object_cache_size(&cache);
+            Assert::AreEqual((size_t)2, filled_size);
+
+            for (size_t i = 0; i < 6; i++)
+            {
+                Assert::IsTrue(ff_dx12_reset_device(true));
+                Assert::AreEqual((size_t)0, ff_dx12_object_cache_size(&cache));
+                fill();
+                Assert::AreEqual(filled_size, ff_dx12_object_cache_size(&cache));
+            }
+
+            Assert::IsTrue(after_first == ff_arena_mark(&cache.arena));
+
+            ff_dx12_object_cache_destroy(&cache);
+        }
+
+        // A cache destroyed while a reset walk is in flight must unregister cleanly.
+        TEST_METHOD(destroying_a_cache_after_a_reset_is_clean)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_object_cache cache{};
+            ff_dx12_object_cache_init(&cache);
+
+            D3D12_VERSIONED_ROOT_SIGNATURE_DESC desc = empty_root_signature_desc(D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            Assert::IsNotNull(ff_dx12_object_cache_root_signature(&cache, &desc));
+
+            Assert::IsTrue(ff_dx12_reset_device(true));
+
+            // Destroy without refilling: the buckets are already empty, so this exercises the
+            // double-release path that a reset plus a destroy could otherwise hit.
+            ff_dx12_object_cache_destroy(&cache);
+            ff_dx12_object_cache_destroy(&cache);
+        }
     };
 }
