@@ -1182,9 +1182,10 @@ area that a reset test proved nothing by checking only "it still works".
 
 ## Current state and next steps
 
-Milestones 1-5, device reset, PNG decoding (6a-2), and the math types (6b) are
-complete. The suite is 983 passing, zero skipped, stable across full runs in
-Debug, with Release building warning-free.
+Milestones 1-5, device reset, PNG decoding (6a-2), the math types (6b), the
+format utilities (6c), and the deferred work queue plus thread-ownership asserts
+are complete. The suite is 1060 passing, zero skipped, stable across full runs in
+**both Debug and Release**, both warning-free.
 
 ### The `ff.test.c` sample
 
@@ -1384,21 +1385,31 @@ stayed at stage 0 (one frame of latency, vsync on) with zero transitions.
 
 Implemented. `base/point.h` and `base/rect.h` hold the generally useful geometry
 types; `dx12/dx12_color.{h,c}` and `dx12/dx12_matrix.{h,c}` hold the types only
-the DX12 renderer will ever use. 48 tests in
-`test/ff.test.unit.c/base/math_types_tests.cpp`, suite now 983.
+the DX12 renderer will ever use. 81 tests in
+`test/ff.test.unit.c/base/math_types_tests.cpp` cover all 73 public functions,
+suite now 1016.
 
 Because the tests compile as C++, they use DirectXMath as an independent oracle
-for the hand-written matrix code: identity, translation, scaling, multiply, and
-transpose are each asserted against the `XMMatrix*` equivalent, and the view
-matrix is checked against the legacy `translate * scale * rotate_0` composition
-copied from `draw_util.cpp`. The C library itself stays DirectXMath-free, since
-those headers are C++ only.
+for the hand-written matrix code: identity, translation, scaling, multiply,
+transpose, and point transform are each asserted against the `XMMatrix*`
+equivalent, and the view matrix is checked against the legacy
+`translate * scale * rotate_0` composition copied from `draw_util.cpp`. The C
+library itself stays DirectXMath-free, since those headers are C++ only.
 
-Three faults were injected and each was caught by exactly the tests written for
+`test/ff.test.unit.c/main.cpp` installs a module-wide assert listener that fails
+any test tripping an assert, which would make the `FF_ASSERT_RET_VAL` guards
+unreachable from a test. `scoped_assert_counter` in the test file swaps in a
+counting listener for the duration of one test so the guards can be verified
+rather than merely trusted.
+
+Six faults were injected and each was caught by exactly the tests written for
 it: transposing the multiply result (4 failures), dropping the palette
 index-zero transparency rule (exactly the 2 transparency tests, with the other
-2 palette tests correctly unaffected), and relaxing `ff_rect_float_intersects`
-to `<=` (only `touching_rects_do_not_intersect`).
+2 palette tests correctly unaffected), relaxing `ff_rect_float_intersects` to
+`<=` (only `touching_rects_do_not_intersect`), removing the `index_remap` NULL
+check (3 access violations), removing the remap bounds check (only the
+out-of-range test), and making the rotation bounds assert off-by-one (only the
+out-of-range rotation test).
 
 `ff_dx12_target_size` carries `rotation` and `dpi_scale` today even though they
 are always `ff_dx12_rotation_none` and `1.0`, and `ff_dx12_view_matrix` already
@@ -1500,7 +1511,35 @@ The legacy rotation table is four orthographic-to-NDC matrices with the
 rotation baked in, so the eventual change is a table lookup in that one
 function rather than new work at any call site.
 
-### 6c. Shader delivery
+### 6c. Format utilities — DONE
+
+`dx12/dx12_format.{h,c}` replaces the legacy `dxgi/format_util`. The legacy
+version answered its questions by calling into **DirectXTex** (`IsCompressed`,
+`IsSRGB`, `HasAlpha`). That dependency is deliberately avoided, and it is not
+needed: the engine uses a small closed set of DXGI formats, so a static table of
+22 entries is both simpler and dependency-free. Adding a format is one table row
+rather than a new code path.
+
+Two deliberate differences from the legacy behavior:
+
+- `parse_format` **asserted** on an unrecognized name. `ff_dx12_format_parse`
+  returns `DXGI_FORMAT_UNKNOWN` instead, so a caller can report a bad asset
+  rather than taking down the process. `ff_dx12_format_fix` maps `UNKNOWN` to
+  `R8G8B8A8_UNORM`, so an unparsed name still lands on a usable format.
+- The power-of-two test uses `ff_math_is_pow2` rather than the legacy
+  `nearest_power_of_two(x) != x`.
+
+This also added `ff_string_equal` / `ff_wstring_equal` to `base/string.h`, which
+did not exist (nor did any `memcmp`/`strncmp` use anywhere in `ff.base.c`).
+Length is compared before bytes, so a name is never matched by a prefix — which
+matters here, since `pal` is both a real name and a prefix of `palette`.
+
+Tests are in `test/ff.test.unit.c/dx12/format_tests.cpp`. Six injected faults
+(the `% 4` check, the `mip_count > 1` bound, the `!compressed` term, a prefix
+match, a `==`-vs-`<=` length compare, and a wide byte-count) were each caught by
+their specific tests. Suite now 1041, Debug and Release.
+
+### 6d. Shader delivery
 
 The old path is `object_cache::shader(resource_provider, name)`, backed by a
 global resource provider that no longer exists for C code. The HLSL sources are
@@ -1514,7 +1553,7 @@ already memoizes root signatures and PSOs, and a shader blob cache is the same
 pattern. Loading from disk rather than embedding keeps the build simple now and
 can be swapped for embedded blobs later without changing callers.
 
-### 6d. Draw device state layer
+### 6e. Draw device state layer
 
 Root signature (VS constants 0 and 1, PS constants 0, sampler table, texture
 table, palette tables), the PSO permutation matrix, and the three constant
@@ -1524,9 +1563,6 @@ code keys PSO permutations off a `state_t` flag set that includes
 
 Also in scope here, pulled in only as the code needs them:
 
-- `format_util` - `color_format`, `palette_format`, `has_alpha`,
-  `supports_pre_multiplied_alpha`, `fix_format`. `parse_format` is only needed
-  once assets are loaded by name, so it can wait.
 - `gpu_event` / PIX markers on `ff_dx12_commands` (`begin_event` / `end_event`).
   Worth doing early in this milestone rather than late, because it is the main
   tool for debugging everything after it.
@@ -1536,6 +1572,145 @@ palette stack (`palette_base`, `palette_data`, `palette_cycle`, pulled in when
 the renderer reaches the palette path), `render_targets`, WIC image decoding,
 and window-message-driven resize inside `target_window` rather than only in the
 sample.
+
+## Running the game on its own thread
+
+The intended end state matches the old C++ design: the game loop and all
+rendering run on a dedicated game thread, while the Win32 message loop stays on
+the main thread and forwards what the game needs.
+
+**This is very achievable. The DX12 code does not depend on the main thread.**
+The reason is structural rather than lucky: DX12 itself has almost no thread
+affinity (unlike D3D9/D3D11 immediate contexts), and the one place the OS does
+impose affinity — the `HWND` — is already isolated to `ff_dx12_target_window`.
+
+What is already in place:
+
+- **The deferred work queue and thread-ownership asserts are done** (see the
+  section below). That was the part genuinely painful to retrofit, so it landed
+  before the draw device rather than after.
+- `windows/dispatch.{h,c}` is a complete cross-thread dispatcher with the
+  `main` / `game` types already defined, a message-only window per dispatcher,
+  `post` / `send` / `flush`, and a thread-affinity check. It is the direct
+  analogue of the old `ff::thread_dispatch` and needs no new work.
+- `ff_dx12_target_window` is the *only* DX12 file that touches an `HWND`, and it
+  touches it through `GetClientRect`, `IsWindow`, `CreateSwapChainForHwnd`, and
+  `MakeWindowAssociation` — none of which require the window's owning thread.
+- The sample already defers `WM_SIZE` into a `size_pending` flag applied at the
+  top of the loop rather than resizing inside the message handler, which is
+  exactly the shape the threaded version needs.
+- `MakeWindowAssociation(DXGI_MWA_NO_WINDOW_CHANGES)` is load-bearing here: DXGI
+  does not install its own message hook, so it never needs to interact with the
+  message thread.
+
+What has to be added before the loop can actually move:
+
+1. **The game thread state machine.** Port `stopped` / `running` / `pausing` /
+   `paused` with the main thread requesting transitions via
+   `ff_dispatch_post` to the game dispatcher and blocking on an event until the
+   game thread acknowledges. The old code's 5-second timeout with
+   `TerminateProcess` (INFINITE under a debugger) is worth keeping: a hung game
+   thread is otherwise an unkillable process.
+2. **A frame scope that blocks dispatch.** The old
+   `allow_dispatch_during_wait` refused to run game-thread work during a frame
+   update, precisely so a device reset or resize could not land mid-frame. Any
+   wait the game thread performs inside a frame must not pump the dispatcher.
+   `ff_dx12_flush_deferred` is already the single place those land, so this is
+   really just a rule about where the flush is called from.
+3. **`ff_dx12_set_owner_thread` on the game thread.** One call as the thread
+   starts, after which the existing asserts enforce the new owner.
+
+The one genuine hazard: `ff_dx12_target_window_destroy` and the swap chain must
+be torn down before the `HWND` dies, and `WM_DESTROY` arrives on the *main*
+thread. That has to become a blocking `ff_dispatch_send` to the game thread from
+the `WM_DESTROY` handler, so the window outlives the swap chain. The sample
+already destroys graphics on `WM_DESTROY`; threaded, that call must be a `send`
+and not a `post`.
+
+Tracked as the `m7-game-thread` todo, sequenced after the draw device so the
+loop being moved is the final one.
+
+## Deferred work queue and thread ownership (complete)
+
+The groundwork for the game thread, built ahead of the draw device because it is
+the piece that is painful to retrofit. All of it is correct and tested
+single-threaded, so nothing here waits on the game thread actually existing.
+
+**Ownership.** `ff_dx12_init` records its calling thread as the owner;
+`ff_dx12_set_owner_thread` hands ownership over (the game thread will call it
+once at startup); `ff_dx12_on_owner_thread` reports it. Before init records an
+owner, every thread counts as the owner, which keeps the asserts quiet for work
+that legitimately runs before the device exists.
+
+`FF_DX12_ASSERT_OWNER()` compiles out in release like any other assert. It
+guards `ff_dx12_destroy`, `frame_started`, `frame_complete`, `wait_for_idle`,
+`flush_deferred`, and `ff_dx12_target_window_set_size`. This is what lets the
+dx12 layer keep having **no locks on any device object** — the absence of
+synchronization is now a stated, checked invariant rather than an accident.
+
+**The queue.** `ff_dx12_defer_resize_target` and `ff_dx12_defer_reset_device`
+are safe from any thread; `ff_dx12_flush_deferred` applies them on the owning
+thread between frames, and `ff_dx12_has_deferred` lets a caller skip the flush
+in the common case. A single critical section guards the queue and nothing
+else, so it is never held across a D3D call.
+
+Three details that matter:
+
+- **Resizes coalesce per target.** A window drag produces a flood of `WM_SIZE`,
+  and each real resize waits for idle, so only the final size is applied.
+- **Reset is applied before resizes.** A reset rebuilds every swap chain at its
+  *current* size, so resizing first would be thrown away.
+- **Destroy cancels.** `ff_dx12_target_window_destroy` cancels any queued resize
+  for itself, so the queue can never hold a pointer to a dead target.
+
+`ff_dx12_destroy` drops the queue rather than applying it, since nothing may be
+queued against objects that no longer exist.
+
+The sample now queues from `WM_SIZE` and flushes at the top of its loop instead
+of resizing inline. Verified still running at **60.0 fps, stage 0, latency 1,
+0.083 cores, "blocking (good)"** — one-frame latency and pacing are unaffected.
+
+Tests are in `test/ff.test.unit.c/dx12/dx12_defer_tests.cpp` (13 tests against a
+real swap chain, including queuing from another thread and four threads hammering
+the queue at once). Three injected faults were each caught by exactly their own
+test: removing the coalescing, removing the cancel-on-destroy, and swapping the
+reset/resize order. Suite 1041 → 1054, Debug and Release.
+
+An adversarial re-read of the queue afterwards added six edge-case tests (1054 →
+**1060**): a resize that fails against a destroyed HWND, minimize clamping 0x0 to
+1x1 and restoring, cancelling a target that was never queued and cancelling
+twice, cancelling a middle entry (the swap-with-last removal is the case that can
+lose a neighbour), `force` surviving a later unforced request, and an unforced
+reset of a healthy device being a no-op. Three more injected faults were each
+caught: downgrading `force`, dropping the swap-in on cancel, and removing the
+zero-size clamp.
+
+Two real defects came out of that read and are fixed:
+
+- **`flush_deferred` looped `while (true)`** with a comment claiming it was
+  bounded because "only a real failure re-queues work". Nothing enforced that,
+  and the re-queue path the comment described does not actually exist —
+  `ff_dx12_device_fatal_error` only marks the device invalid, it never queues a
+  reset. The loop is now capped at 8 passes, and the comment says what the code
+  really guarantees.
+- **The `MAX_DEFERRED_TARGETS` overflow path silently drops the resize when the
+  caller is not the owner thread.** `FF_DEBUG_FAIL` fires in Debug but Release
+  loses it. Only reachable with more than 8 windows; now documented at the site
+  rather than looking like an oversight.
+
+Known and deliberately left for `m7-game-thread`, since neither is reachable
+while one thread owns everything:
+
+- **`s_defer_mutex_valid` is read outside the lock**, then `ff_dx12_destroy`
+  clears it and calls `DeleteCriticalSection`. A window thread calling
+  `defer_resize_target` concurrently with destroy could pass the check and then
+  enter a deleted critical section. `dispatch.c` has the same check-then-lock
+  shape deliberately, but it never deletes its critical section while another
+  thread can still arrive. Fixing this properly means a shutdown handshake, which
+  belongs with the game-thread state machine.
+- **Cancel reorders the queue** (swap-with-last). Harmless today because targets
+  are independent, but it means the queue is a set, not a FIFO — worth
+  remembering before anything grows an ordering assumption.
 
 ## Review guidance for new subsystems
 

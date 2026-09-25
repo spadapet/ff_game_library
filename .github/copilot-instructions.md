@@ -72,7 +72,23 @@ Tests for this project live in `test/ff.test.unit.c/` and are C++ (MSVC CppUnitT
 
 Because the tests compile as C++, any public header has to be valid in both languages. `string.h` shows the pattern: `FF_SVL` has separate `__cplusplus` and C definitions because compound literals and designated initializers aren't spelled the same way in both. Keep new public headers free of C-only syntax in declarations, and if a macro must expand to an initializer, give it both forms.
 
+`test/ff.test.unit.c/main.cpp` installs a module-wide `ff_assert_listener` that fails any test which trips an assert. That makes the `FF_ASSERT_*_RET*` guards unreachable from a test by default. To cover a guard, swap in a counting listener for the duration of one test (see `scoped_assert_counter` in `math_types_tests.cpp`) and restore the previous listener afterward. C++ is allowed in the tests, so an RAII type is the right tool there even though the library itself is C.
+
+`FF_ASSERT_MSG` compiles to `((void)0)` outside `_DEBUG`, so no listener fires in Release and the assert count is always zero there. The surrounding `if (!(exp)) { ...; return val; }` of `FF_ASSERT_*_RET*` is *not* compiled out, so the early-out return still happens in both configurations. A test may always assert the returned value, but must guard any assert-count expectation on `_DEBUG` (see `scoped_assert_counter::expected_count`). Run the suite in Release as well as Debug, or this class of failure goes unnoticed.
+
+When restoring a file after fault injection, do not use `Copy-Item` from a backup: it preserves the backup's older timestamp, so MSBuild considers the object up to date and silently links the *faulty* build. Set `LastWriteTime` to now after restoring, or the next test run reports failures that no longer exist in the source.
+
+When the tests are C++ they can use a C++-only library as an independent oracle for hand-written C math — `math_types_tests.cpp` checks `ff_matrix` against DirectXMath. Keep the dependency in the test project only.
+
 There is no `.sln`; build individual `.vcxproj` files with MSBuild. Warnings are errors, so a clean build produces no output. A unit test reported as "Skipped" with no result usually means the test host crashed rather than that the test was filtered out.
+
+#### dx12 thread ownership
+
+The dx12 layer has **no synchronization on any device object** — no critical section, no `Interlocked`, no thread checks — because a single thread owns all of it. Preserve that; do not add a lock to make a call "thread safe."
+
+The owner is the thread that called `ff_dx12_init`, or whichever thread later called `ff_dx12_set_owner_thread`. Any new entry point that touches device state, waits on the GPU, or runs as part of the frame lifecycle should start with `FF_DX12_ASSERT_OWNER()`, which compiles out in release like any other assert.
+
+Work arriving from another thread (window messages, most obviously) must not call into dx12 directly. It queues instead, via `ff_dx12_defer_resize_target` or `ff_dx12_defer_reset_device`, and the owning thread applies it with `ff_dx12_flush_deferred` between frames — never inside one. The single critical section in `dx12_globals.c` guards only that queue and is never held across a D3D call. Anything that holds a pointer into the queue must cancel its entry when it is destroyed, the way `ff_dx12_target_window_destroy` calls `ff_dx12_cancel_deferred_target`.
 
 ### ff.base2
 

@@ -14,6 +14,7 @@
 #include "dx12/dx12_reset.h"
 #include "dx12/dx12_resource.h"
 #include "dx12/dx12_residency.h"
+#include "dx12/dx12_target_window.h"
 
 // Embedding the link dependencies here keeps them with the code that needs them, and they
 // automatically flow to anything that links this static library.
@@ -24,6 +25,11 @@
 // Max adapters enumerated in one pass. Way more than any real machine has, and it keeps
 // adapter handling on the stack instead of needing a dynamic array.
 #define MAX_ADAPTERS 16
+
+// Max swap chain targets with a pending resize. One per window, and a game has very few windows,
+// so this never fills in practice. Overflow degrades to applying the resize synchronously rather
+// than dropping it.
+#define MAX_DEFERRED_TARGETS 8
 
 typedef enum ff_dx12_mem_allocator_index
 {
@@ -37,8 +43,7 @@ typedef enum ff_dx12_mem_allocator_index
 } ff_dx12_mem_allocator_index;
 
 static IDXGIFactory6* s_factory;
-static IDXGIAdapter3* s_adapter;
-static ID3D12Device6* s_device;
+static IDXGIAdapter3* s_adapter;static ID3D12Device6* s_device;
 static DXGI_GPU_PREFERENCE s_gpu_preference;
 static D3D_FEATURE_LEVEL s_feature_level;
 static uint64_t s_adapters_hash;
@@ -55,6 +60,26 @@ static ff_dx12_queue s_direct_queue;
 static ff_dx12_queue s_copy_queue;
 static ff_dx12_queue s_compute_queue;
 static uint64_t s_frame_count;
+
+// Owning thread and the cross-thread work queue. This mutex is the one piece of synchronization
+// in the dx12 layer, and it guards only the queue below, never any device object. The owning
+// thread does all the real work after draining the queue, so the lock is never held across a
+// D3D call.
+static CRITICAL_SECTION s_defer_mutex;
+static bool s_defer_mutex_valid;
+static DWORD s_owner_thread_id;
+
+typedef struct ff_dx12_deferred_size
+{
+    ff_dx12_target_window* target;
+    size_t width;
+    size_t height;
+} ff_dx12_deferred_size;
+
+static ff_dx12_deferred_size s_deferred_sizes[MAX_DEFERRED_TARGETS];
+static size_t s_deferred_size_count;
+static bool s_deferred_reset;
+static bool s_deferred_reset_force;
 
 // Resources whose GPU work hasn't retired yet. Nodes are arena-allocated and recycled through
 // s_keep_alive_free, so the list never grows without bound as long as it keeps getting drained.
@@ -739,6 +764,8 @@ void ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
 
 void ff_dx12_wait_for_idle(void)
 {
+    FF_DX12_ASSERT_OWNER();
+
     if (ff_dx12_queue_valid(&s_copy_queue))
     {
         ff_dx12_queue_wait_for_idle(&s_copy_queue);
@@ -757,14 +784,182 @@ void ff_dx12_wait_for_idle(void)
     ff_dx12_flush_keep_alive();
 }
 
+void ff_dx12_set_owner_thread(void)
+{
+    s_owner_thread_id = GetCurrentThreadId();
+}
+
+bool ff_dx12_on_owner_thread(void)
+{
+    // Before init records an owner, every thread counts as the owner. That keeps the asserts
+    // quiet for anything that legitimately runs before the device exists.
+    return !s_owner_thread_id || s_owner_thread_id == GetCurrentThreadId();
+}
+
+void ff_dx12_defer_resize_target(ff_dx12_target_window* target, size_t width, size_t height)
+{
+    FF_ASSERT_RET(target);
+    FF_CHECK_RET(s_defer_mutex_valid);
+
+    bool overflow = false;
+
+    EnterCriticalSection(&s_defer_mutex);
+    {
+        size_t i = 0;
+        for (; i < s_deferred_size_count; i++)
+        {
+            if (s_deferred_sizes[i].target == target)
+            {
+                break;
+            }
+        }
+
+        if (i < s_deferred_size_count)
+        {
+            // Latest size wins, so a drag produces one resize instead of one per WM_SIZE.
+            s_deferred_sizes[i].width = width;
+            s_deferred_sizes[i].height = height;
+        }
+        else if (s_deferred_size_count < MAX_DEFERRED_TARGETS)
+        {
+            s_deferred_sizes[s_deferred_size_count++] = (ff_dx12_deferred_size)
+            {
+                .target = target,
+                .width = width,
+                .height = height,
+            };
+        }
+        else
+        {
+            overflow = true;
+        }
+    }
+    LeaveCriticalSection(&s_defer_mutex);
+
+    // Dropping the request would leave the swap chain permanently the wrong size, which is far
+    // worse than resizing here. Only reachable with more windows than MAX_DEFERRED_TARGETS.
+    if (overflow)
+    {
+        FF_DEBUG_FAIL();
+
+        // Off the owner thread there is no safe way to apply it here, so the request is lost and
+        // that window keeps its old size until something resizes it again.
+        if (ff_dx12_on_owner_thread())
+        {
+            ff_dx12_target_window_set_size(target, width, height);
+        }
+    }
+}
+
+void ff_dx12_cancel_deferred_target(ff_dx12_target_window* target)
+{
+    FF_CHECK_RET(target && s_defer_mutex_valid);
+
+    EnterCriticalSection(&s_defer_mutex);
+    {
+        for (size_t i = 0; i < s_deferred_size_count; i++)
+        {
+            if (s_deferred_sizes[i].target == target)
+            {
+                s_deferred_sizes[i] = s_deferred_sizes[--s_deferred_size_count];
+                break;
+            }
+        }
+    }
+    LeaveCriticalSection(&s_defer_mutex);
+}
+
+void ff_dx12_defer_reset_device(bool force)
+{
+    FF_CHECK_RET(s_defer_mutex_valid);
+
+    EnterCriticalSection(&s_defer_mutex);
+    {
+        s_deferred_reset = true;
+        s_deferred_reset_force = s_deferred_reset_force || force;
+    }
+    LeaveCriticalSection(&s_defer_mutex);
+}
+
+bool ff_dx12_has_deferred(void)
+{
+    FF_CHECK_RET_VAL(s_defer_mutex_valid, false);
+
+    bool any;
+
+    EnterCriticalSection(&s_defer_mutex);
+    {
+        any = s_deferred_reset || s_deferred_size_count > 0;
+    }
+    LeaveCriticalSection(&s_defer_mutex);
+
+    return any;
+}
+
+bool ff_dx12_flush_deferred(void)
+{
+    FF_DX12_ASSERT_OWNER();
+    FF_CHECK_RET_VAL(s_defer_mutex_valid, true);
+
+    bool result = true;
+
+    // Applying one item can queue another: a device reset rebuilds swap chains, and a caller
+    // watching for a lost device can queue a reset from inside a resize. The cap is a safety net
+    // rather than an expected path, since a pass that keeps re-queuing work would otherwise hang
+    // the owning thread forever; two passes is enough for reset-then-resize to settle.
+    for (size_t pass = 0; pass < 8; pass++)
+    {
+        bool reset;
+        bool reset_force;
+        ff_dx12_deferred_size sizes[MAX_DEFERRED_TARGETS];
+        size_t size_count;
+
+        EnterCriticalSection(&s_defer_mutex);
+        {
+            reset = s_deferred_reset;
+            reset_force = s_deferred_reset_force;
+            s_deferred_reset = false;
+            s_deferred_reset_force = false;
+
+            size_count = s_deferred_size_count;
+            memcpy(sizes, s_deferred_sizes, size_count * sizeof(ff_dx12_deferred_size));
+            s_deferred_size_count = 0;
+        }
+        LeaveCriticalSection(&s_defer_mutex);
+
+        if (!reset && !size_count)
+        {
+            break;
+        }
+
+        // Reset first: it rebuilds every swap chain at its current size, so resizing before it
+        // would be thrown away, and resizing a device that is already gone would just fail.
+        if (reset)
+        {
+            result = ff_dx12_reset_device(reset_force) && result;
+        }
+
+        for (size_t i = 0; i < size_count; i++)
+        {
+            // A target destroyed while this batch was in flight had its entry cancelled, so
+            // anything still here was alive when the queue was drained.
+            result = ff_dx12_target_window_set_size(sizes[i].target, sizes[i].width, sizes[i].height) && result;
+        }
+    }
+
+    return result;
+}
+
 void ff_dx12_frame_started(void)
 {
+    FF_DX12_ASSERT_OWNER();
     ff_dx12_flush_keep_alive();
     ff_dx12_update_video_memory_info();
 }
 
 void ff_dx12_frame_complete(void)
 {
+    FF_DX12_ASSERT_OWNER();
     s_frame_count++;
 
     // The old code drove this through a frame_complete signal that each allocator subscribed to.
@@ -875,6 +1070,16 @@ bool ff_dx12_init(const ff_dx12_init_params* params)
 
     FF_ASSERT_RET_VAL(!s_factory && !s_device, false);
 
+    // Recorded before anything can fail, so the error path and ff_dx12_destroy are already
+    // covered by the ownership asserts.
+    ff_dx12_set_owner_thread();
+
+    if (!s_defer_mutex_valid)
+    {
+        InitializeCriticalSection(&s_defer_mutex);
+        s_defer_mutex_valid = true;
+    }
+
     s_gpu_preference = params->gpu_preference;
     s_feature_level = params->feature_level;
 
@@ -968,10 +1173,24 @@ bool internal_ff_dx12_allocators_reset(void)
 
 void ff_dx12_destroy(void)
 {
+    FF_DX12_ASSERT_OWNER();
+
     internal_ff_dx12_reset_shutdown();
     destroy_d3d(false);
     destroy_dxgi();
 
+    if (s_defer_mutex_valid)
+    {
+        // Nothing may be queued against objects that no longer exist, so the queue is dropped
+        // rather than applied.
+        s_defer_mutex_valid = false;
+        s_deferred_size_count = 0;
+        s_deferred_reset = false;
+        s_deferred_reset_force = false;
+        DeleteCriticalSection(&s_defer_mutex);
+    }
+
+    s_owner_thread_id = 0;
     s_gpu_preference = (DXGI_GPU_PREFERENCE)0;
     s_feature_level = (D3D_FEATURE_LEVEL)0;
 }

@@ -73,8 +73,23 @@ ff_wstring_view ff_wz_view(const wchar_t* sz)
     };
 }
 
-ff_wstring_view ff_utf8_to_wide(ff_string_view utf8, ff_arena* arena, bool null_terminating)
+bool ff_string_equal(ff_string_view l, ff_string_view r)
 {
+    FF_CHECK_RET_VAL(l.count == r.count, false);
+    FF_CHECK_RET_VAL(l.count, true);
+    FF_ASSERT_RET_VAL(l.data && r.data, false);
+    return memcmp(l.data, r.data, l.count) == 0;
+}
+
+bool ff_wstring_equal(ff_wstring_view l, ff_wstring_view r)
+{
+    FF_CHECK_RET_VAL(l.count == r.count, false);
+    FF_CHECK_RET_VAL(l.count, true);
+    FF_ASSERT_RET_VAL(l.data && r.data, false);
+    return memcmp(l.data, r.data, l.count * sizeof(wchar_t)) == 0;
+}
+
+ff_wstring_view ff_utf8_to_wide(ff_string_view utf8, ff_arena* arena, bool null_terminating){
     FF_CHECK_RET_VAL(utf8.count, ff_wstring_view_empty());
 
     int source_len = (int)utf8.count;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../base/assert.h"
 #include "../base/string.h"
 
 typedef struct ff_arena ff_arena;
@@ -14,6 +15,21 @@ ff_dx12_init_params ff_dx12_init_params_default(void);
 
 bool ff_dx12_init(const ff_dx12_init_params* params);
 void ff_dx12_destroy(void);
+
+// Thread ownership. Everything in the dx12 layer is deliberately free of locks, which is only
+// safe because a single thread owns all of it. ff_dx12_init records its caller as the owner.
+// When the game loop later moves to its own thread, that thread calls ff_dx12_set_owner_thread
+// once and the asserts below start enforcing the new owner.
+//
+// The window thread must not call into dx12 directly. It queues work instead, with
+// ff_dx12_defer_resize_target for a resize and ff_dx12_defer_reset_device for a device reset;
+// both are safe from any thread. ff_dx12_flush_deferred applies them on the owning thread
+// between frames.
+void ff_dx12_set_owner_thread(void);
+bool ff_dx12_on_owner_thread(void);
+
+// Debug-only check that the caller owns the dx12 layer. Compiled out in release, like FF_ASSERT.
+#define FF_DX12_ASSERT_OWNER() FF_ASSERT_MSG(ff_dx12_on_owner_thread(), "Called dx12 from a thread that does not own it")
 
 IDXGIFactory6* ff_dx12_factory(void);
 IDXGIAdapter3* ff_dx12_adapter(void);
@@ -86,6 +102,31 @@ void ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
 void ff_dx12_frame_started(void);
 void ff_dx12_frame_complete(void);
 uint64_t ff_dx12_frame_count(void);
+
+typedef struct ff_dx12_target_window ff_dx12_target_window;
+
+// Queues a swap chain resize to be applied on the owning thread. Safe to call from any thread,
+// which is the point: WM_SIZE arrives on the window thread, but resizing tears down back buffers
+// and waits for idle, so it must not happen while the owning thread is inside a frame.
+//
+// Repeated requests for the same target collapse to the latest size, so dragging a window edge
+// produces one resize rather than one per message.
+void ff_dx12_defer_resize_target(ff_dx12_target_window* target, size_t width, size_t height);
+
+// Drops any queued resize for a target that is being destroyed, so the queue never holds a
+// pointer to a dead object.
+void ff_dx12_cancel_deferred_target(ff_dx12_target_window* target);
+
+// Queues a device reset. Safe from any thread.
+void ff_dx12_defer_reset_device(bool force);
+
+// Applies everything queued above. Must run on the owning thread, between frames rather than
+// inside one. Returns false if a deferred operation failed and the graphics stack is unusable.
+bool ff_dx12_flush_deferred(void);
+
+// True when there is deferred work waiting, so a caller can skip the flush entirely in the
+// common case. Safe from any thread.
+bool ff_dx12_has_deferred(void);
 
 // Largest power-of-two sample count at or below 'sample_count' that the device actually supports
 // for 'format'. Always at least 1.

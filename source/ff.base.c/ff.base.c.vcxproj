@@ -15,6 +15,7 @@
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
     <ClCompile Include="dx12\dx12_color.c" />
+    <ClCompile Include="dx12\dx12_format.c" />
     <ClCompile Include="dx12\dx12_matrix.c" />
     <ClCompile Include="base\signal.c" />
     <ClCompile Include="base\span.c" />
@@ -72,6 +73,7 @@
     <ClInclude Include="base\point.h" />
     <ClInclude Include="base\rect.h" />
     <ClInclude Include="dx12\dx12_color.h" />
+    <ClInclude Include="dx12\dx12_format.h" />
     <ClInclude Include="dx12\dx12_matrix.h" />
     <ClInclude Include="base\signal.h" />
     <ClInclude Include="base\span.h" />

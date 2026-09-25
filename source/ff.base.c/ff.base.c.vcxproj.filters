@@ -26,6 +26,9 @@
     <ClCompile Include="dx12\dx12_color.c">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_format.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_matrix.c">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -183,6 +186,9 @@
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_color.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_format.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_matrix.h">

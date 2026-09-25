@@ -29,7 +29,9 @@
     <ClCompile Include="base\value_tests.cpp" />
     <ClCompile Include="base\window_tests.cpp" />
     <ClCompile Include="dx12\dx12_commands_tests.cpp" />
+    <ClCompile Include="dx12\dx12_defer_tests.cpp" />
     <ClCompile Include="dx12\dx12_fence_tests.cpp" />
+    <ClCompile Include="dx12\format_tests.cpp" />
     <ClCompile Include="dx12\dx12_frame_tests.cpp" />
     <ClCompile Include="dx12\dx12_object_cache_tests.cpp" />
     <ClCompile Include="dx12\dx12_queue_tests.cpp" />

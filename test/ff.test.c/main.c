@@ -146,9 +146,6 @@ typedef struct test_app
     ff_dx12_texture sprite;
     ff_signal_connection window_connection;
 
-    size_t pending_width;
-    size_t pending_height;
-    bool size_pending;
     bool resizing;
     bool graphics_valid;
     bool done;
@@ -423,13 +420,11 @@ static void report_summary(test_app* app)
 
 static void apply_pending_size(test_app* app)
 {
-    FF_CHECK_RET(app->size_pending && !app->resizing && app->graphics_valid);
-
-    app->size_pending = false;
+    FF_CHECK_RET(!app->resizing && app->graphics_valid && ff_dx12_has_deferred());
 
     // A failed resize leaves the swap chain without back buffers, and nothing retries it, so
     // there is no way back to rendering. Shut down rather than idle forever in a dead state.
-    if (!ff_dx12_target_window_set_size(&app->target, app->pending_width, app->pending_height))
+    if (!ff_dx12_flush_deferred())
     {
         app->done = true;
         destroy_graphics(app);
@@ -443,14 +438,19 @@ static void on_window_message(void* args, void* cookie)
 
     switch (message->msg)
     {
+        // Queued rather than applied here. Today this is the same thread as the render loop, but
+        // going through the queue is what lets the loop move to its own thread later, and the
+        // queue coalesces a drag's worth of sizes down to the last one either way.
         case WM_SIZE:
-            app->pending_width = (size_t)LOWORD(message->lp);
-            app->pending_height = (size_t)HIWORD(message->lp);
-            app->size_pending = true;
+            if (app->graphics_valid)
+            {
+                ff_dx12_defer_resize_target(&app->target,
+                    (size_t)LOWORD(message->lp), (size_t)HIWORD(message->lp));
+            }
             break;
 
         // Dragging a window edge sends a flood of WM_SIZE messages, and rebuilding the swap chain
-        // for each one means waiting for idle over and over. Coalesce to the final size.
+        // for each one means waiting for idle over and over. Hold off until the drag ends.
         case WM_ENTERSIZEMOVE:
             app->resizing = true;
             break;

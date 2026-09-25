@@ -43,6 +43,9 @@ ff_wstring_view ff_wstring_copy(ff_wstring_view str, ff_arena* arena);
 ff_string_view ff_sz_view(const char* sz);
 ff_wstring_view ff_wz_view(const wchar_t* sz);
 
+bool ff_string_equal(ff_string_view l, ff_string_view r);
+bool ff_wstring_equal(ff_wstring_view l, ff_wstring_view r);
+
 // Convert between UTF-8 and UTF-16, allocating the result from 'arena'. The returned view's 'size'
 // excludes the terminator, but 'data' is always null-terminated so it can be passed to C-string APIs.
 ff_wstring_view ff_utf8_to_wide(ff_string_view utf8, ff_arena* arena, bool null_terminating);

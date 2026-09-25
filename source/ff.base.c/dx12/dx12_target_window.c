@@ -223,6 +223,9 @@ void ff_dx12_target_window_destroy(ff_dx12_target_window* target)
 {
     FF_CHECK_RET(target);
 
+    // Must happen before the object dies, or the deferred queue would hold a pointer to it.
+    ff_dx12_cancel_deferred_target(target);
+
     ff_dx12_remove_device_child(&target->device_child);
 
     // The GPU may still be presenting from these buffers, and the swap chain is about to go away,
@@ -252,6 +255,10 @@ bool ff_dx12_target_window_valid(const ff_dx12_target_window* target)
 bool ff_dx12_target_window_set_size(ff_dx12_target_window* target, size_t width, size_t height)
 {
     FF_ASSERT_RET_VAL(target && target->hwnd, false);
+
+    // Tears down back buffers and waits for idle, so the window thread must go through
+    // ff_dx12_defer_resize_target instead of calling this directly.
+    FF_DX12_ASSERT_OWNER();
 
     // A minimized window has a zero-sized client area, which DXGI rejects.
     width = width ? width : 1;
