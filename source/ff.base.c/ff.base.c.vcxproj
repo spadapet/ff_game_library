@@ -20,6 +20,7 @@
     <ClCompile Include="dx12\dx12_format.c" />
     <ClCompile Include="dx12\dx12_gpu_event.c" />
     <ClCompile Include="dx12\dx12_matrix.c" />
+    <ClCompile Include="dx12\dx12_shader.c" />
     <ClCompile Include="base\signal.c" />
     <ClCompile Include="base\span.c" />
     <ClCompile Include="base\string.c" />
@@ -80,6 +81,7 @@
     <ClInclude Include="dx12\dx12_format.h" />
     <ClInclude Include="dx12\dx12_gpu_event.h" />
     <ClInclude Include="dx12\dx12_matrix.h" />
+    <ClInclude Include="dx12\dx12_shader.h" />
     <ClInclude Include="base\signal.h" />
     <ClInclude Include="base\span.h" />
     <ClInclude Include="base\string.h" />
@@ -127,6 +129,56 @@
   <ItemGroup>
     <None Include="packages.ff.base.c.config" />
     <Natvis Include="base.c.natvis" />
+    <FfShaderInclude Include="dx12\shaders\*.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- One item per (source, entry point): ps_sprite.hlsl and ps_color.hlsl each compile several
+         entry points, so the source file alone doesn't identify a shader. Entry doubles as the
+         output name, which is what ff_dx12_shader_name returns. -->
+    <FfShader Include="dx12\shaders\vs_sprite.hlsl">
+      <Entry>vs_sprite</Entry>
+      <Profile>vs_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_line.hlsl">
+      <Entry>vs_line</Entry>
+      <Profile>vs_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_triangle.hlsl">
+      <Entry>vs_triangle</Entry>
+      <Profile>vs_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_rectangle.hlsl">
+      <Entry>vs_rectangle</Entry>
+      <Profile>vs_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_circle.hlsl">
+      <Entry>vs_circle</Entry>
+      <Profile>vs_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_color.hlsl">
+      <Entry>ps_color</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_color.hlsl">
+      <Entry>ps_color_out_palette</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_sprite.hlsl">
+      <Entry>ps_sprite</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_sprite.hlsl">
+      <Entry>ps_palette_sprite</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_sprite.hlsl">
+      <Entry>ps_sprite_out_palette</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_sprite.hlsl">
+      <Entry>ps_palette_sprite_out_palette</Entry>
+      <Profile>ps_5_1</Profile>
+    </FfShader>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\vendor\ff.vendor.zlib.vcxproj">
@@ -137,14 +189,30 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
+  <!-- The PIX package is imported only to get WinPixEventRuntime.dll next to the executable, which
+       is what PIX timing captures look for. Nothing includes its headers or links its lib: GPU
+       markers are written with the legacy BeginEvent blob format from d3d12.h alone. Release has no
+       markers (PROFILE_APP=0), so the package is left out entirely there rather than shipping a DLL
+       that would never be loaded. Importing it unconditionally would also put WinPixEventRuntime.lib
+       on the link line, since its targets add that with no configuration condition. -->
+  <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="'$(Configuration)' != 'Release' And Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
   <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(WinPixRoot)\build\WinPixEventRuntime.targets'))" />
+    <Error Condition="'$(Configuration)' != 'Release' And !Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(WinPixRoot)\build\WinPixEventRuntime.targets'))" />
     <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props'))" />
     <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets'))" />
+  </Target>
+  <Target Name="CompileShaders" AfterTargets="Build"
+          Inputs="@(FfShader);@(FfShaderInclude)"
+          Outputs="@(FfShader->'$(FfShaderOutDir)%(Entry).cso')">
+    <Error Condition="!Exists('$(FxcPath)')" Text="The HLSL compiler was not found at '$(FxcPath)'. Set FxcPath to the location of fxc.exe." />
+    <MakeDir Directories="$(FfShaderOutDir)" />
+    <!-- Every .cso depends on the shared .hlsli files, so Inputs lists them too: editing data.hlsli
+         has to rebuild all of them, not just the .hlsl that changed. -->
+    <Exec Command="&quot;$(FxcPath)&quot; /nologo /T %(FfShader.Profile) /E %(FfShader.Entry) $(FxcFlags) /Fo &quot;$(FfShaderOutDir)%(FfShader.Entry).cso&quot; &quot;%(FfShader.FullPath)&quot;"
+          StandardOutputImportance="low" />
   </Target>
 </Project>

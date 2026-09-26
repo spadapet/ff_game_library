@@ -18,6 +18,19 @@
     <WinPixRoot>$(PackagesRoot)WinPixEventRuntime.$(WinPixVersion)\</WinPixRoot>
     <D3D12AgilityRoot>$(PackagesRoot)Microsoft.Direct3D.D3D12.$(D3D12AgilityVersion)\</D3D12AgilityRoot>
 
+    <!-- Where the Agility package copies D3D12Core.dll relative to the executable, and the value the
+         exported D3D12SDKPath must contain. The two have to agree or D3D12CreateDevice fails, so
+         the package property is set from here rather than left to its default, which has changed
+         between package versions. -->
+    <Microsoft_Direct3D_D3D12_D3D12SDKPath>.\D3D12\</Microsoft_Direct3D_D3D12_D3D12SDKPath>
+
+    <!-- HLSL. Compiled .cso files are shared by every project in a configuration rather than built
+         per project, since the shaders belong to ff.base.c but are loaded next to whichever
+         executable links it. -->
+    <FfShaderOutDir>$(ConfigOutRoot)shaders\</FfShaderOutDir>
+    <FxcFlags Condition=" '$(Configuration)' == 'Debug' ">/Od /Zi</FxcFlags>
+    <FxcFlags Condition=" '$(Configuration)' != 'Debug' ">/O3</FxcFlags>
+
     <UseImguiInternal>$(UseImgui)</UseImguiInternal>
     <UseImguiInternal Condition=" '$(UseImgui)' == '' ">True</UseImguiInternal>
     <UseImguiInternal Condition=" '$(UseImgui)' == '' And '$(Configuration)' == 'Release' ">False</UseImguiInternal>

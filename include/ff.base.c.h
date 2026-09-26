@@ -48,6 +48,7 @@
 #include "../source/ff.base.c/dx12/dx12_resource.h"
 #include "../source/ff.base.c/dx12/dx12_pacing.h"
 #include "../source/ff.base.c/dx12/dx12_queue.h"
+#include "../source/ff.base.c/dx12/dx12_shader.h"
 #include "../source/ff.base.c/dx12/dx12_commands.h"
 #include "../source/ff.base.c/dx12/dx12_object_cache.h"
 #include "../source/ff.base.c/dx12/dx12_buffer.h"

@@ -38,6 +38,9 @@
     <ClCompile Include="dx12\dx12_matrix.c">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_shader.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="base\string_builder.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -206,6 +209,9 @@
     <ClInclude Include="dx12\dx12_matrix.h">
       <Filter>dx12</Filter>
     </ClInclude>
+    <ClInclude Include="dx12\dx12_shader.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
     <ClInclude Include="base\signal.h">
       <Filter>base</Filter>
     </ClInclude>
@@ -352,5 +358,37 @@
     <Filter Include="app">
       <UniqueIdentifier>{26f84247-d1a2-4411-84ce-6d14532f4a86}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dx12\shaders">
+      <UniqueIdentifier>{9d2c1f55-0b4a-4e7c-9a1d-3f7c26b8e410}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <FfShaderInclude Include="dx12\shaders\data.hlsli">
+      <Filter>dx12\shaders</Filter>
+    </FfShaderInclude>
+    <FfShaderInclude Include="dx12\shaders\functions.hlsli">
+      <Filter>dx12\shaders</Filter>
+    </FfShaderInclude>
+    <FfShader Include="dx12\shaders\vs_sprite.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_line.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_triangle.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_rectangle.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\vs_circle.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_color.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
+    <FfShader Include="dx12\shaders\ps_sprite.hlsl">
+      <Filter>dx12\shaders</Filter>
+    </FfShader>
   </ItemGroup>
 </Project>

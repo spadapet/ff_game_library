@@ -3,9 +3,13 @@
 #include "base/hash.h"
 #include "base/log.h"
 #include "base/string.h"
+#include "base/string_builder.h"
+#include "data/file.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_object_cache.h"
+#include "dx12/dx12_shader.h"
+#include "windows/module.h"
 
 static void hash_bytes(ff_hash_data* hash, const void* data, size_t size)
 {
@@ -196,8 +200,78 @@ void ff_dx12_object_cache_destroy(ff_dx12_object_cache* cache)
     buckets_release(cache, cache->root_signatures, true);
     buckets_release(cache, cache->pipeline_states, true);
 
+    for (size_t i = 0; i < ff_dx12_shader_count; i++)
+    {
+        ff_file_map_destroy(&cache->shaders[i]);
+        cache->shaders_tried[i] = false;
+    }
+
     cache->entries_free = NULL;
     ff_arena_destroy(&cache->arena);
+}
+
+D3D12_SHADER_BYTECODE ff_dx12_object_cache_shader(ff_dx12_object_cache* cache, ff_dx12_shader shader)
+{
+    const D3D12_SHADER_BYTECODE empty = { 0 };
+    FF_ASSERT_RET_VAL(cache, empty);
+    FF_ASSERT_RET_VAL(shader >= 0 && shader < ff_dx12_shader_count, empty);
+
+    if (!cache->shaders_tried[shader])
+    {
+        // Marked before the load so a missing or unreadable .cso is reported once rather than
+        // hitting the disk again on every pipeline state that asks for it.
+        cache->shaders_tried[shader] = true;
+
+        ff_arena_declare_stack(temp_arena, 1024);
+        // The shaders ship next to the binary that links this library, which is not the process
+        // executable when that binary is a DLL loaded by a host process such as a test runner.
+        const ff_string_view dir = ff_file_module_dir(ff_module_instance(), &temp_arena);
+        const ff_string_view name = ff_dx12_shader_name(shader);
+
+        ff_string_builder sb;
+        ff_string_builder_init(&sb, &temp_arena);
+        ff_string_builder_append(&sb, dir);
+        ff_string_builder_append(&sb, FF_SVL("shaders\\"));
+        ff_string_builder_append(&sb, name);
+        ff_string_builder_append(&sb, FF_SVL(".cso"));
+
+        const ff_string_view path = ff_string_builder_copy_to(&sb, &temp_arena);
+
+        if (!ff_file_map_init(&cache->shaders[shader], path))
+        {
+            ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Failed to load shader: %.*s"), FF_SV_FORMAT(path));
+            FF_DEBUG_FAIL_MSG("shader .cso is missing or unreadable");
+        }
+
+        ff_arena_destroy(&temp_arena);
+    }
+
+    // No assert here: a failed load already reported itself once above, and every pipeline state
+    // asking for the same missing shader afterward should not repeat it.
+    const ff_span data = ff_file_map_data(&cache->shaders[shader]);
+    FF_CHECK_RET_VAL(data.data && data.size, empty);
+
+    D3D12_SHADER_BYTECODE bytecode;
+    bytecode.pShaderBytecode = data.data;
+    bytecode.BytecodeLength = data.size;
+    return bytecode;
+}
+
+size_t ff_dx12_object_cache_shader_count(const ff_dx12_object_cache* cache)
+{
+    FF_ASSERT_RET_VAL(cache, 0);
+
+    size_t count = 0;
+
+    for (size_t i = 0; i < ff_dx12_shader_count; i++)
+    {
+        if (cache->shaders[i].base)
+        {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 size_t ff_dx12_object_cache_size(const ff_dx12_object_cache* cache)

@@ -199,3 +199,21 @@ ff_string_view ff_file_user_local_path(ff_arena* arena)
     CoTaskMemFree(path);
     return result;
 }
+
+ff_string_view ff_file_module_dir(HINSTANCE module, ff_arena* arena)
+{
+    const ff_string_view module_path = ff_file_module_path(module, arena);
+    FF_CHECK_RET_VAL(module_path.count, ff_string_view_empty());
+
+    size_t count = module_path.count;
+
+    while (count && module_path.data[count - 1] != '\\' && module_path.data[count - 1] != '/')
+    {
+        count--;
+    }
+
+    ff_string_view dir;
+    dir.data = module_path.data;
+    dir.count = count;
+    return dir;
+}

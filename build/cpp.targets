@@ -8,6 +8,10 @@
     <CreateMergedResPack>False</CreateMergedResPack>
     <CreateMergedResPack Condition=" '$(Configuration)' == 'Release' ">True</CreateMergedResPack>
     <ResJsonDebugCommandArgument Condition=" '$(ResJsonDebugCommandArgument)' == '' And '$(Configuration)' != 'Release' ">-debug</ResJsonDebugCommandArgument>
+    <!-- Set here rather than in cpp.props because the Windows SDK version is only resolved once the
+         platform toolset props have run. WindowsSdkVerBinPath is not defined by this toolset, so
+         the path is composed from the SDK root and the resolved version. -->
+    <FxcPath Condition=" '$(FxcPath)' == '' ">$(WindowsSdkDir)bin\$(TargetUniversalCRTVersion)\x64\fxc.exe</FxcPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -122,7 +126,6 @@
     </ResourceCompile>
     <!-- Linker options -->
     <Link>
-      <AdditionalLibraryDirectories>$(WinPixRoot)bin\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>

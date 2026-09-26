@@ -50,6 +50,7 @@
     <ClCompile Include="dx12\dx12_reset_timing_tests.cpp" />
     <ClCompile Include="dx12\dx12_milestone4_tests.cpp" />
     <ClCompile Include="dx12\dx12_resource_tracker_tests.cpp" />
+    <ClCompile Include="dx12\dx12_shader_tests.cpp" />
     <ClCompile Include="dx12\dx12_reset_tests.cpp" />
     <ClCompile Include="dx12\dx12_pacing_tests.cpp" />
     <ClCompile Include="dx12\dx12_texture_view_tests.cpp" />
@@ -76,4 +77,13 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- Tests load the same .cso files the sample does, from a shaders directory next to the test
+       binary. See the matching target in ff.test.c. -->
+  <Target Name="CopyShaders" AfterTargets="Build">
+    <ItemGroup>
+      <FfShaderBinary Include="$(FfShaderOutDir)*.cso" />
+    </ItemGroup>
+    <Error Condition="'@(FfShaderBinary)' == ''" Text="No compiled shaders were found in '$(FfShaderOutDir)'." />
+    <Copy SourceFiles="@(FfShaderBinary)" DestinationFolder="$(OutDir)shaders" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

@@ -25,6 +25,16 @@
           Inputs="@(SampleAsset)" Outputs="@(SampleAsset->'$(OutDir)assets\%(Filename)%(Extension)')">
     <Copy SourceFiles="@(SampleAsset)" DestinationFolder="$(OutDir)assets" SkipUnchangedFiles="true" />
   </Target>
+  <!-- The .cso files are built by ff.base.c into a shared per-configuration directory, so they are
+       copied here rather than produced here. The glob is expanded inside the target because the
+       files do not exist until the referenced project has built. -->
+  <Target Name="CopyShaders" AfterTargets="Build">
+    <ItemGroup>
+      <FfShaderBinary Include="$(FfShaderOutDir)*.cso" />
+    </ItemGroup>
+    <Error Condition="'@(FfShaderBinary)' == ''" Text="No compiled shaders were found in '$(FfShaderOutDir)'." />
+    <Copy SourceFiles="@(FfShaderBinary)" DestinationFolder="$(OutDir)shaders" SkipUnchangedFiles="true" />
+  </Target>
   <ItemGroup>
     <ProjectReference Include="..\..\source\ff.base.c\ff.base.c.vcxproj">
       <Project>{9acbc255-a76a-495d-9d2f-e6f39d8d3312}</Project>

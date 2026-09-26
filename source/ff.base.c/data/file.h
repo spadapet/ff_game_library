@@ -21,3 +21,8 @@ ff_span ff_map_resource(HMODULE module, ff_wstring_view name, ff_wstring_view ty
 ff_string_view ff_file_module_path(HINSTANCE module, ff_arena* arena);
 ff_string_view ff_file_temp_path(ff_arena* arena);
 ff_string_view ff_file_user_local_path(ff_arena* arena);
+
+// Directory containing the module's executable, with a trailing separator. Files that ship
+// alongside the executable are found this way rather than through the working directory, which
+// differs between launching from the IDE and from a shell.
+ff_string_view ff_file_module_dir(HINSTANCE module, ff_arena* arena);

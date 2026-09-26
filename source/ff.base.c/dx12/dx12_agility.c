@@ -6,13 +6,15 @@
 //
 // The version must match the headers being compiled against, which is why it comes from the
 // build (D3D12_AGILITY_SDK_VERSION_EXPORT) rather than being written out here. The path is
-// relative to the executable, and the NuGet targets copy D3D12Core.dll flat next to it.
+// relative to the executable and must match where the NuGet targets copy D3D12Core.dll, which is
+// pinned by Microsoft_Direct3D_D3D12_D3D12SDKPath in cpp.props. Change one and the other has to
+// change with it, or D3D12CreateDevice fails outright.
 //
 // This lives in its own file so the whole translation unit is pulled in by the linker: a static
 // library only contributes objects that something references, and nothing references these.
 // ff_dx12_agility_sdk_version exists purely to give consumers that reference to make.
 __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
-__declspec(dllexport) extern const char* D3D12SDKPath = ".\\";
+__declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 
 uint32_t ff_dx12_agility_sdk_version(void)
 {

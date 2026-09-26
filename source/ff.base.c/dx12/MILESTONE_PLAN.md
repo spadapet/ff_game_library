@@ -1539,19 +1539,86 @@ Tests are in `test/ff.test.unit.c/dx12/format_tests.cpp`. Six injected faults
 match, a `==`-vs-`<=` length compare, and a wide byte-count) were each caught by
 their specific tests. Suite now 1041, Debug and Release.
 
-### 6d. Shader delivery
+### 6d. Shader delivery — done
 
 The old path is `object_cache::shader(resource_provider, name)`, backed by a
-global resource provider that no longer exists for C code. The HLSL sources are
-in `source/ff.application/assets/shaders/`: `vs_sprite`, `vs_line`,
-`vs_triangle`, `vs_rectangle`, `vs_circle`, `ps_sprite`, `ps_color`, plus
-`data.hlsli` and `functions.hlsli`.
+global resource provider that no longer exists for C code.
 
 The replacement is compiled `.cso` blobs loaded from disk next to the
-executable, looked up by name. This keeps the object cache's existing shape: it
-already memoizes root signatures and PSOs, and a shader blob cache is the same
-pattern. Loading from disk rather than embedding keeps the build simple now and
-can be swapped for embedded blobs later without changing callers.
+executable, looked up by name, and memory mapped into the object cache. This
+keeps the object cache's existing shape: it already memoizes root signatures and
+PSOs, and a shader blob cache is the same pattern. Loading from disk rather than
+embedding keeps the build simple now and can be swapped for embedded blobs later
+without changing callers.
+
+What shipped:
+
+- `ff_dx12_shader` has **11** entries, not 7. The unit of compilation is a
+  (file, entry point, profile) triple, not a file: `ps_sprite.hlsl` has four
+  entry points and `ps_color.hlsl` two. `source/ff.application/assets/ff.dx12.res.json`
+  is the authoritative list. The enum name doubles as the `.cso` file name and
+  the HLSL entry point name.
+- A `CompileShaders` MSBuild target in `ff.base.c.vcxproj` drives `fxc.exe` over
+  `<FfShader>` items. The metadata is `<Entry>`/`<Profile>` — `Target` is a
+  reserved item metadata name and fails with MSB4118. `Inputs` must include the
+  `.hlsli` items or editing a shared header will not rebuild the blobs.
+- Output goes to a per-configuration `$(FfShaderOutDir)`, shared rather than
+  built per project, and each consuming project copies it to `$(OutDir)shaders`.
+- Blobs are looked up relative to `ff_module_instance()`, not the process
+  executable. Under a test runner the process is `testhost.exe`, so resolving
+  against the process would look in the wrong directory.
+- Shader blobs deliberately **survive a device reset**. They are device
+  independent file bytes, so `internal_ff_dx12_object_cache_before_reset` leaves
+  them alone; dropping them would only force a re-map and would invalidate any
+  `D3D12_SHADER_BYTECODE` a caller still held. The legacy code made the same
+  split, clearing shaders in `on_rebuild_resources` rather than `before_reset`.
+
+Found while testing: package 1.619.6 changed its default copy location to
+`.\D3D12\`, but the exported `D3D12SDKPath` still said `.\`, so every
+`D3D12CreateDevice` failed. `Microsoft_Direct3D_D3D12_D3D12SDKPath` is now
+pinned in `cpp.props` next to the literal it has to agree with.
+
+Seven tests, each fault injected: clearing shaders on reset, swapping a vertex
+blob for a pixel blob, and hiding a `.cso` were all caught. The stage check uses
+`D3DReflect`, which is the only thing here that would catch a wrong `/T`
+profile. Suite now 1072, Debug and Release.
+
+**Memory lifetime review.** Blobs are handed out as raw pointers into a mapping
+the cache owns, so the review focused on anything that could move or free that
+mapping while a caller still holds bytecode. No defects were found. What makes
+it safe:
+
+- The blob lives in a `MapViewOfFile` view, not in the cache's arena. The arena
+  relocates its blocks as it grows, so a blob allocated there would move
+  underneath a caller.
+- `ff_file_map` structs sit in a fixed-size array indexed by the enum, so
+  mapping a new shader cannot disturb an existing one.
+- PSO hashing hashes shader *contents* (`hash_shader` → `hash_bytes`), not the
+  pointer, so two caches with different addresses for the same blob still agree.
+- Files open `FILE_SHARE_READ`, so independent caches map the same `.cso`
+  without interfering, and destroying one leaves the other's view intact.
+- `ff_file_map_destroy` zeroes the struct, making the double-destroy path and
+  `destroy` → `init` reuse safe.
+
+Seven more tests cover exactly these: blob stability across 256 unrelated cache
+insertions, full byte-for-byte comparison of all 11 blobs after every load, two
+independent caches, destroy-then-reinit, double destroy, a handle-count check
+across 8 load/destroy cycles, and the out-of-range guard (using a local
+`scoped_shader_assert_counter`, since the module listener otherwise fails any
+test that trips an assert).
+
+Fault injected three more ways: leaking the mappings in `destroy` was caught by
+3 tests including the handle count, writing every blob to slot 0 was caught by 9,
+and an off-by-one `BytecodeLength` was caught only by the reflection test —
+which is a good argument for keeping it. Suite now 1079, Debug and Release.
+
+One non-issue worth recording, since it looks like a bug on first read:
+`ff_file_module_path` and `ff_wide_to_utf8` do not check their arena
+allocations, and the loader passes a 1024-byte stack arena. That is safe because
+`ff_arena_declare_stack` passes `grow_buffer_size == 0`, which
+`ff_arena_init_external` reads as "default from the external size" — the arena
+spills to the heap rather than returning NULL. Verified directly with a 64-byte
+arena, which still returned the full module directory.
 
 ### 6e. Draw device state layer
 
@@ -1793,8 +1860,23 @@ targets copy `D3D12Core.dll` flat next to the exe.
 **The PIX package is referenced for the DLL, not for linking.** Markers use the
 legacy blob format recorded directly on the command list, so nothing links
 `WinPixEventRuntime.lib` — confirmed with `dumpbin /imports`, which shows no PIX
-import in either configuration. The DLL is still deployed next to the exe because
+import in either configuration. The DLL is deployed next to the exe because
 PIX *timing* captures look for it there.
+
+**Release does not reference the PIX package at all.** `WinPixEventRuntime.dll`
+is not shipped, so `ff.base.c.vcxproj` imports the package's targets only when
+the configuration is not Release, and `EnsureNuGetPackageBuildImports` only
+demands the package there too. The import has to be gated rather than just
+suppressing the copy: the package's targets add `WinPixEventRuntime.lib` to
+`AdditionalDependencies` with no configuration condition, so importing it in
+Release would put a link dependency on a DLL that is not being shipped. Release
+also has no markers to begin with (`PROFILE_APP=0`).
+
+The `$(WinPixRoot)bin\x64\` entry that used to be in `cpp.targets` was removed:
+the package's own targets already add that directory for the projects that
+import it, so the global copy only served to leak the path into projects that
+do not use PIX. `ff.application` (the old C++ code) genuinely calls
+`PIXBeginEvent` and includes `pix3.h`, so its import stays unconditional.
 
 ## Review guidance for new subsystems
 
