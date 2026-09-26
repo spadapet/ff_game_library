@@ -24,6 +24,7 @@ typedef enum ff_dx12_device_child_type
     ff_dx12_device_child_type_target_texture,
     ff_dx12_device_child_type_target_window,
     ff_dx12_device_child_type_object_cache,
+    ff_dx12_device_child_type_draw_state,
     ff_dx12_device_child_type_count,
 } ff_dx12_device_child_type;
 

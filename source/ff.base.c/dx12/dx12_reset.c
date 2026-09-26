@@ -4,6 +4,7 @@
 #include "dx12/dx12_buffer.h"
 #include "dx12/dx12_depth.h"
 #include "dx12/dx12_device_child.h"
+#include "dx12/dx12_draw_state.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_object_cache.h"
 #include "dx12/dx12_queue.h"
@@ -36,6 +37,12 @@ static void child_before_reset(ff_dx12_device_child* child)
 
         case ff_dx12_device_child_type_object_cache:
             internal_ff_dx12_object_cache_before_reset((ff_dx12_object_cache*)child->owner);
+            break;
+
+        // Drops its borrowed root signature and pipeline pointers. This runs before the object
+        // cache's own pass, which is what actually releases them.
+        case ff_dx12_device_child_type_draw_state:
+            internal_ff_dx12_draw_state_before_reset((ff_dx12_draw_state*)child->owner);
             break;
 
         // The rest own no GPU object of their own: their resource and their descriptor range are
@@ -81,6 +88,9 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
         // the new device.
         case ff_dx12_device_child_type_object_cache:
             return true;
+
+        case ff_dx12_device_child_type_draw_state:
+            return internal_ff_dx12_draw_state_reset((ff_dx12_draw_state*)child->owner);
 
         default:
             FF_DEBUG_FAIL_MSG_RET_VAL("unhandled device child type", false);

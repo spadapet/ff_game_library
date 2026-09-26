@@ -2209,3 +2209,136 @@ latency handle rather than spinning. It was validated by injecting a 2ms busy
 spin per frame: the reading moved from 0.012 to 0.177 cores while the frame rate
 stayed at 60. Note that `ff_log_type_debug` is disabled in Release, so the
 sample enables it explicitly.
+
+## Draw state layer (`ff_dx12_draw_state`, complete)
+
+The state half of the draw device: one root signature, two samplers, and a
+lazily built matrix of pipeline states. Splitting it out from the batching half
+means the batcher can be built on a state layer that already has tests.
+
+A permutation is keyed by `(bucket, blend, depth, target format)`. Blend and
+target are multi-bit fields rather than independent flags because their values
+are mutually exclusive, and the whole key stays a small integer so the
+permutations can index a flat array instead of needing a hash.
+
+`make_flags` takes the target format, not just a `transparent` flag, because
+blending has to be forced off for the `R8_UINT` palette target: blending two
+palette indexes produces a third, unrelated index rather than a blended color.
+The target bit is still set in that case, since it also selects the palette-out
+pixel shader.
+
+Depth comparison is `GREATER`, not `LESS`. Depth values increase front-to-back,
+so the newest instance at a pixel wins. This matches the old C++.
+
+The object cache is owned by the draw state rather than reached through a
+global as it was in C++. Every pipeline and the root signature are borrowed
+pointers into that cache, so containing the cache makes the borrow strictly
+shorter than the lifetime of what it points at, and two draw states cannot
+disturb each other. `destroy` drops the borrowed pointers before destroying the
+cache so nothing can observe them dangling.
+
+Samplers come from a pinned range, not the ring: the sampler table is bound for
+every draw of every frame, and a ring range would be reclaimed out from under
+it. Across a device reset the pinned range keeps its heap slots (so outstanding
+handles stay valid) but the descriptors written into them do not survive, so
+reset re-creates the samplers without re-allocating the range.
+
+Device-child ordering is load-bearing. `draw_state` sits last in the enum, so
+`before_reset` runs on it *first* (dropping borrowed pointers before the object
+cache releases them) and `reset` runs on it *last* (after the cache is ready to
+refill). This depends on `object_cache` preceding it in the enum.
+
+The `CD3DX12_*` helpers the C++ used for the default blend, rasterizer and
+depth-stencil descs are C++-only, so those defaults are written out by hand.
+A wrong value there produces a silently different PSO rather than an error,
+so they were checked field by field against the D3D12 defaults.
+
+`ff_dx12_draw_state_bucket_ps` exists only for testing, and it was added because
+a test was found to be vacuous. The original test compared pipeline pointers for
+the color and palette targets and asserted they differed, but those two
+permutations also differ by render target format, so they would have been
+distinct objects even if both used the same pixel shader. Fault injection (making
+the palette path select the non-palette shader) did not fail that test. The
+accessor exposes the shader choice directly, `create_pipeline_state` now routes
+through it so the test pins the code that actually runs, and the same fault
+injection now fails as it should.
+
+All fourteen tests were fault-injected. Four independent faults (blend not
+forced off for the palette target, palette-out shader ignored, `before_reset`
+not clearing pipelines, and `apply` ignoring its flags) each produced a failure.
+
+### Draw state review pass
+
+A second pass over the draw state layer, after the tests were already green.
+
+**Reserved permutation keys were accepted (fixed).** The blend and target fields
+are each two bits with only three legal values, so the fourth pattern of each is
+unreachable from `make_flags` but still *in range*. `apply` only bounds-checked
+against `ff_dx12_draw_state_count`, so a hand-built key using a reserved pattern
+would have silently aliased onto some other permutation instead of being
+rejected. `ff_dx12_draw_state_flags_valid` now rejects both patterns and `apply`
+asserts on it. Weakening it back to a bare bounds check fails two tests.
+
+**Pipeline creation does validate against the root signature.** This was worth
+establishing rather than assuming, because it determines whether the `apply`
+tests prove anything about the binding contract. Shrinking the texture range
+from 32 to 1 does not merely fail a test, it takes down the test host: the
+runtime rejects the mismatch hard. So the passing `apply` tests really do pin
+the root signature against what the shaders in `data.hlsli` declare, which is
+the most valuable thing this suite checks.
+
+**The hand-rolled D3D12 defaults were verified field by field** against
+`d3dx12_core.h` in the Agility package rather than from memory: `CD3DX12_BLEND_DESC`
+(:591), `CD3DX12_RASTERIZER_DESC` (:615) and `CD3DX12_DEPTH_STENCIL_DESC` (:318).
+All three match, including the fields left zero. The one deliberate difference is
+`CullMode`, which the C++ also overrides to `NONE` right after constructing the
+default.
+
+**Destroy has a lifetime contract that is now documented.** Command lists do not
+hold references on the pipelines they are given, so releasing the cache while
+work is in flight would dangle. This is the same contract the object cache
+already has, and in practice the draw device holds one draw state for its whole
+lifetime and tears it down after `ff_dx12_wait_for_idle`. Worth stating in the
+header rather than leaving implicit.
+
+Confirmed correct and left alone: the object cache hashes descs deeply (input
+layouts by semantic string, not by pointer), so passing stack locals for the
+root signature ranges is safe; shader-visible heaps are bound once per command
+list in `ff_dx12_queue_new_commands`, so the sampler table binding works; and the
+device-child enum ordering puts `draw_state` after `object_cache`, which is what
+makes the borrowed pointers get dropped before the cache releases them.
+
+## Instance bucket (f_dx12_instance_bucket, complete)
+
+The storage half of the draw device, ported from instance_bucket in draw_util.cpp. Sixteen
+type-erased growable arrays: eight opaque buckets that line up one-for-one with the eight
+`ff_dx12_draw_bucket` pipeline buckets, then eight transparent mirrors in the same order.
+
+Design notes:
+
+- **Sixteen instance buckets, eight pipeline buckets.** Opaque and transparent are separate
+  buckets rather than a flag on the instance, because they are drawn by completely different
+  strategies: the opaque half is drawn in bucket order with one instanced call per bucket, while
+  the transparent half has to be drawn back to front in caller order. They still share a pipeline,
+  since blending is selected by the draw state flags. `ff_dx12_instance_bucket_draw_bucket`
+  does the mapping, and two `static_assert`s pin the two enums together so the halves cannot
+  drift apart.
+- **Arena-backed, not `_aligned_realloc`.** The C++ used `_aligned_realloc`; this uses a
+  per-bucket `ff_arena` initialized with `ff_arena_init_heap_local`, which may relocate the
+  block, so `add` always re-fetches the pointer from `ff_arena_realloc`.
+- **Nothing is allocated until the first instance lands.** Most frames touch only a few of the
+  sixteen buckets, so the unused ones cost nothing.
+- **`clear` keeps the allocation.** Instances are plain bytes with no destructors, so clearing
+  is a rewind of the count. Bucket sizes are stable frame to frame, so a steady-state frame does
+  no allocation at all. Growth doubles from `FF_DX12_MIN_INSTANCE_BUCKET_COUNT` (64).
+- **`render_start` / `render_count` are snapshotted separately from `count`**, because the
+  draw happens after the buckets have been copied into the combined instance buffer and cleared.
+
+11 tests in `dx12_instance_bucket_tests.cpp`. Fault-injected with four distinct faults
+(`realloc`->`alloc` losing contents, a wrong opaque/transparent mapping, `clear` freeing the
+block, and an off-by-one in `add`); every one was caught by the expected tests. One originally
+planned guard test (`add_rejects_uninitialized_bucket`) was found to be **non-discriminating** --
+an unrelated arena assert fired either way -- and was replaced with a behavioral test that pins
+each returned slot to `data + count * item_size` across a reallocation.
+
+Debug 1111/1111, Release 1111/1111.

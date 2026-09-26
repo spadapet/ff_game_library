@@ -46,6 +46,8 @@
     <ClCompile Include="dx12\dx12_descriptor_range.c" />
     <ClCompile Include="dx12\dx12_buffer.c" />
     <ClCompile Include="dx12\dx12_depth.c" />
+    <ClCompile Include="dx12\dx12_draw_state.c" />
+    <ClCompile Include="dx12\dx12_instance_bucket.c" />
     <ClCompile Include="dx12\dx12_descriptor_allocator.c" />
     <ClCompile Include="dx12\dx12_target_texture.c" />
     <ClCompile Include="dx12\dx12_target_window.c" />
@@ -108,6 +110,8 @@
     <ClInclude Include="dx12\dx12_descriptor_range.h" />
     <ClInclude Include="dx12\dx12_buffer.h" />
     <ClInclude Include="dx12\dx12_depth.h" />
+    <ClInclude Include="dx12\dx12_draw_state.h" />
+    <ClInclude Include="dx12\dx12_instance_bucket.h" />
     <ClInclude Include="dx12\dx12_descriptor_allocator.h" />
     <ClInclude Include="dx12\dx12_target_texture.h" />
     <ClInclude Include="dx12\dx12_target_window.h" />
