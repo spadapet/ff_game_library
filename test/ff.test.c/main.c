@@ -299,6 +299,8 @@ static bool render_frame(test_app* app)
     const float black[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
     bool presented = false;
 
+    ff_dx12_commands_begin_event(&commands, ff_dx12_gpu_event_render_frame);
+
     if (ff_dx12_target_window_begin_render(&app->target, &commands, black) &&
         upload_sprite(app, &commands))
     {
@@ -315,11 +317,22 @@ static bool render_frame(test_app* app)
             .bottom = (LONG)app->sprite_height,
         };
 
+        ff_dx12_commands_begin_event(&commands, ff_dx12_gpu_event_draw_2d);
+
         ff_dx12_commands_copy_texture(&commands,
             ff_dx12_target_window_resource(&app->target), 0, dest_x, dest_y,
             ff_dx12_texture_resource(&app->sprite), 0, &source_rect);
 
+        ff_dx12_commands_end_event(&commands);
+
+        // Has to close before end_render, which executes the list.
+        ff_dx12_commands_end_event(&commands);
+
         presented = ff_dx12_target_window_end_render(&app->target, &commands);
+    }
+    else
+    {
+        ff_dx12_commands_end_event(&commands);
     }
 
     if (!presented)

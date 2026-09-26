@@ -6,6 +6,7 @@
 #include "base/math.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_agility.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_mem_allocator.h"
@@ -266,6 +267,9 @@ static ID3D12Device6* create_device(void)
 
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] D3D12CreateDevice succeeded, node count: %u"),
         (unsigned int)ID3D12Device6_GetNodeCount(device));
+    // Also forces the linker to keep the Agility SDK exports; see dx12_agility.c.
+    ff_log_write(ff_log_type_debug, FF_SVL("[dx12] - agility sdk version: %u"),
+        (unsigned int)ff_dx12_agility_sdk_version());
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] - supports non-resident heaps: %d"),
         (int)s_supports_create_heap_not_resident);
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] - supports bindless: %d"), (int)s_supports_bindless);

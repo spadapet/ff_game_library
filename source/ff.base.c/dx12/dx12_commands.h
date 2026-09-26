@@ -2,6 +2,7 @@
 
 #include "dx12_descriptor_range.h"
 #include "dx12_fence_values.h"
+#include "dx12_gpu_event.h"
 #include "dx12_mem_range.h"
 #include "dx12_queue.h"
 #include "dx12_resource.h"
@@ -41,6 +42,14 @@ ff_dx12_command_cache* ff_dx12_commands_take_cache(ff_dx12_commands* commands);
 
 void ff_dx12_commands_pipeline_state_unknown(ff_dx12_commands* commands);
 void ff_dx12_commands_pipeline_state(ff_dx12_commands* commands, ID3D12PipelineState* state);
+
+// Nested, named scopes around GPU work for PIX and RenderDoc. Compiled out of Release, where
+// they cost list space and CPU for something no debugger is attached to read. Every begin needs
+// a matching end on the same commands object.
+void ff_dx12_commands_begin_event(ff_dx12_commands* commands, ff_dx12_gpu_event type);
+void ff_dx12_commands_end_event(ff_dx12_commands* commands);
+// A single point on the timeline, with no scope to close.
+void ff_dx12_commands_set_marker(ff_dx12_commands* commands, ff_dx12_gpu_event type);
 
 // array_size/mip_size of 0 mean "the rest of the resource".
 void ff_dx12_commands_resource_state(ff_dx12_commands* commands, ff_dx12_resource* resource,

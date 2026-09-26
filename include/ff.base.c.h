@@ -28,6 +28,7 @@
 #include "../source/ff.base.c/data/value.h"
 #include "../source/ff.base.c/data/value_type.h"
 
+#include "../source/ff.base.c/dx12/dx12_agility.h"
 #include "../source/ff.base.c/dx12/dx12_color.h"
 #include "../source/ff.base.c/dx12/dx12_descriptor_allocator.h"
 #include "../source/ff.base.c/dx12/dx12_descriptor_range.h"
@@ -35,6 +36,7 @@
 #include "../source/ff.base.c/dx12/dx12_device_child.h"
 #include "../source/ff.base.c/dx12/dx12_fence.h"
 #include "../source/ff.base.c/dx12/dx12_fence_values.h"
+#include "../source/ff.base.c/dx12/dx12_gpu_event.h"
 #include "../source/ff.base.c/dx12/dx12_globals.h"
 #include "../source/ff.base.c/dx12/dx12_heap.h"
 #include "../source/ff.base.c/dx12/dx12_mem_allocator.h"

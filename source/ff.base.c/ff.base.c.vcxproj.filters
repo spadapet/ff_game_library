@@ -23,10 +23,16 @@
     <ClCompile Include="base\math.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_agility.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_color.c">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\dx12_format.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
+    <ClCompile Include="dx12\dx12_gpu_event.c">
       <Filter>dx12</Filter>
     </ClCompile>
     <ClCompile Include="dx12\dx12_matrix.c">
@@ -185,10 +191,16 @@
     <ClInclude Include="base\rect.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="dx12\dx12_agility.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
     <ClInclude Include="dx12\dx12_color.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_format.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
+    <ClInclude Include="dx12\dx12_gpu_event.h">
       <Filter>dx12</Filter>
     </ClInclude>
     <ClInclude Include="dx12\dx12_matrix.h">

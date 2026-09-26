@@ -57,6 +57,9 @@
     <ClCompile Include="dx12\dx12_globals_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="dx12\dx12_gpu_event_tests.cpp">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="base\dispatch_tests.cpp">
       <Filter>windows</Filter>
     </ClCompile>

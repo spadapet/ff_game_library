@@ -90,6 +90,24 @@ The owner is the thread that called `ff_dx12_init`, or whichever thread later ca
 
 Work arriving from another thread (window messages, most obviously) must not call into dx12 directly. It queues instead, via `ff_dx12_defer_resize_target` or `ff_dx12_defer_reset_device`, and the owning thread applies it with `ff_dx12_flush_deferred` between frames — never inside one. The single critical section in `dx12_globals.c` guards only that queue and is never held across a D3D call. Anything that holds a pointer into the queue must cancel its entry when it is destroyed, the way `ff_dx12_target_window_destroy` calls `ff_dx12_cancel_deferred_target`.
 
+#### Profile-only code and GPU markers
+
+`PROFILE_APP` is defined for every configuration except Release (`build/cpp.targets`), so `#if PROFILE_APP` is the guard for debugging aids that should cost nothing in a shipping build. Use it for anything that only exists to be read by a tool.
+
+PIX's `pix3.h` cannot be used here: it begins with `#error "Only C++ files can include pix3.h. C is not supported."` GPU markers instead use PIX's legacy format — `ID3D12GraphicsCommandList_BeginEvent(list, 0, wide_string, byte_count)`, where metadata `0` means "null-terminated wide string." PIX and RenderDoc both read it, and it needs nothing beyond `d3d12.h`. The WinPixEventRuntime package is referenced only so its DLL is deployed next to the exe for PIX timing captures — nothing links against it, so don't add a `#pragma comment(lib, ...)` or try to call its exports.
+
+Be careful what you claim a marker test proves: **D3D12 does not validate marker blobs.** A wrong blob size is accepted silently and surfaces only as garbage in a capture, so no runtime test can catch a malformed blob. Test the name tables and the call plumbing, and say plainly in the test that blob contents are out of scope.
+
+#### NuGet packages and the Agility SDK
+
+Package versions live in `build/base.props` and are duplicated in each `packages.*.config`; change both together. For the Agility SDK that means three files — `D3D12AgilitySDK` and `D3D12AgilityVersion` in `base.props`, plus the `packages.*.config` for both `ff.base.c` and `ff.application`, which share the property. `D3D12AgilitySDK` becomes the `D3D12_AGILITY_SDK_VERSION_EXPORT` define and must match `D3D12_SDK_VERSION` in the package's `d3d12.h`, or the runtime rejects the redist and quietly uses the OS D3D12. A project that references a package needs the two `Import` lines after `Microsoft.Cpp.targets` plus the `EnsureNuGetPackageBuildImports` target, so a missing restore fails with a readable message.
+
+There is no solution file, so restoring a `packages.config` project takes `/t:Restore /p:RestorePackagesConfig=true`; plain `/t:Restore` reports "nothing to do." The repo-root `nuget.config` sets `repositoryPath` to `packages` so restore lands where `PackagesRoot` expects it. Note that `nuget.org` is disabled in the machine-level NuGet config and packages come from a Microsoft proxy feed, so direct `api.nuget.org` requests fail while restore works fine.
+
+**Referencing the Agility SDK package is not enough to use it.** The D3D12 runtime only loads the redistributable `D3D12Core.dll` if it finds `D3D12SDKVersion` and `D3D12SDKPath` exported from the *executable* (see `dx12_agility.c`); otherwise it silently falls back to `C:\windows\SYSTEM32`. Since `ff.base.c` is a static library, the linker drops any object file nothing references, so those exports need a real call from live code — `ff_dx12_init` logs the version for exactly that reason. Don't delete that log line.
+
+When verifying this kind of thing, **check the loaded module path, not that the DLL was copied**. `$proc.Modules | Where ModuleName -match 'D3D12Core'` tells you the truth, including the real file version; the presence of the file next to the exe tells you nothing.
+
 ### ff.base2
 
 The `ff.base2` project has strict constraints. When suggesting or generating code for any file under `source/ff.base2/`:

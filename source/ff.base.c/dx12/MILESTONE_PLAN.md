@@ -1184,7 +1184,7 @@ area that a reset test proved nothing by checking only "it still works".
 
 Milestones 1-5, device reset, PNG decoding (6a-2), the math types (6b), the
 format utilities (6c), and the deferred work queue plus thread-ownership asserts
-are complete. The suite is 1060 passing, zero skipped, stable across full runs in
+are complete. The suite is 1065 passing, zero skipped, stable across full runs in
 **both Debug and Release**, both warning-free.
 
 ### The `ff.test.c` sample
@@ -1711,6 +1711,90 @@ while one thread owns everything:
 - **Cancel reorders the queue** (swap-with-last). Harmless today because targets
   are independent, but it means the queue is a set, not a FIFO — worth
   remembering before anything grows an ordering assumption.
+
+## GPU event markers (complete)
+
+`dx12_gpu_event.{h,c}` plus `ff_dx12_commands_begin_event` / `end_event` /
+`set_marker`. Named scopes show up as a nested timeline in PIX and RenderDoc,
+which is the main debugging tool for the draw work that follows.
+
+**No WinPixEventRuntime dependency.** `pix3.h` starts with an `#error` for any
+non-C++ translation unit, so it cannot be used from `ff.base.c` at all. The
+runtime's exports (`PIXBeginEventOnCommandList` and friends) are undecorated and
+would be callable from C, but they are not declared in any C-consumable header
+and the modern PIX3 blob layout is an undocumented implementation detail. Instead
+this uses PIX's *legacy* marker format: `BeginEvent(0, wide_string, byte_count)`,
+where a metadata value of 0 means "the blob is a null-terminated wide string."
+That format is stable, documented by the `WINPIX_EVENT_UNICODE_VERSION` define,
+understood by both PIX and RenderDoc, and needs nothing but `d3d12.h`.
+
+Compiled out when `PROFILE_APP` is 0 (Release), matching the old
+`ff::constants::profile_build` guard — markers cost command list space and CPU
+time for something no debugger is attached to read.
+
+The old `gpu_event_color` was dropped. The legacy blob format carries no color
+field, so it would have been an unused function.
+
+Tests are in `test/ff.test.unit.c/dx12/dx12_gpu_event_tests.cpp` (5 tests). The
+name table is `static_assert`ed to cover every enum value and tested for
+completeness and uniqueness, since it is indexed directly by enum value.
+
+**What these tests cannot do:** injecting a deliberately wrong blob size (name
+length + 4096) did *not* fail anything — D3D12 accepts marker blobs without
+validating them, so a malformed blob is silently passed through and only shows up
+as garbage inside a capture. The execute-cleanly tests therefore cover the call
+plumbing, not the blob contents; the comments in that file say so. Verifying the
+blob layout itself needs an actual PIX capture. The name-table faults (a
+duplicated name) *were* caught.
+
+The sample wraps its frame in `render_frame` / `draw_2d` markers, so the path is
+exercised for real rather than only in tests. Re-measured at **60.12 fps, stage
+0, latency 1, 0 long frames**.
+
+## NuGet packages: Agility SDK and PIX (complete)
+
+`source/ff.base.c/packages.ff.base.c.config` references
+`Microsoft.Direct3D.D3D12` (1.619.6) and `WinPixEventRuntime` (1.0.240308001,
+the newest published), with the versions coming from `build/base.props`
+(`D3D12AgilityVersion`, `WinPixVersion`). The project imports both `.targets`
+files and has the usual `EnsureNuGetPackageBuildImports` check so a missing
+restore fails with a clear message instead of a link error.
+
+Three files hold the version and must change together: `build/base.props` (both
+`D3D12AgilitySDK` and `D3D12AgilityVersion`) and the two `packages.*.config`
+files for `ff.base.c` and `ff.application`. `D3D12AgilitySDK` becomes the
+`D3D12_AGILITY_SDK_VERSION_EXPORT` define, so it has to match
+`D3D12_SDK_VERSION` in the package's `d3d12.h` or the runtime rejects the
+redistributable and silently falls back to the OS copy.
+
+There is no solution file, so a `packages.config` restore needs
+`/t:Restore /p:RestorePackagesConfig=true`, and the repo-root `nuget.config`
+sets `repositoryPath` to `packages` — without it, restore drops packages next to
+the project instead of where `PackagesRoot` expects them.
+
+**The Agility SDK does nothing without two exported symbols.** `dx12_agility.c`
+exports `D3D12SDKVersion` and `D3D12SDKPath`; the D3D12 runtime looks for them in
+the *executable* to decide whether to load the redistributable `D3D12Core.dll`
+instead of the one in system32. The old C++ code had these in `dx12_globals.cpp`
+and the C port had lost them, so the package was being restored and copied while
+the process quietly used the OS D3D12. Verified by checking the loaded module
+path: it now resolves to the exe directory, and removing the `__declspec` puts it
+straight back to `C:\windows\SYSTEM32\D3D12Core.dll`.
+
+Because a static library only contributes object files something references,
+those exports live in their own translation unit with an
+`ff_dx12_agility_sdk_version()` accessor, which `ff_dx12_init` calls when it logs
+the version. That log line is what guarantees the linker keeps the object, and it
+also makes the active SDK visible in any capture of the log.
+
+`D3D12SDKPath` is `".\\"`, not the old `".\\D3D12\\"`, because the current NuGet
+targets copy `D3D12Core.dll` flat next to the exe.
+
+**The PIX package is referenced for the DLL, not for linking.** Markers use the
+legacy blob format recorded directly on the command list, so nothing links
+`WinPixEventRuntime.lib` — confirmed with `dumpbin /imports`, which shows no PIX
+import in either configuration. The DLL is still deployed next to the exe because
+PIX *timing* captures look for it there.
 
 ## Review guidance for new subsystems
 

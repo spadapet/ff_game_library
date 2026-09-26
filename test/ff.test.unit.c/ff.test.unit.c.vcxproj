@@ -37,6 +37,7 @@
     <ClCompile Include="dx12\dx12_queue_tests.cpp" />
     <ClCompile Include="dx12\dx12_fence_values_tests.cpp" />
     <ClCompile Include="dx12\dx12_globals_tests.cpp" />
+    <ClCompile Include="dx12\dx12_gpu_event_tests.cpp" />
     <ClCompile Include="dx12\dx12_heap_tests.cpp" />
     <ClCompile Include="dx12\dx12_mem_allocator_tests.cpp" />
     <ClCompile Include="dx12\dx12_mem_range_tests.cpp" />

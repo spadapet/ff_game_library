@@ -6,6 +6,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" />
   <ItemGroup>
     <ClCompile Include="app\app.c" />
     <ClCompile Include="base\arena.c" />
@@ -14,8 +15,10 @@
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
+    <ClCompile Include="dx12\dx12_agility.c" />
     <ClCompile Include="dx12\dx12_color.c" />
     <ClCompile Include="dx12\dx12_format.c" />
+    <ClCompile Include="dx12\dx12_gpu_event.c" />
     <ClCompile Include="dx12\dx12_matrix.c" />
     <ClCompile Include="base\signal.c" />
     <ClCompile Include="base\span.c" />
@@ -72,8 +75,10 @@
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\point.h" />
     <ClInclude Include="base\rect.h" />
+    <ClInclude Include="dx12\dx12_agility.h" />
     <ClInclude Include="dx12\dx12_color.h" />
     <ClInclude Include="dx12\dx12_format.h" />
+    <ClInclude Include="dx12\dx12_gpu_event.h" />
     <ClInclude Include="dx12\dx12_matrix.h" />
     <ClInclude Include="base\signal.h" />
     <ClInclude Include="base\span.h" />
@@ -120,6 +125,7 @@
     <ClInclude Include="windows\window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.ff.base.c.config" />
     <Natvis Include="base.c.natvis" />
   </ItemGroup>
   <ItemGroup>
@@ -131,4 +137,14 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="$(WinPixRoot)build\WinPixEventRuntime.targets" Condition="Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" />
+  <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(WinPixRoot)\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(WinPixRoot)\build\WinPixEventRuntime.targets'))" />
+    <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props'))" />
+    <Error Condition="!Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.targets'))" />
+  </Target>
 </Project>

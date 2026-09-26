@@ -57,6 +57,76 @@ ID3D12GraphicsCommandList1* ff_dx12_commands_list(ff_dx12_commands* commands)
     return commands_list_flush(commands);
 }
 
+// PIX's legacy unicode marker format: an event metadata value of 0 tells the debugger the blob
+// is just a null-terminated wide string. This is recorded straight onto the command list, so
+// nothing links or calls into the WinPixEventRuntime and markers show up in a GPU capture from
+// either PIX or RenderDoc.
+//
+// The runtime's own PIXBeginEventOnCommandList is deliberately not used: it takes an undocumented
+// PIX3 blob, and its only declaration is in pix3.h, which hard-errors on C translation units.
+// The package is referenced for the DLL, which PIX *timing* captures look for in the exe
+// directory, and alongside the Agility SDK package.
+#define FF_PIX_EVENT_UNICODE_VERSION 0
+#define FF_MAX_EVENT_NAME 64
+
+#if PROFILE_APP
+static bool event_blob(ff_dx12_gpu_event type, wchar_t* buffer, UINT* out_size)
+{
+    const ff_wstring_view name = ff_dx12_gpu_event_name(type);
+    FF_CHECK_RET_VAL(name.count && name.count < FF_MAX_EVENT_NAME, false);
+
+    memcpy(buffer, name.data, name.count * sizeof(wchar_t));
+    buffer[name.count] = L'\0';
+
+    *out_size = (UINT)((name.count + 1) * sizeof(wchar_t));
+    return true;
+}
+#endif
+
+void ff_dx12_commands_begin_event(ff_dx12_commands* commands, ff_dx12_gpu_event type)
+{
+#if PROFILE_APP
+    FF_CHECK_RET(ff_dx12_commands_valid(commands));
+
+    wchar_t buffer[FF_MAX_EVENT_NAME];
+    UINT size;
+    FF_CHECK_RET(event_blob(type, buffer, &size));
+
+    ID3D12GraphicsCommandList_BeginEvent((ID3D12GraphicsCommandList*)commands_list_raw(commands),
+        FF_PIX_EVENT_UNICODE_VERSION, buffer, size);
+#else
+    (void)commands;
+    (void)type;
+#endif
+}
+
+void ff_dx12_commands_end_event(ff_dx12_commands* commands)
+{
+#if PROFILE_APP
+    FF_CHECK_RET(ff_dx12_commands_valid(commands));
+    ID3D12GraphicsCommandList_EndEvent((ID3D12GraphicsCommandList*)commands_list_raw(commands));
+#else
+    (void)commands;
+#endif
+}
+
+void ff_dx12_commands_set_marker(ff_dx12_commands* commands, ff_dx12_gpu_event type)
+{
+#if PROFILE_APP
+    FF_CHECK_RET(ff_dx12_commands_valid(commands));
+
+    wchar_t buffer[FF_MAX_EVENT_NAME];
+    UINT size;
+    FF_CHECK_RET(event_blob(type, buffer, &size));
+
+    ID3D12GraphicsCommandList_SetMarker((ID3D12GraphicsCommandList*)commands_list_raw(commands),
+        FF_PIX_EVENT_UNICODE_VERSION, buffer, size);
+#else
+    (void)commands;
+    (void)type;
+#endif
+}
+
 void ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_commands* prev_commands,
     ff_dx12_commands* next_commands, ff_dx12_fence_values* wait_before_execute)
 {
