@@ -1264,6 +1264,194 @@ builds warning-free in both configurations and the suite is 1079 passing.
 
 Remaining before a renderer can draw real geometry: see "Milestone 6" below.
 
+## Lifetime audit before milestone 6
+
+A full audit of lifetime management across the dx12 layer, run before adding
+more code on top of it. Two real bugs, both in `dx12_queue.c`, plus two
+standing-rule risks to resolve before the draw device lands.
+
+**Bug 1: `queue->caches_in_use` is never destroyed — fixed.** `ff_dx12_queue_destroy`
+(`dx12_queue.c:369-397`) walked only `queue->caches` and NULLed it. The
+second list is pushed at 458-459 and spliced out *only* on a successful execute
+at 558-566, so anything left on it at teardown leaked its command lists,
+allocators, fence, and resource tracker — all of which hold COM references on
+the device, so the device could not be fully released either. Not hit internally
+today, since the one in-library caller does execute, but the list was
+structurally unreachable from `destroy` on every path. Fixed by walking it with
+the same `command_cache_destroy` loop. The caches are arena-allocated and
+`command_cache_destroy` does not touch `next`, so the walk is safe.
+
+**Bug 2: fences were signalled for command lists that were never submitted —
+fixed.** This is the serious one, because it broke the rule that a GPU resource
+is never released while the GPU may still be using it. `ExecuteCommandLists` is
+gated on `all_resident` at `dx12_queue.c:586`, but the signal loop ran
+unconditionally. `ff_dx12_make_resident` returns false when the GPU is over
+budget (`dx12_residency.c:279`), so under memory pressure nothing executed and
+the fences retired anyway. A second, rarer path wrote `signal_values` *before*
+`ff_dx12_commands_take_cache`, so a NULL cache broke the loop with the value
+already recorded.
+
+Three reclamation mechanisms read those fence values as "the GPU is finished":
+keep-alive deferred release (`dx12_globals.c:453`), command allocator recycling
+(`dx12_queue.c:213`, where resetting an allocator whose work has not retired is
+undefined behavior), and the upload ring (`dx12_mem_allocator.c:267`). All three
+would have handed back memory the GPU may still be reading.
+
+The fix is not simply to skip the signal. The allocators and ring ranges were
+already pushed with that fence value earlier in the same function, so never
+signalling would strand them behind a value nothing could ever reach — a leak
+instead of a corruption. Instead the value is now signalled through the queue
+when work was submitted (ordering it behind that work) and directly on the CPU
+when it was not, where it is immediately and truthfully complete. The
+`signal_values` write also moved to after a successful `take_cache`.
+
+Worth recording that this is inherited rather than a porting mistake: the C++
+original has the same unconditional `fence_values.signal(this)` after an
+`if (all_resident)` guard at `ff.application/graphics/dx12/queue.cpp:168-173`.
+
+Two tests were added. `abandoned_commands_are_released_by_queue_destroy` was
+**vacuous on its first attempt** — merely surviving teardown passed with the bug
+still present, because the leak is a refcount, not a crash. It now holds its own
+reference to an abandoned command list and asserts the final `Release` returns 0;
+re-injecting the fault makes it fail with `Expected:<0> Actual:<1>`.
+`executed_fence_values_are_complete_after_idle` covers the normal path. The
+residency-failure path is not covered, since reaching it needs real GPU memory
+exhaustion; that gap is deliberate and noted here rather than papered over.
+
+Suite is 1081 passing in both Debug and Release.
+
+**Verified clean**, each traced rather than assumed:
+
+- No path in `ff_dx12_destroy` or device reset releases before waiting.
+  `destroy_d3d` waits at `dx12_globals.c:1016-1019`; `ff_dx12_reset_device` waits
+  at `dx12_reset.c:141-144`, and skipping the wait for an already-lost device is
+  correct because its queues can never signal again.
+- Every failing `_init` leaves the object inert. The house pattern is "zero
+  first, then call your own `_destroy`". The subtle case is handled:
+  `ff_dx12_resource_init_placed` clears `mem_range` before destroying so the
+  *caller's* range is not freed (`dx12_resource.c:134`).
+- Every `_destroy` is idempotent, ending in a full struct zero.
+- The upload ring cannot hand out memory the GPU is still reading: `ring_alloc_bytes`
+  checks the front range's fence and returns an empty range rather than blocking
+  or reusing (`dx12_mem_allocator.c:262-281`). The C port also adds a `back &&`
+  NULL guard at 287 that the C++ lacked.
+- Descriptor ranges are not freed while referenced. Ring space is fence-gated;
+  the eagerly-freeing path serves only CPU-only descriptors that are copied into
+  a shader-visible heap at bind time. That invariant is structural rather than
+  enforced, so it is worth remembering as the draw device is ported.
+- Swap chain resize waits for idle before releasing back buffers
+  (`dx12_target_window.c:277-278`), and it is per-resize rather than per-frame.
+- No COM pointer stored without an `AddRef`, none released twice.
+  `ff_dx12_resource_init_external` AddRefs at `dx12_resource.c:195`. Root
+  signatures and PSOs are handed back borrowed and un-AddRef'd, which is safe
+  only because nothing caches them across a reset — another unenforced invariant
+  the draw device must respect.
+
+**Two standing-rule risks, both now fixed:**
+
+- ~~`ff_dx12_make_resident` blocks the CPU at `dx12_residency.c:209`~~ — **fixed**,
+  see "Two-pass eviction" below.
+- ~~`ff_dx12_descriptor_buffer_alloc_ring` blocks at
+  `dx12_descriptor_allocator.c:318`~~ — **fixed**, see "Non-blocking descriptor
+  ring" below.
+
+### Non-blocking descriptor ring
+
+`ff_dx12_descriptor_buffer_alloc_ring` blocked the CPU when the write cursor
+wrapped onto a range the GPU had not finished reading. The C++ does the same at
+`descriptor_allocator.cpp:189`. With the draw device calling `alloc_range` three
+times per flush (`draw_device.cpp:807/823/839`) against a 7936-descriptor ring,
+enough per-frame texture churn laps the ring inside a single frame and the block
+becomes a full mid-frame CPU/GPU sync.
+
+The fence values involved come from `ff_dx12_commands_next_fence_value`, which is
+a *reserved, unsubmitted* value (`dx12_fence.c:58`). There were therefore two
+distinct states reaching the wait:
+
+- the current frame's own reserved value, which nothing will ever signal, so
+  waiting could never return. The port already failed this case quietly via
+  `wait_is_pending`, which the C++ lacks; that guard was the only thing standing
+  between a lapped ring and a permanent hang.
+- a previous frame's submitted-but-unfinished value, which is what actually
+  blocked.
+
+Both now take the same path: reclaim only ranges that are already complete, and
+otherwise return an invalid range so the caller can flush and retry. This is the
+same shape the upload ring already used at `dx12_mem_allocator.c:262-281`, so the
+two rings no longer disagree about what a full ring means.
+
+`ring_fails_instead_of_blocking_on_submitted_gpu_work` covers this by stalling the
+queue behind an unsignalled gate fence, asserting the value is genuinely
+incomplete, filling the ring, and requiring the wrapping allocation to fail. It
+then releases the gate and requires the same allocation to succeed, so the test
+pins both halves of the contract rather than just "returns invalid". Restoring
+the blocking wait makes it fail on the first assertion. Run five times to confirm
+it is not timing-sensitive.
+
+Callers must now treat an invalid range as "flush and retry", not as an error.
+
+### Two-pass eviction in `ff_dx12_make_resident`
+
+The eviction loop blocked the CPU on `wait_to_evict` every time it evicted
+anything, reachable per-frame from `ff_dx12_queue_execute_many` under memory
+pressure. The C++ original has the identical unconditional
+`wait_to_evict.wait(nullptr)` at `residency.cpp:114`, so this was inherited
+rather than a porting regression. The C++ author described the fix in a comment
+at `residency.cpp:80-82` but never implemented it.
+
+The wait cannot be moved onto the GPU: `Evict` is a CPU-immediate call and D3D12
+requires the GPU to be finished with a pageable before eviction, so a fence wait
+ordered into the queue does not help when `Evict` runs right after on the CPU.
+
+`evict_pass` is now called twice. The first pass takes only pageables whose
+`keep_resident` values are already complete, so `wait_to_evict` stays empty and
+the block costs nothing. Only if that frees too little does the second pass take
+in-flight pageables and pay for the wait. This works in practice because the loop
+already skips anything used this frame via `usage_counter`, so candidates come
+from previous frames and their fences are normally retired.
+
+This narrows the window rather than closing it: a genuinely full budget still
+blocks in the fallback pass, which is the right trade against failing the frame.
+
+Testing needed a seam, since the real budget is far too large to ever evict.
+`ff_dx12_simulate_video_memory_budget` forces the reported budget, following the
+existing `ff_dx12_simulate_factory_stale` hook, and is cleared by
+`ff_dx12_update_video_memory_info`.
+
+Two tests, both fault-injected by deleting the second pass. That injection makes
+`over_budget_still_evicts_when_work_is_in_flight` fail while
+`over_budget_evicts_an_unused_pageable` still passes, which proves the first pass
+really does evict without blocking and the second really is required.
+
+Two rounds of correcting the tests themselves:
+
+- The first version of the in-flight test signalled its fence on a real queue,
+  which retires almost immediately, so the first pass saw it complete and the
+  test passed with the second pass deleted. It now stalls the queue behind an
+  unsignalled gate fence released from a helper thread, and asserts
+  `ff_dx12_fence_value_complete` is false before calling `make_resident`.
+- It also passed `commands_fence` as the commands value, which CPU-signalled the
+  same fence the in-flight value came from and retired it early. The commands
+  value now comes from a separate `submit_fence`.
+- Both tests now do all teardown before asserting. Asserting first threw past
+  `release_gate.join()`, and `std::thread`'s destructor called `terminate`, so a
+  failure crashed the test host instead of reporting which assertion failed.
+
+### The test app harness
+
+Reviewed alongside the above, since it was the newest code. One real bug:
+`blit_load` initializes a heap arena before anything that can fail, but
+`ff_test_app_run` returned early on a failed `load` without calling `unload`, so
+every failed load leaked a Win32 heap. Fixed by applying the same rule the
+library follows — a failed init gets destroyed rather than abandoned. Verified by
+renaming the asset away and confirming a clean exit. `ff_arena_destroy` is
+idempotent (`base/arena.c:288`), so the normal path's second destroy is safe.
+
+A comment claiming the sprite uploads only when the texture is new was also
+wrong: the upload is unconditional and runs every frame. The comment was
+corrected rather than the behavior, since the per-frame upload is what makes
+this a useful ring buffer smoke test.
+
 ## Milestone 6: texture views, math types, shaders, draw state
 
 The old renderer is `dxgi/draw_util.cpp` (1118 lines) plus

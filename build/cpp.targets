@@ -126,6 +126,10 @@
     </ResourceCompile>
     <!-- Linker options -->
     <Link>
+      <!-- ff.application.h emits a /DEFAULTLIB for WinPixEventRuntime.lib whenever PROFILE_APP is on,
+           so every project that includes it needs the PIX lib directory, not just the ones that
+           import the PIX targets. -->
+      <AdditionalLibraryDirectories Condition=" Exists('$(WinPixRoot)bin\x64\') ">$(WinPixRoot)bin\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition=" '$(ProjectSubType)' == 'NativeUnitTestProject' ">$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <EnableCOMDATFolding Condition=" '$(Configuration)' != 'Debug' ">true</EnableCOMDATFolding>

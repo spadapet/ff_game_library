@@ -81,6 +81,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_descriptor_buffer_cpu_handle(ff_dx12_descrip
 D3D12_GPU_DESCRIPTOR_HANDLE ff_dx12_descriptor_buffer_gpu_handle(ff_dx12_descriptor_buffer* buffer, size_t index);
 
 ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_free_list(ff_dx12_descriptor_buffer* buffer, size_t count);
+
+// Never blocks. Returns an invalid range when the ring has wrapped onto descriptors the GPU has
+// not finished reading, which callers should treat as "flush and retry" rather than an error.
 ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_ring(ff_dx12_descriptor_buffer* buffer, size_t count, ff_dx12_fence_value fence_value);
 
 // CPU-visible descriptors (RTV/DSV/SRV staging): a growing list of free-list buckets, each with
@@ -113,6 +116,9 @@ bool ff_dx12_gpu_descriptor_allocator_init(ff_dx12_gpu_descriptor_allocator* all
 void ff_dx12_gpu_descriptor_allocator_destroy(ff_dx12_gpu_descriptor_allocator* allocator);
 
 ID3D12DescriptorHeap* ff_dx12_gpu_descriptor_allocator_heap(ff_dx12_gpu_descriptor_allocator* allocator);
+
+// Never blocks. Returns an invalid range when the ring is full of descriptors still in use by the
+// GPU; callers should flush and retry rather than treat it as an error.
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc(ff_dx12_gpu_descriptor_allocator* allocator, size_t count, ff_dx12_fence_value fence_value);
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc_pinned(ff_dx12_gpu_descriptor_allocator* allocator, size_t count);
 

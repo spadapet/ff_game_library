@@ -77,8 +77,9 @@ static void blit_destroy(ff_test_app* app)
     ff_dx12_texture_destroy(&s_blit.sprite);
 }
 
-// The decoded pixels only have to be uploaded when the texture is new, since nothing animates
-// them any more. A device reset recreates the texture, so this runs again from init.
+// Re-uploaded every frame. Nothing animates these pixels, so this is pure waste, but it keeps the
+// per-frame upload path exercised and it is what makes this a useful smoke test for the ring
+// buffer: a ring that handed out memory the GPU was still reading would corrupt the image here.
 static bool upload_sprite(ff_dx12_commands* commands)
 {
     return ff_dx12_texture_update(&s_blit.sprite, commands, 0, 0, 0, 0,

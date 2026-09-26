@@ -236,6 +236,54 @@ namespace ff::test::dx12
             ff_dx12_gpu_descriptor_allocator_destroy(&allocator);
         }
 
+        TEST_METHOD(ring_fails_instead_of_blocking_on_submitted_gpu_work)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_gpu_descriptor_allocator allocator{};
+            Assert::IsTrue(ff_dx12_gpu_descriptor_allocator_init(&allocator, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 8, 16));
+
+            ff_dx12_fence gate_fence{};
+            ff_dx12_fence busy_fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&gate_fence, FF_SVL("ring gate fence"), 1));
+            Assert::IsTrue(ff_dx12_fence_init(&busy_fence, FF_SVL("ring busy fence"), 1));
+
+            // Stall the queue behind an unsignalled gate, then signal through it. The resulting
+            // value is genuinely submitted but will not complete until the gate is released, which
+            // is the state that used to make alloc_ring block the CPU mid-frame.
+            ID3D12CommandQueue* queue = ff_dx12_queue_command_queue(ff_dx12_direct_queue());
+            ID3D12Fence* gate = gate_fence.fence;
+            Assert::IsTrue(SUCCEEDED(queue->Wait(gate, 1)));
+
+            ff_dx12_fence_value busy = ff_dx12_fence_signal(&busy_fence, queue);
+            Assert::IsFalse(ff_dx12_fence_value_complete(busy));
+
+            ff_dx12_descriptor_range first = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 16, busy);
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&first));
+            ff_dx12_descriptor_range_free(&first);
+
+            // The ring is now entirely owned by work the GPU has not finished. Wrapping onto it
+            // must fail rather than wait.
+            ff_dx12_descriptor_range wrapped = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 16, busy);
+            const bool wrapped_valid = ff_dx12_descriptor_range_valid(&wrapped);
+
+            gate->Signal(1);
+            ff_dx12_fence_value_wait(busy, nullptr);
+
+            // Once the GPU is done, the same allocation succeeds.
+            ff_dx12_fence_value after_value = ff_dx12_fence_signal(&busy_fence, nullptr);
+            ff_dx12_descriptor_range after = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 16, after_value);
+            const bool after_valid = ff_dx12_descriptor_range_valid(&after);
+            ff_dx12_descriptor_range_free(&after);
+
+            ff_dx12_fence_destroy(&busy_fence);
+            ff_dx12_fence_destroy(&gate_fence);
+            ff_dx12_gpu_descriptor_allocator_destroy(&allocator);
+
+            Assert::IsFalse(wrapped_valid, L"wrapping onto unfinished GPU work must fail, not block");
+            Assert::IsTrue(after_valid, L"the ring must be reusable once the GPU finishes");
+        }
+
         TEST_METHOD(alloc_larger_than_the_ring_fails)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

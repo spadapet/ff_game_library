@@ -381,6 +381,15 @@ void ff_dx12_queue_destroy(ff_dx12_queue* queue)
     }
     queue->caches = NULL;
 
+    // Caches only leave this list on a successful execute, so anything still on it belongs to
+    // commands that were abandoned without being executed. Their lists, allocators, fences, and
+    // trackers all hold references on the device, which would otherwise keep it alive forever.
+    for (ff_dx12_command_cache* cache = queue->caches_in_use; cache; cache = cache->next)
+    {
+        command_cache_destroy(cache);
+    }
+    queue->caches_in_use = NULL;
+
     allocator_list_release_all(queue, &queue->allocators);
     allocator_list_release_all(queue, &queue->allocators_before);
     queue->allocator_nodes_free = NULL;
@@ -546,7 +555,6 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     for (size_t i = 0; i < valid_count; i++)
     {
         next_fence_value = ff_dx12_commands_next_fence_value(valid[i]);
-        signal_values[signal_count++] = next_fence_value;
 
         ff_dx12_command_cache* cache = ff_dx12_commands_take_cache(valid[i]);
         FF_ASSERT(cache);
@@ -554,6 +562,10 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
         {
             break;
         }
+
+        // Recorded only once the cache is in hand. A value recorded for a list that never made it
+        // into dx12_lists would retire a fence for work the GPU never saw.
+        signal_values[signal_count++] = next_fence_value;
 
         for (ff_dx12_command_cache** it = &queue->caches_in_use; *it; it = &(*it)->next)
         {
@@ -583,14 +595,22 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     bool all_resident = ff_dx12_make_resident(residency_set, residency_count, next_fence_value, &wait_before_execute);
     ff_dx12_fence_values_wait(&wait_before_execute, queue->command_queue);
 
-    if (all_resident && dx12_list_count)
+    const bool executed = all_resident && dx12_list_count;
+
+    if (executed)
     {
         ID3D12CommandQueue_ExecuteCommandLists(queue->command_queue, (UINT)dx12_list_count, dx12_lists);
     }
 
+    // Signaling through the queue orders the fence behind the work that was just submitted, which
+    // is what makes a reached value mean "the GPU is done with these resources". When nothing was
+    // submitted the GPU never saw the work at all, so the value is signaled straight from the CPU
+    // instead: it is immediately and truthfully complete. Skipping the signal entirely would be
+    // wrong in the other direction, stranding the allocators and ring ranges pushed above behind a
+    // value that nothing would ever reach.
     for (size_t i = 0; i < signal_count; i++)
     {
-        ff_dx12_fence_value_signal(signal_values[i], queue->command_queue);
+        ff_dx12_fence_value_signal(signal_values[i], executed ? queue->command_queue : NULL);
     }
     for (size_t i = 0; i < cache_count; i++)
     {

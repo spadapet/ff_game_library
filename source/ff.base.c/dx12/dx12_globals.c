@@ -1263,3 +1263,9 @@ DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void)
 {
     return s_video_memory_info;
 }
+
+void ff_dx12_simulate_video_memory_budget(uint64_t budget, uint64_t current_usage)
+{
+    s_video_memory_info.Budget = budget;
+    s_video_memory_info.CurrentUsage = current_usage;
+}

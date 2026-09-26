@@ -412,9 +412,16 @@ int ff_test_app_run(const ff_test_mode* mode, double run_seconds)
     ff_signal_connection_init_and_connect(&app.window_connection, &app.window->signal, &on_window_message, &app);
 
     // Assets load before the device exists, since a mode's texture sizes can come from the files
-    // rather than from constants.
+    // rather than from constants. A failed load still gets unloaded, following the house rule that
+    // a failed init leaves the object inert rather than untouched: blit_load allocates its arena
+    // before anything that can fail, so returning early would otherwise leak it.
     if (mode->load && !mode->load(&app))
     {
+        if (mode->unload)
+        {
+            mode->unload(&app);
+        }
+
         ff_signal_connection_destroy(&app.window_connection);
         return 1;
     }

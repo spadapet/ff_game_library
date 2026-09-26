@@ -308,14 +308,16 @@ ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_ring(ff_dx12_descriptor
             ff_dx12_descriptor_ring_range* front = ring_front(buffer);
             if (start <= front->start && start + count > front->start)
             {
-                // Reclaiming this descriptor space genuinely needs the GPU to finish with it. But
-                // if the front range's fence was only reserved (signal_later) and not yet
-                // submitted, no GPU work will ever signal it, so waiting would hang forever.
-                // Being out of room is a normal condition, so fail the allocation quietly and let
-                // the caller decide what to do.
-                FF_CHECK_RET_VAL(ff_dx12_fence_value_wait_is_pending(front->fence_value), result);
+                // Reclaiming this descriptor space genuinely needs the GPU to finish with it, but
+                // blocking here would be a mid-frame CPU/GPU sync. Take back only what the GPU has
+                // already finished with, and otherwise report the ring as full so the caller can
+                // flush and retry. This matches the upload ring in dx12_mem_allocator.c.
+                //
+                // This also covers fence values that were reserved by signal_later and never
+                // submitted, which is the normal case for the frame being built right now. Waiting
+                // on one of those could never complete.
+                FF_CHECK_RET_VAL(ff_dx12_fence_value_complete(front->fence_value), result);
 
-                ff_dx12_fence_value_wait(front->fence_value, NULL);
                 ring_pop_front(buffer);
             }
             else

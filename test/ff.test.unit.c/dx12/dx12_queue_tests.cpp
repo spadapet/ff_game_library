@@ -117,6 +117,68 @@ namespace ff::test::dx12
             ff_dx12_queue_wait_for_idle(queue);
         }
 
+        // Commands that are never executed stay on queue->caches_in_use, which only a successful
+        // execute splices out. Destroying the queue has to release them anyway, or their lists,
+        // allocators, fences and trackers keep the device alive forever. Surviving teardown proves
+        // nothing on its own, so this holds a reference to an abandoned command list and checks
+        // that the queue really dropped its own.
+        TEST_METHOD(abandoned_commands_are_released_by_queue_destroy)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_dx12_queue* queue = ff_dx12_direct_queue();
+
+            ID3D12GraphicsCommandList1* watched = nullptr;
+
+            for (int i = 0; i < 8; i++)
+            {
+                ff_dx12_commands commands{};
+                Assert::IsTrue(ff_dx12_queue_new_commands(queue, &commands));
+
+                // Touch the list so the allocator and tracker are really in use, then walk away
+                // without executing or destroying.
+                ID3D12GraphicsCommandList1* list = ff_dx12_commands_list(&commands);
+                Assert::IsNotNull(list);
+
+                if (!watched)
+                {
+                    watched = list;
+                    watched->AddRef();
+                }
+            }
+
+            Assert::IsNotNull(queue->caches_in_use);
+
+            ff_dx12_destroy();
+
+            // Ours must now be the only reference left. A leaked cache would still be holding one.
+            Assert::AreEqual(0ul, watched->Release());
+        }
+
+        // A fence value handed out by execute must be truthfully complete once reached: the
+        // keep-alive list, allocator recycling and the upload ring all read it as "the GPU is
+        // finished with these resources".
+        TEST_METHOD(executed_fence_values_are_complete_after_idle)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_dx12_queue* queue = ff_dx12_direct_queue();
+
+            ff_dx12_commands a{};
+            ff_dx12_commands b{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(queue, &a));
+            Assert::IsTrue(ff_dx12_queue_new_commands(queue, &b));
+
+            const ff_dx12_fence_value a_value = ff_dx12_commands_next_fence_value(&a);
+            const ff_dx12_fence_value b_value = ff_dx12_commands_next_fence_value(&b);
+
+            ff_dx12_commands* many[] = { &a, &b };
+            ff_dx12_queue_execute_many(queue, many, 2);
+
+            ff_dx12_queue_wait_for_idle(queue);
+
+            Assert::IsTrue(ff_dx12_fence_value_complete(a_value));
+            Assert::IsTrue(ff_dx12_fence_value_complete(b_value));
+        }
+
         TEST_METHOD(execute_many_with_zero_or_null_is_harmless)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

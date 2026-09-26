@@ -55,6 +55,10 @@ void ff_dx12_simulate_factory_stale(void);
 DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void);
 void ff_dx12_update_video_memory_info(void);
 
+// Testing hook: forces the budget reported to residency so the over-budget eviction paths can be
+// exercised without really exhausting GPU memory. Cleared by ff_dx12_update_video_memory_info.
+void ff_dx12_simulate_video_memory_budget(uint64_t budget, uint64_t current_usage);
+
 ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena);
 
 typedef struct ff_dx12_queue ff_dx12_queue;
