@@ -6,9 +6,13 @@
   <ItemGroup>
     <ClCompile Include="pch.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="test_app.c" />
+    <ClCompile Include="test_blit.c" />
+    <ClCompile Include="test_draw.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="test_app.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="source">

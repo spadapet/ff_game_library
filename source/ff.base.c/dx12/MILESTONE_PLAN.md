@@ -1224,6 +1224,44 @@ rebuilding a lost device belongs in the renderer and not in the sample.
 Verified by running it: 700 frames across live edge-resizing, a
 minimize/restore cycle, and a clean exit with no debug-layer complaints.
 
+### Multi-mode restructure
+
+The sample is now a mode host rather than a single hard-coded scene, mirroring
+what the old `ff.test.console` menu offered. `test_app.c` owns everything that
+is not scene-specific — the window, swap chain, device reset, deferred resize,
+message pump, stats, and both reports — and a mode is a table of function
+pointers in `test_app.h`:
+
+| File | Contents |
+| --- | --- |
+| `main.c` | Mode table, command line parsing, usage |
+| `test_app.c` | Harness: loop, pacing, stats, window, graphics lifetime |
+| `test_blit.c` | `blit` mode, the former `main.c` scene |
+| `test_draw.c` | `shapes`, `sprites`, `sprite_perf` |
+
+`load`/`unload` are split from `init`/`destroy` because they answer to different
+events: assets are read once, while GPU objects are rebuilt on every device
+reset. Folding them together would re-read files from disk on every reset.
+
+Mode selection is a command line argument rather than the old `std::cin` menu.
+That keeps `ff.test.c <mode> <seconds>` non-interactive, which is what makes it
+usable for catching frame pacing regressions from a script; a keyboard menu
+needs an input layer that `ff.base.c` does not have yet.
+
+`shapes`, `sprites`, and `sprite_perf` are registered but fail immediately in
+`load` with a message naming the two milestones they need. They cannot work
+yet: nothing outside the tests calls `ff_dx12_object_cache_shader` or
+`ff_dx12_object_cache_pipeline_state`, there is no root signature matching what
+the shaders declare, and without a pipeline state `ff_dx12_commands_draw` cannot
+be called at all. Failing in `load`, before a device exists, makes that one
+clear line instead of a crash deeper in. The old sprite perf test also drove its
+count from `VK_SPACE`, so it will take a count argument until there is input.
+
+Verified: `blit` at 59.44 fps and 0.073 cores over 6 s in Debug, and Release
+equivalent, so the pacing path is unchanged by the restructure. Help text, an
+unknown mode, and a stub mode each exit 1 with the right message. Full solution
+builds warning-free in both configurations and the suite is 1079 passing.
+
 Remaining before a renderer can draw real geometry: see "Milestone 6" below.
 
 ## Milestone 6: texture views, math types, shaders, draw state

@@ -8,12 +8,16 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemGroup>
     <ClCompile Include="main.c" />
+    <ClCompile Include="test_app.c" />
+    <ClCompile Include="test_blit.c" />
+    <ClCompile Include="test_draw.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="test_app.h" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />
