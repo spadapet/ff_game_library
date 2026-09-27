@@ -1,9 +1,11 @@
 #pragma once
 
 #include "dx12_buffer.h"
+#include "dx12_color.h"
 #include "dx12_depth.h"
 #include "dx12_draw_state.h"
 #include "dx12_instance_bucket.h"
+#include "dx12_texture_view.h"
 
 #define FF_DX12_MAX_RENDER_COUNT 0x80000
 #define FF_DX12_MAX_RENDER_DEPTH 1.0f
@@ -116,6 +118,32 @@ typedef struct ff_dx12_circle_instance
     uint32_t matrix_index;
 } ff_dx12_circle_instance;
 
+// A sprite ready to draw: the quad to place in world space, the sub-rectangle of the texture to
+// sample, and the view that sub-rectangle belongs to. This is the C port's stand-in for the old
+// sprite_data type, carrying only what the instance layout actually needs.
+//
+// world is relative to the transform's position, so a sprite whose world rect is centered on the
+// origin rotates about its own center.
+typedef struct ff_dx12_sprite
+{
+    ff_dx12_texture_view* view;
+    ff_rect_float world;
+    ff_rect_float texture_uv;
+} ff_dx12_sprite;
+
+// Position, scale, rotation and tint applied to a sprite at draw time. None of this becomes a
+// matrix: the vertex shader reads it straight out of the instance, so a scene of differently
+// placed sprites still shares one model matrix.
+typedef struct ff_dx12_sprite_transform
+{
+    ff_point_float position;
+    ff_point_float scale;
+    float rotation_radians;
+    ff_color color;
+} ff_dx12_sprite_transform;
+
+ff_dx12_sprite_transform ff_dx12_sprite_transform_default(void);
+
 // One transparent instance, recorded in the order the caller issued it. Transparent geometry can't
 // be drawn in bucket order like opaque geometry can, because overlapping translucent pixels only
 // composite correctly back to front.
@@ -157,8 +185,6 @@ typedef struct ff_dx12_draw_device
     size_t transparent_count;
     size_t transparent_capacity;
 
-    ff_dx12_buffer instance_buffer;
-
     // Static geometry shared by every bucket and never rewritten after init: the index ranges
     // above, and the unit-circle vertex ring the circle buckets expand per instance.
     ff_dx12_buffer index_buffer;
@@ -182,6 +208,12 @@ typedef struct ff_dx12_draw_device
     DXGI_FORMAT target_format;
     bool target_requires_palette;
 
+    // Textures referenced by the sprites batched so far, in the order they were first seen. An
+    // instance stores its slot here rather than a descriptor, so the whole table binds once per
+    // flush. Filling it forces a flush, which is what empties it.
+    ff_dx12_texture_view* textures[FF_DX12_MAX_TEXTURES];
+    size_t texture_count;
+
     // Set by begin when drawing into a target that has a depth buffer. Selects the depth-enabled
     // pipeline variant, and is what makes the per-instance depth slices actually resolve overlap
     // on the GPU rather than relying purely on draw order.
@@ -203,7 +235,12 @@ bool ff_dx12_draw_device_valid(const ff_dx12_draw_device* device);
 
 // Enters the drawing state. Fails without entering it if the view and world rects don't produce a
 // usable projection, so a failed begin leaves the device safely reusable.
+//
+// target and target_view are the render target to draw into. They are bound here rather than left
+// to the caller because a draw with no bound target, viewport, or scissor is silently clipped away
+// rather than reported as an error.
 bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* commands,
+    ff_dx12_resource* target, D3D12_CPU_DESCRIPTOR_HANDLE target_view,
     ff_dx12_target_size target_size, DXGI_FORMAT target_format, ff_dx12_depth* depth,
     ff_rect_float view_rect, ff_rect_float world_rect, bool ignore_rotation);
 
@@ -245,3 +282,44 @@ bool ff_dx12_draw_device_allow_transparent(const ff_dx12_draw_device* device);
 // transparent one. Returns uninitialized storage for the caller to fill.
 void* ff_dx12_draw_device_add_instance(ff_dx12_draw_device* device,
     ff_dx12_instance_bucket_type bucket_type, float depth);
+
+// One point of a geometry draw. The meaning of size depends on the call: line thickness for
+// draw_lines, radius for draw_circle, and unused for draw_triangles.
+//
+// Unlike the C++ original there is no "inherit the previous point's color" sentinel, because that
+// needed a nullable color pointer. Every endpoint carries its own color.
+typedef struct ff_dx12_draw_endpoint
+{
+    ff_point_float pos;
+    ff_color color;
+    float size;
+} ff_dx12_draw_endpoint;
+
+// A polyline through the given points. Needs at least two. A run whose first and last points match
+// is treated as closed, which wraps the miter neighbors around instead of repeating the endpoints.
+// Degenerate and fully transparent segments are skipped individually rather than failing the call.
+void ff_dx12_draw_device_draw_lines(ff_dx12_draw_device* device,
+    const ff_dx12_draw_endpoint* points, size_t count);
+
+// Independent triangles, three points each. A trailing partial triangle is ignored.
+void ff_dx12_draw_device_draw_triangles(ff_dx12_draw_device* device,
+    const ff_dx12_draw_endpoint* points, size_t count);
+
+// Filled when thickness is zero, outlined otherwise. A negative thickness draws the outline
+// outside the rect rather than inside it. An outline too thick to fit becomes a fill.
+void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
+    ff_rect_float rect, ff_color color, float thickness);
+
+// Filled when thickness is zero, outlined otherwise. A negative thickness grows the outline
+// outward from the radius. outside_color produces a gradient from the endpoint's own color.
+void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
+    ff_dx12_draw_endpoint pos, float thickness, ff_color outside_color);
+
+// One textured sprite. The sprite's world rect is scaled by the transform's scale, then rotated
+// about the transform's position, all in the vertex shader. The transform color multiplies the
+// sampled texel, so ff_color_white draws the texture unmodified.
+//
+// The texture is interned into a per-flush table; a full table forces a flush, so any number of
+// distinct textures can be drawn between one begin and end.
+void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
+    const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform);

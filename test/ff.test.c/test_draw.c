@@ -1,51 +1,10 @@
 #include "pch.h"
 #include "test_app.h"
 
-// These three modes all need the same two things, which do not exist yet: the root signature and
-// pipeline state permutations from m6-draw-state, and the batched instance buckets from
-// dx12-draw-device. Until then ff_dx12_commands_draw cannot be called at all, because there is no
-// pipeline state to bind. Each mode fails in load, before a device is created, so the failure is
-// one clear message rather than a crash deeper in.
+// sprite_perf still needs the palette half of m7d plus a way to take a sprite count, so it fails
+// in load, before a device is created, rather than crashing deeper in.
 static const ff_string_view s_needs =
-    FF_SVL_INIT("m6-draw-state (root signature and pipeline states) and dx12-draw-device (batched instance buckets)");
-
-static bool shapes_load(ff_test_app* app)
-{
-    return ff_test_mode_unavailable(ff_test_mode_shapes.name, s_needs);
-}
-
-static bool shapes_render(ff_test_app* app, ff_dx12_commands* commands)
-{
-    return false;
-}
-
-// Filled and outlined variants of every primitive, plus overlapping alpha to exercise the
-// depth-sorted transparent pass.
-const ff_test_mode ff_test_mode_shapes =
-{
-    .name = FF_SVL_INIT("shapes"),
-    .description = FF_SVL_INIT("Rectangles, lines, circles and triangles, filled and outlined"),
-    .load = shapes_load,
-    .render = shapes_render,
-};
-
-static bool sprites_load(ff_test_app* app)
-{
-    return ff_test_mode_unavailable(ff_test_mode_sprites.name, s_needs);
-}
-
-static bool sprites_render(ff_test_app* app, ff_dx12_commands* commands)
-{
-    return false;
-}
-
-const ff_test_mode ff_test_mode_sprites =
-{
-    .name = FF_SVL_INIT("sprites"),
-    .description = FF_SVL_INIT("Textured sprites with transforms, tinting and palette lookups"),
-    .load = sprites_load,
-    .render = sprites_render,
-};
+    FF_SVL_INIT("m7d sprite_perf (palette types and a count argument)");
 
 static bool sprite_perf_load(ff_test_app* app)
 {

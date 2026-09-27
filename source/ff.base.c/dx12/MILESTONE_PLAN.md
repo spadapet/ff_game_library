@@ -2524,3 +2524,221 @@ within that close pass, and is discarded at the merge on the next line.
 Promotion/decay coverage now lives in `dx12_resource_tracker_tests.cpp` (6 tests). Both
 `allow_promotion`'s `global`/`COMMON` gate and `allow_decay`'s `type_before == promoted` gate were
 fault-injected and confirmed to fail tests when broken.
+
+## Milestone 7c: geometry draw calls (complete)
+
+Four public entry points on the draw device -- `draw_lines`, `draw_triangles`, `draw_rectangle`,
+`draw_circle` -- plus the `shapes` sample mode that renders them in a window.
+
+### Design differences from the C++ original
+
+- **No nullable color sentinel.** The C++ endpoints carried `const ff::color*`, where null meant
+  "inherit the previous point's color", with subtly different inheritance rules in `draw_lines`
+  (falls back to the *first* point's color) and `draw_triangles` (falls back to the *previous*
+  point's color). `ff_dx12_draw_endpoint` gives every point its own color instead. Callers that
+  want a single-color shape fill in the same value, which costs nothing and removes an
+  inconsistency that was easy to trip over.
+- **Thickness is a plain float, not `std::optional<float>`.** Zero means filled. This is the same
+  encoding the instance struct already used, so the optional was being flattened to zero anyway.
+- **`outside_color` is a value, not a nullable pointer.** Callers pass the inside color again for
+  a solid circle.
+
+### A real bug in the C++ original, not ported
+
+`draw_circle` with a negative thickness does `radius += thickness`. The C++ version only rejects
+`thickness >= radius` *after* that adjustment, so a call like `radius 10, thickness -10` produces a
+**zero radius** instance, and `-15` produces a **negative** one. The C port adds
+`FF_CHECK_RET(radius > 0.0f)` after the adjustment. Pinned by
+`circle_thickness_that_consumes_the_radius_draws_nothing`, which was confirmed to fail when the
+check is removed.
+
+### Depth: one slice per draw call, not per instance
+
+All segments of a polyline and all triangles in one `draw_triangles` call share a single depth, so
+they merge into one instanced draw. This matches the C++ behavior and is what keeps a 23-segment
+gradient line at one draw call rather than 23. Separate calls still advance, or they could not sort
+against each other. Pinned by `one_polyline_shares_a_depth_across_its_segments`.
+
+### Alpha merging
+
+A segment whose two endpoints disagree on alpha has to go through the transparent path even when
+neither endpoint is translucent, because the shader interpolates between them and the in-between
+pixels are translucent. `merge_alpha_type` collapses any disagreement to transparent.
+
+**This produced the one vacuous test of the milestone.** The first version of
+`a_line_with_mismatched_endpoint_alpha_is_transparent` put the translucent endpoint *second*, so
+with the merge removed the last endpoint alone still decided "transparent" and the test passed
+anyway. Reordering to translucent-then-opaque made it discriminating. The general trap: when
+testing a fold or accumulate, the element that must survive the fold has to be positioned where a
+naive "last value wins" implementation would drop it.
+
+25 new tests, five faults injected one at a time, all caught after the reorder above.
+
+### The `shapes` sample
+
+Renders filled/outlined rectangles, a gradient circle, gradient triangles, a **closed** pentagram
+polyline, and a 23-point polyline with varying thickness and color. The pentagram is deliberate:
+a closed polyline is the only shape where the miter wrap at the seam has real neighbors on both
+sides, so a bad wrap shows up as a visible notch.
+
+Verified the batch really is built by temporarily logging bucket totals: 44 instances, 3
+transparent, 1 interned matrix, which matches the shapes drawn exactly. Worth doing because a
+malformed vertex buffer view silently draws nothing rather than failing, so "frames rendered" alone
+proves very little.
+
+Debug 1165/1165, Release 1165/1165. 60 fps, zero long frames, in both configurations.
+
+## Milestone 7c addendum: the blank-frame bugs
+
+Geometry drawing was implemented and 46 tests passed, yet the `shapes` sample rendered a
+completely black window. Three independent defects were involved, and no existing test could see
+any of them because every test stopped at "the GPU accepted the command list". A NULL or
+mismatched vertex buffer binding is perfectly legal D3D12: it silently draws nothing.
+
+1. **No render target, viewport, or scissor was ever bound.** `ff_dx12_commands_viewports`,
+   `_scissors` and `_targets` existed but had no callers anywhere in the codebase; the C++
+   `draw_device::internal_setup` binds all three. A default viewport is all zeros, so the
+   rasterizer clipped every pixel. Now bound at the end of `ff_dx12_draw_device_begin`, which
+   gained `target` and `target_view` parameters.
+
+2. **Instance data was bound to the wrong input slot.** The input layouts declare instance
+   elements in `FF_DX12_INSTANCE_SLOT` (1), but `apply_bucket` packed buffers from slot 0 upward,
+   so every non-circle bucket bound its instance buffer to slot 0 and the shader read zeros.
+   Circles were unaffected only by accident, since their per-vertex buffer already occupied
+   slot 0. `FF_DX12_VERTEX_SLOT` / `FF_DX12_INSTANCE_SLOT` moved into `dx12_draw_state.h` so the
+   layout and the binding cannot drift apart again, and `apply_bucket` now indexes its arrays by
+   those constants instead of by a running counter.
+
+3. **The projection matrix was not transposed.** Model matrices are transposed at intern time,
+   but `update_constants` assigned `projection` raw. The shader does `mul(pos, mul(model,
+   projection))` (row-vector) while HLSL cbuffers default to column-major, so the projection needs
+   the same transpose. The C++ `setup_view_matrix` does exactly this. With only bug 2 fixed the
+   test lit 528 of 4096 pixels; with the transpose restored it lit all 4096.
+
+### Pixel readback is now the standard for "does it actually draw"
+
+`a_filled_rectangle_actually_writes_pixels` draws a full-target white rectangle, copies the target
+into a readback allocation and counts lit pixels. Recipe: allocate from
+`ff_dx12_readback_allocator()` via `ff_dx12_mem_allocator_ring_alloc_buffer(...,
+ff_dx12_commands_next_fence_value(&commands))`, fill a `D3D12_SUBRESOURCE_FOOTPRINT`, call
+`ff_dx12_commands_readback_texture`, then `ff_dx12_queue_execute` + `ff_dx12_wait_for_idle`, then
+read `ff_dx12_mem_range_cpu_data`. The tracker resolves the copy-source transition on close.
+
+`ff_dx12_commands_readback_texture` requires a non-NULL `source_rect`; it returns silently when
+one is not supplied. Passing NULL made the readback test report zero lit pixels no matter what,
+which masked the real state of the fixes for several iterations. When a readback test reports
+zero, first prove the readback itself works by clearing to a known non-black color and asserting
+the clear is visible.
+
+Future milestones that add draw types should add a readback test alongside the batching tests. The
+batching tests verify what was recorded; only a readback verifies what the GPU produced.
+
+## m7d-1: RGBA sprites
+
+Sprites split from palettes. This slice covers `ff_dx12_sprite`, `ff_dx12_sprite_transform`,
+`ff_dx12_draw_device_draw_sprite`, texture interning and the descriptor-table bind. Palettes moved
+to m7d-2 because they need palette data types, hash-based interning and per-row texture upload that
+do not exist in the C port yet.
+
+### Matrix and texture indexes are interned together
+
+`sprite_indexes` takes both a matrix slot and a texture slot before it decides whether to flush.
+Both tables are per-flush, so interning one and then flushing to make room in the other silently
+invalidates the index already handed out by the first. Taking both, then flushing once and retrying
+both, is the only ordering that cannot leak a stale index into an instance.
+
+### Flush is a no-op outside begin/end
+
+`ff_dx12_draw_device_flush` early-outs on `FF_CHECK_RET(state == drawing)`. A test that means to
+exercise a table-full flush must set up a real target, commands and `begin` first, or it silently
+tests nothing. The first version of `a_full_texture_table_flushes_and_starts_over` got this wrong;
+the assert it hit was the test premise being wrong, not the code.
+
+### A fault survived because a field was zero
+
+Fault-injecting the matrix shift in the `indexes` packing (16 instead of 24) did not fail any test,
+because the only test covering the packing used matrix index 0, where both shifts agree.
+`sprite_indexes_pack_texture_sampler_and_matrix` exists specifically to close that: it uses two
+textures, a non-identity matrix and the linear sampler so every packed field is non-zero and
+distinct. When a test pins a bit layout, no field may be zero.
+
+### Sample app
+
+`test/ff.test.c/test_sprites.c` draws a generated 2x2 atlas (solid, ring, checkerboard, gradient)
+so a wrong uv rect shows as the wrong picture rather than a subtle shift. The texture is
+`R8G8B8A8_UNORM`, so pixels are built from named components rather than a packed literal; the first
+version used BGRA-ordered literals and drew orange where blue was intended. The orbit ring uses
+`push_no_overlap` to collapse 48 translucent sprites into one instanced draw.
+
+## Fixed: the intermittent "ring flake"
+
+`ring_fails_instead_of_blocking_on_submitted_gpu_work` failed intermittently in full-suite runs and
+always passed in isolation. The cause was in the test, not the allocator, but the test had silently
+stopped testing anything.
+
+`ff_dx12_fence_init` creates the D3D12 fence *already at* `initial_value` (`completed_value =
+initial_value ? initial_value : 1`). The test built its gate fence with `initial_value = 1` and then
+called `queue->Wait(gate, 1)`, which was already satisfied. The queue never stalled, so the "busy"
+fence was free to complete at any moment. Whether the ring saw it as complete came down to timing
+against the rest of the suite -- hence a flake.
+
+Two failure modes, both bad:
+- when the signal landed late, the assert passed for the wrong reason
+- when it landed early, the wrap succeeded and the test failed
+
+The fix holds the gate at `completed_value + 1` and asserts up front that the gate really is closed,
+so the precondition can never silently rot again.
+
+### Fault injection proved the repaired test
+
+Replacing the no-block guard in `alloc_ring` with `ff_dx12_fence_value_wait` made the test **hang**,
+which is exactly the mid-frame CPU/GPU stall it exists to prevent. Before the fix the same injection
+returned instantly and the test still passed. A hang is the correct signal here: the test is now
+holding real unfinished GPU work.
+
+### Lesson
+
+A test that sets up a GPU stall must **assert the stall exists** before relying on it. Otherwise the
+setup can degrade into a no-op and the test keeps reporting green. `ff_dx12_fence_init`'s
+"initial_value is already complete" behavior is now documented in `dx12_fence.h` because it is the
+kind of off-by-one that produces a passing test rather than a compile error.
+
+## Audit: GPU-stall test preconditions
+
+Follow-up to the ring flake. Audited every test that sets up unfinished GPU work.
+
+Exactly two tests stall a queue with `ID3D12CommandQueue::Wait`:
+- `ring_fails_instead_of_blocking_on_submitted_gpu_work`
+- `over_budget_does_not_evict_work_that_is_still_in_flight`
+
+Both had bugs. Neither was a product bug; both were tests that could silently stop testing.
+
+### 1. Hardcoded gate values
+
+Both used a literal (`1` and `2`) for the gate. The descriptor one was off by one and never stalled
+at all. The residency one happened to be right, but only because `initial_value` was `1` -- changing
+that argument would have silently broken the stall while the test kept passing. Both now derive
+`gate_closed` from `gate_fence.completed_value + 1` and assert `GetCompletedValue() < gate_closed`
+immediately after the `Wait`, so the precondition is checked rather than assumed.
+
+### 2. The vacuity re-check was itself racy
+
+`over_budget_does_not_evict_work_that_is_still_in_flight` re-checked its precondition with
+`ff_dx12_fence_value_complete(in_flight)`. That is a *GPU-side* observation: `in_flight` only becomes
+complete once the driver processes the signal behind the gate. Opening the gate and re-running showed
+the fault surviving 6/6 -- the CPU simply got there first. Adding a 300 ms sleep made the same fault
+fail, confirming the check was a race rather than a guard.
+
+Both tests now check `gate->GetCompletedValue()`, which is CPU-side and exact, instead of inferring
+the gate state from downstream GPU work.
+
+### Verification
+
+Injecting the original off-by-one (`gate_closed = completed_value`) now fails **both** tests
+deterministically, 3/3 runs, with "the gate must start closed" / "gate must still be holding the
+queue". Full Debug suite 1170/1170 clean, three consecutive runs.
+
+### Rule
+
+Assert a precondition using the most direct, CPU-side observable available. Inferring "the GPU is
+busy" from a fence the GPU still has to touch is a race, and it fails open -- the test passes.

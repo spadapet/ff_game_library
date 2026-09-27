@@ -11,6 +11,8 @@
     <ClCompile Include="test_app.c" />
     <ClCompile Include="test_blit.c" />
     <ClCompile Include="test_draw.c" />
+    <ClCompile Include="test_shapes.c" />
+    <ClCompile Include="test_sprites.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

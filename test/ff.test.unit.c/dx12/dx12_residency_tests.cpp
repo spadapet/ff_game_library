@@ -190,10 +190,13 @@ namespace ff::test::dx12
             // Stall the queue behind a fence nobody has signalled yet, so the value signalled after
             // it is genuinely submitted but not complete. Evicting this pageable would require
             // blocking until the queue drains, which make_resident must never do.
-            // The fence is created already at 1, so the gate has to be a value it has not reached.
+            // The fence is created already at its initial value, so the gate has to be above it.
+            const uint64_t gate_closed = gate_fence.completed_value + 1;
+
             ID3D12CommandQueue* queue = ff_dx12_queue_command_queue(ff_dx12_direct_queue());
             ID3D12Fence* gate = gate_fence.fence;
-            Assert::IsTrue(SUCCEEDED(queue->Wait(gate, 2)));
+            Assert::IsTrue(SUCCEEDED(queue->Wait(gate, gate_closed)));
+            Assert::IsTrue(gate->GetCompletedValue() < gate_closed, L"the gate must start closed");
 
             ff_dx12_fence_value in_flight = ff_dx12_fence_signal(&commands_fence, queue);
             Assert::IsFalse(ff_dx12_fence_value_complete(in_flight));
@@ -222,9 +225,12 @@ namespace ff::test::dx12
 
             // If the gate ever stopped holding the queue, in_flight would complete on its own and
             // the pageable would look retired, making the assertion below vacuous.
-            Assert::IsFalse(ff_dx12_fence_value_complete(in_flight), L"gate must still be holding the queue");
+            // The gate fence is checked rather than in_flight: in_flight only becomes complete once
+            // the GPU actually processes the signal, so testing it here would race the driver and
+            // could pass even with the gate open. The gate's own value is CPU-side and exact.
+            Assert::IsTrue(gate->GetCompletedValue() < gate_closed, L"gate must still be holding the queue");
 
-            gate->Signal(2);
+            gate->Signal(gate_closed);
             ff_dx12_fence_values_wait(&wait_values, nullptr);
             ff_dx12_update_video_memory_info();
 

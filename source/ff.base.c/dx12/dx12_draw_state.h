@@ -16,6 +16,12 @@ typedef struct ff_dx12_commands ff_dx12_commands;
 #define FF_DX12_MAX_TRANSFORM_MATRIXES 128
 #define FF_DX12_SAMPLER_COUNT 2
 
+// Input-layout slot assignments. The input element descriptions and the vertex buffer binding in
+// dx12_draw_device.c have to agree on these, so they live here rather than in either .c file.
+// Buckets with no per-vertex data leave slot 0 unbound and bind instance data to slot 1.
+#define FF_DX12_VERTEX_SLOT 0
+#define FF_DX12_INSTANCE_SLOT 1
+
 // Root parameter slots, in the order the root signature declares them.
 typedef enum ff_dx12_root_param
 {

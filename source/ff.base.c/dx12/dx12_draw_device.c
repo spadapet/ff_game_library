@@ -2,10 +2,12 @@
 #include "base/assert.h"
 #include "base/math.h"
 #include "dx12/dx12_commands.h"
+#include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_draw_device.h"
 #include "dx12/dx12_format.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_mem_allocator.h"
+#include "dx12/dx12_texture.h"
 
 typedef struct bucket_layout
 {
@@ -128,6 +130,7 @@ static void reset_batch(ff_dx12_draw_device* device)
     device->transparent_count = 0;
     device->matrix_count = 0;
     device->matrix_index = FF_DX12_INVALID_INDEX;
+    device->texture_count = 0;
     device->last_depth_type = ff_dx12_last_depth_none;
 }
 
@@ -151,14 +154,6 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
             layout->item_size, layout->item_align);
     }
 
-    // The instance buffer is written every flush and read by the GPU in the same frame, so it is a
-    // CPU-visible upload buffer rather than a GPU-local one that would need a copy.
-    if (!ff_dx12_buffer_init_cpu(&device->instance_buffer, ff_dx12_buffer_type_vertex))
-    {
-        ff_dx12_draw_device_destroy(device);
-        return false;
-    }
-
     device->sampler_stack[0] = false;
     device->sampler_stack_count = 1;
     device->state = ff_dx12_draw_state_machine_valid;
@@ -170,7 +165,6 @@ void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device)
 {
     FF_ASSERT_RET(device);
 
-    ff_dx12_buffer_destroy(&device->instance_buffer);
     ff_dx12_buffer_destroy(&device->index_buffer);
     ff_dx12_buffer_destroy(&device->circle_vertex_buffer);
 
@@ -190,11 +184,13 @@ bool ff_dx12_draw_device_valid(const ff_dx12_draw_device* device)
 }
 
 bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* commands,
+    ff_dx12_resource* target, D3D12_CPU_DESCRIPTOR_HANDLE target_view,
     ff_dx12_target_size target_size, DXGI_FORMAT target_format, ff_dx12_depth* depth,
     ff_rect_float view_rect, ff_rect_float world_rect, bool ignore_rotation)
 {
     FF_ASSERT_RET_VAL(ff_dx12_draw_device_valid(device), false);
     FF_ASSERT_RET_VAL(commands, false);
+    FF_ASSERT_RET_VAL(target, false);
     FF_ASSERT_RET_VAL(ff_dx12_draw_state_target_format_valid(target_format), false);
 
     ff_dx12_draw_device_end(device);
@@ -227,6 +223,31 @@ bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* co
     device->sampler_stack[0] = false;
 
     reset_batch(device);
+
+    // A draw with no bound render target, viewport, or scissor rect produces no pixels and no
+    // error: the default viewport is all zeros, so the rasterizer clips everything away.
+    ff_dx12_resource* targets[1] = { target };
+    const D3D12_CPU_DESCRIPTOR_HANDLE target_views[1] = { target_view };
+    ff_dx12_resource* depth_resource = device->depth ? ff_dx12_depth_resource(device->depth) : NULL;
+    const D3D12_CPU_DESCRIPTOR_HANDLE depth_view = device->depth
+        ? ff_dx12_depth_view(device->depth)
+        : (D3D12_CPU_DESCRIPTOR_HANDLE){ 0 };
+
+    ff_dx12_commands_targets(commands, targets, target_views, NULL, 1,
+        depth_resource, depth_resource ? &depth_view : NULL);
+
+    const D3D12_VIEWPORT viewport =
+    {
+        .TopLeftX = view_rect.left,
+        .TopLeftY = view_rect.top,
+        .Width = view_rect.right - view_rect.left,
+        .Height = view_rect.bottom - view_rect.top,
+        .MinDepth = 0.0f,
+        .MaxDepth = 1.0f,
+    };
+
+    ff_dx12_commands_viewports(commands, &viewport, 1);
+    ff_dx12_commands_scissors(commands, NULL, 1);
 
     device->state = ff_dx12_draw_state_machine_drawing;
 
@@ -317,7 +338,10 @@ static bool build_instance_buffer(ff_dx12_draw_device* device)
 // the GPU is done reading; it must never be freed explicitly.
 static D3D12_GPU_VIRTUAL_ADDRESS update_constants(ff_dx12_draw_device* device)
 {
-    device->vs_constants_0.projection = device->view_matrix;
+    // The shader transforms row-vector style (mul(pos, m)) and HLSL cbuffers default to
+    // column-major, so the projection is transposed on the way in exactly like the model matrices
+    // are at intern time.
+    device->vs_constants_0.projection = ff_matrix_transpose(device->view_matrix);
 
     FF_CHECK_RET_VAL(device->matrix_count, 0);
 
@@ -393,36 +417,83 @@ static bool apply_bucket(ff_dx12_draw_device* device, const ff_dx12_instance_buc
         draw_bucket, flags), false);
 
     // The circle layouts declare a per-vertex element in slot 0 and instance data in slot 1;
-    // every other bucket is instance-only in slot 0.
+    // every other bucket has no per-vertex data at all, but its instance elements still live in
+    // FF_DX12_INSTANCE_SLOT, so the binding always starts at slot 0 and pads slot 0 for circles.
     const bool circle = draw_bucket == ff_dx12_draw_bucket_circles_filled ||
         draw_bucket == ff_dx12_draw_bucket_circles_outline;
 
     ff_dx12_resource* resources[2];
     D3D12_VERTEX_BUFFER_VIEW views[2];
-    size_t count = 0;
 
     if (circle)
     {
-        resources[count] = ff_dx12_buffer_resource(&device->circle_vertex_buffer);
-        views[count] = (D3D12_VERTEX_BUFFER_VIEW)
+        resources[FF_DX12_VERTEX_SLOT] = ff_dx12_buffer_resource(&device->circle_vertex_buffer);
+        views[FF_DX12_VERTEX_SLOT] = (D3D12_VERTEX_BUFFER_VIEW)
         {
             .BufferLocation = ff_dx12_buffer_gpu_address(&device->circle_vertex_buffer),
             .SizeInBytes = (UINT)ff_dx12_buffer_size(&device->circle_vertex_buffer),
             .StrideInBytes = (UINT)sizeof(ff_point_float),
         };
-        count++;
+    }
+    else
+    {
+        resources[FF_DX12_VERTEX_SLOT] = NULL;
+        views[FF_DX12_VERTEX_SLOT] = (D3D12_VERTEX_BUFFER_VIEW){ 0 };
     }
 
-    resources[count] = NULL;
-    views[count] = (D3D12_VERTEX_BUFFER_VIEW)
+    resources[FF_DX12_INSTANCE_SLOT] = NULL;
+    views[FF_DX12_INSTANCE_SLOT] = (D3D12_VERTEX_BUFFER_VIEW)
     {
         .BufferLocation = device->instance_address,
         .SizeInBytes = (UINT)device->instance_byte_size,
         .StrideInBytes = (UINT)bucket->item_size,
     };
-    count++;
 
-    ff_dx12_commands_vertex_buffers(device->commands, resources, views, 0, count);
+    ff_dx12_commands_vertex_buffers(device->commands, resources, views, 0, 2);
+
+    return true;
+}
+
+static bool apply_textures(ff_dx12_draw_device* device)
+{
+    FF_CHECK_RET_VAL(device->texture_count, true);
+
+    // The sampled textures must be in the shader-resource state before the draws that read them,
+    // and resident for the whole submission, since the table only holds descriptors.
+    for (size_t i = 0; i < device->texture_count; i++)
+    {
+        ff_dx12_texture_view* view = device->textures[i];
+        ff_dx12_texture* texture = ff_dx12_texture_view_texture(view);
+        FF_CHECK_RET_VAL(texture, false);
+
+        ff_dx12_commands_resource_state(device->commands, ff_dx12_texture_resource(texture),
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            ff_dx12_texture_view_array_start(view), ff_dx12_texture_view_array_count(view),
+            ff_dx12_texture_view_mip_start(view), ff_dx12_texture_view_mip_count(view));
+    }
+
+    ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(
+        ff_dx12_gpu_view_descriptors(), device->texture_count,
+        ff_dx12_commands_next_fence_value(device->commands));
+
+    FF_CHECK_RET_VAL(ff_dx12_descriptor_range_valid(&range), false);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE sources[FF_DX12_MAX_TEXTURES];
+    UINT source_counts[FF_DX12_MAX_TEXTURES];
+
+    for (size_t i = 0; i < device->texture_count; i++)
+    {
+        sources[i] = ff_dx12_texture_view_cpu_handle(device->textures[i]);
+        source_counts[i] = 1;
+    }
+
+    const D3D12_CPU_DESCRIPTOR_HANDLE dest = ff_dx12_descriptor_range_cpu_handle(&range, 0);
+    const UINT dest_count = (UINT)device->texture_count;
+
+    ID3D12Device_CopyDescriptors((ID3D12Device*)ff_dx12_device(), 1, &dest, &dest_count,
+        dest_count, sources, source_counts, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    ff_dx12_commands_root_descriptors(device->commands, ff_dx12_root_param_textures, &range, 0);
 
     return true;
 }
@@ -510,8 +581,11 @@ void ff_dx12_draw_device_flush(ff_dx12_draw_device* device)
         ff_dx12_commands_index_buffer(device->commands,
             ff_dx12_buffer_resource(&device->index_buffer), &index_view);
 
-        draw_opaque(device);
-        draw_transparent(device);
+        if (apply_textures(device))
+        {
+            draw_opaque(device);
+            draw_transparent(device);
+        }
     }
 
     reset_batch(device);
@@ -598,6 +672,52 @@ uint32_t ff_dx12_draw_device_matrix_index(ff_dx12_draw_device* device)
     }
 
     return index;
+}
+
+static uint32_t texture_index_no_flush(ff_dx12_draw_device* device, ff_dx12_texture_view* view)
+{
+    for (size_t i = device->texture_count; i != 0; i--)
+    {
+        if (device->textures[i - 1] == view)
+        {
+            return (uint32_t)(i - 1);
+        }
+    }
+
+    if (device->texture_count == FF_DX12_MAX_TEXTURES)
+    {
+        return FF_DX12_INVALID_INDEX;
+    }
+
+    const uint32_t index = (uint32_t)device->texture_count;
+    device->textures[index] = view;
+    device->texture_count++;
+
+    return index;
+}
+
+// The matrix and texture tables are both per-flush and both have to resolve against the same
+// flush, so they are interned together: flushing to make room in one would invalidate an index
+// already taken from the other.
+static uint32_t sprite_indexes(ff_dx12_draw_device* device, ff_dx12_texture_view* view)
+{
+    uint32_t matrix_index = matrix_index_no_flush(device);
+    uint32_t texture_index = texture_index_no_flush(device, view);
+
+    if (matrix_index == FF_DX12_INVALID_INDEX || texture_index == FF_DX12_INVALID_INDEX)
+    {
+        ff_dx12_draw_device_flush(device);
+
+        matrix_index = matrix_index_no_flush(device);
+        texture_index = texture_index_no_flush(device, view);
+
+        FF_CHECK_RET_VAL(matrix_index != FF_DX12_INVALID_INDEX &&
+            texture_index != FF_DX12_INVALID_INDEX, FF_DX12_INVALID_INDEX);
+    }
+
+    const uint32_t sampler_index = (uint32_t)ff_dx12_draw_device_linear_sampler(device);
+
+    return texture_index | (sampler_index << 8) | (matrix_index << 24);
 }
 
 void ff_dx12_draw_device_push_no_overlap(ff_dx12_draw_device* device)
@@ -744,4 +864,297 @@ void* ff_dx12_draw_device_add_instance(ff_dx12_draw_device* device,
     }
 
     return ff_dx12_instance_bucket_add(bucket);
+}
+
+typedef enum alpha_type
+{
+    alpha_type_opaque,
+    alpha_type_transparent,
+    alpha_type_invisible,
+} alpha_type;
+
+static alpha_type get_alpha_type(float alpha, bool allow_transparent)
+{
+    if (alpha == 0.0f)
+    {
+        return alpha_type_invisible;
+    }
+
+    return (alpha == 1.0f || !allow_transparent) ? alpha_type_opaque : alpha_type_transparent;
+}
+
+// Combining two endpoint alphas. A segment whose ends disagree has to go through the transparent
+// path, because the shader interpolates between them and the in-between pixels are translucent
+// even though neither endpoint is.
+static alpha_type merge_alpha_type(float alpha, bool allow_transparent, alpha_type previous)
+{
+    const alpha_type type = get_alpha_type(alpha, allow_transparent);
+    return (type == previous) ? type : alpha_type_transparent;
+}
+
+static ff_dx12_instance_bucket_type transparent_bucket(ff_dx12_instance_bucket_type opaque_bucket)
+{
+    return (ff_dx12_instance_bucket_type)(opaque_bucket + ff_dx12_instance_bucket_first_transparent);
+}
+
+static ff_dx12_instance_bucket_type pick_bucket(ff_dx12_instance_bucket_type opaque_bucket, alpha_type type)
+{
+    return (type == alpha_type_transparent) ? transparent_bucket(opaque_bucket) : opaque_bucket;
+}
+
+static void store_color(float dest[4], ff_color color)
+{
+    const ff_color_shader shader = ff_color_to_shader(color, NULL);
+    dest[0] = shader.r;
+    dest[1] = shader.g;
+    dest[2] = shader.b;
+    dest[3] = shader.a;
+}
+
+void ff_dx12_draw_device_draw_lines(ff_dx12_draw_device* device,
+    const ff_dx12_draw_endpoint* points, size_t count)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(points || !count);
+    FF_CHECK_RET(count > 1);
+
+    const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
+    const bool closed = count > 2 &&
+        points[0].pos.x == points[count - 1].pos.x &&
+        points[0].pos.y == points[count - 1].pos.y;
+
+    const uint32_t matrix_index = ff_dx12_draw_device_matrix_index(device);
+    FF_CHECK_RET(matrix_index != FF_DX12_INVALID_INDEX);
+
+    // One depth for the whole polyline, so that all of its segments merge into a single instanced
+    // draw. Segments of one line are not expected to overlap each other.
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    for (size_t i = 0; i + 1 < count; i++)
+    {
+        const ff_dx12_draw_endpoint* p0 = &points[i];
+        const ff_dx12_draw_endpoint* p1 = &points[i + 1];
+
+        const bool degenerate = (p0->pos.x == p1->pos.x && p0->pos.y == p1->pos.y) ||
+            (p0->size == 0.0f && p1->size == 0.0f);
+
+        if (degenerate)
+        {
+            continue;
+        }
+
+        alpha_type type = get_alpha_type(ff_color_alpha(p0->color), allow_transparent);
+        type = merge_alpha_type(ff_color_alpha(p1->color), allow_transparent, type);
+
+        if (type == alpha_type_invisible)
+        {
+            continue;
+        }
+
+        ff_dx12_line_instance* instance = (ff_dx12_line_instance*)ff_dx12_draw_device_add_instance(
+            device, pick_bucket(ff_dx12_instance_bucket_lines, type), depth);
+
+        FF_CHECK_RET(instance);
+
+        instance->start = p0->pos;
+        instance->end = p1->pos;
+
+        // The miter neighbors. A closed polyline wraps to the other end, skipping the duplicated
+        // point that closes it; an open one repeats its own endpoint, which makes a flat joint.
+        instance->before_start = (i == 0)
+            ? (closed ? points[count - 2].pos : p0->pos)
+            : points[i - 1].pos;
+
+        instance->after_end = (i + 2 == count)
+            ? (closed ? points[1].pos : p1->pos)
+            : points[i + 2].pos;
+
+        store_color(instance->start_color, p0->color);
+        store_color(instance->end_color, p1->color);
+        instance->start_thickness = fabsf(p0->size);
+        instance->end_thickness = fabsf(p1->size);
+        instance->depth = depth;
+        instance->matrix_index = matrix_index;
+    }
+}
+
+void ff_dx12_draw_device_draw_triangles(ff_dx12_draw_device* device,
+    const ff_dx12_draw_endpoint* points, size_t count)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(points || !count);
+    FF_CHECK_RET(count >= 3);
+
+    const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
+    const uint32_t matrix_index = ff_dx12_draw_device_matrix_index(device);
+    FF_CHECK_RET(matrix_index != FF_DX12_INVALID_INDEX);
+
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    for (size_t i = 0; i + 2 < count; i += 3)
+    {
+        alpha_type type = get_alpha_type(ff_color_alpha(points[i].color), allow_transparent);
+        type = merge_alpha_type(ff_color_alpha(points[i + 1].color), allow_transparent, type);
+        type = merge_alpha_type(ff_color_alpha(points[i + 2].color), allow_transparent, type);
+
+        if (type == alpha_type_invisible)
+        {
+            continue;
+        }
+
+        ff_dx12_triangle_instance* instance = (ff_dx12_triangle_instance*)ff_dx12_draw_device_add_instance(
+            device, pick_bucket(ff_dx12_instance_bucket_triangles, type), depth);
+
+        FF_CHECK_RET(instance);
+
+        for (size_t corner = 0; corner < 3; corner++)
+        {
+            instance->position[corner] = points[i + corner].pos;
+            store_color(instance->color[corner], points[i + corner].color);
+        }
+
+        instance->depth = depth;
+        instance->matrix_index = matrix_index;
+    }
+}
+
+void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
+    ff_rect_float rect, ff_color color, float thickness)
+{
+    FF_ASSERT_RET(device);
+
+    const alpha_type type = get_alpha_type(ff_color_alpha(color),
+        ff_dx12_draw_device_allow_transparent(device));
+
+    FF_CHECK_RET(type != alpha_type_invisible);
+
+    ff_rect_float normalized = ff_rect_float_normalize(rect);
+    FF_CHECK_RET(ff_rect_float_area(normalized) != 0.0f);
+
+    if (thickness < 0.0f)
+    {
+        normalized = ff_rect_float_deflate(normalized, thickness, thickness);
+        thickness = -thickness;
+    }
+
+    // An outline thick enough to meet itself has no hole left, so draw it as a fill instead. The
+    // outline shader would otherwise produce overlapping self-intersecting geometry.
+    if (thickness * 2.0f >= ff_rect_float_width(normalized) ||
+        thickness * 2.0f >= ff_rect_float_height(normalized))
+    {
+        thickness = 0.0f;
+    }
+
+    const ff_dx12_instance_bucket_type opaque_bucket = thickness
+        ? ff_dx12_instance_bucket_rectangles_outline
+        : ff_dx12_instance_bucket_rectangles_filled;
+
+    const uint32_t matrix_index = ff_dx12_draw_device_matrix_index(device);
+    FF_CHECK_RET(matrix_index != FF_DX12_INVALID_INDEX);
+
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    ff_dx12_rectangle_instance* instance = (ff_dx12_rectangle_instance*)ff_dx12_draw_device_add_instance(
+        device, pick_bucket(opaque_bucket, type), depth);
+
+    FF_CHECK_RET(instance);
+
+    instance->rect = normalized;
+    store_color(instance->color, color);
+    instance->depth = depth;
+    instance->thickness = thickness;
+    instance->matrix_index = matrix_index;
+}
+
+void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
+    ff_dx12_draw_endpoint pos, float thickness, ff_color outside_color)
+{
+    FF_ASSERT_RET(device);
+
+    float radius = fabsf(pos.size);
+    FF_CHECK_RET(radius != 0.0f);
+
+    const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
+    alpha_type type = get_alpha_type(ff_color_alpha(pos.color), allow_transparent);
+    type = merge_alpha_type(ff_color_alpha(outside_color), allow_transparent, type);
+    FF_CHECK_RET(type != alpha_type_invisible);
+
+    if (thickness < 0.0f)
+    {
+        radius += thickness;
+        thickness = -thickness;
+    }
+
+    FF_CHECK_RET(radius > 0.0f);
+
+    // An outline at least as thick as the radius leaves no hole, so it is a filled circle.
+    if (thickness >= radius)
+    {
+        thickness = 0.0f;
+    }
+
+    const ff_dx12_instance_bucket_type opaque_bucket = thickness
+        ? ff_dx12_instance_bucket_circles_outline
+        : ff_dx12_instance_bucket_circles_filled;
+
+    const uint32_t matrix_index = ff_dx12_draw_device_matrix_index(device);
+    FF_CHECK_RET(matrix_index != FF_DX12_INVALID_INDEX);
+
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    ff_dx12_circle_instance* instance = (ff_dx12_circle_instance*)ff_dx12_draw_device_add_instance(
+        device, pick_bucket(opaque_bucket, type), depth);
+
+    FF_CHECK_RET(instance);
+
+    instance->position_radius[0] = pos.pos.x;
+    instance->position_radius[1] = pos.pos.y;
+    instance->position_radius[2] = depth;
+    instance->position_radius[3] = radius;
+    store_color(instance->inside_color, pos.color);
+    store_color(instance->outside_color, outside_color);
+    instance->thickness = thickness;
+    instance->matrix_index = matrix_index;
+}
+
+ff_dx12_sprite_transform ff_dx12_sprite_transform_default(void)
+{
+    return (ff_dx12_sprite_transform)
+    {
+        .position = { .x = 0.0f, .y = 0.0f },
+        .scale = { .x = 1.0f, .y = 1.0f },
+        .rotation_radians = 0.0f,
+        .color = ff_color_white(),
+    };
+}
+
+void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
+    const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(sprite && transform);
+    FF_CHECK_RET(sprite->view);
+
+    const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
+    const alpha_type type = get_alpha_type(ff_color_alpha(transform->color), allow_transparent);
+    FF_CHECK_RET(type != alpha_type_invisible);
+
+    const uint32_t indexes = sprite_indexes(device, sprite->view);
+    FF_CHECK_RET(indexes != FF_DX12_INVALID_INDEX);
+
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    ff_dx12_sprite_instance* instance = (ff_dx12_sprite_instance*)ff_dx12_draw_device_add_instance(
+        device, pick_bucket(ff_dx12_instance_bucket_sprites, type), depth);
+
+    FF_CHECK_RET(instance);
+
+    instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
+    instance->uv_rect = sprite->texture_uv;
+    store_color(instance->color, transform->color);
+    instance->pos_rot[0] = transform->position.x;
+    instance->pos_rot[1] = transform->position.y;
+    instance->pos_rot[2] = depth;
+    instance->pos_rot[3] = transform->rotation_radians;
+    instance->indexes = indexes;
 }

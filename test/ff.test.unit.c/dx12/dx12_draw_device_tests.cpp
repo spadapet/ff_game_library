@@ -369,6 +369,7 @@ namespace ff::test::dx12
             const ff_rect_float world{ 0.0f, 0.0f, 256.0f, 256.0f };
 
             Assert::IsFalse(ff_dx12_draw_device_begin(&scope.device, nullptr,
+                nullptr, D3D12_CPU_DESCRIPTOR_HANDLE{},
                 target_size, DXGI_FORMAT_R8G8B8A8_UNORM, nullptr, empty, world, false));
 
             // A failed begin must not leave the device stuck in the drawing state.
@@ -408,8 +409,9 @@ namespace ff::test::dx12
             const ff_rect_float view{ 0.0f, 0.0f, 64.0f, 64.0f };
             const ff_rect_float world{ 0.0f, 0.0f, 64.0f, 64.0f };
 
-            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands, target_size,
-                ff_dx12_target_texture_format(&target), nullptr, view, world, false));
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, world, false));
 
             // Two buckets with different strides, so build_instance_buffer has to align the second
             // region to its own stride rather than just concatenating.
@@ -482,6 +484,770 @@ namespace ff::test::dx12
             ff_dx12_draw_device_flush(&scope.device);
 
             Assert::AreEqual<int>(ff_dx12_draw_state_machine_valid, scope.device.state);
+        }
+
+        static ff_dx12_draw_endpoint endpoint(float x, float y, ff_color color, float size)
+        {
+            ff_dx12_draw_endpoint point{};
+            point.pos.x = x;
+            point.pos.y = y;
+            point.color = color;
+            point.size = size;
+            return point;
+        }
+
+        static size_t bucket_count(const ff_dx12_draw_device& device, ff_dx12_instance_bucket_type type)
+        {
+            return device.buckets[type].count;
+        }
+
+        TEST_METHOD(draw_lines_makes_one_instance_per_segment)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, white, 1),
+                endpoint(10, 0, white, 1),
+                endpoint(10, 10, white, 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            Assert::AreEqual<size_t>(2, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+        }
+
+        // An open polyline has no neighbor past its ends, so the miter falls back to the endpoint
+        // itself. A closed one wraps around, skipping the duplicated closing point.
+        TEST_METHOD(open_polyline_repeats_its_endpoints_for_the_miter)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, white, 1),
+                endpoint(10, 0, white, 1),
+                endpoint(10, 10, white, 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            const ff_dx12_line_instance* lines =
+                (const ff_dx12_line_instance*)scope.device.buckets[ff_dx12_instance_bucket_lines].data;
+
+            Assert::AreEqual(0.0f, lines[0].before_start.x);
+            Assert::AreEqual(0.0f, lines[0].before_start.y);
+            Assert::AreEqual(10.0f, lines[1].after_end.x);
+            Assert::AreEqual(10.0f, lines[1].after_end.y);
+        }
+
+        TEST_METHOD(closed_polyline_wraps_the_miter_neighbors)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, white, 1),
+                endpoint(10, 0, white, 1),
+                endpoint(10, 10, white, 1),
+                endpoint(0, 0, white, 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            const ff_dx12_line_instance* lines =
+                (const ff_dx12_line_instance*)scope.device.buckets[ff_dx12_instance_bucket_lines].data;
+
+            Assert::AreEqual<size_t>(3, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+
+            // The first segment looks back at points[count - 2], not at itself.
+            Assert::AreEqual(10.0f, lines[0].before_start.x);
+            Assert::AreEqual(10.0f, lines[0].before_start.y);
+
+            // The last segment looks forward at points[1].
+            Assert::AreEqual(10.0f, lines[2].after_end.x);
+            Assert::AreEqual(0.0f, lines[2].after_end.y);
+        }
+
+        TEST_METHOD(degenerate_line_segments_are_skipped)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint zero_length[] =
+            {
+                endpoint(5, 5, white, 1),
+                endpoint(5, 5, white, 1),
+            };
+
+            const ff_dx12_draw_endpoint zero_thickness[] =
+            {
+                endpoint(0, 0, white, 0),
+                endpoint(10, 0, white, 0),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, zero_length, _countof(zero_length));
+            ff_dx12_draw_device_draw_lines(&scope.device, zero_thickness, _countof(zero_thickness));
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+        }
+
+        TEST_METHOD(fully_transparent_geometry_is_skipped)
+        {
+            scoped_device scope;
+            const ff_color invisible = ff_color_rgba(1, 1, 1, 0);
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, invisible, 1),
+                endpoint(10, 0, invisible, 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0, 0, 10, 10), invisible, 0);
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+        }
+
+        TEST_METHOD(draw_triangles_ignores_a_trailing_partial_triangle)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, white, 0),
+                endpoint(10, 0, white, 0),
+                endpoint(0, 10, white, 0),
+                endpoint(20, 20, white, 0),
+                endpoint(30, 30, white, 0),
+            };
+
+            ff_dx12_draw_device_draw_triangles(&scope.device, points, _countof(points));
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_triangles));
+        }
+
+        TEST_METHOD(zero_thickness_rectangle_is_filled_and_nonzero_is_outlined)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+            const ff_rect_float rect = ff_rect_float_make(0, 0, 100, 100);
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device, rect, white, 0);
+            ff_dx12_draw_device_draw_rectangle(&scope.device, rect, white, 5);
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_outline));
+        }
+
+        // An outline too thick to leave a hole has to become a fill, or the outline shader would
+        // emit self-overlapping geometry.
+        TEST_METHOD(too_thick_rectangle_outline_becomes_a_fill)
+        {
+            scoped_device scope;
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0, 0, 10, 10), ff_color_white(), 5);
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_outline));
+        }
+
+        // A negative thickness puts the outline outside the rect, which grows it rather than
+        // eating into it.
+        TEST_METHOD(negative_rectangle_thickness_grows_the_rect)
+        {
+            scoped_device scope;
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(10, 10, 90, 90), ff_color_white(), -5);
+
+            const ff_dx12_rectangle_instance* rects =
+                (const ff_dx12_rectangle_instance*)scope.device.buckets[ff_dx12_instance_bucket_rectangles_outline].data;
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_outline));
+            Assert::AreEqual(5.0f, rects[0].thickness);
+            Assert::AreEqual(5.0f, rects[0].rect.left);
+            Assert::AreEqual(95.0f, rects[0].rect.right);
+        }
+
+        TEST_METHOD(rectangle_is_normalized_before_use)
+        {
+            scoped_device scope;
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(90, 90, 10, 10), ff_color_white(), 0);
+
+            const ff_dx12_rectangle_instance* rects =
+                (const ff_dx12_rectangle_instance*)scope.device.buckets[ff_dx12_instance_bucket_rectangles_filled].data;
+
+            Assert::AreEqual(10.0f, rects[0].rect.left);
+            Assert::AreEqual(90.0f, rects[0].rect.right);
+        }
+
+        TEST_METHOD(empty_rectangle_draws_nothing)
+        {
+            scoped_device scope;
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(10, 10, 10, 50), ff_color_white(), 0);
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+        }
+
+        TEST_METHOD(zero_thickness_circle_is_filled_and_nonzero_is_outlined)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 50), 0, white);
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 50), 5, white);
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_circles_filled));
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
+        }
+
+        TEST_METHOD(too_thick_circle_outline_becomes_a_fill)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 10), 10, white);
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_circles_filled));
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
+        }
+
+        TEST_METHOD(negative_circle_thickness_shrinks_the_radius)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 50), -10, white);
+
+            const ff_dx12_circle_instance* circles =
+                (const ff_dx12_circle_instance*)scope.device.buckets[ff_dx12_instance_bucket_circles_outline].data;
+
+            Assert::AreEqual(40.0f, circles[0].position_radius[3]);
+            Assert::AreEqual(10.0f, circles[0].thickness);
+        }
+
+        // A negative thickness at least as large as the radius would leave nothing to draw, so the
+        // call is rejected rather than producing a zero or negative radius instance.
+        TEST_METHOD(circle_thickness_that_consumes_the_radius_draws_nothing)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 10), -10, white);
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_filled));
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
+        }
+
+        TEST_METHOD(zero_radius_circle_draws_nothing)
+        {
+            scoped_device scope;
+
+            ff_dx12_draw_device_draw_circle(&scope.device,
+                endpoint(0, 0, ff_color_white(), 0), 0, ff_color_white());
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_filled));
+        }
+
+        // Translucent geometry has to land in the transparent half of the buckets so the flush
+        // draws it back to front instead of in bucket order.
+        TEST_METHOD(translucent_geometry_lands_in_the_transparent_buckets)
+        {
+            scoped_device scope;
+            const ff_color faded = ff_color_rgba(1, 1, 1, 0.5f);
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0, 0, 10, 10), faded, 0);
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+            Assert::AreEqual<size_t>(1,
+                bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled_transparent));
+            Assert::AreEqual<size_t>(1, scope.device.transparent_count);
+        }
+
+        // push_opaque turns off the transparent path entirely, so the same translucent draw has to
+        // land in the opaque bucket instead.
+        TEST_METHOD(push_opaque_forces_translucent_geometry_into_opaque_buckets)
+        {
+            scoped_device scope;
+            const ff_color faded = ff_color_rgba(1, 1, 1, 0.5f);
+
+            ff_dx12_draw_device_push_opaque(&scope.device);
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0, 0, 10, 10), faded, 0);
+
+            ff_dx12_draw_device_pop_opaque(&scope.device);
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_rectangles_filled));
+            Assert::AreEqual<size_t>(0, scope.device.transparent_count);
+        }
+
+        // Two opaque endpoints still interpolate through translucent pixels in between, so a
+        // segment whose ends disagree has to be treated as transparent.
+        // Ordered translucent-then-opaque deliberately: with the alpha merge removed, the last
+        // endpoint alone would decide, and this segment would wrongly be called opaque.
+        TEST_METHOD(a_line_with_mismatched_endpoint_alpha_is_transparent)
+        {
+            scoped_device scope;
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, ff_color_rgba(1, 1, 1, 0.5f), 1),
+                endpoint(10, 0, ff_color_rgba(1, 1, 1, 1), 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_lines_transparent));
+        }
+
+        // All segments of one polyline share a depth so they merge into a single instanced draw,
+        // but separate draw calls must not, or they could not sort against each other.
+        TEST_METHOD(one_polyline_shares_a_depth_across_its_segments)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, white, 1),
+                endpoint(10, 0, white, 1),
+                endpoint(10, 10, white, 1),
+            };
+
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            const ff_dx12_line_instance* lines =
+                (const ff_dx12_line_instance*)scope.device.buckets[ff_dx12_instance_bucket_lines].data;
+
+            Assert::AreEqual<size_t>(4, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+            Assert::AreEqual(lines[0].depth, lines[1].depth);
+            Assert::AreEqual(lines[2].depth, lines[3].depth);
+            Assert::AreNotEqual(lines[0].depth, lines[2].depth);
+        }
+
+        TEST_METHOD(geometry_draws_share_one_interned_matrix)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0, 0, 10, 10), white, 0);
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 5), 0, white);
+
+            const ff_dx12_rectangle_instance* rects =
+                (const ff_dx12_rectangle_instance*)scope.device.buckets[ff_dx12_instance_bucket_rectangles_filled].data;
+            const ff_dx12_circle_instance* circles =
+                (const ff_dx12_circle_instance*)scope.device.buckets[ff_dx12_instance_bucket_circles_filled].data;
+
+            Assert::AreEqual<size_t>(1, scope.device.matrix_count);
+            Assert::AreEqual<uint32_t>(0, rects[0].matrix_index);
+            Assert::AreEqual<uint32_t>(0, circles[0].matrix_index);
+        }
+
+        // The circle shader reads depth from position_radius.z rather than a separate field, so a
+        // miss there would silently break depth sorting for circles only.
+        TEST_METHOD(circle_carries_its_depth_in_position_radius)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+
+            ff_dx12_draw_device_draw_circle(&scope.device, endpoint(1, 2, white, 5), 0, white);
+
+            const ff_dx12_circle_instance* circles =
+                (const ff_dx12_circle_instance*)scope.device.buckets[ff_dx12_instance_bucket_circles_filled].data;
+
+            Assert::AreEqual(1.0f, circles[0].position_radius[0]);
+            Assert::AreEqual(2.0f, circles[0].position_radius[1]);
+            Assert::AreEqual(FF_DX12_RENDER_DEPTH_DELTA, circles[0].position_radius[2]);
+            Assert::AreEqual(5.0f, circles[0].position_radius[3]);
+        }
+
+        TEST_METHOD(too_few_points_draws_nothing)
+        {
+            scoped_device scope;
+            const ff_color white = ff_color_white();
+            const ff_dx12_draw_endpoint one = endpoint(0, 0, white, 1);
+
+            ff_dx12_draw_device_draw_lines(&scope.device, &one, 1);
+            ff_dx12_draw_device_draw_triangles(&scope.device, &one, 1);
+            ff_dx12_draw_device_draw_lines(&scope.device, nullptr, 0);
+            ff_dx12_draw_device_draw_triangles(&scope.device, nullptr, 0);
+
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_triangles));
+        }
+
+        // Everything else in this file proves the draw device *submitted* work the GPU accepted.
+        // None of it proves a pixel changed color, and a draw that is clipped away by a missing
+        // viewport, or fed a bad projection, survives submission and produces a clean black frame.
+        // Reading the target back is the only check that can tell those apart.
+        TEST_METHOD(a_filled_rectangle_actually_writes_pixels)
+        {
+            scoped_device scope;
+
+            const size_t size = 64;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(size, size);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 0, 0, 0));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+            const ff_rect_float view{ 0.0f, 0.0f, (float)size, (float)size };
+            const ff_rect_float world{ 0.0f, 0.0f, (float)size, (float)size };
+
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, world, false));
+
+            // Covers the whole target, so every sampled pixel below must be white regardless of
+            // where exactly the projection places it.
+            ff_dx12_draw_device_draw_rectangle(&scope.device,
+                ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size), ff_color_white(), 0.0f);
+
+            ff_dx12_draw_device_end(&scope.device);
+
+            // Readback needs the target as a copy source, which the tracker resolves on close.
+            const size_t row_pitch = size * sizeof(uint32_t);
+            ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(
+                ff_dx12_readback_allocator(), row_pitch * size,
+                ff_dx12_commands_next_fence_value(&commands));
+
+            D3D12_SUBRESOURCE_FOOTPRINT layout{};
+            layout.Format = ff_dx12_target_texture_format(&target);
+            layout.Width = (UINT)size;
+            layout.Height = (UINT)size;
+            layout.Depth = 1;
+            layout.RowPitch = (UINT)row_pitch;
+
+            // source_rect is required; readback_texture silently does nothing when it is NULL.
+            const D3D12_RECT source_rect = { 0, 0, (LONG)size, (LONG)size };
+
+            ff_dx12_commands_readback_texture(&commands, &readback, &layout,
+                ff_dx12_target_texture_resource(&target), 0, &source_rect);
+
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const uint32_t* pixels = (const uint32_t*)ff_dx12_mem_range_cpu_data(&readback);
+            Assert::IsNotNull((void*)pixels);
+
+            size_t lit = 0;
+
+            for (size_t i = 0; i < size * size; i++)
+            {
+                if ((pixels[i] & 0x00FFFFFFu) != 0)
+                {
+                    lit++;
+                }
+            }
+
+            const bool device_ok = ff_dx12_device_valid();
+
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(device_ok);
+            Assert::AreEqual(size * size, lit);
+        }
+
+        // The sprite path has more that can silently produce a blank frame than the geometry path:
+        // a texture never transitioned to the shader-resource state, a descriptor table never
+        // bound, or a uv rect that samples outside the image all survive submission. Sampling a
+        // texture that was filled with one known color means a correct draw can only produce that
+        // exact color, so a wrong binding cannot pass by accident.
+        TEST_METHOD(a_sprite_actually_samples_its_texture)
+        {
+            scoped_device scope;
+
+            const size_t size = 64;
+
+            ff_dx12_texture_params target_params = ff_dx12_texture_params_default(size, size);
+            ff_dx12_texture target_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&target_texture, &target_params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &target_texture, 0, 0, 0));
+
+            ff_dx12_texture_params source_params = ff_dx12_texture_params_default(size, size);
+            ff_dx12_texture source_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&source_texture, &source_params));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            // Opaque pure blue in BGRA order, distinct from both the black clear and from white,
+            // so neither a missing draw nor an untinted default could produce it.
+            uint32_t source_pixels[size * size];
+
+            for (size_t i = 0; i < size * size; i++)
+            {
+                source_pixels[i] = 0xFF0000FFu;
+            }
+
+            Assert::IsTrue(ff_dx12_texture_update(&source_texture, &commands, 0, 0, 0, 0,
+                source_pixels, size, size, size * sizeof(uint32_t)));
+
+            ff_dx12_texture_view source_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&source_view, &source_texture, 0, 1, 0, 1));
+
+            const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+            const ff_rect_float view{ 0.0f, 0.0f, (float)size, (float)size };
+            const ff_rect_float world{ 0.0f, 0.0f, (float)size, (float)size };
+
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, world, false));
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &source_view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_end(&scope.device);
+
+            const size_t row_pitch = size * sizeof(uint32_t);
+            ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(
+                ff_dx12_readback_allocator(), row_pitch * size,
+                ff_dx12_commands_next_fence_value(&commands));
+
+            D3D12_SUBRESOURCE_FOOTPRINT layout{};
+            layout.Format = ff_dx12_target_texture_format(&target);
+            layout.Width = (UINT)size;
+            layout.Height = (UINT)size;
+            layout.Depth = 1;
+            layout.RowPitch = (UINT)row_pitch;
+
+            const D3D12_RECT source_rect = { 0, 0, (LONG)size, (LONG)size };
+
+            ff_dx12_commands_readback_texture(&commands, &readback, &layout,
+                ff_dx12_target_texture_resource(&target), 0, &source_rect);
+
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const uint32_t* pixels = (const uint32_t*)ff_dx12_mem_range_cpu_data(&readback);
+            Assert::IsNotNull((void*)pixels);
+
+            size_t matched = 0;
+
+            for (size_t i = 0; i < size * size; i++)
+            {
+                if ((pixels[i] & 0x00FFFFFFu) == 0x000000FFu)
+                {
+                    matched++;
+                }
+            }
+
+            const bool device_ok = ff_dx12_device_valid();
+
+            ff_dx12_texture_view_destroy(&source_view);
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&source_texture);
+            ff_dx12_texture_destroy(&target_texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(device_ok);
+            Assert::AreEqual(size * size, matched);
+        }
+
+        TEST_METHOD(sprites_sharing_a_texture_share_one_table_slot)
+        {
+            scoped_device scope;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_texture_view view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&view, &texture, 0, 1, 0, 1));
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, 8.0f, 8.0f);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            for (size_t i = 0; i < 16; i++)
+            {
+                ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+            }
+
+            Assert::AreEqual((size_t)1, scope.device.texture_count);
+            Assert::AreEqual((size_t)16, scope.device.buckets[ff_dx12_instance_bucket_sprites].count);
+
+            ff_dx12_texture_view_destroy(&view);
+            ff_dx12_texture_destroy(&texture);
+        }
+
+        // The vertex shader reads model_[indexes >> 24] and the pixel shaders mask the texture out
+        // of the low byte and the sampler out of the next, so the three fields have to land on
+        // exactly those bits. A scene with one texture and an identity matrix has zero in two of
+        // the three fields, which is why this uses a second texture and a non-identity matrix:
+        // otherwise a wrong shift still produces the right number.
+        TEST_METHOD(sprite_indexes_pack_texture_sampler_and_matrix)
+        {
+            scoped_device scope;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+
+            ff_dx12_texture first_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&first_texture, &params));
+            ff_dx12_texture_view first_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&first_view, &first_texture, 0, 1, 0, 1));
+
+            ff_dx12_texture second_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&second_texture, &params));
+            ff_dx12_texture_view second_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&second_view, &second_texture, 0, 1, 0, 1));
+
+            ff_dx12_sprite sprite{};
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, 8.0f, 8.0f);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            // Slot 0 of the matrix table, so the second matrix below lands in slot 1.
+            sprite.view = &first_view;
+            ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+
+            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_translation(5.0f, 7.0f, 0.0f));
+            ff_dx12_draw_device_push_sampler_linear(&scope.device, true);
+
+            sprite.view = &second_view;
+            ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+
+            ff_dx12_draw_device_pop_sampler_linear(&scope.device);
+
+            const ff_dx12_instance_bucket* bucket =
+                &scope.device.buckets[ff_dx12_instance_bucket_sprites];
+
+            Assert::AreEqual((size_t)2, bucket->count);
+
+            const ff_dx12_sprite_instance* instances =
+                (const ff_dx12_sprite_instance*)bucket->data;
+
+            Assert::AreEqual(0x00000000u, instances[0].indexes);
+            Assert::AreEqual(0x01000101u, instances[1].indexes);
+
+            ff_dx12_texture_view_destroy(&second_view);
+            ff_dx12_texture_view_destroy(&first_view);
+            ff_dx12_texture_destroy(&second_texture);
+            ff_dx12_texture_destroy(&first_texture);
+        }
+
+        // The texture table is per-flush, so the (MAX + 1)th distinct texture has to flush to make
+        // room and then land in slot 0 of a fresh table. Getting this wrong either drops the
+        // sprite or aliases it onto another texture's descriptor.
+        TEST_METHOD(a_full_texture_table_flushes_and_starts_over)
+        {
+            scoped_device scope;
+
+            const size_t count = FF_DX12_MAX_TEXTURES + 1;
+            const size_t size = 8;
+
+            std::unique_ptr<ff_dx12_texture[]> textures{ new ff_dx12_texture[count]{} };
+            std::unique_ptr<ff_dx12_texture_view[]> views{ new ff_dx12_texture_view[count]{} };
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(size, size);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_texture_init(&textures[i], &params));
+                Assert::IsTrue(ff_dx12_texture_view_init(&views[i], &textures[i], 0, 1, 0, 1));
+            }
+
+            ff_dx12_texture target_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&target_texture, &params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &target_texture, 0, 0, 0));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+            const ff_rect_float view{ 0.0f, 0.0f, (float)size, (float)size };
+            const ff_rect_float world{ 0.0f, 0.0f, (float)size, (float)size };
+
+            // A real begin is required: flush is a no-op without a command list, so the table
+            // could never empty and the last sprite would be dropped instead of rebatched.
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, world, false));
+
+            ff_dx12_sprite sprite{};
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            for (size_t i = 0; i < FF_DX12_MAX_TEXTURES; i++)
+            {
+                sprite.view = &views[i];
+                ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+            }
+
+            Assert::AreEqual((size_t)FF_DX12_MAX_TEXTURES, scope.device.texture_count);
+
+            sprite.view = &views[FF_DX12_MAX_TEXTURES];
+            ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
+
+            const size_t after_count = scope.device.texture_count;
+            const bool slot_zero_is_last = scope.device.textures[0] == &views[FF_DX12_MAX_TEXTURES];
+
+            ff_dx12_draw_device_end(&scope.device);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const bool device_ok = ff_dx12_device_valid();
+
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&target_texture);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_texture_view_destroy(&views[i]);
+                ff_dx12_texture_destroy(&textures[i]);
+            }
+
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(device_ok);
+            Assert::AreEqual((size_t)1, after_count);
+            Assert::IsTrue(slot_zero_is_last);
         }
     };
 }

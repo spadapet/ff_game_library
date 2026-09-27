@@ -13,9 +13,6 @@ static_assert(FF_DX12_VS_CONSTANTS_0_DWORD_COUNT * sizeof(uint32_t) + sizeof(flo
 static_assert(sizeof(ff_dx12_vs_constants_1) == FF_DX12_MAX_TRANSFORM_MATRIXES * 64, "vs_constants_1 must match the HLSL cbuffer");
 static_assert(sizeof(ff_dx12_ps_constants_0) == FF_DX12_MAX_PALETTE_TEXTURES * 16, "ps_constants_0 must match the HLSL cbuffer");
 
-#define FF_DX12_VERTEX_SLOT 0
-#define FF_DX12_INSTANCE_SLOT 1
-
 #define FF_DX12_VERTEX_ELEMENT(semantic, index, format) \
     { semantic, index, format, FF_DX12_VERTEX_SLOT, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 

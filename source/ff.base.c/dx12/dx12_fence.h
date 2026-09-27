@@ -29,6 +29,8 @@ typedef struct ff_dx12_fence_value
     uint64_t value;
 } ff_dx12_fence_value;
 
+// initial_value is the value the fence is created *already at*, so it counts as complete. A value
+// of 0 is treated as 1. Waiting on initial_value or below is satisfied immediately.
 bool ff_dx12_fence_init(ff_dx12_fence* fence, ff_string_view name, uint64_t initial_value);
 
 // Records which queue signals this fence, so that same-queue waits can be skipped instead of

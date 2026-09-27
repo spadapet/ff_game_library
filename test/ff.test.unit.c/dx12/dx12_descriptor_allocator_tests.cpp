@@ -251,9 +251,15 @@ namespace ff::test::dx12
             // Stall the queue behind an unsignalled gate, then signal through it. The resulting
             // value is genuinely submitted but will not complete until the gate is released, which
             // is the state that used to make alloc_ring block the CPU mid-frame.
+            // ff_dx12_fence_init creates the fence already at its initial value, so the gate has to
+            // be held at a value above that or the Wait below is satisfied immediately and the queue
+            // never actually stalls.
+            const uint64_t gate_closed = gate_fence.completed_value + 1;
+
             ID3D12CommandQueue* queue = ff_dx12_queue_command_queue(ff_dx12_direct_queue());
             ID3D12Fence* gate = gate_fence.fence;
-            Assert::IsTrue(SUCCEEDED(queue->Wait(gate, 1)));
+            Assert::IsTrue(SUCCEEDED(queue->Wait(gate, gate_closed)));
+            Assert::IsTrue(gate->GetCompletedValue() < gate_closed, L"the gate must start closed");
 
             ff_dx12_fence_value busy = ff_dx12_fence_signal(&busy_fence, queue);
             Assert::IsFalse(ff_dx12_fence_value_complete(busy));
@@ -267,7 +273,12 @@ namespace ff::test::dx12
             ff_dx12_descriptor_range wrapped = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 16, busy);
             const bool wrapped_valid = ff_dx12_descriptor_range_valid(&wrapped);
 
-            gate->Signal(1);
+            // The gate fence is checked rather than busy: busy only becomes complete once the GPU
+            // actually processes the signal, so testing it here would race the driver. The gate's
+            // own value is CPU-side and exact.
+            const bool gate_held = gate->GetCompletedValue() < gate_closed;
+
+            gate->Signal(gate_closed);
             ff_dx12_fence_value_wait(busy, nullptr);
 
             // Once the GPU is done, the same allocation succeeds.
@@ -280,6 +291,7 @@ namespace ff::test::dx12
             ff_dx12_fence_destroy(&gate_fence);
             ff_dx12_gpu_descriptor_allocator_destroy(&allocator);
 
+            Assert::IsTrue(gate_held, L"the gate must still hold the queue, or this test proves nothing");
             Assert::IsFalse(wrapped_valid, L"wrapping onto unfinished GPU work must fail, not block");
             Assert::IsTrue(after_valid, L"the ring must be reusable once the GPU finishes");
         }
