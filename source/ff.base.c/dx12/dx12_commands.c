@@ -287,6 +287,20 @@ void ff_dx12_commands_root_constants(ff_dx12_commands* commands, size_t index, c
     }
 }
 
+void ff_dx12_commands_root_cbv_address(ff_dx12_commands* commands, size_t index, D3D12_GPU_VIRTUAL_ADDRESS address)
+{
+    FF_CHECK_RET(ff_dx12_commands_valid(commands) && address);
+
+    if (commands_is_compute(commands))
+    {
+        ID3D12GraphicsCommandList1_SetComputeRootConstantBufferView(ff_dx12_commands_list(commands), (UINT)index, address);
+    }
+    else
+    {
+        ID3D12GraphicsCommandList1_SetGraphicsRootConstantBufferView(ff_dx12_commands_list(commands), (UINT)index, address);
+    }
+}
+
 void ff_dx12_commands_root_cbv(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset)
 {
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && resource);

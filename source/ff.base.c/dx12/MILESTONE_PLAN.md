@@ -2342,3 +2342,185 @@ an unrelated arena assert fired either way -- and was replaced with a behavioral
 each returned slot to `data + count * item_size` across a reallocation.
 
 Debug 1111/1111, Release 1111/1111.
+
+## Draw device core (f_dx12_draw_device, complete)
+
+The batching half of the draw device, ported from `draw_device_base` in `draw_util.cpp`. Draw
+calls append instances into the sixteen buckets instead of issuing GPU work; a flush turns the
+whole accumulation into a handful of instanced, indexed draw calls.
+
+Design notes:
+
+- **No sort for transparency.** The C++ has no sort either, which is easy to miss.
+  `nudge_depth` hands out strictly non-decreasing depths, so issue order is already depth order.
+  The flush only coalesces runs that share a bucket, a depth and contiguous indices.
+- **`push_no_overlap` shares one depth across a run** so the instances merge into one draw call.
+  The first call inside the region still advances, so the run cannot collide with what came
+  before. `pop_no_overlap` ends the run only at the outermost pop.
+- **Only `pre_multiplied_alpha` flushes on push/pop**, because it alone changes the pipeline.
+  `no_overlap` and `opaque` only affect how later instances are bucketed.
+- **Matrices are interned per flush** and transposed once at intern time rather than per instance.
+  A full table flushes to make room, since the table is per-flush.
+- **Static geometry is generated, not tabled.** The circle index patterns are regular (a fan for
+  filled, a quad per segment for outline), so they are built in a loop and verified against the
+  C++ table rather than transcribed. Same for the unit-circle vertex ring.
+- **Bucket offsets use a modulo round-up, not `ff_math_round_up`.** Instance strides are 68, 80,
+  44, 56 -- none of them powers of two -- and `ff_math_round_up` is bitmask-based, so using it
+  would have silently corrupted every bucket offset after the first.
+
+Two real bugs were caught during this milestone rather than shipped:
+
+1. `ff_math_round_up` is power-of-two only. Caught by reading its implementation before trusting
+   the name.
+2. Uploading the static geometry at init time called `ff_dx12_buffer_update` with a NULL command
+   list, which **took down the test host** rather than failing cleanly. Fixed by deferring the
+   upload to the first `begin`, where a real command list exists, using the purpose-built
+   `ff_dx12_buffer_init_gpu_static`. This is the same "vanished test run" symptom the draw state
+   milestone documented; recognize it as a hard runtime rejection, not a flaky test.
+
+The five instance struct sizes are pinned with `static_assert`. One of the sizes was guessed
+wrong initially and the assert caught it, which is exactly what they are there for.
+
+20 tests in `dx12_draw_device_tests.cpp`, fault-injected with five distinct faults. Note that
+injecting several faults at once **masked one of them** -- `nested_no_overlap` only failed once
+its fault was isolated, because a co-injected fault changed the path under test. Inject faults one
+at a time when a test unexpectedly survives.
+
+Debug 1131/1131, Release 1131/1131.
+
+Deferred to `m7c`/`m7d`: the public `draw_lines`/`draw_triangles`/`draw_rectangle`/
+`draw_circle` entry points, and sprites plus palettes (which need texture and palette index
+tables and types that do not exist in the C port yet).
+
+## Draw device: upload-direct constants and instances
+
+Three bugs were found in the m7b flush path by reviewing it against the root signature
+rather than trusting the code to be self-consistent:
+
+- `ff_dx12_draw_state_bind` was never called, so no draw ever had a root signature, a
+  sampler table, or a primitive topology. The debug layer turns this into a device
+  removal, which presents as the test host vanishing mid-run.
+- `vs_constants_0` is declared as `D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS`, so the
+  buffer that was being uploaded for it every flush was never read by anything.
+- `instance_buffer` was created with `ff_dx12_buffer_init_cpu`, which has no GPU
+  resource at all, so `ff_dx12_buffer_gpu_address` returned 0 and every draw was
+  bound to a null vertex buffer.
+
+### Constants and instance data now live in upload memory
+
+Both the per-flush model matrices and the packed instance data are written straight
+into a ring allocation from `ff_dx12_upload_allocator()` and bound from there: the
+matrices as a root CBV address, the instances as a vertex buffer view. Previously each
+went through a default-heap buffer, costing a CPU copy into upload memory plus a GPU
+`CopyBufferRegion`, for data the GPU reads exactly once in the draws issued immediately
+afterward.
+
+Two constraints make this safe, and both are load-bearing:
+
+- The range is allocated against `ff_dx12_commands_next_fence_value`, so the ring
+  cannot recycle it until the GPU has retired the submission that reads it. These
+  ranges must never be freed explicitly; `ff_dx12_mem_buffer_destroy` documents the
+  same rule.
+- Binding from upload memory bypasses `ff_dx12_commands_update_buffer`, which is where
+  the copy path used to register the heap for residency. Both sites now call
+  `ff_dx12_commands_keep_resident` directly.
+
+A root CBV address must be 256-byte aligned; the upload ring already aligns to
+`D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT`.
+
+### Depth is wired through begin
+
+`apply_bucket` previously hardcoded `has_depth = false`, so the depth-enabled pipeline
+variants could never be selected and the per-instance depth slices did nothing on the
+GPU. `ff_dx12_draw_device_begin` now takes an `ff_dx12_depth*`, and the device tracks
+it for the duration of the drawing state.
+
+### Residency never stalls the CPU
+
+`ff_dx12_make_resident` had a second eviction pass that would evict pageables still in
+flight and block until the GPU retired them. That runs mid-frame on the submit path, so
+it could cost a full frame. Only the non-blocking pass remains: pageables the GPU is
+still using stay resident and the allocation goes over budget instead, which the driver
+absorbs by demoting pages itself.
+
+### Testing
+
+The batching tests never left the valid state, so the entire flush path was unexercised.
+`flush_issues_draws_the_gpu_accepts` drives a real begin/draw/flush/execute against a
+render target with two different-stride buckets, so the debug layer validates the root
+arguments, pipeline state and vertex views, and the instance address is asserted
+directly. A null vertex buffer view is legal in D3D12 and silently draws nothing, so
+device removal alone cannot catch that case.
+
+## Residency: eviction must respect the pending make-resident fence
+
+`ff_dx12_make_resident` guards each pageable with two independent fence values:
+`resident_value` (the async `EnqueueMakeResident` completion) and `keep_resident`
+(the GPU work that references it). `evict_pass` checked only `resident`
+and `keep_resident`, so a pageable could be handed to `ID3D12Device6_Evict` while
+its enqueued make-resident had not signaled. Evict has no defined ordering
+against an in-flight EnqueueMakeResident, so the two residency operations raced.
+
+`keep_resident` usually hid this: if the command fence completed, the work ran,
+so residency must already have finished. But `keep_resident` is empty whenever
+the caller had no command fence value -- `ff_dx12_fence_values_add` drops a zero
+value -- and an empty set reports `true` from both `wait_is_pending` and
+`complete`, so it offers no protection at all in that case. That is reachable
+from `dx12_queue.c`, where `next_fence_value` stays zero if the cache loop breaks
+on its first iteration.
+
+The fix is a `ff_dx12_fence_value_complete(data->resident_value)` check next to
+the existing `resident` check. It is free in the common case, since that function
+returns true for a zeroed value.
+
+`over_budget_does_not_evict_a_pending_make_resident` covers it: a resident
+pageable with an empty `keep_resident` and a deliberately pending
+`resident_value` must survive an over-budget pass. The test asserts the empty
+`keep_resident` and the pending value up front so it cannot pass for the wrong
+reason, and removing the guard makes it fail.
+
+Two related cleanups went with it. `wait_to_evict` was dead: it was filled from
+`data->keep_resident` only after `ff_dx12_fence_values_complete` returned true,
+and that function *clears* the list when it does, so `add_all` always copied from
+an empty set. The whole mechanism was removed along with a comment that credited
+the no-op to the wrong cause. And `s_usage_counter` now skips zero on wrap, since
+zero is what fresh residency data starts at -- on wrap every never-used pageable
+would have looked touched-this-call and stalled eviction at the first one.
+
+## Resource tracker: forget does targeted slot surgery
+
+`ff_dx12_resource_tracker_forget` used to call `index_map_rebuild` unconditionally, rehashing every
+tracked resource on each resource destroy. It now removes the resource's slot directly and repairs
+the probe chain behind it, then repoints the swap-removed last entry with `index_map_move`. Cost
+goes from O(tracked) to O(probe run).
+
+The probe-chain repair is the subtle part. Clearing a slot in an open-addressed map strands any
+following entry that probed past it, so the run after the cleared slot is reinserted. The unmap has
+to happen *before* the swap-remove, while every slot still resolves against the entry it currently
+points at.
+
+Covered by `forget_keeps_the_remaining_resources_findable`, which jitters resource addresses with
+odd-sized padding allocations. This matters: resources in a plain stack array have a fixed stride
+that the multiplicative pointer hash turns into a collision-free permutation, so an array-based test
+never builds a probe run and passes even with the repair loop removed.
+
+`repeat_transitions_stay_on_the_all_same_fast_path` pins the property the sprite renderer's
+efficiency rests on: repeat transitions to the current state collapse to the `all_same` early-out
+with no barrier, no per-subresource expansion, and no arena spill.
+
+## Barrier promotion/decay: the `global` entry type is permanently `global`
+
+`merge_entry` in `dx12_resource_state.c` only copies the *state value* (not the type) when the
+destination entry's type is `global`. Since `ff_dx12_resource_state_init` seeds a resource's
+`global_state` with type `global`, that type sticks for the life of the resource and never becomes
+`decayed`.
+
+This is load-bearing. `allow_promotion` requires `type_before == global && state_before == COMMON`.
+If a decay merge overwrote the type with `decayed`, promotion would fire exactly once per resource
+and every later frame would pay a redundant `COMMON -> read` barrier. The `decayed` type is written
+into the tracker entry during `tracker_close` purely to satisfy `assert_type_change` bookkeeping
+within that close pass, and is discarded at the merge on the next line.
+
+Promotion/decay coverage now lives in `dx12_resource_tracker_tests.cpp` (6 tests). Both
+`allow_promotion`'s `global`/`COMMON` gate and `allow_decay`'s `type_before == promoted` gate were
+fault-injected and confirmed to fail tests when broken.

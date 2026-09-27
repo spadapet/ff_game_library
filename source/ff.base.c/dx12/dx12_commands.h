@@ -64,6 +64,10 @@ void ff_dx12_commands_root_descriptors(ff_dx12_commands* commands, size_t index,
 void ff_dx12_commands_root_constant(ff_dx12_commands* commands, size_t index, uint32_t data, size_t data_index);
 void ff_dx12_commands_root_constants(ff_dx12_commands* commands, size_t index, const void* data, size_t size, size_t data_index);
 void ff_dx12_commands_root_cbv(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset);
+
+// Binds a constant buffer straight from upload memory. The caller keeps the range alive by
+// allocating it against the fence value the commands object will be submitted with.
+void ff_dx12_commands_root_cbv_address(ff_dx12_commands* commands, size_t index, D3D12_GPU_VIRTUAL_ADDRESS address);
 void ff_dx12_commands_root_srv(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset, bool ps_access, bool non_ps_access);
 void ff_dx12_commands_root_uav(ff_dx12_commands* commands, size_t index, ff_dx12_resource* resource, uint64_t offset);
 

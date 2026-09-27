@@ -34,7 +34,7 @@ void ff_dx12_instance_bucket_destroy(ff_dx12_instance_bucket* bucket)
 
 void* ff_dx12_instance_bucket_add(ff_dx12_instance_bucket* bucket)
 {
-    FF_ASSERT_RET_VAL(bucket, NULL);
+    FF_ASSERT_RET_VAL(bucket && bucket->item_size, NULL);
 
     if (bucket->count == bucket->capacity)
     {

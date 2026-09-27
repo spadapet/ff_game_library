@@ -125,6 +125,56 @@ static void index_map_insert(ff_dx12_resource_tracker* tracker, ff_dx12_resource
     tracker->index_map[slot] = entry_index + 1;
 }
 
+static void index_map_remove(ff_dx12_resource_tracker* tracker, const ff_dx12_resource* resource)
+{
+    FF_CHECK_RET(tracker->index_map_size);
+
+    size_t slot = index_map_slot(tracker, resource);
+
+    while (tracker->index_map[slot])
+    {
+        if (tracker->entries_a[tracker->index_map[slot] - 1].resource == resource)
+        {
+            break;
+        }
+
+        slot = (slot + 1) & (tracker->index_map_size - 1);
+    }
+
+    FF_CHECK_RET(tracker->index_map[slot]);
+
+    tracker->index_map[slot] = 0;
+
+    // Clearing a slot breaks the linear probe chain behind it, so reinsert the rest of the run.
+    for (size_t i = (slot + 1) & (tracker->index_map_size - 1); tracker->index_map[i]; i = (i + 1) & (tracker->index_map_size - 1))
+    {
+        const size_t moved = tracker->index_map[i];
+        tracker->index_map[i] = 0;
+        index_map_insert(tracker, tracker->entries_a[moved - 1].resource, moved - 1);
+    }
+}
+
+// Repoints an already-mapped resource at a new entries_a index, for the swap-remove in forget.
+static void index_map_move(ff_dx12_resource_tracker* tracker, const ff_dx12_resource* resource, size_t entry_index)
+{
+    FF_CHECK_RET(tracker->index_map_size);
+
+    size_t slot = index_map_slot(tracker, resource);
+
+    while (tracker->index_map[slot])
+    {
+        if (tracker->entries_a[tracker->index_map[slot] - 1].resource == resource)
+        {
+            tracker->index_map[slot] = entry_index + 1;
+            return;
+        }
+
+        slot = (slot + 1) & (tracker->index_map_size - 1);
+    }
+
+    FF_DEBUG_FAIL();
+}
+
 static void index_map_rebuild(ff_dx12_resource_tracker* tracker, size_t new_size)
 {
     tracker->index_map = ff_arena_alloc_type(&tracker->arena, size_t, new_size);
@@ -351,13 +401,19 @@ void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_
     const size_t count = ff_array_count(tracker->entries_a);
     const size_t index = (size_t)(entry - tracker->entries_a);
 
-    tracker->entries_a[index] = tracker->entries_a[count - 1];
+    // Unmap before the swap, while the probe-chain repair can still resolve every slot against
+    // the entry it currently points at.
+    index_map_remove(tracker, resource);
+
+    if (index != count - 1)
+    {
+        tracker->entries_a[index] = tracker->entries_a[count - 1];
+        index_map_move(tracker, tracker->entries_a[index].resource, index);
+    }
+
     ff_array_resize(tracker->entries_a, count - 1);
 
     ff_dx12_resource_set_tracker(resource, NULL);
-
-    // Removing from an open-addressed map would break probe chains, so rebuild it instead.
-    index_map_rebuild(tracker, tracker->index_map_size);
 }
 
 void ff_dx12_resource_tracker_uav(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource)

@@ -107,9 +107,8 @@ void ff_dx12_residency_data_destroy(ff_dx12_residency_data* data)
     *data = (ff_dx12_residency_data){ 0 };
 }
 
-static uint64_t evict_pass(bool allow_wait, uint32_t new_usage_counter, uint64_t delta_resident_size,
-    uint64_t available_space, ID3D12Pageable*** make_evicted, uint64_t* make_evicted_size,
-    ff_dx12_fence_values* wait_to_evict)
+static uint64_t evict_pass(uint32_t new_usage_counter, uint64_t delta_resident_size,
+    uint64_t available_space, ID3D12Pageable*** make_evicted, uint64_t* make_evicted_size)
 {
     // Single-threaded v1: the old code took pageable_mutex here.
     for (ff_dx12_residency_data* data = s_pageable_back;
@@ -117,6 +116,15 @@ static uint64_t evict_pass(bool allow_wait, uint32_t new_usage_counter, uint64_t
         data = data->prev)
     {
         if (!data->resident)
+        {
+            continue;
+        }
+
+        // An enqueued make-resident that hasn't signaled yet is still in flight on the GPU
+        // timeline, and Evict has no defined ordering against it. keep_resident usually covers
+        // this, but it is empty whenever the caller had no command fence value, and an empty
+        // list reports itself as complete.
+        if (!ff_dx12_fence_value_complete(data->resident_value))
         {
             continue;
         }
@@ -130,17 +138,15 @@ static uint64_t evict_pass(bool allow_wait, uint32_t new_usage_counter, uint64_t
             continue;
         }
 
-        // The first pass only takes pageables that would cost nothing to wait on. Checking this
-        // after wait_is_pending matters because _complete clears the values when it returns true.
-        if (!allow_wait && !ff_dx12_fence_values_complete(&data->keep_resident))
+        // Only take pageables the GPU has already finished with. Checking this after
+        // wait_is_pending matters because _complete clears the values when it returns true.
+        if (!ff_dx12_fence_values_complete(&data->keep_resident))
         {
             continue;
         }
 
         data->resident = false;
         data->resident_value = (ff_dx12_fence_value){ 0 };
-
-        ff_dx12_fence_values_add_all(wait_to_evict, &data->keep_resident);
 
         ff_array_push(*make_evicted, data->pageable);
         *make_evicted_size += data->size;
@@ -175,7 +181,14 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
     const uint64_t available_space = (memory_info.Budget > memory_info.CurrentUsage)
         ? memory_info.Budget - memory_info.CurrentUsage
         : 0;
-    const uint32_t new_usage_counter = ++s_usage_counter;
+    // Zero is the value fresh residency data starts at, so skipping it on wrap keeps a
+    // never-used pageable from looking like it was touched this call and stalling eviction.
+    if (!++s_usage_counter)
+    {
+        s_usage_counter = 1;
+    }
+
+    const uint32_t new_usage_counter = s_usage_counter;
 
     for (size_t i = 0; i < residency_set_count; i++)
     {
@@ -210,30 +223,19 @@ bool ff_dx12_make_resident(ff_dx12_residency_data** residency_set, size_t reside
         list_add_front(residency_set[i]);
     }
 
-    // Evict LRU until below budget, in two passes. The first pass only takes pageables the GPU has
-    // already finished with, so it never has to block. Only if that fails to free enough does the
-    // second pass take pageables that are still in flight and pay for a CPU wait.
+    // Evict LRU until below budget, but only pageables the GPU has already finished with. Evicting
+    // memory that is still in flight would require blocking until the GPU retires it, and this
+    // runs mid-frame on the submit path. Staying over budget instead is a soft cost the driver
+    // absorbs by demoting pages itself; a CPU stall here would cost a whole frame.
     {
-        ff_dx12_fence_values wait_to_evict;
-        ff_dx12_fence_values_init_arena(&wait_to_evict, &batch_arena);
-        uint64_t delta_resident_size = make_resident_size;
-
-        delta_resident_size = evict_pass(false, new_usage_counter, delta_resident_size, available_space,
-            &make_evicted, &make_evicted_size, &wait_to_evict);
-
-        if (delta_resident_size > available_space)
-        {
-            delta_resident_size = evict_pass(true, new_usage_counter, delta_resident_size, available_space,
-                &make_evicted, &make_evicted_size, &wait_to_evict);
-        }
+        const uint64_t delta_resident_size = evict_pass(new_usage_counter, make_resident_size,
+            available_space, &make_evicted, &make_evicted_size);
 
         if (delta_resident_size > available_space)
         {
             ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Over budget by %llu bytes, available: %llu bytes"),
                 (unsigned long long)(delta_resident_size - available_space), (unsigned long long)available_space);
         }
-
-        ff_dx12_fence_values_wait(&wait_to_evict, NULL);
     }
 
     const size_t make_evicted_count = ff_array_count(make_evicted);
