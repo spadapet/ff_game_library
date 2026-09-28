@@ -10,7 +10,7 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="test_app.c" />
     <ClCompile Include="test_blit.c" />
-    <ClCompile Include="test_draw.c" />
+    <ClCompile Include="test_sprite_perf.c" />
     <ClCompile Include="test_shapes.c" />
     <ClCompile Include="test_palettes.c" />
     <ClCompile Include="test_sprites.c" />

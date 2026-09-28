@@ -185,6 +185,27 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
     }
 
     device->state = ff_dx12_draw_state_machine_valid;
+    ff_dx12_add_device_child(&device->device_child, device, ff_dx12_device_child_type_draw_device);
+
+    return true;
+}
+
+void internal_ff_dx12_draw_device_before_reset(ff_dx12_draw_device* device)
+{
+    FF_ASSERT_RET(device);
+
+    reset_batch(device);
+
+    device->commands = NULL;
+    device->state = ff_dx12_draw_state_machine_valid;
+}
+
+bool internal_ff_dx12_draw_device_reset(ff_dx12_draw_device* device)
+{
+    FF_ASSERT_RET_VAL(device, false);
+
+    memset(device->palette_row_hashes, 0, sizeof(device->palette_row_hashes));
+    memset(device->palette_remap_row_hashes, 0, sizeof(device->palette_remap_row_hashes));
 
     return true;
 }
@@ -192,6 +213,8 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
 void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device)
 {
     FF_ASSERT_RET(device);
+
+    ff_dx12_remove_device_child(&device->device_child);
 
     ff_dx12_buffer_destroy(&device->index_buffer);
     ff_dx12_buffer_destroy(&device->circle_vertex_buffer);
@@ -633,8 +656,9 @@ static void update_ps_constants(ff_dx12_draw_device* device)
         device->ps_constants_0.texture_palette_sizes[i].top = (float)ff_dx12_texture_height(texture);
     }
 
-    // A root CBV carries no size, so the shader can legally read any slot. Uploading the whole
-    // 512-byte struct keeps an out-of-range index from reading past the allocation.
+    // Uploaded whole rather than trimmed to palette_texture_count: 512 bytes at most once per
+    // flush isn't worth the trim, and the debug layer validates a CBV read against the resource
+    // size, so a short upload draws false out-of-bounds reports on padding no shader reads.
     const size_t size = sizeof(device->ps_constants_0);
 
     ff_dx12_mem_range range = ff_dx12_mem_allocator_ring_alloc_buffer(ff_dx12_upload_allocator(),
@@ -1195,6 +1219,18 @@ static alpha_type merge_alpha_type(float alpha, bool allow_transparent, alpha_ty
     return (type == previous) ? type : alpha_type_transparent;
 }
 
+// A sprite whose own pixels have partial alpha needs blending even when the tint is fully opaque.
+// The reverse doesn't hold: an opaque sprite under a translucent tint is already transparent from
+// the tint alone.
+static alpha_type sprite_alpha_type(float alpha, bool allow_transparent, bool sprite_transparent)
+{
+    const alpha_type type = get_alpha_type(alpha, allow_transparent);
+
+    return (type == alpha_type_opaque && sprite_transparent && allow_transparent)
+        ? alpha_type_transparent
+        : type;
+}
+
 static ff_dx12_instance_bucket_type transparent_bucket(ff_dx12_instance_bucket_type opaque_bucket)
 {
     return (ff_dx12_instance_bucket_type)(opaque_bucket + ff_dx12_instance_bucket_first_transparent);
@@ -1205,9 +1241,17 @@ static ff_dx12_instance_bucket_type pick_bucket(ff_dx12_instance_bucket_type opa
     return (type == alpha_type_transparent) ? transparent_bucket(opaque_bucket) : opaque_bucket;
 }
 
-static void store_color(float dest[4], ff_color color)
+// Geometry and sprite colors carry a palette index when the target wants indexes, and there is no
+// GPU-side remap on that path: ps_color_out_palette turns the vertex color straight into an index.
+// The active remap therefore has to be applied here, matching where the old C++ device applied it.
+static const uint8_t* active_remap(const ff_dx12_draw_device* device)
 {
-    const ff_color_shader shader = ff_color_to_shader(color, NULL);
+    return device->palette_remap_stack[device->palette_remap_stack_count - 1].remap;
+}
+
+static void store_color(const ff_dx12_draw_device* device, float dest[4], ff_color color)
+{
+    const ff_color_shader shader = ff_color_to_shader(color, active_remap(device));
     dest[0] = shader.r;
     dest[1] = shader.g;
     dest[2] = shader.b;
@@ -1272,8 +1316,8 @@ void ff_dx12_draw_device_draw_lines(ff_dx12_draw_device* device,
             ? (closed ? points[1].pos : p1->pos)
             : points[i + 2].pos;
 
-        store_color(instance->start_color, p0->color);
-        store_color(instance->end_color, p1->color);
+        store_color(device, instance->start_color, p0->color);
+        store_color(device, instance->end_color, p1->color);
         instance->start_thickness = fabsf(p0->size);
         instance->end_thickness = fabsf(p1->size);
         instance->depth = depth;
@@ -1313,7 +1357,7 @@ void ff_dx12_draw_device_draw_triangles(ff_dx12_draw_device* device,
         for (size_t corner = 0; corner < 3; corner++)
         {
             instance->position[corner] = points[i + corner].pos;
-            store_color(instance->color[corner], points[i + corner].color);
+            store_color(device, instance->color[corner], points[i + corner].color);
         }
 
         instance->depth = depth;
@@ -1363,7 +1407,7 @@ void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
     FF_CHECK_RET(instance);
 
     instance->rect = normalized;
-    store_color(instance->color, color);
+    store_color(device, instance->color, color);
     instance->depth = depth;
     instance->thickness = thickness;
     instance->matrix_index = matrix_index;
@@ -1414,8 +1458,8 @@ void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
     instance->position_radius[1] = pos.pos.y;
     instance->position_radius[2] = depth;
     instance->position_radius[3] = radius;
-    store_color(instance->inside_color, pos.color);
-    store_color(instance->outside_color, outside_color);
+    store_color(device, instance->inside_color, pos.color);
+    store_color(device, instance->outside_color, outside_color);
     instance->thickness = thickness;
     instance->matrix_index = matrix_index;
 }
@@ -1439,7 +1483,8 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
     FF_CHECK_RET(sprite->view);
 
     const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
-    const alpha_type type = get_alpha_type(ff_color_alpha(transform->color), allow_transparent);
+    const alpha_type type = sprite_alpha_type(ff_color_alpha(transform->color),
+        allow_transparent, sprite->transparent);
     FF_CHECK_RET(type != alpha_type_invisible);
 
     const uint32_t indexes = sprite_indexes(device, sprite->view);
@@ -1454,7 +1499,7 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
 
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;
-    store_color(instance->color, transform->color);
+    store_color(device, instance->color, transform->color);
     instance->pos_rot[0] = transform->position.x;
     instance->pos_rot[1] = transform->position.y;
     instance->pos_rot[2] = depth;
@@ -1485,7 +1530,7 @@ void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
 
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;
-    store_color(instance->color, transform->color);
+    store_color(device, instance->color, transform->color);
     instance->pos_rot[0] = transform->position.x;
     instance->pos_rot[1] = transform->position.y;
     instance->pos_rot[2] = depth;

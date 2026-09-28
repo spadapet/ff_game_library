@@ -51,6 +51,12 @@ uint64_t ff_dx12_target_window_pacing_late_frames(const ff_dx12_target_window* t
     return target->pacing.total_late_frames;
 }
 
+uint64_t ff_dx12_target_window_pacing_idle_late_frames(const ff_dx12_target_window* target)
+{
+    FF_ASSERT_RET_VAL(target, 0);
+    return target->pacing.total_idle_late_frames;
+}
+
 size_t ff_dx12_target_window_pacing_stage(const ff_dx12_target_window* target)
 {
     FF_ASSERT_RET_VAL(target, 0);
@@ -397,7 +403,7 @@ bool ff_dx12_target_window_begin_render(ff_dx12_target_window* target, ff_dx12_c
     return true;
 }
 
-static bool update_pacing(ff_dx12_target_window* target)
+static bool update_pacing(ff_dx12_target_window* target, double busy_seconds)
 {
     const int64_t now = perf_counter();
     const int64_t last = target->pacing.last_tick;
@@ -417,7 +423,7 @@ static bool update_pacing(ff_dx12_target_window* target)
         frame_seconds = target->pacing.refresh_seconds;
     }
 
-    FF_CHECK_RET_VAL(internal_ff_dx12_pacing_add_frame(&target->pacing, frame_seconds), true);
+    FF_CHECK_RET_VAL(internal_ff_dx12_pacing_add_frame_busy(&target->pacing, frame_seconds, busy_seconds), true);
 
     return apply_latency(target);
 }
@@ -428,10 +434,17 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
 
     // Pacing the CPU against the frame latency handle is the one place a wait on the GPU belongs.
     // It happens before this frame's work is submitted, so it never stalls in the middle of one.
+    //
+    // Time spent blocked here is not the app being slow, so it is measured and excluded from what
+    // the pacing ladder blames on the app.
+    const int64_t wait_start = perf_counter();
+
     if (target->latency_handle)
     {
         WaitForSingleObjectEx(target->latency_handle, INFINITE, FALSE);
     }
+
+    const double wait_seconds = (double)(perf_counter() - wait_start) / perf_frequency();
 
     ff_dx12_commands_resource_state(commands, ff_dx12_target_window_resource(target),
         D3D12_RESOURCE_STATE_PRESENT, 0, 1, 0, 1);
@@ -440,7 +453,12 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
     const HRESULT hr = IDXGISwapChain4_Present(target->swap_chain,
         ff_dx12_target_window_pacing_vsync(target) ? 1 : 0, 0);
 
-    const bool paced = update_pacing(target);
+    const double frame_seconds = target->pacing.last_tick
+        ? (double)(perf_counter() - target->pacing.last_tick) / perf_frequency()
+        : 0.0;
+
+    const double busy_seconds = (frame_seconds > wait_seconds) ? frame_seconds - wait_seconds : 0.0;
+    const bool paced = update_pacing(target, busy_seconds);
 
     return paced && ff_dx12_device_valid() &&
         hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;

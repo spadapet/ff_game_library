@@ -48,6 +48,12 @@ typedef struct ff_dx12_pacing
     size_t skip_frames;
 
     uint64_t total_late_frames;
+
+    // Frames that overran the refresh interval while the app was idle. These are deliberately not
+    // held against the stage, but they are worth reporting: a large count means the display or
+    // compositor is dropping vblanks, which looks like a renderer problem and is not one.
+    uint64_t total_idle_late_frames;
+
     uint64_t stage_changes;
 } ff_dx12_pacing;
 
@@ -60,7 +66,13 @@ void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing);
 // Feeds one measured frame interval and returns true when the stage changed, which means the
 // caller must reapply the swap chain latency. Exposed separately from the tick-based path so tests
 // can drive the state machine with synthetic frame times.
+//
+// busy_seconds is how much of the interval the app spent doing its own work rather than blocked
+// waiting for a vblank. The ladder only blames a long frame on the app when the app was actually
+// busy, since dropping vsync cannot speed up a frame loop that was already idle. The plain
+// add_frame form charges the whole interval as busy, which is the conservative reading.
 bool internal_ff_dx12_pacing_add_frame(ff_dx12_pacing* pacing, double frame_seconds);
+bool internal_ff_dx12_pacing_add_frame_busy(ff_dx12_pacing* pacing, double frame_seconds, double busy_seconds);
 
 uint32_t internal_ff_dx12_pacing_latency(const ff_dx12_pacing* pacing);
 bool internal_ff_dx12_pacing_vsync(const ff_dx12_pacing* pacing);

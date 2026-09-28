@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../base/span.h"
+#include "dx12_device_child.h"
 #include "dx12_texture.h"
 
 #define FF_PALETTE_SIZE 256
@@ -16,6 +17,12 @@ typedef struct ff_dx12_palette_data
     ff_dx12_texture texture;
     uint64_t* row_hashes;
     size_t row_count;
+
+    // The colors are kept so a device reset can re-upload them: ff_dx12_texture rebuilds the
+    // resource and its view but never restores pixels, leaving every palette black otherwise.
+    uint32_t* colors;
+
+    ff_dx12_device_child device_child;
     ff_arena arena;
 } ff_dx12_palette_data;
 
@@ -53,3 +60,7 @@ ff_dx12_palette_remap ff_dx12_palette_remap_identity(void);
 
 // Hashes the bytes and fills in the hash field, so callers never compute it themselves.
 ff_dx12_palette_remap ff_dx12_palette_remap_make(ff_span remap);
+
+// Device reset: re-uploads the saved colors into the rebuilt texture. There is no before_reset
+// because the texture and its resource handle their own teardown.
+bool internal_ff_dx12_palette_data_reset(ff_dx12_palette_data* data, ff_dx12_commands* commands);

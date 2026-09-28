@@ -18,6 +18,9 @@
     <ClCompile Include="base\dict_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="base\file_enum_tests.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="base\file_map_tests.cpp">
       <Filter>base</Filter>
     </ClCompile>

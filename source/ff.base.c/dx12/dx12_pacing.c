@@ -34,6 +34,11 @@ static const size_t s_demote_windows = 2;
 // pipeline drains to the new depth, so the frames spanning that transition measure neither stage.
 static const size_t s_skip_frames_after_change = FF_DX12_PACING_WINDOW_FRAMES / 2;
 
+// Fraction of the refresh interval the app's own CPU+submit work must reach before a late frame is
+// blamed on the app. Below this the frame loop is mostly idle, so the display simply did not hand
+// back a vblank when expected and nothing the ladder can do would help.
+static const double s_busy_blame_scale = 0.5;
+
 static void begin_window(ff_dx12_pacing* pacing)
 {
     pacing->window_frames = 0;
@@ -91,6 +96,11 @@ bool internal_ff_dx12_pacing_vsync(const ff_dx12_pacing* pacing)
 
 bool internal_ff_dx12_pacing_add_frame(ff_dx12_pacing* pacing, double frame_seconds)
 {
+    return internal_ff_dx12_pacing_add_frame_busy(pacing, frame_seconds, frame_seconds);
+}
+
+bool internal_ff_dx12_pacing_add_frame_busy(ff_dx12_pacing* pacing, double frame_seconds, double busy_seconds)
+{
     FF_ASSERT_RET_VAL(pacing, false);
     FF_CHECK_RET_VAL(frame_seconds > 0.0, false);
 
@@ -103,12 +113,27 @@ bool internal_ff_dx12_pacing_add_frame(ff_dx12_pacing* pacing, double frame_seco
         return false;
     }
 
-    const bool late = frame_seconds > pacing->refresh_seconds * s_late_frame_scale;
+    // A frame is only late in a way the ladder can act on when the app itself was busy enough to
+    // plausibly have missed the deadline. An idle loop that gets a 33ms interval lost a vblank to
+    // something outside the process, and giving up vsync for that trades away tear-free output
+    // without making the next vblank any more likely to arrive.
+    const bool over_budget = frame_seconds > pacing->refresh_seconds * s_late_frame_scale;
+    const bool app_was_busy = busy_seconds > pacing->refresh_seconds * s_busy_blame_scale;
+    const bool late = over_budget && app_was_busy;
+
+    if (over_budget)
+    {
+        pacing->total_late_frames++;
+
+        if (!app_was_busy)
+        {
+            pacing->total_idle_late_frames++;
+        }
+    }
 
     if (late)
     {
         pacing->window_late_frames++;
-        pacing->total_late_frames++;
     }
 
     pacing->window_frames++;

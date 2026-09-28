@@ -2761,8 +2761,8 @@ invalidate an index already taken from another.
 
 Notable details:
 - A hash of zero is remapped to one; zero is the "slot never uploaded" sentinel in the row cache.
-- `ps_constants_0` uploads whole. A root CBV carries no size, so a partial upload would let an
-  out-of-range texture index read past the allocation.
+- `ps_constants_0` uploads whole, matching the old code. It is 512 bytes uploaded at most once per
+  flush, so trimming it to the palette-texture count would save nothing measurable.
 - A palette sprite with no palette pushed is dropped rather than silently using row 0.
 - The index texture must be R8_UINT so the shader's `Load` returns the index unscaled.
 
@@ -2772,3 +2772,812 @@ remap interned at row 0 and dropping the index was a no-op; it now interns the i
 the remap row is non-zero and load-bearing. Every packed field in the index-layout test is distinct
 and non-zero for the same reason. A `palettes` mode was added to the sample app and verified by
 screenshot, which is how the RGBA byte-order bug in the test palette was caught.
+
+### Sample app: palettes mode covers every draw type
+
+Geometry reaches palettes differently than sprites do. There is no palette-lookup pixel shader for
+lines, triangles, rectangles or circles: `ps_color_out_palette` only *writes* an index. So geometry
+uses palettes by rendering into an R8_UINT target with `ff_color_palette`, and that target is then
+displayed as a palette sprite, which is where the index-to-color lookup happens.
+
+The `palettes` mode is therefore two passes. Pass 1 draws rectangles (filled and outlined), circles
+(outlined), a polyline spiral, a triangle fan, a palette sprite and an RGBA sprite into an offscreen
+R8_UINT scene target, all carrying palette indexes rather than colors. Pass 2 draws that scene
+target to the window as a palette sprite, alongside palette sprites that exercise row cycling, the
+remap, and a no-overlap swarm. Choosing a different palette row when displaying the scene recolors
+every geometry draw in it at once, which is the point of the indexed pipeline.
+
+Covered by draw type: lines, triangles, rectangles (fill + outline), circles, `draw_sprite` into a
+palette target (the text path, index from vertex color), and `draw_palette_sprite` both into a
+palette target and into an RGBA target.
+
+A `geometry_writes_its_palette_index_into_a_palette_target` readback test pins the geometry path:
+it draws a rectangle with a distinct index and reads the R8_UINT target back to confirm that exact
+index landed. Fault-injected with an off-by-one in `ff_color_to_shader`, which it catches.
+
+## Palette remap audit
+
+Compared against the old C++ `draw_util.cpp` / `palette_base.h`.
+
+### Bug found and fixed: the remap never reached geometry
+
+`store_color` passed `NULL` as `ff_color_to_shader`'s `index_remap`, so the CPU-side remap was
+never applied. The old device applied it at every color store
+(`to_shader_color(this->palette_remap())`).
+
+This mattered because the two remap paths are disjoint, not redundant:
+
+- **Texture-sourced indexes** (palette sprites) remap on the GPU, via
+  `palette_remap_.Load(...)` in `ps_sprite.hlsl`. This path worked.
+- **Vertex-color-sourced indexes** (lines, triangles, rectangles, circles drawn with
+  `ff_color_palette` into an R8_UINT target) have no GPU remap at all: `ps_color_out_palette`
+  writes the vertex color's index straight out. CPU-side was the only opportunity, so
+  `push_palette_remap` was silently a no-op for all geometry.
+
+Fixed by having `store_color` take the device and read
+`palette_remap_stack[count - 1].remap`. Confirmed by
+`a_pushed_remap_applies_to_geometry_drawn_into_a_palette_target`, which failed before the fix
+(4096/4096 pixels kept the un-remapped index).
+
+### Remapping still works as designed
+
+`one_palette_with_two_remaps_produces_two_colors_in_one_frame` covers the feature the old
+`palette_cycle` existed for: one palette's colors reused through several substitution tables in a
+single frame. Each remap interns to its own row of the remap texture, so switching remaps costs a
+packed index in the instance, not a flush. Fault-injected by forcing
+`palette_remap_index_no_flush` to return 0; the test failed as it should.
+
+### Deliberate divergence: palettes do not carry their own remap
+
+The old `palette_base` had a virtual `remap()`, and `push_palette` pushed it onto the remap stack
+unconditionally. `ff_dx12_palette` has no such field.
+
+This is kept as-is. Bundling a remap into the palette only existed so `palette_cycle` could ship
+data, row and remap as one object; the remap stack already expresses "one palette, many remaps"
+directly, and keeping them independent avoids a push that silently affects state the caller did not
+mention. If a resource type later wants to bundle them, it can push both.
+
+### Still open
+
+- `palette_row_hashes` / `palette_remap_row_hashes` are not cleared on device reset. The textures
+  are recreated but the hashes persist, so a row that needs re-uploading could be skipped. Not
+  reproduced yet; reset handling is not otherwise implemented in the draw device.
+
+## Device reset for the draw device and palettes
+
+The draw device and `ff_dx12_palette_data` were both missing from the `device_child` registry, so a
+device reset left palettes permanently black. Two independent causes, each confirmed by fault
+injection against `palettes_still_draw_after_a_device_reset`.
+
+### ff_dx12_palette_data lost its colors
+
+`ff_dx12_texture` rebuilds the resource and re-creates the SRV, but explicitly does not restore
+pixels: "this layer never keeps a CPU copy, so the owner has to re-upload them". Nobody owned that
+for a palette, so the palette texture came back cleared.
+
+Fixed the way `ff_dx12_buffer` already handles `gpu_static`: the colors are copied into the
+palette's own arena at init and re-uploaded in `internal_ff_dx12_palette_data_reset`.
+
+### The draw device's row-hash caches went stale
+
+`palette_row_hashes` / `palette_remap_row_hashes` exist to suppress redundant uploads: a row is
+uploaded only when its hash differs from what is cached for that slot. After a reset the shared
+palette and remap textures are blank but the caches still claim every row is correct, so nothing is
+ever re-uploaded. `internal_ff_dx12_draw_device_reset` clears both.
+
+Note these two fixes are not redundant. Clearing the caches alone still yields black, because the
+source palette has nothing left to copy from; restoring the palette alone still yields black,
+because the cache suppresses the copy. Injecting either one individually reproduces the failure.
+
+### before_reset abandons the in-flight batch
+
+Registering the draw device also gave it somewhere to drop a half-built batch. Its instance data
+lives in upload memory the allocators are about to release, and the commands it would flush into
+belong to the dying device, so `before_reset` clears the batch and returns the state machine to
+`valid`. Without this a reset during a frame would flush into freed memory.
+
+### Ordering
+
+`palette_data` and `draw_device` are appended after `draw_state` in the child-type enum, so they
+reset after the textures and views they depend on (forward order) and tear down before them
+(reverse order).
+
+## Frame pacing: blaming the app for vblanks it did not miss
+
+The sample app ran at a steady 60fps, then every ~16 seconds burst past 200fps, jumped forward,
+and settled again. The log named the culprit: `Frame pacing FAILS. stage 0 -> 1`. Stage 1 is
+vsync-off, so the burst *was* the ladder's own response, not the problem it was reacting to.
+
+The trigger was a run of ~11 frames at exactly two refresh intervals, recurring about every 960
+frames. That beat is what a 60.00 vs 59.94 Hz mismatch looks like: the compositor drops a vblank.
+
+Instrumenting the phases of `end_render` settled it. The wait on the latency handle was 33ms
+while everything before it took 0.5ms, so the renderer was about 3% utilized and nowhere near
+missing a deadline. No amount of dropping vsync can make a missing vblank arrive, so the ladder
+was demoting for a condition it had no power to fix, and the backoff doubling (4, 8, 16) meant it
+would keep rediscovering it forever.
+
+The ladder now only blames a long frame on the app when the app was actually busy for it.
+`end_render` measures the latency wait, subtracts it, and passes the remaining busy time to
+`internal_ff_dx12_pacing_add_frame_busy`; a frame counts as late only when it is over budget *and*
+busy time exceeded half a refresh. `add_frame` stays conservative for callers with no measurement
+and charges the whole interval as busy.
+
+Excused frames are not discarded. They accumulate in `total_idle_late_frames` and the test app
+reports them separately, so a genuinely dropped vblank stays visible instead of being silently
+swallowed by the thing that used to overreact to it.
+
+Verified with 75-second runs of all three modes: zero stage changes, a steady ~59fps, and every
+late frame attributed to the display rather than the renderer.
+
+## Old-vs-new trace: every per-draw input to its consumer
+
+The three things this port missed - device reset, palette remaps, sprite transparency - all had one
+shape: state that existed and looked plumbed but reached no consumer. Reading the new code and
+asking "is this correct?" cannot find them, because it always is, given what it can see. So this
+pass went the other way: enumerate the old per-draw state and shader inputs, then find the line in
+the new code that consumes each one. Anything terminating without a consumer is a miss.
+
+All 47 members of the old `draw_device_base` now have a counterpart or a recorded decline.
+
+Instance layouts match field for field: sprite (rect, uv_rect, color, pos_rot, indexes), line
+(start, end, before_start, after_end, both colors, both thicknesses, depth, matrix_index), and the
+triangle, rectangle and circle structs.
+
+Draw state all reaches a decision: `force_opaque` to `allow_transparent`, `force_no_overlap` to
+`nudge_depth`, `force_pre_multiplied_alpha` to `make_flags`, `ignore_rotation` to the view setup,
+and `sprite.transparent` to `sprite_alpha_type`.
+
+`nudge_depth` is identical to the original, including the rule that a no-overlap run shares one
+depth so it can merge into a single instanced call.
+
+Both constant buffer uploads match the original. An earlier revision of this document claimed two
+of them were improvements on it; that was wrong in both cases and is corrected here.
+
+`ps_constants_0` uploads the whole struct, and so did the old code - the old
+`update_ps_constants_buffer_0` gated on `textures_using_palette_count` being non-zero but then
+passed `sizeof(ps_constants_0)`. The count controlled *whether* to upload, not how much. This is
+parity, not a fix. Uploading whole is still the right call, but only because the struct is 512
+bytes and is uploaded at most once per flush, so trimming it would save nothing measurable.
+
+`vs_constants_1` uploads exactly the slots interned this flush, and so did the old code in
+release. The old size expression was `debug_build ? sizeof(struct) : sizeof(matrix) * count`,
+which reads at a glance like debug and release disagreeing about correctness, but the release
+branch is the real one and the new code does the same thing. The debug branch uploaded the full
+array so that the D3D12 debug layer, which validates a CBV read against the resource size rather
+than against the root CBV (which carries no size), would not report a false out-of-bounds read on
+padding it could not know was unused. That is a debug-layer accommodation, not a behavior
+difference. Uploading only the used slots is the efficient choice and both versions make it.
+
+The out-of-range concern does not apply to either buffer. A matrix index reaches the shader only
+through an instance field written by `matrix_index_no_flush`, which hands out indices below
+`matrix_count` or nothing at all, so no instance can reference a slot that was not uploaded.
+
+One dead input found: `view_scale_` in `data.hlsli` is declared and written but never read by any
+shader. It is dead in the old code too, so this is inherited rather than a port miss. Left in
+place because the constant buffer layout has to match the shader declaration.
+
+Two deliberate declines. `push_custom_context` was a `std::function` escape hatch that nothing in
+the engine used; games may want custom shaders later, but through a mechanism that fits this
+layer. The world matrix stack is flattened to `set_world_matrix`, since the stack mostly existed
+to hang a change signal off for cache invalidation, which the setter now does directly. Callers
+that need nesting save and restore the matrix on the callstack.
+
+## sprite_perf
+
+The stress mode the depth and batching work was aimed at. Sprites are stored as 16 bytes each
+(angle, radius, speed, cell) and their transforms are derived per frame rather than stored, so a
+million sprites still fit in a 16 MB working set. Placement is seeded deterministically and only
+the newly added tail is initialized when the count grows, so raising the count extends the scene
+instead of reshuffling it and two runs at the same count are comparable.
+
+SPACE doubles the count and BACK halves it, because finding the count where the frame rate breaks
+takes a handful of presses that way instead of hundreds. DEL clears, P switches between RGBA and
+palette sprites, N toggles no-overlap, T toggles a translucent tint, S pauses the motion without
+pausing the loop. A third command line argument sets the starting count for non-interactive runs.
+
+The status line reports build time per sprite, measured around the draw loop and `end_draw`
+together - `end_draw` is where the batch becomes draw calls, so timing only the loop would credit
+the batching for work it merely deferred.
+
+Measured in Release: about 31-45 ns per sprite, flat from 5,000 to 1,000,000, so there is no
+hidden quadratic in the batching. 5,000 sprites hold a locked 60fps at 0.025 cores. At 100,000 the
+frame is GPU-bound on fill rate at 30fps while the CPU sits at 0.15 cores.
+
+That 100,000 case also validates the pacing fix from the other direction. The earlier fix taught
+the ladder to excuse a late frame when the app was idle; here the app genuinely is busy, and in
+the Debug build the ladder correctly demotes to stage 1. Idle stalls are excused, real overruns
+are still acted on.
+
+## Milestone 8 design: resources
+
+This is the layer that turns a name into a loaded thing, and it has to sit under textures and
+sprites before either of those can be written. The goal is one API - ask for a resource by name -
+that works whether the bytes came from a JSON file next to the exe or from a prebuilt pack where
+all the parsing already happened, and that can swap a resource out underneath a running game when
+the file on disk changes.
+
+The old system is not being reimplemented. What follows keeps the two ideas from it that earned
+their keep and drops the machinery around them.
+
+### What the old design got right, and what to leave behind
+
+Two ideas are worth keeping.
+
+The first is the **source/cache split**. Every resource type implemented both `load_from_source`
+(parse a PNG, build mips) and `load_from_cache` (map an already-converted blob). The same declared
+resource can therefore come from either a readable authoring format or a fast prebuilt one, and
+nothing above the factory knows which happened. This is exactly what was asked for and it is kept
+almost unchanged.
+
+The second is the **`new_resource` redirect** for hot reload. When a file changed, the old code did
+not mutate the live resource; it built a whole new one and left a forwarding pointer on the old.
+Anything still holding the old handle could follow the pointer and pick up the new value at a
+moment of its choosing. That is the right shape, because it never mutates an object while a frame
+may be mid-draw over it. It is kept, as an explicit generation counter rather than a chain of
+`shared_ptr` forwards.
+
+What is not being ported: the coroutine loader (`co_task`), the `shared_ptr`/`weak_ptr` graph, the
+per-resource `win_event` and blocked-count deadlock tracking, `resource_objects` as itself a
+savable resource, and the `resource_object_factory` virtual hierarchy. That machinery exists to
+make *arbitrary* dependency graphs load concurrently while a caller blocks on any node. It is a
+lot of moving parts for a problem a game mostly does not have: a level's resources are known up
+front and can be loaded as a batch.
+
+### The one discovery that shapes everything
+
+`ff_idict` already does the hard part. `ff_idict_load` maps saved bytes **in place** - no parsing,
+no allocation, and the comment at `idict.c:710` notes a mapped file stays paged out until a value
+is actually read. It stores binary data, nested dicts, arrays, strings, rects and points, and
+`ff_idict_save` writes it back with a hash.
+
+So the pack file does not need a new format. **A resource pack is an `ff_idict` of name to
+resource-dict, memory-mapped and used in place.** Booting a 200 MB pack costs one `MapViewOfFile`
+and a header validation. Nothing is read until a resource is asked for, and a texture's pixels are
+a `ff_ivalue_as_data` pointing straight into the mapping.
+
+That also means source and cache converge on one shape. JSON parses into an `ff_dict`; a pack
+gives an `ff_idict`. Both are "a dict describing one resource", so a loader reads its parameters
+the same way from either, and the only real difference is which key it finds: a `file` to import,
+or a `data` blob that was already converted.
+
+### The design
+
+Four pieces.
+
+**`ff_resource_pack`** - a set of named resource dicts from one source. Init it from a mapped pack
+file (`ff_idict_load`, zero copy) or from a JSON manifest (`ff_json_parse` into an arena-backed
+`ff_dict`). Either way it answers "give me the dict named X" and reports whether that dict is
+source-form or cache-form.
+
+**`ff_resources`** - the search path. An ordered list of packs, searched front to back, so a loose
+JSON manifest can shadow the shipped pack for one resource without rebuilding anything. This is
+what a game actually holds, and the one type that needs a name-to-resource hash table.
+
+**`ff_resource`** - a loaded object plus its identity: name, type tag, and the arena its contents
+live in. Handed out as `ff_resource*`, stable for the lifetime of the load. Not reference counted;
+ownership sits with `ff_resources`.
+
+**`ff_resource_loader`** - a type tag plus two function pointers, `load_from_source` and
+`load_from_cache`, registered in a table. This is the tagged-dispatch equivalent of the old factory
+hierarchy, following `ff_stream`'s tagged union rather than a vtable. A loader is free to implement
+only one of the two: a shader that can only be compiled offline leaves `load_from_source` null in
+shipping builds and the pack is then mandatory for it.
+
+Types get registered rather than hard-coded so `ff.base.c` does not gain a dependency on every
+resource type. The DX12 texture loader registers itself; the resource core knows nothing about
+DX12.
+
+### Async, without coroutines
+
+The old loader was async per resource, with each node able to block on its dependencies. The
+replacement is async per *batch*: `ff_resources_load_all` walks the names, pushes each onto the
+existing `ff_task` pool, and waits once for the group. `ff_task` already exists and already has a
+flush.
+
+This is a deliberate simplification and it is worth being honest that it gives something up: a
+single resource requested mid-frame that is not yet loaded will block the caller. The bet is that
+games load per level, not per frame, and a level's resource list is known before it starts. If
+streaming ever becomes real, per-resource async can be added then, against a real use case rather
+than a hypothetical one. The old design's deadlock-detection fields (`blocked_count`,
+`parent_loading_infos`) are evidence of what the general version costs.
+
+### Hot reload
+
+Hot reload is where the device-reset lesson from the renderer applies directly: **never mutate a
+live object while the GPU might be reading it.**
+
+A debug-only watcher (`ReadDirectoryChangesW`) notices a file change and marks the affected
+resource dirty. Nothing loads on the watcher thread. At a frame boundary the app drains the dirty
+set - the same "between frames" point `ff_dx12_flush_deferred` already establishes - reloads into a
+*new* `ff_resource` with a fresh arena, and leaves the old one holding a pointer to the new plus a
+bumped generation. The old object's memory is released one full frame later, through the same
+keep-alive discipline GPU resources use.
+
+Holders notice via a cheap generation check rather than a signal, so a sprite holding a texture
+does not need a subscription. The watcher and the whole dirty set compile out entirely in
+shipping builds.
+
+### How a texture actually loads
+
+This is the case that motivated the milestone, and it is worth walking end to end.
+
+*From source:* the dict has `file: "bricks.png"`. The loader maps the file, calls the existing
+`ff_png_decode` into the resource's arena, optionally premultiplies alpha, and uploads. The decoded
+pixels are kept, because a device reset needs to re-upload them without re-reading the disk.
+
+*From cache:* the dict has a `data` blob. `ff_ivalue_as_data` hands back a pointer into the mapped
+pack and the loader uploads straight from it, with no decode and no copy. The pixel memory is the
+memory-mapped file, so a texture that is never reset never pages its pixels in beyond the upload.
+
+Both paths end at the same place: an `ff_dx12_texture` plus a retained CPU copy. Device reset then
+re-uploads from that copy - which is the missing piece `test_blit.c` currently works around by
+re-uploading every single frame.
+
+Premultiplied alpha, format conversion and mip generation stay on the *source* path only, so the
+cache path is a straight upload. That is what makes the pack worth building, and it is why the
+conversion tool is a separate offline concern rather than part of this milestone.
+
+### What this milestone does not include
+
+The pack *builder* is not part of it. Reading a pack and reading loose JSON both ship first, since
+that is enough to run a game from source assets and enough to test both code paths (a test can
+build a pack in memory with `ff_idict_save`, exactly as the PNG tests build PNGs with libpng's
+writer). The offline tool that converts a source tree into a pack is worth its own milestone, and
+DDS conversion without DirectXTex needs its own decision.
+
+Also out: `sprite_list`, `sprite_font`, `animation`, and the `random_sprite`/`palette_cycle` types.
+Those are content layers that sit on this one.
+
+### Open questions
+
+1. **Is per-batch async enough**, or is there a streaming case that needs per-resource waits?
+2. **Should the cache path store DDS or a private format?** DDS is inspectable by external tools;
+   a private layout is a struct plus a blob and avoids writing a DDS parser. Leaning private, given
+   DirectXTex is off the table.
+3. **Does a resource need to outlive its `ff_resources`?** Not reference counting is simpler and
+   matches "a level owns its assets"; if a sprite can outlive the pack it came from, that changes.
+
+## Milestone 8 design, part 2: preprocessing and packing
+
+The refinement from the first design pass is that resources are looked up by **file name** -
+`"foo.png"`, `"music/title.wav"`, `"ui.sprites"` - rather than by a name declared in a manifest. The
+name is a path relative to the asset root, and it means the same thing whether the bytes come from
+disk or from the pack. That removes the manifest indirection layer the old design had and makes the
+"either source" requirement fall out naturally.
+
+### The importer table
+
+Preprocessing is a set of **importers** keyed by file extension. An importer reads one source file
+and produces one `ff_dict` in parsed form - the same dict shape the runtime loader consumes from a
+pack.
+
+| Extension | Produces | Parsed form |
+| --- | --- | --- |
+| `.png` | texture | raw pixels blob, width, height, format, mip offsets |
+| `.wav` | audio | decoded PCM blob, sample rate, channels, bit depth |
+| `.sprites` | sprite sheet | the JSON inside, resolved: texture reference plus a sprite array of sub-rects, handles, and the transparency flag |
+| `.json` | data | parsed dict, stored as-is |
+
+Two things fall out of the extension being the key. A `.sprites` file is JSON *describing* sprites,
+so its importer both parses that JSON and does the sub-rect transparency scan - which is where the
+`sprite-transparency-flag` detection work finally lands, offline, where a full pixel scan costs
+nothing at runtime. And an importer declares which *other* files it read (a `.sprites` file names a
+`.png`), which is what makes dependency tracking possible.
+
+The importer table is registered, like the loader table, so the resource core stays free of
+dependencies on PNG, audio, or DX12.
+
+### Two names per resource, not one
+
+Each entry in the pack is keyed by source path, and importers may produce more than one resource
+from one file. A `.sprites` file yields the sheet plus one entry per named sprite; the convention
+is `ui.sprites` for the sheet and `ui.sprites:button_ok` for a sprite inside it. The colon cannot
+appear in a path, so the two namespaces cannot collide.
+
+### Building the pack
+
+The builder is a standalone exe (`ff.resource.build`), following the old `ff.resource.build.exe`,
+run from MSBuild. The old `build/cpp.targets` already has the shape for this with its `ResJson`
+item type, `CustomBuild` with `MinimalRebuildFromTracking`, and `AdditionalInputs` pointing at
+`%(RootDir)%(Directory)**\*` so any file under the asset directory retriggers the build. That
+tracking-based incremental rebuild is worth keeping; it is what makes the "rebuild when any file
+changes" part work without inventing a watcher for the build.
+
+The builder walks the asset root, runs the importer for each recognized extension, and writes one
+`ff_idict` via `ff_idict_save`. Alongside each resource it records a **manifest** entry:
+
+- the source path, relative to the asset root
+- its last write time and size
+- the paths of every file the importer read
+
+The dependency list is why `.sprites` matters: editing the `.png` a sheet refers to must
+invalidate the sheet, not just the texture.
+
+### Debug builds preferring newer files on disk
+
+This is the mechanism asked for, and it is per-resource rather than per-pack. The old code had it
+at whole-pack granularity (`load_cached_resources` rejected the entire cache if any input file was
+newer), which means one edited PNG re-imports everything.
+
+At startup a debug build reads only the manifest - cheap, since `ff_idict` maps in place and
+nothing else is paged in - and stats each source file. A resource is **stale** if its source file's
+write time or size differs from the manifest, or if any of its recorded dependencies differ. Stale
+resources are marked; everything else loads from the pack as normal.
+
+A stale resource loads by running its importer at runtime, in-process, against the file on disk.
+The importer produces the same dict the pack would have held, so the loader below it cannot tell
+the difference. This is the payoff of importers being a library the builder merely drives: the
+debug path is not a second implementation, it is the same code.
+
+Write time *and* size, rather than time alone, because copying files around preserves timestamps
+often enough that size catches what time misses. A content hash would be stricter but requires
+reading every file at startup, which defeats the purpose.
+
+In shipping builds the manifest check compiles out entirely and the pack is trusted.
+
+### The file-locking constraint
+
+The old code carries a comment worth preserving: memory-mapping the pack **locks it on disk**, so
+the build cannot overwrite it while the game holds it open. This directly conflicts with wanting to
+rebuild the pack while a debug session is running.
+
+The resolution is that debug builds do not map the pack; they read it into an arena. Shipping
+builds map it, since nothing rebuilds underneath them. That costs debug startup time and saves the
+ability to rebuild live, which is the right trade in that configuration. The zero-copy property
+that made `ff_idict` attractive is preserved exactly where it matters - shipping - and
+`ff_idict_load` works identically either way, since it only needs bytes.
+
+### How this composes with hot reload
+
+The staleness check is a startup-time version of the same question the watcher answers at runtime,
+and they should share code: both produce "this resource is stale", and both resolve it by running
+the importer in-process and swapping in a new `ff_resource` with a bumped generation. The watcher
+is the incremental case, the startup scan the batch case.
+
+### Order of work
+
+1. Filesystem support: `ff.base.c` currently has no directory enumeration and no file timestamps.
+   `ff_file_map`, `ff_stream` and `ff_file_module_dir` exist, but `FindFirstFileW` walking and
+   `GetFileAttributesExW` are both needed and neither is written.
+2. The importer table plus the PNG importer, which is the one with an existing decoder.
+3. The builder exe and its MSBuild wiring.
+4. The debug staleness check and runtime import.
+5. The `.sprites` importer, which needs sprite types to exist first.
+
+### Open questions
+
+1. ~~**Is the asset root a single directory**, or a search path of several?~~ Answered in part 3:
+   several, each under a module namespace.
+2. **Should the builder be incremental internally**, caching per-file imports, or is MSBuild-level
+   tracking plus a fast full rebuild enough? Full rebuild is far simpler and probably fine until
+   the asset count is large.
+3. **Do audio resources want decoding at all**, or should a `.wav` be stored compressed and decoded
+   on demand? Music wants streaming, sound effects want decoded and resident.
+
+## Milestone 8 design, part 3: module namespaces and the search path
+
+The refinement here is that there is no single asset root. Several independent modules - `ff.base.c`
+itself, the game, a third-party library - each register their own resources at startup, and each may
+supply them as a directory of loose files during development or as a pack file in shipping. Names
+are qualified by module: `base:foo.png` and `game:foo.png` are different resources that can coexist.
+
+### Why namespaces rather than an ordered search path
+
+The first design pass proposed an ordered list searched front to back, with earlier entries
+shadowing later ones. That is the conventional answer and it is the wrong one here.
+
+The old code is the evidence. `resource_objects::try_add_resource` (`resource_objects.cpp:266`)
+merged every registered source into one flat map and, on a collision, did this:
+
+```cpp
+ff::log::write(ff::log::type::resource_load, "Duplicate resource: ", name);
+return false;
+```
+
+First registration wins, later ones are dropped with a log line nobody reads. Two modules that each
+ship a `button.png` produce a silent, **registration-order-dependent** bug: the game gets the
+engine's button, or its own, depending on link order and init order. The failure is invisible until
+someone notices the wrong art.
+
+A namespace makes that case unrepresentable rather than merely detected. `base:button.png` and
+`game:button.png` are simply different names, so there is nothing to resolve and no order to depend
+on. This is the same reasoning that made `ui.sprites:button_ok` work in part 2, applied one level
+up, and it costs a hash lookup on a shorter string rather than a walk down a list of packs.
+
+It also gives a better error. An unqualified miss can say *"no module named `game`"* or *"`game` has
+no `foo.png`"*, where a search path can only say "not found anywhere", which is the least useful
+moment to have lost track of where you looked.
+
+### The shape
+
+**`ff_resource_module`** replaces the per-pack search entry. One module is a namespace plus an
+ordered list of *sources*, where a source is either a directory on disk or a mapped pack. The
+ordering is kept, but it is now **within** a module and means something specific: loose files in a
+registered directory shadow the same name in that module's pack, which is exactly the hot-reload
+story from part 2 - drop a file next to the exe and it wins over the shipped pack, but only for the
+module that registered that directory.
+
+**`ff_resources`** becomes a small map of namespace to module. Registration is
+`ff_resources_add_module(resources, FF_SVL("game"), ...)`, and a duplicate namespace is a hard
+failure at startup rather than a log line, because unlike a duplicate resource it is unambiguously a
+programming error.
+
+Lookup splits the name at the first `:` that precedes any `/`. That qualification is worth stating
+precisely, because part 2 already spends `:` on sub-resources: `ui.sprites:button_ok`. A full name
+is therefore `module:path:sub`, and the parse is "first colon splits the module, last colon splits
+the sub-resource". Since a module namespace is constrained to `[A-Za-z0-9_]` - no colons, no slashes
+- and a path may contain neither colons nor a sub-resource name containing one, the three-part split
+is unambiguous. `base:ui.sprites:button_ok` reads correctly.
+
+### What an unqualified name means
+
+This is the one place worth being careful, because it is where a convenience feature can quietly
+reintroduce the old bug.
+
+An unqualified `foo.png` **does not search all modules**. Searching would be exactly the
+order-dependent behavior the namespaces exist to eliminate. Instead each lookup context carries a
+default module, and an unqualified name resolves against that one only. A game asking for `foo.png`
+gets `game:foo.png` and nothing else; if it wants the engine's, it says `base:foo.png` and its
+intent is in the source code rather than in link order.
+
+The default is set per `ff_resources` handle rather than globally, so a library's own resource
+lookups resolve to the library's module without the library having to spell its own name at every
+call site.
+
+### Consequences for the pack builder
+
+Each module builds its own pack, independently, from its own asset root. That falls out of the
+namespace being the unit of registration and it is a real simplification: the builder does not need
+to know about other modules, there is no merge step, and a library can ship a prebuilt pack without
+the game rebuilding it.
+
+The manifest and staleness check from part 2 are per pack and therefore per module already, so
+nothing there changes. The `ff_file_enumerate` work just finished is what walks one module's root.
+
+Dependencies across modules are the one thing this opens up - a game `.sprites` file referring to
+`base:atlas.png`. The importer records dependency paths already; those paths now need to be
+qualified names, and a cross-module dependency means the builder cannot fully validate it in
+isolation. The resolution is that the builder records the qualified name without resolving it and
+the runtime resolves it on load, which is the only option that keeps module builds independent.
+
+### Open questions
+
+1. ~~**Can a module be registered after startup**?~~ Answered in part 4: not globally; locally yes.
+2. **Should a module be allowed to reference another module's resources at all**, or should
+   cross-module references be limited to explicitly exported names? Unrestricted is simpler; it also
+   means any module can depend on any other module's internals.
+
+## Milestone 8 design, part 4: registration lifetime and source-tree asset roots
+
+Two decisions, and they turn out to be related: both are about keeping the shipping configuration
+honest while making development convenient.
+
+### Global registration closes after startup
+
+The global set of modules is fixed once initialization finishes. Each module registers during its
+own init - `ff.base.c` registers `base`, the game exe registers `game` - and after that the
+namespace map is immutable.
+
+Immutability is worth more than the flexibility it gives up. An immutable map needs no lock on the
+lookup path, which matters because resource lookup happens from the game thread and potentially from
+task threads at load time. It also makes the failure mode good: a missing module is a startup error
+with every module present, rather than a mystery an hour into play when something registers late and
+shadows a name.
+
+What stays possible is a **local** `ff_resources`. Tests, the resource compiler, and a resource
+viewer all want a private set of modules with no relation to the global one, and they get it by
+initializing their own `ff_resources` instead of touching the global. That is the same type, just
+not the global instance, so nothing extra is built for it. It also means the unit tests never mutate
+process-wide state, which is what makes them safe to run in any order.
+
+So the API splits: `ff_resources_init` / `ff_resources_add_module` are general and usable at any
+time on any instance, while `ff_resources_global()` returns the one that seals after init. Asserting
+that seal is cheap - a bool checked in `add_module` - and turns "registered a module too late" from
+a subtle bug into an immediate failure.
+
+### Asset directories in the source tree, not the output folder
+
+This is possible, and it is better than copying.
+
+The mechanism is that the compiler bakes the absolute source path into the binary as a define. The
+build already computes `$(FFRoot)` in `build/base.props:18` and every project inherits
+`build/cpp.targets`, so a project sets its asset directory and the targets file turns it into a
+preprocessor definition:
+
+```xml
+<PreprocessorDefinitions Condition=" '$(Configuration)' != 'Release' And '$(FFAssetDir)' != '' ">
+  FF_ASSET_DIR="$(FFAssetDir.Replace('\','/'))";%(PreprocessorDefinitions)
+</PreprocessorDefinitions>
+```
+
+Forward slashes because the value passes through both MSBuild and a C string literal, where a
+trailing backslash would escape the closing quote. Windows accepts forward slashes in paths
+throughout, and `ff_file_enumerate` already normalizes entry names to `/` separators, so the two
+conventions agree.
+
+Verified this works as described: compiling with `/DFF_ASSET_DIR="\"C:/dev/x/assets/\""` and
+printing the macro yields `[C:/dev/x/assets/]`. The path is a compile-time constant, so there is no
+lookup cost and nothing to deploy.
+
+`ff.base.c` therefore points at `source/ff.base.c/assets/` in its own source tree, the game points
+at its own, and neither copies a single file into `bin`. Editing a PNG in the source tree is
+immediately visible to a running debug build, which is the hot-reload story from part 2 working with
+no build step at all - strictly better than copy-on-build, where the copy is what you would have to
+wait for.
+
+### Why this is safe to do only in development
+
+The obvious objection is that a baked absolute path is meaningless on any other machine, and that is
+exactly right - which is why the define is conditioned on `'$(Configuration)' != 'Release'`,
+matching how `PROFILE` is already set at `cpp.targets:80`.
+
+The two configurations genuinely differ:
+
+- **Debug/profile**: the module's source is its asset *directory*, read as loose files. No pack is
+  required, and the pack is consulted only if present. An absolute path into the source tree is
+  correct because the binary only ever runs on the machine that built it.
+- **Release**: the module's source is its *pack*, found next to the executable or embedded as a
+  Win32 resource via the existing `ff_map_resource`. `FF_ASSET_DIR` is not defined at all, so a
+  stray reference to it fails to compile rather than silently shipping a dead path.
+
+Making it a compile error rather than a runtime fallback is the point. The alternative - define it
+everywhere and fall back when the directory is missing - means a shipping build that quietly tries a
+developer's path first, and a bug where a machine that happens to have that path works differently
+from one that does not.
+
+### What this means for the source ordering
+
+Part 3 gave each module an ordered list of sources. That ordering now has a concrete default rather
+than being a general mechanism looking for a use:
+
+1. the source-tree asset directory, when `FF_ASSET_DIR` is defined (development only)
+2. a pack file next to the executable, if present
+3. an embedded pack resource, if the module has one
+
+Development therefore prefers loose files and falls back to a pack; shipping has only the pack.
+The same lookup code runs either way, and the only difference is how many sources the module was
+initialized with.
+
+### Open questions
+
+1. **Does the game exe need its own asset directory at all for the test app**, or is a single
+   `base` module enough until a real game project exists? The two-module case should be exercised by
+   tests regardless, since it is the interesting one.
+2. **Should `ff.base.c` ship any resources at all**? A default font and a white 1x1 texture are the
+   usual candidates, and they are the reason the `base` module exists rather than the game owning
+   everything.
+
+## Sprite throughput: where 60fps actually breaks
+
+Measured in Release on this machine, 1920x1080, vsync on, latency 1. Each number is a 12-second
+run; the headline is **median frame time**, not the final one-second fps window, which turned out
+to be too noisy to rank counts by (a 64k run reported 30fps while a 72k run reported 60, with both
+showing a 16.7 ms median).
+
+### 32x32 sprites
+
+| Sprites | Median frame | p99 | Long frames | CPU cores |
+| --- | --- | --- | --- | --- |
+| 60,000 | 16.66 ms | 17.27 | 66 | 0.097 |
+| 70,000 | 16.72 ms | 33.71 | 124 | 0.111 |
+| 80,000 | 16.76 ms | 33.76 | 142 | 0.140 |
+| 90,000 | 16.67 ms | 33.54 | 70 | 0.154 |
+| 100,000 | 32.99 ms | 34.02 | 260 | 0.123 |
+
+**60,000 is the last count that holds a solid 60fps.** At 70-90k the median is still 16.7 ms but
+p99 has doubled to 33.7: most frames make it and a growing minority miss and wait a full extra
+vblank. By 100k the median itself is 33 ms and it is a locked 30fps.
+
+The failure mode is worth noting - it is not a gradual slope. Because vsync quantizes, a frame that
+misses by a microsecond costs a whole 16.7 ms, so the transition from "fine" to "half rate" spans
+about 40k sprites and shows up as p99 splitting away from the median long before the median moves.
+p99 is the number to watch; by the time the median moves it is already too late.
+
+### It is fill rate, not sprite count
+
+CPU never exceeds 0.16 cores anywhere in that table, which already argues the CPU is not the
+limit. Confirmed directly by shrinking the sprites from 32x32 to 8x8 - 16x less fill, identical
+everything else:
+
+| Sprites (8x8) | Median frame | CPU cores |
+| --- | --- | --- |
+| 100,000 | 16.67 ms | 0.198 |
+| 200,000 | 16.67 ms | 0.339 |
+| 400,000 | 16.55 ms | 0.669 |
+| 600,000 | 16.62 ms | 0.830 |
+| 800,000 | 21.66 ms | 0.926 |
+| 1,000,000 | 28.16 ms | 0.934 |
+
+400,000 small sprites hold 60fps where 100,000 large ones could not, so the limit tracks pixels
+rather than instances. The 60k figure is about 61 Mpixel per frame, or 3.7 Gpixel/s sustained -
+a plausible number for this GPU and one that will differ on another.
+
+The small-sprite run also locates the *other* ceiling: throughput flattens around 600k sprites at
+0.83 cores, and past that the CPU is saturated and the frame time climbs. So there are two
+independent limits - roughly **60k sprites when fill-bound at 32x32**, and roughly **600k sprites
+when CPU-bound at any size**.
+
+### Per-sprite cost
+
+Batch build time is 26-48 ns/sprite and does not trend upward with count (26.0 at 60k, 33.4 at
+100k, 26.7 at 400k, 28.6 at 1M). Flat cost per sprite across a 16x range means no hidden quadratic
+in the batching, interning, or bucket handling. The variance between runs at the same count is
+larger than the variance across counts.
+
+### What this means
+
+For the game this library targets, 60,000 sprites of 32x32 at a locked 60fps is far more headroom
+than a Robotron-class game needs; those peak in the low thousands. The practical conclusion is that
+**sprite throughput is not the thing to optimize next**, and that when it eventually matters the
+lever is overdraw and sprite size, not batch efficiency or draw call count.
+
+Two caveats on these numbers. Every sprite here samples a 64x64 atlas with no overlap, so cache
+behavior is ideal; real scenes with many distinct textures will flush the texture table more often
+and land lower. And this is one GPU - the CPU-side figures should carry over, the fill-rate figure
+should not.
+
+## Would bindless push more sprites?
+
+Short answer: not for the limit measured above, but yes for a limit not yet hit.
+
+### What bindless changes
+
+Bindless replaces descriptor tables with `ResourceDescriptorHeap[]` indexing in the shader. The
+groundwork is already in (`ff_dx12_descriptor_range_heap_index`, `ff_dx12_supports_bindless`), so
+adopting it is a real option rather than a rewrite.
+
+What it removes is **CPU-side binding cost**: copying descriptors into a per-flush table, and the
+flush itself when a table fills. What it does not touch is the work of shading a pixel.
+
+### Why it will not raise the 60k figure
+
+The 60k ceiling measured above is fill rate. CPU sat at 0.097-0.16 cores through that entire sweep,
+and the decisive evidence is that shrinking sprites 16x raised the ceiling to 400k with no code
+change at all. The GPU is spending its time writing pixels, and bindless does not make a pixel
+cheaper to write.
+
+Spending CPU time to buy more CPU headroom does not help when 84% of a core is already idle. The
+one number bindless would improve - draw submission - is not in the critical path here.
+
+This is worth being blunt about because the plan's own note at "Bindless groundwork" says bindless
+is "for better AMD performance", which is a reasonable general belief but does not survive contact
+with these particular measurements.
+
+### The hardware detail that matters
+
+This machine is an **AMD Radeon 860M**, an integrated GPU sharing system memory. That is exactly
+the profile where fill rate binds early: no dedicated VRAM bandwidth, and a 1080p frame at 60k
+sprites of 32x32 is ~61 Mpixel/frame of mostly-overdraw blending. A discrete card would move the
+fill ceiling up substantially and the CPU ceiling hardly at all - which would make bindless
+*relatively* more interesting on a discrete card, but only after the fill limit stopped being the
+binding one.
+
+### Where bindless would genuinely win
+
+There is a real limit it addresses, and the perf test cannot see it: `FF_DX12_MAX_TEXTURES` is 32.
+When a batch needs a 33rd distinct texture, `texture_index_no_flush` returns invalid and the device
+flushes mid-batch - ending the instanced draw, rebinding, and starting over.
+
+The stress test draws every sprite from one 64x64 atlas, so it never flushes once. A real scene
+with hundreds of distinct textures would flush constantly, and *that* cost scales with texture
+variety rather than pixel count. Bindless removes the cap entirely: with a persistent heap, a
+sprite's texture is an index in its instance data and no table ever fills.
+
+So the honest framing is that bindless is not a throughput optimization for this renderer, it is a
+**scene-complexity optimization**. It converts "60k sprites sharing <=32 textures" into "60k sprites
+sharing any number of textures", which is a different and more useful kind of headroom.
+
+### Recommendation
+
+Not yet, and not for speed. Two reasons to wait:
+
+1. The fill limit binds first on this hardware, so bindless would measure as no change.
+2. There is no benchmark today that can show a win, because nothing exceeds 32 textures. Building
+   bindless before the test that proves it works means guessing.
+
+The right order is: get the sprite resource pipeline in (M8), which is what makes many distinct
+textures possible at all; extend `sprite_perf` with a texture-variety axis that can force table
+flushes; confirm the flush cost is real and measurable; then implement bindless against that
+benchmark. That also follows the rule that has caught the real bugs in this port - measure the old
+behavior, then prove the new code changes the number.

@@ -47,6 +47,10 @@ typedef struct ff_test_mode
     void (*destroy)(ff_test_app* app);
     bool (*render)(ff_test_app* app, ff_dx12_commands* commands);
     void (*status)(ff_test_app* app, char* text, size_t count);
+
+    // A raw WM_KEYDOWN virtual key code, since there is no input layer yet. Modes that want keys
+    // handle them here rather than the app knowing what any key means.
+    void (*key_down)(ff_test_app* app, int virtual_key);
 } ff_test_mode;
 
 struct ff_test_app
@@ -78,6 +82,10 @@ extern const ff_test_mode ff_test_mode_shapes;
 extern const ff_test_mode ff_test_mode_sprites;
 extern const ff_test_mode ff_test_mode_palettes;
 extern const ff_test_mode ff_test_mode_sprite_perf;
+
+// sprite_perf takes an optional starting count so a benchmark run can pin the scene size instead
+// of reaching it with the keyboard.
+void ff_test_sprite_perf_set_start_count(size_t count);
 
 // Shared by the modes that cannot run until the draw device exists, so each one reports the same
 // way instead of failing somewhere deeper with a less obvious message.

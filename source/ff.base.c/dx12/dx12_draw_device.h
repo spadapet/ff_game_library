@@ -147,6 +147,15 @@ typedef struct ff_dx12_sprite
     ff_dx12_texture_view* view;
     ff_rect_float world;
     ff_rect_float texture_uv;
+
+    // Whether this sprite's own pixels include partial alpha, which forces it into the transparent
+    // bucket even under an opaque tint. This is a property of the sub-rectangle, not of the
+    // texture: two sprites on one sheet can differ. Fully transparent pixels don't count, since the
+    // shader discards those without needing to blend.
+    //
+    // The old sprite_type enum also carried a palette bit, which has no counterpart here because
+    // ff_dx12_draw_device_draw_palette_sprite is a separate entry point.
+    bool transparent;
 } ff_dx12_sprite;
 
 // Position, scale, rotation and tint applied to a sprite at draw time. None of this becomes a
@@ -279,7 +288,19 @@ typedef struct ff_dx12_draw_device
 
     bool sampler_stack[FF_DX12_MAX_SAMPLER_STACK];
     size_t sampler_stack_count;
+
+    ff_dx12_device_child device_child;
 } ff_dx12_draw_device;
+
+// Device reset. The shared palette and remap textures are rebuilt by their own reset, but their
+// pixels are not, so the row-hash caches that suppress redundant uploads have to be cleared or
+// every interned row would be considered already-correct and never re-uploaded.
+//
+// before_reset also abandons any half-built batch. Its instance data lives in upload memory that
+// the allocators are about to release, and the commands it would have been flushed into are gone
+// with the old device.
+void internal_ff_dx12_draw_device_before_reset(ff_dx12_draw_device* device);
+bool internal_ff_dx12_draw_device_reset(ff_dx12_draw_device* device);
 
 bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* draw_state);
 void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device);

@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "base/arena.h"
+#include "base/array.h"
 #include "base/assert.h"
 #include "base/string.h"
+#include "base/string_builder.h"
 #include "data/file.h"
 
 static HANDLE open_file_read(ff_string_view path)
@@ -216,4 +218,178 @@ ff_string_view ff_file_module_dir(HINSTANCE module, ff_arena* arena)
     dir.data = module_path.data;
     dir.count = count;
     return dir;
+}
+
+static uint64_t file_time_to_uint64(FILETIME time)
+{
+    ULARGE_INTEGER value;
+    value.LowPart = time.dwLowDateTime;
+    value.HighPart = time.dwHighDateTime;
+    return value.QuadPart;
+}
+
+static uint64_t file_size_to_uint64(DWORD high, DWORD low)
+{
+    ULARGE_INTEGER value;
+    value.LowPart = low;
+    value.HighPart = high;
+    return value.QuadPart;
+}
+
+bool ff_file_stat(ff_string_view path, ff_file_info* info)
+{
+    FF_ASSERT_RET_VAL(info, false);
+    *info = (ff_file_info){ 0 };
+
+    ff_arena_declare_stack(temp_arena, 1024 * sizeof(wchar_t));
+    const ff_wstring_view wide_path = ff_utf8_to_wide(path, &temp_arena, true);
+
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    const bool found = wide_path.count && GetFileAttributesExW(wide_path.data, GetFileExInfoStandard, &data);
+
+    ff_arena_destroy(&temp_arena);
+    FF_CHECK_RET_VAL(found, false);
+
+    info->write_time = file_time_to_uint64(data.ftLastWriteTime);
+    info->size = file_size_to_uint64(data.nFileSizeHigh, data.nFileSizeLow);
+    info->directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+    return true;
+}
+
+bool ff_file_exists(ff_string_view path)
+{
+    ff_file_info info;
+    return ff_file_stat(path, &info);
+}
+
+static bool extension_matches(ff_string_view name, ff_string_view extension)
+{
+    FF_CHECK_RET_VAL(extension.count, true);
+    FF_CHECK_RET_VAL(name.count >= extension.count, false);
+
+    const char* tail = name.data + (name.count - extension.count);
+
+    for (size_t i = 0; i < extension.count; i++)
+    {
+        if (tolower((unsigned char)tail[i]) != tolower((unsigned char)extension.data[i]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Joins with '/' so that entry names are directly usable as resource names. The Win32 side is
+// happy with either separator, so nothing has to convert back.
+static ff_string_view join_path(ff_string_view dir, ff_string_view name, ff_arena* arena)
+{
+    ff_string_builder sb;
+    ff_string_builder_init_capacity(&sb, arena, dir.count + name.count + 2);
+
+    if (dir.count)
+    {
+        ff_string_builder_append(&sb, dir);
+        ff_string_builder_append_char(&sb, '/');
+    }
+
+    ff_string_builder_append(&sb, name);
+
+    return ff_string_builder_copy_to(&sb, arena);
+}
+
+typedef struct enumerate_context
+{
+    ff_string_view root;
+    ff_string_view extension;
+    ff_arena* arena;
+    ff_file_entry* entries;
+} enumerate_context;
+
+// 'relative' is the directory being walked, relative to the root; empty for the root itself.
+static void enumerate_dir(enumerate_context* context, ff_string_view relative)
+{
+    ff_arena_declare_stack(temp_arena, 2048);
+
+    const ff_string_view dir = relative.count
+        ? join_path(context->root, relative, &temp_arena)
+        : context->root;
+    const ff_string_view pattern = join_path(dir, FF_SVL("*"), &temp_arena);
+    const ff_wstring_view wide_pattern = ff_utf8_to_wide(pattern, &temp_arena, true);
+
+    WIN32_FIND_DATAW found;
+    HANDLE handle = wide_pattern.count ? FindFirstFileExW(wide_pattern.data, FindExInfoBasic,
+        &found, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH) : INVALID_HANDLE_VALUE;
+
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        ff_arena_destroy(&temp_arena);
+        return;
+    }
+
+    do
+    {
+        const bool is_dir = (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+        if (is_dir && (!wcscmp(found.cFileName, L".") || !wcscmp(found.cFileName, L"..")))
+        {
+            continue;
+        }
+
+        // Allocated from the temp arena when it's only needed to recurse, and copied into the
+        // caller's arena only for entries that are actually returned.
+        const ff_string_view name = ff_wide_to_utf8(ff_wz_view(found.cFileName), &temp_arena, false);
+
+        if (!name.count)
+        {
+            continue;
+        }
+
+        if (is_dir)
+        {
+            const ff_string_view child = join_path(relative, name, &temp_arena);
+            enumerate_dir(context, child);
+            continue;
+        }
+
+        if (!extension_matches(name, context->extension))
+        {
+            continue;
+        }
+
+        ff_file_entry entry;
+        entry.name = join_path(relative, name, context->arena);
+        entry.info.write_time = file_time_to_uint64(found.ftLastWriteTime);
+        entry.info.size = file_size_to_uint64(found.nFileSizeHigh, found.nFileSizeLow);
+        entry.info.directory = false;
+
+        ff_array_push(context->entries, entry);
+    } while (FindNextFileW(handle, &found));
+
+    FindClose(handle);
+    ff_arena_destroy(&temp_arena);
+}
+
+ff_file_entry* ff_file_enumerate_extension(ff_string_view root, ff_string_view extension, ff_arena* arena)
+{
+    FF_ASSERT_RET_VAL(arena, NULL);
+
+    ff_file_info info;
+    FF_CHECK_RET_VAL(ff_file_stat(root, &info) && info.directory, NULL);
+
+    enumerate_context context;
+    context.root = root;
+    context.extension = extension;
+    context.arena = arena;
+    context.entries = ff_array_init(ff_file_entry, arena);
+
+    enumerate_dir(&context, ff_string_view_empty());
+
+    return context.entries;
+}
+
+ff_file_entry* ff_file_enumerate(ff_string_view root, ff_arena* arena)
+{
+    return ff_file_enumerate_extension(root, ff_string_view_empty(), arena);
 }

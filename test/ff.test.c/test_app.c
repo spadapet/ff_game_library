@@ -321,6 +321,11 @@ static void report_summary(ff_test_app* app)
         ff_dx12_target_window_pacing_vsync(&app->target) ? 1 : 0,
         (unsigned long long)ff_dx12_target_window_pacing_late_frames(&app->target));
 
+    // Late frames the app was idle for are dropped vblanks from outside the process. They are
+    // reported separately so they are not mistaken for the renderer missing its budget.
+    ff_log_write(ff_log_type_debug, FF_SVL("pacing      %llu of those were idle (dropped vblanks, not this app)"),
+        (unsigned long long)ff_dx12_target_window_pacing_idle_late_frames(&app->target));
+
     // A vsynced renderer that blocks correctly sits near one core-tenth. Much higher means the
     // loop is spinning somewhere instead of sleeping on the latency handle.
     ff_log_write(ff_log_type_debug, FF_SVL("pacing      %s"),
@@ -375,6 +380,17 @@ static void on_window_message(void* args, void* cookie)
         case WM_DESTROY:
             app->done = true;
             destroy_graphics(app);
+            break;
+
+        case WM_KEYDOWN:
+            if (message->wp == VK_ESCAPE)
+            {
+                app->done = true;
+            }
+            else if (app->mode->key_down)
+            {
+                app->mode->key_down(app, (int)message->wp);
+            }
             break;
     }
 }

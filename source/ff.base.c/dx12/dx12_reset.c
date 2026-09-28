@@ -4,9 +4,11 @@
 #include "dx12/dx12_buffer.h"
 #include "dx12/dx12_depth.h"
 #include "dx12/dx12_device_child.h"
+#include "dx12/dx12_draw_device.h"
 #include "dx12/dx12_draw_state.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_object_cache.h"
+#include "dx12/dx12_palette.h"
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_reset.h"
 #include "dx12/dx12_residency.h"
@@ -45,12 +47,19 @@ static void child_before_reset(ff_dx12_device_child* child)
             internal_ff_dx12_draw_state_before_reset((ff_dx12_draw_state*)child->owner);
             break;
 
+        // Abandons any half-built batch, whose instance data lives in upload memory that the
+        // allocators are about to release.
+        case ff_dx12_device_child_type_draw_device:
+            internal_ff_dx12_draw_device_before_reset((ff_dx12_draw_device*)child->owner);
+            break;
+
         // The rest own no GPU object of their own: their resource and their descriptor range are
         // both rebuilt in place by other passes, so there is nothing to release here.
         case ff_dx12_device_child_type_texture:
         case ff_dx12_device_child_type_texture_view:
         case ff_dx12_device_child_type_depth:
         case ff_dx12_device_child_type_target_texture:
+        case ff_dx12_device_child_type_palette_data:
             break;
 
         default:
@@ -91,6 +100,12 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
 
         case ff_dx12_device_child_type_draw_state:
             return internal_ff_dx12_draw_state_reset((ff_dx12_draw_state*)child->owner);
+
+        case ff_dx12_device_child_type_palette_data:
+            return internal_ff_dx12_palette_data_reset((ff_dx12_palette_data*)child->owner, commands);
+
+        case ff_dx12_device_child_type_draw_device:
+            return internal_ff_dx12_draw_device_reset((ff_dx12_draw_device*)child->owner);
 
         default:
             FF_DEBUG_FAIL_MSG_RET_VAL("unhandled device child type", false);

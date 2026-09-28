@@ -45,6 +45,8 @@ static void print_usage(void)
 
     ff_log_write(ff_log_type_debug,
         FF_SVL("Seconds is optional; a positive value exits with a summary instead of running until closed."));
+    ff_log_write(ff_log_type_debug,
+        FF_SVL("sprite_perf takes a third argument for its starting sprite count."));
 }
 
 // Choosing the mode from the command line rather than a stdin menu keeps the benchmark path
@@ -102,6 +104,18 @@ int main(int argc, char** argv)
     // Optional "seconds to run" argument, so the sample can be used as a non-interactive
     // benchmark that exits on its own with a summary.
     const double run_seconds = (argc > 2) ? atof(argv[2]) : 0.0;
+
+    // sprite_perf takes a third argument for its starting sprite count, so a benchmark can pin the
+    // scene size rather than reaching it with the keyboard.
+    if (mode == &ff_test_mode_sprite_perf && argc > 3)
+    {
+        const long count = atol(argv[3]);
+
+        if (count > 0)
+        {
+            ff_test_sprite_perf_set_start_count((size_t)count);
+        }
+    }
 
     const int result = ff_test_app_run(mode, run_seconds);
 

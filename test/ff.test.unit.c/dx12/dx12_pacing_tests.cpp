@@ -324,6 +324,81 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, pacing.stage);
         }
 
+        // The bug this guards: an idle frame loop that loses vblanks to the compositor was demoted
+        // for it, giving up vsync roughly every 16 seconds and then climbing back. Dropping vsync
+        // cannot make a vblank arrive, so a loop that did almost no work is never blamed.
+        TEST_METHOD(dropped_vblanks_while_the_app_is_idle_never_demote)
+        {
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+
+            const double busy = refresh * 0.03;
+
+            for (size_t i = 0; i < 40 * FF_DX12_PACING_WINDOW_FRAMES; i++)
+            {
+                internal_ff_dx12_pacing_add_frame_busy(&pacing, refresh * 2.0, busy);
+            }
+
+            Assert::AreEqual((size_t)0, pacing.stage);
+            Assert::AreEqual((uint64_t)0, pacing.stage_changes);
+
+            // Still counted and reported, just not blamed on the app.
+            Assert::IsTrue(pacing.total_late_frames > 0);
+            Assert::AreEqual(pacing.total_late_frames, pacing.total_idle_late_frames);
+        }
+
+        // The other half of the same rule: when the app really is the bottleneck, the ladder must
+        // still demote exactly as before.
+        TEST_METHOD(long_frames_the_app_was_busy_for_still_demote)
+        {
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+
+            add_windows(&pacing, 4, refresh);
+            align_to_window(&pacing, refresh);
+
+            for (size_t i = 0; i < FF_DX12_PACING_WINDOW_FRAMES * 2; i++)
+            {
+                internal_ff_dx12_pacing_add_frame_busy(&pacing, refresh * 3.0, refresh * 3.0);
+            }
+
+            Assert::AreEqual((size_t)1, pacing.stage);
+            Assert::AreEqual((uint64_t)0, pacing.total_idle_late_frames);
+        }
+
+        // A slow frame counts against the app well before it saturates the budget, so a renderer
+        // that is genuinely struggling is not excused just because it finished with time to spare.
+        TEST_METHOD(a_frame_busy_for_most_of_the_interval_is_blamed_on_the_app)
+        {
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+
+            add_windows(&pacing, 4, refresh);
+            align_to_window(&pacing, refresh);
+
+            for (size_t i = 0; i < FF_DX12_PACING_WINDOW_FRAMES * 2; i++)
+            {
+                internal_ff_dx12_pacing_add_frame_busy(&pacing, refresh * 3.0, refresh * 0.75);
+            }
+
+            Assert::AreEqual((size_t)1, pacing.stage);
+        }
+
+        // The plain add_frame form has no busy measurement, so it must stay conservative and treat
+        // the whole interval as the app's own work.
+        TEST_METHOD(add_frame_without_a_busy_time_still_blames_the_app)
+        {
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+
+            add_windows(&pacing, 4, refresh);
+            align_to_window(&pacing, refresh);
+
+            add_frames(&pacing, FF_DX12_PACING_WINDOW_FRAMES * 2, refresh * 3.0);
+
+            Assert::AreEqual((size_t)1, pacing.stage);
+        }
+
         TEST_METHOD(latency_never_exceeds_two_frames)
         {
             ff_dx12_pacing pacing;

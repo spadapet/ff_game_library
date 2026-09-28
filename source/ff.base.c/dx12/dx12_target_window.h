@@ -72,6 +72,10 @@ bool ff_dx12_target_window_pacing_vsync(const ff_dx12_target_window* target);
 // average.
 double ff_dx12_target_window_pacing_average_seconds(const ff_dx12_target_window* target);
 uint64_t ff_dx12_target_window_pacing_late_frames(const ff_dx12_target_window* target);
+
+// Of the late frames, how many happened while the app was idle. These are dropped vblanks coming
+// from outside the process, and the ladder deliberately does not demote for them.
+uint64_t ff_dx12_target_window_pacing_idle_late_frames(const ff_dx12_target_window* target);
 size_t ff_dx12_target_window_pacing_stage(const ff_dx12_target_window* target);
 
 // Device reset. before_reset drops the back buffers, the latency handle and the swap chain
