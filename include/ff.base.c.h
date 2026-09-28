@@ -57,6 +57,7 @@
 #include "../source/ff.base.c/dx12/dx12_depth.h"
 #include "../source/ff.base.c/dx12/dx12_target_texture.h"
 #include "../source/ff.base.c/dx12/dx12_target_window.h"
+#include "../source/ff.base.c/dx12/dx12_palette.h"
 #include "../source/ff.base.c/dx12/dx12_draw_device.h"
 #include "../source/ff.base.c/dx12/dx12_draw_state.h"
 #include "../source/ff.base.c/dx12/dx12_instance_bucket.h"

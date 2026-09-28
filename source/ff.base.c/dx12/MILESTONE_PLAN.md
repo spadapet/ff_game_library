@@ -2742,3 +2742,33 @@ queue". Full Debug suite 1170/1170 clean, three consecutive runs.
 
 Assert a precondition using the most direct, CPU-side observable available. Inferring "the GPU is
 busy" from a fence the GPU still has to touch is a race, and it fails open -- the test passes.
+
+## m7d-2: palette sprites
+
+Palette sprites sample a texture of indexes rather than colors, run each index through a 256-entry
+remap, then through a 256-entry palette row to get RGBA. This keeps classic paletted art cheap and
+lets a sprite recolor or cycle without touching a pixel of the index texture.
+
+New: `dx12_palette.h/.c` with `ff_dx12_palette_data` (an N-row RGBA texture plus a per-row hash),
+`ff_dx12_palette` (a cursor onto one row), and `ff_dx12_palette_remap` (256 bytes plus a hash).
+
+Draw device: two shared textures, 256 x MAX_PALETTES RGBA and 256 x MAX_PALETTE_REMAPS R8_UINT.
+Palettes and remaps intern by hash per flush the same way matrices and textures do, so repeated
+pushes of the same palette cost one row. Rows upload only when the cached hash for that slot
+differs, so a static palette costs one copy for the life of the device rather than one per flush.
+All four per-flush tables are interned before any flush, since flushing to make room in one would
+invalidate an index already taken from another.
+
+Notable details:
+- A hash of zero is remapped to one; zero is the "slot never uploaded" sentinel in the row cache.
+- `ps_constants_0` uploads whole. A root CBV carries no size, so a partial upload would let an
+  out-of-range texture index read past the allocation.
+- A palette sprite with no palette pushed is dropped rather than silently using row 0.
+- The index texture must be R8_UINT so the shader's `Load` returns the index unscaled.
+
+Testing: four unit tests including a GPU readback that proves the full index -> remap -> palette
+chain. The readback test initially passed with the remap deliberately broken, because the pushed
+remap interned at row 0 and dropping the index was a no-op; it now interns the identity first so
+the remap row is non-zero and load-bearing. Every packed field in the index-layout test is distinct
+and non-zero for the same reason. A `palettes` mode was added to the sample app and verified by
+screenshot, which is how the RGBA byte-order bug in the test palette was caught.

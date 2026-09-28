@@ -76,6 +76,7 @@ int ff_test_app_run(const ff_test_mode* mode, double run_seconds);
 extern const ff_test_mode ff_test_mode_blit;
 extern const ff_test_mode ff_test_mode_shapes;
 extern const ff_test_mode ff_test_mode_sprites;
+extern const ff_test_mode ff_test_mode_palettes;
 extern const ff_test_mode ff_test_mode_sprite_perf;
 
 // Shared by the modes that cannot run until the draw device exists, so each one reports the same

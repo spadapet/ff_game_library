@@ -131,6 +131,11 @@ static void reset_batch(ff_dx12_draw_device* device)
     device->matrix_count = 0;
     device->matrix_index = FF_DX12_INVALID_INDEX;
     device->texture_count = 0;
+    device->palette_texture_count = 0;
+    device->palette_count = 0;
+    device->palette_remap_count = 0;
+    device->palette_index = FF_DX12_INVALID_INDEX;
+    device->palette_remap_index = FF_DX12_INVALID_INDEX;
     device->last_depth_type = ff_dx12_last_depth_none;
 }
 
@@ -156,6 +161,29 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
 
     device->sampler_stack[0] = false;
     device->sampler_stack_count = 1;
+
+    device->palette_stack[0] = ff_dx12_palette_make(NULL, 0);
+    device->palette_stack_count = 1;
+    device->palette_remap_stack[0] = ff_dx12_palette_remap_identity();
+    device->palette_remap_stack_count = 1;
+    device->palette_index = FF_DX12_INVALID_INDEX;
+    device->palette_remap_index = FF_DX12_INVALID_INDEX;
+
+    // The shared palette rows are RGBA colors; the remap rows are raw indexes, so R8_UINT keeps the
+    // shader's Load returning the index unscaled rather than normalizing it to 0..1.
+    ff_dx12_texture_params palette_params = ff_dx12_texture_params_default(FF_PALETTE_SIZE, FF_DX12_MAX_PALETTES);
+    ff_dx12_texture_params remap_params = ff_dx12_texture_params_default(FF_PALETTE_SIZE, FF_DX12_MAX_PALETTE_REMAPS);
+    remap_params.format = DXGI_FORMAT_R8_UINT;
+
+    if (!ff_dx12_texture_init(&device->palette_texture, &palette_params) ||
+        !ff_dx12_texture_init(&device->palette_remap_texture, &remap_params) ||
+        !ff_dx12_texture_view_init(&device->palette_texture_view, &device->palette_texture, 0, 1, 0, 1) ||
+        !ff_dx12_texture_view_init(&device->palette_remap_texture_view, &device->palette_remap_texture, 0, 1, 0, 1))
+    {
+        ff_dx12_draw_device_destroy(device);
+        return false;
+    }
+
     device->state = ff_dx12_draw_state_machine_valid;
 
     return true;
@@ -167,6 +195,11 @@ void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device)
 
     ff_dx12_buffer_destroy(&device->index_buffer);
     ff_dx12_buffer_destroy(&device->circle_vertex_buffer);
+
+    ff_dx12_texture_view_destroy(&device->palette_texture_view);
+    ff_dx12_texture_view_destroy(&device->palette_remap_texture_view);
+    ff_dx12_texture_destroy(&device->palette_texture);
+    ff_dx12_texture_destroy(&device->palette_remap_texture);
 
     for (size_t i = 0; i < ff_dx12_instance_bucket_count; i++)
     {
@@ -454,26 +487,78 @@ static bool apply_bucket(ff_dx12_draw_device* device, const ff_dx12_instance_buc
     return true;
 }
 
-static bool apply_textures(ff_dx12_draw_device* device)
+// Copies only the palette and remap rows whose contents actually changed. The stored hash is what
+// makes a static palette cost one upload for the life of the device rather than one per flush.
+static void update_palette_textures(ff_dx12_draw_device* device)
 {
-    FF_CHECK_RET_VAL(device->texture_count, true);
+    const bool needs_palettes = device->palette_texture_count != 0;
+    const bool needs_remaps = device->palette_texture_count || device->target_requires_palette;
+
+    FF_CHECK_RET(needs_palettes || needs_remaps);
+
+    ff_dx12_commands_begin_event(device->commands, ff_dx12_gpu_event_update_palette);
+
+    if (needs_palettes)
+    {
+        for (size_t i = 0; i < device->palette_count; i++)
+        {
+            ff_dx12_palette_data* data = device->palettes[i].palette.data;
+
+            if (data && device->palette_row_hashes[i] != device->palettes[i].hash)
+            {
+                device->palette_row_hashes[i] = device->palettes[i].hash;
+
+                const size_t src_row = device->palettes[i].palette.current_row;
+                D3D12_RECT source_rect;
+                source_rect.left = 0;
+                source_rect.top = (LONG)src_row;
+                source_rect.right = FF_PALETTE_SIZE;
+                source_rect.bottom = (LONG)src_row + 1;
+
+                ff_dx12_commands_copy_texture(device->commands,
+                    ff_dx12_texture_resource(&device->palette_texture), 0, 0, i,
+                    ff_dx12_texture_resource(&data->texture), 0, &source_rect);
+            }
+        }
+    }
+
+    if (needs_remaps)
+    {
+        for (size_t i = 0; i < device->palette_remap_count; i++)
+        {
+            if (device->palette_remap_row_hashes[i] != device->palette_remaps[i].hash)
+            {
+                device->palette_remap_row_hashes[i] = device->palette_remaps[i].hash;
+
+                ff_dx12_texture_update(&device->palette_remap_texture, device->commands, 0, 0, 0, i,
+                    device->palette_remaps[i].remap.remap, FF_PALETTE_SIZE, 1, FF_PALETTE_SIZE);
+            }
+        }
+    }
+
+    ff_dx12_commands_end_event(device->commands);
+}
+
+static bool apply_texture_table(ff_dx12_draw_device* device, ff_dx12_texture_view** views,
+    size_t count, ff_dx12_root_param root_param)
+{
+    FF_CHECK_RET_VAL(count, true);
 
     // The sampled textures must be in the shader-resource state before the draws that read them,
     // and resident for the whole submission, since the table only holds descriptors.
-    for (size_t i = 0; i < device->texture_count; i++)
+    for (size_t i = 0; i < count; i++)
     {
-        ff_dx12_texture_view* view = device->textures[i];
-        ff_dx12_texture* texture = ff_dx12_texture_view_texture(view);
+        ff_dx12_texture* texture = ff_dx12_texture_view_texture(views[i]);
         FF_CHECK_RET_VAL(texture, false);
 
         ff_dx12_commands_resource_state(device->commands, ff_dx12_texture_resource(texture),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-            ff_dx12_texture_view_array_start(view), ff_dx12_texture_view_array_count(view),
-            ff_dx12_texture_view_mip_start(view), ff_dx12_texture_view_mip_count(view));
+            ff_dx12_texture_view_array_start(views[i]), ff_dx12_texture_view_array_count(views[i]),
+            ff_dx12_texture_view_mip_start(views[i]), ff_dx12_texture_view_mip_count(views[i]));
     }
 
     ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(
-        ff_dx12_gpu_view_descriptors(), device->texture_count,
+        ff_dx12_gpu_view_descriptors(), count,
         ff_dx12_commands_next_fence_value(device->commands));
 
     FF_CHECK_RET_VAL(ff_dx12_descriptor_range_valid(&range), false);
@@ -481,21 +566,103 @@ static bool apply_textures(ff_dx12_draw_device* device)
     D3D12_CPU_DESCRIPTOR_HANDLE sources[FF_DX12_MAX_TEXTURES];
     UINT source_counts[FF_DX12_MAX_TEXTURES];
 
-    for (size_t i = 0; i < device->texture_count; i++)
+    for (size_t i = 0; i < count; i++)
     {
-        sources[i] = ff_dx12_texture_view_cpu_handle(device->textures[i]);
+        sources[i] = ff_dx12_texture_view_cpu_handle(views[i]);
         source_counts[i] = 1;
     }
 
     const D3D12_CPU_DESCRIPTOR_HANDLE dest = ff_dx12_descriptor_range_cpu_handle(&range, 0);
-    const UINT dest_count = (UINT)device->texture_count;
+    const UINT dest_count = (UINT)count;
 
     ID3D12Device_CopyDescriptors((ID3D12Device*)ff_dx12_device(), 1, &dest, &dest_count,
         dest_count, sources, source_counts, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    ff_dx12_commands_root_descriptors(device->commands, ff_dx12_root_param_textures, &range, 0);
+    ff_dx12_commands_root_descriptors(device->commands, root_param, &range, 0);
 
     return true;
+}
+
+// The palette and remap textures bind as one contiguous two-descriptor table, which is why they
+// are copied together rather than through apply_texture_table.
+static bool apply_palettes(ff_dx12_draw_device* device)
+{
+    FF_CHECK_RET_VAL(device->palette_texture_count || device->target_requires_palette, true);
+
+    ff_dx12_commands_resource_state(device->commands,
+        ff_dx12_texture_resource(&device->palette_texture),
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, 0, 1);
+
+    ff_dx12_commands_resource_state(device->commands,
+        ff_dx12_texture_resource(&device->palette_remap_texture),
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, 0, 1);
+
+    ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(
+        ff_dx12_gpu_view_descriptors(), 2, ff_dx12_commands_next_fence_value(device->commands));
+
+    FF_CHECK_RET_VAL(ff_dx12_descriptor_range_valid(&range), false);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE sources[2];
+    UINT source_counts[2] = { 1, 1 };
+    sources[0] = ff_dx12_texture_view_cpu_handle(&device->palette_texture_view);
+    sources[1] = ff_dx12_texture_view_cpu_handle(&device->palette_remap_texture_view);
+
+    const D3D12_CPU_DESCRIPTOR_HANDLE dest = ff_dx12_descriptor_range_cpu_handle(&range, 0);
+    const UINT dest_count = 2;
+
+    ID3D12Device_CopyDescriptors((ID3D12Device*)ff_dx12_device(), 1, &dest, &dest_count,
+        dest_count, sources, source_counts, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    ff_dx12_commands_root_descriptors(device->commands, ff_dx12_root_param_palettes, &range, 0);
+
+    return true;
+}
+
+// The palette sprite shader divides the uv by the texture size to turn it back into a texel index,
+// so the sizes have to reach the pixel shader for every palette texture in the table.
+static void update_ps_constants(ff_dx12_draw_device* device)
+{
+    FF_CHECK_RET(device->palette_texture_count);
+
+    for (size_t i = 0; i < device->palette_texture_count; i++)
+    {
+        ff_dx12_texture* texture = ff_dx12_texture_view_texture(device->palette_textures[i]);
+        FF_CHECK_RET(texture);
+
+        device->ps_constants_0.texture_palette_sizes[i].left = (float)ff_dx12_texture_width(texture);
+        device->ps_constants_0.texture_palette_sizes[i].top = (float)ff_dx12_texture_height(texture);
+    }
+
+    // A root CBV carries no size, so the shader can legally read any slot. Uploading the whole
+    // 512-byte struct keeps an out-of-range index from reading past the allocation.
+    const size_t size = sizeof(device->ps_constants_0);
+
+    ff_dx12_mem_range range = ff_dx12_mem_allocator_ring_alloc_buffer(ff_dx12_upload_allocator(),
+        size, ff_dx12_commands_next_fence_value(device->commands));
+
+    void* dest = ff_dx12_mem_range_cpu_data(&range);
+    FF_CHECK_RET(dest);
+
+    memcpy(dest, &device->ps_constants_0, size);
+
+    ff_dx12_commands_keep_resident(device->commands, ff_dx12_mem_range_residency_data(&range));
+
+    ff_dx12_commands_root_cbv_address(device->commands, ff_dx12_root_param_ps_constants_0,
+        ff_dx12_mem_range_gpu_data(&range));
+}
+
+static bool apply_textures(ff_dx12_draw_device* device)
+{
+    update_palette_textures(device);
+    update_ps_constants(device);
+
+    FF_CHECK_RET_VAL(apply_texture_table(device, device->textures, device->texture_count,
+        ff_dx12_root_param_textures), false);
+
+    FF_CHECK_RET_VAL(apply_texture_table(device, device->palette_textures, device->palette_texture_count,
+        ff_dx12_root_param_palette_textures), false);
+
+    return apply_palettes(device);
 }
 
 static void draw_opaque(ff_dx12_draw_device* device)
@@ -604,6 +771,12 @@ float ff_dx12_draw_device_nudge_depth(ff_dx12_draw_device* device)
     if (depth_type != ff_dx12_last_depth_instance_no_overlap || device->last_depth_type != depth_type)
     {
         device->draw_depth += FF_DX12_RENDER_DEPTH_DELTA;
+
+        // Past the far plane the depth test rejects everything, so the draw silently disappears
+        // instead of sorting in front. Debug-only: guarding this at runtime would cost a branch on
+        // every draw, and an unplanned flush to reclaim depth would stall a frame.
+        FF_ASSERT_MSG(device->draw_depth <= FF_DX12_MAX_RENDER_DEPTH,
+            "Too many draws in one frame; depth exhausted");
     }
 
     device->last_depth_type = depth_type;
@@ -696,6 +869,8 @@ static uint32_t texture_index_no_flush(ff_dx12_draw_device* device, ff_dx12_text
     return index;
 }
 
+static uint32_t palette_remap_index_no_flush(ff_dx12_draw_device* device);
+
 // The matrix and texture tables are both per-flush and both have to resolve against the same
 // flush, so they are interned together: flushing to make room in one would invalidate an index
 // already taken from the other.
@@ -704,20 +879,148 @@ static uint32_t sprite_indexes(ff_dx12_draw_device* device, ff_dx12_texture_view
     uint32_t matrix_index = matrix_index_no_flush(device);
     uint32_t texture_index = texture_index_no_flush(device, view);
 
-    if (matrix_index == FF_DX12_INVALID_INDEX || texture_index == FF_DX12_INVALID_INDEX)
+    // An RGBA sprite drawn into a palette target still writes indexes, so it goes through the
+    // remap just like a palette sprite does.
+    uint32_t remap_index = device->target_requires_palette ? palette_remap_index_no_flush(device) : 0;
+
+    if (matrix_index == FF_DX12_INVALID_INDEX || texture_index == FF_DX12_INVALID_INDEX ||
+        remap_index == FF_DX12_INVALID_INDEX)
     {
         ff_dx12_draw_device_flush(device);
 
         matrix_index = matrix_index_no_flush(device);
         texture_index = texture_index_no_flush(device, view);
+        remap_index = device->target_requires_palette ? palette_remap_index_no_flush(device) : 0;
 
         FF_CHECK_RET_VAL(matrix_index != FF_DX12_INVALID_INDEX &&
-            texture_index != FF_DX12_INVALID_INDEX, FF_DX12_INVALID_INDEX);
+            texture_index != FF_DX12_INVALID_INDEX &&
+            remap_index != FF_DX12_INVALID_INDEX, FF_DX12_INVALID_INDEX);
     }
 
     const uint32_t sampler_index = (uint32_t)ff_dx12_draw_device_linear_sampler(device);
 
-    return texture_index | (sampler_index << 8) | (matrix_index << 24);
+    return texture_index | (sampler_index << 8) | (remap_index << 16) | (matrix_index << 24);
+}
+
+static uint32_t palette_texture_index_no_flush(ff_dx12_draw_device* device, ff_dx12_texture_view* view)
+{
+    for (size_t i = device->palette_texture_count; i != 0; i--)
+    {
+        if (device->palette_textures[i - 1] == view)
+        {
+            return (uint32_t)(i - 1);
+        }
+    }
+
+    if (device->palette_texture_count == FF_DX12_MAX_PALETTE_TEXTURES)
+    {
+        return FF_DX12_INVALID_INDEX;
+    }
+
+    const uint32_t index = (uint32_t)device->palette_texture_count;
+    device->palette_textures[index] = view;
+    device->palette_texture_count++;
+
+    return index;
+}
+
+static uint32_t palette_index_no_flush(ff_dx12_draw_device* device)
+{
+    if (device->palette_index == FF_DX12_INVALID_INDEX)
+    {
+        // Drawing into a palette target means the indexes are the output, so there is nothing to
+        // look up and row 0 stands in.
+        if (device->target_requires_palette)
+        {
+            device->palette_index = 0;
+            return device->palette_index;
+        }
+
+        const ff_dx12_palette* palette = &device->palette_stack[device->palette_stack_count - 1];
+
+        // A palette sprite with no palette pushed has nothing to look up, so it is dropped rather
+        // than left pointing at whatever happens to be in row 0.
+        FF_CHECK_RET_VAL(palette->data, FF_DX12_INVALID_INDEX);
+
+        const uint64_t hash = ff_dx12_palette_row_hash(palette);
+
+        for (size_t i = 0; i < device->palette_count; i++)
+        {
+            if (device->palettes[i].hash == hash)
+            {
+                device->palette_index = (uint32_t)i;
+                return device->palette_index;
+            }
+        }
+
+        if (device->palette_count < FF_DX12_MAX_PALETTES)
+        {
+            const uint32_t index = (uint32_t)device->palette_count;
+            device->palettes[index].palette = *palette;
+            device->palettes[index].hash = hash;
+            device->palette_count++;
+            device->palette_index = index;
+        }
+    }
+
+    return device->palette_index;
+}
+
+static uint32_t palette_remap_index_no_flush(ff_dx12_draw_device* device)
+{
+    if (device->palette_remap_index == FF_DX12_INVALID_INDEX)
+    {
+        const ff_dx12_palette_remap* remap = &device->palette_remap_stack[device->palette_remap_stack_count - 1];
+
+        for (size_t i = 0; i < device->palette_remap_count; i++)
+        {
+            if (device->palette_remaps[i].hash == remap->hash)
+            {
+                device->palette_remap_index = (uint32_t)i;
+                return device->palette_remap_index;
+            }
+        }
+
+        if (device->palette_remap_count < FF_DX12_MAX_PALETTE_REMAPS)
+        {
+            const uint32_t index = (uint32_t)device->palette_remap_count;
+            device->palette_remaps[index].remap = *remap;
+            device->palette_remaps[index].hash = remap->hash;
+            device->palette_remap_count++;
+            device->palette_remap_index = index;
+        }
+    }
+
+    return device->palette_remap_index;
+}
+
+// Four per-flush tables have to resolve against the same flush, so they are all interned before
+// any flush happens. Flushing to make room in one would invalidate an index already taken from
+// another.
+static uint32_t palette_sprite_indexes(ff_dx12_draw_device* device, ff_dx12_texture_view* view)
+{
+    uint32_t matrix_index = matrix_index_no_flush(device);
+    uint32_t texture_index = palette_texture_index_no_flush(device, view);
+    uint32_t palette_index = palette_index_no_flush(device);
+    uint32_t remap_index = palette_remap_index_no_flush(device);
+
+    if (matrix_index == FF_DX12_INVALID_INDEX || texture_index == FF_DX12_INVALID_INDEX ||
+        palette_index == FF_DX12_INVALID_INDEX || remap_index == FF_DX12_INVALID_INDEX)
+    {
+        ff_dx12_draw_device_flush(device);
+
+        matrix_index = matrix_index_no_flush(device);
+        texture_index = palette_texture_index_no_flush(device, view);
+        palette_index = palette_index_no_flush(device);
+        remap_index = palette_remap_index_no_flush(device);
+
+        FF_CHECK_RET_VAL(matrix_index != FF_DX12_INVALID_INDEX &&
+            texture_index != FF_DX12_INVALID_INDEX &&
+            palette_index != FF_DX12_INVALID_INDEX &&
+            remap_index != FF_DX12_INVALID_INDEX, FF_DX12_INVALID_INDEX);
+    }
+
+    return texture_index | (palette_index << 8) | (remap_index << 16) | (matrix_index << 24);
 }
 
 void ff_dx12_draw_device_push_no_overlap(ff_dx12_draw_device* device)
@@ -1157,4 +1460,73 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
     instance->pos_rot[2] = depth;
     instance->pos_rot[3] = transform->rotation_radians;
     instance->indexes = indexes;
+}
+
+void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
+    const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(sprite && transform);
+    FF_CHECK_RET(sprite->view);
+
+    const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
+    const alpha_type type = get_alpha_type(ff_color_alpha(transform->color), allow_transparent);
+    FF_CHECK_RET(type != alpha_type_invisible);
+
+    const uint32_t indexes = palette_sprite_indexes(device, sprite->view);
+    FF_CHECK_RET(indexes != FF_DX12_INVALID_INDEX);
+
+    const float depth = ff_dx12_draw_device_nudge_depth(device);
+
+    ff_dx12_sprite_instance* instance = (ff_dx12_sprite_instance*)ff_dx12_draw_device_add_instance(
+        device, pick_bucket(ff_dx12_instance_bucket_palette_sprites, type), depth);
+
+    FF_CHECK_RET(instance);
+
+    instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
+    instance->uv_rect = sprite->texture_uv;
+    store_color(instance->color, transform->color);
+    instance->pos_rot[0] = transform->position.x;
+    instance->pos_rot[1] = transform->position.y;
+    instance->pos_rot[2] = depth;
+    instance->pos_rot[3] = transform->rotation_radians;
+    instance->indexes = indexes;
+}
+
+void ff_dx12_draw_device_push_palette(ff_dx12_draw_device* device, ff_dx12_palette palette)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(device->palette_stack_count < FF_DX12_MAX_PALETTE_STACK);
+
+    device->palette_stack[device->palette_stack_count++] = palette;
+    device->palette_index = FF_DX12_INVALID_INDEX;
+}
+
+void ff_dx12_draw_device_pop_palette(ff_dx12_draw_device* device)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(device->palette_stack_count > 1);
+
+    device->palette_stack_count--;
+    device->palette_index = FF_DX12_INVALID_INDEX;
+}
+
+void ff_dx12_draw_device_push_palette_remap(ff_dx12_draw_device* device, const ff_dx12_palette_remap* remap)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(device->palette_remap_stack_count < FF_DX12_MAX_PALETTE_STACK);
+
+    device->palette_remap_stack[device->palette_remap_stack_count++] =
+        remap ? *remap : ff_dx12_palette_remap_identity();
+
+    device->palette_remap_index = FF_DX12_INVALID_INDEX;
+}
+
+void ff_dx12_draw_device_pop_palette_remap(ff_dx12_draw_device* device)
+{
+    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(device->palette_remap_stack_count > 1);
+
+    device->palette_remap_stack_count--;
+    device->palette_remap_index = FF_DX12_INVALID_INDEX;
 }

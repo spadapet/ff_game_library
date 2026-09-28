@@ -8,6 +8,7 @@ static const ff_test_mode* const s_modes[] =
     &ff_test_mode_blit,
     &ff_test_mode_shapes,
     &ff_test_mode_sprites,
+    &ff_test_mode_palettes,
     &ff_test_mode_sprite_perf,
 };
 

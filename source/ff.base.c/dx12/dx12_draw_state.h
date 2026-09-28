@@ -13,6 +13,11 @@ typedef struct ff_dx12_commands ff_dx12_commands;
 // register assignments have to be changed together.
 #define FF_DX12_MAX_TEXTURES 32
 #define FF_DX12_MAX_PALETTE_TEXTURES 32
+
+// Rows in the shared palette and remap textures. Both index spaces are carried in one byte of the
+// instance's packed indexes, so neither may exceed 256.
+#define FF_DX12_MAX_PALETTES 128
+#define FF_DX12_MAX_PALETTE_REMAPS 128
 #define FF_DX12_MAX_TRANSFORM_MATRIXES 128
 #define FF_DX12_SAMPLER_COUNT 2
 

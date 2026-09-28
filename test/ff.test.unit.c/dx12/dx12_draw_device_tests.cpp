@@ -1249,5 +1249,355 @@ namespace ff::test::dx12
             Assert::AreEqual((size_t)1, after_count);
             Assert::IsTrue(slot_zero_is_last);
         }
+
+        // A palette sprite's texture holds indexes, not colors. This proves the whole chain runs:
+        // texture index -> remap -> palette row -> RGBA. The remap is non-identity and the palette
+        // entry for the un-remapped index is a different color, so a skipped remap produces the
+        // wrong color rather than the right one by luck.
+        TEST_METHOD(a_palette_sprite_remaps_its_index_and_looks_up_the_color)
+        {
+            scoped_device scope;
+
+            const size_t size = 64;
+
+            ff_dx12_texture_params target_params = ff_dx12_texture_params_default(size, size);
+            ff_dx12_texture target_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&target_texture, &target_params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &target_texture, 0, 0, 0));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            // The index texture is R8_UINT so the shader's Load returns the index unscaled.
+            ff_dx12_texture_params source_params = ff_dx12_texture_params_default(size, size);
+            source_params.format = DXGI_FORMAT_R8_UINT;
+            ff_dx12_texture source_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&source_texture, &source_params));
+
+            uint8_t source_pixels[size * size];
+
+            for (size_t i = 0; i < size * size; i++)
+            {
+                source_pixels[i] = 3;
+            }
+
+            Assert::IsTrue(ff_dx12_texture_update(&source_texture, &commands, 0, 0, 0, 0,
+                source_pixels, size, size, size));
+
+            ff_dx12_texture_view source_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&source_view, &source_texture, 0, 1, 0, 1));
+
+            // R8G8B8A8 packs little-endian as 0xAABBGGRR, so components are named explicitly
+            // rather than written as a literal that is easy to get backwards.
+            auto rgba = [](uint32_t r, uint32_t g, uint32_t b, uint32_t a)
+            {
+                return r | (g << 8) | (b << 16) | (a << 24);
+            };
+
+            // Index 3 is the trap color; only index 7, which the remap produces, is correct.
+            uint32_t colors[FF_PALETTE_SIZE];
+
+            for (size_t i = 0; i < FF_PALETTE_SIZE; i++)
+            {
+                colors[i] = rgba(0, 0, 0, 255);
+            }
+
+            colors[3] = rgba(0, 255, 0, 255);
+            colors[7] = rgba(255, 0, 0, 255);
+
+            ff_dx12_palette_data palette_data{};
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 1));
+
+            uint8_t remap_bytes[FF_PALETTE_SIZE];
+
+            for (size_t i = 0; i < FF_PALETTE_SIZE; i++)
+            {
+                remap_bytes[i] = (uint8_t)i;
+            }
+
+            remap_bytes[3] = 7;
+
+            ff_span remap_span{};
+            remap_span.data = remap_bytes;
+            remap_span.size = FF_PALETTE_SIZE;
+
+            const ff_dx12_palette_remap remap = ff_dx12_palette_remap_make(remap_span);
+
+            const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+            const ff_rect_float view{ 0.0f, 0.0f, (float)size, (float)size };
+            const ff_rect_float world{ 0.0f, 0.0f, (float)size, (float)size };
+
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, world, false));
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &source_view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 0));
+
+            // Interning the identity first pushes the real remap to row 1, so the remap row index
+            // has to be carried correctly rather than defaulting to 0 and still working.
+            ff_dx12_draw_device_push_palette_remap(&scope.device, nullptr);
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_pop_palette_remap(&scope.device);
+
+            ff_dx12_draw_device_push_palette_remap(&scope.device, &remap);
+
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+
+            ff_dx12_draw_device_pop_palette_remap(&scope.device);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+            ff_dx12_draw_device_end(&scope.device);
+
+            const size_t row_pitch = size * sizeof(uint32_t);
+            ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(
+                ff_dx12_readback_allocator(), row_pitch * size,
+                ff_dx12_commands_next_fence_value(&commands));
+
+            D3D12_SUBRESOURCE_FOOTPRINT layout{};
+            layout.Format = ff_dx12_target_texture_format(&target);
+            layout.Width = (UINT)size;
+            layout.Height = (UINT)size;
+            layout.Depth = 1;
+            layout.RowPitch = (UINT)row_pitch;
+
+            const D3D12_RECT source_rect = { 0, 0, (LONG)size, (LONG)size };
+
+            ff_dx12_commands_readback_texture(&commands, &readback, &layout,
+                ff_dx12_target_texture_resource(&target), 0, &source_rect);
+
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const uint32_t* pixels = (const uint32_t*)ff_dx12_mem_range_cpu_data(&readback);
+            Assert::IsNotNull((void*)pixels);
+
+            size_t remapped = 0;
+            size_t un_remapped = 0;
+
+            for (size_t i = 0; i < size * size; i++)
+            {
+                const uint32_t rgb = pixels[i] & 0x00FFFFFFu;
+
+                if (rgb == 0x000000FFu)
+                {
+                    remapped++;
+                }
+                else if (rgb == 0x0000FF00u)
+                {
+                    un_remapped++;
+                }
+            }
+
+            const bool device_ok = ff_dx12_device_valid();
+
+            ff_dx12_texture_view_destroy(&source_view);
+            ff_dx12_palette_data_destroy(&palette_data);
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&source_texture);
+            ff_dx12_texture_destroy(&target_texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(device_ok);
+            Assert::AreEqual((size_t)0, un_remapped);
+            Assert::AreEqual(size * size, remapped);
+        }
+
+        TEST_METHOD(palette_sprite_indexes_pack_texture_palette_remap_and_matrix)
+        {
+            scoped_device scope;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+            params.format = DXGI_FORMAT_R8_UINT;
+
+            ff_dx12_texture first_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&first_texture, &params));
+            ff_dx12_texture_view first_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&first_view, &first_texture, 0, 1, 0, 1));
+
+            ff_dx12_texture second_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&second_texture, &params));
+            ff_dx12_texture_view second_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&second_view, &second_texture, 0, 1, 0, 1));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            uint32_t colors[FF_PALETTE_SIZE * 2];
+
+            for (size_t i = 0; i < FF_PALETTE_SIZE * 2; i++)
+            {
+                colors[i] = (uint32_t)(0xFF000000u | i);
+            }
+
+            ff_dx12_palette_data palette_data{};
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 2));
+
+            uint8_t remap_bytes[FF_PALETTE_SIZE];
+
+            for (size_t i = 0; i < FF_PALETTE_SIZE; i++)
+            {
+                remap_bytes[i] = (uint8_t)(FF_PALETTE_SIZE - 1 - i);
+            }
+
+            ff_span remap_span{};
+            remap_span.data = remap_bytes;
+            remap_span.size = FF_PALETTE_SIZE;
+
+            const ff_dx12_palette_remap remap = ff_dx12_palette_remap_make(remap_span);
+
+            ff_dx12_sprite sprite{};
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, 8.0f, 8.0f);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            // Every packed field ends up distinct and non-zero on the second instance, so a wrong
+            // shift cannot coincide with the right one.
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 0));
+            sprite.view = &first_view;
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+
+            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_translation(5.0f, 7.0f, 0.0f));
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 1));
+            ff_dx12_draw_device_push_palette_remap(&scope.device, &remap);
+
+            sprite.view = &second_view;
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+
+            ff_dx12_draw_device_pop_palette_remap(&scope.device);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+
+            const ff_dx12_instance_bucket* bucket =
+                &scope.device.buckets[ff_dx12_instance_bucket_palette_sprites];
+
+            Assert::AreEqual((size_t)2, bucket->count);
+
+            const ff_dx12_sprite_instance* instances =
+                (const ff_dx12_sprite_instance*)bucket->data;
+
+            const uint32_t first = instances[0].indexes;
+            const uint32_t second = instances[1].indexes;
+
+            ff_dx12_palette_data_destroy(&palette_data);
+            ff_dx12_texture_view_destroy(&second_view);
+            ff_dx12_texture_view_destroy(&first_view);
+            ff_dx12_texture_destroy(&second_texture);
+            ff_dx12_texture_destroy(&first_texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::AreEqual(0x00000000u, first);
+            Assert::AreEqual(0x01010101u, second);
+        }
+
+        // Two palettes sitting on the same row of the same data hash identically, so they must
+        // share one row of the shared palette texture instead of burning two slots.
+        TEST_METHOD(identical_palettes_share_one_interned_row)
+        {
+            scoped_device scope;
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            uint32_t colors[FF_PALETTE_SIZE * 2];
+
+            for (size_t i = 0; i < FF_PALETTE_SIZE * 2; i++)
+            {
+                colors[i] = (uint32_t)(0xFF000000u | i);
+            }
+
+            ff_dx12_palette_data palette_data{};
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 2));
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+            params.format = DXGI_FORMAT_R8_UINT;
+
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+            ff_dx12_texture_view texture_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&texture_view, &texture, 0, 1, 0, 1));
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &texture_view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, 8.0f, 8.0f);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 0));
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 1));
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+
+            // Back to row 0, which is already interned.
+            ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 0));
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_pop_palette(&scope.device);
+
+            const size_t palette_count = scope.device.palette_count;
+
+            const ff_dx12_instance_bucket* bucket =
+                &scope.device.buckets[ff_dx12_instance_bucket_palette_sprites];
+            const ff_dx12_sprite_instance* instances =
+                (const ff_dx12_sprite_instance*)bucket->data;
+
+            const uint32_t first_palette = (instances[0].indexes >> 8) & 0xFF;
+            const uint32_t second_palette = (instances[1].indexes >> 8) & 0xFF;
+            const uint32_t third_palette = (instances[2].indexes >> 8) & 0xFF;
+
+            ff_dx12_palette_data_destroy(&palette_data);
+            ff_dx12_texture_view_destroy(&texture_view);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::AreEqual((size_t)2, palette_count);
+            Assert::AreEqual(0u, first_palette);
+            Assert::AreEqual(1u, second_palette);
+            Assert::AreEqual(0u, third_palette);
+        }
+
+        // Without a palette pushed there is nothing to look up, so the draw must be dropped rather
+        // than silently reading whatever is in row 0.
+        TEST_METHOD(a_palette_sprite_without_a_palette_draws_nothing)
+        {
+            scoped_device scope;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+            params.format = DXGI_FORMAT_R8_UINT;
+
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+            ff_dx12_texture_view texture_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&texture_view, &texture, 0, 1, 0, 1));
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &texture_view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, 8.0f, 8.0f);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+
+            ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+
+            const size_t count = scope.device.buckets[ff_dx12_instance_bucket_palette_sprites].count;
+
+            ff_dx12_texture_view_destroy(&texture_view);
+            ff_dx12_texture_destroy(&texture);
+
+            Assert::AreEqual((size_t)0, count);
+        }
     };
 }

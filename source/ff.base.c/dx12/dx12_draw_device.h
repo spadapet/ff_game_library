@@ -6,6 +6,24 @@
 #include "dx12_draw_state.h"
 #include "dx12_instance_bucket.h"
 #include "dx12_texture_view.h"
+#include "dx12_palette.h"
+
+#define FF_DX12_MAX_PALETTE_STACK 16
+
+// One interned palette row: which palette produced it, and the hash that identified it. The hash
+// is kept separately from the palette because the palette may move to another row later.
+typedef struct ff_dx12_palette_entry
+{
+    ff_dx12_palette palette;
+    uint64_t hash;
+} ff_dx12_palette_entry;
+
+typedef struct ff_dx12_palette_remap_entry
+{
+    ff_dx12_palette_remap remap;
+    uint64_t hash;
+} ff_dx12_palette_remap_entry;
+
 
 #define FF_DX12_MAX_RENDER_COUNT 0x80000
 #define FF_DX12_MAX_RENDER_DEPTH 1.0f
@@ -64,7 +82,7 @@ typedef struct ff_dx12_sprite_instance
     // instead, which is how font glyphs get recolored.
     float color[4];
 
-    // x, y, z = depth, w = rotation in degrees counter-clockwise.
+    // x, y, z = depth, w = rotation in radians counter-clockwise.
     float pos_rot[4];
 
     // matrix << 24, remap << 16, (palette or sampler) << 8, texture
@@ -214,6 +232,40 @@ typedef struct ff_dx12_draw_device
     ff_dx12_texture_view* textures[FF_DX12_MAX_TEXTURES];
     size_t texture_count;
 
+    // The same table for palette sprites, whose textures hold indexes rather than colors and so
+    // bind to a separate shader register range.
+    ff_dx12_texture_view* palette_textures[FF_DX12_MAX_PALETTE_TEXTURES];
+    size_t palette_texture_count;
+
+    // Every palette row and remap row in use this flush, gathered into two shared textures so a
+    // draw needs one binding rather than one per palette. Rows are interned by hash, so repeated
+    // pushes of the same palette reuse a row, and the stored hash also suppresses the upload when
+    // a row is already correct from a previous flush.
+    ff_dx12_texture palette_texture;
+    ff_dx12_texture palette_remap_texture;
+    ff_dx12_texture_view palette_texture_view;
+    ff_dx12_texture_view palette_remap_texture_view;
+
+    ff_dx12_palette_entry palettes[FF_DX12_MAX_PALETTES];
+    size_t palette_count;
+    uint64_t palette_row_hashes[FF_DX12_MAX_PALETTES];
+
+    ff_dx12_palette_remap_entry palette_remaps[FF_DX12_MAX_PALETTE_REMAPS];
+    size_t palette_remap_count;
+    uint64_t palette_remap_row_hashes[FF_DX12_MAX_PALETTE_REMAPS];
+
+    // Cached results of interning the top of each stack, invalidated on push/pop and on flush.
+    uint32_t palette_index;
+    uint32_t palette_remap_index;
+
+    ff_dx12_palette palette_stack[FF_DX12_MAX_PALETTE_STACK];
+    size_t palette_stack_count;
+
+    ff_dx12_palette_remap palette_remap_stack[FF_DX12_MAX_PALETTE_STACK];
+    size_t palette_remap_stack_count;
+
+    ff_dx12_ps_constants_0 ps_constants_0;
+
     // Set by begin when drawing into a target that has a depth buffer. Selects the depth-enabled
     // pipeline variant, and is what makes the per-instance depth slices actually resolve overlap
     // on the GPU rather than relying purely on draw order.
@@ -323,3 +375,19 @@ void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
 // distinct textures can be drawn between one begin and end.
 void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
     const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform);
+
+// Draws a sprite whose texture holds palette indexes rather than colors. The active palette and
+// palette remap come from the stacks below, so the same sprite can be recolored without touching
+// its texture.
+void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
+    const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform);
+
+// The palette used by palette sprites drawn until the matching pop. Pushing the same palette that
+// is already active is cheap: it interns to the row already in the shared texture.
+void ff_dx12_draw_device_push_palette(ff_dx12_draw_device* device, ff_dx12_palette palette);
+void ff_dx12_draw_device_pop_palette(ff_dx12_draw_device* device);
+
+// The index -> index remap applied before the palette lookup. A NULL or empty remap is the
+// identity.
+void ff_dx12_draw_device_push_palette_remap(ff_dx12_draw_device* device, const ff_dx12_palette_remap* remap);
+void ff_dx12_draw_device_pop_palette_remap(ff_dx12_draw_device* device);

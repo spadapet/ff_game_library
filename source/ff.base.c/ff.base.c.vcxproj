@@ -60,6 +60,7 @@
     <ClCompile Include="dx12\dx12_pacing.c" />
     <ClCompile Include="dx12\dx12_queue.c" />
     <ClCompile Include="dx12\dx12_commands.c" />
+    <ClCompile Include="dx12\dx12_palette.c" />
     <ClCompile Include="dx12\dx12_object_cache.c" />
     <ClCompile Include="pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -125,6 +126,7 @@
     <ClInclude Include="dx12\dx12_pacing.h" />
     <ClInclude Include="dx12\dx12_queue.h" />
     <ClInclude Include="dx12\dx12_commands.h" />
+    <ClInclude Include="dx12\dx12_palette.h" />
     <ClInclude Include="dx12\dx12_object_cache.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="windows\module.h" />
