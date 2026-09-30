@@ -273,8 +273,9 @@ static void report_stats(ff_test_app* app)
 
     wchar_t title[256];
     _snwprintf_s(title, _countof(title), _TRUNCATE,
-        L"ff.test.c [%.*S] - %.1f fps - median %.2f ms - p99 %.2f ms - %.3f cores",
-        (int)app->mode->name.count, app->mode->name.data, fps, median_ms, p99_ms, cores);
+        L"ff.test.c [%.*S] - %.1f fps - median %.2f ms - p99 %.2f ms - %.3f cores%s%S",
+        (int)app->mode->name.count, app->mode->name.data, fps, median_ms, p99_ms, cores,
+        status[0] ? L" | " : L"", status);
     SetWindowTextW(app->window->hwnd, title);
 
     ff_arena_destroy(&arena);

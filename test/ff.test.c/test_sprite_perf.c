@@ -6,7 +6,7 @@
 #define PERF_TEXTURE_SIZE 64
 #define PERF_ATLAS_CELLS 2
 #define PERF_PALETTE_ROWS 4
-#define PERF_DEFAULT_SPRITES 20000
+#define PERF_DEFAULT_SPRITES 1000
 #define PERF_MAX_SPRITES 1000000
 #define PERF_PI 3.14159265f
 
@@ -73,30 +73,46 @@ static void fill_atlas(uint32_t* pixels)
             const size_t cell_y = y / cell;
             const size_t in_x = x % cell;
             const size_t in_y = y % cell;
-
             const float dx = (float)in_x - half;
             const float dy = (float)in_y - half;
             const float distance = sqrtf(dx * dx + dy * dy);
-
-            uint32_t color;
+            uint32_t color = 0;
 
             if (cell_x == 0 && cell_y == 0)
             {
-                color = rgba(80, 160, 255, 255);
+                const float angle = atan2f(dy, dx);
+                const float star_radius = 9.0f + 5.0f * cosf(angle * 4.0f);
+
+                if (distance < star_radius)
+                {
+                    color = (distance < 4.0f) ? rgba(255, 255, 255, 255) :
+                        ((distance < 9.0f) ? rgba(255, 232, 32, 255) : rgba(255, 96, 24, 255));
+                }
             }
             else if (cell_x == 1 && cell_y == 0)
             {
-                color = (distance < half) ? rgba(255, 96, 96, 255) : 0;
+                if (distance < 14.0f)
+                {
+                    color = (distance > 10.0f) ? rgba(255, 255, 255, 255) :
+                        ((distance > 6.0f) ? rgba(255, 48, 192, 255) : rgba(32, 232, 255, 255));
+                }
             }
             else if (cell_x == 0 && cell_y == 1)
             {
-                const bool light = (((in_x / 8) + (in_y / 8)) & 1) != 0;
-                color = light ? rgba(255, 216, 64, 255) : rgba(64, 32, 0, 255);
+                if (fabsf(dx) + fabsf(dy) < 14.0f)
+                {
+                    const size_t pattern = ((in_x / 5) + (in_y / 5)) % 3;
+                    color = (pattern == 0) ? rgba(64, 255, 96, 255) :
+                        ((pattern == 1) ? rgba(32, 160, 255, 255) : rgba(255, 64, 192, 255));
+                }
             }
             else
             {
-                const uint32_t ramp = (uint32_t)((in_x + in_y) * 255 / (cell * 2 - 1));
-                color = rgba(ramp, 255 - ramp, 160, 255);
+                const size_t band = ((in_x + in_y) / 4) % 4;
+                color = (abs((int)in_x - (int)in_y) < 2) ? rgba(255, 255, 255, 255) :
+                    ((band == 0) ? rgba(255, 48, 96, 255) :
+                    ((band == 1) ? rgba(255, 208, 32, 255) :
+                    ((band == 2) ? rgba(32, 224, 255, 255) : rgba(192, 64, 255, 255))));
             }
 
             pixels[y * PERF_TEXTURE_SIZE + x] = color;
@@ -104,8 +120,6 @@ static void fill_atlas(uint32_t* pixels)
     }
 }
 
-// The palette-index version of the same atlas. Index 0 is reserved as transparent by the shader,
-// so every visible pixel is at least 1.
 static void fill_index_atlas(uint8_t* pixels)
 {
     const size_t cell = PERF_TEXTURE_SIZE / PERF_ATLAS_CELLS;
@@ -119,28 +133,36 @@ static void fill_index_atlas(uint8_t* pixels)
             const size_t cell_y = y / cell;
             const size_t in_x = x % cell;
             const size_t in_y = y % cell;
-
             const float dx = (float)in_x - half;
             const float dy = (float)in_y - half;
             const float distance = sqrtf(dx * dx + dy * dy);
-
-            uint8_t index;
+            uint8_t index = 0;
 
             if (cell_x == 0 && cell_y == 0)
             {
-                index = 1;
+                const float star_radius = 9.0f + 5.0f * cosf(atan2f(dy, dx) * 4.0f);
+                if (distance < star_radius)
+                {
+                    index = (uint8_t)(1 + (size_t)distance % 24);
+                }
             }
             else if (cell_x == 1 && cell_y == 0)
             {
-                index = (distance < half) ? 2 : 0;
+                if (distance < 14.0f)
+                {
+                    index = (uint8_t)(1 + (size_t)(distance * 1.5f) % 24);
+                }
             }
             else if (cell_x == 0 && cell_y == 1)
             {
-                index = (((in_x / 8) + (in_y / 8)) & 1) ? 3 : 4;
+                if (fabsf(dx) + fabsf(dy) < 14.0f)
+                {
+                    index = (uint8_t)(1 + (((in_x / 5) + (in_y / 5)) % 24));
+                }
             }
             else
             {
-                index = (uint8_t)(1 + ((in_x + in_y) * 5) / (cell * 2));
+                index = (uint8_t)(1 + ((in_x + in_y) % 24));
             }
 
             pixels[y * PERF_TEXTURE_SIZE + x] = index;
@@ -225,7 +247,7 @@ static bool set_sprite_count(size_t count)
         sprite->angle = (float)(next_random(&state) % 62832) / 10000.0f;
         sprite->radius = 40.0f + (float)(next_random(&state) % 5000) / 10.0f;
         sprite->speed = 0.15f + (float)(next_random(&state) % 1000) / 1000.0f;
-        sprite->cell = next_random(&state) % (PERF_ATLAS_CELLS * PERF_ATLAS_CELLS);
+        sprite->cell = (uint32_t)(i % (PERF_ATLAS_CELLS * PERF_ATLAS_CELLS));
     }
 
     s_perf.count = count;
@@ -335,7 +357,7 @@ static void draw_sprites(ff_dx12_draw_device* device, float phase)
 
     ff_dx12_sprite sprite;
     sprite.view = palette ? &s_perf.palette_view : &s_perf.view;
-    sprite.world = ff_rect_float_make(-16.0f, -16.0f, 16.0f, 16.0f);
+    sprite.world = ff_rect_float_make(-24.0f, -24.0f, 24.0f, 24.0f);
     sprite.transparent = false;
 
     ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
@@ -419,11 +441,14 @@ static bool perf_render(ff_test_app* app, ff_dx12_commands* commands)
         target_size, ff_dx12_target_window_format(), NULL, view_rect, world_rect, false), false);
 
     static float phase;
+    static int64_t last_tick;
 
-    if (!s_perf.paused)
+    const int64_t now = ff_test_perf_now();
+    if (!s_perf.paused && last_tick)
     {
-        phase += 1.0f / 60.0f;
+        phase += (float)(now - last_tick) / (float)app->stats.frequency;
     }
+    last_tick = now;
 
     ff_dx12_commands_begin_event(commands, ff_dx12_gpu_event_draw_2d);
 
