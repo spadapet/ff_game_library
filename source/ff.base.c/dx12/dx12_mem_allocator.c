@@ -262,7 +262,7 @@ static ff_dx12_mem_range ring_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t s
         while (buffer->u.ring.ranges_count)
         {
             ff_dx12_mem_ring_range* front = ring_front(buffer);
-            if (aligned_start <= front->start && aligned_start + size > front->start)
+            if (allocated_start <= front->start && aligned_start + size > front->start)
             {
                 if (ff_dx12_fence_value_complete(front->fence_value))
                 {
@@ -317,11 +317,11 @@ static ff_dx12_mem_range free_list_alloc_bytes(ff_dx12_mem_buffer* buffer, uint6
         {
             uint64_t allocated_start = ranges_a[i].start;
             uint64_t aligned_start = ff_math_round_up(ranges_a[i].start, align);
-            uint64_t allocated_size = size + aligned_start - allocated_start;
             uint64_t after_end = ranges_a[i].start + ranges_a[i].size;
 
-            if (after_end - aligned_start >= size)
+            if (aligned_start <= after_end && after_end - aligned_start >= size)
             {
+                uint64_t allocated_size = size + aligned_start - allocated_start;
                 ranges_a[i].start += allocated_size;
                 ranges_a[i].size -= allocated_size;
 

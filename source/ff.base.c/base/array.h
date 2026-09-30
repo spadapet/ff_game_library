@@ -3,8 +3,8 @@
 typedef struct ff_arena ff_arena;
 
 void* internal_ff_array_alloc(ff_arena* arena, size_t item_size, size_t item_align, size_t capacity);
-void internal_ff_array_realloc(void** array_ptr, size_t min_capacity);
-void internal_ff_array_resize(void** array_ptr, size_t new_size);
+bool internal_ff_array_realloc(void** array_ptr, size_t min_capacity);
+bool internal_ff_array_resize(void** array_ptr, size_t new_size);
 size_t internal_ff_array_push_reserve(void** array_ptr);
 
 size_t ff_array_count(const void* data);
@@ -19,5 +19,8 @@ size_t ff_array_capacity(const void* data);
     do \
     { \
         size_t internal_ff_array_index = internal_ff_array_push_reserve((void**)&(a)); \
-        (a)[internal_ff_array_index] = (value); \
+        if (internal_ff_array_index != SIZE_MAX) \
+        { \
+            (a)[internal_ff_array_index] = (value); \
+        } \
     } while (0)

@@ -4,6 +4,7 @@
 #include "base/string.h"
 #include "dx12/dx12_commands.h"
 #include "dx12/dx12_descriptor_allocator.h"
+#include "dx12/dx12_format.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_texture.h"
@@ -34,9 +35,10 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     const size_t mip_count = params->mip_count ? params->mip_count : 1;
     const size_t array_size = params->array_size ? params->array_size : 1;
     const size_t sample_count = params->sample_count ? params->sample_count : 1;
-    const DXGI_FORMAT format = (params->format != DXGI_FORMAT_UNKNOWN) ? params->format : DXGI_FORMAT_R8G8B8A8_UNORM;
+    const DXGI_FORMAT format = ff_dx12_format_fix(params->format, params->width, params->height, mip_count);
 
     FF_ASSERT_RET_VAL(params->width && params->height, false);
+    FF_ASSERT_RET_VAL(!params->optimized_clear_color || ff_dx12_format_render_target(format), false);
 
     // Mips and MSAA are mutually exclusive in D3D12.
     FF_ASSERT_RET_VAL(sample_count == 1 || mip_count == 1, false);
@@ -50,7 +52,9 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     desc.Format = format;
     desc.SampleDesc.Count = (UINT)ff_dx12_fix_sample_count(format, sample_count);
     desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    desc.Flags = (D3D12_RESOURCE_FLAGS)(ff_dx12_format_render_target(format)
+        ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
+        : D3D12_RESOURCE_FLAG_NONE);
 
     D3D12_CLEAR_VALUE clear_value = { 0 };
     if (params->optimized_clear_color)
@@ -160,10 +164,18 @@ bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands
     FF_ASSERT_RET_VAL(mip_index < ff_dx12_texture_mip_count(texture), false);
     FF_ASSERT_RET_VAL(row_pitch, false);
 
+    const DXGI_FORMAT format = ff_dx12_texture_format(texture);
+    const size_t source_row_count = ff_dx12_format_row_count(format, height);
+    const size_t min_row_pitch = ff_dx12_format_row_pitch(format, width);
+
+    FF_ASSERT_RET_VAL(source_row_count && min_row_pitch && row_pitch >= min_row_pitch, false);
+
     // The copy source footprint must have rows aligned to D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, so
     // the upload copy is done row by row into a repitched staging range rather than as one memcpy.
     const size_t aligned_row_pitch = ff_math_round_up(row_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-    const uint64_t upload_size = (uint64_t)aligned_row_pitch * height;
+    FF_ASSERT_RET_VAL(aligned_row_pitch <= UINT32_MAX, false);
+
+    const uint64_t upload_size = (uint64_t)aligned_row_pitch * source_row_count;
 
     ff_dx12_mem_range upload = ff_dx12_mem_allocator_ring_alloc_texture(
         ff_dx12_upload_allocator(), upload_size, ff_dx12_commands_next_fence_value(commands));
@@ -173,13 +185,13 @@ bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands
     FF_ASSERT_RET_VAL(dest_data, false);
 
     const uint8_t* source_data = (const uint8_t*)data;
-    for (size_t y = 0; y < height; y++)
+    for (size_t y = 0; y < source_row_count; y++)
     {
         memcpy(dest_data + y * aligned_row_pitch, source_data + y * row_pitch, row_pitch);
     }
 
     D3D12_SUBRESOURCE_FOOTPRINT layout = { 0 };
-    layout.Format = ff_dx12_texture_format(texture);
+    layout.Format = format;
     layout.Width = (UINT)width;
     layout.Height = (UINT)height;
     layout.Depth = 1;

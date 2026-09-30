@@ -42,6 +42,11 @@ static bool buffer_init_resource(ff_dx12_buffer* buffer, size_t size)
     return true;
 }
 
+static size_t buffer_resource_size(const ff_dx12_buffer* buffer)
+{
+    return buffer->has_resource ? (size_t)buffer->resource.desc.Width : 0;
+}
+
 static void buffer_init_common(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, ff_dx12_buffer_kind kind)
 {
     *buffer = (ff_dx12_buffer){ 0 };
@@ -166,8 +171,11 @@ size_t ff_dx12_buffer_size(const ff_dx12_buffer* buffer)
             // The resource may be padded, so the logical size is what was uploaded.
             return buffer->cpu_size;
 
+        case ff_dx12_buffer_kind_gpu:
+            return buffer->has_resource ? buffer->gpu_size : 0;
+
         default:
-            return buffer->has_resource ? (size_t)buffer->resource.desc.Width : 0;
+            return 0;
     }
 }
 
@@ -227,11 +235,12 @@ void* ff_dx12_buffer_map(ff_dx12_buffer* buffer, ff_dx12_commands* commands, siz
 
     FF_ASSERT_RET_VAL(commands, NULL);
 
-    if (size > ff_dx12_buffer_size(buffer))
+    const size_t resource_size = buffer_resource_size(buffer);
+    if (size > resource_size)
     {
         // Growing by doubling keeps a buffer that creeps upward in size from reallocating every
         // frame. The old contents are not preserved, which is fine because map overwrites them.
-        FF_ASSERT_RET_VAL(buffer_init_resource(buffer, ff_math_max_size(ff_dx12_buffer_size(buffer) * 2, size)), NULL);
+        FF_ASSERT_RET_VAL(buffer_init_resource(buffer, ff_math_max_size(resource_size * 2, size)), NULL);
     }
 
     buffer->mapped_range = ff_dx12_mem_allocator_ring_alloc_buffer(
@@ -245,6 +254,7 @@ void* ff_dx12_buffer_map(ff_dx12_buffer* buffer, ff_dx12_commands* commands, siz
         FF_DEBUG_FAIL_RET_VAL(NULL);
     }
 
+    buffer->gpu_size = size;
     buffer->data_hash = 0;
     buffer->version++;
 
@@ -378,6 +388,12 @@ bool internal_ff_dx12_buffer_reset(ff_dx12_buffer* buffer, ff_dx12_commands* com
 
     buffer->version++;
     buffer->data_hash = 0;
+
+    if (buffer->kind == ff_dx12_buffer_kind_gpu)
+    {
+        buffer->gpu_size = 0;
+        return true;
+    }
 
     if (buffer->kind != ff_dx12_buffer_kind_gpu_static)
     {

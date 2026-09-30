@@ -125,40 +125,77 @@ bool ff_uncompress(ff_stream* reader, size_t saved_size, ff_stream* writer)
     return status;
 }
 
-static uint8_t base64_byte(char ch)
+static bool base64_byte(char ch, uint8_t* value)
 {
-    if (ch >= 'A' && ch <= 'Z') { return (uint8_t)(ch - 'A'); }
-    if (ch >= 'a' && ch <= 'z') { return (uint8_t)(ch - 'a' + 26); }
-    if (ch >= '0' && ch <= '9') { return (uint8_t)(ch - '0' + 52); }
-    if (ch == '+') { return 62; }
-    if (ch == '/') { return 63; }
+    if (ch >= 'A' && ch <= 'Z') { *value = (uint8_t)(ch - 'A'); return true; }
+    if (ch >= 'a' && ch <= 'z') { *value = (uint8_t)(ch - 'a' + 26); return true; }
+    if (ch >= '0' && ch <= '9') { *value = (uint8_t)(ch - '0' + 52); return true; }
+    if (ch == '+') { *value = 62; return true; }
+    if (ch == '/') { *value = 63; return true; }
 
-    return 0;
+    return false;
 }
 
 ff_span ff_decode_base64(ff_string_view text, ff_arena* arena)
 {
     FF_ASSERT_RET_VAL(arena, ff_span_empty());
     FF_CHECK_RET_VAL(text.count, ff_span_empty());
-    FF_ASSERT_RET_VAL(!(text.count % 4), ff_span_empty());
+    FF_CHECK_RET_VAL(!(text.count % 4), ff_span_empty());
 
-    size_t count = text.count / 4 * 3;
+    size_t padding = 0;
+    if (text.data[text.count - 1] == '=')
+    {
+        padding++;
+
+        if (text.data[text.count - 2] == '=')
+        {
+            padding++;
+        }
+    }
+
+    for (size_t i = 0; i < text.count; i++)
+    {
+        uint8_t value;
+        bool padded = i >= text.count - padding;
+        FF_CHECK_RET_VAL(padded ? text.data[i] == '=' : base64_byte(text.data[i], &value), ff_span_empty());
+    }
+
+    size_t count = text.count / 4 * 3 - padding;
     uint8_t* out = (uint8_t*)ff_arena_alloc(arena, count, 1);
     FF_CHECK_RET_VAL(out, ff_span_empty());
 
     for (size_t i = 0, j = 0; i < text.count; i += 4, j += 3)
     {
-        const uint8_t ch0 = base64_byte(text.data[i + 0]);
-        const uint8_t ch1 = base64_byte(text.data[i + 1]);
-        const uint8_t ch2 = base64_byte(text.data[i + 2]);
-        const uint8_t ch3 = base64_byte(text.data[i + 3]);
+        uint8_t ch0 = 0;
+        uint8_t ch1 = 0;
+        uint8_t ch2 = 0;
+        uint8_t ch3 = 0;
+
+        FF_VERIFY(base64_byte(text.data[i + 0], &ch0));
+        FF_VERIFY(base64_byte(text.data[i + 1], &ch1));
+
+        if (text.data[i + 2] != '=')
+        {
+            FF_VERIFY(base64_byte(text.data[i + 2], &ch2));
+        }
+
+        if (text.data[i + 3] != '=')
+        {
+            FF_VERIFY(base64_byte(text.data[i + 3], &ch3));
+        }
 
         out[j + 0] = (uint8_t)((ch0 << 2) | (ch1 >> 4));
-        out[j + 1] = (uint8_t)((ch1 << 4) | (ch2 >> 2));
-        out[j + 2] = (uint8_t)((ch2 << 6) | ch3);
-    }
 
-    count -= (text.data[text.count - 2] == '=') ? 2 : ((text.data[text.count - 1] == '=') ? 1 : 0);
+        if (j + 1 < count)
+        {
+            out[j + 1] = (uint8_t)((ch1 << 4) | (ch2 >> 2));
+        }
+
+        if (j + 2 < count)
+        {
+            out[j + 2] = (uint8_t)((ch2 << 6) | ch3);
+        }
+    }
 
     return (ff_span)
     {

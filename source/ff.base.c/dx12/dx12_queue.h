@@ -47,6 +47,8 @@ typedef struct ff_dx12_command_cache
     ff_dx12_residency_set residency_set;
     ff_dx12_resource_tracker resource_tracker;
     ff_dx12_fence fence;
+    ff_arena wait_before_execute_arena;
+    bool wait_before_execute_arena_valid;
 
     // Set while the cache is sitting in the queue's recycle list with its lists already closed.
     // A cache can only be handed back out after its lists have been reset.

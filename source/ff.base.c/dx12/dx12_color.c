@@ -49,8 +49,9 @@ ff_color_shader ff_color_to_shader(ff_color color, const uint8_t* index_remap)
     if (color.type == ff_color_type_palette)
     {
         int32_t index = color.palette.index;
+        FF_ASSERT_RET_VAL(index >= 0 && index < 256, shader);
 
-        if (index_remap && index >= 0 && index < 256)
+        if (index_remap)
         {
             index = index_remap[index];
         }

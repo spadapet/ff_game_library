@@ -107,14 +107,17 @@ void ff_dx12_target_texture_clear(ff_dx12_target_texture* target, ff_dx12_comman
 {
     FF_CHECK_RET(ff_dx12_target_texture_valid(target) && commands && color);
 
-    ff_dx12_commands_clear_target(commands, ff_dx12_target_texture_resource(target),
-        ff_dx12_target_texture_view(target), color);
+    ff_dx12_target_range range = ff_dx12_target_texture_range(target);
+    ff_dx12_commands_clear_target_range(commands, ff_dx12_target_texture_resource(target),
+        ff_dx12_target_texture_view(target), color, &range);
 }
 
 void ff_dx12_target_texture_discard(ff_dx12_target_texture* target, ff_dx12_commands* commands)
 {
     FF_CHECK_RET(ff_dx12_target_texture_valid(target) && commands);
-    ff_dx12_commands_discard_target(commands, ff_dx12_target_texture_resource(target));
+
+    ff_dx12_target_range range = ff_dx12_target_texture_range(target);
+    ff_dx12_commands_discard_target_range(commands, ff_dx12_target_texture_resource(target), &range);
 }
 
 bool ff_dx12_target_texture_begin_render(ff_dx12_target_texture* target, ff_dx12_commands* commands, const float* clear_color)
@@ -142,8 +145,9 @@ bool ff_dx12_target_texture_end_render(ff_dx12_target_texture* target, ff_dx12_c
 {
     FF_ASSERT_RET_VAL(ff_dx12_target_texture_valid(target) && commands, false);
 
+    ff_dx12_target_range range = ff_dx12_target_texture_range(target);
     ff_dx12_commands_resource_state(commands, ff_dx12_target_texture_resource(target),
-        D3D12_RESOURCE_STATE_COMMON, 0, 0, 0, 0);
+        D3D12_RESOURCE_STATE_COMMON, range.array_start, range.array_size, range.mip_start, range.mip_size);
 
     return true;
 }

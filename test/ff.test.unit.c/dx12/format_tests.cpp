@@ -98,6 +98,31 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, ff_dx12_format_bits_per_pixel(DXGI_FORMAT_UNKNOWN));
         }
 
+        TEST_METHOD(render_target_support)
+        {
+            Assert::IsTrue(ff_dx12_format_render_target(DXGI_FORMAT_R8G8B8A8_UNORM));
+            Assert::IsTrue(ff_dx12_format_render_target(DXGI_FORMAT_R8_UINT));
+            Assert::IsFalse(ff_dx12_format_render_target(DXGI_FORMAT_BC1_UNORM));
+            Assert::IsFalse(ff_dx12_format_render_target(DXGI_FORMAT_D24_UNORM_S8_UINT));
+            Assert::IsFalse(ff_dx12_format_render_target(DXGI_FORMAT_UNKNOWN));
+        }
+
+        TEST_METHOD(row_layout)
+        {
+            Assert::AreEqual((size_t)1, ff_dx12_format_block_width(DXGI_FORMAT_R8G8B8A8_UNORM));
+            Assert::AreEqual((size_t)1, ff_dx12_format_block_height(DXGI_FORMAT_R8G8B8A8_UNORM));
+            Assert::AreEqual((size_t)4, ff_dx12_format_row_pitch(DXGI_FORMAT_R8G8B8A8_UNORM, 1));
+            Assert::AreEqual((size_t)12, ff_dx12_format_row_pitch(DXGI_FORMAT_R8G8B8A8_UNORM, 3));
+            Assert::AreEqual((size_t)3, ff_dx12_format_row_count(DXGI_FORMAT_R8G8B8A8_UNORM, 3));
+
+            Assert::AreEqual((size_t)4, ff_dx12_format_block_width(DXGI_FORMAT_BC1_UNORM));
+            Assert::AreEqual((size_t)4, ff_dx12_format_block_height(DXGI_FORMAT_BC1_UNORM));
+            Assert::AreEqual((size_t)8, ff_dx12_format_row_pitch(DXGI_FORMAT_BC1_UNORM, 1));
+            Assert::AreEqual((size_t)16, ff_dx12_format_row_pitch(DXGI_FORMAT_BC1_UNORM, 8));
+            Assert::AreEqual((size_t)1, ff_dx12_format_row_count(DXGI_FORMAT_BC1_UNORM, 1));
+            Assert::AreEqual((size_t)2, ff_dx12_format_row_count(DXGI_FORMAT_BC1_UNORM, 8));
+        }
+
         TEST_METHOD(parse_known_names)
         {
             Assert::IsTrue(DXGI_FORMAT_R8G8B8A8_UNORM == ff_dx12_format_parse(FF_SVL("rgba32")));

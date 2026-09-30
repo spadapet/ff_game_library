@@ -439,9 +439,10 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
     // the pacing ladder blames on the app.
     const int64_t wait_start = perf_counter();
 
-    if (target->latency_handle)
+    if (target->latency_handle && WaitForSingleObjectEx(target->latency_handle, INFINITE, FALSE) == WAIT_FAILED)
     {
-        WaitForSingleObjectEx(target->latency_handle, INFINITE, FALSE);
+        ff_dx12_device_fatal_error(FF_SVL("Frame latency wait failed"));
+        return false;
     }
 
     const double wait_seconds = (double)(perf_counter() - wait_start) / perf_frequency();
@@ -453,6 +454,11 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
     const HRESULT hr = IDXGISwapChain4_Present(target->swap_chain,
         ff_dx12_target_window_pacing_vsync(target) ? 1 : 0, 0);
 
+    if (FAILED(hr))
+    {
+        ff_dx12_device_fatal_error(FF_SVL("Swap chain present failed"));
+    }
+
     const double frame_seconds = target->pacing.last_tick
         ? (double)(perf_counter() - target->pacing.last_tick) / perf_frequency()
         : 0.0;
@@ -460,8 +466,7 @@ bool ff_dx12_target_window_end_render(ff_dx12_target_window* target, ff_dx12_com
     const double busy_seconds = (frame_seconds > wait_seconds) ? frame_seconds - wait_seconds : 0.0;
     const bool paced = update_pacing(target, busy_seconds);
 
-    return paced && ff_dx12_device_valid() &&
-        hr != DXGI_ERROR_DEVICE_RESET && hr != DXGI_ERROR_DEVICE_REMOVED;
+    return paced && ff_dx12_device_valid() && SUCCEEDED(hr);
 }
 
 void internal_ff_dx12_target_window_before_reset(ff_dx12_target_window* target)

@@ -9,12 +9,11 @@
 static const size_t s_index_map_min_size = 64;
 
 // https://docs.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#common-state-promotion
-static bool allow_promotion(ff_dx12_resource* resource, ff_dx12_resource_state_type type_before,
+static bool allow_promotion(const D3D12_RESOURCE_DESC* desc, ff_dx12_resource_state_type type_before,
     D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_STATES state_after)
 {
-    FF_CHECK_RET_VAL(type_before == ff_dx12_resource_state_type_global && state_before == D3D12_RESOURCE_STATE_COMMON, false);
+    FF_CHECK_RET_VAL(desc && type_before == ff_dx12_resource_state_type_global && state_before == D3D12_RESOURCE_STATE_COMMON, false);
 
-    const D3D12_RESOURCE_DESC* desc = ff_dx12_resource_desc(resource);
     D3D12_RESOURCE_STATES allowed_read_states;
     D3D12_RESOURCE_STATES allowed_write_states;
 
@@ -58,12 +57,10 @@ static bool allow_promotion(ff_dx12_resource* resource, ff_dx12_resource_state_t
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#common-state-promotion
-static bool allow_decay(D3D12_COMMAND_LIST_TYPE list_type, ff_dx12_resource* resource,
+static bool allow_decay(D3D12_COMMAND_LIST_TYPE list_type, const D3D12_RESOURCE_DESC* desc,
     ff_dx12_resource_state_type type_before, D3D12_RESOURCE_STATES before_state, D3D12_RESOURCE_STATES after_state)
 {
-    FF_CHECK_RET_VAL(type_before != ff_dx12_resource_state_type_none && after_state == D3D12_RESOURCE_STATE_COMMON, false);
-
-    const D3D12_RESOURCE_DESC* desc = ff_dx12_resource_desc(resource);
+    FF_CHECK_RET_VAL(desc && type_before != ff_dx12_resource_state_type_none && after_state == D3D12_RESOURCE_STATE_COMMON, false);
 
     if (list_type == D3D12_COMMAND_LIST_TYPE_COPY ||
         desc->Dimension == D3D12_RESOURCE_DIMENSION_BUFFER ||
@@ -154,7 +151,6 @@ static void index_map_remove(ff_dx12_resource_tracker* tracker, const ff_dx12_re
     }
 }
 
-// Repoints an already-mapped resource at a new entries_a index, for the swap-remove in forget.
 static void index_map_move(ff_dx12_resource_tracker* tracker, const ff_dx12_resource* resource, size_t entry_index)
 {
     FF_CHECK_RET(tracker->index_map_size);
@@ -234,6 +230,7 @@ static ff_dx12_resource_tracker_entry* find_or_add_entry(ff_dx12_resource_tracke
     entry = &tracker->entries_a[new_index];
     *entry = (ff_dx12_resource_tracker_entry){ 0 };
     entry->resource = resource;
+    entry->desc = *ff_dx12_resource_desc(resource);
     entry->first_barriers_a = ff_array_init(D3D12_RESOURCE_BARRIER, &tracker->arena);
     ff_dx12_resource_state_init(&entry->state, &tracker->arena, D3D12_RESOURCE_STATE_COMMON,
         ff_dx12_resource_state_type_none, array_size, mip_size);
@@ -258,6 +255,7 @@ void ff_dx12_resource_tracker_init(ff_dx12_resource_tracker* tracker)
     *tracker = (ff_dx12_resource_tracker){ 0 };
     ff_arena_init_heap_local(&tracker->arena, 0);
     tracker->entries_a = ff_array_init(ff_dx12_resource_tracker_entry, &tracker->arena);
+    tracker->forgotten_entries_a = ff_array_init(ff_dx12_resource_tracker_forgotten_entry, &tracker->arena);
     tracker->barriers_pending_a = ff_array_init(D3D12_RESOURCE_BARRIER, &tracker->arena);
     index_map_rebuild(tracker, s_index_map_min_size);
 }
@@ -281,10 +279,20 @@ void ff_dx12_resource_tracker_reset(ff_dx12_resource_tracker* tracker)
         ff_dx12_resource_set_tracker(tracker->entries_a[i].resource, NULL);
     }
 
+    size_t forgotten_count = ff_array_count(tracker->forgotten_entries_a);
+    for (size_t i = 0; i < forgotten_count; i++)
+    {
+        if (tracker->forgotten_entries_a[i].resource_ref)
+        {
+            ID3D12Resource_Release(tracker->forgotten_entries_a[i].resource_ref);
+        }
+    }
+
     // The arena is reset rather than destroyed so a recycled tracker reuses its memory; every
     // arena allocation below belongs to this tracker and is rebuilt right after.
     ff_arena_reset(&tracker->arena);
     tracker->entries_a = ff_array_init(ff_dx12_resource_tracker_entry, &tracker->arena);
+    tracker->forgotten_entries_a = ff_array_init(ff_dx12_resource_tracker_forgotten_entry, &tracker->arena);
     tracker->barriers_pending_a = ff_array_init(D3D12_RESOURCE_BARRIER, &tracker->arena);
     tracker->index_map = NULL;
     tracker->index_map_size = 0;
@@ -336,7 +344,14 @@ void ff_dx12_resource_tracker_state(ff_dx12_resource_tracker* tracker, ff_dx12_r
         if (all && ff_dx12_resource_state_all_same(&entry->state))
         {
             ff_dx12_resource_state_entry old_state = ff_dx12_resource_state_get(&entry->state, 0, NULL);
-            if (needs_transition(old_state.state, state))
+            if (old_state.type == ff_dx12_resource_state_type_none)
+            {
+                ff_array_push(entry->first_barriers_a,
+                    transition_barrier(dx12_res, state, state, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES));
+                ff_dx12_resource_state_set(&entry->state, state, ff_dx12_resource_state_type_pending,
+                    0, ff_dx12_resource_state_sub_resource_size(&entry->state));
+            }
+            else if (needs_transition(old_state.state, state))
             {
                 ff_array_push(tracker->barriers_pending_a,
                     transition_barrier(dx12_res, old_state.state, state, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES));
@@ -349,19 +364,16 @@ void ff_dx12_resource_tracker_state(ff_dx12_resource_tracker* tracker, ff_dx12_r
             for (size_t i = ia * resource_mip_size + mip_start, i2 = i + mip_size; i < i2; i++)
             {
                 ff_dx12_resource_state_entry old_state = ff_dx12_resource_state_get(&entry->state, i, NULL);
-                if (needs_transition(old_state.state, state))
+                if (old_state.type == ff_dx12_resource_state_type_none)
                 {
-                    if (old_state.type == ff_dx12_resource_state_type_none)
-                    {
-                        ff_array_push(entry->first_barriers_a, transition_barrier(dx12_res, state, state, (UINT)i));
-                        ff_dx12_resource_state_set(&entry->state, state, ff_dx12_resource_state_type_pending, i, 1);
-                    }
-                    else
-                    {
-                        ff_array_push(tracker->barriers_pending_a,
-                            transition_barrier(dx12_res, old_state.state, state, (UINT)i));
-                        ff_dx12_resource_state_set(&entry->state, state, ff_dx12_resource_state_type_barrier, i, 1);
-                    }
+                    ff_array_push(entry->first_barriers_a, transition_barrier(dx12_res, state, state, (UINT)i));
+                    ff_dx12_resource_state_set(&entry->state, state, ff_dx12_resource_state_type_pending, i, 1);
+                }
+                else if (needs_transition(old_state.state, state))
+                {
+                    ff_array_push(tracker->barriers_pending_a,
+                        transition_barrier(dx12_res, old_state.state, state, (UINT)i));
+                    ff_dx12_resource_state_set(&entry->state, state, ff_dx12_resource_state_type_barrier, i, 1);
                 }
             }
         }
@@ -396,13 +408,25 @@ void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_
     ff_dx12_resource_tracker_entry* entry = find_entry(tracker, resource);
     FF_CHECK_RET(entry);
 
-    // Held-back first barriers are dropped along with the entry: they were never recorded, and
-    // there is no longer a wrapper whose global state they could be resolved against.
+    if (ff_array_count(entry->first_barriers_a))
+    {
+        size_t new_index = ff_array_count(tracker->forgotten_entries_a);
+        ff_array_resize(tracker->forgotten_entries_a, new_index + 1);
+
+        ff_dx12_resource_tracker_forgotten_entry* forgotten = &tracker->forgotten_entries_a[new_index];
+        *forgotten = (ff_dx12_resource_tracker_forgotten_entry){ 0 };
+        forgotten->resource_key = resource;
+        forgotten->resource_ref = resource->resource;
+        forgotten->desc = entry->desc;
+        forgotten->first_barriers_a = entry->first_barriers_a;
+        ID3D12Resource_AddRef(forgotten->resource_ref);
+        ff_dx12_resource_state_copy(&forgotten->state, &tracker->arena, &entry->state);
+        ff_dx12_resource_state_copy(&forgotten->global_state, &tracker->arena, ff_dx12_resource_global_state(resource));
+    }
+
     const size_t count = ff_array_count(tracker->entries_a);
     const size_t index = (size_t)(entry - tracker->entries_a);
 
-    // Unmap before the swap, while the probe-chain repair can still resolve every slot against
-    // the entry it currently points at.
     index_map_remove(tracker, resource);
 
     if (index != count - 1)
@@ -412,7 +436,6 @@ void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_
     }
 
     ff_array_resize(tracker->entries_a, count - 1);
-
     ff_dx12_resource_set_tracker(resource, NULL);
 }
 
@@ -460,7 +483,7 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
             D3D12_RESOURCE_BARRIER* barrier = &entry->first_barriers_a[bi];
             bool all = (barrier->Transition.Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             size_t first_sub_resource = all ? 0 : (size_t)barrier->Transition.Subresource;
-            size_t sub_count = all ? ff_dx12_resource_sub_resource_size(resource) : 1;
+            size_t sub_count = all ? ff_dx12_resource_state_sub_resource_size(&entry->state) : 1;
 
             all = all && (prev_entry
                 ? ff_dx12_resource_state_all_same(&prev_entry->state)
@@ -477,7 +500,7 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
 
                 if (needs_transition(prev_state.state, barrier->Transition.StateAfter))
                 {
-                    ff_dx12_resource_state_type type = allow_promotion(resource, prev_state.type, prev_state.state, barrier->Transition.StateAfter)
+                    ff_dx12_resource_state_type type = allow_promotion(&entry->desc, prev_state.type, prev_state.state, barrier->Transition.StateAfter)
                         ? ff_dx12_resource_state_type_promoted
                         : ff_dx12_resource_state_type_barrier;
 
@@ -516,6 +539,50 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
         }
     }
 
+    size_t forgotten_count = ff_array_count(tracker->forgotten_entries_a);
+    for (size_t forgotten_index = 0; forgotten_index < forgotten_count; forgotten_index++)
+    {
+        ff_dx12_resource_tracker_forgotten_entry* forgotten = &tracker->forgotten_entries_a[forgotten_index];
+        ff_dx12_resource_tracker_entry* prev_entry = prev_tracker ? find_entry(prev_tracker, forgotten->resource_key) : NULL;
+        ff_dx12_resource_state* global_state = &forgotten->global_state;
+
+        size_t first_barriers_count = ff_array_count(forgotten->first_barriers_a);
+        for (size_t bi = 0; bi < first_barriers_count; bi++)
+        {
+            D3D12_RESOURCE_BARRIER* barrier = &forgotten->first_barriers_a[bi];
+            bool all = (barrier->Transition.Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+            size_t first_sub_resource = all ? 0 : (size_t)barrier->Transition.Subresource;
+            size_t sub_count = all ? ff_dx12_resource_state_sub_resource_size(&forgotten->state) : 1;
+
+            all = all && (prev_entry
+                ? ff_dx12_resource_state_all_same(&prev_entry->state)
+                : ff_dx12_resource_state_all_same(global_state));
+
+            size_t step = all ? sub_count : 1;
+
+            for (size_t i = first_sub_resource; i < first_sub_resource + sub_count; i += step)
+            {
+                ff_dx12_resource_state_entry prev_state = prev_entry
+                    ? ff_dx12_resource_state_get(&prev_entry->state, i, global_state)
+                    : ff_dx12_resource_state_get(global_state, i, NULL);
+
+                if (needs_transition(prev_state.state, barrier->Transition.StateAfter) &&
+                    !allow_promotion(&forgotten->desc, prev_state.type, prev_state.state, barrier->Transition.StateAfter))
+                {
+                    D3D12_RESOURCE_BARRIER resolved = *barrier;
+                    resolved.Transition.StateBefore = prev_state.state;
+                    resolved.Transition.Subresource = all ? D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES : (UINT)i;
+                    ff_array_push(resolved_barriers_a, resolved);
+                }
+            }
+        }
+
+        ID3D12Resource_Release(forgotten->resource_ref);
+        forgotten->resource_ref = NULL;
+    }
+
+    ff_array_resize(tracker->forgotten_entries_a, 0);
+
     if (prev_tracker)
     {
         // The merged state now lives in prev_tracker's entries, but the caller keeps recording
@@ -525,7 +592,10 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
 
         for (size_t i = 0; i < count; i++)
         {
-            ff_dx12_resource_set_tracker(tracker->entries_a[i].resource, NULL);
+            if (tracker->entries_a[i].resource)
+            {
+                ff_dx12_resource_set_tracker(tracker->entries_a[i].resource, NULL);
+            }
         }
 
         ff_array_resize(tracker->entries_a, 0);
@@ -534,6 +604,11 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
         for (size_t i = 0; i < prev_count; i++)
         {
             ff_dx12_resource_tracker_entry* prev_entry = &prev_tracker->entries_a[i];
+            if (!prev_entry->resource)
+            {
+                continue;
+            }
+
             bool found_existing = false;
             ff_dx12_resource_tracker_entry* entry = find_or_add_entry(tracker, prev_entry->resource, &found_existing);
             FF_ASSERT_RET(entry);
@@ -549,7 +624,10 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
 
         for (size_t i = 0; i < count; i++)
         {
-            ff_dx12_resource_set_tracker(tracker->entries_a[i].resource, tracker);
+            if (tracker->entries_a[i].resource)
+            {
+                ff_dx12_resource_set_tracker(tracker->entries_a[i].resource, tracker);
+            }
         }
     }
 
@@ -562,6 +640,11 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
         for (size_t entry_index = 0; entry_index < count; entry_index++)
         {
             ff_dx12_resource_tracker_entry* entry = &tracker->entries_a[entry_index];
+            if (!entry->resource)
+            {
+                continue;
+            }
+
             size_t sub_resource_size = ff_dx12_resource_state_sub_resource_size(&entry->state);
             bool all = ff_dx12_resource_state_all_same(&entry->state);
             size_t step = all ? sub_resource_size : 1;
@@ -569,7 +652,7 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
             for (size_t i = 0; i < sub_resource_size; i += step)
             {
                 ff_dx12_resource_state_entry state = ff_dx12_resource_state_get(&entry->state, i, NULL);
-                if (allow_decay(list_type, entry->resource, state.type, state.state, D3D12_RESOURCE_STATE_COMMON))
+                if (allow_decay(list_type, &entry->desc, state.type, state.state, D3D12_RESOURCE_STATE_COMMON))
                 {
                     ff_dx12_resource_state_set(&entry->state, D3D12_RESOURCE_STATE_COMMON,
                         ff_dx12_resource_state_type_decayed, i, step);

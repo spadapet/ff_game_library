@@ -198,7 +198,6 @@ namespace ff::test::base
         {
             static ff_window window;
             Assert::IsTrue(ff_window_main_init(&window, FF_SVL("full screen test")));
-            ff_window_main_show();
             pump_window_messages();
 
             Assert::IsFalse(ff_window_main_is_full_screen());
@@ -227,7 +226,6 @@ namespace ff::test::base
         {
             static ff_window window;
             Assert::IsTrue(ff_window_main_init(&window, FF_SVL("full screen no-op test")));
-            ff_window_main_show();
             pump_window_messages();
 
             RECT before;
@@ -249,7 +247,6 @@ namespace ff::test::base
         {
             static ff_window window;
             Assert::IsTrue(ff_window_main_init(&window, FF_SVL("f11 test")));
-            ff_window_main_show();
             pump_window_messages();
 
             Assert::IsFalse(ff_window_main_is_full_screen());
@@ -275,7 +272,6 @@ namespace ff::test::base
         {
             static ff_window window;
             Assert::IsTrue(ff_window_main_init(&window, FF_SVL("alt enter test")));
-            ff_window_main_show();
             pump_window_messages();
 
             // Marked handled so Windows doesn't play the "ding" for an unhandled system key.

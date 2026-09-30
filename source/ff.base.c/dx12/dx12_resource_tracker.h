@@ -8,6 +8,7 @@ typedef struct ff_dx12_resource ff_dx12_resource;
 typedef struct ff_dx12_resource_tracker_entry
 {
     ff_dx12_resource* resource;
+    D3D12_RESOURCE_DESC desc;
     ff_dx12_resource_state state;
 
     // Barriers for the first transition of each subresource: StateBefore isn't known until the
@@ -15,6 +16,16 @@ typedef struct ff_dx12_resource_tracker_entry
     // One per subresource touched, so this is sized by the resource, not a fixed cap.
     D3D12_RESOURCE_BARRIER* first_barriers_a;
 } ff_dx12_resource_tracker_entry;
+
+typedef struct ff_dx12_resource_tracker_forgotten_entry
+{
+    ff_dx12_resource* resource_key;
+    ID3D12Resource* resource_ref;
+    D3D12_RESOURCE_DESC desc;
+    ff_dx12_resource_state state;
+    ff_dx12_resource_state global_state;
+    D3D12_RESOURCE_BARRIER* first_barriers_a;
+} ff_dx12_resource_tracker_forgotten_entry;
 
 // Per-command-list resource state transition batching. Single-threaded v1: a tracker belongs to
 // exactly one command list being recorded.
@@ -25,6 +36,7 @@ typedef struct ff_dx12_resource_tracker
 {
     ff_arena arena;
     ff_dx12_resource_tracker_entry* entries_a;
+    ff_dx12_resource_tracker_forgotten_entry* forgotten_entries_a;
 
     // Open-addressed map from resource pointer to entries_a index + 1 (0 means empty).
     size_t* index_map;
@@ -50,7 +62,6 @@ void ff_dx12_resource_tracker_state(ff_dx12_resource_tracker* tracker, ff_dx12_r
 void ff_dx12_resource_tracker_uav(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource);
 void ff_dx12_resource_tracker_alias(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource_before, ff_dx12_resource* resource_after);
 
-// Drops a resource that is being destroyed while a command list still references it. The already
-// recorded barriers keep naming the underlying ID3D12Resource, which stays alive through the
-// keep-alive list, so only the tracker's pointer back to the wrapper has to go away.
+// Drops a resource that is being destroyed while a command list still references it. Held-back
+// first-use barriers are kept separately so the live entry can leave the lookup table immediately.
 void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_resource* resource);

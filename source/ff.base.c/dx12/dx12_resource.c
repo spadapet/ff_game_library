@@ -117,6 +117,25 @@ static const D3D12_CLEAR_VALUE* clear_value_or_null(const ff_dx12_resource* reso
     return (resource->optimized_clear_value.Format != DXGI_FORMAT_UNKNOWN) ? &resource->optimized_clear_value : NULL;
 }
 
+static void resource_make_resident_before_destroy(ff_dx12_resource* resource)
+{
+    FF_CHECK_RET(resource && resource->has_residency_data);
+
+    ff_dx12_residency_data* residency_set[1] = { &resource->residency_data };
+    ff_dx12_fence_values wait_values;
+    ff_dx12_fence_values_init(&wait_values);
+
+    if (ff_dx12_make_resident(residency_set, 1, (ff_dx12_fence_value){ 0 }, &wait_values))
+    {
+        ff_dx12_fence_values_wait(&wait_values, NULL);
+    }
+    else
+    {
+        ff_dx12_fence_values_clear(&wait_values);
+        FF_DEBUG_FAIL();
+    }
+}
+
 bool ff_dx12_resource_init_placed(ff_dx12_resource* resource, ff_string_view name,
     const ff_dx12_mem_range* mem_range, const D3D12_RESOURCE_DESC* desc, const D3D12_CLEAR_VALUE* optimized_clear_value)
 {
@@ -224,11 +243,9 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
     ff_dx12_fence_values_clear(&resource->global_reads);
     resource->global_write = (ff_dx12_fence_value){ 0 };
 
-    // The residency_data is an intrusive node in the global pageable list and lives inside this
-    // struct, so it can't be deferred; unregistering it now is safe because it only governs
-    // eviction, and the pageable itself stays alive until the deferred Release runs.
     if (resource->has_residency_data)
     {
+        resource_make_resident_before_destroy(resource);
         ff_dx12_residency_data_destroy(&resource->residency_data);
         resource->has_residency_data = false;
     }

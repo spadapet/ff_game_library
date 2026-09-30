@@ -18,7 +18,7 @@ typedef struct ff_dispatch
 {
     ff_window window;
     ff_signal_connection connection;
-    CRITICAL_SECTION mutex;
+    SRWLOCK mutex;
     ff_arena arena;
     internal_ff_dispatch_entry* entries_a;
     internal_ff_dispatch_entry* running_entries_a;
@@ -27,6 +27,7 @@ typedef struct ff_dispatch
     bool posted;
     bool running;
     bool destroyed;
+    bool destroy_complete;
 } ff_dispatch;
 
 bool ff_dispatch_init(ff_dispatch* dispatch, ff_dispatch_type type);

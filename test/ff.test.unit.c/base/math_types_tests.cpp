@@ -463,19 +463,20 @@ namespace ff::test::base
             Assert::IsTrue(ff_color_equal(ff_color_magenta(), ff_color_rgba(1.0f, 0.0f, 1.0f, 1.0f)));
         }
 
-        TEST_METHOD(to_shader_ignores_remap_for_out_of_range_index)
+        TEST_METHOD(to_shader_rejects_out_of_range_index_as_transparent)
         {
-            // The bounds check guards a read of the 256-entry remap table, so an out-of-range
-            // index must pass through unremapped rather than indexing past the end.
+            scoped_assert_counter counter;
             uint8_t remap[256] = { 0 };
 
-            ff_color_shader high = ff_color_to_shader(ff_color_palette(300, 1.0f), remap);
-            Assert::AreEqual(300 / 256.0f, high.r);
-            Assert::AreEqual(1.0f, high.a);
+            ff_color_shader high = ff_color_to_shader(ff_color_palette(256, 1.0f), remap);
+            Assert::AreEqual(0.0f, high.r);
+            Assert::AreEqual(0.0f, high.a);
 
-            ff_color_shader negative = ff_color_to_shader(ff_color_palette(-5, 1.0f), remap);
-            Assert::AreEqual(-5 / 256.0f, negative.r);
-            Assert::AreEqual(1.0f, negative.a);
+            ff_color_shader negative = ff_color_to_shader(ff_color_palette(-5, 1.0f), nullptr);
+            Assert::AreEqual(0.0f, negative.r);
+            Assert::AreEqual(0.0f, negative.a);
+
+            Assert::AreEqual(scoped_assert_counter::expected_count(2), scoped_assert_counter::count);
         }
 
         TEST_METHOD(to_shader_palette_max_index)

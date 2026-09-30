@@ -20,6 +20,7 @@
 
 static uint64_t s_reset_count;
 static bool s_resetting;
+static bool s_reset_failed;
 
 static void child_before_reset(ff_dx12_device_child* child)
 {
@@ -119,7 +120,7 @@ static bool reset_needed(bool* out_dxgi_stale)
 {
     *out_dxgi_stale = !ff_dx12_factory_current();
 
-    return !ff_dx12_device_valid();
+    return s_reset_failed || !ff_dx12_device_valid();
 }
 
 bool ff_dx12_reset_device(bool force)
@@ -203,6 +204,7 @@ bool ff_dx12_reset_device(bool force)
     {
         ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Device reset failed to recreate the device"));
         internal_ff_dx12_device_child_reset_end();
+        s_reset_failed = true;
         s_resetting = false;
         return false;
     }
@@ -234,6 +236,7 @@ bool ff_dx12_reset_device(bool force)
 
     internal_ff_dx12_device_child_reset_end();
     s_resetting = false;
+    s_reset_failed = !result;
     s_reset_count++;
 
     ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Device reset complete (%s)"),
@@ -251,4 +254,5 @@ void internal_ff_dx12_reset_shutdown(void)
 {
     s_reset_count = 0;
     s_resetting = false;
+    s_reset_failed = false;
 }

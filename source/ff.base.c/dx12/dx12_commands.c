@@ -462,20 +462,88 @@ void ff_dx12_commands_draw_indexed(ff_dx12_commands* commands, size_t start_vert
         (UINT)index_count, (UINT)instance_count, (UINT)start_index, (INT)start_vertex, (UINT)start_instance);
 }
 
+static ff_dx12_target_range target_range_normalize(ff_dx12_resource* resource, const ff_dx12_target_range* range)
+{
+    ff_dx12_target_range result = range ? *range : (ff_dx12_target_range){ 0 };
+    const size_t array_size = ff_dx12_resource_array_size(resource);
+    const size_t mip_size = ff_dx12_resource_mip_size(resource);
+
+    FF_ASSERT_RET_VAL(result.array_start < array_size, ((ff_dx12_target_range) { 0 }));
+    FF_ASSERT_RET_VAL(result.mip_start < mip_size, ((ff_dx12_target_range) { 0 }));
+
+    if (!result.array_size)
+    {
+        result.array_size = array_size - result.array_start;
+    }
+
+    if (!result.mip_size)
+    {
+        result.mip_size = mip_size - result.mip_start;
+    }
+
+    FF_ASSERT_RET_VAL(result.array_size <= array_size - result.array_start, ((ff_dx12_target_range) { 0 }));
+    FF_ASSERT_RET_VAL(result.mip_size <= mip_size - result.mip_start, ((ff_dx12_target_range) { 0 }));
+
+    return result;
+}
+
 void ff_dx12_commands_clear_target(ff_dx12_commands* commands, ff_dx12_resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view, const float color[4])
+{
+    ff_dx12_commands_clear_target_range(commands, resource, view, color, NULL);
+}
+
+void ff_dx12_commands_clear_target_range(ff_dx12_commands* commands, ff_dx12_resource* resource,
+    D3D12_CPU_DESCRIPTOR_HANDLE view, const float color[4], const ff_dx12_target_range* range)
 {
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && resource && color);
 
-    ff_dx12_commands_resource_state(commands, resource, D3D12_RESOURCE_STATE_RENDER_TARGET, 0, 0, 0, 0);
+    ff_dx12_target_range actual = target_range_normalize(resource, range);
+    FF_CHECK_RET(actual.array_size && actual.mip_size);
+
+    ff_dx12_commands_resource_state(commands, resource, D3D12_RESOURCE_STATE_RENDER_TARGET,
+        actual.array_start, actual.array_size, actual.mip_start, actual.mip_size);
     ID3D12GraphicsCommandList1_ClearRenderTargetView(ff_dx12_commands_list(commands), view, color, 0, NULL);
 }
 
 void ff_dx12_commands_discard_target(ff_dx12_commands* commands, ff_dx12_resource* resource)
 {
+    ff_dx12_commands_discard_target_range(commands, resource, NULL);
+}
+
+void ff_dx12_commands_discard_target_range(ff_dx12_commands* commands, ff_dx12_resource* resource, const ff_dx12_target_range* range)
+{
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && resource);
 
-    ff_dx12_commands_resource_state(commands, resource, D3D12_RESOURCE_STATE_RENDER_TARGET, 0, 0, 0, 0);
-    ID3D12GraphicsCommandList1_DiscardResource(ff_dx12_commands_list(commands), resource->resource, NULL);
+    ff_dx12_target_range actual = target_range_normalize(resource, range);
+    FF_CHECK_RET(actual.array_size && actual.mip_size);
+
+    ff_dx12_commands_resource_state(commands, resource, D3D12_RESOURCE_STATE_RENDER_TARGET,
+        actual.array_start, actual.array_size, actual.mip_start, actual.mip_size);
+
+    if (!range)
+    {
+        ID3D12GraphicsCommandList1_DiscardResource(ff_dx12_commands_list(commands), resource->resource, NULL);
+        return;
+    }
+
+    const size_t resource_mip_size = ff_dx12_resource_mip_size(resource);
+    for (size_t array_index = actual.array_start; array_index < actual.array_start + actual.array_size; array_index++)
+    {
+        for (size_t mip_index = actual.mip_start; mip_index < actual.mip_start + actual.mip_size; mip_index++)
+        {
+            FF_ASSERT_RET(resource_mip_size && array_index <= (SIZE_MAX - mip_index) / resource_mip_size);
+            const size_t sub_resource = array_index * resource_mip_size + mip_index;
+            FF_ASSERT_RET(sub_resource <= UINT_MAX);
+
+            D3D12_DISCARD_REGION region =
+            {
+                .FirstSubresource = (UINT)sub_resource,
+                .NumSubresources = 1,
+            };
+
+            ID3D12GraphicsCommandList1_DiscardResource(ff_dx12_commands_list(commands), resource->resource, &region);
+        }
+    }
 }
 
 void ff_dx12_commands_clear_depth(ff_dx12_commands* commands, ff_dx12_resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view,

@@ -52,7 +52,7 @@ ff_dx12_resource* ff_dx12_texture_resource(ff_dx12_texture* texture);
 // The SRV over the whole texture. ff_dx12_texture_view covers sub-ranges.
 D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_handle(ff_dx12_texture* texture);
 
-// Copies a tightly packed block of pixels into one subresource at (dest_x, dest_y). The data is
+// Copies a row-pitched block of pixels into one subresource at (dest_x, dest_y). The data is
 // staged through the shared upload allocator, so it may be freed as soon as this returns.
 bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands,
     size_t array_index, size_t mip_index, size_t dest_x, size_t dest_y,

@@ -164,6 +164,11 @@ static void allocator_list_push(ff_dx12_queue* queue, ff_dx12_queue_allocator_li
 
 // Pops the oldest allocator only when the GPU has finished with it. The list is in FIFO order,
 // so if the front isn't complete then nothing behind it is either.
+static bool allocator_list_front_complete(ff_dx12_queue_allocator_list* list)
+{
+    return list->head && ff_dx12_fence_value_complete(list->head->fence_value);
+}
+
 static ID3D12CommandAllocator* allocator_list_pop_complete(ff_dx12_queue* queue, ff_dx12_queue_allocator_list* list)
 {
     ff_dx12_queue_allocator_node* node = list->head;
@@ -202,6 +207,29 @@ static void allocator_list_release_all(ff_dx12_queue* queue, ff_dx12_queue_alloc
 
     list->head = NULL;
     list->tail = NULL;
+}
+
+static bool ensure_allocator_nodes(ff_dx12_queue* queue, size_t count)
+{
+    size_t free_count = 0;
+    for (ff_dx12_queue_allocator_node* node = queue->allocator_nodes_free; node; node = node->next)
+    {
+        free_count++;
+    }
+
+    while (free_count < count)
+    {
+        ff_dx12_queue_allocator_node* node = ff_arena_alloc_type(&queue->arena, ff_dx12_queue_allocator_node, 1);
+        FF_ASSERT_RET_VAL(node, false);
+
+        node->next = queue->allocator_nodes_free;
+        node->allocator = NULL;
+        node->fence_value = (ff_dx12_fence_value){ 0 };
+        queue->allocator_nodes_free = node;
+        free_count++;
+    }
+
+    return true;
 }
 
 static ID3D12CommandAllocator* new_allocator(ff_dx12_queue* queue, ff_dx12_queue_allocator_list* list, ff_wstring_view suffix)
@@ -255,6 +283,33 @@ static void command_cache_destroy(ff_dx12_command_cache* cache)
     ff_dx12_resource_tracker_destroy(&cache->resource_tracker);
     ff_dx12_fence_destroy(&cache->fence);
     ff_dx12_residency_set_clear(&cache->residency_set);
+
+    if (cache->wait_before_execute_arena_valid)
+    {
+        ff_arena_destroy(&cache->wait_before_execute_arena);
+        cache->wait_before_execute_arena_valid = false;
+    }
+}
+
+static bool command_cache_try_reset_lists(ff_dx12_queue* queue, ff_dx12_command_cache* cache)
+{
+    FF_CHECK_RET_VAL(cache && cache->needs_reset, false);
+    FF_CHECK_RET_VAL(allocator_list_front_complete(&queue->allocators) &&
+        allocator_list_front_complete(&queue->allocators_before), false);
+
+    cache->allocator = allocator_list_pop_complete(queue, &queue->allocators);
+    cache->allocator_before = allocator_list_pop_complete(queue, &queue->allocators_before);
+    FF_ASSERT_RET_VAL(cache->allocator && cache->allocator_before, false);
+
+    ff_arena_reset(&cache->wait_before_execute_arena);
+
+    FF_ASSERT_HR_RET_VAL(ID3D12CommandAllocator_Reset(cache->allocator), false);
+    FF_ASSERT_HR_RET_VAL(ID3D12CommandAllocator_Reset(cache->allocator_before), false);
+    FF_ASSERT_HR_RET_VAL(ID3D12GraphicsCommandList1_Reset(cache->list, cache->allocator, NULL), false);
+    FF_ASSERT_HR_RET_VAL(ID3D12GraphicsCommandList_Reset(cache->list_before, cache->allocator_before, NULL), false);
+
+    cache->needs_reset = false;
+    return true;
 }
 
 // Takes a recycled cache whose lists are already reset, or builds a new one.
@@ -262,13 +317,15 @@ static ff_dx12_command_cache* command_cache_acquire(ff_dx12_queue* queue)
 {
     for (ff_dx12_command_cache** it = &queue->caches; *it; it = &(*it)->next)
     {
-        if (!(*it)->needs_reset)
+        ff_dx12_command_cache* cache = *it;
+        if (cache->needs_reset && !command_cache_try_reset_lists(queue, cache))
         {
-            ff_dx12_command_cache* cache = *it;
-            *it = cache->next;
-            cache->next = NULL;
-            return cache;
+            continue;
         }
+
+        *it = cache->next;
+        cache->next = NULL;
+        return cache;
     }
 
     ff_dx12_command_cache* cache = ff_arena_alloc_type(&queue->arena, ff_dx12_command_cache, 1);
@@ -276,6 +333,8 @@ static ff_dx12_command_cache* command_cache_acquire(ff_dx12_queue* queue)
 
     *cache = (ff_dx12_command_cache){ 0 };
     ff_dx12_resource_tracker_init(&cache->resource_tracker);
+    ff_arena_init_heap_local(&cache->wait_before_execute_arena, 256);
+    cache->wait_before_execute_arena_valid = true;
 
     ff_arena_declare_stack(name_arena, 256);
     ff_string_view queue_name = ff_wide_to_utf8(ff_wz_view(queue->name), &name_arena, true);
@@ -313,22 +372,6 @@ static ff_dx12_command_cache* command_cache_acquire(ff_dx12_queue* queue)
     ID3D12GraphicsCommandList_SetName(cache->list_before, name);
 
     return cache;
-}
-
-// The old code did this on a thread pool task and gated hand-out on an event. Single-threaded
-// v1 resets inline right after ExecuteCommandLists, which needs no event and no waiting.
-static void command_cache_reset_lists(ff_dx12_queue* queue, ff_dx12_command_cache* cache)
-{
-    FF_CHECK_RET(cache && cache->needs_reset);
-
-    cache->allocator = new_allocator(queue, &queue->allocators, FF_WSVL(L"allocator"));
-    cache->allocator_before = new_allocator(queue, &queue->allocators_before, FF_WSVL(L"allocator before"));
-    FF_ASSERT_RET(cache->allocator && cache->allocator_before);
-
-    FF_VERIFY_HR(ID3D12GraphicsCommandList1_Reset(cache->list, cache->allocator, NULL));
-    FF_VERIFY_HR(ID3D12GraphicsCommandList_Reset(cache->list_before, cache->allocator_before, NULL));
-
-    cache->needs_reset = false;
 }
 
 bool ff_dx12_queue_init(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND_LIST_TYPE type)
@@ -462,7 +505,8 @@ bool ff_dx12_queue_new_commands(ff_dx12_queue* queue, ff_dx12_commands* commands
     commands->queue = queue;
     commands->cache = cache;
     commands->type = queue->type;
-    ff_dx12_fence_values_init_arena(&commands->wait_before_execute, &queue->arena);
+    ff_arena_reset(&cache->wait_before_execute_arena);
+    ff_dx12_fence_values_init_arena(&commands->wait_before_execute, &cache->wait_before_execute_arena);
 
     cache->next = queue->caches_in_use;
     queue->caches_in_use = cache;
@@ -614,8 +658,6 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     }
     for (size_t i = 0; i < cache_count; i++)
     {
-        command_cache_reset_lists(queue, caches[i]);
-
         caches[i]->next = queue->caches;
         queue->caches = caches[i];
     }

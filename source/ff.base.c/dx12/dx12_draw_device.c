@@ -292,6 +292,11 @@ bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* co
     ff_dx12_commands_targets(commands, targets, target_views, NULL, 1,
         depth_resource, depth_resource ? &depth_view : NULL);
 
+    if (device->depth)
+    {
+        ff_dx12_depth_clear_depth(device->depth, commands, 0.0f);
+    }
+
     const D3D12_VIEWPORT viewport =
     {
         .TopLeftX = view_rect.left,
@@ -1210,13 +1215,10 @@ static alpha_type get_alpha_type(float alpha, bool allow_transparent)
     return (alpha == 1.0f || !allow_transparent) ? alpha_type_opaque : alpha_type_transparent;
 }
 
-// Combining two endpoint alphas. A segment whose ends disagree has to go through the transparent
-// path, because the shader interpolates between them and the in-between pixels are translucent
-// even though neither endpoint is.
 static alpha_type merge_alpha_type(float alpha, bool allow_transparent, alpha_type previous)
 {
     const alpha_type type = get_alpha_type(alpha, allow_transparent);
-    return (type == previous) ? type : alpha_type_transparent;
+    return (type == previous) ? type : (allow_transparent ? alpha_type_transparent : alpha_type_opaque);
 }
 
 // A sprite whose own pixels have partial alpha needs blending even when the tint is fully opaque.
@@ -1241,17 +1243,15 @@ static ff_dx12_instance_bucket_type pick_bucket(ff_dx12_instance_bucket_type opa
     return (type == alpha_type_transparent) ? transparent_bucket(opaque_bucket) : opaque_bucket;
 }
 
-// Geometry and sprite colors carry a palette index when the target wants indexes, and there is no
-// GPU-side remap on that path: ps_color_out_palette turns the vertex color straight into an index.
-// The active remap therefore has to be applied here, matching where the old C++ device applied it.
+// Geometry colors need CPU remap because ps_color_out_palette writes the vertex color directly.
 static const uint8_t* active_remap(const ff_dx12_draw_device* device)
 {
     return device->palette_remap_stack[device->palette_remap_stack_count - 1].remap;
 }
 
-static void store_color(const ff_dx12_draw_device* device, float dest[4], ff_color color)
+static void store_color(float dest[4], ff_color color, const uint8_t* index_remap)
 {
-    const ff_color_shader shader = ff_color_to_shader(color, active_remap(device));
+    const ff_color_shader shader = ff_color_to_shader(color, index_remap);
     dest[0] = shader.r;
     dest[1] = shader.g;
     dest[2] = shader.b;
@@ -1316,8 +1316,8 @@ void ff_dx12_draw_device_draw_lines(ff_dx12_draw_device* device,
             ? (closed ? points[1].pos : p1->pos)
             : points[i + 2].pos;
 
-        store_color(device, instance->start_color, p0->color);
-        store_color(device, instance->end_color, p1->color);
+        store_color(instance->start_color, p0->color, active_remap(device));
+        store_color(instance->end_color, p1->color, active_remap(device));
         instance->start_thickness = fabsf(p0->size);
         instance->end_thickness = fabsf(p1->size);
         instance->depth = depth;
@@ -1357,7 +1357,7 @@ void ff_dx12_draw_device_draw_triangles(ff_dx12_draw_device* device,
         for (size_t corner = 0; corner < 3; corner++)
         {
             instance->position[corner] = points[i + corner].pos;
-            store_color(device, instance->color[corner], points[i + corner].color);
+            store_color(instance->color[corner], points[i + corner].color, active_remap(device));
         }
 
         instance->depth = depth;
@@ -1407,7 +1407,7 @@ void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
     FF_CHECK_RET(instance);
 
     instance->rect = normalized;
-    store_color(device, instance->color, color);
+    store_color(instance->color, color, active_remap(device));
     instance->depth = depth;
     instance->thickness = thickness;
     instance->matrix_index = matrix_index;
@@ -1428,11 +1428,9 @@ void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
 
     if (thickness < 0.0f)
     {
-        radius += thickness;
+        radius -= thickness;
         thickness = -thickness;
     }
-
-    FF_CHECK_RET(radius > 0.0f);
 
     // An outline at least as thick as the radius leaves no hole, so it is a filled circle.
     if (thickness >= radius)
@@ -1458,8 +1456,8 @@ void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
     instance->position_radius[1] = pos.pos.y;
     instance->position_radius[2] = depth;
     instance->position_radius[3] = radius;
-    store_color(device, instance->inside_color, pos.color);
-    store_color(device, instance->outside_color, outside_color);
+    store_color(instance->inside_color, pos.color, active_remap(device));
+    store_color(instance->outside_color, outside_color, active_remap(device));
     instance->thickness = thickness;
     instance->matrix_index = matrix_index;
 }
@@ -1499,7 +1497,7 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
 
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;
-    store_color(device, instance->color, transform->color);
+    store_color(instance->color, transform->color, NULL);
     instance->pos_rot[0] = transform->position.x;
     instance->pos_rot[1] = transform->position.y;
     instance->pos_rot[2] = depth;
@@ -1515,7 +1513,7 @@ void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
     FF_CHECK_RET(sprite->view);
 
     const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
-    const alpha_type type = get_alpha_type(ff_color_alpha(transform->color), allow_transparent);
+    const alpha_type type = sprite_alpha_type(ff_color_alpha(transform->color), allow_transparent, sprite->transparent);
     FF_CHECK_RET(type != alpha_type_invisible);
 
     const uint32_t indexes = palette_sprite_indexes(device, sprite->view);
@@ -1530,7 +1528,7 @@ void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
 
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;
-    store_color(device, instance->color, transform->color);
+    store_color(instance->color, transform->color, NULL);
     instance->pos_rot[0] = transform->position.x;
     instance->pos_rot[1] = transform->position.y;
     instance->pos_rot[2] = depth;

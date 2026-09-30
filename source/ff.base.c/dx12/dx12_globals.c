@@ -62,12 +62,12 @@ static ff_dx12_queue s_copy_queue;
 static ff_dx12_queue s_compute_queue;
 static uint64_t s_frame_count;
 
-// Owning thread and the cross-thread work queue. This mutex is the one piece of synchronization
+// Owning thread and the cross-thread work queue. This lock is the one piece of synchronization
 // in the dx12 layer, and it guards only the queue below, never any device object. The owning
 // thread does all the real work after draining the queue, so the lock is never held across a
 // D3D call.
-static CRITICAL_SECTION s_defer_mutex;
-static bool s_defer_mutex_valid;
+static SRWLOCK s_defer_lock = SRWLOCK_INIT;
+static bool s_defer_queue_valid;
 static DWORD s_owner_thread_id;
 
 typedef struct ff_dx12_deferred_size
@@ -175,9 +175,16 @@ static size_t enum_adapters(IDXGIAdapter3** adapters, size_t max_adapters)
 
     IDXGIAdapter3* warp_adapter = NULL;
     DXGI_ADAPTER_DESC warp_desc = { 0 };
-    bool warp_valid =
-        SUCCEEDED(IDXGIFactory6_EnumWarpAdapter(s_factory, &IID_IDXGIAdapter3, (void**)&warp_adapter)) &&
-        SUCCEEDED(IDXGIAdapter3_GetDesc(warp_adapter, &warp_desc));
+    bool warp_valid = false;
+    if (SUCCEEDED(IDXGIFactory6_EnumWarpAdapter(s_factory, &IID_IDXGIAdapter3, (void**)&warp_adapter)))
+    {
+        warp_valid = SUCCEEDED(IDXGIAdapter3_GetDesc(warp_adapter, &warp_desc));
+        if (!warp_valid)
+        {
+            IDXGIAdapter3_Release(warp_adapter);
+            warp_adapter = NULL;
+        }
+    }
     bool found_warp = false;
 
     for (UINT i = 0; count < max_adapters; i++)
@@ -803,11 +810,11 @@ bool ff_dx12_on_owner_thread(void)
 void ff_dx12_defer_resize_target(ff_dx12_target_window* target, size_t width, size_t height)
 {
     FF_ASSERT_RET(target);
-    FF_CHECK_RET(s_defer_mutex_valid);
 
     bool overflow = false;
 
-    EnterCriticalSection(&s_defer_mutex);
+    AcquireSRWLockExclusive(&s_defer_lock);
+    if (s_defer_queue_valid)
     {
         size_t i = 0;
         for (; i < s_deferred_size_count; i++)
@@ -838,7 +845,7 @@ void ff_dx12_defer_resize_target(ff_dx12_target_window* target, size_t width, si
             overflow = true;
         }
     }
-    LeaveCriticalSection(&s_defer_mutex);
+    ReleaseSRWLockExclusive(&s_defer_lock);
 
     // Dropping the request would leave the swap chain permanently the wrong size, which is far
     // worse than resizing here. Only reachable with more windows than MAX_DEFERRED_TARGETS.
@@ -857,9 +864,10 @@ void ff_dx12_defer_resize_target(ff_dx12_target_window* target, size_t width, si
 
 void ff_dx12_cancel_deferred_target(ff_dx12_target_window* target)
 {
-    FF_CHECK_RET(target && s_defer_mutex_valid);
+    FF_CHECK_RET(target);
 
-    EnterCriticalSection(&s_defer_mutex);
+    AcquireSRWLockExclusive(&s_defer_lock);
+    if (s_defer_queue_valid)
     {
         for (size_t i = 0; i < s_deferred_size_count; i++)
         {
@@ -870,32 +878,27 @@ void ff_dx12_cancel_deferred_target(ff_dx12_target_window* target)
             }
         }
     }
-    LeaveCriticalSection(&s_defer_mutex);
+    ReleaseSRWLockExclusive(&s_defer_lock);
 }
 
 void ff_dx12_defer_reset_device(bool force)
 {
-    FF_CHECK_RET(s_defer_mutex_valid);
-
-    EnterCriticalSection(&s_defer_mutex);
+    AcquireSRWLockExclusive(&s_defer_lock);
+    if (s_defer_queue_valid)
     {
         s_deferred_reset = true;
         s_deferred_reset_force = s_deferred_reset_force || force;
     }
-    LeaveCriticalSection(&s_defer_mutex);
+    ReleaseSRWLockExclusive(&s_defer_lock);
 }
 
 bool ff_dx12_has_deferred(void)
 {
-    FF_CHECK_RET_VAL(s_defer_mutex_valid, false);
-
     bool any;
 
-    EnterCriticalSection(&s_defer_mutex);
-    {
-        any = s_deferred_reset || s_deferred_size_count > 0;
-    }
-    LeaveCriticalSection(&s_defer_mutex);
+    AcquireSRWLockExclusive(&s_defer_lock);
+    any = s_defer_queue_valid && (s_deferred_reset || s_deferred_size_count > 0);
+    ReleaseSRWLockExclusive(&s_defer_lock);
 
     return any;
 }
@@ -903,7 +906,6 @@ bool ff_dx12_has_deferred(void)
 bool ff_dx12_flush_deferred(void)
 {
     FF_DX12_ASSERT_OWNER();
-    FF_CHECK_RET_VAL(s_defer_mutex_valid, true);
 
     bool result = true;
 
@@ -918,18 +920,22 @@ bool ff_dx12_flush_deferred(void)
         ff_dx12_deferred_size sizes[MAX_DEFERRED_TARGETS];
         size_t size_count;
 
-        EnterCriticalSection(&s_defer_mutex);
+        AcquireSRWLockExclusive(&s_defer_lock);
+        if (!s_defer_queue_valid)
         {
-            reset = s_deferred_reset;
-            reset_force = s_deferred_reset_force;
-            s_deferred_reset = false;
-            s_deferred_reset_force = false;
-
-            size_count = s_deferred_size_count;
-            memcpy(sizes, s_deferred_sizes, size_count * sizeof(ff_dx12_deferred_size));
-            s_deferred_size_count = 0;
+            ReleaseSRWLockExclusive(&s_defer_lock);
+            return true;
         }
-        LeaveCriticalSection(&s_defer_mutex);
+
+        reset = s_deferred_reset;
+        reset_force = s_deferred_reset_force;
+        s_deferred_reset = false;
+        s_deferred_reset_force = false;
+
+        size_count = s_deferred_size_count;
+        memcpy(sizes, s_deferred_sizes, size_count * sizeof(ff_dx12_deferred_size));
+        s_deferred_size_count = 0;
+        ReleaseSRWLockExclusive(&s_defer_lock);
 
         if (!reset && !size_count)
         {
@@ -1078,11 +1084,12 @@ bool ff_dx12_init(const ff_dx12_init_params* params)
     // covered by the ownership asserts.
     ff_dx12_set_owner_thread();
 
-    if (!s_defer_mutex_valid)
-    {
-        InitializeCriticalSection(&s_defer_mutex);
-        s_defer_mutex_valid = true;
-    }
+    AcquireSRWLockExclusive(&s_defer_lock);
+    s_deferred_size_count = 0;
+    s_deferred_reset = false;
+    s_deferred_reset_force = false;
+    s_defer_queue_valid = true;
+    ReleaseSRWLockExclusive(&s_defer_lock);
 
     s_gpu_preference = params->gpu_preference;
     s_feature_level = params->feature_level;
@@ -1179,20 +1186,16 @@ void ff_dx12_destroy(void)
 {
     FF_DX12_ASSERT_OWNER();
 
+    AcquireSRWLockExclusive(&s_defer_lock);
+    s_defer_queue_valid = false;
+    s_deferred_size_count = 0;
+    s_deferred_reset = false;
+    s_deferred_reset_force = false;
+    ReleaseSRWLockExclusive(&s_defer_lock);
+
     internal_ff_dx12_reset_shutdown();
     destroy_d3d(false);
     destroy_dxgi();
-
-    if (s_defer_mutex_valid)
-    {
-        // Nothing may be queued against objects that no longer exist, so the queue is dropped
-        // rather than applied.
-        s_defer_mutex_valid = false;
-        s_deferred_size_count = 0;
-        s_deferred_reset = false;
-        s_deferred_reset_force = false;
-        DeleteCriticalSection(&s_defer_mutex);
-    }
 
     s_owner_thread_id = 0;
     s_gpu_preference = (DXGI_GPU_PREFERENCE)0;

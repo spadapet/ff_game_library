@@ -10,7 +10,7 @@ typedef struct task_entry
     void* cookie;
 } task_entry;
 
-static CRITICAL_SECTION s_mutex;
+static SRWLOCK s_mutex;
 static TP_CALLBACK_ENVIRON s_pool_env;
 static PTP_CLEANUP_GROUP s_pool_cleanup;
 static ff_arena s_arena;
@@ -42,10 +42,10 @@ static task_entry* alloc_entry(ff_task_func func, void* cookie)
 
 static void free_entry(task_entry* entry)
 {
-    EnterCriticalSection(&s_mutex);
+    AcquireSRWLockExclusive(&s_mutex);
     entry->next_free = s_free_list;
     s_free_list = entry;
-    LeaveCriticalSection(&s_mutex);
+    ReleaseSRWLockExclusive(&s_mutex);
 }
 
 static void CALLBACK task_callback(PTP_CALLBACK_INSTANCE instance, void* context)
@@ -75,7 +75,7 @@ void ff_task_init(void)
 {
     FF_ASSERT_RET(!s_valid);
 
-    InitializeCriticalSection(&s_mutex);
+    InitializeSRWLock(&s_mutex);
     ff_arena_init_heap_global(&s_arena, 0);
     s_free_list = NULL;
 
@@ -87,11 +87,14 @@ void ff_task_init(void)
 
 void ff_task_destroy(void)
 {
-    FF_CHECK_RET(s_valid);
+    bool valid;
 
-    EnterCriticalSection(&s_mutex);
+    AcquireSRWLockExclusive(&s_mutex);
+    valid = s_valid;
     s_valid = false;
-    LeaveCriticalSection(&s_mutex);
+    ReleaseSRWLockExclusive(&s_mutex);
+
+    FF_CHECK_RET(valid);
 
     drain();
     CloseThreadpoolCleanupGroup(s_pool_cleanup);
@@ -100,7 +103,6 @@ void ff_task_destroy(void)
 
     s_free_list = NULL;
     ff_arena_destroy(&s_arena);
-    DeleteCriticalSection(&s_mutex);
 }
 
 void ff_task_add(ff_task_func func, void* cookie)
@@ -109,28 +111,24 @@ void ff_task_add(ff_task_func func, void* cookie)
 
     bool submitted = false;
 
-    // s_valid is checked before taking the lock since the lock is gone after destroy.
+    AcquireSRWLockExclusive(&s_mutex);
+
     if (s_valid)
     {
-        EnterCriticalSection(&s_mutex);
+        // Submitted while holding the lock so destroy can't close the environment in between.
+        task_entry* entry = alloc_entry(func, cookie);
+        InterlockedIncrement(&s_outstanding);
+        submitted = TrySubmitThreadpoolCallback(&task_callback, entry, &s_pool_env) != FALSE;
 
-        if (s_valid)
+        if (!submitted)
         {
-            // Submitted while holding the lock so destroy can't close the environment in between.
-            task_entry* entry = alloc_entry(func, cookie);
-            InterlockedIncrement(&s_outstanding);
-            submitted = TrySubmitThreadpoolCallback(&task_callback, entry, &s_pool_env) != FALSE;
-
-            if (!submitted)
-            {
-                InterlockedDecrement(&s_outstanding);
-                entry->next_free = s_free_list;
-                s_free_list = entry;
-            }
+            InterlockedDecrement(&s_outstanding);
+            entry->next_free = s_free_list;
+            s_free_list = entry;
         }
-
-        LeaveCriticalSection(&s_mutex);
     }
+
+    ReleaseSRWLockExclusive(&s_mutex);
 
     if (!submitted)
     {

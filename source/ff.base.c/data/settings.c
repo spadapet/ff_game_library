@@ -2,6 +2,7 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/signal.h"
+#include "base/string.h"
 #include "data/dict.h"
 #include "data/settings.h"
 #include "data/stream.h"
@@ -52,26 +53,62 @@ void ff_settings_destroy(void)
     ff_arena_destroy(&s_settings_arena);
 }
 
+static ff_string_view settings_temp_file(ff_arena* arena)
+{
+    ff_string_view result = ff_string_view_empty();
+    char* data = ff_arena_alloc_type(arena, char, s_settings_file.count + 5);
+    FF_ASSERT_RET_VAL(data, result);
+
+    memcpy(data, s_settings_file.data, s_settings_file.count);
+    memcpy(data + s_settings_file.count, ".tmp", 5);
+
+    result.data = data;
+    result.count = s_settings_file.count + 4;
+    return result;
+}
+
+static bool replace_settings_file(ff_string_view temp_file, ff_arena* arena)
+{
+    ff_wstring_view wide_temp_file = ff_utf8_to_wide(temp_file, arena, true);
+    ff_wstring_view wide_settings_file = ff_utf8_to_wide(s_settings_file, arena, true);
+    FF_CHECK_RET_VAL(wide_temp_file.count && wide_settings_file.count, false);
+
+    return MoveFileExW(wide_temp_file.data, wide_settings_file.data, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+}
+
 void ff_settings_save(void)
 {
     ff_signal_notify(&s_settings_save_signal, NULL);
 
-    if (s_settings_dirty)
+    if (s_settings_dirty && s_settings_file.count)
     {
+        ff_arena_declare_stack(temp_arena, 1024);
+        ff_span dict_span = ff_idict_save(&s_settings_dict, &temp_arena);
+        ff_string_view temp_file = settings_temp_file(&temp_arena);
+        bool saved = dict_span.size && temp_file.count;
+
         ff_stream stream;
-        if (s_settings_file.count && ff_stream_init_write_file(&stream, s_settings_file))
+        if (saved && ff_stream_init_write_file(&stream, temp_file))
         {
-            ff_arena_declare_stack(temp_arena, 1024);
-            ff_span dict_span = ff_idict_save(&s_settings_dict, &temp_arena);
-
-            if (dict_span.size && ff_stream_write(&stream, dict_span))
-            {
-                s_settings_dirty = false;
-            }
-
+            saved = ff_stream_write(&stream, dict_span) && FlushFileBuffers(stream.file);
             ff_stream_destroy(&stream);
-            ff_arena_destroy(&temp_arena);
+
+            if (saved)
+            {
+                saved = replace_settings_file(temp_file, &temp_arena);
+            }
         }
+        else
+        {
+            saved = false;
+        }
+
+        if (saved)
+        {
+            s_settings_dirty = false;
+        }
+
+        ff_arena_destroy(&temp_arena);
     }
 }
 

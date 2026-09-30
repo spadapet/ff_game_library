@@ -724,7 +724,7 @@ namespace ff::test::dx12
             Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
         }
 
-        TEST_METHOD(negative_circle_thickness_shrinks_the_radius)
+        TEST_METHOD(negative_circle_thickness_grows_the_radius)
         {
             scoped_device scope;
             const ff_color white = ff_color_white();
@@ -734,21 +734,40 @@ namespace ff::test::dx12
             const ff_dx12_circle_instance* circles =
                 (const ff_dx12_circle_instance*)scope.device.buckets[ff_dx12_instance_bucket_circles_outline].data;
 
-            Assert::AreEqual(40.0f, circles[0].position_radius[3]);
+            Assert::AreEqual(60.0f, circles[0].position_radius[3]);
             Assert::AreEqual(10.0f, circles[0].thickness);
         }
 
-        // A negative thickness at least as large as the radius would leave nothing to draw, so the
-        // call is rejected rather than producing a zero or negative radius instance.
-        TEST_METHOD(circle_thickness_that_consumes_the_radius_draws_nothing)
+        TEST_METHOD(negative_circle_thickness_as_large_as_the_radius_stays_an_outline)
         {
             scoped_device scope;
             const ff_color white = ff_color_white();
 
             ff_dx12_draw_device_draw_circle(&scope.device, endpoint(0, 0, white, 10), -10, white);
 
-            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_filled));
-            Assert::AreEqual<size_t>(0, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
+            const ff_dx12_circle_instance* circles =
+                (const ff_dx12_circle_instance*)scope.device.buckets[ff_dx12_instance_bucket_circles_outline].data;
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_circles_outline));
+            Assert::AreEqual(20.0f, circles[0].position_radius[3]);
+            Assert::AreEqual(10.0f, circles[0].thickness);
+        }
+
+        TEST_METHOD(mixed_alpha_line_stays_opaque_while_forced_opaque)
+        {
+            scoped_device scope;
+
+            const ff_dx12_draw_endpoint points[] =
+            {
+                endpoint(0, 0, ff_color_rgba(1.0f, 1.0f, 1.0f, 0.0f), 1),
+                endpoint(10, 0, ff_color_white(), 1),
+            };
+
+            ff_dx12_draw_device_push_opaque(&scope.device);
+            ff_dx12_draw_device_draw_lines(&scope.device, points, _countof(points));
+
+            Assert::AreEqual<size_t>(1, bucket_count(scope.device, ff_dx12_instance_bucket_lines));
+            Assert::AreEqual<size_t>(0, scope.device.transparent_count);
         }
 
         TEST_METHOD(zero_radius_circle_draws_nothing)

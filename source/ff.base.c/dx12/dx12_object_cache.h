@@ -5,9 +5,9 @@
 #include "dx12_device_child.h"
 #include "dx12_shader.h"
 
-// Caches root signatures and pipeline states by a hash of their description, so that repeatedly
-// asking for the same pipeline returns the same object instead of creating a duplicate. Compiled
-// shader blobs are cached here too, keyed by name.
+// Caches root signatures and pipeline states by their description, so that repeatedly asking for
+// the same pipeline returns the same object instead of creating a duplicate. Compiled shader blobs
+// are cached here too, keyed by name.
 //
 // The old C++ version also persisted compiled pipelines to an on-disk ID3D12PipelineLibrary, which
 // is still not done here.
@@ -15,6 +15,9 @@ typedef struct ff_dx12_object_cache_entry
 {
     struct ff_dx12_object_cache_entry* next;
     uint64_t hash;
+    uint8_t* key;
+    size_t key_size;
+    size_t key_capacity;
     IUnknown* object;
 } ff_dx12_object_cache_entry;
 

@@ -44,6 +44,7 @@ typedef struct ff_dx12_buffer
     uint8_t* cpu_data;
     size_t cpu_size;
     size_t cpu_capacity;
+    size_t gpu_size;
 
     // Upload range currently handed out by map, released back by unmap.
     ff_dx12_mem_range mapped_range;

@@ -346,8 +346,9 @@ static char skip_spaces_and_comments(ff_json_tokenizer* tokenizer)
 
 static void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text)
 {
-    tokenizer->pos = text.data;
-    tokenizer->end = text.data + text.count;
+    static const char empty_text[] = "";
+    tokenizer->pos = text.data ? text.data : empty_text;
+    tokenizer->end = tokenizer->pos + (text.data ? text.count : 0);
 }
 
 static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
@@ -360,7 +361,14 @@ static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
     switch (ch)
     {
         case '\0':
-            type = ff_json_token_type_none;
+            if (tokenizer->pos >= tokenizer->end)
+            {
+                type = ff_json_token_type_none;
+            }
+            else
+            {
+                tokenizer->pos++;
+            }
             break;
 
         case 't':
@@ -708,11 +716,14 @@ static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
     }
 }
 
+static const size_t s_max_parse_depth = 256;
+
 typedef struct internal_ff_json_parser
 {
     ff_json_tokenizer tokenizer;
     ff_arena* arena;
     const char* error_pos;
+    size_t depth;
 } internal_ff_json_parser;
 
 static void parse_error(internal_ff_json_parser* parser, const ff_json_token* token)
@@ -844,10 +855,19 @@ static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* to
 {
     if (token->type == ff_json_token_type_open_curly)
     {
+        if (parser->depth >= s_max_parse_depth)
+        {
+            parse_error(parser, token);
+            return false;
+        }
+
         ff_dict* dict = ff_arena_alloc_type(parser->arena, ff_dict, 1);
         FF_ASSERT_RET_VAL(dict, false);
 
-        FF_CHECK_RET_VAL(parse_object(parser, dict), false);
+        parser->depth++;
+        bool parsed = parse_object(parser, dict);
+        parser->depth--;
+        FF_CHECK_RET_VAL(parsed, false);
 
         *result = ff_value_new_dict(dict);
         return true;
@@ -855,7 +875,16 @@ static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* to
 
     if (token->type == ff_json_token_type_open_bracket)
     {
-        return parse_array(parser, result);
+        if (parser->depth >= s_max_parse_depth)
+        {
+            parse_error(parser, token);
+            return false;
+        }
+
+        parser->depth++;
+        bool parsed = parse_array(parser, result);
+        parser->depth--;
+        return parsed;
     }
 
     *result = ff_json_token_value(token, parser->arena);
@@ -880,6 +909,7 @@ bool ff_json_parse(ff_string_view text, ff_dict* dict, ff_arena* arena, const ch
     internal_ff_json_parser parser;
     parser.arena = arena;
     parser.error_pos = NULL;
+    parser.depth = 0;
     ff_json_tokenizer_init(&parser.tokenizer, text);
 
     ff_dict_init(dict, arena);

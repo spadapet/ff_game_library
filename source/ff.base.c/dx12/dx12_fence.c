@@ -44,12 +44,32 @@ void ff_dx12_fence_destroy(ff_dx12_fence* fence)
 
     fence->completed_value = 0;
     fence->next_value = 0;
+    fence->signaled_value = 0;
     fence->owner_queue = NULL;
 }
 
 bool ff_dx12_fence_valid(const ff_dx12_fence* fence)
 {
     return fence && fence->fence;
+}
+
+static bool fence_refresh_completed_value(ff_dx12_fence* fence)
+{
+    FF_ASSERT_RET_VAL(ff_dx12_fence_valid(fence), false);
+
+    uint64_t completed_value = ID3D12Fence_GetCompletedValue(fence->fence);
+    if (completed_value == UINT64_MAX)
+    {
+        ff_dx12_device_fatal_error(FF_SVL("Fence completion failed"));
+        return false;
+    }
+
+    if (fence->completed_value < completed_value)
+    {
+        fence->completed_value = completed_value;
+    }
+
+    return true;
 }
 
 ff_dx12_fence_value ff_dx12_fence_next_value(ff_dx12_fence* fence)
@@ -68,22 +88,33 @@ ff_dx12_fence_value ff_dx12_fence_signal_value(ff_dx12_fence* fence, uint64_t va
 {
     FF_ASSERT_RET_VAL(fence, ((ff_dx12_fence_value) { 0 }));
 
+    if (ff_dx12_fence_valid(fence))
+    {
+        FF_ASSERT(value >= fence->signaled_value);
+    }
+
     if (ff_dx12_fence_valid(fence) && !ff_dx12_fence_complete(fence, value))
     {
-        fence->next_value = value + 1;
+        FF_ASSERT_RET_VAL(value != UINT64_MAX, ((ff_dx12_fence_value) { 0 }));
+
+        HRESULT hr = queue
+            ? ID3D12CommandQueue_Signal(queue, fence->fence, value)
+            : ID3D12Fence_Signal(fence->fence, value);
+
+        if (FAILED(hr))
+        {
+            ff_dx12_device_fatal_error(FF_SVL("Fence signal failed"));
+            FF_CHECK_HR_RET_VAL(hr, ((ff_dx12_fence_value) { 0 }));
+        }
+
+        if (fence->next_value < value + 1)
+        {
+            fence->next_value = value + 1;
+        }
 
         if (value > fence->signaled_value)
         {
             fence->signaled_value = value;
-        }
-
-        if (queue)
-        {
-            ID3D12CommandQueue_Signal(queue, fence->fence, value);
-        }
-        else
-        {
-            ID3D12Fence_Signal(fence->fence, value);
         }
     }
 
@@ -105,18 +136,22 @@ void ff_dx12_fence_wait(ff_dx12_fence* fence, uint64_t value, ID3D12CommandQueue
     FF_CHECK_RET(!queue || queue != fence->owner_queue);
 
     FF_CHECK_RET(ff_dx12_fence_valid(fence) && !ff_dx12_fence_complete(fence, value));
+    FF_CHECK_RET(queue || ff_dx12_fence_wait_is_pending(fence, value));
 
     if (queue)
     {
-        ID3D12CommandQueue_Wait(queue, fence->fence, value);
+        HRESULT hr = ID3D12CommandQueue_Wait(queue, fence->fence, value);
+        if (FAILED(hr))
+        {
+            ff_dx12_device_fatal_error(FF_SVL("Fence queue wait failed"));
+            FF_CHECK_HR_RET(hr);
+        }
     }
     else
     {
-        if (SUCCEEDED(ID3D12Fence_SetEventOnCompletion(fence->fence, value, NULL)))
-        {
-            // Single-threaded v1: the old code took completed_value_mutex here.
-            fence->completed_value = ff_math_max_size((size_t)fence->completed_value, (size_t)value);
-        }
+        HRESULT hr = ID3D12Fence_SetEventOnCompletion(fence->fence, value, NULL);
+        fence_refresh_completed_value(fence);
+        FF_CHECK_HR_RET(hr);
     }
 }
 
@@ -149,7 +184,7 @@ bool ff_dx12_fence_complete(ff_dx12_fence* fence, uint64_t value)
     // Single-threaded v1: the old code took completed_value_mutex here.
     if (value > fence->completed_value)
     {
-        fence->completed_value = ff_math_max_size((size_t)fence->completed_value, (size_t)ID3D12Fence_GetCompletedValue(fence->fence));
+        fence_refresh_completed_value(fence);
     }
 
     return value <= fence->completed_value;
@@ -226,8 +261,18 @@ static void wait_batch(ff_dx12_fence** fences, uint64_t* values, size_t count, I
             dx12_fences[i] = fences[i]->fence;
         }
 
-        ID3D12Device6_SetEventOnMultipleFenceCompletion(ff_dx12_device(), dx12_fences, values,
+        HRESULT hr = ID3D12Device6_SetEventOnMultipleFenceCompletion(ff_dx12_device(), dx12_fences, values,
             (UINT)count, D3D12_MULTIPLE_FENCE_WAIT_FLAG_ALL, NULL);
+
+        if (FAILED(hr))
+        {
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_complete(fences[i], values[i]);
+            }
+
+            return;
+        }
 
         for (size_t i = 0; i < count; i++)
         {

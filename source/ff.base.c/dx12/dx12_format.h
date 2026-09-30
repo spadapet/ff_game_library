@@ -7,8 +7,13 @@ bool ff_dx12_format_color(DXGI_FORMAT format);
 bool ff_dx12_format_palette(DXGI_FORMAT format);
 bool ff_dx12_format_has_alpha(DXGI_FORMAT format);
 bool ff_dx12_format_supports_pre_multiplied_alpha(DXGI_FORMAT format);
+bool ff_dx12_format_render_target(DXGI_FORMAT format);
 
 size_t ff_dx12_format_bits_per_pixel(DXGI_FORMAT format);
+size_t ff_dx12_format_block_width(DXGI_FORMAT format);
+size_t ff_dx12_format_block_height(DXGI_FORMAT format);
+size_t ff_dx12_format_row_count(DXGI_FORMAT format, size_t height);
+size_t ff_dx12_format_row_pitch(DXGI_FORMAT format, size_t width);
 
 // Returns DXGI_FORMAT_UNKNOWN for an unrecognized name rather than asserting, so callers can
 // report a bad asset instead of crashing.

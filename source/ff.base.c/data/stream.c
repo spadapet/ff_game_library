@@ -12,20 +12,25 @@ static bool is_read(const ff_stream* stream)
     return stream->type == ff_stream_type_read_file || stream->type == ff_stream_type_read_memory;
 }
 
+static bool is_path_separator(wchar_t ch)
+{
+    return ch == L'\\' || ch == L'/';
+}
+
 static void create_parent_directories(wchar_t* path, size_t count)
 {
     size_t i = (count >= 2 && path[1] == L':') ? 2 : 0;
 
-    const wchar_t separator = L'\\';
-    while (i < count && path[i] == separator)
+    while (i < count && is_path_separator(path[i]))
     {
         i++;
     }
 
     for (; i < count; i++)
     {
-        if (path[i] == separator)
+        if (is_path_separator(path[i]))
         {
+            wchar_t separator = path[i];
             path[i] = 0;
             BOOL result = CreateDirectory(path, NULL);
             path[i] = separator;
@@ -62,15 +67,26 @@ static HANDLE open_file(ff_string_view path, bool write)
     return file;
 }
 
-static void ensure_write_capacity(ff_stream* stream, size_t needed)
+static bool ensure_write_capacity(ff_stream* stream, size_t needed)
 {
-    if (needed > stream->capacity)
+    if (needed <= stream->capacity)
     {
-        size_t doubled = stream->capacity * 2;
-        size_t new_capacity = ff_math_round_up_pow2(ff_math_max_size(ff_math_max_size(doubled, needed), s_min_write_capacity));
-        stream->data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
-        stream->capacity = new_capacity;
+        return true;
     }
+
+    size_t doubled = stream->capacity * 2;
+    FF_CHECK_RET_VAL(doubled >= stream->capacity, false);
+
+    size_t wanted = ff_math_max_size(ff_math_max_size(doubled, needed), s_min_write_capacity);
+    size_t new_capacity = ff_math_round_up_pow2(wanted);
+    FF_CHECK_RET_VAL(new_capacity >= wanted, false);
+
+    uint8_t* data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
+    FF_CHECK_RET_VAL(data, false);
+
+    stream->data = data;
+    stream->capacity = new_capacity;
+    return true;
 }
 
 ff_stream ff_stream_none(void)
@@ -85,7 +101,7 @@ bool ff_stream_init_read_file(ff_stream* stream, ff_string_view path)
     FF_CHECK_RET_VAL(file, false);
 
     LARGE_INTEGER file_size;
-    if (!GetFileSizeEx(file, &file_size) || file_size.QuadPart < 0)
+    if (!GetFileSizeEx(file, &file_size) || file_size.QuadPart < 0 || (uint64_t)file_size.QuadPart > (uint64_t)SIZE_MAX)
     {
         CloseHandle(file);
         FF_DEBUG_FAIL_RET_VAL(false);
@@ -129,9 +145,9 @@ void ff_stream_init_write_memory(ff_stream* stream, ff_arena* arena, size_t init
         .arena = arena,
     };
 
-    if (initial_capacity)
+    if (initial_capacity && !ensure_write_capacity(stream, initial_capacity))
     {
-        ensure_write_capacity(stream, initial_capacity);
+        *stream = ff_stream_none();
     }
 }
 
@@ -192,17 +208,33 @@ ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size, size_t a
     }
 
     uint8_t* dest = (uint8_t*)ff_arena_alloc(arena, size, align);
-    DWORD read = 0;
-    if (!ReadFile(stream->file, dest, (DWORD)size, &read, NULL))
+    FF_CHECK_RET_VAL(dest, ff_span_empty());
+
+    size_t total_read = 0;
+    while (total_read < size)
     {
-        FF_DEBUG_FAIL_RET_VAL(ff_span_empty());
+        size_t remaining = size - total_read;
+        DWORD to_read = (DWORD)ff_math_min_size(remaining, UINT32_MAX);
+        DWORD read = 0;
+
+        if (!ReadFile(stream->file, dest + total_read, to_read, &read, NULL))
+        {
+            FF_DEBUG_FAIL_RET_VAL(ff_span_empty());
+        }
+
+        total_read += read;
+
+        if (!read)
+        {
+            break;
+        }
     }
 
-    stream->pos += read;
+    stream->pos += total_read;
     return (ff_span)
     {
         .data = dest,
-        .size = read,
+        .size = total_read,
     };
 }
 
@@ -211,22 +243,33 @@ bool ff_stream_write(ff_stream* stream, ff_span data)
     FF_ASSERT_RET_VAL(stream->type == ff_stream_type_write_file || stream->type == ff_stream_type_write_memory, false);
     FF_CHECK_RET_VAL(data.size, true);
     FF_ASSERT_RET_VAL(data.data, false);
+    FF_CHECK_RET_VAL(data.size <= SIZE_MAX - stream->size, false);
 
     if (stream->type == ff_stream_type_write_memory)
     {
-        ensure_write_capacity(stream, stream->size + data.size);
+        FF_CHECK_RET_VAL(ensure_write_capacity(stream, stream->size + data.size), false);
         memcpy(stream->data + stream->size, data.data, data.size);
         stream->size += data.size;
         return true;
     }
 
-    DWORD written = 0;
-    if (!WriteFile(stream->file, data.data, (DWORD)data.size, &written, NULL) || written != data.size)
+    const uint8_t* bytes = (const uint8_t*)data.data;
+    size_t total_written = 0;
+    while (total_written < data.size)
     {
-        FF_DEBUG_FAIL_RET_VAL(false);
+        size_t remaining = data.size - total_written;
+        DWORD to_write = (DWORD)ff_math_min_size(remaining, UINT32_MAX);
+        DWORD written = 0;
+
+        if (!WriteFile(stream->file, bytes + total_written, to_write, &written, NULL) || !written)
+        {
+            FF_DEBUG_FAIL_RET_VAL(false);
+        }
+
+        total_written += written;
     }
 
-    stream->size += written;
+    stream->size += total_written;
     return true;
 }
 

@@ -99,7 +99,10 @@ void ff_dx12_commands_draw(ff_dx12_commands* commands, size_t start_vertex, size
 void ff_dx12_commands_draw_indexed(ff_dx12_commands* commands, size_t start_vertex, size_t start_index, size_t index_count, size_t start_instance, size_t instance_count);
 
 void ff_dx12_commands_clear_target(ff_dx12_commands* commands, ff_dx12_resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view, const float color[4]);
+void ff_dx12_commands_clear_target_range(ff_dx12_commands* commands, ff_dx12_resource* resource,
+    D3D12_CPU_DESCRIPTOR_HANDLE view, const float color[4], const ff_dx12_target_range* range);
 void ff_dx12_commands_discard_target(ff_dx12_commands* commands, ff_dx12_resource* resource);
+void ff_dx12_commands_discard_target_range(ff_dx12_commands* commands, ff_dx12_resource* resource, const ff_dx12_target_range* range);
 // depth_value/stencil_value of NULL leave that plane alone, matching the old optional arguments.
 void ff_dx12_commands_clear_depth(ff_dx12_commands* commands, ff_dx12_resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view,
     const float* depth_value, const uint8_t* stencil_value);

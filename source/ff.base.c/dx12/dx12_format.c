@@ -8,37 +8,40 @@ typedef struct format_info
 {
     DXGI_FORMAT format;
     uint16_t bits_per_pixel;
+    uint8_t block_width;
+    uint8_t block_height;
     bool compressed;
     bool color;
     bool has_alpha;
+    bool render_target;
 } format_info;
 
 // The legacy code answered these through DirectXTex. This table covers every format the engine
 // actually uses and keeps the library free of that dependency.
 static const format_info s_formats[] =
 {
-    { .format = DXGI_FORMAT_R8G8B8A8_UNORM, .bits_per_pixel = 32, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, .bits_per_pixel = 32, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_B8G8R8A8_UNORM, .bits_per_pixel = 32, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, .bits_per_pixel = 32, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_B8G8R8X8_UNORM, .bits_per_pixel = 32, .color = true },
-    { .format = DXGI_FORMAT_R32G32B32A32_FLOAT, .bits_per_pixel = 128, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_R32G32_FLOAT, .bits_per_pixel = 64, .color = true },
-    { .format = DXGI_FORMAT_R32_FLOAT, .bits_per_pixel = 32, .color = true },
-    { .format = DXGI_FORMAT_R8_UNORM, .bits_per_pixel = 8, .color = true },
+    { .format = DXGI_FORMAT_R8G8B8A8_UNORM, .bits_per_pixel = 32, .color = true, .has_alpha = true, .render_target = true },
+    { .format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, .bits_per_pixel = 32, .color = true, .has_alpha = true, .render_target = true },
+    { .format = DXGI_FORMAT_B8G8R8A8_UNORM, .bits_per_pixel = 32, .color = true, .has_alpha = true, .render_target = true },
+    { .format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, .bits_per_pixel = 32, .color = true, .has_alpha = true, .render_target = true },
+    { .format = DXGI_FORMAT_B8G8R8X8_UNORM, .bits_per_pixel = 32, .color = true, .render_target = true },
+    { .format = DXGI_FORMAT_R32G32B32A32_FLOAT, .bits_per_pixel = 128, .color = true, .has_alpha = true, .render_target = true },
+    { .format = DXGI_FORMAT_R32G32_FLOAT, .bits_per_pixel = 64, .color = true, .render_target = true },
+    { .format = DXGI_FORMAT_R32_FLOAT, .bits_per_pixel = 32, .color = true, .render_target = true },
+    { .format = DXGI_FORMAT_R8_UNORM, .bits_per_pixel = 8, .color = true, .render_target = true },
     { .format = DXGI_FORMAT_A8_UNORM, .bits_per_pixel = 8, .has_alpha = true },
     { .format = DXGI_FORMAT_R1_UNORM, .bits_per_pixel = 1, .color = true },
-    { .format = DXGI_FORMAT_R8_UINT, .bits_per_pixel = 8 },
-    { .format = DXGI_FORMAT_R16_UINT, .bits_per_pixel = 16 },
-    { .format = DXGI_FORMAT_R32_UINT, .bits_per_pixel = 32 },
+    { .format = DXGI_FORMAT_R8_UINT, .bits_per_pixel = 8, .render_target = true },
+    { .format = DXGI_FORMAT_R16_UINT, .bits_per_pixel = 16, .render_target = true },
+    { .format = DXGI_FORMAT_R32_UINT, .bits_per_pixel = 32, .render_target = true },
     { .format = DXGI_FORMAT_D24_UNORM_S8_UINT, .bits_per_pixel = 32 },
     { .format = DXGI_FORMAT_D32_FLOAT, .bits_per_pixel = 32 },
-    { .format = DXGI_FORMAT_BC1_UNORM, .bits_per_pixel = 4, .compressed = true, .color = true },
-    { .format = DXGI_FORMAT_BC1_UNORM_SRGB, .bits_per_pixel = 4, .compressed = true, .color = true },
-    { .format = DXGI_FORMAT_BC2_UNORM, .bits_per_pixel = 8, .compressed = true, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_BC2_UNORM_SRGB, .bits_per_pixel = 8, .compressed = true, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_BC3_UNORM, .bits_per_pixel = 8, .compressed = true, .color = true, .has_alpha = true },
-    { .format = DXGI_FORMAT_BC3_UNORM_SRGB, .bits_per_pixel = 8, .compressed = true, .color = true, .has_alpha = true },
+    { .format = DXGI_FORMAT_BC1_UNORM, .bits_per_pixel = 4, .block_width = 4, .block_height = 4, .compressed = true, .color = true },
+    { .format = DXGI_FORMAT_BC1_UNORM_SRGB, .bits_per_pixel = 4, .block_width = 4, .block_height = 4, .compressed = true, .color = true },
+    { .format = DXGI_FORMAT_BC2_UNORM, .bits_per_pixel = 8, .block_width = 4, .block_height = 4, .compressed = true, .color = true, .has_alpha = true },
+    { .format = DXGI_FORMAT_BC2_UNORM_SRGB, .bits_per_pixel = 8, .block_width = 4, .block_height = 4, .compressed = true, .color = true, .has_alpha = true },
+    { .format = DXGI_FORMAT_BC3_UNORM, .bits_per_pixel = 8, .block_width = 4, .block_height = 4, .compressed = true, .color = true, .has_alpha = true },
+    { .format = DXGI_FORMAT_BC3_UNORM_SRGB, .bits_per_pixel = 8, .block_width = 4, .block_height = 4, .compressed = true, .color = true, .has_alpha = true },
 };
 
 typedef struct format_name
@@ -103,10 +106,50 @@ bool ff_dx12_format_supports_pre_multiplied_alpha(DXGI_FORMAT format)
     return info && !info->compressed && info->color && info->has_alpha;
 }
 
+bool ff_dx12_format_render_target(DXGI_FORMAT format)
+{
+    const format_info* info = find_format(format);
+    return info && info->render_target;
+}
+
 size_t ff_dx12_format_bits_per_pixel(DXGI_FORMAT format)
 {
     const format_info* info = find_format(format);
     return info ? info->bits_per_pixel : 0;
+}
+
+size_t ff_dx12_format_block_width(DXGI_FORMAT format)
+{
+    const format_info* info = find_format(format);
+    return info ? (info->block_width ? (size_t)info->block_width : 1) : 0;
+}
+
+size_t ff_dx12_format_block_height(DXGI_FORMAT format)
+{
+    const format_info* info = find_format(format);
+    return info ? (info->block_height ? (size_t)info->block_height : 1) : 0;
+}
+
+size_t ff_dx12_format_row_count(DXGI_FORMAT format, size_t height)
+{
+    const size_t block_height = ff_dx12_format_block_height(format);
+    return block_height ? (height + block_height - 1) / block_height : 0;
+}
+
+size_t ff_dx12_format_row_pitch(DXGI_FORMAT format, size_t width)
+{
+    const size_t bits_per_pixel = ff_dx12_format_bits_per_pixel(format);
+    const size_t block_width = ff_dx12_format_block_width(format);
+    const size_t block_height = ff_dx12_format_block_height(format);
+
+    if (!bits_per_pixel || !block_width || !block_height)
+    {
+        return 0;
+    }
+
+    const size_t block_count = (width + block_width - 1) / block_width;
+    const size_t bits_per_block = bits_per_pixel * block_width * block_height;
+    return (block_count * bits_per_block + 7) / 8;
 }
 
 DXGI_FORMAT ff_dx12_format_parse(ff_string_view name)

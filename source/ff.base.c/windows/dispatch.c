@@ -54,30 +54,36 @@ static void unregister_dispatch(ff_dispatch* dispatch)
 
 static void destroy_now(ff_dispatch* dispatch)
 {
+    if (dispatch->destroy_complete)
+    {
+        return;
+    }
+
+    dispatch->destroy_complete = true;
     unregister_dispatch(dispatch);
     ff_signal_connection_destroy(&dispatch->connection);
 
     if (dispatch->window.hwnd)
     {
         DestroyWindow(dispatch->window.hwnd);
+        dispatch->window.hwnd = NULL;
     }
 
     dispatch->entries_a = NULL;
     dispatch->running_entries_a = NULL;
     ff_arena_destroy(&dispatch->arena);
-    DeleteCriticalSection(&dispatch->mutex);
 }
 
 static void run_entries(ff_dispatch* dispatch)
 {
     bool already_running;
 
-    EnterCriticalSection(&dispatch->mutex);
+    AcquireSRWLockExclusive(&dispatch->mutex);
     {
         already_running = dispatch->running;
         dispatch->running = true;
     }
-    LeaveCriticalSection(&dispatch->mutex);
+    ReleaseSRWLockExclusive(&dispatch->mutex);
 
     FF_CHECK_RET(!already_running);
 
@@ -86,7 +92,7 @@ static void run_entries(ff_dispatch* dispatch)
     {
         internal_ff_dispatch_entry* entries_a = NULL;
 
-        EnterCriticalSection(&dispatch->mutex);
+        AcquireSRWLockExclusive(&dispatch->mutex);
         {
             if (ff_array_count(dispatch->entries_a))
             {
@@ -101,7 +107,7 @@ static void run_entries(ff_dispatch* dispatch)
                 destroyed = dispatch->destroyed;
             }
         }
-        LeaveCriticalSection(&dispatch->mutex);
+        ReleaseSRWLockExclusive(&dispatch->mutex);
 
         if (!entries_a)
         {
@@ -117,11 +123,11 @@ static void run_entries(ff_dispatch* dispatch)
 
         ff_array_resize(entries_a, 0);
 
-        EnterCriticalSection(&dispatch->mutex);
+        AcquireSRWLockExclusive(&dispatch->mutex);
         {
             dispatch->running_entries_a = entries_a;
         }
-        LeaveCriticalSection(&dispatch->mutex);
+        ReleaseSRWLockExclusive(&dispatch->mutex);
     }
 
     if (destroyed)
@@ -146,12 +152,14 @@ bool ff_dispatch_init(ff_dispatch* dispatch, ff_dispatch_type type)
     FF_ASSERT_RET_VAL(type != ff_dispatch_type_main || !s_main_dispatch, false);
     FF_ASSERT_RET_VAL(type != ff_dispatch_type_game || !s_game_dispatch, false);
 
+    dispatch->window = (ff_window){ 0 };
     dispatch->thread_id = GetCurrentThreadId();
     dispatch->type = type;
     dispatch->posted = false;
     dispatch->running = false;
     dispatch->destroyed = false;
-    InitializeCriticalSection(&dispatch->mutex);
+    dispatch->destroy_complete = false;
+    InitializeSRWLock(&dispatch->mutex);
     ff_arena_init_heap_local(&dispatch->arena, 0);
     dispatch->entries_a = ff_array_init(internal_ff_dispatch_entry, &dispatch->arena);
     dispatch->running_entries_a = ff_array_init(internal_ff_dispatch_entry, &dispatch->arena);
@@ -159,7 +167,8 @@ bool ff_dispatch_init(ff_dispatch* dispatch, ff_dispatch_type type)
 
     if (!ff_window_message_init(&dispatch->window))
     {
-        ff_dispatch_destroy(dispatch);
+        dispatch->destroyed = true;
+        destroy_now(dispatch);
         FF_DEBUG_FAIL_RET_VAL(false);
     }
 
@@ -201,36 +210,39 @@ ff_dispatch* ff_dispatch_get_current(void)
 
 void ff_dispatch_destroy(ff_dispatch* dispatch)
 {
-    FF_CHECK_RET(dispatch && !dispatch->destroyed);
+    FF_CHECK_RET(dispatch);
     FF_ASSERT_RET(ff_dispatch_is_current(dispatch));
 
+    bool destroyed;
+    bool running;
+    AcquireSRWLockExclusive(&dispatch->mutex);
+    {
+        destroyed = dispatch->destroyed;
+        running = dispatch->running;
+
+        if (!destroyed)
+        {
+            dispatch->destroyed = true;
+        }
+    }
+    ReleaseSRWLockExclusive(&dispatch->mutex);
+
+    FF_CHECK_RET(!destroyed);
     unregister_dispatch(dispatch);
 
-    bool running;
-    EnterCriticalSection(&dispatch->mutex);
+    if (!running)
     {
-        dispatch->destroyed = true;
-        running = dispatch->running;
+        run_entries(dispatch);
     }
-    LeaveCriticalSection(&dispatch->mutex);
-
-    FF_CHECK_RET(!running);
-    run_entries(dispatch);
-    destroy_now(dispatch);
 }
 
 static void post_entry(ff_dispatch* dispatch, const internal_ff_dispatch_entry* entry)
 {
-    // After destroy the critical section is gone, so "destroyed" must be checked before taking it.
-    if (dispatch->destroyed)
-    {
-        run_entry(entry);
-        return;
-    }
-
     bool run_now = false;
+    bool send_flush = false;
+    HWND hwnd = NULL;
 
-    EnterCriticalSection(&dispatch->mutex);
+    AcquireSRWLockExclusive(&dispatch->mutex);
     {
         if (dispatch->destroyed)
         {
@@ -243,15 +255,28 @@ static void post_entry(ff_dispatch* dispatch, const internal_ff_dispatch_entry* 
             if (!dispatch->posted)
             {
                 dispatch->posted = true;
-                PostMessage(dispatch->window.hwnd, FF_WM_FLUSH, 0, 0);
+                hwnd = dispatch->window.hwnd;
+                send_flush = !PostMessage(hwnd, FF_WM_FLUSH, 0, 0);
             }
         }
     }
-    LeaveCriticalSection(&dispatch->mutex);
+    ReleaseSRWLockExclusive(&dispatch->mutex);
 
     if (run_now)
     {
         run_entry(entry);
+    }
+    else if (send_flush)
+    {
+        if (hwnd)
+        {
+            SendMessage(hwnd, FF_WM_FLUSH, 0, 0);
+        }
+
+        if (!hwnd || (entry->done && !InterlockedCompareExchange(entry->done, 0, 0)))
+        {
+            run_entries(dispatch);
+        }
     }
 }
 
