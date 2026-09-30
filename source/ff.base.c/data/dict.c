@@ -25,13 +25,15 @@ static void internal_ff_dict_reserve(ff_dict* dict, size_t new_capacity)
 
 void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value)
 {
+    ff_value value_copy = *value;
+
     if (dict->count == dict->capacity)
     {
         internal_ff_dict_reserve(dict, ff_math_round_up_pow2(ff_math_max_size(dict->capacity * 2, 8)));
     }
 
     dict->keys[dict->count] = key_hash;
-    internal_ff_dict_values(dict)[dict->count] = *value;
+    internal_ff_dict_values(dict)[dict->count] = value_copy;
     dict->count++;
 }
 
@@ -102,11 +104,12 @@ void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other)
 void ff_dict_set(ff_dict* dict, ff_string_view key, const ff_value* value)
 {
     uint64_t key_hash = ff_hash_string(key);
+    ff_value value_copy = value ? *value : (ff_value){ 0 };
     internal_ff_dict_clear_hash(dict, key_hash);
 
     if (value)
     {
-        internal_ff_dict_add_hash(dict, key_hash, value);
+        internal_ff_dict_add_hash(dict, key_hash, &value_copy);
     }
 }
 

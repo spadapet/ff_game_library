@@ -524,7 +524,7 @@ namespace ff::test::data_persist
 
             // There is no depth limit, so this has to parse rather than be refused. Kept to a
             // depth the default stack handles comfortably, since each level is one recursion.
-            static const size_t nest = 256;
+            static const size_t nest = 512;
             static char json[nest * 2 + 16]{};
             size_t count = 0;
 
@@ -582,6 +582,58 @@ namespace ff::test::data_persist
 
             ff_dict dict{};
             Assert::IsFalse(ff_json_parse(sv("{ bad }"), &dict, &arena, nullptr));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(deep_mixed_nesting_survives_idict_round_trip)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 65536);
+
+            ff_string_builder json{};
+            ff_string_builder_init(&json, &arena);
+            ff_string_builder_append(&json, FF_SVL("{\"a\":"));
+
+            const size_t depth = 160;
+            for (size_t i = 0; i < depth; i++)
+            {
+                ff_string_builder_append(&json, FF_SVL("[{\"a\":"));
+            }
+
+            ff_string_builder_append(&json, FF_SVL("42"));
+            for (size_t i = 0; i < depth; i++)
+            {
+                ff_string_builder_append(&json, FF_SVL("}]"));
+            }
+            ff_string_builder_append(&json, FF_SVL("}"));
+
+            ff_idict dict{};
+            Assert::IsTrue(ff_json_parse_idict(ff_string_builder_view(&json), &dict, &arena, nullptr));
+
+            ff_span saved = ff_idict_save(&dict, &arena);
+            ff_idict loaded{};
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, true));
+
+            ff_dict restored{};
+            ff_dict_init_from_idict(&restored, &arena, &loaded);
+            ff_dict* current = &restored;
+            for (size_t i = 0; i < depth; i++)
+            {
+                const ff_value* value = ff_dict_get(current, FF_SVL("a"));
+                Assert::IsNotNull(value);
+                Assert::IsTrue(value->type == ff_value_type_array);
+                ff_value_span items = ff_value_as_array(value);
+                Assert::AreEqual((size_t)1, items.count);
+                Assert::IsTrue(items.data[0].type == ff_value_type_dict);
+                current = ff_value_as_dict(&items.data[0]);
+                Assert::IsNotNull(current);
+            }
+
+            const ff_value* leaf = ff_dict_get(current, FF_SVL("a"));
+            Assert::IsNotNull(leaf);
+            Assert::IsTrue(leaf->type == ff_value_type_int32);
+            Assert::AreEqual(42, leaf->i32);
 
             ff_arena_destroy(&arena);
         }

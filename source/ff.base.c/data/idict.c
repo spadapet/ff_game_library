@@ -29,7 +29,6 @@ typedef struct internal_ff_idict_builder
 
 static const size_t s_idict_header_size = sizeof(internal_ff_idict_header);
 static const size_t s_idict_entry_size = sizeof(uint64_t) + sizeof(ff_ivalue);
-static const size_t s_max_depth = 64;
 
 static internal_ff_idict_header* get_idict_header(const ff_idict* dict)
 {
@@ -432,13 +431,13 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 // rebuilding needs to add by hash, but no caller outside this file has a reason to bypass hashing.
 void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value);
 
-static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena, size_t depth);
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena);
 
-static void build_dict_from_idict_depth(ff_dict* dict, ff_arena* arena, const ff_idict* source, size_t depth)
+static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
 {
     size_t count = (source && source->data) ? get_idict_entry_count(source) : 0;
     ff_dict_init_capacity(dict, arena, count);
-    FF_CHECK_RET(count && depth <= s_max_depth);
+    FF_CHECK_RET(count);
 
     const uint64_t* keys = get_idict_keys(source);
     const ff_ivalue* values = get_idict_values(source);
@@ -447,20 +446,13 @@ static void build_dict_from_idict_depth(ff_dict* dict, ff_arena* arena, const ff
     // so the duplicate order that ff_dict_get_next walks is preserved.
     for (size_t i = 0; i < count; i++)
     {
-        ff_value value = convert_ivalue_to_value(values + i, source, arena, depth);
+        ff_value value = convert_ivalue_to_value(values + i, source, arena);
         internal_ff_dict_add_hash(dict, keys[i], &value);
     }
 }
 
-static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena)
 {
-    build_dict_from_idict_depth(dict, arena, source, 0);
-}
-
-static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena, size_t depth)
-{
-    FF_CHECK_RET_VAL(depth <= s_max_depth, ff_value_new_empty());
-
     switch (value->type)
     {
         case ff_value_type_string:
@@ -503,7 +495,7 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
 
                 for (size_t i = 0; i < items.count; i++)
                 {
-                    result.data[i] = convert_ivalue_to_value(items.data + i, parent_dict, arena, depth + 1);
+                    result.data[i] = convert_ivalue_to_value(items.data + i, parent_dict, arena);
                 }
 
                 return ff_value_new_array(result);
@@ -514,7 +506,7 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
             {
                 ff_idict nested = ff_ivalue_as_dict(value, parent_dict);
                 ff_dict* child = ff_arena_alloc_type(arena, ff_dict, 1);
-                build_dict_from_idict_depth(child, arena, &nested, depth + 1);
+                build_dict_from_idict(child, arena, &nested);
                 return ff_value_new_dict(child);
             }
 
@@ -611,13 +603,11 @@ typedef struct internal_ff_idict_file
 
 static_assert(sizeof(internal_ff_idict_file) == FF_IDICT_MAX_ALIGN, "the data must follow the prefix at the right alignment");
 
-static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate_values, size_t depth);
+static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate_values);
 
-static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t data_size, size_t depth)
+static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t data_size)
 {
     size_t offset = value->data.offset;
-
-    FF_CHECK_RET_VAL(depth <= s_max_depth, false);
 
     switch (value->type)
     {
@@ -678,7 +668,7 @@ static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t d
 
                 for (size_t i = 0; i < count; i++)
                 {
-                    FF_CHECK_RET_VAL(validate_value(items + i, data, data_size, depth + 1), false);
+                    FF_CHECK_RET_VAL(validate_value(items + i, data, data_size), false);
                 }
             }
             break;
@@ -689,7 +679,7 @@ static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t d
                 FF_CHECK_RET_VAL(!value->data.count && !value->data.item_size, false);
                 FF_CHECK_RET_VAL(value->data.item_align == FF_IDICT_BLOCK_ALIGN, false);
                 FF_CHECK_RET_VAL(offset <= data_size, false);
-                FF_CHECK_RET_VAL(validate_idict_data(data + offset, data_size - offset, true, depth + 1), false);
+                FF_CHECK_RET_VAL(validate_idict_data(data + offset, data_size - offset, true), false);
             }
             break;
 
@@ -701,11 +691,10 @@ static bool validate_value(const ff_ivalue* value, const uint8_t* data, size_t d
     return true;
 }
 
-static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate_values, size_t depth)
+static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate_values)
 {
     size_t entries_size = 0;
 
-    FF_CHECK_RET_VAL(depth <= s_max_depth, false);
     FF_CHECK_RET_VAL(avail >= s_idict_header_size, false);
     FF_CHECK_RET_VAL(!((uintptr_t)data & (FF_IDICT_BLOCK_ALIGN - 1)), false);
 
@@ -739,7 +728,7 @@ static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate
 
     for (size_t i = 0; i < header.entry_count; i++)
     {
-        FF_CHECK_RET_VAL(validate_value(values + i, value_data, data_size, depth), false);
+        FF_CHECK_RET_VAL(validate_value(values + i, value_data, data_size), false);
     }
 
     return true;
@@ -801,7 +790,7 @@ bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool val
 
     // The root data must fill the file exactly.
     FF_CHECK_RET_VAL(header.byte_size == byte_size, false);
-    FF_CHECK_RET_VAL(validate_idict_data(data, byte_size, validate_values, 0), false);
+    FF_CHECK_RET_VAL(validate_idict_data(data, byte_size, validate_values), false);
 
     dict->data = data;
     return true;

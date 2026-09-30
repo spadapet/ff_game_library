@@ -176,9 +176,12 @@ static ff_dx12_object_cache_entry* bucket_find_by_object(ff_dx12_object_cache_en
 static bool build_pipeline_state_key(ff_dx12_object_cache* cache,
     const D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc, object_cache_key_builder* key)
 {
-    ff_dx12_object_cache_entry* root_signature = bucket_find_by_object(cache->root_signatures, (IUnknown*)desc->pRootSignature);
-    FF_CHECK_RET_VAL(root_signature, false);
-    FF_CHECK_RET_VAL(key_append_data(key, root_signature->key, root_signature->key_size), false);
+    ff_dx12_object_cache_entry* root_signature = desc->pRootSignature
+        ? bucket_find_by_object(cache->root_signatures, (IUnknown*)desc->pRootSignature)
+        : NULL;
+    FF_CHECK_RET_VAL(!desc->pRootSignature || root_signature, false);
+    FF_CHECK_RET_VAL(key_append_data(key, root_signature ? root_signature->key : NULL,
+        root_signature ? root_signature->key_size : 0), false);
     FF_CHECK_RET_VAL(key_append_shader(key, &desc->VS), false);
     FF_CHECK_RET_VAL(key_append_shader(key, &desc->PS), false);
     FF_CHECK_RET_VAL(key_append_shader(key, &desc->DS), false);

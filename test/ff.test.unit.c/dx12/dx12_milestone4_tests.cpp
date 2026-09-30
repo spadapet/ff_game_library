@@ -2,6 +2,94 @@
 
 namespace ff::test::dx12
 {
+    struct scoped_texture_assert_counter
+    {
+        scoped_texture_assert_counter()
+        {
+            count = 0;
+            this->previous = ff_assert_listener(&handler);
+        }
+
+        ~scoped_texture_assert_counter()
+        {
+            ff_assert_listener(this->previous);
+        }
+
+        static bool handler(const char*, const char*, const char*, unsigned int)
+        {
+            count++;
+            return true;
+        }
+
+        static inline size_t count = 0;
+        ff_assert_listener_func previous;
+    };
+
+    static void assert_texture_upload_roundtrip(DXGI_FORMAT format, size_t width, size_t height, size_t mip_index)
+    {
+        ff_dx12_texture_params params = ff_dx12_texture_params_default(width, height);
+        params.format = format;
+        params.mip_count = mip_index + 1;
+        params.array_size = 2;
+
+        ff_dx12_texture texture{};
+        Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+        Assert::IsTrue(format == ff_dx12_texture_format(&texture));
+
+        const size_t sub_index = params.mip_count + mip_index;
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+        UINT row_count = 0;
+        UINT64 row_bytes = 0;
+        UINT64 total_bytes = 0;
+        ff_dx12_device()->GetCopyableFootprints(&texture.resource.desc, (UINT)sub_index, 1, 0,
+            &footprint, &row_count, &row_bytes, &total_bytes);
+        Assert::IsTrue(total_bytes != UINT64_MAX && row_count && row_bytes);
+
+        const size_t mip_width = ff_math_max_size(width >> mip_index, 1);
+        const size_t mip_height = ff_math_max_size(height >> mip_index, 1);
+        Assert::AreEqual((size_t)row_count, ff_dx12_format_row_count(format, mip_height));
+        Assert::AreEqual((size_t)row_bytes, ff_dx12_format_row_pitch(format, mip_width));
+        const size_t source_pitch = (size_t)row_bytes + 13;
+        uint8_t source[1024];
+        Assert::IsTrue(source_pitch * row_count <= sizeof(source));
+        memset(source, 0xCD, sizeof(source));
+        for (size_t y = 0; y < row_count; y++)
+        {
+            for (size_t x = 0; x < row_bytes; x++)
+            {
+                source[y * source_pitch + x] = (uint8_t)(y * 53 + x * 7 + 1);
+            }
+        }
+
+        ff_dx12_commands commands{};
+        Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+        Assert::IsTrue(ff_dx12_texture_update(&texture, &commands, 1, mip_index, 0, 0,
+            source, mip_width, mip_height, source_pitch));
+
+        ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_texture(
+            ff_dx12_readback_allocator(), total_bytes, ff_dx12_commands_next_fence_value(&commands));
+        Assert::IsTrue(ff_dx12_mem_range_valid(&readback));
+        D3D12_RECT rect{};
+        rect.right = (LONG)footprint.Footprint.Width;
+        rect.bottom = (LONG)footprint.Footprint.Height;
+        ff_dx12_commands_readback_texture(&commands, &readback, &footprint.Footprint,
+            &texture.resource, sub_index, &rect);
+
+        ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+        ff_dx12_wait_for_idle();
+        const uint8_t* actual = (const uint8_t*)ff_dx12_mem_range_cpu_data(&readback);
+        Assert::IsNotNull(actual);
+        for (size_t y = 0; y < row_count; y++)
+        {
+            Assert::AreEqual(0, memcmp(source + y * source_pitch,
+                actual + y * footprint.Footprint.RowPitch, (size_t)row_bytes));
+        }
+
+        Assert::IsTrue(ff_dx12_device_valid());
+        ff_dx12_texture_destroy(&texture);
+        ff_dx12_wait_for_idle();
+    }
+
     TEST_CLASS(dx12_milestone4_tests)
     {
     public:
@@ -208,6 +296,154 @@ namespace ff::test::dx12
 
             ff_dx12_texture_destroy(&texture);
             ff_dx12_wait_for_idle();
+        }
+
+        TEST_METHOD(texture_upload_roundtrips_uncompressed_format_families)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            const DXGI_FORMAT formats[] =
+            {
+                DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_UNORM,
+                DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R32G32_FLOAT,
+                DXGI_FORMAT_R16G16_FLOAT, DXGI_FORMAT_R16_FLOAT, DXGI_FORMAT_R16_UNORM,
+                DXGI_FORMAT_R11G11B10_FLOAT, DXGI_FORMAT_R10G10B10A2_UNORM,
+                DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,
+                DXGI_FORMAT_R16G16_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R8G8B8A8_UNORM,
+            };
+
+            for (DXGI_FORMAT format : formats)
+            {
+                assert_texture_upload_roundtrip(format, 7, 3, 0);
+            }
+            assert_texture_upload_roundtrip(DXGI_FORMAT_R16G16B16A16_FLOAT, 16, 8, 2);
+        }
+
+        TEST_METHOD(texture_upload_roundtrips_bc_block_rows_and_small_mips)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            const DXGI_FORMAT formats[] =
+            {
+                DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM,
+                DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_UF16,
+                DXGI_FORMAT_BC7_UNORM,
+            };
+
+            for (DXGI_FORMAT format : formats)
+            {
+                assert_texture_upload_roundtrip(format, 8, 8, 0);
+                assert_texture_upload_roundtrip(format, 8, 8, 2);
+                assert_texture_upload_roundtrip(format, 8, 8, 3);
+            }
+        }
+
+        TEST_METHOD(texture_upload_rejects_invalid_rows_and_bc_regions)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+            uint8_t source[256]{};
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
+            params.format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            ff_dx12_texture hdr{};
+            Assert::IsTrue(ff_dx12_texture_init(&hdr, &params));
+            params.format = DXGI_FORMAT_BC3_UNORM;
+            ff_dx12_texture bc{};
+            Assert::IsTrue(ff_dx12_texture_init(&bc, &params));
+
+            {
+                scoped_texture_assert_counter counter;
+                Assert::IsFalse(ff_dx12_texture_update(&hdr, &commands, 0, 0, 0, 0, source, 4, 2, 31));
+                Assert::IsFalse(ff_dx12_texture_update(&hdr, &commands, 0, 0, 0, 0, source, 4, 2, SIZE_MAX));
+                Assert::IsFalse(ff_dx12_texture_update(&bc, &commands, 0, 0, 0, 0, source, 8, 8, 31));
+                Assert::IsFalse(ff_dx12_texture_update(&bc, &commands, 0, 0, 1, 0, source, 4, 4, 16));
+                Assert::IsFalse(ff_dx12_texture_update(&bc, &commands, 0, 0, 0, 0, source, 2, 4, 16));
+#ifdef _DEBUG
+                Assert::AreEqual((size_t)5, scoped_texture_assert_counter::count);
+#else
+                Assert::AreEqual((size_t)0, scoped_texture_assert_counter::count);
+#endif
+            }
+
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+            Assert::IsTrue(ff_dx12_device_valid());
+            ff_dx12_texture_destroy(&bc);
+            ff_dx12_texture_destroy(&hdr);
+            ff_dx12_wait_for_idle();
+        }
+
+        TEST_METHOD(hdr_targets_accept_optimized_clear_and_roundtrip_clear_values)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            const struct
+            {
+                DXGI_FORMAT format;
+                uint64_t pixel;
+                size_t pixel_bytes;
+            } cases[] =
+            {
+                { DXGI_FORMAT_R16G16B16A16_FLOAT, 0x3C003C003C003C00, 8 },
+                { DXGI_FORMAT_R16G16_FLOAT, 0x3C003C00, 4 },
+                { DXGI_FORMAT_R32_FLOAT, 0x3F800000, 4 },
+                { DXGI_FORMAT_R11G11B10_FLOAT, 0x781E03C0, 4 },
+                { DXGI_FORMAT_R10G10B10A2_UNORM, 0xFFFFFFFF, 4 },
+            };
+
+            for (const auto& entry : cases)
+            {
+                const float clear_color[] = { 1, 1, 1, 1 };
+                ff_dx12_texture_params params = ff_dx12_texture_params_default(7, 3);
+                params.format = entry.format;
+                params.optimized_clear_color = clear_color;
+                ff_dx12_texture texture{};
+                Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+                Assert::IsTrue((texture.resource.desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0);
+                const D3D12_CLEAR_VALUE optimized = ff_dx12_texture_optimized_clear_value(&texture);
+                Assert::IsTrue(optimized.Format == entry.format);
+                Assert::AreEqual(0, memcmp(optimized.Color, clear_color, sizeof(clear_color)));
+
+                ff_dx12_target_texture target{};
+                Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 0, 1, 0));
+                ff_dx12_commands commands{};
+                Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+                ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+                D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+                UINT row_count = 0;
+                UINT64 row_bytes = 0;
+                UINT64 total_bytes = 0;
+                ff_dx12_device()->GetCopyableFootprints(&texture.resource.desc, 0, 1, 0,
+                    &footprint, &row_count, &row_bytes, &total_bytes);
+                Assert::AreEqual((UINT)3, row_count);
+                Assert::AreEqual((UINT64)(7 * entry.pixel_bytes), row_bytes);
+                ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_texture(
+                    ff_dx12_readback_allocator(), total_bytes, ff_dx12_commands_next_fence_value(&commands));
+                Assert::IsTrue(ff_dx12_mem_range_valid(&readback));
+                D3D12_RECT rect{};
+                rect.right = 7;
+                rect.bottom = 3;
+                ff_dx12_commands_readback_texture(&commands, &readback, &footprint.Footprint,
+                    &texture.resource, 0, &rect);
+                ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+                ff_dx12_wait_for_idle();
+
+                const uint8_t* actual = (const uint8_t*)ff_dx12_mem_range_cpu_data(&readback);
+                Assert::IsNotNull(actual);
+                for (size_t y = 0; y < row_count; y++)
+                {
+                    for (size_t x = 0; x < 7; x++)
+                    {
+                        Assert::AreEqual(0, memcmp(&entry.pixel,
+                            actual + y * footprint.Footprint.RowPitch + x * entry.pixel_bytes, entry.pixel_bytes));
+                    }
+                }
+
+                Assert::IsTrue(ff_dx12_device_valid());
+                ff_dx12_target_texture_destroy(&target);
+                ff_dx12_texture_destroy(&texture);
+                ff_dx12_wait_for_idle();
+            }
         }
 
         TEST_METHOD(target_texture_range_matches_the_slice_it_views)

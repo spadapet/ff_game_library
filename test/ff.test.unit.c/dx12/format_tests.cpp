@@ -107,6 +107,112 @@ namespace ff::test::base
             Assert::IsFalse(ff_dx12_format_render_target(DXGI_FORMAT_UNKNOWN));
         }
 
+        TEST_METHOD(uncompressed_format_families_have_complete_row_layouts)
+        {
+            const struct
+            {
+                DXGI_FORMAT format;
+                size_t bits;
+                bool render_target;
+            } cases[] =
+            {
+                { DXGI_FORMAT_R32G32B32A32_SINT, 128, true },
+                { DXGI_FORMAT_R32G32B32_FLOAT, 96, false },
+                { DXGI_FORMAT_R16G16B16A16_FLOAT, 64, true },
+                { DXGI_FORMAT_R16G16B16A16_UNORM, 64, true },
+                { DXGI_FORMAT_R16G16B16A16_SNORM, 64, true },
+                { DXGI_FORMAT_R32G32_UINT, 64, true },
+                { DXGI_FORMAT_R16G16_FLOAT, 32, true },
+                { DXGI_FORMAT_R16G16_SINT, 32, true },
+                { DXGI_FORMAT_R10G10B10A2_UNORM, 32, true },
+                { DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM, 32, false },
+                { DXGI_FORMAT_R11G11B10_FLOAT, 32, true },
+                { DXGI_FORMAT_R9G9B9E5_SHAREDEXP, 32, false },
+                { DXGI_FORMAT_R8G8B8A8_SNORM, 32, true },
+                { DXGI_FORMAT_R32_SINT, 32, true },
+                { DXGI_FORMAT_B8G8R8X8_UNORM_SRGB, 32, true },
+                { DXGI_FORMAT_R16_FLOAT, 16, true },
+                { DXGI_FORMAT_R16_UNORM, 16, true },
+                { DXGI_FORMAT_R8G8_UNORM, 16, true },
+                { DXGI_FORMAT_B5G6R5_UNORM, 16, true },
+                { DXGI_FORMAT_B5G5R5A1_UNORM, 16, true },
+                { DXGI_FORMAT_B4G4R4A4_UNORM, 16, true },
+                { DXGI_FORMAT_R8_SINT, 8, true },
+                { DXGI_FORMAT_R16G16B16A16_TYPELESS, 64, false },
+            };
+
+            for (const auto& entry : cases)
+            {
+                Assert::AreEqual(entry.bits, ff_dx12_format_bits_per_pixel(entry.format));
+                Assert::AreEqual((size_t)1, ff_dx12_format_block_width(entry.format));
+                Assert::AreEqual((size_t)1, ff_dx12_format_block_height(entry.format));
+                Assert::AreEqual((size_t)3, ff_dx12_format_row_count(entry.format, 3));
+                Assert::AreEqual(5 * entry.bits / 8, ff_dx12_format_row_pitch(entry.format, 5));
+                Assert::AreEqual(entry.render_target, ff_dx12_format_render_target(entry.format));
+                Assert::IsFalse(ff_dx12_format_compressed(entry.format));
+                Assert::IsTrue(entry.format == ff_dx12_format_fix(entry.format, 5, 3, 1));
+            }
+
+            Assert::IsTrue(ff_dx12_format_color(DXGI_FORMAT_R16G16B16A16_FLOAT));
+            Assert::IsTrue(ff_dx12_format_has_alpha(DXGI_FORMAT_R16G16B16A16_FLOAT));
+            Assert::IsTrue(ff_dx12_format_supports_pre_multiplied_alpha(DXGI_FORMAT_R16G16B16A16_FLOAT));
+            Assert::IsTrue(ff_dx12_format_color(DXGI_FORMAT_R11G11B10_FLOAT));
+            Assert::IsFalse(ff_dx12_format_has_alpha(DXGI_FORMAT_R11G11B10_FLOAT));
+            Assert::IsFalse(ff_dx12_format_color(DXGI_FORMAT_R16G16B16A16_UINT));
+        }
+
+        TEST_METHOD(all_bc_families_use_block_rows)
+        {
+            const DXGI_FORMAT formats[] =
+            {
+                DXGI_FORMAT_BC1_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB,
+                DXGI_FORMAT_BC2_TYPELESS, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB,
+                DXGI_FORMAT_BC3_TYPELESS, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB,
+                DXGI_FORMAT_BC4_TYPELESS, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC4_SNORM,
+                DXGI_FORMAT_BC5_TYPELESS, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC5_SNORM,
+                DXGI_FORMAT_BC6H_TYPELESS, DXGI_FORMAT_BC6H_UF16, DXGI_FORMAT_BC6H_SF16,
+                DXGI_FORMAT_BC7_TYPELESS, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB,
+            };
+
+            for (DXGI_FORMAT format : formats)
+            {
+                const size_t block_bytes = (format >= DXGI_FORMAT_BC1_TYPELESS && format <= DXGI_FORMAT_BC1_UNORM_SRGB) ||
+                    (format >= DXGI_FORMAT_BC4_TYPELESS && format <= DXGI_FORMAT_BC4_SNORM) ? 8 : 16;
+                Assert::IsTrue(ff_dx12_format_compressed(format));
+                Assert::IsFalse(ff_dx12_format_render_target(format));
+                Assert::AreEqual((size_t)4, ff_dx12_format_block_width(format));
+                Assert::AreEqual((size_t)4, ff_dx12_format_block_height(format));
+                Assert::AreEqual(block_bytes, ff_dx12_format_row_pitch(format, 1));
+                Assert::AreEqual(block_bytes, ff_dx12_format_row_pitch(format, 4));
+                Assert::AreEqual(block_bytes * 2, ff_dx12_format_row_pitch(format, 5));
+                Assert::AreEqual((size_t)1, ff_dx12_format_row_count(format, 1));
+                Assert::AreEqual((size_t)1, ff_dx12_format_row_count(format, 4));
+                Assert::AreEqual((size_t)2, ff_dx12_format_row_count(format, 5));
+                Assert::AreEqual((size_t)0, ff_dx12_format_row_pitch(format, 0));
+                Assert::AreEqual((size_t)0, ff_dx12_format_row_count(format, 0));
+            }
+        }
+
+        TEST_METHOD(row_layout_rejects_unsupported_formats_and_overflow)
+        {
+            const DXGI_FORMAT unsupported[] = { DXGI_FORMAT_UNKNOWN, (DXGI_FORMAT)-1, DXGI_FORMAT_NV12, DXGI_FORMAT_P010 };
+            for (DXGI_FORMAT format : unsupported)
+            {
+                Assert::AreEqual((size_t)0, ff_dx12_format_bits_per_pixel(format));
+                Assert::AreEqual((size_t)0, ff_dx12_format_block_width(format));
+                Assert::AreEqual((size_t)0, ff_dx12_format_block_height(format));
+                Assert::AreEqual((size_t)0, ff_dx12_format_row_pitch(format, 4));
+                Assert::AreEqual((size_t)0, ff_dx12_format_row_count(format, 4));
+                Assert::IsFalse(ff_dx12_format_render_target(format));
+            }
+
+            Assert::AreEqual((size_t)0, ff_dx12_format_row_pitch(DXGI_FORMAT_R16G16B16A16_FLOAT, SIZE_MAX));
+            Assert::AreEqual((size_t)0, ff_dx12_format_row_pitch(DXGI_FORMAT_BC7_UNORM, SIZE_MAX));
+            Assert::AreEqual(SIZE_MAX / 4 + 1, ff_dx12_format_row_count(DXGI_FORMAT_BC1_UNORM, SIZE_MAX));
+            Assert::AreEqual(SIZE_MAX / 8 + 1, ff_dx12_format_row_pitch(DXGI_FORMAT_R1_UNORM, SIZE_MAX));
+            Assert::AreEqual(SIZE_MAX, ff_dx12_format_row_pitch(DXGI_FORMAT_R8_UNORM, SIZE_MAX));
+        }
+
         TEST_METHOD(row_layout)
         {
             Assert::AreEqual((size_t)1, ff_dx12_format_block_width(DXGI_FORMAT_R8G8B8A8_UNORM));

@@ -128,9 +128,9 @@
     <ClCompile Include="dx12\dx12_texture.c">
       <Filter>dx12</Filter>
     </ClCompile>
-        <ClCompile Include="dx12\dx12_texture_view.c">
-          <Filter>dx12</Filter>
-        </ClCompile>
+    <ClCompile Include="dx12\dx12_texture_view.c">
+      <Filter>dx12</Filter>
+    </ClCompile>
     <ClCompile Include="dx12\dx12_resource_state.c">
       <Filter>dx12</Filter>
     </ClCompile>
@@ -314,9 +314,9 @@
     <ClInclude Include="dx12\dx12_texture.h">
       <Filter>dx12</Filter>
     </ClInclude>
-        <ClInclude Include="dx12\dx12_texture_view.h">
-          <Filter>dx12</Filter>
-        </ClInclude>
+    <ClInclude Include="dx12\dx12_texture_view.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
     <ClInclude Include="dx12\dx12_resource_state.h">
       <Filter>dx12</Filter>
     </ClInclude>
@@ -387,12 +387,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <FfShaderInclude Include="dx12\shaders\data.hlsli">
-      <Filter>dx12\shaders</Filter>
-    </FfShaderInclude>
-    <FfShaderInclude Include="dx12\shaders\functions.hlsli">
-      <Filter>dx12\shaders</Filter>
-    </FfShaderInclude>
     <FfShader Include="dx12\shaders\vs_sprite.hlsl">
       <Filter>dx12\shaders</Filter>
     </FfShader>
@@ -414,5 +408,9 @@
     <FfShader Include="dx12\shaders\ps_sprite.hlsl">
       <Filter>dx12\shaders</Filter>
     </FfShader>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.ff.base.c.config" />
+    <None Include="BUGS.md" />
   </ItemGroup>
 </Project>

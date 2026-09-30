@@ -3830,8 +3830,6 @@ namespace ff::test::base
             ff_idict_init(dict, arena, &chain[0]);
         }
 
-        // Wraps a saved file's block in one more hand built block, adding a level of nesting that
-        // the builder would refuse to produce. The caller frees the result.
         static uint8_t* wrap_in_one_more_block(const uint8_t* saved, size_t saved_size, size_t* out_size)
         {
             size_t child_size = saved_size - saved_header_size;
@@ -3872,47 +3870,62 @@ namespace ff::test::base
             return bytes;
         }
 
-        TEST_METHOD(nesting_up_to_the_depth_limit_is_allowed)
+        TEST_METHOD(deep_dictionary_nesting_round_trips)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 65536);
 
-            const int depth = 64;
+            const int depth = 128;
             ff_dict chain[depth]{};
 
             ff_idict dict{};
             build_chain(&arena, chain, depth, &dict);
 
-            ff_idict current = dict;
+            ff_span saved = ff_idict_save(&dict, &arena);
+            ff_idict current{};
+            Assert::IsTrue(ff_idict_load(&current, saved, true, true));
+
+            ff_dict restored{};
+            ff_dict_init_from_idict(&restored, &arena, &current);
+            ff_dict* mutable_current = &restored;
 
             for (int i = 0; i < depth; i++)
             {
-                Assert::AreEqual(i, ff_idict_get(&current, FF_SVL("depth"))->i32);
+                const ff_ivalue* marker = ff_idict_get(&current, FF_SVL("depth"));
+                const ff_value* mutable_marker = ff_dict_get(mutable_current, FF_SVL("depth"));
+                Assert::IsNotNull(marker);
+                Assert::IsNotNull(mutable_marker);
+                Assert::AreEqual(i, marker->i32);
+                Assert::IsTrue(mutable_marker->type == ff_value_type_int32);
+                Assert::AreEqual(i, mutable_marker->i32);
 
                 const ff_ivalue* child = ff_idict_get(&current, FF_SVL("child"));
+                const ff_value* mutable_child = ff_dict_get(mutable_current, FF_SVL("child"));
 
                 if (i + 1 < depth)
                 {
                     Assert::IsNotNull(child);
+                    Assert::IsNotNull(mutable_child);
                     current = ff_ivalue_as_dict(child, &current);
+                    mutable_current = ff_value_as_dict(mutable_child);
+                    Assert::IsNotNull(mutable_current);
                 }
                 else
                 {
                     Assert::IsNull(child);
+                    Assert::IsNull(mutable_child);
                 }
             }
 
             ff_arena_destroy(&arena);
         }
 
-        // The same wrapper around a shallower chain still has to load, so the test above is
-        // rejecting the depth rather than something wrong with how the wrapper is built.
-        TEST_METHOD(load_accepts_a_wrapped_chain_that_stays_inside_the_depth_limit)
+        TEST_METHOD(load_accepts_a_deep_wrapped_chain)
         {
             ff_arena arena{};
             ff_arena_init_heap_global(&arena, 256 * 1024);
 
-            const int depth = 63;
+            const int depth = 128;
             ff_dict chain[depth]{};
             ff_idict dict{};
             build_chain(&arena, chain, depth, &dict);

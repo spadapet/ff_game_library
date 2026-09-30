@@ -129,6 +129,66 @@ namespace ff::test::base
 			ff_log_set_sink(prev);
 		}
 
+		TEST_METHOD(sink_can_reconfigure_logging)
+		{
+			struct sink_state
+			{
+				ff_log_sink_data previous;
+				int calls;
+				bool enabled;
+			};
+
+			sink_state state{};
+			bool old = ff_log_get_type_enabled(ff_log_type_normal);
+			ff_log_set_type_enabled(ff_log_type_normal, true);
+			state.previous = ff_log_set_sink((ff_log_sink_data)
+			{
+				.sink = [](ff_log_type type, ff_string_view, void* cookie)
+				{
+					sink_state* state = (sink_state*)cookie;
+					state->calls++;
+					state->enabled = ff_log_get_type_enabled(type);
+					ff_log_set_type_enabled(type, false);
+					ff_log_set_sink(state->previous);
+				},
+				.cookie = &state,
+			});
+
+			ff_log_write(ff_log_type_normal, FF_SVL("reconfigure"));
+			bool disabled = !ff_log_get_type_enabled(ff_log_type_normal);
+			ff_log_sink_data restored = ff_log_set_sink(state.previous);
+			ff_log_set_type_enabled(ff_log_type_normal, old);
+
+			Assert::AreEqual(1, state.calls);
+			Assert::IsTrue(state.enabled && disabled);
+			Assert::IsTrue(restored.sink == state.previous.sink && restored.cookie == state.previous.cookie);
+		}
+
+		TEST_METHOD(sink_can_log_recursively)
+		{
+			int calls = 0;
+			bool old = ff_log_get_type_enabled(ff_log_type_normal);
+			ff_log_set_type_enabled(ff_log_type_normal, true);
+			ff_log_sink_data previous = ff_log_set_sink((ff_log_sink_data)
+			{
+				.sink = [](ff_log_type type, ff_string_view, void* cookie)
+				{
+					int* calls = (int*)cookie;
+					if (++*calls == 1)
+					{
+						ff_log_write(type, FF_SVL("nested"));
+					}
+				},
+				.cookie = &calls,
+			});
+
+			ff_log_write(ff_log_type_normal, FF_SVL("outer"));
+			ff_log_set_sink(previous);
+			ff_log_set_type_enabled(ff_log_type_normal, old);
+
+			Assert::AreEqual(2, calls);
+		}
+
 		// ====================================================================
 		// Write formatting
 		// ====================================================================

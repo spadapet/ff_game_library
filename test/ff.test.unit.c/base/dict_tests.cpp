@@ -796,6 +796,126 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(set_preserves_borrowed_values_during_compaction)
+        {
+            for (size_t source_index = 0; source_index < 4; source_index++)
+            {
+                ff_arena_declare_stack(arena, 4096);
+                ff_dict dict{};
+                ff_dict_init_capacity(&dict, &arena, 4);
+
+                const char* keys[] = { "a", "b", "a", "c" };
+                for (size_t i = 0; i < _countof(keys); i++)
+                {
+                    ff_value value = ff_value_new_int32((int)i + 1);
+                    ff_dict_add(&dict, ff_sz_view(keys[i]), &value);
+                }
+
+                const ff_value* source = ff_dict_get(&dict, ff_sz_view(keys[source_index]));
+                if (source_index == 2)
+                {
+                    source = ff_dict_get_next(&dict, FF_SVL("a"), source);
+                }
+                Assert::IsNotNull(source);
+                ff_dict_set(&dict, FF_SVL("a"), source);
+
+                Assert::AreEqual((size_t)3, dict.count);
+                Assert::AreEqual((size_t)4, dict.capacity);
+                Assert::AreEqual(1, this->count_matches(&dict, "a"));
+                const ff_value* result = ff_dict_get(&dict, FF_SVL("a"));
+                Assert::IsNotNull(result);
+                Assert::IsTrue(result->type == ff_value_type_int32);
+                Assert::AreEqual((int)source_index + 1, result->i32);
+                Assert::IsTrue(result == values_of(dict) + 2);
+                Assert::AreEqual(2, ff_dict_get(&dict, FF_SVL("b"))->i32);
+                Assert::AreEqual(4, ff_dict_get(&dict, FF_SVL("c"))->i32);
+
+                ff_arena_destroy(&arena);
+            }
+        }
+
+        TEST_METHOD(borrowed_values_survive_add_and_set_growth)
+        {
+            const size_t capacities[] = { 1, 3, 8 };
+            for (size_t capacity : capacities)
+            {
+                for (int mode = 0; mode < 4; mode++)
+                {
+                    ff_arena_declare_stack(arena, 4096);
+                    ff_dict dict{};
+                    ff_dict_init_capacity(&dict, &arena, capacity);
+                    char key[32];
+                    for (size_t i = 0; i < capacity; i++)
+                    {
+                        sprintf_s(key, "key%zu", i);
+                        ff_value value = ff_value_new_int32((int)i + 10);
+                        ff_dict_add(&dict, ff_sz_view(key), &value);
+                    }
+
+                    const bool force_relocation = (mode & 1) != 0;
+                    if (force_relocation)
+                    {
+                        Assert::IsNotNull(ff_arena_alloc_type(&arena, uint64_t, 1));
+                    }
+
+                    const uint64_t* old_keys = dict.keys;
+                    const ff_value* source = ff_dict_get(&dict, FF_SVL("key0"));
+                    if (mode & 2)
+                    {
+                        ff_dict_set(&dict, FF_SVL("copy"), source);
+                    }
+                    else
+                    {
+                        ff_dict_add(&dict, FF_SVL("copy"), source);
+                    }
+
+                    Assert::AreEqual(capacity + 1, dict.count);
+                    Assert::IsTrue(dict.capacity > capacity);
+                    Assert::AreEqual(force_relocation, dict.keys != old_keys);
+                    const ff_value* result = ff_dict_get(&dict, FF_SVL("copy"));
+                    Assert::IsNotNull(result);
+                    Assert::IsTrue(result->type == ff_value_type_int32);
+                    Assert::AreEqual(10, result->i32);
+                    for (size_t i = 0; i < capacity; i++)
+                    {
+                        sprintf_s(key, "key%zu", i);
+                        Assert::AreEqual((int)i + 10, ff_dict_get(&dict, ff_sz_view(key))->i32);
+                    }
+
+                    ff_arena_destroy(&arena);
+                }
+            }
+        }
+
+        TEST_METHOD(set_borrowed_array_preserves_shallow_storage)
+        {
+            ff_arena_declare_stack(arena, 4096);
+            ff_dict dict{};
+            ff_dict_init(&dict, &arena);
+
+            ff_value items[] = { ff_value_new_int32(7), ff_value_new_int32(8) };
+            ff_value_span span{};
+            span.data = items;
+            span.count = _countof(items);
+            ff_value array = ff_value_new_array(span);
+            ff_value other = ff_value_new_int32(99);
+            ff_dict_add(&dict, FF_SVL("array"), &array);
+            ff_dict_add(&dict, FF_SVL("other"), &other);
+            ff_dict_set(&dict, FF_SVL("array"), ff_dict_get(&dict, FF_SVL("array")));
+
+            const ff_value* result = ff_dict_get(&dict, FF_SVL("array"));
+            Assert::IsNotNull(result);
+            Assert::IsTrue(result->type == ff_value_type_array);
+            ff_value_span restored = ff_value_as_array(result);
+            Assert::IsTrue(restored.data == items);
+            Assert::AreEqual(span.count, restored.count);
+            Assert::AreEqual(7, restored.data[0].i32);
+            Assert::AreEqual(8, restored.data[1].i32);
+            Assert::AreEqual(99, ff_dict_get(&dict, FF_SVL("other"))->i32);
+
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(set_collapses_duplicates_to_single_entry)
         {
             ff_arena arena{};

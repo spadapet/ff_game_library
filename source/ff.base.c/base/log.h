@@ -19,6 +19,8 @@ typedef struct ff_log_sink_data
     void* cookie;
 } ff_log_sink_data;
 
+// Configure the sink and type flags before logging threads start or after they stop.
+// Sinks can run concurrently and must synchronize their own mutable state.
 ff_log_sink_data ff_log_set_sink(ff_log_sink_data sink);
 
 ff_string_view ff_log_get_type_name(ff_log_type type);

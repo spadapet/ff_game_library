@@ -8,6 +8,7 @@ typedef struct ff_dx12_resource ff_dx12_resource;
 typedef struct ff_dx12_resource_tracker_entry
 {
     ff_dx12_resource* resource;
+    ID3D12Resource* resource_identity;
     D3D12_RESOURCE_DESC desc;
     ff_dx12_resource_state state;
 

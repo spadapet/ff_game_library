@@ -15,6 +15,98 @@ namespace ff::test::dx12
         return desc;
     }
 
+    class tracker_barrier_recorder final : public ID3D12GraphicsCommandList
+    {
+    public:
+        D3D12_RESOURCE_BARRIER barriers[32]{};
+        size_t count{};
+
+        void STDMETHODCALLTYPE ResourceBarrier(UINT barrier_count, const D3D12_RESOURCE_BARRIER* values) override
+        {
+            Assert::IsTrue(this->count + barrier_count <= _countof(this->barriers));
+            for (UINT i = 0; i < barrier_count; i++)
+            {
+                this->barriers[this->count++] = values[i];
+            }
+        }
+
+        D3D12_COMMAND_LIST_TYPE STDMETHODCALLTYPE GetType() override { return D3D12_COMMAND_LIST_TYPE_DIRECT; }
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID, void**) override { return E_NOINTERFACE; }
+        ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
+        ULONG STDMETHODCALLTYPE Release() override { return 1; }
+        HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID, UINT*, void*) override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID, UINT, const void*) override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID, const IUnknown*) override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE SetName(LPCWSTR) override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE GetDevice(REFIID, void**) override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE Close() override { return E_NOTIMPL; }
+        HRESULT STDMETHODCALLTYPE Reset(ID3D12CommandAllocator*, ID3D12PipelineState*) override { return E_NOTIMPL; }
+
+#define TRACKER_UNEXPECTED_COMMAND(name, ...) \
+        void STDMETHODCALLTYPE name(__VA_ARGS__) override { Assert::Fail(L"Unexpected command list call"); }
+
+        TRACKER_UNEXPECTED_COMMAND(ClearState, ID3D12PipelineState*)
+        TRACKER_UNEXPECTED_COMMAND(DrawInstanced, UINT, UINT, UINT, UINT)
+        TRACKER_UNEXPECTED_COMMAND(DrawIndexedInstanced, UINT, UINT, UINT, INT, UINT)
+        TRACKER_UNEXPECTED_COMMAND(Dispatch, UINT, UINT, UINT)
+        TRACKER_UNEXPECTED_COMMAND(CopyBufferRegion, ID3D12Resource*, UINT64, ID3D12Resource*, UINT64, UINT64)
+        TRACKER_UNEXPECTED_COMMAND(CopyTextureRegion, const D3D12_TEXTURE_COPY_LOCATION*, UINT, UINT, UINT, const D3D12_TEXTURE_COPY_LOCATION*, const D3D12_BOX*)
+        TRACKER_UNEXPECTED_COMMAND(CopyResource, ID3D12Resource*, ID3D12Resource*)
+        TRACKER_UNEXPECTED_COMMAND(CopyTiles, ID3D12Resource*, const D3D12_TILED_RESOURCE_COORDINATE*, const D3D12_TILE_REGION_SIZE*, ID3D12Resource*, UINT64, D3D12_TILE_COPY_FLAGS)
+        TRACKER_UNEXPECTED_COMMAND(ResolveSubresource, ID3D12Resource*, UINT, ID3D12Resource*, UINT, DXGI_FORMAT)
+        TRACKER_UNEXPECTED_COMMAND(IASetPrimitiveTopology, D3D12_PRIMITIVE_TOPOLOGY)
+        TRACKER_UNEXPECTED_COMMAND(RSSetViewports, UINT, const D3D12_VIEWPORT*)
+        TRACKER_UNEXPECTED_COMMAND(RSSetScissorRects, UINT, const D3D12_RECT*)
+        TRACKER_UNEXPECTED_COMMAND(OMSetBlendFactor, const FLOAT*)
+        TRACKER_UNEXPECTED_COMMAND(OMSetStencilRef, UINT)
+        TRACKER_UNEXPECTED_COMMAND(SetPipelineState, ID3D12PipelineState*)
+        TRACKER_UNEXPECTED_COMMAND(ExecuteBundle, ID3D12GraphicsCommandList*)
+        TRACKER_UNEXPECTED_COMMAND(SetDescriptorHeaps, UINT, ID3D12DescriptorHeap* const*)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRootSignature, ID3D12RootSignature*)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRootSignature, ID3D12RootSignature*)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRootDescriptorTable, UINT, D3D12_GPU_DESCRIPTOR_HANDLE)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRootDescriptorTable, UINT, D3D12_GPU_DESCRIPTOR_HANDLE)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRoot32BitConstant, UINT, UINT, UINT)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRoot32BitConstant, UINT, UINT, UINT)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRoot32BitConstants, UINT, UINT, const void*, UINT)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRoot32BitConstants, UINT, UINT, const void*, UINT)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRootConstantBufferView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRootConstantBufferView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRootShaderResourceView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRootShaderResourceView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(SetComputeRootUnorderedAccessView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(SetGraphicsRootUnorderedAccessView, UINT, D3D12_GPU_VIRTUAL_ADDRESS)
+        TRACKER_UNEXPECTED_COMMAND(IASetIndexBuffer, const D3D12_INDEX_BUFFER_VIEW*)
+        TRACKER_UNEXPECTED_COMMAND(IASetVertexBuffers, UINT, UINT, const D3D12_VERTEX_BUFFER_VIEW*)
+        TRACKER_UNEXPECTED_COMMAND(SOSetTargets, UINT, UINT, const D3D12_STREAM_OUTPUT_BUFFER_VIEW*)
+        TRACKER_UNEXPECTED_COMMAND(OMSetRenderTargets, UINT, const D3D12_CPU_DESCRIPTOR_HANDLE*, BOOL, const D3D12_CPU_DESCRIPTOR_HANDLE*)
+        TRACKER_UNEXPECTED_COMMAND(ClearDepthStencilView, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_CLEAR_FLAGS, FLOAT, UINT8, UINT, const D3D12_RECT*)
+        TRACKER_UNEXPECTED_COMMAND(ClearRenderTargetView, D3D12_CPU_DESCRIPTOR_HANDLE, const FLOAT*, UINT, const D3D12_RECT*)
+        TRACKER_UNEXPECTED_COMMAND(ClearUnorderedAccessViewUint, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_CPU_DESCRIPTOR_HANDLE, ID3D12Resource*, const UINT*, UINT, const D3D12_RECT*)
+        TRACKER_UNEXPECTED_COMMAND(ClearUnorderedAccessViewFloat, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_CPU_DESCRIPTOR_HANDLE, ID3D12Resource*, const FLOAT*, UINT, const D3D12_RECT*)
+        TRACKER_UNEXPECTED_COMMAND(DiscardResource, ID3D12Resource*, const D3D12_DISCARD_REGION*)
+        TRACKER_UNEXPECTED_COMMAND(BeginQuery, ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT)
+        TRACKER_UNEXPECTED_COMMAND(EndQuery, ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT)
+        TRACKER_UNEXPECTED_COMMAND(ResolveQueryData, ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT, UINT, ID3D12Resource*, UINT64)
+        TRACKER_UNEXPECTED_COMMAND(SetPredication, ID3D12Resource*, UINT64, D3D12_PREDICATION_OP)
+        TRACKER_UNEXPECTED_COMMAND(SetMarker, UINT, const void*, UINT)
+        TRACKER_UNEXPECTED_COMMAND(BeginEvent, UINT, const void*, UINT)
+        TRACKER_UNEXPECTED_COMMAND(EndEvent)
+        TRACKER_UNEXPECTED_COMMAND(ExecuteIndirect, ID3D12CommandSignature*, UINT, ID3D12Resource*, UINT64, ID3D12Resource*, UINT64)
+
+#undef TRACKER_UNEXPECTED_COMMAND
+    };
+
+    static void assert_tracker_barrier(const D3D12_RESOURCE_BARRIER& barrier, ID3D12Resource* resource,
+        D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+    {
+        Assert::AreEqual((int)D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, (int)barrier.Type);
+        Assert::IsTrue(barrier.Transition.pResource == resource);
+        Assert::AreEqual((int)before, (int)barrier.Transition.StateBefore);
+        Assert::AreEqual((int)after, (int)barrier.Transition.StateAfter);
+        Assert::AreEqual((UINT)D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, barrier.Transition.Subresource);
+    }
+
     TEST_CLASS(dx12_resource_tracker_tests)
     {
     public:
@@ -514,6 +606,157 @@ namespace ff::test::dx12
 
             ff_dx12_resource_tracker_reset(&tracker);
             ff_dx12_resource_tracker_destroy(&tracker);
+            ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(forgotten_common_buffer_does_not_use_replacement_state)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc{};
+            desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+            desc.Width = 1024;
+            desc.Height = 1;
+            desc.DepthOrArraySize = 1;
+            desc.MipLevels = 1;
+            desc.SampleDesc.Count = 1;
+            desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("old buffer"), &desc, nullptr));
+            ID3D12Resource* old_resource = resource.resource;
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder recorder;
+
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            ff_dx12_resource_destroy(&resource);
+            desc.Width *= 2;
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement buffer"), &desc, nullptr));
+            Assert::IsTrue(resource.resource != old_resource);
+
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_flush(&b, &recorder);
+            Assert::AreEqual((size_t)1, recorder.count);
+            assert_tracker_barrier(recorder.barriers[0], resource.resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
+            recorder.count = 0;
+            ff_dx12_resource_tracker_close(&a, &recorder, nullptr, &b);
+            ff_dx12_resource_tracker_close(&b, &recorder, &a, nullptr);
+            Assert::AreEqual((size_t)0, recorder.count,
+                L"Both allocations promote from COMMON; neither needs a first-use barrier");
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
+            ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(forgotten_required_barrier_survives_wrapper_reuse)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("old texture"), &desc, nullptr));
+            ID3D12Resource* old_resource = resource.resource;
+            ff_dx12_resource_state_set(ff_dx12_resource_global_state(&resource), D3D12_RESOURCE_STATE_COPY_DEST,
+                ff_dx12_resource_state_type_global, 0, 1);
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder recorder;
+
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_destroy(&resource);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement texture"), &desc, nullptr));
+            Assert::IsTrue(resource.resource != old_resource);
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+
+            ff_dx12_resource_tracker_close(&a, &recorder, nullptr, &b);
+            ff_dx12_resource_tracker_close(&b, &recorder, &a, nullptr);
+            Assert::AreEqual((size_t)1, recorder.count);
+            assert_tracker_barrier(recorder.barriers[0], old_resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
+            ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(forgotten_barrier_uses_previous_state_before_live_merge)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("previous texture"), &desc, nullptr));
+            ID3D12Resource* old_resource = resource.resource;
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder recorder;
+
+            ff_dx12_resource_tracker_state(&a, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_close(&a, &recorder, nullptr, &b);
+            Assert::AreEqual((size_t)0, recorder.count);
+
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_destroy(&resource);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement texture"), &desc, nullptr));
+            Assert::IsTrue(resource.resource != old_resource);
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_close(&b, &recorder, &a, nullptr);
+
+            Assert::AreEqual((size_t)1, recorder.count);
+            assert_tracker_barrier(recorder.barriers[0], old_resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
+            ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(forgotten_barrier_ignores_previous_entry_for_another_allocation)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("forgotten texture"), &desc, nullptr));
+            ID3D12Resource* old_resource = resource.resource;
+            ff_dx12_resource_state_set(ff_dx12_resource_global_state(&resource), D3D12_RESOURCE_STATE_COPY_DEST,
+                ff_dx12_resource_state_type_global, 0, 1);
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder recorder;
+
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_destroy(&resource);
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("earlier replacement"), &desc, nullptr));
+            Assert::IsTrue(resource.resource != old_resource);
+            ff_dx12_resource_tracker_state(&a, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_close(&a, &recorder, nullptr, &b);
+            Assert::AreEqual((size_t)0, recorder.count);
+
+            ff_dx12_resource_tracker_close(&b, &recorder, &a, nullptr);
+            Assert::AreEqual((size_t)1, recorder.count);
+            assert_tracker_barrier(recorder.barriers[0], old_resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
             ff_dx12_resource_destroy(&resource);
         }
 

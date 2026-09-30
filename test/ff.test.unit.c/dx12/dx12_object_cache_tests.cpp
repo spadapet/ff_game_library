@@ -1,7 +1,24 @@
 #include "pch.h"
+#include <d3dcompiler.h>
+#include <wrl/client.h>
 
 namespace ff::test::dx12
 {
+    struct scoped_pipeline_object_cache
+    {
+        scoped_pipeline_object_cache()
+        {
+            ff_dx12_object_cache_init(&this->cache);
+        }
+
+        ~scoped_pipeline_object_cache()
+        {
+            ff_dx12_object_cache_destroy(&this->cache);
+        }
+
+        ff_dx12_object_cache cache{};
+    };
+
     TEST_CLASS(dx12_object_cache_tests)
     {
     public:
@@ -175,6 +192,119 @@ namespace ff::test::dx12
             Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(&cache, &desc));
 
             ff_dx12_object_cache_destroy(&cache);
+        }
+
+        TEST_METHOD(null_root_pipeline_hash_is_stable_and_shader_content_sensitive)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            scoped_pipeline_object_cache scoped_cache;
+            ff_dx12_object_cache* cache = &scoped_cache.cache;
+
+            uint8_t shader_a[] = { 1, 2, 3, 4 };
+            uint8_t shader_b[] = { 1, 2, 3, 4 };
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+            desc.VS.pShaderBytecode = shader_a;
+            desc.VS.BytecodeLength = sizeof(shader_a);
+
+            const uint64_t hash = ff_dx12_object_cache_pipeline_state_hash(cache, &desc);
+            Assert::AreNotEqual((uint64_t)0, hash);
+            Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+
+            desc.VS.pShaderBytecode = shader_b;
+            Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            shader_b[3]++;
+            Assert::AreNotEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            shader_b[3]--;
+
+            desc.SampleMask = UINT_MAX;
+            Assert::AreNotEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            desc.SampleMask = 0;
+
+            D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_desc = empty_root_signature_desc(D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            desc.pRootSignature = ff_dx12_object_cache_root_signature(cache, &root_desc);
+            Assert::IsNotNull(desc.pRootSignature);
+            Assert::AreNotEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+
+            desc.pRootSignature = nullptr;
+            Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+        }
+
+        TEST_METHOD(pipeline_rejects_explicit_root_from_another_cache)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            scoped_pipeline_object_cache scoped_cache;
+            scoped_pipeline_object_cache other_cache;
+            ff_dx12_object_cache* cache = &scoped_cache.cache;
+
+            D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_desc = empty_root_signature_desc(D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+            desc.pRootSignature = ff_dx12_object_cache_root_signature(&other_cache.cache, &root_desc);
+            Assert::IsNotNull(desc.pRootSignature);
+
+            Assert::AreEqual((uint64_t)0, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            Assert::IsNull(ff_dx12_object_cache_pipeline_state(cache, &desc));
+            Assert::AreEqual((size_t)0, ff_dx12_object_cache_size(cache));
+        }
+
+        TEST_METHOD(embedded_root_pipeline_is_created_and_reused_separately_from_explicit_root)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            scoped_pipeline_object_cache scoped_cache;
+            ff_dx12_object_cache* cache = &scoped_cache.cache;
+
+            const char source[] =
+                "[RootSignature(\"RootFlags(0)\")]\n"
+                "float4 vs_main(uint id : SV_VertexID) : SV_Position { return float4(id, 0, 0, 1); }\n"
+                "[RootSignature(\"RootFlags(0)\")]\n"
+                "float4 ps_main() : SV_Target { return float4(1, 0, 0, 1); }\n";
+            Microsoft::WRL::ComPtr<ID3DBlob> vertex_shader;
+            Microsoft::WRL::ComPtr<ID3DBlob> pixel_shader;
+            Assert::IsTrue(SUCCEEDED(D3DCompile(source, sizeof(source) - 1, nullptr, nullptr, nullptr,
+                "vs_main", "vs_5_1", D3DCOMPILE_ENABLE_STRICTNESS, 0, vertex_shader.GetAddressOf(), nullptr)));
+            Assert::IsTrue(SUCCEEDED(D3DCompile(source, sizeof(source) - 1, nullptr, nullptr, nullptr,
+                "ps_main", "ps_5_1", D3DCOMPILE_ENABLE_STRICTNESS, 0, pixel_shader.GetAddressOf(), nullptr)));
+
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+            desc.VS.pShaderBytecode = vertex_shader->GetBufferPointer();
+            desc.VS.BytecodeLength = vertex_shader->GetBufferSize();
+            desc.PS.pShaderBytecode = pixel_shader->GetBufferPointer();
+            desc.PS.BytecodeLength = pixel_shader->GetBufferSize();
+            desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+            desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+            desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+            desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+            desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+            desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+            desc.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+            desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+            desc.SampleMask = UINT_MAX;
+            desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+            desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+            desc.RasterizerState.DepthClipEnable = TRUE;
+            desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+            desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+            desc.NumRenderTargets = 1;
+            desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+            desc.SampleDesc.Count = 1;
+
+            const uint64_t embedded_hash = ff_dx12_object_cache_pipeline_state_hash(cache, &desc);
+            ID3D12PipelineState* embedded = ff_dx12_object_cache_pipeline_state(cache, &desc);
+            Assert::IsNotNull(embedded);
+            Assert::IsTrue(embedded == ff_dx12_object_cache_pipeline_state(cache, &desc));
+            Assert::AreEqual((size_t)1, ff_dx12_object_cache_size(cache));
+
+            D3D12_VERSIONED_ROOT_SIGNATURE_DESC root_desc = empty_root_signature_desc(D3D12_ROOT_SIGNATURE_FLAG_NONE);
+            desc.pRootSignature = ff_dx12_object_cache_root_signature(cache, &root_desc);
+            Assert::IsNotNull(desc.pRootSignature);
+            Assert::AreNotEqual(embedded_hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            ID3D12PipelineState* explicit_root = ff_dx12_object_cache_pipeline_state(cache, &desc);
+            Assert::IsNotNull(explicit_root);
+            Assert::IsTrue(explicit_root == ff_dx12_object_cache_pipeline_state(cache, &desc));
+            Assert::AreEqual((size_t)3, ff_dx12_object_cache_size(cache));
+
+            desc.pRootSignature = nullptr;
+            Assert::IsTrue(embedded == ff_dx12_object_cache_pipeline_state(cache, &desc));
+            Assert::AreEqual((size_t)3, ff_dx12_object_cache_size(cache));
         }
 
         // The hash must follow the root signature's content, not its address, so that two caches

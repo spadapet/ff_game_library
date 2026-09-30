@@ -28,6 +28,7 @@ ff_dx12_texture_params ff_dx12_texture_params_default(size_t width, size_t heigh
 
 bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params* params)
 {
+    FF_DX12_ASSERT_OWNER();
     FF_ASSERT_RET_VAL(texture && params, false);
 
     *texture = (ff_dx12_texture){ 0 };
@@ -38,7 +39,12 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     const DXGI_FORMAT format = ff_dx12_format_fix(params->format, params->width, params->height, mip_count);
 
     FF_ASSERT_RET_VAL(params->width && params->height, false);
-    FF_ASSERT_RET_VAL(!params->optimized_clear_color || ff_dx12_format_render_target(format), false);
+
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT support = { .Format = format };
+    FF_CHECK_RET_VAL(SUCCEEDED(ID3D12Device6_CheckFeatureSupport(ff_dx12_device(),
+        D3D12_FEATURE_FORMAT_SUPPORT, &support, sizeof(support))), false);
+    const bool render_target = (support.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) != 0;
+    FF_ASSERT_RET_VAL(!params->optimized_clear_color || render_target, false);
 
     // Mips and MSAA are mutually exclusive in D3D12.
     FF_ASSERT_RET_VAL(sample_count == 1 || mip_count == 1, false);
@@ -52,7 +58,7 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     desc.Format = format;
     desc.SampleDesc.Count = (UINT)ff_dx12_fix_sample_count(format, sample_count);
     desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    desc.Flags = (D3D12_RESOURCE_FLAGS)(ff_dx12_format_render_target(format)
+    desc.Flags = (D3D12_RESOURCE_FLAGS)(render_target
         ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
         : D3D12_RESOURCE_FLAG_NONE);
 
@@ -159,21 +165,33 @@ bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands
     size_t array_index, size_t mip_index, size_t dest_x, size_t dest_y,
     const void* data, size_t width, size_t height, size_t row_pitch)
 {
-    FF_ASSERT_RET_VAL(ff_dx12_texture_valid(texture) && commands && data && width && height, false);
+    FF_DX12_ASSERT_OWNER();
+    FF_ASSERT_RET_VAL(ff_dx12_texture_valid(texture) && ff_dx12_commands_valid(commands) && data && width && height, false);
     FF_ASSERT_RET_VAL(array_index < ff_dx12_texture_array_size(texture), false);
     FF_ASSERT_RET_VAL(mip_index < ff_dx12_texture_mip_count(texture), false);
-    FF_ASSERT_RET_VAL(row_pitch, false);
+    FF_ASSERT_RET_VAL(ff_dx12_texture_sample_count(texture) == 1, false);
 
     const DXGI_FORMAT format = ff_dx12_texture_format(texture);
     const size_t source_row_count = ff_dx12_format_row_count(format, height);
     const size_t min_row_pitch = ff_dx12_format_row_pitch(format, width);
 
     FF_ASSERT_RET_VAL(source_row_count && min_row_pitch && row_pitch >= min_row_pitch, false);
+    FF_ASSERT_RET_VAL(source_row_count - 1 <= (SIZE_MAX - min_row_pitch) / row_pitch, false);
 
-    // The copy source footprint must have rows aligned to D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, so
-    // the upload copy is done row by row into a repitched staging range rather than as one memcpy.
-    const size_t aligned_row_pitch = ff_math_round_up(row_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-    FF_ASSERT_RET_VAL(aligned_row_pitch <= UINT32_MAX, false);
+    const size_t mip_width = ff_math_max_size(ff_dx12_texture_width(texture) >> mip_index, 1);
+    const size_t mip_height = ff_math_max_size(ff_dx12_texture_height(texture) >> mip_index, 1);
+    FF_ASSERT_RET_VAL(dest_x < mip_width && width <= mip_width - dest_x, false);
+    FF_ASSERT_RET_VAL(dest_y < mip_height && height <= mip_height - dest_y, false);
+
+    const size_t block_width = ff_dx12_format_block_width(format);
+    const size_t block_height = ff_dx12_format_block_height(format);
+    FF_ASSERT_RET_VAL(!(dest_x % block_width) && !(dest_y % block_height), false);
+    FF_ASSERT_RET_VAL(!(width % block_width) || width == mip_width - dest_x, false);
+    FF_ASSERT_RET_VAL(!(height % block_height) || height == mip_height - dest_y, false);
+
+    FF_ASSERT_RET_VAL(min_row_pitch <= UINT32_MAX - (D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1), false);
+    const size_t aligned_row_pitch = ff_math_round_up(min_row_pitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+    FF_ASSERT_RET_VAL(source_row_count <= SIZE_MAX / aligned_row_pitch, false);
 
     const uint64_t upload_size = (uint64_t)aligned_row_pitch * source_row_count;
 
@@ -187,13 +205,13 @@ bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands
     const uint8_t* source_data = (const uint8_t*)data;
     for (size_t y = 0; y < source_row_count; y++)
     {
-        memcpy(dest_data + y * aligned_row_pitch, source_data + y * row_pitch, row_pitch);
+        memcpy(dest_data + y * aligned_row_pitch, source_data + y * row_pitch, min_row_pitch);
     }
 
     D3D12_SUBRESOURCE_FOOTPRINT layout = { 0 };
     layout.Format = format;
-    layout.Width = (UINT)width;
-    layout.Height = (UINT)height;
+    layout.Width = (UINT)ff_math_round_up(width, block_width);
+    layout.Height = (UINT)ff_math_round_up(height, block_height);
     layout.Depth = 1;
     layout.RowPitch = (UINT)aligned_row_pitch;
 

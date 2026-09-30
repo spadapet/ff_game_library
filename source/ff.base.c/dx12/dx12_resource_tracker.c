@@ -212,7 +212,7 @@ static ff_dx12_resource_tracker_entry* find_or_add_entry(ff_dx12_resource_tracke
     ff_dx12_resource* resource, bool* found_existing)
 {
     ff_dx12_resource_tracker_entry* entry = find_entry(tracker, resource);
-    if (entry)
+    if (entry && entry->resource_identity == resource->resource)
     {
         *found_existing = true;
         return entry;
@@ -224,12 +224,16 @@ static ff_dx12_resource_tracker_entry* find_or_add_entry(ff_dx12_resource_tracke
     size_t mip_size = ff_dx12_resource_mip_size(resource);
     FF_ASSERT_RET_VAL(array_size * mip_size, NULL);
 
-    size_t new_index = ff_array_count(tracker->entries_a);
-    ff_array_resize(tracker->entries_a, new_index + 1);
+    size_t new_index = entry ? (size_t)(entry - tracker->entries_a) : ff_array_count(tracker->entries_a);
+    if (!entry)
+    {
+        ff_array_resize(tracker->entries_a, new_index + 1);
+    }
 
     entry = &tracker->entries_a[new_index];
     *entry = (ff_dx12_resource_tracker_entry){ 0 };
     entry->resource = resource;
+    entry->resource_identity = resource->resource;
     entry->desc = *ff_dx12_resource_desc(resource);
     entry->first_barriers_a = ff_array_init(D3D12_RESOURCE_BARRIER, &tracker->arena);
     ff_dx12_resource_state_init(&entry->state, &tracker->arena, D3D12_RESOURCE_STATE_COMMON,
@@ -416,7 +420,7 @@ void ff_dx12_resource_tracker_forget(ff_dx12_resource_tracker* tracker, ff_dx12_
         ff_dx12_resource_tracker_forgotten_entry* forgotten = &tracker->forgotten_entries_a[new_index];
         *forgotten = (ff_dx12_resource_tracker_forgotten_entry){ 0 };
         forgotten->resource_key = resource;
-        forgotten->resource_ref = resource->resource;
+        forgotten->resource_ref = entry->resource_identity;
         forgotten->desc = entry->desc;
         forgotten->first_barriers_a = entry->first_barriers_a;
         ID3D12Resource_AddRef(forgotten->resource_ref);
@@ -475,6 +479,11 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
         ff_dx12_resource_tracker_entry* entry = &tracker->entries_a[entry_index];
         ff_dx12_resource* resource = entry->resource;
         ff_dx12_resource_tracker_entry* prev_entry = prev_tracker ? find_entry(prev_tracker, resource) : NULL;
+        if (prev_entry && prev_entry->resource_identity != entry->resource_identity)
+        {
+            prev_entry = NULL;
+        }
+
         ff_dx12_resource_state* global_state = ff_dx12_resource_global_state(resource);
 
         size_t first_barriers_count = ff_array_count(entry->first_barriers_a);
@@ -526,17 +535,6 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
         }
 
         ff_array_resize(entry->first_barriers_a, 0);
-        if (prev_tracker)
-        {
-            if (!prev_entry)
-            {
-                bool found_existing = false;
-                prev_entry = find_or_add_entry(prev_tracker, resource, &found_existing);
-                FF_ASSERT_RET(prev_entry);
-            }
-
-            ff_dx12_resource_state_merge(&prev_entry->state, &entry->state);
-        }
     }
 
     size_t forgotten_count = ff_array_count(tracker->forgotten_entries_a);
@@ -544,6 +542,11 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
     {
         ff_dx12_resource_tracker_forgotten_entry* forgotten = &tracker->forgotten_entries_a[forgotten_index];
         ff_dx12_resource_tracker_entry* prev_entry = prev_tracker ? find_entry(prev_tracker, forgotten->resource_key) : NULL;
+        if (prev_entry && prev_entry->resource_identity != forgotten->resource_ref)
+        {
+            prev_entry = NULL;
+        }
+
         ff_dx12_resource_state* global_state = &forgotten->global_state;
 
         size_t first_barriers_count = ff_array_count(forgotten->first_barriers_a);
@@ -585,6 +588,15 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
 
     if (prev_tracker)
     {
+        for (size_t i = 0; i < count; i++)
+        {
+            ff_dx12_resource_tracker_entry* entry = &tracker->entries_a[i];
+            bool found_existing = false;
+            ff_dx12_resource_tracker_entry* prev_entry = find_or_add_entry(prev_tracker, entry->resource, &found_existing);
+            FF_ASSERT_RET(prev_entry);
+            ff_dx12_resource_state_merge(&prev_entry->state, &entry->state);
+        }
+
         // The merged state now lives in prev_tracker's entries, but the caller keeps recording
         // into this tracker. Deep-copy those entries back into this tracker's own arena rather
         // than swapping array ownership, so no state points into another tracker's memory.
