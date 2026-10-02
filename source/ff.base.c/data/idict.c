@@ -381,9 +381,11 @@ static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff
         return 0;
     }
 
-    internal_ff_idict_header header;
-    header.entry_count = (uint32_t)count;
-    header.byte_size = (uint32_t)byte_size;
+    const internal_ff_idict_header header =
+    {
+        .entry_count = (uint32_t)count,
+        .byte_size = (uint32_t)byte_size,
+    };
     build_idict_write(builder, block_offset, &header, sizeof(header));
 
     return block_offset;
@@ -489,9 +491,11 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
         case ff_value_type_array:
             {
                 ff_ivalue_span items = ff_ivalue_as_array(value, parent_dict);
-                ff_value_span result;
-                result.data = items.count ? ff_arena_alloc_type(arena, ff_value, items.count) : NULL;
-                result.count = items.count;
+                ff_value_span result =
+                {
+                    .data = items.count ? ff_arena_alloc_type(arena, ff_value, items.count) : NULL,
+                    .count = items.count,
+                };
 
                 for (size_t i = 0; i < items.count; i++)
                 {
@@ -798,45 +802,50 @@ bool ff_idict_load(ff_idict* dict, ff_span saved, bool validate_values, bool val
 
 ff_array_span ff_ivalue_as_data(const ff_ivalue* value, const ff_idict* parent_dict)
 {
-    ff_array_span result = { 0 };
-    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, result);
-    FF_ASSERT_RET_VAL(value->type == ff_value_type_data, result);
+    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, ff_array_span_empty());
+    FF_ASSERT_RET_VAL(value->type == ff_value_type_data, ff_array_span_empty());
 
-    result.count = value->data.count;
-    result.data = get_idict_data(parent_dict, value->data.offset);
-    result.item_size = value->data.item_size;
-    result.item_align = value->data.item_align;
-    return result;
+    return (ff_array_span)
+    {
+        .data = get_idict_data(parent_dict, value->data.offset),
+        .count = value->data.count,
+        .item_size = value->data.item_size,
+        .item_align = value->data.item_align,
+    };
 }
 
 ff_idict ff_ivalue_as_dict(const ff_ivalue* value, const ff_idict* parent_dict)
 {
-    ff_idict result = { 0 };
-    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, result);
-    FF_ASSERT_RET_VAL(value->type == ff_value_type_dict || value->type == ff_value_type_idict, result);
+    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, ff_idict_empty());
+    FF_ASSERT_RET_VAL(value->type == ff_value_type_dict || value->type == ff_value_type_idict, ff_idict_empty());
 
-    result.data = get_idict_data(parent_dict, value->data.offset);
-    return result;
+    return (ff_idict)
+    {
+        .data = get_idict_data(parent_dict, value->data.offset),
+    };
 }
 
 ff_string_view ff_ivalue_as_string(const ff_ivalue* value, const ff_idict* parent_dict)
 {
-    ff_string_view result = { 0 };
-    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, result);
-    FF_ASSERT_RET_VAL(value->type == ff_value_type_string, result);
+    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, ff_string_view_empty());
+    FF_ASSERT_RET_VAL(value->type == ff_value_type_string, ff_string_view_empty());
 
-    result.data = (const char*)get_idict_data(parent_dict, value->data.offset);
-    result.count = value->data.count;
-    return result;
+    return (ff_string_view)
+    {
+        .data = (const char*)get_idict_data(parent_dict, value->data.offset),
+        .count = value->data.count,
+    };
 }
 
 ff_ivalue_span ff_ivalue_as_array(const ff_ivalue* value, const ff_idict* parent_dict)
 {
-    ff_ivalue_span result = { 0 };
-    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, result);
-    FF_ASSERT_RET_VAL(value->type == ff_value_type_array, result);
+    static ff_ivalue_span empty_span = { 0 };
+    FF_ASSERT_RET_VAL(value && parent_dict && parent_dict->data, empty_span);
+    FF_ASSERT_RET_VAL(value->type == ff_value_type_array, empty_span);
 
-    result.data = (const ff_ivalue*)get_idict_data(parent_dict, value->data.offset);
-    result.count = value->data.count;
-    return result;
+    return (ff_ivalue_span)
+    {
+        .data = (const ff_ivalue*)get_idict_data(parent_dict, value->data.offset),
+        .count = value->data.count,
+    };
 }

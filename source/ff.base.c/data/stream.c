@@ -293,8 +293,7 @@ bool ff_stream_seek(ff_stream* stream, size_t pos)
 
     if (stream->type == ff_stream_type_read_file)
     {
-        LARGE_INTEGER move;
-        move.QuadPart = (LONGLONG)pos;
+        const LARGE_INTEGER move = { .QuadPart = (LONGLONG)pos };
         FF_ASSERT_RET_VAL(SetFilePointerEx(stream->file, move, NULL, FILE_BEGIN), false);
     }
 

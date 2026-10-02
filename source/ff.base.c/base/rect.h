@@ -29,32 +29,35 @@ typedef struct ff_rect_size
 
 static inline ff_rect_float ff_rect_float_make(float left, float top, float right, float bottom)
 {
-    ff_rect_float value;
-    value.left = left;
-    value.top = top;
-    value.right = right;
-    value.bottom = bottom;
-    return value;
+    return (ff_rect_float)
+    {
+        .left = left,
+        .top = top,
+        .right = right,
+        .bottom = bottom,
+    };
 }
 
 static inline ff_rect_int ff_rect_int_make(int32_t left, int32_t top, int32_t right, int32_t bottom)
 {
-    ff_rect_int value;
-    value.left = left;
-    value.top = top;
-    value.right = right;
-    value.bottom = bottom;
-    return value;
+    return (ff_rect_int)
+    {
+        .left = left,
+        .top = top,
+        .right = right,
+        .bottom = bottom,
+    };
 }
 
 static inline ff_rect_size ff_rect_size_make(size_t left, size_t top, size_t right, size_t bottom)
 {
-    ff_rect_size value;
-    value.left = left;
-    value.top = top;
-    value.right = right;
-    value.bottom = bottom;
-    return value;
+    return (ff_rect_size)
+    {
+        .left = left,
+        .top = top,
+        .right = right,
+        .bottom = bottom,
+    };
 }
 
 static inline ff_rect_float ff_rect_float_zero(void)

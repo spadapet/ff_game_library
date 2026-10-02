@@ -123,10 +123,11 @@ static bool debug_layer_wanted(void)
 
 ff_dx12_init_params ff_dx12_init_params_default(void)
 {
-    ff_dx12_init_params params;
-    params.gpu_preference = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE;
-    params.feature_level = D3D_FEATURE_LEVEL_11_0;
-    return params;
+    return (ff_dx12_init_params)
+    {
+        .gpu_preference = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+        .feature_level = D3D_FEATURE_LEVEL_11_0,
+    };
 }
 
 ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena)

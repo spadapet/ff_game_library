@@ -30,7 +30,7 @@ These apply to every project in this repo.
 - Allocate from an `ff_arena` rather than calling `malloc` / `HeapAlloc` directly. For a short-lived temporary allocation, initialize an `ff_arena` over a stack buffer with `ff_arena_init_external` so typical cases never touch the heap and only large ones spill.
 - `ff_arena_realloc` may relocate a block, so always re-fetch the pointer from its return value.
 - Use the `FF_ASSERT_*`, `FF_CHECK_*`, `FF_VERIFY*`, and `FF_DEBUG_FAIL*` macros from `assert.h` for validation and early-out, rather than hand-written `if (...) return;` checks.
-- Use designated initializers (`.field = value`) for compound literals; never positional aggregate initializers. Assigning named fields one at a time is also fine.
+- Initialize structs with designated field initializers (`.field = value`) at declaration or in compound-literal returns; do not default-declare a struct and assign its members one by one solely to initialize it. Apply this to project structs and Win32/D3D structs, including required size fields on API structures. Keep positional aggregate initializers out; `{ 0 }` is valid for zero-initialization. Ordinary member assignments remain appropriate when mutating an already-initialized struct.
 - Use `ff_string_view` / `ff_wstring_view` for string parameters, never null-terminated `const char*` / `const wchar_t*`. Use `FF_SVL` / `FF_WSVL` for literals and `ff_sz_view` / `ff_wz_view` for runtime C-strings. When an underlying API needs a null-terminated string, make a temporary null-terminated copy internally.
 - Use `wchar_t` (not `char16_t`) for wide strings, since every wide Win32/CRT API takes `wchar_t*`.
 - Add a `static_assert` on `sizeof` for structs whose layout matters, following `value.c` and `string_builder.c`.

@@ -20,26 +20,29 @@ typedef struct ff_point_size
 
 static inline ff_point_float ff_point_float_make(float x, float y)
 {
-    ff_point_float value;
-    value.x = x;
-    value.y = y;
-    return value;
+    return (ff_point_float)
+    {
+        .x = x,
+        .y = y,
+    };
 }
 
 static inline ff_point_int ff_point_int_make(int32_t x, int32_t y)
 {
-    ff_point_int value;
-    value.x = x;
-    value.y = y;
-    return value;
+    return (ff_point_int)
+    {
+        .x = x,
+        .y = y,
+    };
 }
 
 static inline ff_point_size ff_point_size_make(size_t x, size_t y)
 {
-    ff_point_size value;
-    value.x = x;
-    value.y = y;
-    return value;
+    return (ff_point_size)
+    {
+        .x = x,
+        .y = y,
+    };
 }
 
 static inline ff_point_float ff_point_float_zero(void)

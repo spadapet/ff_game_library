@@ -537,11 +537,13 @@ static void update_palette_textures(ff_dx12_draw_device* device)
                 device->palette_row_hashes[i] = device->palettes[i].hash;
 
                 const size_t src_row = device->palettes[i].palette.current_row;
-                D3D12_RECT source_rect;
-                source_rect.left = 0;
-                source_rect.top = (LONG)src_row;
-                source_rect.right = FF_PALETTE_SIZE;
-                source_rect.bottom = (LONG)src_row + 1;
+                const D3D12_RECT source_rect =
+                {
+                    .left = 0,
+                    .top = (LONG)src_row,
+                    .right = FF_PALETTE_SIZE,
+                    .bottom = (LONG)src_row + 1,
+                };
 
                 ff_dx12_commands_copy_texture(device->commands,
                     ff_dx12_texture_resource(&device->palette_texture), 0, 0, i,

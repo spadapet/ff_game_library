@@ -146,11 +146,13 @@ ff_value ff_value_new_data(struct ff_span value)
 {
     FF_ASSERT(value.size <= UINT32_MAX);
 
-    ff_array_span span;
-    span.data = value.data;
-    span.count = (uint32_t)value.size;
-    span.item_size = 1;
-    span.item_align = alignof(size_t);
+    const ff_array_span span =
+    {
+        .data = value.data,
+        .count = (uint32_t)value.size,
+        .item_size = 1,
+        .item_align = alignof(size_t),
+    };
 
     return ff_value_new_data_array(span);
 }
@@ -166,9 +168,11 @@ ff_value ff_value_new_data_array(struct ff_array_span value)
 
 ff_value ff_value_new_string(ff_string_view value)
 {
-    ff_span span;
-    span.data = value.data;
-    span.size = value.count;
+    const ff_span span =
+    {
+        .data = value.data,
+        .size = value.count,
+    };
 
     ff_value result = ff_value_new_data(span);
     result.type = ff_value_type_string;
@@ -179,11 +183,13 @@ ff_value ff_value_new_array(ff_value_span value)
 {
     FF_ASSERT(value.count <= UINT32_MAX);
 
-    ff_array_span span;
-    span.data = value.data;
-    span.count = (uint32_t)value.count;
-    span.item_size = sizeof(ff_value);
-    span.item_align = alignof(ff_value);
+    const ff_array_span span =
+    {
+        .data = value.data,
+        .count = (uint32_t)value.count,
+        .item_size = sizeof(ff_value),
+        .item_align = alignof(ff_value),
+    };
 
     ff_value result = ff_value_new_data_array(span);
     result.type = ff_value_type_array;

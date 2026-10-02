@@ -199,13 +199,17 @@ double internal_ff_dx12_pacing_refresh_seconds(HWND hwnd)
     HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
     FF_CHECK_RET_VAL(monitor, s_default_refresh_seconds);
 
-    MONITORINFOEXW info;
-    info.cbSize = sizeof(info);
+    MONITORINFOEXW info =
+    {
+        .cbSize = sizeof(info),
+    };
     FF_CHECK_RET_VAL(GetMonitorInfoW(monitor, (MONITORINFO*)&info), s_default_refresh_seconds);
 
-    DEVMODEW mode;
-    mode.dmSize = sizeof(mode);
-    mode.dmDriverExtra = 0;
+    DEVMODEW mode =
+    {
+        .dmSize = sizeof(mode),
+        .dmDriverExtra = 0,
+    };
     FF_CHECK_RET_VAL(EnumDisplaySettingsW(info.szDevice, ENUM_CURRENT_SETTINGS, &mode), s_default_refresh_seconds);
 
     // A refresh rate of 0 or 1 means "hardware default" rather than an actual rate.

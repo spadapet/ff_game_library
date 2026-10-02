@@ -366,10 +366,11 @@ D3D12_SHADER_BYTECODE ff_dx12_object_cache_shader(ff_dx12_object_cache* cache, f
     const ff_span data = ff_file_map_data(&cache->shaders[shader]);
     FF_CHECK_RET_VAL(data.data && data.size, empty);
 
-    D3D12_SHADER_BYTECODE bytecode;
-    bytecode.pShaderBytecode = data.data;
-    bytecode.BytecodeLength = data.size;
-    return bytecode;
+    return (D3D12_SHADER_BYTECODE)
+    {
+        .pShaderBytecode = data.data,
+        .BytecodeLength = data.size,
+    };
 }
 
 size_t ff_dx12_object_cache_shader_count(const ff_dx12_object_cache* cache)

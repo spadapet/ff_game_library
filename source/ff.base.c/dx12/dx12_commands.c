@@ -607,16 +607,23 @@ void ff_dx12_commands_update_texture(ff_dx12_commands* commands, ff_dx12_resourc
     ff_dx12_commands_keep_resident(commands, ff_dx12_mem_range_residency_data(source));
     ff_dx12_commands_resource_state_sub_index(commands, dest, D3D12_RESOURCE_STATE_COPY_DEST, dest_sub_index);
 
-    D3D12_TEXTURE_COPY_LOCATION source_location;
-    source_location.pResource = heap->cpu_resource;
-    source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    source_location.PlacedFootprint.Offset = source->start;
-    source_location.PlacedFootprint.Footprint = *source_layout;
+    const D3D12_TEXTURE_COPY_LOCATION source_location =
+    {
+        .pResource = heap->cpu_resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+        .PlacedFootprint =
+        {
+            .Offset = source->start,
+            .Footprint = *source_layout,
+        },
+    };
 
-    D3D12_TEXTURE_COPY_LOCATION dest_location;
-    dest_location.pResource = dest->resource;
-    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dest_location.SubresourceIndex = (UINT)dest_sub_index;
+    const D3D12_TEXTURE_COPY_LOCATION dest_location =
+    {
+        .pResource = dest->resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = (UINT)dest_sub_index,
+    };
 
     ID3D12GraphicsCommandList1_CopyTextureRegion(ff_dx12_commands_list(commands),
         &dest_location, (UINT)dest_x, (UINT)dest_y, 0, &source_location, NULL);
@@ -643,16 +650,23 @@ void ff_dx12_commands_readback_texture(ff_dx12_commands* commands, const ff_dx12
         .back = 1,
     };
 
-    D3D12_TEXTURE_COPY_LOCATION dest_location;
-    dest_location.pResource = heap->cpu_resource;
-    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    dest_location.PlacedFootprint.Offset = dest->start;
-    dest_location.PlacedFootprint.Footprint = *dest_layout;
+    const D3D12_TEXTURE_COPY_LOCATION dest_location =
+    {
+        .pResource = heap->cpu_resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+        .PlacedFootprint =
+        {
+            .Offset = dest->start,
+            .Footprint = *dest_layout,
+        },
+    };
 
-    D3D12_TEXTURE_COPY_LOCATION source_location;
-    source_location.pResource = source->resource;
-    source_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    source_location.SubresourceIndex = (UINT)source_sub_index;
+    const D3D12_TEXTURE_COPY_LOCATION source_location =
+    {
+        .pResource = source->resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = (UINT)source_sub_index,
+    };
 
     ID3D12GraphicsCommandList1_CopyTextureRegion(ff_dx12_commands_list(commands),
         &dest_location, 0, 0, 0, &source_location, &source_box);
@@ -686,15 +700,19 @@ void ff_dx12_commands_copy_texture(ff_dx12_commands* commands, ff_dx12_resource*
         .back = 1,
     };
 
-    D3D12_TEXTURE_COPY_LOCATION dest_location;
-    dest_location.pResource = dest->resource;
-    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dest_location.SubresourceIndex = (UINT)dest_sub_index;
+    const D3D12_TEXTURE_COPY_LOCATION dest_location =
+    {
+        .pResource = dest->resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = (UINT)dest_sub_index,
+    };
 
-    D3D12_TEXTURE_COPY_LOCATION source_location;
-    source_location.pResource = source->resource;
-    source_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    source_location.SubresourceIndex = (UINT)source_sub_index;
+    const D3D12_TEXTURE_COPY_LOCATION source_location =
+    {
+        .pResource = source->resource,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = (UINT)source_sub_index,
+    };
 
     ID3D12GraphicsCommandList1_CopyTextureRegion(ff_dx12_commands_list(commands),
         &dest_location, (UINT)dest_x, (UINT)dest_y, 0, &source_location, &source_box);

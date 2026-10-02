@@ -455,12 +455,16 @@ static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer)
             break;
     }
 
-    ff_json_token token;
-    token.type = type;
-    token.text.data = start;
-    token.text.count = (size_t)(tokenizer->pos - start);
-    token.escaped = escaped;
-    return token;
+    return (ff_json_token)
+    {
+        .text =
+        {
+            .data = start,
+            .count = (size_t)(tokenizer->pos - start),
+        },
+        .type = type,
+        .escaped = escaped,
+    };
 }
 
 static uint32_t hex_digit_value(char ch)
@@ -500,18 +504,18 @@ static size_t write_utf8(char* dest, uint32_t code_point)
 // decoded text is never longer than the quoted source, so one allocation up front is enough.
 static ff_string_view json_string_text(ff_string_view text, bool escaped, ff_arena* arena)
 {
-    ff_string_view result;
-    result.data = NULL;
-    result.count = 0;
+    ff_string_view result = { 0 };
 
     FF_ASSERT_RET_VAL(text.count >= 2, result);
 
     if (!escaped)
     {
         // Nothing to decode, so the quoted text is already the answer and no copy is needed.
-        result.data = text.data + 1;
-        result.count = text.count - 2;
-        return result;
+        return (ff_string_view)
+        {
+            .data = text.data + 1,
+            .count = text.count - 2,
+        };
     }
 
     const char* cur = text.data + 1;
@@ -593,9 +597,11 @@ static ff_string_view json_string_text(ff_string_view text, bool escaped, ff_are
         cur += 2;
     }
 
-    result.data = dest;
-    result.count = count;
-    return result;
+    return (ff_string_view)
+    {
+        .data = dest,
+        .count = count,
+    };
 }
 
 // Integers are read directly so large 64 bit values keep every digit, which going through a double
@@ -665,9 +671,7 @@ static ff_value json_number_value(ff_string_view text)
 
 static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena)
 {
-    ff_string_view result;
-    result.data = NULL;
-    result.count = 0;
+    ff_string_view result = { 0 };
 
     FF_ASSERT_RET_VAL(token, result);
     FF_CHECK_RET_VAL(token->type == ff_json_token_type_string, result);
@@ -771,9 +775,11 @@ static bool parse_array(internal_ff_json_parser* parser, ff_value* result)
         }
     }
 
-    ff_value_span span;
-    span.data = items_a;
-    span.count = ff_array_count(items_a);
+    const ff_value_span span =
+    {
+        .data = items_a,
+        .count = ff_array_count(items_a),
+    };
 
     *result = ff_value_new_array(span);
     return true;
@@ -885,9 +891,11 @@ bool ff_json_parse(ff_string_view text, ff_dict* dict, ff_arena* arena, const ch
 
     FF_ASSERT_RET_VAL(dict && arena, false);
 
-    internal_ff_json_parser parser;
-    parser.arena = arena;
-    parser.error_pos = NULL;
+    internal_ff_json_parser parser =
+    {
+        .arena = arena,
+        .error_pos = NULL,
+    };
     ff_json_tokenizer_init(&parser.tokenizer, text);
 
     ff_dict_init(dict, arena);

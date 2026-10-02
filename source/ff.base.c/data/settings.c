@@ -62,9 +62,11 @@ static ff_string_view settings_temp_file(ff_arena* arena)
     memcpy(data, s_settings_file.data, s_settings_file.count);
     memcpy(data + s_settings_file.count, ".tmp", 5);
 
-    result.data = data;
-    result.count = s_settings_file.count + 4;
-    return result;
+    return (ff_string_view)
+    {
+        .data = data,
+        .count = s_settings_file.count + 4,
+    };
 }
 
 static bool replace_settings_file(ff_string_view temp_file, ff_arena* arena)

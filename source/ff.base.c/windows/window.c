@@ -57,16 +57,16 @@ static uint32_t monitor_dpi(HMONITOR monitor)
 
 static SIZE minimum_window_size(uint32_t dpi)
 {
-    SIZE size;
-    size.cx = 0;
-    size.cy = 0;
+    SIZE size = { 0 };
     FF_CHECK_RET_VAL(dpi, size);
 
-    RECT rect;
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = MulDiv(240, (int)dpi, 96);
-    rect.bottom = MulDiv(135, (int)dpi, 96);
+    RECT rect =
+    {
+        .left = 0,
+        .top = 0,
+        .right = MulDiv(240, (int)dpi, 96),
+        .bottom = MulDiv(135, (int)dpi, 96),
+    };
 
     if (AdjustWindowRectExForDpi(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0, dpi))
     {
@@ -79,8 +79,7 @@ static SIZE minimum_window_size(uint32_t dpi)
 
 static bool get_monitor_rect(HMONITOR monitor, RECT* rect)
 {
-    MONITORINFO info;
-    info.cbSize = sizeof(info);
+    MONITORINFO info = { .cbSize = sizeof(info) };
     FF_CHECK_RET_VAL(monitor && GetMonitorInfo(monitor, &info), false);
 
     *rect = info.rcMonitor;
@@ -98,8 +97,7 @@ static window_state current_window_state(HWND hwnd)
     state.full_screen = is_full_screen_style(hwnd);
     state.maximized = IsZoomed(hwnd) != 0;
 
-    WINDOWPLACEMENT placement;
-    placement.length = sizeof(placement);
+    WINDOWPLACEMENT placement = { .length = sizeof(placement) };
     if (GetWindowPlacement(hwnd, &placement))
     {
         state.normal_rect = placement.rcNormalPosition;
@@ -129,9 +127,11 @@ static void save_window_state(void* args, void* cookie)
     ff_dict dict;
     ff_dict_init_from_idict(&dict, &arena, &(ff_idict){ .data = NULL });
 
-    ff_span blob;
-    blob.data = &state;
-    blob.size = sizeof(state);
+    const ff_span blob =
+    {
+        .data = &state,
+        .size = sizeof(state),
+    };
 
     const ff_value value = ff_value_new_data(blob);
     ff_dict_set(&dict, s_state_key, &value);

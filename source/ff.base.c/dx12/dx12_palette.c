@@ -94,11 +94,11 @@ uint64_t ff_dx12_palette_data_row_hash(const ff_dx12_palette_data* data, size_t 
 
 ff_dx12_palette ff_dx12_palette_make(ff_dx12_palette_data* data, size_t current_row)
 {
-    ff_dx12_palette palette;
-    palette.data = data;
-    palette.current_row = (data && current_row < data->row_count) ? current_row : 0;
-
-    return palette;
+    return (ff_dx12_palette)
+    {
+        .data = data,
+        .current_row = (data && current_row < data->row_count) ? current_row : 0,
+    };
 }
 
 uint64_t ff_dx12_palette_row_hash(const ff_dx12_palette* palette)

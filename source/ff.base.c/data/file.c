@@ -214,25 +214,30 @@ ff_string_view ff_file_module_dir(HINSTANCE module, ff_arena* arena)
         count--;
     }
 
-    ff_string_view dir;
-    dir.data = module_path.data;
-    dir.count = count;
-    return dir;
+    return (ff_string_view)
+    {
+        .data = module_path.data,
+        .count = count,
+    };
 }
 
 static uint64_t file_time_to_uint64(FILETIME time)
 {
-    ULARGE_INTEGER value;
-    value.LowPart = time.dwLowDateTime;
-    value.HighPart = time.dwHighDateTime;
+    const ULARGE_INTEGER value =
+    {
+        .LowPart = time.dwLowDateTime,
+        .HighPart = time.dwHighDateTime,
+    };
     return value.QuadPart;
 }
 
 static uint64_t file_size_to_uint64(DWORD high, DWORD low)
 {
-    ULARGE_INTEGER value;
-    value.LowPart = low;
-    value.HighPart = high;
+    const ULARGE_INTEGER value =
+    {
+        .LowPart = low,
+        .HighPart = high,
+    };
     return value.QuadPart;
 }
 
@@ -378,11 +383,13 @@ ff_file_entry* ff_file_enumerate_extension(ff_string_view root, ff_string_view e
     ff_file_info info;
     FF_CHECK_RET_VAL(ff_file_stat(root, &info) && info.directory, NULL);
 
-    enumerate_context context;
-    context.root = root;
-    context.extension = extension;
-    context.arena = arena;
-    context.entries = ff_array_init(ff_file_entry, arena);
+    enumerate_context context =
+    {
+        .root = root,
+        .extension = extension,
+        .arena = arena,
+        .entries = ff_array_init(ff_file_entry, arena),
+    };
 
     enumerate_dir(&context, ff_string_view_empty());
 
