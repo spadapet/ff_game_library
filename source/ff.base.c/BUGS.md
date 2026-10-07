@@ -29,8 +29,8 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 | ID | Priority | Status | Finding |
 | --- | --- | --- | --- |
-| FFC-001 | P1 | Open | Only the first reader waits for the preceding GPU writer |
-| FFC-002 | P1 | Open | Multiple open trackers retain destroyed resource wrappers |
+| FFC-001 | P1 | Fixed | Only the first reader waits for the preceding GPU writer |
+| FFC-002 | P1 | Fixed | Multiple open trackers retain destroyed resource wrappers |
 | FFC-003 | P2 | Open | Whole-resource barriers ignore divergent fallback states |
 | FFC-004 | P2 | Open | Caller-created allocators are omitted from device recovery |
 | FFC-005 | P2 | Open | Ring metadata exhaustion causes exponential heap growth |
@@ -42,7 +42,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-011 | P2 | Open | Mip render targets report base-level dimensions |
 | FFC-012 | P2 | Open | Array-slice sprite SRVs do not match shader dimensions |
 | FFC-013 | P2 | Open | Depthless batching changes draw order |
-| FFC-014 | P1 | Open | App shutdown deadlocks on synchronous main dispatch |
+| FFC-014 | P1 | Fixed | App shutdown deadlocks on synchronous main dispatch |
 | FFC-015 | P2 | Fixed | Dictionary mutation corrupts borrowed input values |
 | FFC-016 | P2 | Open | Embedding immutable dictionaries breaks payload alignment |
 | FFC-017 | P2 | Open | Embedding an empty immutable dictionary omits its header |
@@ -62,7 +62,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-001: Only the first reader waits for the preceding GPU writer
 
-**Priority:** P1. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P1. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Inherited.
 
 **Location:** `dx12\dx12_resource.c:297-303`, `ff_dx12_resource_prepare_state`.
 
@@ -78,11 +78,15 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\resource.cpp:272-278` also consumes/clears `global_write_` on the first read.
 
+**Resolution:** Working tree, not committed. Read preparations now add the last writer fence without clearing it. Write preparations still wait on both that writer and accumulated readers before replacing the writer fence.
+
+**Regression coverage:** `dx12_resource_tests::each_reader_waits_for_the_last_writer` passed in Debug/x64 and Release/x64. It verifies that two readers each inherit the pending writer dependency and that a following writer waits for the prior writer and both readers.
+
 ### FFC-002: Multiple open trackers retain destroyed resource wrappers
 
-**Priority:** P1. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P1. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
-**Location:** `dx12\dx12_resource.c:229-232`, `ff_dx12_resource_destroy`; `dx12\dx12_resource_tracker.c:400`, `ff_dx12_resource_tracker_state`; `dx12\dx12_resource_tracker.c:272-280`, `ff_dx12_resource_tracker_reset`.
+**Location:** `dx12\dx12_resource.c:213-228`, `ff_dx12_resource_destroy`; `dx12\dx12_resource_tracker.c:259-319`, reference linking; `dx12\dx12_resource_tracker.c:532-570`, `ff_dx12_resource_tracker_forget`; `dx12\dx12_resource_tracker.c:402-429`, tracker reset.
 
 **Cause:** A resource has one `tracker` back-pointer, but multiple open command lists can each contain an entry for it. The second tracker overwrites the pointer. Destruction forgets only that tracker. Resetting one tracker also unconditionally clears the pointer, even if another tracker still references the resource.
 
@@ -93,6 +97,10 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 **Fix direction:** Track every recording reference, or otherwise detach every referencing tracker before wrapper destruction. Tracker reset must not erase another tracker's ownership information. Retain the existing deferred GPU-resource lifetime guarantees.
 
 **Regression scenario:** Establish that both trackers actually contain the resource before destruction, then exercise destruction and submission in both orders above. Reuse the old wrapper storage to make accidental stale access visible. Do not rely on two identical `ff_dx12_buffer_update` calls: its size/hash shortcut can skip the second update entirely, creating no second tracker reference.
+
+**Resolution:** Working tree, not committed. Fully initialized, stable reference nodes link every tracker entry to both its resource and tracker. Resource destruction and device reset detach every reference; tracker reset detaches only its own. Forgotten state retains the native resource and is carried across tracker close chains, including an intermediate tracker that never referenced the resource.
+
+**Regression coverage:** `dx12_lifetime_deep_tests::resource_in_two_trackers_destroyed_scrubs_both` and `dx12_resource_tracker_tests::destroyed_resource_state_flows_through_unreferencing_trackers` passed in Debug/x64 and Release/x64. The tests cover multiple references, tracker reset, wrapper-storage reuse, and forgotten barrier propagation. All 65 tests in the resource, tracker, lifetime, app, and task test groups pass in both configurations.
 
 ### FFC-003: Whole-resource barriers ignore divergent fallback states
 
@@ -296,7 +304,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-014: App shutdown deadlocks on synchronous main dispatch
 
-**Priority:** P1. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P1. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
 **Location:** `app\app.c:83-84`, `ff_app_destroy`; `windows\task.c:64-71,99`, task draining; `windows\dispatch.c:305-314`, `ff_dispatch_send`.
 
@@ -306,9 +314,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** Main waits for the worker; the worker waits for main. Shutdown never returns. Windowed applications can encounter the same dependency once their message loop stops.
 
-**Fix direction:** Continue servicing the required main-thread dispatch while draining workers, or establish a shutdown protocol that safely prevents/resolves those synchronous dependencies. One flush before draining is not sufficient because workers can send later.
+**Resolution:** Working tree, not committed. `ff_task_destroy` stops thread-pool submissions under the task lock, keeps shutdown-time inline submissions counted, and flushes the supplied main dispatcher until outstanding tasks reach zero. Passing `NULL` drains without pumping. App teardown now drains and pumps before destroying the main window; it then destroys the window and processes its quit message before tearing down the dispatcher. Late sends remain covered because their worker task stays outstanding until the synchronous send returns.
 
-**Regression scenario:** Exercise pending and late-arriving synchronous sends during shutdown in an isolated, timeout-bounded harness. Verify callback completion and teardown order, not just that destruction eventually returns after cancellation.
+**Regression coverage:** `app_tests::destroy_pumps_early_and_late_worker_sends` passed in Debug/x64 and Release/x64. It sends synchronously from a worker twice with a delay after the first dispatch, verifies the main window is alive for both callbacks, and submits tasks from dispatch callbacks during shutdown. The test has a 10-second method timeout and a bounded start wait. All 65 tests in the resource, tracker, lifetime, app, and task test groups pass in both configurations.
 
 ### FFC-015: Dictionary mutation corrupts borrowed input values
 

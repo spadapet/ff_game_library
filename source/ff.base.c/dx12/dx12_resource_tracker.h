@@ -5,10 +5,21 @@
 
 typedef struct ff_dx12_resource ff_dx12_resource;
 
+typedef struct ff_dx12_resource_tracker_reference
+{
+    struct ff_dx12_resource_tracker* tracker;
+    ff_dx12_resource* resource;
+    struct ff_dx12_resource_tracker_reference* next_resource;
+    struct ff_dx12_resource_tracker_reference* prev_resource;
+    struct ff_dx12_resource_tracker_reference* next_tracker;
+    struct ff_dx12_resource_tracker_reference* prev_tracker;
+} ff_dx12_resource_tracker_reference;
+
 typedef struct ff_dx12_resource_tracker_entry
 {
     ff_dx12_resource* resource;
     ID3D12Resource* resource_identity;
+    ff_dx12_resource_tracker_reference* reference;
     D3D12_RESOURCE_DESC desc;
     ff_dx12_resource_state state;
 
@@ -38,6 +49,7 @@ typedef struct ff_dx12_resource_tracker
     ff_arena arena;
     ff_dx12_resource_tracker_entry* entries_a;
     ff_dx12_resource_tracker_forgotten_entry* forgotten_entries_a;
+    ff_dx12_resource_tracker_reference* resource_references;
 
     // Open-addressed map from resource pointer to entries_a index + 1 (0 means empty).
     size_t* index_map;

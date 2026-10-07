@@ -8,6 +8,7 @@
 #include "dx12_resource_state.h"
 
 typedef struct ff_dx12_resource_tracker ff_dx12_resource_tracker;
+typedef struct ff_dx12_resource_tracker_reference ff_dx12_resource_tracker_reference;
 
 typedef enum ff_dx12_resource_kind
 {
@@ -39,8 +40,9 @@ typedef struct ff_dx12_resource
 
     ff_dx12_resource_state global_state;
     ff_dx12_fence_values global_reads;
+    // Retained until a later write so every dependent reader inherits this fence.
     ff_dx12_fence_value global_write;
-    ff_dx12_resource_tracker* tracker;
+    ff_dx12_resource_tracker_reference* tracker_references;
     size_t reset_count;
 } ff_dx12_resource;
 
@@ -62,7 +64,6 @@ size_t ff_dx12_resource_sub_resource_size(const ff_dx12_resource* resource);
 
 ff_dx12_resource_state* ff_dx12_resource_global_state(ff_dx12_resource* resource);
 ff_dx12_residency_data* ff_dx12_resource_residency_data(ff_dx12_resource* resource);
-void ff_dx12_resource_set_tracker(ff_dx12_resource* resource, ff_dx12_resource_tracker* tracker);
 
 // Records the read/write fence dependencies for an upcoming command list and routes the state
 // change through the tracker. array_size/mip_size of 0 mean "the rest of the resource".

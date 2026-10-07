@@ -78,12 +78,6 @@ ff_dx12_residency_data* ff_dx12_resource_residency_data(ff_dx12_resource* resour
         : NULL;
 }
 
-void ff_dx12_resource_set_tracker(ff_dx12_resource* resource, ff_dx12_resource_tracker* tracker)
-{
-    FF_ASSERT_RET(resource);
-    resource->tracker = tracker;
-}
-
 static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name,
     const D3D12_RESOURCE_DESC* desc, const D3D12_CLEAR_VALUE* optimized_clear_value,
     ff_dx12_resource_kind kind, D3D12_RESOURCE_STATES initial_state)
@@ -224,12 +218,13 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
 
     // A resource can be destroyed while a command list that referenced it is still recording,
     // which happens whenever a buffer or depth buffer is resized mid-frame. The recorded barriers
-    // name the ID3D12Resource, which outlives this through the keep-alive list, so the tracker
+    // name the ID3D12Resource, which outlives this through the keep-alive list, so every tracker
     // only has to drop its pointer back to this wrapper.
-    if (resource->tracker)
+    while (resource->tracker_references)
     {
-        ff_dx12_resource_tracker_forget(resource->tracker, resource);
-        FF_ASSERT(!resource->tracker);
+        ff_dx12_resource_tracker_reference* reference = resource->tracker_references;
+        ff_dx12_resource_tracker_forget(resource->tracker_references->tracker, resource);
+        FF_CHECK_RET(resource->tracker_references != reference);
     }
 
     // The GPU may still have commands referencing this resource, so hand the pieces that need a
@@ -297,7 +292,6 @@ void ff_dx12_resource_prepare_state(ff_dx12_resource* resource, ff_dx12_fence_va
         if (ff_dx12_fence_value_valid(resource->global_write))
         {
             ff_dx12_fence_values_add(wait_before_execute, resource->global_write);
-            resource->global_write = (ff_dx12_fence_value){ 0 };
         }
 
         ff_dx12_fence_values_add(&resource->global_reads, next_fence_value);
@@ -393,10 +387,11 @@ void internal_ff_dx12_resource_before_reset(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
 
-    if (resource->tracker)
+    while (resource->tracker_references)
     {
-        ff_dx12_resource_tracker_forget(resource->tracker, resource);
-        FF_ASSERT(!resource->tracker);
+        ff_dx12_resource_tracker_reference* reference = resource->tracker_references;
+        ff_dx12_resource_tracker_forget(reference->tracker, resource);
+        FF_CHECK_RET(resource->tracker_references != reference);
     }
 
     // Unlike destroy, nothing is deferred to the keep-alive list. The device itself is going

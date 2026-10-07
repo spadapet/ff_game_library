@@ -13,6 +13,39 @@ namespace ff::test::base
 {
     static const ff_string_view app_test_name = FF_SVL_INIT("ff.test.unit.c.app");
 
+    struct app_shutdown_state
+    {
+        ff_dispatch* dispatch;
+        HANDLE started;
+        volatile long dispatch_calls;
+        volatile long inline_tasks;
+        volatile long window_alive_calls;
+    };
+
+    static void app_shutdown_dispatch(void* cookie)
+    {
+        app_shutdown_state* state = (app_shutdown_state*)cookie;
+        ::InterlockedIncrement(&state->dispatch_calls);
+        if (ff_window_main() && ff_window_main()->hwnd && ::IsWindow(ff_window_main()->hwnd))
+        {
+            ::InterlockedIncrement(&state->window_alive_calls);
+        }
+
+        ff_task_add([](void* task_cookie)
+        {
+            ::InterlockedIncrement(&((app_shutdown_state*)task_cookie)->inline_tasks);
+        }, state);
+    }
+
+    static void app_shutdown_task(void* cookie)
+    {
+        app_shutdown_state* state = (app_shutdown_state*)cookie;
+        ::SetEvent(state->started);
+        ff_dispatch_send(state->dispatch, app_shutdown_dispatch, state);
+        ::Sleep(100);
+        ff_dispatch_send(state->dispatch, app_shutdown_dispatch, state);
+    }
+
     static void delete_app_file(ff_arena* arena, ff_string_view user_path, ff_string_view file_name)
     {
         ff_string_builder sb;
@@ -113,6 +146,34 @@ namespace ff::test::base
             Assert::AreEqual(1L, calls);
 
             ff_app_destroy();
+        }
+
+        BEGIN_TEST_METHOD_ATTRIBUTE(destroy_pumps_early_and_late_worker_sends)
+            TEST_METHOD_ATTRIBUTE(L"Timeout", L"10000")
+        END_TEST_METHOD_ATTRIBUTE()
+        TEST_METHOD(destroy_pumps_early_and_late_worker_sends)
+        {
+            app_shutdown_state state{};
+            state.started = ::CreateEventW(nullptr, TRUE, FALSE, nullptr);
+            Assert::IsNotNull(state.started);
+            if (!state.started)
+            {
+                return;
+            }
+
+            ff_app_init(app_test_name, FF_SVL("app shutdown test"));
+            state.dispatch = ff_dispatch_get_main();
+
+            ff_task_add(app_shutdown_task, &state);
+            const DWORD started = ::WaitForSingleObject(state.started, 5000);
+            ff_app_destroy();
+
+            ::CloseHandle(state.started);
+
+            Assert::AreEqual((DWORD)WAIT_OBJECT_0, started);
+            Assert::AreEqual(2l, (long)state.dispatch_calls);
+            Assert::AreEqual(2l, (long)state.inline_tasks);
+            Assert::AreEqual(2l, (long)state.window_alive_calls);
         }
 
         TEST_METHOD(settings_survive_app_lifetime)

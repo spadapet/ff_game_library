@@ -74,13 +74,14 @@ void ff_app_destroy(void)
 
     ff_log_write(ff_log_type_debug, FF_SVL("App destroy"));
 
+    ff_task_destroy(&s_main_dispatch);
+
     if (s_main_window.hwnd)
     {
         DestroyWindow(s_main_window.hwnd);
         ff_window_handle_messages();
     }
 
-    ff_task_destroy();
     ff_dispatch_flush(&s_main_dispatch);
     ff_settings_save();
     ff_dispatch_destroy(&s_main_dispatch);

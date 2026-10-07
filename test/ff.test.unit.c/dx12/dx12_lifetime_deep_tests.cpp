@@ -349,31 +349,50 @@ namespace ff::test::dx12
             ff_dx12_buffer_destroy(&buffer);
         }
 
-        // Destroying a resource that two different command lists both referenced. Both residency
-        // sets have to be scrubbed, not just the most recent one.
-        TEST_METHOD(resource_in_two_lists_destroyed_scrubs_both)
+        TEST_METHOD(resource_in_two_trackers_destroyed_scrubs_both)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            ff_dx12_commands first{};
-            ff_dx12_commands second{};
-            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &first));
-            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &second));
+            ff_dx12_resource resource{};
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("tracked resource"), &desc, nullptr));
 
-            ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu(&buffer, ff_dx12_buffer_type_vertex, 0));
+            ff_dx12_resource_tracker first{};
+            ff_dx12_resource_tracker second{};
+            ff_dx12_resource_tracker_init(&first);
+            ff_dx12_resource_tracker_init(&second);
 
-            uint8_t data[256];
-            memset(data, 0x3C, sizeof(data));
-            Assert::IsTrue(ff_dx12_buffer_update(&buffer, &first, data, sizeof(data)));
-            Assert::IsTrue(ff_dx12_buffer_update(&buffer, &second, data, sizeof(data)));
+            ff_dx12_resource_tracker_state(&first, &resource,
+                D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_state(&second, &resource,
+                D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
+            Assert::IsNotNull(resource.tracker_references);
+            Assert::IsNotNull(resource.tracker_references->next_resource);
 
-            // Referenced by both lists, neither of which has executed.
-            ff_dx12_buffer_destroy(&buffer);
+            ff_dx12_resource_tracker_reset(&first);
+            Assert::IsNotNull(resource.tracker_references);
+            Assert::IsNull(resource.tracker_references->next_resource);
+            Assert::AreEqual((size_t)1, ff_array_count(second.entries_a));
 
-            ff_dx12_commands* both[] = { &first, &second };
-            ff_dx12_queue_execute_many(ff_dx12_direct_queue(), both, _countof(both));
-            ff_dx12_wait_for_idle();
+            ff_dx12_resource_tracker_state(&first, &resource,
+                D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
+            Assert::IsNotNull(resource.tracker_references->next_resource);
+
+            ff_dx12_resource_destroy(&resource);
+            Assert::IsNull(resource.tracker_references);
+            Assert::AreEqual((size_t)0, ff_array_count(first.entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(second.entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(first.forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(second.forgotten_entries_a));
+
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("reused wrapper"), &desc, nullptr));
+            ff_dx12_resource_tracker_reset(&first);
+            Assert::IsTrue(ff_dx12_resource_valid(&resource));
+            Assert::IsNull(resource.tracker_references);
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_resource_tracker_destroy(&first);
+            ff_dx12_resource_tracker_destroy(&second);
         }
 
         // Destroying a texture that a list referenced, then executing that list, then destroying

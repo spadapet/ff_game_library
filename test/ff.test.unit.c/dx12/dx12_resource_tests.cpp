@@ -2,6 +2,21 @@
 
 namespace ff::test::dx12
 {
+    static bool fence_values_contain(ff_dx12_fence_values& values, const ff_dx12_fence* fence)
+    {
+        const ff_dx12_fence_value* data = ff_dx12_fence_values_data(&values);
+
+        for (size_t i = 0; i < values.count; i++)
+        {
+            if (data[i].fence == fence)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     static D3D12_RESOURCE_DESC texture_desc(UINT16 array_size = 1, UINT16 mip_levels = 1)
     {
         D3D12_RESOURCE_DESC desc{};
@@ -191,11 +206,81 @@ namespace ff::test::dx12
 
             ff_dx12_fence_signal_value(&fence, pending.value, nullptr);
 
-            ff_dx12_resource_set_tracker(&resource, nullptr);
             ff_dx12_resource_destroy(&resource);
 
             ff_dx12_resource_tracker_destroy(&tracker);
             ff_dx12_fence_destroy(&fence);
+        }
+
+        TEST_METHOD(each_reader_waits_for_the_last_writer)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("reader dependencies"), &desc, nullptr));
+
+            ff_dx12_resource_tracker writer_tracker{};
+            ff_dx12_resource_tracker first_reader_tracker{};
+            ff_dx12_resource_tracker second_reader_tracker{};
+            ff_dx12_resource_tracker_init(&writer_tracker);
+            ff_dx12_resource_tracker_init(&first_reader_tracker);
+            ff_dx12_resource_tracker_init(&second_reader_tracker);
+
+            ff_dx12_fence writer_fence{};
+            ff_dx12_fence first_reader_fence{};
+            ff_dx12_fence second_reader_fence{};
+            ff_dx12_fence next_writer_fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&writer_fence, FF_SVL("writer"), 1));
+            Assert::IsTrue(ff_dx12_fence_init(&first_reader_fence, FF_SVL("first reader"), 1));
+            Assert::IsTrue(ff_dx12_fence_init(&second_reader_fence, FF_SVL("second reader"), 1));
+            Assert::IsTrue(ff_dx12_fence_init(&next_writer_fence, FF_SVL("next writer"), 1));
+
+            ff_dx12_fence_values writer_wait{};
+            ff_dx12_fence_values_init(&writer_wait);
+            const ff_dx12_fence_value writer = ff_dx12_fence_signal_later(&writer_fence);
+            ff_dx12_resource_prepare_state(&resource, &writer_wait, writer, &writer_tracker,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+
+            ff_dx12_fence_values first_reader_wait{};
+            ff_dx12_fence_values_init(&first_reader_wait);
+            const ff_dx12_fence_value first_reader = ff_dx12_fence_signal_later(&first_reader_fence);
+            ff_dx12_resource_prepare_state(&resource, &first_reader_wait, first_reader, &first_reader_tracker,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+
+            ff_dx12_fence_values second_reader_wait{};
+            ff_dx12_fence_values_init(&second_reader_wait);
+            const ff_dx12_fence_value second_reader = ff_dx12_fence_signal_later(&second_reader_fence);
+            ff_dx12_resource_prepare_state(&resource, &second_reader_wait, second_reader, &second_reader_tracker,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+
+            Assert::IsTrue(fence_values_contain(first_reader_wait, &writer_fence));
+            Assert::IsTrue(fence_values_contain(second_reader_wait, &writer_fence));
+            Assert::IsTrue(resource.global_write.fence == &writer_fence);
+
+            ff_dx12_fence_values next_writer_wait{};
+            ff_dx12_fence_values_init(&next_writer_wait);
+            const ff_dx12_fence_value next_writer = ff_dx12_fence_signal_later(&next_writer_fence);
+            ff_dx12_resource_prepare_state(&resource, &next_writer_wait, next_writer, &writer_tracker,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+
+            Assert::IsTrue(fence_values_contain(next_writer_wait, &writer_fence));
+            Assert::IsTrue(fence_values_contain(next_writer_wait, &first_reader_fence));
+            Assert::IsTrue(fence_values_contain(next_writer_wait, &second_reader_fence));
+
+            ff_dx12_fence_value_signal(writer, nullptr);
+            ff_dx12_fence_value_signal(first_reader, nullptr);
+            ff_dx12_fence_value_signal(second_reader, nullptr);
+            ff_dx12_fence_value_signal(next_writer, nullptr);
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_resource_tracker_destroy(&writer_tracker);
+            ff_dx12_resource_tracker_destroy(&first_reader_tracker);
+            ff_dx12_resource_tracker_destroy(&second_reader_tracker);
+            ff_dx12_fence_destroy(&writer_fence);
+            ff_dx12_fence_destroy(&first_reader_fence);
+            ff_dx12_fence_destroy(&second_reader_fence);
+            ff_dx12_fence_destroy(&next_writer_fence);
         }
     };
 }

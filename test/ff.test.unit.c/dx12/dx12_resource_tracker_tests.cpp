@@ -143,10 +143,10 @@ namespace ff::test::dx12
             Assert::AreEqual((size_t)1, ff_array_count(tracker.entries_a));
             Assert::AreEqual((size_t)1, ff_array_count(tracker.entries_a[0].first_barriers_a));
             Assert::IsTrue(tracker.entries_a[0].resource == &resource);
-            Assert::IsTrue(resource.tracker == &tracker);
+            Assert::IsTrue(resource.tracker_references && resource.tracker_references->tracker == &tracker);
 
             ff_dx12_resource_tracker_reset(&tracker);
-            Assert::IsNull((void*)resource.tracker);
+            Assert::IsNull((void*)resource.tracker_references);
 
             ff_dx12_resource_tracker_destroy(&tracker);
             ff_dx12_resource_destroy(&resource);
@@ -356,7 +356,7 @@ namespace ff::test::dx12
 
                 ff_dx12_resource_tracker_reset(&tracker);
                 Assert::AreEqual((size_t)0, ff_array_count(tracker.entries_a));
-                Assert::IsNull((void*)resource.tracker);
+                Assert::IsNull((void*)resource.tracker_references);
             }
 
             ff_dx12_resource_tracker_destroy(&tracker);
@@ -548,7 +548,7 @@ namespace ff::test::dx12
                 forgotten[i] = true;
                 live--;
 
-                Assert::IsNull((void*)resources[i]->tracker, L"a forgotten resource must drop its tracker back-pointer");
+                Assert::IsNull((void*)resources[i]->tracker_references, L"a forgotten resource must drop its tracker reference");
                 Assert::AreEqual(live, ff_array_count(tracker.entries_a));
 
                 for (size_t j = 0; j < count; j++)
@@ -607,6 +607,46 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_reset(&tracker);
             ff_dx12_resource_tracker_destroy(&tracker);
             ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(destroyed_resource_state_flows_through_unreferencing_trackers)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("destroyed tracker chain"),
+                &desc, nullptr));
+            ID3D12Resource* resource_identity = resource.resource;
+
+            ff_dx12_resource_tracker first{};
+            ff_dx12_resource_tracker middle{};
+            ff_dx12_resource_tracker last{};
+            ff_dx12_resource_tracker_init(&first);
+            ff_dx12_resource_tracker_init(&middle);
+            ff_dx12_resource_tracker_init(&last);
+
+            ff_dx12_resource_tracker_state(&first, &resource, D3D12_RESOURCE_STATE_RENDER_TARGET, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_state(&last, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_destroy(&resource);
+
+            tracker_barrier_recorder first_list;
+            tracker_barrier_recorder middle_list;
+            tracker_barrier_recorder last_list;
+            ff_dx12_resource_tracker_close(&first, &first_list, nullptr, &middle);
+            ff_dx12_resource_tracker_close(&middle, &middle_list, &first, &last);
+            ff_dx12_resource_tracker_close(&last, &last_list, &middle, nullptr);
+
+            Assert::AreEqual((size_t)1, first_list.count);
+            assert_tracker_barrier(first_list.barriers[0], resource_identity,
+                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            Assert::AreEqual((size_t)1, last_list.count);
+            assert_tracker_barrier(last_list.barriers[0], resource_identity,
+                D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+            ff_dx12_resource_tracker_destroy(&first);
+            ff_dx12_resource_tracker_destroy(&middle);
+            ff_dx12_resource_tracker_destroy(&last);
         }
 
         TEST_METHOD(forgotten_common_buffer_does_not_use_replacement_state)

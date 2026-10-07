@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
+#include "windows/dispatch.h"
 #include "windows/task.h"
 
 typedef struct task_entry
@@ -17,6 +18,13 @@ static ff_arena s_arena;
 static task_entry* s_free_list;
 static LONG s_outstanding;
 static bool s_valid;
+static bool s_draining;
+
+static void complete_task(void)
+{
+    InterlockedDecrement(&s_outstanding);
+    WakeByAddressAll(&s_outstanding);
+}
 
 static task_entry* alloc_entry(ff_task_func func, void* cookie)
 {
@@ -58,17 +66,41 @@ static void CALLBACK task_callback(PTP_CALLBACK_INSTANCE instance, void* context
     func(cookie);
 
     // Decremented last so a task that queues more work still counts as outstanding.
-    InterlockedDecrement(&s_outstanding);
+    complete_task();
 }
 
-static void drain(void)
+static void drain(ff_dispatch* dispatch)
 {
-    // CloseThreadpoolCleanupGroupMembers only waits on callbacks that were members when it
-    // was called, so tasks queued by a running callback need another pass.
-    do
+    if (!dispatch)
     {
         CloseThreadpoolCleanupGroupMembers(s_pool_cleanup, FALSE, NULL);
-    } while (InterlockedCompareExchange(&s_outstanding, 0, 0) != 0);
+    }
+
+    while (true)
+    {
+        LONG outstanding;
+
+        AcquireSRWLockExclusive(&s_mutex);
+        outstanding = InterlockedCompareExchange(&s_outstanding, 0, 0);
+        if (!outstanding)
+        {
+            s_draining = false;
+            ReleaseSRWLockExclusive(&s_mutex);
+            break;
+        }
+        ReleaseSRWLockExclusive(&s_mutex);
+
+        if (dispatch)
+        {
+            ff_dispatch_flush(dispatch);
+            LONG waiting = outstanding;
+            WaitOnAddress(&s_outstanding, &waiting, sizeof(waiting), (DWORD)1);
+        }
+        else
+        {
+            WaitOnAddress(&s_outstanding, &outstanding, sizeof(outstanding), INFINITE);
+        }
+    }
 }
 
 void ff_task_init(void)
@@ -78,6 +110,8 @@ void ff_task_init(void)
     InitializeSRWLock(&s_mutex);
     ff_arena_init_heap_global(&s_arena, 0);
     s_free_list = NULL;
+    InterlockedExchange(&s_outstanding, 0);
+    s_draining = false;
 
     InitializeThreadpoolEnvironment(&s_pool_env);
     s_pool_cleanup = CreateThreadpoolCleanupGroup();
@@ -85,18 +119,21 @@ void ff_task_init(void)
     s_valid = true;
 }
 
-void ff_task_destroy(void)
+static bool begin_destroy(void)
 {
     bool valid;
 
     AcquireSRWLockExclusive(&s_mutex);
     valid = s_valid;
     s_valid = false;
+    s_draining = valid;
     ReleaseSRWLockExclusive(&s_mutex);
 
-    FF_CHECK_RET(valid);
+    return valid;
+}
 
-    drain();
+static void finish_destroy(void)
+{
     CloseThreadpoolCleanupGroup(s_pool_cleanup);
     s_pool_cleanup = NULL;
     DestroyThreadpoolEnvironment(&s_pool_env);
@@ -105,27 +142,48 @@ void ff_task_destroy(void)
     ff_arena_destroy(&s_arena);
 }
 
+void ff_task_destroy(ff_dispatch* main_dispatch)
+{
+    if (!begin_destroy())
+    {
+        return;
+    }
+
+    drain(main_dispatch);
+    if (main_dispatch)
+    {
+        CloseThreadpoolCleanupGroupMembers(s_pool_cleanup, FALSE, NULL);
+    }
+
+    finish_destroy();
+}
+
 void ff_task_add(ff_task_func func, void* cookie)
 {
     FF_ASSERT_RET(func);
 
     bool submitted = false;
+    bool tracked = false;
 
     AcquireSRWLockExclusive(&s_mutex);
 
     if (s_valid)
     {
-        // Submitted while holding the lock so destroy can't close the environment in between.
         task_entry* entry = alloc_entry(func, cookie);
         InterlockedIncrement(&s_outstanding);
+        tracked = true;
         submitted = TrySubmitThreadpoolCallback(&task_callback, entry, &s_pool_env) != FALSE;
 
         if (!submitted)
         {
-            InterlockedDecrement(&s_outstanding);
             entry->next_free = s_free_list;
             s_free_list = entry;
         }
+    }
+    else if (s_draining)
+    {
+        InterlockedIncrement(&s_outstanding);
+        tracked = true;
     }
 
     ReleaseSRWLockExclusive(&s_mutex);
@@ -133,11 +191,15 @@ void ff_task_add(ff_task_func func, void* cookie)
     if (!submitted)
     {
         func(cookie);
+        if (tracked)
+        {
+            complete_task();
+        }
     }
 }
 
 void ff_task_flush(void)
 {
     FF_CHECK_RET(s_valid);
-    drain();
+    drain(NULL);
 }

@@ -38,9 +38,9 @@ namespace ff::test::base
         TEST_METHOD(init_and_destroy)
         {
             ff_task_init();
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
 
-            ff_task_destroy(); // idempotent
+            ff_task_destroy(nullptr); // idempotent
         }
 
         TEST_METHOD(flush_waits_for_tasks)
@@ -56,7 +56,7 @@ namespace ff::test::base
             ff_task_flush();
             Assert::AreEqual(500l, (long)task_count);
 
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
         }
 
         TEST_METHOD(flush_waits_for_tasks_added_by_tasks)
@@ -85,7 +85,7 @@ namespace ff::test::base
                 Assert::AreEqual(count, (long)task_nested);
             }
 
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
         }
 
         TEST_METHOD(flush_is_reusable)
@@ -104,7 +104,7 @@ namespace ff::test::base
             ff_task_flush(); // idle flush must be harmless
             ff_task_flush();
 
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
         }
 
         TEST_METHOD(destroy_waits_for_tasks)
@@ -117,14 +117,14 @@ namespace ff::test::base
                 ff_task_add(bump_task, nullptr);
             }
 
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
             Assert::AreEqual(200l, (long)task_count); // destroy must not abandon queued work
         }
 
         TEST_METHOD(add_after_destroy_runs_inline)
         {
             ff_task_init();
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
 
             task_count = 0;
             ff_task_add(bump_task, nullptr);
@@ -168,7 +168,7 @@ namespace ff::test::base
             ff_task_flush();
             Assert::AreEqual(thread_count * per_thread, (long)task_count);
 
-            ff_task_destroy();
+            ff_task_destroy(nullptr);
         }
     };
 }
