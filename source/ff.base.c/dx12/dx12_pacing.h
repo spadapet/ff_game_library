@@ -16,6 +16,13 @@ typedef struct ff_dx12_pacing_stage
 // single slow frame can never move it.
 #define FF_DX12_PACING_WINDOW_FRAMES 16
 
+typedef enum ff_dx12_pacing_mode
+{
+    ff_dx12_pacing_mode_conservative,
+    ff_dx12_pacing_mode_aggressive,
+    ff_dx12_pacing_mode_count,
+} ff_dx12_pacing_mode;
+
 typedef struct ff_dx12_pacing
 {
     // Nominal display refresh interval in seconds. Lateness is judged against this rather than a
@@ -29,6 +36,8 @@ typedef struct ff_dx12_pacing
 
     int64_t last_tick;
     size_t stage;
+    size_t legacy_frame_count;
+    ff_dx12_pacing_mode mode;
 
     size_t window_frames;
     size_t window_late_frames;
@@ -57,10 +66,15 @@ typedef struct ff_dx12_pacing
     uint64_t stage_changes;
 } ff_dx12_pacing;
 
+// The process-wide default is conservative. Aggressive reproduces the legacy 58/54 FPS EMA ladder.
+// If DX12 is active, change the mode on the owner thread between frames.
+void ff_dx12_pacing_set_mode(ff_dx12_pacing_mode mode);
+ff_dx12_pacing_mode ff_dx12_pacing_get_mode(void);
+
 void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds);
 
-// Discards in-flight measurements without touching the stage. Used when the frame loop is about to
-// be interrupted (resize, device reset) so the resulting long frame is not blamed on the stage.
+// Discards in-flight measurements when the frame loop is interrupted. Conservative mode keeps the
+// current stage; aggressive mode resets it to match the legacy behavior.
 void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing);
 
 // Feeds one measured frame interval and returns true when the stage changed, which means the

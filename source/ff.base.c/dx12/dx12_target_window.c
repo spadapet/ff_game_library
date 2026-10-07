@@ -407,6 +407,7 @@ static bool update_pacing(ff_dx12_target_window* target, double busy_seconds)
 {
     const int64_t now = perf_counter();
     const int64_t last = target->pacing.last_tick;
+    const uint32_t latency_before = internal_ff_dx12_pacing_latency(&target->pacing);
     target->pacing.last_tick = now;
 
     // The first frame after init, a resize or a reset has no previous tick to measure against.
@@ -418,12 +419,19 @@ static bool update_pacing(ff_dx12_target_window* target, double busy_seconds)
     // not block and is measured back-to-back with this one. That is the tail of one long frame,
     // not a genuinely fast frame, and feeding it in as-is is what made the old ladder see
     // above-refresh frame rates and oscillate. Charge it at the refresh interval instead.
-    if (frame_seconds < target->pacing.refresh_seconds)
+    if (ff_dx12_pacing_get_mode() == ff_dx12_pacing_mode_conservative &&
+        frame_seconds < target->pacing.refresh_seconds)
     {
         frame_seconds = target->pacing.refresh_seconds;
     }
 
     FF_CHECK_RET_VAL(internal_ff_dx12_pacing_add_frame_busy(&target->pacing, frame_seconds, busy_seconds), true);
+
+    if (ff_dx12_pacing_get_mode() == ff_dx12_pacing_mode_aggressive &&
+        latency_before == internal_ff_dx12_pacing_latency(&target->pacing))
+    {
+        return true;
+    }
 
     return apply_latency(target);
 }

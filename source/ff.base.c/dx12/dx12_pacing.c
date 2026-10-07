@@ -12,6 +12,10 @@ static const ff_dx12_pacing_stage s_pacing_stages[FF_DX12_PACING_STAGE_COUNT] =
 };
 
 static const double s_default_refresh_seconds = 1.0 / 60.0;
+static const double s_legacy_good_frame_seconds = 1.0 / 58.0;
+static const double s_legacy_bad_frame_seconds = 1.0 / 54.0;
+static const double s_legacy_initial_average_seconds = 1.0 / 60.0;
+static ff_dx12_pacing_mode s_pacing_mode = ff_dx12_pacing_mode_aggressive; // conservative;
 
 // A frame counts as late once it overruns the refresh interval by half. Anything under this is
 // just jitter in when the present lands relative to the vblank.
@@ -39,6 +43,17 @@ static const size_t s_skip_frames_after_change = FF_DX12_PACING_WINDOW_FRAMES / 
 // back a vblank when expected and nothing the ladder can do would help.
 static const double s_busy_blame_scale = 0.5;
 
+void ff_dx12_pacing_set_mode(ff_dx12_pacing_mode mode)
+{
+    FF_CHECK_RET(mode >= ff_dx12_pacing_mode_conservative && mode < ff_dx12_pacing_mode_count);
+    s_pacing_mode = mode;
+}
+
+ff_dx12_pacing_mode ff_dx12_pacing_get_mode(void)
+{
+    return s_pacing_mode;
+}
+
 static void begin_window(ff_dx12_pacing* pacing)
 {
     pacing->window_frames = 0;
@@ -61,15 +76,41 @@ static void enter_stage(ff_dx12_pacing* pacing, size_t stage)
     begin_window(pacing);
 }
 
+static void sync_mode(ff_dx12_pacing* pacing)
+{
+    if (pacing->mode == s_pacing_mode)
+    {
+        return;
+    }
+
+    pacing->mode = s_pacing_mode;
+    pacing->average_seconds = (s_pacing_mode == ff_dx12_pacing_mode_aggressive)
+        ? s_legacy_initial_average_seconds
+        : pacing->refresh_seconds;
+    pacing->legacy_frame_count = 0;
+    pacing->good_windows = 0;
+    pacing->promote_windows = s_min_promote_windows;
+    pacing->bad_windows = 0;
+    pacing->skip_frames = (s_pacing_mode == ff_dx12_pacing_mode_conservative)
+        ? s_skip_frames_after_change
+        : 0;
+    begin_window(pacing);
+}
+
 void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds)
 {
     FF_ASSERT_RET(pacing);
 
     *pacing = (ff_dx12_pacing){ 0 };
     pacing->refresh_seconds = (refresh_seconds > 0.0) ? refresh_seconds : s_default_refresh_seconds;
-    pacing->average_seconds = pacing->refresh_seconds;
+    pacing->mode = s_pacing_mode;
+    pacing->average_seconds = (s_pacing_mode == ff_dx12_pacing_mode_aggressive)
+        ? s_legacy_initial_average_seconds
+        : pacing->refresh_seconds;
     pacing->promote_windows = s_min_promote_windows;
-    pacing->skip_frames = s_skip_frames_after_change;
+    pacing->skip_frames = (s_pacing_mode == ff_dx12_pacing_mode_conservative)
+        ? s_skip_frames_after_change
+        : 0;
 }
 
 void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing)
@@ -77,6 +118,21 @@ void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing)
     FF_ASSERT_RET(pacing);
 
     pacing->last_tick = 0;
+    sync_mode(pacing);
+
+    if (pacing->mode == ff_dx12_pacing_mode_aggressive)
+    {
+        pacing->stage = 0;
+        pacing->average_seconds = s_legacy_initial_average_seconds;
+        pacing->legacy_frame_count = 0;
+        pacing->good_windows = 0;
+        pacing->promote_windows = s_min_promote_windows;
+        pacing->bad_windows = 0;
+        pacing->skip_frames = 0;
+        begin_window(pacing);
+        return;
+    }
+
     pacing->skip_frames = s_skip_frames_after_change;
     pacing->bad_windows = 0;
     begin_window(pacing);
@@ -104,8 +160,55 @@ bool internal_ff_dx12_pacing_add_frame_busy(ff_dx12_pacing* pacing, double frame
     FF_ASSERT_RET_VAL(pacing, false);
     FF_CHECK_RET_VAL(frame_seconds > 0.0, false);
 
+    sync_mode(pacing);
+
     const double ema_alpha = 1.0 / (double)FF_DX12_PACING_WINDOW_FRAMES;
     pacing->average_seconds = pacing->average_seconds * (1.0 - ema_alpha) + frame_seconds * ema_alpha;
+
+    if (pacing->mode == ff_dx12_pacing_mode_aggressive)
+    {
+        if (frame_seconds > pacing->refresh_seconds * s_late_frame_scale)
+        {
+            pacing->total_late_frames++;
+
+            if (busy_seconds <= pacing->refresh_seconds * s_busy_blame_scale)
+            {
+                pacing->total_idle_late_frames++;
+            }
+        }
+
+        pacing->legacy_frame_count++;
+        FF_CHECK_RET_VAL(!(pacing->legacy_frame_count % FF_DX12_PACING_WINDOW_FRAMES), false);
+
+        const size_t window_count = pacing->legacy_frame_count / FF_DX12_PACING_WINDOW_FRAMES;
+        const size_t before_stage = pacing->stage;
+
+        if (pacing->average_seconds <= s_legacy_good_frame_seconds &&
+            pacing->stage && window_count >= 2)
+        {
+            pacing->stage--;
+        }
+        else if (pacing->average_seconds >= s_legacy_bad_frame_seconds &&
+            (pacing->stage || window_count > 1))
+        {
+            pacing->stage = (pacing->stage + 1 < FF_DX12_PACING_STAGE_COUNT)
+                ? pacing->stage + 1
+                : FF_DX12_PACING_STAGE_COUNT - 1;
+        }
+
+        if (pacing->stage != before_stage)
+        {
+            pacing->stage_changes++;
+            ff_log_write(ff_log_type_debug,
+                FF_SVL("[dx12] Frame pacing %s. stage %u -> %u, latency %u, vsync %d"),
+                (pacing->stage > before_stage) ? "FAILS" : "IMPROVES",
+                (unsigned int)before_stage, (unsigned int)pacing->stage,
+                s_pacing_stages[pacing->stage].latency, s_pacing_stages[pacing->stage].vsync ? 1 : 0);
+            return true;
+        }
+
+        return false;
+    }
 
     if (pacing->skip_frames)
     {

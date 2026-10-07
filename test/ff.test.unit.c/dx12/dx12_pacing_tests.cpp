@@ -7,6 +7,11 @@ namespace ff::test::base
     public:
         static const double refresh;
 
+        TEST_METHOD_CLEANUP(reset_pacing_mode)
+        {
+            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_conservative);
+        }
+
         static void add_frames(ff_dx12_pacing* pacing, size_t count, double frame_seconds)
         {
             for (size_t i = 0; i < count; i++)
@@ -70,6 +75,38 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, pacing.stage);
             Assert::AreEqual((uint32_t)1, internal_ff_dx12_pacing_latency(&pacing));
             Assert::IsTrue(internal_ff_dx12_pacing_vsync(&pacing));
+        }
+
+        TEST_METHOD(aggressive_mode_matches_legacy_demotion_timing)
+        {
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_aggressive);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)ff_dx12_pacing_get_mode());
+
+            for (size_t i = 0; i < FF_DX12_PACING_WINDOW_FRAMES * 2; i++)
+            {
+                internal_ff_dx12_pacing_add_frame_busy(&pacing, 1.0 / 50.0, 0.0);
+            }
+
+            Assert::AreEqual((size_t)1, pacing.stage);
+            Assert::AreEqual((uint32_t)1, internal_ff_dx12_pacing_latency(&pacing));
+            Assert::IsFalse(internal_ff_dx12_pacing_vsync(&pacing));
+        }
+
+        TEST_METHOD(aggressive_mode_reproduces_legacy_stage_ladder_and_recovery)
+        {
+            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_aggressive);
+
+            ff_dx12_pacing pacing;
+            internal_ff_dx12_pacing_init(&pacing, refresh);
+            add_frames(&pacing, FF_DX12_PACING_WINDOW_FRAMES * 4, refresh * 3.0);
+
+            Assert::AreEqual((size_t)FF_DX12_PACING_STAGE_COUNT - 1, pacing.stage);
+
+            add_frames(&pacing, FF_DX12_PACING_WINDOW_FRAMES * 16, refresh);
+
+            Assert::AreEqual((size_t)0, pacing.stage);
         }
 
         TEST_METHOD(steady_good_frames_never_leave_stage_zero)
