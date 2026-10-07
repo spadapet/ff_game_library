@@ -774,6 +774,26 @@ void ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
     }
 }
 
+void internal_ff_dx12_forget_resource(ff_dx12_resource* resource)
+{
+    FF_CHECK_RET(resource);
+
+    if (ff_dx12_queue_valid(&s_copy_queue))
+    {
+        ff_dx12_queue_forget_resource(&s_copy_queue, resource);
+    }
+
+    if (ff_dx12_queue_valid(&s_compute_queue))
+    {
+        ff_dx12_queue_forget_resource(&s_compute_queue, resource);
+    }
+
+    if (ff_dx12_queue_valid(&s_direct_queue))
+    {
+        ff_dx12_queue_forget_resource(&s_direct_queue, resource);
+    }
+}
+
 void ff_dx12_wait_for_idle(void)
 {
     FF_DX12_ASSERT_OWNER();

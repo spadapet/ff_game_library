@@ -86,9 +86,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Priority:** P1. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
-**Location:** `dx12\dx12_resource.c:213-228`, `ff_dx12_resource_destroy`; `dx12\dx12_resource_tracker.c:259-319`, reference linking; `dx12\dx12_resource_tracker.c:532-570`, `ff_dx12_resource_tracker_forget`; `dx12\dx12_resource_tracker.c:402-429`, tracker reset.
+**Location:** `dx12\dx12_resource.c`, `ff_dx12_resource_destroy` and `internal_ff_dx12_resource_before_reset`; `dx12\dx12_globals.c`, `internal_ff_dx12_forget_resource`; `dx12\dx12_queue.c`, `ff_dx12_queue_forget_resource`; `dx12\dx12_resource_tracker.c`, `ff_dx12_resource_tracker_forget`.
 
-**Cause:** A resource has one `tracker` back-pointer, but multiple open command lists can each contain an entry for it. The second tracker overwrites the pointer. Destruction forgets only that tracker. Resetting one tracker also unconditionally clears the pointer, even if another tracker still references the resource.
+**Cause:** The original single `tracker` back-pointer could not represent multiple open command lists containing the same resource. Destruction therefore forgot only one tracker, and resetting a tracker could clear a pointer still needed by another.
 
 **Trigger:** Explicitly record the same resource in two open lists, destroy its wrapper, and then submit the lists. Alternatively, submit the first list while the second remains open, destroy the wrapper, and submit the second. Allowing caller-owned wrapper storage to be freed or reused makes the stale reference observable.
 
@@ -98,9 +98,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Regression scenario:** Establish that both trackers actually contain the resource before destruction, then exercise destruction and submission in both orders above. Reuse the old wrapper storage to make accidental stale access visible. Do not rely on two identical `ff_dx12_buffer_update` calls: its size/hash shortcut can skip the second update entirely, creating no second tracker reference.
 
-**Resolution:** Working tree, not committed. Fully initialized, stable reference nodes link every tracker entry to both its resource and tracker. Resource destruction and device reset detach every reference; tracker reset detaches only its own. Forgotten state retains the native resource and is carried across tracker close chains, including an intermediate tracker that never referenced the resource.
+**Resolution:** Working tree, not committed. Resource destruction and device reset scan active command caches on the copy, compute, and direct queues, then forget matching entries through each tracker's existing resource index. This removes per-entry intrusive reference nodes and requires no tracker-reset unlinking. Forgotten state retains the native resource and is carried across tracker close chains, including an intermediate tracker that never referenced the resource.
 
-**Regression coverage:** `dx12_lifetime_deep_tests::resource_in_two_trackers_destroyed_scrubs_both` and `dx12_resource_tracker_tests::destroyed_resource_state_flows_through_unreferencing_trackers` passed in Debug/x64 and Release/x64. The tests cover multiple references, tracker reset, wrapper-storage reuse, and forgotten barrier propagation. All 65 tests in the resource, tracker, lifetime, app, and task test groups pass in both configurations.
+**Regression coverage:** `dx12_lifetime_deep_tests::resource_destroy_scans_active_trackers_across_queues` and `dx12_resource_tracker_tests::destroyed_resource_state_flows_through_unreferencing_trackers` cover multi-queue cleanup, wrapper-storage reuse, and forgotten barrier propagation.
 
 ### FFC-003: Whole-resource barriers ignore divergent fallback states
 

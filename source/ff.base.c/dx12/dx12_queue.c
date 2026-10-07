@@ -7,6 +7,9 @@
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_residency.h"
 
+
+static uint64_t s_residency_gather_generation;
+
 void ff_dx12_residency_set_clear(ff_dx12_residency_set* set)
 {
     FF_CHECK_RET(set);
@@ -110,25 +113,46 @@ void ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency
     }
 }
 
-static size_t residency_set_gather(const ff_dx12_residency_set* set, ff_dx12_residency_data** out, size_t out_max, size_t out_count)
+void ff_dx12_queue_forget_resource(ff_dx12_queue* queue, ff_dx12_resource* resource)
 {
-    for (size_t i = 0; i < set->capacity && out_count < out_max; i++)
+    FF_CHECK_RET(queue && resource);
+
+    for (ff_dx12_command_cache* cache = queue->caches_in_use; cache; cache = cache->next)
+    {
+        ff_dx12_resource_tracker_forget(&cache->resource_tracker, resource);
+    }
+}
+
+static void residency_set_clear_gather_generations(const ff_dx12_residency_set* set)
+{
+    for (size_t i = 0; i < set->capacity; i++)
     {
         if (set->slots[i])
         {
-            bool found = false;
-            for (size_t j = 0; j < out_count && !found; j++)
+            set->slots[i]->gather_generation = 0;
+        }
+    }
+}
+
+static size_t residency_set_gather(ff_dx12_residency_set* set, ff_dx12_residency_data** out,
+    size_t out_max, size_t out_count, uint64_t generation)
+{
+    for (size_t i = 0; i < set->capacity; i++)
+    {
+        ff_dx12_residency_data* data = set->slots[i];
+        if (data)
+        {
+            if (out_count < out_max && data->gather_generation != generation)
             {
-                found = (out[j] == set->slots[i]);
+                data->gather_generation = generation;
+                out[out_count++] = data;
             }
 
-            if (!found)
-            {
-                out[out_count++] = set->slots[i];
-            }
+            set->slots[i] = NULL;
         }
     }
 
+    set->count = 0;
     return out_count;
 }
 
@@ -553,6 +577,18 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
         return;
     }
 
+    uint64_t gather_generation = s_residency_gather_generation + 1;
+    if (!gather_generation)
+    {
+        for (size_t i = 0; i < valid_count; i++)
+        {
+            residency_set_clear_gather_generations(&valid[i]->cache->residency_set);
+        }
+
+        gather_generation = 1;
+    }
+    s_residency_gather_generation = gather_generation;
+
     ff_dx12_fence_values wait_before_execute;
     ff_dx12_fence_values_init_arena(&wait_before_execute, &temp);
 
@@ -625,8 +661,8 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
         dx12_lists[dx12_list_count++] = (ID3D12CommandList*)cache->list_before;
         dx12_lists[dx12_list_count++] = (ID3D12CommandList*)cache->list;
 
-        residency_count = residency_set_gather(&cache->residency_set, residency_set, residency_max, residency_count);
-        ff_dx12_residency_set_clear(&cache->residency_set);
+        residency_count = residency_set_gather(&cache->residency_set, residency_set, residency_max,
+            residency_count, gather_generation);
 
         allocator_list_push(queue, &queue->allocators, cache->allocator, next_fence_value);
         allocator_list_push(queue, &queue->allocators_before, cache->allocator_before, next_fence_value);

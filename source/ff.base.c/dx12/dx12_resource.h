@@ -8,7 +8,6 @@
 #include "dx12_resource_state.h"
 
 typedef struct ff_dx12_resource_tracker ff_dx12_resource_tracker;
-typedef struct ff_dx12_resource_tracker_reference ff_dx12_resource_tracker_reference;
 
 typedef enum ff_dx12_resource_kind
 {
@@ -42,7 +41,6 @@ typedef struct ff_dx12_resource
     ff_dx12_fence_values global_reads;
     // Retained until a later write so every dependent reader inherits this fence.
     ff_dx12_fence_value global_write;
-    ff_dx12_resource_tracker_reference* tracker_references;
     size_t reset_count;
 } ff_dx12_resource;
 

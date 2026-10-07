@@ -283,6 +283,59 @@ namespace ff::test::dx12
             ff_dx12_flush_keep_alive();
         }
 
+        TEST_METHOD(residency_gather_generation_is_shared_across_lists_and_queues)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            ff_dx12_resource first_resource{};
+            ff_dx12_resource second_resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&first_resource, FF_SVL("first residency"), &desc, nullptr));
+            Assert::IsTrue(ff_dx12_resource_init_committed(&second_resource, FF_SVL("second residency"), &desc, nullptr));
+
+            ff_dx12_commands first{};
+            ff_dx12_commands second{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &first));
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &second));
+            ff_dx12_commands_keep_resident(&first, ff_dx12_resource_residency_data(&first_resource));
+            ff_dx12_commands_keep_resident(&second, ff_dx12_resource_residency_data(&first_resource));
+            ff_dx12_commands_keep_resident(&second, ff_dx12_resource_residency_data(&second_resource));
+
+            ff_dx12_command_cache* first_cache = first.cache;
+            ff_dx12_command_cache* second_cache = second.cache;
+            ff_dx12_commands* direct_commands[] = { &first, &second };
+            ff_dx12_queue_execute_many(ff_dx12_direct_queue(), direct_commands, _countof(direct_commands));
+
+            Assert::AreEqual((size_t)0, first_cache->residency_set.count);
+            Assert::AreEqual((size_t)0, second_cache->residency_set.count);
+            for (size_t i = 0; i < first_cache->residency_set.capacity; i++)
+            {
+                Assert::IsNull(first_cache->residency_set.slots[i]);
+            }
+            for (size_t i = 0; i < second_cache->residency_set.capacity; i++)
+            {
+                Assert::IsNull(second_cache->residency_set.slots[i]);
+            }
+
+            const uint64_t direct_generation = ff_dx12_resource_residency_data(&first_resource)->gather_generation;
+            Assert::AreNotEqual((uint64_t)0, direct_generation);
+            Assert::AreEqual(direct_generation,
+                ff_dx12_resource_residency_data(&second_resource)->gather_generation);
+
+            ff_dx12_commands copy{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &copy));
+            ff_dx12_commands_keep_resident(&copy, ff_dx12_resource_residency_data(&first_resource));
+            ff_dx12_queue_execute(ff_dx12_copy_queue(), &copy);
+
+            Assert::AreNotEqual(direct_generation,
+                ff_dx12_resource_residency_data(&first_resource)->gather_generation);
+
+            ff_dx12_wait_for_idle();
+            ff_dx12_resource_destroy(&first_resource);
+            ff_dx12_resource_destroy(&second_resource);
+            ff_dx12_flush_keep_alive();
+        }
+
         TEST_METHOD(one_resource_read_by_many_command_lists_does_not_deadlock)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

@@ -349,7 +349,7 @@ namespace ff::test::dx12
             ff_dx12_buffer_destroy(&buffer);
         }
 
-        TEST_METHOD(resource_in_two_trackers_destroyed_scrubs_both)
+        TEST_METHOD(resource_destroy_scans_active_trackers_across_queues)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
@@ -357,42 +357,59 @@ namespace ff::test::dx12
             D3D12_RESOURCE_DESC desc = buffer_desc();
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("tracked resource"), &desc, nullptr));
 
-            ff_dx12_resource_tracker first{};
-            ff_dx12_resource_tracker second{};
-            ff_dx12_resource_tracker_init(&first);
-            ff_dx12_resource_tracker_init(&second);
+            ff_dx12_commands direct{};
+            ff_dx12_commands copy{};
+            ff_dx12_commands compute{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &direct));
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &copy));
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_compute_queue(), &compute));
 
-            ff_dx12_resource_tracker_state(&first, &resource,
+            ff_dx12_commands_resource_state(&direct, &resource,
                 D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
-            ff_dx12_resource_tracker_state(&second, &resource,
-                D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
-            Assert::IsNotNull(resource.tracker_references);
-            Assert::IsNotNull(resource.tracker_references->next_resource);
+            ff_dx12_commands_resource_state(&copy, &resource,
+                D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 0, 0, 0);
+            ff_dx12_commands_resource_state(&compute, &resource,
+                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
 
-            ff_dx12_resource_tracker_reset(&first);
-            Assert::IsNotNull(resource.tracker_references);
-            Assert::IsNull(resource.tracker_references->next_resource);
-            Assert::AreEqual((size_t)1, ff_array_count(second.entries_a));
-
-            ff_dx12_resource_tracker_state(&first, &resource,
-                D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0, 0, 0, 0);
-            Assert::IsNotNull(resource.tracker_references->next_resource);
+            ff_dx12_resource_tracker* direct_tracker = &direct.cache->resource_tracker;
+            ff_dx12_resource_tracker* copy_tracker = &copy.cache->resource_tracker;
+            ff_dx12_resource_tracker* compute_tracker = &compute.cache->resource_tracker;
+            Assert::AreEqual((size_t)1, ff_array_count(direct_tracker->entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(copy_tracker->entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(compute_tracker->entries_a));
 
             ff_dx12_resource_destroy(&resource);
-            Assert::IsNull(resource.tracker_references);
-            Assert::AreEqual((size_t)0, ff_array_count(first.entries_a));
-            Assert::AreEqual((size_t)0, ff_array_count(second.entries_a));
-            Assert::AreEqual((size_t)1, ff_array_count(first.forgotten_entries_a));
-            Assert::AreEqual((size_t)1, ff_array_count(second.forgotten_entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(direct_tracker->entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(copy_tracker->entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(compute_tracker->entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(direct_tracker->forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(copy_tracker->forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(compute_tracker->forgotten_entries_a));
 
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("reused wrapper"), &desc, nullptr));
-            ff_dx12_resource_tracker_reset(&first);
             Assert::IsTrue(ff_dx12_resource_valid(&resource));
-            Assert::IsNull(resource.tracker_references);
+            ff_dx12_commands replacement{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &replacement));
+            ff_dx12_commands_resource_state(&replacement, &resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            ff_dx12_resource_tracker* replacement_tracker = &replacement.cache->resource_tracker;
+            Assert::AreEqual((size_t)1, ff_array_count(replacement_tracker->entries_a));
 
             ff_dx12_resource_destroy(&resource);
-            ff_dx12_resource_tracker_destroy(&first);
-            ff_dx12_resource_tracker_destroy(&second);
+            Assert::AreEqual((size_t)0, ff_array_count(replacement_tracker->entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(replacement_tracker->forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(direct_tracker->forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(copy_tracker->forgotten_entries_a));
+            Assert::AreEqual((size_t)1, ff_array_count(compute_tracker->forgotten_entries_a));
+
+            ff_dx12_commands* direct_commands[] = { &direct, &replacement };
+            ff_dx12_queue_execute_many(ff_dx12_direct_queue(), direct_commands, _countof(direct_commands));
+            ff_dx12_queue_execute(ff_dx12_copy_queue(), &copy);
+            ff_dx12_queue_execute(ff_dx12_compute_queue(), &compute);
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+
+            Assert::IsFalse(ff_dx12_resource_valid(&resource));
         }
 
         // Destroying a texture that a list referenced, then executing that list, then destroying

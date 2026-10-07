@@ -20,6 +20,7 @@ typedef struct ff_dx12_residency_data
     ff_dx12_fence_value resident_value;
     ff_dx12_fence_values keep_resident;
     uint32_t usage_counter;
+    uint64_t gather_generation;
 } ff_dx12_residency_data;
 
 // pageable is not ref-counted here; the owner (for example ff_dx12_heap) must keep it alive for

@@ -143,10 +143,8 @@ namespace ff::test::dx12
             Assert::AreEqual((size_t)1, ff_array_count(tracker.entries_a));
             Assert::AreEqual((size_t)1, ff_array_count(tracker.entries_a[0].first_barriers_a));
             Assert::IsTrue(tracker.entries_a[0].resource == &resource);
-            Assert::IsTrue(resource.tracker_references && resource.tracker_references->tracker == &tracker);
 
             ff_dx12_resource_tracker_reset(&tracker);
-            Assert::IsNull((void*)resource.tracker_references);
 
             ff_dx12_resource_tracker_destroy(&tracker);
             ff_dx12_resource_destroy(&resource);
@@ -356,7 +354,6 @@ namespace ff::test::dx12
 
                 ff_dx12_resource_tracker_reset(&tracker);
                 Assert::AreEqual((size_t)0, ff_array_count(tracker.entries_a));
-                Assert::IsNull((void*)resource.tracker_references);
             }
 
             ff_dx12_resource_tracker_destroy(&tracker);
@@ -548,7 +545,6 @@ namespace ff::test::dx12
                 forgotten[i] = true;
                 live--;
 
-                Assert::IsNull((void*)resources[i]->tracker_references, L"a forgotten resource must drop its tracker reference");
                 Assert::AreEqual(live, ff_array_count(tracker.entries_a));
 
                 for (size_t j = 0; j < count; j++)
@@ -628,6 +624,8 @@ namespace ff::test::dx12
 
             ff_dx12_resource_tracker_state(&first, &resource, D3D12_RESOURCE_STATE_RENDER_TARGET, 0, 0, 0, 0);
             ff_dx12_resource_tracker_state(&last, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&first, &resource);
+            ff_dx12_resource_tracker_forget(&last, &resource);
             ff_dx12_resource_destroy(&resource);
 
             tracker_barrier_recorder first_list;
@@ -673,6 +671,7 @@ namespace ff::test::dx12
             tracker_barrier_recorder recorder;
 
             ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&b, &resource);
             ff_dx12_resource_destroy(&resource);
             desc.Width *= 2;
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement buffer"), &desc, nullptr));
@@ -714,6 +713,7 @@ namespace ff::test::dx12
             tracker_barrier_recorder recorder;
 
             ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&b, &resource);
             ff_dx12_resource_destroy(&resource);
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement texture"), &desc, nullptr));
             Assert::IsTrue(resource.resource != old_resource);
@@ -750,6 +750,8 @@ namespace ff::test::dx12
             Assert::AreEqual((size_t)0, recorder.count);
 
             ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&a, &resource);
+            ff_dx12_resource_tracker_forget(&b, &resource);
             ff_dx12_resource_destroy(&resource);
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("replacement texture"), &desc, nullptr));
             Assert::IsTrue(resource.resource != old_resource);
@@ -783,6 +785,7 @@ namespace ff::test::dx12
             tracker_barrier_recorder recorder;
 
             ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&b, &resource);
             ff_dx12_resource_destroy(&resource);
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("earlier replacement"), &desc, nullptr));
             Assert::IsTrue(resource.resource != old_resource);

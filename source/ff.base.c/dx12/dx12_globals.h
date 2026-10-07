@@ -62,6 +62,7 @@ void ff_dx12_simulate_video_memory_budget(uint64_t budget, uint64_t current_usag
 ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena);
 
 typedef struct ff_dx12_queue ff_dx12_queue;
+typedef struct ff_dx12_resource ff_dx12_resource;
 typedef struct ff_dx12_mem_range ff_dx12_mem_range;
 typedef struct ff_dx12_residency_data ff_dx12_residency_data;
 typedef struct ff_dx12_fence_values ff_dx12_fence_values;
@@ -100,6 +101,9 @@ void ff_dx12_wait_for_idle(void);
 // Scrubs residency data out of every queue's command caches. Called when the data is destroyed
 // while command lists may still reference it, since the data lives inside the dying resource.
 void ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
+
+// Removes a destroyed resource from all active command-list trackers.
+void internal_ff_dx12_forget_resource(ff_dx12_resource* resource);
 
 // Frame lifecycle. frame_started drains the keep-alive list and refreshes the video memory
 // budget; frame_complete advances the frame counter.
