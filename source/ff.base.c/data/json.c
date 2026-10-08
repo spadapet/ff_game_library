@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <locale.h>
 #include "base/arena.h"
 #include "base/array.h"
 #include "base/assert.h"
@@ -38,10 +39,25 @@ typedef struct ff_json_tokenizer
     const char* end;
 } ff_json_tokenizer;
 
+static INIT_ONCE s_json_c_numeric_locale_once = INIT_ONCE_STATIC_INIT;
+static _locale_t s_json_c_numeric_locale;
+
 static void ff_json_tokenizer_init(ff_json_tokenizer* tokenizer, ff_string_view text);
 static ff_json_token ff_json_tokenizer_next(ff_json_tokenizer* tokenizer);
-static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena);
+static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena, _locale_t* numeric_locale);
 static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena* arena);
+
+static BOOL CALLBACK init_json_c_numeric_locale(PINIT_ONCE init_once, PVOID parameter, PVOID* context)
+{
+    s_json_c_numeric_locale = _create_locale(LC_NUMERIC, "C");
+    return s_json_c_numeric_locale != NULL;
+}
+
+static _locale_t json_c_numeric_locale(void)
+{
+    FF_CHECK_RET_VAL(InitOnceExecuteOnce(&s_json_c_numeric_locale_once, init_json_c_numeric_locale, NULL, NULL), NULL);
+    return s_json_c_numeric_locale;
+}
 
 static bool is_json_space(char ch)
 {
@@ -606,9 +622,9 @@ static ff_string_view json_string_text(ff_string_view text, bool escaped, ff_are
 
 // Integers are read directly so large 64 bit values keep every digit, which going through a double
 // would quietly round away.
-static ff_value json_number_value(ff_string_view text)
+static ff_value json_number_value(ff_string_view text, _locale_t* numeric_locale)
 {
-    FF_ASSERT_RET_VAL(text.count, ff_value_new_empty());
+    FF_ASSERT_RET_VAL(text.count && numeric_locale, ff_value_new_empty());
 
     size_t i = 0;
     bool negative = text.data[0] == '-';
@@ -650,15 +666,21 @@ static ff_value json_number_value(ff_string_view text)
         }
     }
 
-    // strtod needs a terminator, and the token is a slice of a larger text. Every number the
+    // _strtod_l needs a terminator, and the token is a slice of a larger text. Every number the
     // tokenizer accepts fits easily, and anything longer is pathological padding.
     char buffer[512];
     FF_CHECK_RET_VAL(text.count < sizeof(buffer), ff_value_new_empty());
     memcpy(buffer, text.data, text.count);
     buffer[text.count] = '\0';
 
+    if (!*numeric_locale)
+    {
+        *numeric_locale = json_c_numeric_locale();
+        FF_CHECK_RET_VAL(*numeric_locale, ff_value_new_empty());
+    }
+
     char* parse_end = NULL;
-    double value = strtod(buffer, &parse_end);
+    double value = _strtod_l(buffer, &parse_end, *numeric_locale);
     FF_CHECK_RET_VAL(parse_end == buffer + text.count, ff_value_new_empty());
 
     // Overflow to infinity is a rejection, not a result: JSON has no way to write infinity back
@@ -679,7 +701,7 @@ static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena*
     return json_string_text(token->text, token->escaped, arena);
 }
 
-static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
+static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena, _locale_t* numeric_locale)
 {
     FF_ASSERT_RET_VAL(token, ff_value_new_empty());
 
@@ -695,7 +717,7 @@ static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena)
             return ff_value_new_null();
 
         case ff_json_token_type_number:
-            return json_number_value(token->text);
+            return json_number_value(token->text, numeric_locale);
 
         case ff_json_token_type_string:
             {
@@ -724,6 +746,7 @@ typedef struct internal_ff_json_parser
 {
     ff_json_tokenizer tokenizer;
     ff_arena* arena;
+    _locale_t numeric_locale;
     const char* error_pos;
 } internal_ff_json_parser;
 
@@ -872,7 +895,7 @@ static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* to
         return parse_array(parser, result);
     }
 
-    *result = ff_json_token_value(token, parser->arena);
+    *result = ff_json_token_value(token, parser->arena, &parser->numeric_locale);
 
     if (result->type == ff_value_type_empty)
     {

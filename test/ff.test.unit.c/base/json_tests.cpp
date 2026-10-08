@@ -1,7 +1,70 @@
 #include "pch.h"
+#include <locale.h>
 
 namespace ff::test::data_persist
 {
+    struct scoped_comma_numeric_locale
+    {
+        int previous_thread_mode;
+        char previous_locale[128];
+        bool locale_saved;
+        bool active;
+
+        scoped_comma_numeric_locale()
+            : previous_thread_mode(_configthreadlocale(_ENABLE_PER_THREAD_LOCALE))
+            , previous_locale{}
+            , locale_saved(false)
+            , active(false)
+        {
+            if (this->previous_thread_mode == -1)
+            {
+                return;
+            }
+
+            const char* current_locale = setlocale(LC_NUMERIC, nullptr);
+            if (!current_locale || strcpy_s(this->previous_locale, current_locale))
+            {
+                return;
+            }
+
+            this->locale_saved = true;
+
+            const char* candidates[] =
+            {
+                "de-DE",
+                "fr-FR",
+                "German_Germany.1252",
+                "French_France.1252",
+            };
+
+            for (const char* candidate : candidates)
+            {
+                if (setlocale(LC_NUMERIC, candidate))
+                {
+                    const struct lconv* info = localeconv();
+                    if (info && info->decimal_point[0] == ',')
+                    {
+                        this->active = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        ~scoped_comma_numeric_locale()
+        {
+            if (this->locale_saved)
+            {
+                setlocale(LC_NUMERIC, this->previous_locale);
+            }
+
+            if (this->previous_thread_mode != -1)
+            {
+                _configthreadlocale(this->previous_thread_mode);
+            }
+        }
+    };
+
     TEST_CLASS(json_tests)
     {
     public:
@@ -119,6 +182,29 @@ namespace ff::test::data_persist
             Assert::IsTrue(value_fails("1.", &arena));
             Assert::IsTrue(value_fails("1e", &arena));
             Assert::IsTrue(value_fails("1e+", &arena));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(decimal_and_exponent_numbers_ignore_numeric_locale)
+        {
+            scoped_comma_numeric_locale locale;
+            Assert::IsTrue(locale.active, L"No comma-decimal CRT locale is available");
+
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_value value{};
+            Assert::IsTrue(parse_value("1.5", &arena, &value));
+            Assert::AreEqual((int)ff_value_type_float64, (int)value.type);
+            Assert::AreEqual(1.5, value.f64);
+
+            Assert::IsTrue(parse_value("-1.25e+2", &arena, &value));
+            Assert::AreEqual(-125.0, value.f64);
+
+            Assert::IsTrue(parse_value("9007199254740993", &arena, &value));
+            Assert::AreEqual((int)ff_value_type_int64, (int)value.type);
+            Assert::AreEqual(INT64_C(9007199254740993), value.i64);
 
             ff_arena_destroy(&arena);
         }

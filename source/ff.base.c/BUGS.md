@@ -49,8 +49,8 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-018 | P2 | Open | String-builder insertion corrupts aliased source text |
 | FFC-019 | P2 | Fixed | Dictionary producers and consumers disagree on depth limits |
 | FFC-020 | P2 | Fixed | Log sink configuration changes deadlock inside callbacks |
-| FFC-021 | P2 | Open | JSON decimal parsing depends on the numeric locale |
-| FFC-022 | P2 | Open | Empty rectangles report intersections |
+| FFC-021 | P2 | Fixed | JSON decimal parsing depends on the numeric locale |
+| FFC-022 | P2 | Not a bug | Degenerate rectangles can intersect |
 | FFC-023 | P2 | Open | Queued fullscreen requests discard the final desired state |
 | FFC-024 | P2 | Open | Window placement mixes workspace and screen coordinates |
 | FFC-025 | P2 | Open | Message-window class registration races across threads |
@@ -336,7 +336,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-016: Embedding immutable dictionaries breaks payload alignment
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
 **Location:** `data\idict.c:318-324`, immutable-child conversion in `build_idict_convert_value`; alignment rejection at `data\idict.c:647-656`.
 
@@ -424,33 +424,31 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
-**Location:** `data\json.c:654-656`, numeric conversion through `strtod`.
+**Location:** `data\json.c`, `json_number_value` and the cached C numeric locale.
 
-**Cause:** JSON tokenization correctly requires a period as the decimal separator, but conversion uses the host's numeric locale. The complete-consumption guard then rejects a period that the active locale does not recognize.
+**Cause:** JSON tokenization correctly requires a period as the decimal separator, but conversion through `strtod` uses the active CRT numeric locale. The complete-consumption guard then rejects a period that a comma-decimal locale does not recognize.
 
 **Trigger:** Successfully select a comma-decimal `LC_NUMERIC` locale and parse `{"x":1.5}`.
 
 **Impact:** Valid JSON is rejected depending on unrelated application locale configuration. Integer-only inputs can mask the problem.
 
-**Fix direction:** Use invariant C-locale numeric conversion without changing the process-wide locale as a workaround. Preserve the existing integer precision and overflow handling.
+**Resolution:** Floating-point tokens use `_strtod_l` with a C numeric locale created once through `InitOnceExecuteOnce`. Each parser caches the locale after its first floating-point token, so integer-only parses do not initialize or query it and later floating-point tokens avoid repeated one-time initialization checks. The process locale is never changed. Integer parsing, complete-token validation, overflow rejection, and underflow behavior are preserved.
 
-**Regression scenario:** Parse decimal and exponent forms under C and available comma-decimal locales, restoring locale state afterward and avoiding interference with concurrent cases.
+**Regression coverage:** `json_tests::decimal_and_exponent_numbers_ignore_numeric_locale` parses decimal and exponent values while the current thread uses an available comma-decimal CRT locale, and checks that large integers retain exact `int64` values. JSON tests pass in Debug/x64 and Release/x64.
 
-### FFC-022: Empty rectangles report intersections
+### FFC-022: Degenerate rectangles can intersect
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Not a bug. **Evidence:** Disproved. **Origin:** Inherited.
 
 **Location:** `base\rect.h:150-153`, `ff_rect_float_intersects`; empty definition at `base\rect.h:135-138`.
 
-**Cause:** The overlap comparison does not first exclude empty operands. A zero-width or zero-height rectangle inside another rectangle can satisfy all four strict boundary comparisons.
+**Finding:** Intersection operates on rectangle geometry, including degenerate lines and points. A horizontal and vertical degenerate rectangle can intersect at a point; a degenerate rectangle can also intersect a positive-area rectangle. This matches the legacy `ff::rect_t::intersects` implementation.
 
-**Trigger:** Intersect `(0, 0, 10, 10)` with `(5, 5, 5, 6)`. The second rectangle is empty under `ff_rect_float_empty`, but `ff_rect_float_intersects` returns true. Enclosed inverted bounds can produce the same inconsistency.
+**Contract evidence:** Legacy `ff::rect_t::empty` returns true only when both dimensions are zero. Its strict overlap test returns true for crossing horizontal/vertical degenerate rectangles and for a point inside a positive-area rectangle. The C `ff_rect_float_intersects` uses the same comparisons. C `empty` semantics have been aligned with the legacy implementation.
 
-**Impact:** Clipping or collision decisions based on the boolean helper disagree with the library's empty/intersection semantics.
+**Resolution:** No intersection bug. Disjoint intersection results return the zero rectangle as in the legacy implementation. Deflating past the center returns zero rather than reflecting the rectangle into a smaller nonempty rectangle.
 
-**Fix direction:** Reject empty operands before evaluating overlap, preserving the existing edge-touching behavior for nonempty rectangles.
-
-**Regression scenario:** Cover zero width, zero height, inverted bounds, touching edges, and ordinary overlap in both operand orders.
+**Regression coverage:** `math_types_tests::degenerate_rectangles_intersect_by_shared_geometry`, `touching_rects_do_not_intersect`, and `deflate_past_center_produces_empty` cover degenerate intersections, edge contact, and overshrink behavior.
 
 ## Window behavior
 

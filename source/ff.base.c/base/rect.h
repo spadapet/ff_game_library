@@ -137,12 +137,12 @@ static inline float ff_rect_float_area(ff_rect_float value)
 
 static inline bool ff_rect_float_empty(ff_rect_float value)
 {
-    return value.left >= value.right || value.top >= value.bottom;
+    return value.right == value.left && value.bottom == value.top;
 }
 
 static inline bool ff_rect_int_empty(ff_rect_int value)
 {
-    return value.left >= value.right || value.top >= value.bottom;
+    return value.right == value.left && value.bottom == value.top;
 }
 
 static inline bool ff_rect_float_contains(ff_rect_float value, ff_point_float point)
@@ -155,14 +155,21 @@ static inline bool ff_rect_float_intersects(ff_rect_float l, ff_rect_float r)
     return l.left < r.right && l.right > r.left && l.top < r.bottom && l.bottom > r.top;
 }
 
-// Empty when the inputs don't overlap, since the clamped edges can cross.
+// Returns zero when the inputs are disjoint; edge-touching inputs retain their degenerate intersection.
 static inline ff_rect_float ff_rect_float_intersection(ff_rect_float l, ff_rect_float r)
 {
-    return ff_rect_float_make(
+    ff_rect_float intersection = ff_rect_float_make(
         ff_math_max_float(l.left, r.left),
         ff_math_max_float(l.top, r.top),
         ff_math_min_float(l.right, r.right),
         ff_math_min_float(l.bottom, r.bottom));
+
+    if (intersection.left > intersection.right || intersection.top > intersection.bottom)
+    {
+        return ff_rect_float_zero();
+    }
+
+    return intersection;
 }
 
 static inline ff_rect_float ff_rect_float_boundary(ff_rect_float l, ff_rect_float r)
@@ -195,12 +202,21 @@ static inline ff_rect_float ff_rect_float_move_top_left(ff_rect_float value, ff_
 
 static inline ff_rect_float ff_rect_float_inflate(ff_rect_float value, float x, float y)
 {
-    return ff_rect_float_make(value.left - x, value.top - y, value.right + x, value.bottom + y);
+    return ff_rect_float_normalize(ff_rect_float_make(
+        value.left - x, value.top - y, value.right + x, value.bottom + y));
 }
 
 static inline ff_rect_float ff_rect_float_deflate(ff_rect_float value, float x, float y)
 {
-    return ff_rect_float_inflate(value, -x, -y);
+    ff_rect_float deflated = ff_rect_float_make(
+        value.left + x, value.top + y, value.right - x, value.bottom - y);
+
+    if (deflated.left > deflated.right || deflated.top > deflated.bottom)
+    {
+        return ff_rect_float_zero();
+    }
+
+    return ff_rect_float_normalize(deflated);
 }
 
 static inline ff_rect_float ff_rect_float_scale(ff_rect_float value, ff_point_float scale)

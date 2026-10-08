@@ -187,9 +187,9 @@ namespace ff::test::base
         TEST_METHOD(empty)
         {
             Assert::IsFalse(ff_rect_float_empty(ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f)));
-            Assert::IsTrue(ff_rect_float_empty(ff_rect_float_make(0.0f, 0.0f, 0.0f, 1.0f)));
-            Assert::IsTrue(ff_rect_float_empty(ff_rect_float_make(0.0f, 0.0f, 1.0f, 0.0f)));
-            Assert::IsTrue(ff_rect_float_empty(ff_rect_float_make(2.0f, 0.0f, 1.0f, 1.0f)));
+            Assert::IsFalse(ff_rect_float_empty(ff_rect_float_make(0.0f, 0.0f, 0.0f, 1.0f)));
+            Assert::IsFalse(ff_rect_float_empty(ff_rect_float_make(0.0f, 0.0f, 1.0f, 0.0f)));
+            Assert::IsFalse(ff_rect_float_empty(ff_rect_float_make(2.0f, 0.0f, 1.0f, 1.0f)));
             Assert::IsTrue(ff_rect_float_empty(ff_rect_float_zero()));
         }
 
@@ -220,6 +220,27 @@ namespace ff::test::base
             ff_rect_float a = ff_rect_float_make(0.0f, 0.0f, 10.0f, 10.0f);
             ff_rect_float b = ff_rect_float_make(10.0f, 0.0f, 20.0f, 10.0f);
             Assert::IsFalse(ff_rect_float_intersects(a, b));
+            Assert::IsTrue(ff_rect_float_equal(ff_rect_float_intersection(a, b),
+                ff_rect_float_make(10.0f, 0.0f, 10.0f, 10.0f)));
+            Assert::IsFalse(ff_rect_float_empty(ff_rect_float_intersection(a, b)));
+        }
+
+        TEST_METHOD(degenerate_rectangles_intersect_by_shared_geometry)
+        {
+            ff_rect_float vertical = ff_rect_float_make(5.0f, 0.0f, 5.0f, 10.0f);
+            ff_rect_float horizontal = ff_rect_float_make(0.0f, 5.0f, 10.0f, 5.0f);
+            ff_rect_float point = ff_rect_float_make(5.0f, 5.0f, 5.0f, 5.0f);
+            ff_rect_float area = ff_rect_float_make(0.0f, 0.0f, 10.0f, 10.0f);
+
+            Assert::IsFalse(ff_rect_float_empty(vertical));
+            Assert::IsFalse(ff_rect_float_empty(horizontal));
+            Assert::IsTrue(ff_rect_float_intersects(vertical, horizontal));
+            Assert::IsTrue(ff_rect_float_equal(ff_rect_float_intersection(vertical, horizontal),
+                ff_rect_float_make(5.0f, 5.0f, 5.0f, 5.0f)));
+            Assert::IsTrue(ff_rect_float_empty(ff_rect_float_intersection(vertical, horizontal)));
+            Assert::IsTrue(ff_rect_float_empty(point));
+            Assert::IsTrue(ff_rect_float_intersects(point, area));
+            Assert::IsTrue(ff_rect_float_equal(ff_rect_float_intersection(point, area), point));
         }
 
         TEST_METHOD(boundary)
@@ -264,6 +285,8 @@ namespace ff::test::base
             Assert::AreEqual(6, ff_rect_int_height(r));
             Assert::IsTrue(ff_rect_int_equal(r, ff_rect_int_make(1, 2, 5, 8)));
             Assert::IsTrue(ff_rect_int_empty(ff_rect_int_zero()));
+            Assert::IsFalse(ff_rect_int_empty(ff_rect_int_make(1, 2, 1, 8)));
+            Assert::IsFalse(ff_rect_int_empty(ff_rect_int_make(1, 2, 5, 2)));
             Assert::IsTrue(ff_rect_float_equal(ff_rect_int_to_float(r), ff_rect_float_make(1.0f, 2.0f, 5.0f, 8.0f)));
             Assert::IsTrue(ff_rect_float_equal(ff_rect_size_to_float(ff_rect_size_make(1, 2, 5, 8)), ff_rect_float_make(1.0f, 2.0f, 5.0f, 8.0f)));
             Assert::IsTrue(ff_rect_int_equal(ff_rect_float_to_int(ff_rect_float_make(1.9f, 2.9f, 5.9f, 8.9f)), ff_rect_int_make(1, 2, 5, 8)));
@@ -279,7 +302,7 @@ namespace ff::test::base
 
             ff_rect_float inverted = ff_rect_float_make(5.0f, 2.0f, 1.0f, 8.0f);
             Assert::AreEqual(-4.0f, ff_rect_float_width(inverted));
-            Assert::IsTrue(ff_rect_float_empty(inverted));
+            Assert::IsFalse(ff_rect_float_empty(inverted));
         }
 
         TEST_METHOD(normalize_is_idempotent_and_preserves_normal_rects)
@@ -289,6 +312,9 @@ namespace ff::test::base
 
             ff_rect_float once = ff_rect_float_normalize(ff_rect_float_make(10.0f, 8.0f, 2.0f, 1.0f));
             Assert::IsTrue(ff_rect_float_equal(ff_rect_float_normalize(once), once));
+            Assert::IsTrue(ff_rect_float_equal(
+                ff_rect_float_inflate(ff_rect_float_make(5.0f, 8.0f, 1.0f, 2.0f), 1.0f, 1.0f),
+                ff_rect_float_make(2.0f, 3.0f, 4.0f, 7.0f)));
         }
 
         TEST_METHOD(intersection_of_identical_rects_is_itself)
@@ -332,6 +358,8 @@ namespace ff::test::base
         TEST_METHOD(deflate_past_center_produces_empty)
         {
             ff_rect_float r = ff_rect_float_make(0.0f, 0.0f, 4.0f, 4.0f);
+            Assert::IsTrue(ff_rect_float_equal(ff_rect_float_deflate(r, 3.0f, 3.0f),
+                ff_rect_float_zero()));
             Assert::IsTrue(ff_rect_float_empty(ff_rect_float_deflate(r, 3.0f, 3.0f)));
         }
 
