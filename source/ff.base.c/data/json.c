@@ -1,5 +1,4 @@
 #include "pch.h"
-#include <locale.h>
 #include "base/arena.h"
 #include "base/array.h"
 #include "base/assert.h"

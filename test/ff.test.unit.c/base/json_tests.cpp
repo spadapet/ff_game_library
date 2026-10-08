@@ -1,5 +1,4 @@
 #include "pch.h"
-#include <locale.h>
 
 namespace ff::test::data_persist
 {

@@ -84,6 +84,35 @@ static bool needs_transition(D3D12_RESOURCE_STATES state_before, D3D12_RESOURCE_
         : ((state_before & state_after) != state_after);
 }
 
+static bool resource_states_all_same_effectively(ff_dx12_resource_state* states, ff_dx12_resource_state* fallback_state)
+{
+    FF_ASSERT_RET_VAL(states, false);
+
+    if (ff_dx12_resource_state_all_same(states))
+    {
+        ff_dx12_resource_state_entry entry = ff_dx12_resource_state_get(states, 0, NULL);
+        if (entry.type != ff_dx12_resource_state_type_none || !fallback_state)
+        {
+            return true;
+        }
+
+        return ff_dx12_resource_state_all_same(fallback_state);
+    }
+
+    size_t count = ff_dx12_resource_state_sub_resource_size(states);
+    ff_dx12_resource_state_entry first = ff_dx12_resource_state_get(states, 0, fallback_state);
+    for (size_t i = 1; i < count; i++)
+    {
+        ff_dx12_resource_state_entry entry = ff_dx12_resource_state_get(states, i, fallback_state);
+        if (entry.state != first.state || entry.type != first.type)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static D3D12_RESOURCE_BARRIER transition_barrier(ID3D12Resource* dx12_res,
     D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, UINT sub_resource)
 {
@@ -523,9 +552,8 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
             size_t first_sub_resource = all ? 0 : (size_t)barrier->Transition.Subresource;
             size_t sub_count = all ? ff_dx12_resource_state_sub_resource_size(&entry->state) : 1;
 
-            all = all && (prev_entry
-                ? ff_dx12_resource_state_all_same(&prev_entry->state)
-                : ff_dx12_resource_state_all_same(global_state));
+            ff_dx12_resource_state* previous_state = prev_entry ? &prev_entry->state : global_state;
+            all = all && resource_states_all_same_effectively(previous_state, prev_entry ? global_state : NULL);
 
             size_t step = all ? sub_count : 1;
 
@@ -591,11 +619,11 @@ void ff_dx12_resource_tracker_close(ff_dx12_resource_tracker* tracker, ID3D12Gra
             size_t first_sub_resource = all ? 0 : (size_t)barrier->Transition.Subresource;
             size_t sub_count = all ? ff_dx12_resource_state_sub_resource_size(&forgotten->state) : 1;
 
-            all = all && (prev_entry
-                ? ff_dx12_resource_state_all_same(&prev_entry->state)
-                : (prev_forgotten
-                    ? ff_dx12_resource_state_all_same(&prev_forgotten->state)
-                    : ff_dx12_resource_state_all_same(global_state)));
+            ff_dx12_resource_state* previous_state = prev_entry
+                ? &prev_entry->state
+                : (prev_forgotten ? &prev_forgotten->state : global_state);
+            ff_dx12_resource_state* previous_fallback = (prev_entry || prev_forgotten) ? global_state : NULL;
+            all = all && resource_states_all_same_effectively(previous_state, previous_fallback);
 
             size_t step = all ? sub_count : 1;
 

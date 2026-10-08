@@ -556,6 +556,40 @@ namespace ff::test::dx12
             Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_DEPTH_WRITE, command_list_before.barriers[0].Transition.StateAfter);
         }
 
+        TEST_METHOD(resource_tracker_splits_all_subresources_against_divergent_global_fallback)
+        {
+            ff::dx12::resource texture("", CD3DX12_RESOURCE_DESC::Tex2D(
+                DXGI_FORMAT_R8G8B8A8_UNORM, 64, 64, 1, 2));
+            texture.global_state().set(D3D12_RESOURCE_STATE_COPY_DEST,
+                ff::dx12::resource_state::type_t::global, 0, 1);
+            texture.global_state().set(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                ff::dx12::resource_state::type_t::global, 1, 1);
+
+            ff::dx12::resource_tracker trackers[2];
+            trackers[0].state(texture, D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            trackers[1].state(texture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+            ::test_command_list lists[2]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+            ::test_command_list before_lists[2]{ D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_TYPE_DIRECT };
+            trackers[0].flush(&lists[0]);
+            trackers[1].flush(&lists[1]);
+            trackers[0].close(&before_lists[0], nullptr, &trackers[1]);
+            trackers[1].close(&before_lists[1], &trackers[0], nullptr);
+
+            Assert::AreEqual<size_t>(2, before_lists[1].barriers.size());
+            for (const D3D12_RESOURCE_BARRIER& barrier : before_lists[1].barriers)
+            {
+                Assert::AreEqual<UINT>(D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, barrier.Type);
+            }
+
+            Assert::AreEqual<UINT>(0, before_lists[1].barriers[0].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_DEST, before_lists[1].barriers[0].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_SOURCE, before_lists[1].barriers[0].Transition.StateAfter);
+            Assert::AreEqual<UINT>(1, before_lists[1].barriers[1].Transition.Subresource);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, before_lists[1].barriers[1].Transition.StateBefore);
+            Assert::AreEqual<UINT>(D3D12_RESOURCE_STATE_COPY_SOURCE, before_lists[1].barriers[1].Transition.StateAfter);
+        }
+
         TEST_METHOD(resource_tracker_multi_list_promote)
         {
             ff::dx12::resource res[3]

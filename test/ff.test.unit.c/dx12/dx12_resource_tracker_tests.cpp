@@ -97,14 +97,20 @@ namespace ff::test::dx12
 #undef TRACKER_UNEXPECTED_COMMAND
     };
 
-    static void assert_tracker_barrier(const D3D12_RESOURCE_BARRIER& barrier, ID3D12Resource* resource,
-        D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+    static void assert_tracker_subresource_barrier(const D3D12_RESOURCE_BARRIER& barrier, ID3D12Resource* resource,
+        D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, UINT subresource)
     {
         Assert::AreEqual((int)D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, (int)barrier.Type);
         Assert::IsTrue(barrier.Transition.pResource == resource);
         Assert::AreEqual((int)before, (int)barrier.Transition.StateBefore);
         Assert::AreEqual((int)after, (int)barrier.Transition.StateAfter);
-        Assert::AreEqual((UINT)D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, barrier.Transition.Subresource);
+        Assert::AreEqual(subresource, barrier.Transition.Subresource);
+    }
+
+    static void assert_tracker_barrier(const D3D12_RESOURCE_BARRIER& barrier, ID3D12Resource* resource,
+        D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+    {
+        assert_tracker_subresource_barrier(barrier, resource, before, after, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
     }
 
     TEST_CLASS(dx12_resource_tracker_tests)
@@ -498,6 +504,91 @@ namespace ff::test::dx12
             }
 
             ff_dx12_resource_destroy(&resource);
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+        }
+
+        TEST_METHOD(all_subresources_barrier_splits_against_divergent_global_fallback)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc(1, 2);
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("divergent fallback"), &desc, nullptr));
+            ID3D12Resource* resource_identity = resource.resource;
+            ff_dx12_resource_state* global = ff_dx12_resource_global_state(&resource);
+            ff_dx12_resource_state_set(global, D3D12_RESOURCE_STATE_COPY_DEST,
+                ff_dx12_resource_state_type_global, 0, 1);
+            ff_dx12_resource_state_set(global, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                ff_dx12_resource_state_type_global, 1, 1);
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder a_list;
+            tracker_barrier_recorder b_list;
+
+            ff_dx12_resource_tracker_state(&a, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 0, 0, 0);
+
+            ff_dx12_resource_tracker_close(&a, &a_list, nullptr, &b);
+            ff_dx12_resource_tracker_close(&b, &b_list, &a, nullptr);
+
+            Assert::AreEqual((size_t)0, a_list.count);
+            Assert::AreEqual((size_t)2, b_list.count);
+            assert_tracker_subresource_barrier(b_list.barriers[0], resource_identity,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE, 0);
+            assert_tracker_subresource_barrier(b_list.barriers[1], resource_identity,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE, 1);
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_wait_for_idle();
+            ff_dx12_flush_keep_alive();
+        }
+
+        TEST_METHOD(forgotten_all_subresources_barrier_splits_against_divergent_fallback)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            D3D12_RESOURCE_DESC desc = tracker_texture_desc(1, 2);
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("forgotten divergent fallback"),
+                &desc, nullptr));
+            ID3D12Resource* resource_identity = resource.resource;
+            ff_dx12_resource_state* global = ff_dx12_resource_global_state(&resource);
+            ff_dx12_resource_state_set(global, D3D12_RESOURCE_STATE_COPY_DEST,
+                ff_dx12_resource_state_type_global, 0, 1);
+            ff_dx12_resource_state_set(global, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                ff_dx12_resource_state_type_global, 1, 1);
+
+            ff_dx12_resource_tracker a{};
+            ff_dx12_resource_tracker b{};
+            ff_dx12_resource_tracker_init(&a);
+            ff_dx12_resource_tracker_init(&b);
+            tracker_barrier_recorder a_list;
+            tracker_barrier_recorder b_list;
+
+            ff_dx12_resource_tracker_state(&a, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            ff_dx12_resource_tracker_forget(&a, &resource);
+            ff_dx12_resource_tracker_state(&b, &resource, D3D12_RESOURCE_STATE_COPY_SOURCE, 0, 0, 0, 0);
+            ff_dx12_resource_tracker_forget(&b, &resource);
+            ff_dx12_resource_destroy(&resource);
+
+            ff_dx12_resource_tracker_close(&a, &a_list, nullptr, &b);
+            ff_dx12_resource_tracker_close(&b, &b_list, &a, nullptr);
+
+            Assert::AreEqual((size_t)0, a_list.count);
+            Assert::AreEqual((size_t)2, b_list.count);
+            assert_tracker_subresource_barrier(b_list.barriers[0], resource_identity,
+                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE, 0);
+            assert_tracker_subresource_barrier(b_list.barriers[1], resource_identity,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE, 1);
+
+            ff_dx12_resource_tracker_destroy(&b);
+            ff_dx12_resource_tracker_destroy(&a);
             ff_dx12_wait_for_idle();
             ff_dx12_flush_keep_alive();
         }

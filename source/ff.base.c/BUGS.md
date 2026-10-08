@@ -31,7 +31,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | --- | --- | --- | --- |
 | FFC-001 | P1 | Fixed | Only the first reader waits for the preceding GPU writer |
 | FFC-002 | P1 | Fixed | Multiple open trackers retain destroyed resource wrappers |
-| FFC-003 | P2 | Open | Whole-resource barriers ignore divergent fallback states |
+| FFC-003 | P2 | Fixed | Whole-resource barriers ignore divergent fallback states |
 | FFC-004 | P2 | Open | Caller-created allocators are omitted from device recovery |
 | FFC-005 | P2 | Open | Ring metadata exhaustion causes exponential heap growth |
 | FFC-006 | P2 | Open | Allocator pruning retains the oldest, smallest heap |
@@ -104,9 +104,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-003: Whole-resource barriers ignore divergent fallback states
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in the C and legacy C++ trackers. **Origin:** Inherited.
 
-**Location:** `dx12\dx12_resource_tracker.c:488-498`, `ff_dx12_resource_tracker_close`; `dx12\dx12_resource_state.c:204-216`, `ff_dx12_resource_state_get`.
+**Location:** `dx12\dx12_resource_tracker.c:87-111,550-555,617-625`; `dx12\dx12_resource_state.c:204-216`; legacy `source\ff.application\graphics\dx12\resource_tracker.cpp:97-120,151-160`.
 
 **Cause:** Whole-resource barrier resolution checks whether the previous tracker's stored entries are uniform. Uniform `none` entries mean "inherit global state", not "the effective states are uniform". The inherited global states can differ between subresources.
 
@@ -118,7 +118,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Regression scenario:** Exercise the sequence above and inspect emitted barrier before-states, not just the wrapper's final state. Final bookkeeping can look correct even when the emitted transition is invalid.
 
-**Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\resource_tracker.cpp:126-135` makes the same previous-state uniformity decision.
+**Resolution:** Both trackers now test effective per-subresource states, including fallback state and promotion type, before keeping a whole-resource barrier. The C tracker applies the same resolution to forgotten entries and their saved global-state fallback.
+
+**Regression coverage:** `dx12_resource_tracker_tests::all_subresources_barrier_splits_against_divergent_global_fallback`, `dx12_resource_tracker_tests::forgotten_all_subresources_barrier_splits_against_divergent_fallback`, and `resource_tracker_tests::resource_tracker_splits_all_subresources_against_divergent_global_fallback` inspect the emitted barriers and each subresource's before-state.
 
 ### FFC-004: Caller-created allocators are omitted from device recovery
 

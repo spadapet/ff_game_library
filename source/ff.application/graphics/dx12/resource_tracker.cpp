@@ -94,6 +94,32 @@ constexpr bool needs_transition(D3D12_RESOURCE_STATES state_before, D3D12_RESOUR
         : ((state_before & state_after) != state_after);
 }
 
+static bool all_same_effective_state(ff::dx12::resource_state& state, ff::dx12::resource_state* fallback_state)
+{
+    if (state.all_same())
+    {
+        ff::dx12::resource_state::state_t entry = state.get(0);
+        if (entry.second != ff::dx12::resource_state::type_t::none || !fallback_state)
+        {
+            return true;
+        }
+
+        return fallback_state->all_same();
+    }
+
+    const size_t count = state.sub_resource_size();
+    ff::dx12::resource_state::state_t first = state.get(0, fallback_state);
+    for (size_t i = 1; i < count; ++i)
+    {
+        if (state.get(i, fallback_state) != first)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 ff::dx12::resource_tracker::resource_t::resource_t(size_t array_size, size_t mip_size)
     : state(D3D12_RESOURCE_STATE_COMMON, ff::dx12::resource_state::type_t::none, array_size, mip_size)
 {
@@ -126,7 +152,13 @@ void ff::dx12::resource_tracker::close(ID3D12GraphicsCommandList* prev_list, res
             bool all = (barrier.Transition.Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
             size_t first_sub_resource = !all ? static_cast<size_t>(barrier.Transition.Subresource) : 0;
             size_t count = all ? resource->sub_resource_size() : 1;
-            all = all && ((prev_i != prev_resources.end()) ? prev_i->second.state.all_same() : resource->global_state().all_same());
+            ff::dx12::resource_state* previous_state = (prev_i != prev_resources.end())
+                ? &prev_i->second.state
+                : &resource->global_state();
+            ff::dx12::resource_state* previous_fallback = (prev_i != prev_resources.end())
+                ? &resource->global_state()
+                : nullptr;
+            all = all && ::all_same_effective_state(*previous_state, previous_fallback);
 
             for (size_t i = first_sub_resource, ai = all ? count : 1; i < first_sub_resource + count; i += ai)
             {
