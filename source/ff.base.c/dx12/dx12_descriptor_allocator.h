@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../base/arena.h"
+#include "dx12_device_child.h"
 #include "dx12_descriptor_range.h"
 #include "dx12_fence.h"
 
@@ -93,6 +94,7 @@ ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_ring(ff_dx12_descriptor
 typedef struct ff_dx12_cpu_descriptor_allocator
 {
     ff_arena arena;
+    ff_dx12_device_child device_child;
     ff_dx12_descriptor_buffer* buckets;
     D3D12_DESCRIPTOR_HEAP_TYPE type;
     size_t bucket_size;
@@ -106,6 +108,7 @@ ff_dx12_descriptor_range ff_dx12_cpu_descriptor_allocator_alloc(ff_dx12_cpu_desc
 typedef struct ff_dx12_gpu_descriptor_allocator
 {
     ff_arena arena;
+    ff_dx12_device_child device_child;
     ID3D12DescriptorHeap* descriptor_heap;
     D3D12_DESCRIPTOR_HEAP_TYPE type;
     ff_dx12_descriptor_buffer pinned;

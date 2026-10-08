@@ -10,12 +10,13 @@
 // that owners come before the things they own means a resource frees its descriptor and memory
 // ranges before the allocators holding them are touched.
 //
-// Globally-owned singletons (queues, the six mem allocators, the CPU/GPU descriptor allocators,
-// residency) are not in this registry. dx12_reset.c drives them directly, in a fixed order it
-// already knows, because they are created lazily by dx12_globals.c and there is exactly one of
-// each. Only objects the caller can create an unbounded number of need to be tracked here.
+// Shared singletons and caller-created owners use the same reset walk. dx12_globals.c still owns
+// lazy construction and shutdown for the shared instances.
 typedef enum ff_dx12_device_child_type
 {
+    ff_dx12_device_child_type_mem_allocator,
+    ff_dx12_device_child_type_cpu_descriptor_allocator,
+    ff_dx12_device_child_type_gpu_descriptor_allocator,
     ff_dx12_device_child_type_resource,
     ff_dx12_device_child_type_buffer,
     ff_dx12_device_child_type_texture,
@@ -27,6 +28,7 @@ typedef enum ff_dx12_device_child_type
     ff_dx12_device_child_type_draw_state,
     ff_dx12_device_child_type_palette_data,
     ff_dx12_device_child_type_draw_device,
+    ff_dx12_device_child_type_queue,
     ff_dx12_device_child_type_count,
 } ff_dx12_device_child_type;
 

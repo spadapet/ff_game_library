@@ -315,6 +315,33 @@ static void command_cache_destroy(ff_dx12_command_cache* cache)
     }
 }
 
+static bool queue_create_device_objects(ff_dx12_queue* queue)
+{
+    ff_arena_declare_stack(name_arena, 256);
+    ff_string_view queue_name = ff_wide_to_utf8(ff_wz_view(queue->name), &name_arena, true);
+    char idle_name_buffer[128];
+    _snprintf_s(idle_name_buffer, _countof(idle_name_buffer), _TRUNCATE, "%.*s idle fence", FF_SV_FORMAT(queue_name));
+    bool fence_ok = ff_dx12_fence_init(&queue->idle_fence, ff_sz_view(idle_name_buffer), 0);
+    ff_arena_destroy(&name_arena);
+
+    if (!fence_ok)
+    {
+        return false;
+    }
+
+    const D3D12_COMMAND_QUEUE_DESC desc = { .Type = queue->type };
+    if (FAILED(ID3D12Device6_CreateCommandQueue(ff_dx12_device(), &desc,
+        &IID_ID3D12CommandQueue, (void**)&queue->command_queue)))
+    {
+        ff_dx12_fence_destroy(&queue->idle_fence);
+        FF_DEBUG_FAIL_MSG_RET_VAL("failed to create command queue", false);
+    }
+
+    ID3D12CommandQueue_SetName(queue->command_queue, queue->name);
+    ff_dx12_fence_set_owner_queue(&queue->idle_fence, queue->command_queue);
+    return true;
+}
+
 static bool command_cache_try_reset_lists(ff_dx12_queue* queue, ff_dx12_command_cache* cache)
 {
     FF_CHECK_RET_VAL(cache && cache->needs_reset, false);
@@ -411,32 +438,18 @@ bool ff_dx12_queue_init(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND
     wcsncpy_s(queue->name, _countof(queue->name), wide_name.data, _TRUNCATE);
     ff_arena_destroy(&name_arena);
 
-    char idle_name_buffer[128];
-    _snprintf_s(idle_name_buffer, _countof(idle_name_buffer), _TRUNCATE, "%.*s idle fence", FF_SV_FORMAT(name));
-    bool fence_ok = ff_dx12_fence_init(&queue->idle_fence, ff_sz_view(idle_name_buffer), 0);
-    if (!fence_ok)
+    if (!queue_create_device_objects(queue))
     {
         ff_dx12_queue_destroy(queue);
         return false;
     }
 
-    const D3D12_COMMAND_QUEUE_DESC desc = { .Type = type };
-    if (FAILED(ID3D12Device6_CreateCommandQueue(ff_dx12_device(), &desc, &IID_ID3D12CommandQueue, (void**)&queue->command_queue)))
-    {
-        ff_dx12_queue_destroy(queue);
-        FF_DEBUG_FAIL_RET_VAL(false);
-    }
-
-    ID3D12CommandQueue_SetName(queue->command_queue, queue->name);
-    ff_dx12_fence_set_owner_queue(&queue->idle_fence, queue->command_queue);
-
+    ff_dx12_add_device_child(&queue->device_child, queue, ff_dx12_device_child_type_queue);
     return true;
 }
 
-void ff_dx12_queue_destroy(ff_dx12_queue* queue)
+static void queue_release_device_objects(ff_dx12_queue* queue, bool preserve_arena)
 {
-    FF_CHECK_RET(queue);
-
     if (queue->command_queue && ff_dx12_device_valid())
     {
         ff_dx12_queue_wait_for_idle(queue);
@@ -469,7 +482,38 @@ void ff_dx12_queue_destroy(ff_dx12_queue* queue)
         queue->command_queue = NULL;
     }
 
-    ff_arena_destroy(&queue->arena);
+    queue->list_counter = 0;
+    queue->allocator_counter = 0;
+
+    if (preserve_arena)
+    {
+        ff_arena_reset(&queue->arena);
+    }
+    else
+    {
+        ff_arena_destroy(&queue->arena);
+    }
+}
+
+void ff_dx12_queue_destroy(ff_dx12_queue* queue)
+{
+    FF_CHECK_RET(queue);
+    ff_dx12_remove_device_child(&queue->device_child);
+    queue_release_device_objects(queue, false);
+}
+
+void internal_ff_dx12_queue_before_reset(ff_dx12_queue* queue)
+{
+    FF_DX12_ASSERT_OWNER();
+    FF_CHECK_RET(queue);
+    queue_release_device_objects(queue, true);
+}
+
+bool internal_ff_dx12_queue_reset(ff_dx12_queue* queue)
+{
+    FF_DX12_ASSERT_OWNER();
+    FF_ASSERT_RET_VAL(queue && queue->device_child.registered, false);
+    return ff_dx12_queue_valid(queue) || queue_create_device_objects(queue);
 }
 
 bool ff_dx12_queue_valid(const ff_dx12_queue* queue)

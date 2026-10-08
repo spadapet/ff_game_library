@@ -360,11 +360,14 @@ void ff_dx12_cpu_descriptor_allocator_init(ff_dx12_cpu_descriptor_allocator* all
     allocator->bucket_size = ff_math_round_up_pow2(bucket_size);
 
     ff_arena_init_heap_local(&allocator->arena, 0);
+    ff_dx12_add_device_child(&allocator->device_child, allocator,
+        ff_dx12_device_child_type_cpu_descriptor_allocator);
 }
 
 void ff_dx12_cpu_descriptor_allocator_destroy(ff_dx12_cpu_descriptor_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
+    ff_dx12_remove_device_child(&allocator->device_child);
 
     for (ff_dx12_descriptor_buffer* bucket = allocator->buckets; bucket; )
     {
@@ -454,12 +457,15 @@ bool ff_dx12_gpu_descriptor_allocator_init(ff_dx12_gpu_descriptor_allocator* all
         FF_DEBUG_FAIL_MSG_RET_VAL("failed to init shader-visible descriptor buffers", false);
     }
 
+    ff_dx12_add_device_child(&allocator->device_child, allocator,
+        ff_dx12_device_child_type_gpu_descriptor_allocator);
     return true;
 }
 
 void ff_dx12_gpu_descriptor_allocator_destroy(ff_dx12_gpu_descriptor_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
+    ff_dx12_remove_device_child(&allocator->device_child);
 
     if (allocator->descriptor_heap)
     {

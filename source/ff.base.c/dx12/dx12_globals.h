@@ -72,7 +72,7 @@ typedef struct ff_dx12_gpu_descriptor_allocator ff_dx12_gpu_descriptor_allocator
 
 // Shared memory allocators. The first three hand out transient per-frame ranges keyed on a fence
 // value; the last three are long-lived free-list allocators. All are created on first use and
-// destroyed with the device.
+// destroyed by ff_dx12_destroy and participate in the common device-child reset walk.
 ff_dx12_mem_allocator* ff_dx12_upload_allocator(void);
 ff_dx12_mem_allocator* ff_dx12_readback_allocator(void);
 ff_dx12_mem_allocator* ff_dx12_dynamic_buffer_allocator(void);
@@ -159,8 +159,3 @@ void internal_ff_dx12_destroy_d3d(bool for_reset);
 // Clears the simulated-failure flag set by ff_dx12_device_fatal_error, so that a successful reset
 // makes the device usable again.
 void internal_ff_dx12_clear_fatal_error(void);
-
-// Releases (and rebuilds) the GPU objects inside the already-created shared allocators, leaving
-// their buffer/bucket structure and offsets intact so outstanding ranges stay valid.
-void internal_ff_dx12_allocators_before_reset(void);
-bool internal_ff_dx12_allocators_reset(void);

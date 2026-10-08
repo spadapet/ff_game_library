@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../base/arena.h"
+#include "dx12_device_child.h"
 #include "dx12_fence_values.h"
 #include "dx12_heap.h"
 #include "dx12_mem_range.h"
@@ -11,7 +12,7 @@ typedef enum ff_dx12_mem_buffer_type
     ff_dx12_mem_buffer_type_free_list,
 } ff_dx12_mem_buffer_type;
 
-#define FF_DX12_MEM_RING_RANGES_MAX 64
+#define FF_DX12_MEM_RING_RANGES_INITIAL_CAPACITY 64
 
 typedef struct ff_dx12_mem_ring_range
 {
@@ -33,12 +34,12 @@ typedef struct ff_dx12_mem_buffer
     {
         struct
         {
-            // Fixed-capacity circular buffer of in-flight ranges: bounded by frames-in-flight,
-            // not by run time, so it never needs to grow.
-            ff_dx12_mem_ring_range ranges[FF_DX12_MEM_RING_RANGES_MAX];
+            ff_dx12_mem_ring_range* ranges_a;
+            size_t ranges_capacity;
             size_t ranges_head;
             size_t ranges_count;
             size_t allocated_range_count;
+            ff_arena* arena;
         } ring;
 
         struct
@@ -73,6 +74,7 @@ ff_dx12_mem_range ff_dx12_mem_buffer_alloc_bytes(ff_dx12_mem_buffer* buffer, uin
 typedef struct ff_dx12_mem_allocator
 {
     ff_arena arena;
+    ff_dx12_device_child device_child;
     ff_dx12_mem_buffer* buffers;
     ff_dx12_mem_buffer* buffers_free;
     size_t buffers_count;

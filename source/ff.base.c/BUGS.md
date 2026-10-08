@@ -32,10 +32,10 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-001 | P1 | Fixed | Only the first reader waits for the preceding GPU writer |
 | FFC-002 | P1 | Fixed | Multiple open trackers retain destroyed resource wrappers |
 | FFC-003 | P2 | Fixed | Whole-resource barriers ignore divergent fallback states |
-| FFC-004 | P2 | Open | Caller-created allocators are omitted from device recovery |
-| FFC-005 | P2 | Open | Ring metadata exhaustion causes exponential heap growth |
-| FFC-006 | P2 | Open | Allocator pruning retains the oldest, smallest heap |
-| FFC-007 | P2 | Open | Recycled free-list nodes abandon arena-backed metadata |
+| FFC-004 | P2 | Fixed | Caller-created allocators are omitted from device recovery |
+| FFC-005 | P2 | Fixed | Ring metadata exhaustion causes exponential heap growth |
+| FFC-006 | P2 | Fixed | Allocator pruning retains the oldest, smallest heap |
+| FFC-007 | P2 | Fixed | Recycled free-list nodes abandon arena-backed metadata |
 | FFC-008 | P2 | Open | Recycled keep-alive nodes abandon spilled fence storage |
 | FFC-009 | P2 | Open | Filled circles ignore their inside color |
 | FFC-010 | P2 | Open | Palette sprites use base dimensions for nonzero-mip views |
@@ -124,21 +124,21 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-004: Caller-created allocators are omitted from device recovery
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Port regression.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port regression.
 
-**Location:** `dx12\dx12_globals.c:1131-1181`, `internal_ff_dx12_allocators_before_reset` and `internal_ff_dx12_allocators_reset`; `dx12\dx12_resource.c:457-464`, `internal_ff_dx12_resource_reset`.
+**Location:** `dx12\dx12_device_child.h`, device-owner tags; `dx12\dx12_reset.c`, `child_before_reset` and `child_reset`; allocator and queue init/destroy paths.
 
-**Cause:** Public construction APIs permit local allocators and placed resources. Registered resources participate in reset, but the allocator reset walk visits only the global allocator arrays. Local heaps retain their old device objects. Public local queues have a related omission from global lifecycle management and should be covered by the same contract decision.
+**Cause:** Public constructors permitted caller-owned memory allocators, descriptor allocators, and queues, but reset rebuilt only the shared instances owned by `dx12_globals.c`. Registered resources could therefore be rebuilt against heaps or queues that still belonged to the prior device.
 
 **Trigger:** Keep a placed resource backed by a caller-created allocator alive across actual device removal or migration to a different adapter. Recovery attempts to recreate the registered resource without rebuilding its local heap.
 
 **Impact:** Old-device references can obstruct removed-device recovery. A heap belonging to the old adapter cannot be passed to the new adapter's device to recreate a placed resource.
 
-**Important qualification:** A healthy, same-adapter `ff_dx12_reset_device(true)` is not by itself a deterministic failure trigger. D3D12 devices are singletons per adapter; a still-referenced healthy device can be returned again. Actual removal or adapter migration is the relevant recovery case.
+**Important qualification:** Actual device removal and adapter migration are not emulated by the unit test. It pins references to each old local COM object so reset hooks must replace those objects even if D3D12 reuses the same healthy device instance.
 
-**Fix direction:** Register caller-created device-owning objects for the appropriate reset phases, or make the global-only restriction explicit and enforce it at the API boundary. Do not leave local constructors appearing equivalent to globally managed instances.
+**Resolution:** Memory allocators, CPU/GPU descriptor allocators, and command queues now register as device children when initialized and unregister when destroyed. The ordered reset walk rebuilds all live instances, including shared globals, so resources are reset only after their allocators and descriptors are available; queues are rebuilt after resource reset work. The duplicate global-only allocator reset walk was removed.
 
-**Regression scenario:** Cover a local allocator plus a registered placed resource during actual removal or adapter migration, and verify the resulting resource and heap belong to the current device. Include the chosen policy for local queues and descriptor allocators.
+**Regression coverage:** `dx12_reset_tests::caller_created_device_owners_rebuild_on_reset` keeps caller-created memory/descriptor heaps and a queue alive across reset, pins references to the old COM objects to rule out pointer reuse, and verifies the new owners and placed resource use the current device. The test also confirms CPU/GPU descriptor ranges remain valid.
 
 **Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\heap.cpp:24-31` registers each C++ heap as a device child. See also the singleton/removal behavior in [D3D12CreateDevice documentation](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-d3d12createdevice).
 
@@ -146,9 +146,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-005: Ring metadata exhaustion causes exponential heap growth
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Port regression.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port regression.
 
-**Location:** `dx12\dx12_mem_allocator.c:250-297`, `ring_alloc_bytes`; `dx12\dx12_mem_allocator.c:418-430`, `allocator_alloc_bytes`; `dx12\dx12_mem_allocator.h:14,36-38`.
+**Location:** `dx12\dx12_mem_allocator.c:36-87,298-354,461-539`; `dx12\dx12_mem_allocator.h:14,36-42`.
 
 **Cause:** A ring buffer has 64 fence-range records. Exhausting those records returns the same failure as exhausting bytes, so the outer allocator creates a larger heap. Its growth policy doubles the previous heap size. The allocation path removes completed ranges only when the requested bytes overlap them, not merely because metadata is full.
 
@@ -156,45 +156,45 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** The requested heaps total 1 + 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 = **511 MiB** for 131,328 bytes of payload, assuming creation succeeds. Larger sequences can fail allocation despite minimal useful data. The record count is bounded by distinct command/fence allocations, not just frames in flight.
 
-**Fix direction:** Reclaim completed metadata before declaring exhaustion and grow bookkeeping independently from heap byte capacity. Preserve nonblocking behavior for genuinely unsubmitted work; the descriptor ring provides relevant prior art.
+**Resolution:** Ring fence ranges now use a dynamically growing circular array independent of heap bytes. Completed ranges at the front are retired before each allocation; incomplete fence values are never waited on or discarded. Range storage and its capacity survive buffer pruning and reuse.
 
-**Regression scenario:** Measure total heap capacity for many small allocations with distinct completed and incomplete fence values. Assert capacity behavior, not only successful allocation.
+**Regression coverage:** `dx12_mem_allocator_tests::ring_allocator_grows_metadata_without_growing_the_heap`, `ring_allocator_retires_completed_metadata_before_growing`, and `ring_allocator_reuses_grown_metadata_when_pruning_buffers` assert bounded heap capacity, completed-range reclamation, and metadata reuse for pending ranges.
 
-**Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\mem_allocator.h:58` uses a dynamically sized range list; `mem_allocator.cpp:130-139` adds records without treating metadata exhaustion as heap exhaustion.
+**Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\mem_allocator.h:58` uses a dynamically sized range list; `mem_allocator.cpp:130-139` adds records without treating metadata exhaustion as heap exhaustion. The descriptor ring in `dx12\dx12_descriptor_allocator.c:255-285` uses a growable circular array.
 
 ### FFC-006: Allocator pruning retains the oldest, smallest heap
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Port regression.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port regression.
 
 **Location:** `dx12\dx12_mem_allocator.c:462-463,482-495`, buffer insertion and `ff_dx12_mem_allocator_frame_complete`.
 
-**Cause:** Buffers are inserted newest-first, but pruning removes empty buffers from the head while more than one remains. The stated policy of retaining the newest warm heap is therefore reversed.
+**Cause:** Buffers are inserted newest-first, but pruning removed empty buffers starting at the head while more than one remained. This retained the oldest heap rather than the newest warm heap.
 
 **Trigger:** Grow an allocator to a newest-first list of 4-MiB, 2-MiB, and 1-MiB buffers. Retire/free all allocations and complete the frame.
 
 **Impact:** Pruning retains the 1-MiB heap, not the 4-MiB heap. Repeated bursts recreate larger heaps, adding allocation and residency churn rather than converging on the warmed-up workload size.
 
-**Fix direction:** Preserve the intended newest buffer while removing other eligible empty buffers. Keep stable node addresses for any still-live ranges.
+**Resolution:** Frame completion now retires completed ranges in every buffer, keeps the newest list head, and prunes eligible empty buffers from the remaining list. Recycled nodes retain stable addresses.
 
-**Regression scenario:** Grow, retire everything, prune, and repeat the workload. Assert the retained buffer's identity/size and that unnecessary larger-heap recreation stops.
+**Regression coverage:** `dx12_mem_allocator_tests::free_list_pruning_keeps_newest_heap_and_reuses_metadata` grows two free-list heaps, drains and prunes them, and asserts that the newest heap remains active.
 
 **Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\mem_allocator.cpp:298-320` stores buffers oldest-first, so its removal order preserves the newest when all are empty.
 
 ### FFC-007: Recycled free-list nodes abandon arena-backed metadata
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Port regression.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port regression.
 
 **Location:** `dx12\dx12_mem_allocator.c:64-66,90-91,444-447,488-495`, free-list initialization, destruction, and pruning.
 
-**Cause:** Each free-range array is allocated from the outer allocator's arena. Pruning destroys and zeroes the buffer, losing the array pointer, then recycles only the outer node. Reinitialization allocates a new array; the old array cannot be reclaimed until the allocator's entire arena is destroyed.
+**Cause:** Each free-range array is allocated from the outer allocator's arena. Pruning destroyed and zeroed the buffer, losing the array pointer, then recycled only the outer node. Reinitialization allocated a new array; the old array could not be reclaimed until the allocator's entire arena was destroyed.
 
 **Trigger:** Repeatedly grow a free-list allocator, free its allocations, prune extra buffers, and reuse the recycled nodes. Fragmented workloads grow the abandoned arrays further.
 
 **Impact:** CPU memory usage grows with the number of recycle cycles even when live heaps and buffer nodes remain bounded. This is not merely normal arena retention of reusable capacity: the capacity has become unreachable.
 
-**Fix direction:** Preserve/reuse the free-range array when recycling a node, or use buffer-owned storage that can be reclaimed with that buffer. Keep this separate from FFC-006: fixing prune order does not eliminate metadata loss whenever pruning still occurs.
+**Resolution:** Pruning now saves and restores each free-list array pointer around buffer destruction. Reinitialization resets its single free extent in place, preserving the array's existing capacity. This remains independent of FFC-006: pruning can occur for any eligible non-head buffer.
 
-**Regression scenario:** Repeat grow/fragment/coalesce/prune cycles after warm-up and verify metadata storage remains bounded. The original C++ buffer-owned vector was reclaimed when the buffer was deleted.
+**Regression coverage:** `dx12_mem_allocator_tests::free_list_pruning_keeps_newest_heap_and_reuses_metadata` fragments the old heap until its metadata grows, coalesces it, prunes it, then reuses the node for a larger heap and checks that the array pointer and capacity are unchanged.
 
 ### FFC-008: Recycled keep-alive nodes abandon spilled fence storage
 

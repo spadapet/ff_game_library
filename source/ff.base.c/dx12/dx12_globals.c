@@ -568,34 +568,36 @@ static void keep_alive_destroy(void)
     }
 }
 
-ff_dx12_queue* ff_dx12_direct_queue(void)
+static ff_dx12_queue* get_queue(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND_LIST_TYPE type)
 {
-    if (!ff_dx12_queue_valid(&s_direct_queue))
+    if (!ff_dx12_queue_valid(queue))
     {
-        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_direct_queue, FF_SVL("Direct queue"), D3D12_COMMAND_LIST_TYPE_DIRECT), NULL);
+        if (queue->device_child.registered)
+        {
+            FF_ASSERT_RET_VAL(internal_ff_dx12_queue_reset(queue), NULL);
+        }
+        else
+        {
+            FF_ASSERT_RET_VAL(ff_dx12_queue_init(queue, name, type), NULL);
+        }
     }
 
-    return &s_direct_queue;
+    return queue;
+}
+
+ff_dx12_queue* ff_dx12_direct_queue(void)
+{
+    return get_queue(&s_direct_queue, FF_SVL("Direct queue"), D3D12_COMMAND_LIST_TYPE_DIRECT);
 }
 
 ff_dx12_queue* ff_dx12_copy_queue(void)
 {
-    if (!ff_dx12_queue_valid(&s_copy_queue))
-    {
-        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_copy_queue, FF_SVL("Copy queue"), D3D12_COMMAND_LIST_TYPE_COPY), NULL);
-    }
-
-    return &s_copy_queue;
+    return get_queue(&s_copy_queue, FF_SVL("Copy queue"), D3D12_COMMAND_LIST_TYPE_COPY);
 }
 
 ff_dx12_queue* ff_dx12_compute_queue(void)
 {
-    if (!ff_dx12_queue_valid(&s_compute_queue))
-    {
-        FF_ASSERT_RET_VAL(ff_dx12_queue_init(&s_compute_queue, FF_SVL("Compute queue"), D3D12_COMMAND_LIST_TYPE_COMPUTE), NULL);
-    }
-
-    return &s_compute_queue;
+    return get_queue(&s_compute_queue, FF_SVL("Compute queue"), D3D12_COMMAND_LIST_TYPE_COMPUTE);
 }
 
 ff_dx12_queue* ff_dx12_queue_from_type(D3D12_COMMAND_LIST_TYPE type)
@@ -758,19 +760,14 @@ void ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(data);
 
-    if (ff_dx12_queue_valid(&s_copy_queue))
+    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = ff_dx12_device_child_next(child))
     {
-        ff_dx12_queue_forget_residency_data(&s_copy_queue, data);
-    }
-
-    if (ff_dx12_queue_valid(&s_compute_queue))
-    {
-        ff_dx12_queue_forget_residency_data(&s_compute_queue, data);
-    }
-
-    if (ff_dx12_queue_valid(&s_direct_queue))
-    {
-        ff_dx12_queue_forget_residency_data(&s_direct_queue, data);
+        ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
+        if (ff_dx12_queue_valid(queue))
+        {
+            ff_dx12_queue_forget_residency_data(queue, data);
+        }
     }
 }
 
@@ -778,19 +775,14 @@ void internal_ff_dx12_forget_resource(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
 
-    if (ff_dx12_queue_valid(&s_copy_queue))
+    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = ff_dx12_device_child_next(child))
     {
-        ff_dx12_queue_forget_resource(&s_copy_queue, resource);
-    }
-
-    if (ff_dx12_queue_valid(&s_compute_queue))
-    {
-        ff_dx12_queue_forget_resource(&s_compute_queue, resource);
-    }
-
-    if (ff_dx12_queue_valid(&s_direct_queue))
-    {
-        ff_dx12_queue_forget_resource(&s_direct_queue, resource);
+        ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
+        if (ff_dx12_queue_valid(queue))
+        {
+            ff_dx12_queue_forget_resource(queue, resource);
+        }
     }
 }
 
@@ -798,19 +790,14 @@ void ff_dx12_wait_for_idle(void)
 {
     FF_DX12_ASSERT_OWNER();
 
-    if (ff_dx12_queue_valid(&s_copy_queue))
+    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = ff_dx12_device_child_next(child))
     {
-        ff_dx12_queue_wait_for_idle(&s_copy_queue);
-    }
-
-    if (ff_dx12_queue_valid(&s_compute_queue))
-    {
-        ff_dx12_queue_wait_for_idle(&s_compute_queue);
-    }
-
-    if (ff_dx12_queue_valid(&s_direct_queue))
-    {
-        ff_dx12_queue_wait_for_idle(&s_direct_queue);
+        ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
+        if (ff_dx12_queue_valid(queue))
+        {
+            ff_dx12_queue_wait_for_idle(queue);
+        }
     }
 
     ff_dx12_flush_keep_alive();
@@ -1040,14 +1027,18 @@ static void destroy_d3d(bool for_reset)
     // again, so waiting would hang forever, and the driver has already retired the work. When the
     // device is still healthy (a forced or adapter-change reset) the GPU really is still running,
     // and releasing resources without draining it first would pull them out from under it.
-    if (ff_dx12_device_valid() && (ff_dx12_queue_valid(&s_direct_queue) || ff_dx12_queue_valid(&s_copy_queue) || ff_dx12_queue_valid(&s_compute_queue)))
+    if (ff_dx12_device_valid() &&
+        ff_dx12_device_child_count(ff_dx12_device_child_type_queue))
     {
         ff_dx12_wait_for_idle();
     }
 
-    ff_dx12_queue_destroy(&s_direct_queue);
-    ff_dx12_queue_destroy(&s_copy_queue);
-    ff_dx12_queue_destroy(&s_compute_queue);
+    if (!for_reset)
+    {
+        ff_dx12_queue_destroy(&s_direct_queue);
+        ff_dx12_queue_destroy(&s_copy_queue);
+        ff_dx12_queue_destroy(&s_compute_queue);
+    }
 
     keep_alive_destroy();
     s_frame_count = 0;
@@ -1147,60 +1138,6 @@ void internal_ff_dx12_destroy_d3d(bool for_reset)
 void internal_ff_dx12_clear_fatal_error(void)
 {
     s_simulate_device_invalid = false;
-}
-
-void internal_ff_dx12_allocators_before_reset(void)
-{
-    // Only allocators that were actually created are touched; the lazy accessors must not be used
-    // here, since creating an allocator against a dying device would immediately fail.
-    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
-    {
-        if (s_mem_allocator_valid[i])
-        {
-            internal_ff_dx12_mem_allocator_before_reset(&s_mem_allocators[i]);
-        }
-    }
-
-    for (size_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
-    {
-        if (s_cpu_descriptor_allocator_valid[i])
-        {
-            internal_ff_dx12_cpu_descriptor_allocator_before_reset(&s_cpu_descriptor_allocators[i]);
-        }
-
-        if (s_gpu_descriptor_allocator_valid[i])
-        {
-            internal_ff_dx12_gpu_descriptor_allocator_before_reset(&s_gpu_descriptor_allocators[i]);
-        }
-    }
-}
-
-bool internal_ff_dx12_allocators_reset(void)
-{
-    bool result = true;
-
-    for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
-    {
-        if (s_mem_allocator_valid[i])
-        {
-            result = internal_ff_dx12_mem_allocator_reset(&s_mem_allocators[i]) && result;
-        }
-    }
-
-    for (size_t i = 0; i < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; i++)
-    {
-        if (s_cpu_descriptor_allocator_valid[i])
-        {
-            result = internal_ff_dx12_cpu_descriptor_allocator_reset(&s_cpu_descriptor_allocators[i]) && result;
-        }
-
-        if (s_gpu_descriptor_allocator_valid[i])
-        {
-            result = internal_ff_dx12_gpu_descriptor_allocator_reset(&s_gpu_descriptor_allocators[i]) && result;
-        }
-    }
-
-    return result;
 }
 
 void ff_dx12_destroy(void)

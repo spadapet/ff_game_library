@@ -2,11 +2,13 @@
 #include "base/assert.h"
 #include "base/log.h"
 #include "dx12/dx12_buffer.h"
+#include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_depth.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_draw_device.h"
 #include "dx12/dx12_draw_state.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_object_cache.h"
 #include "dx12/dx12_palette.h"
 #include "dx12/dx12_queue.h"
@@ -26,6 +28,24 @@ static void child_before_reset(ff_dx12_device_child* child)
 {
     switch (child->type)
     {
+        case ff_dx12_device_child_type_mem_allocator:
+            internal_ff_dx12_mem_allocator_before_reset((ff_dx12_mem_allocator*)child->owner);
+            break;
+
+        case ff_dx12_device_child_type_cpu_descriptor_allocator:
+            internal_ff_dx12_cpu_descriptor_allocator_before_reset(
+                (ff_dx12_cpu_descriptor_allocator*)child->owner);
+            break;
+
+        case ff_dx12_device_child_type_gpu_descriptor_allocator:
+            internal_ff_dx12_gpu_descriptor_allocator_before_reset(
+                (ff_dx12_gpu_descriptor_allocator*)child->owner);
+            break;
+
+        case ff_dx12_device_child_type_queue:
+            internal_ff_dx12_queue_before_reset((ff_dx12_queue*)child->owner);
+            break;
+
         case ff_dx12_device_child_type_resource:
             internal_ff_dx12_resource_before_reset((ff_dx12_resource*)child->owner);
             break;
@@ -73,6 +93,20 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
 {
     switch (child->type)
     {
+        case ff_dx12_device_child_type_mem_allocator:
+            return internal_ff_dx12_mem_allocator_reset((ff_dx12_mem_allocator*)child->owner);
+
+        case ff_dx12_device_child_type_cpu_descriptor_allocator:
+            return internal_ff_dx12_cpu_descriptor_allocator_reset(
+                (ff_dx12_cpu_descriptor_allocator*)child->owner);
+
+        case ff_dx12_device_child_type_gpu_descriptor_allocator:
+            return internal_ff_dx12_gpu_descriptor_allocator_reset(
+                (ff_dx12_gpu_descriptor_allocator*)child->owner);
+
+        case ff_dx12_device_child_type_queue:
+            return internal_ff_dx12_queue_reset((ff_dx12_queue*)child->owner);
+
         case ff_dx12_device_child_type_resource:
             return internal_ff_dx12_resource_reset((ff_dx12_resource*)child->owner);
 
@@ -188,17 +222,10 @@ bool ff_dx12_reset_device(bool force)
         internal_ff_dx12_device_child_walk_end();
     }
 
-    internal_ff_dx12_allocators_before_reset();
-
     internal_ff_dx12_destroy_d3d(true);
     internal_ff_dx12_clear_fatal_error();
 
     bool result = internal_ff_dx12_init_d3d(true) && ff_dx12_residency_init();
-
-    if (result)
-    {
-        result = internal_ff_dx12_allocators_reset();
-    }
 
     if (!result)
     {

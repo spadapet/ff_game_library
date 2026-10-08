@@ -9,7 +9,9 @@
 
 static ff_dx12_mem_ring_range* ring_front(ff_dx12_mem_buffer* buffer)
 {
-    return buffer->u.ring.ranges_count ? &buffer->u.ring.ranges[buffer->u.ring.ranges_head] : NULL;
+    return buffer->u.ring.ranges_count
+        ? &buffer->u.ring.ranges_a[buffer->u.ring.ranges_head]
+        : NULL;
 }
 
 static ff_dx12_mem_ring_range* ring_back(ff_dx12_mem_buffer* buffer)
@@ -19,23 +21,73 @@ static ff_dx12_mem_ring_range* ring_back(ff_dx12_mem_buffer* buffer)
         return NULL;
     }
 
-    size_t index = (buffer->u.ring.ranges_head + buffer->u.ring.ranges_count - 1) % FF_DX12_MEM_RING_RANGES_MAX;
-    return &buffer->u.ring.ranges[index];
+    size_t index = (buffer->u.ring.ranges_head + buffer->u.ring.ranges_count - 1) %
+        buffer->u.ring.ranges_capacity;
+    return &buffer->u.ring.ranges_a[index];
 }
 
 static void ring_pop_front(ff_dx12_mem_buffer* buffer)
 {
     FF_ASSERT_RET(buffer->u.ring.ranges_count);
-    buffer->u.ring.ranges_head = (buffer->u.ring.ranges_head + 1) % FF_DX12_MEM_RING_RANGES_MAX;
+    buffer->u.ring.ranges_head = (buffer->u.ring.ranges_head + 1) % buffer->u.ring.ranges_capacity;
     buffer->u.ring.ranges_count--;
 }
 
-static void ring_push_back(ff_dx12_mem_buffer* buffer, ff_dx12_mem_ring_range value)
+static bool ring_grow(ff_dx12_mem_buffer* buffer)
 {
-    FF_ASSERT_RET(buffer->u.ring.ranges_count < FF_DX12_MEM_RING_RANGES_MAX);
-    size_t index = (buffer->u.ring.ranges_head + buffer->u.ring.ranges_count) % FF_DX12_MEM_RING_RANGES_MAX;
-    buffer->u.ring.ranges[index] = value;
+    size_t old_capacity = buffer->u.ring.ranges_capacity;
+    FF_ASSERT_RET_VAL(old_capacity <= SIZE_MAX / 2, false);
+    FF_ASSERT_RET_VAL(buffer->u.ring.ranges_count <= old_capacity, false);
+    FF_ASSERT_RET_VAL(!old_capacity || buffer->u.ring.ranges_a, false);
+
+    size_t new_capacity = old_capacity ? old_capacity * 2 : FF_DX12_MEM_RING_RANGES_INITIAL_CAPACITY;
+    FF_ASSERT_RET_VAL(new_capacity <= SIZE_MAX / sizeof(ff_dx12_mem_ring_range), false);
+    FF_ASSERT_RET_VAL(buffer->u.ring.arena, false);
+
+    ff_dx12_mem_ring_range* new_ranges_a = ff_arena_alloc_type(buffer->u.ring.arena,
+        ff_dx12_mem_ring_range, new_capacity);
+    FF_ASSERT_RET_VAL(new_ranges_a, false);
+
+    for (size_t i = 0; i < buffer->u.ring.ranges_count; i++)
+    {
+        size_t old_index = (buffer->u.ring.ranges_head + i) % old_capacity;
+        new_ranges_a[i] = buffer->u.ring.ranges_a[old_index];
+    }
+
+    buffer->u.ring.ranges_a = new_ranges_a;
+    buffer->u.ring.ranges_capacity = new_capacity;
+    buffer->u.ring.ranges_head = 0;
+    return true;
+}
+
+static bool ring_push_back(ff_dx12_mem_buffer* buffer, ff_dx12_mem_ring_range value)
+{
+    FF_ASSERT_RET_VAL(buffer->u.ring.ranges_count <= buffer->u.ring.ranges_capacity, false);
+    if (buffer->u.ring.ranges_count == buffer->u.ring.ranges_capacity && !ring_grow(buffer))
+    {
+        return false;
+    }
+
+    size_t index = (buffer->u.ring.ranges_head + buffer->u.ring.ranges_count) %
+        buffer->u.ring.ranges_capacity;
+    buffer->u.ring.ranges_a[index] = value;
     buffer->u.ring.ranges_count++;
+    return true;
+}
+
+static void ring_retire_completed(ff_dx12_mem_buffer* buffer)
+{
+    while (buffer->u.ring.ranges_count)
+    {
+        ff_dx12_mem_ring_range* range = ring_front(buffer);
+        FF_ASSERT(range->fence_value.fence);
+        if (!ff_dx12_fence_value_complete(range->fence_value))
+        {
+            break;
+        }
+
+        ring_pop_front(buffer);
+    }
 }
 
 static uint64_t ring_range_after_end(const ff_dx12_mem_ring_range* range)
@@ -43,29 +95,69 @@ static uint64_t ring_range_after_end(const ff_dx12_mem_ring_range* range)
     return range->start + range->size;
 }
 
-bool ff_dx12_mem_buffer_init_ring(ff_dx12_mem_buffer* buffer, ff_arena* arena, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
+static bool mem_buffer_init_ring_with_ranges(ff_dx12_mem_buffer* buffer, ff_arena* arena,
+    ff_string_view name, uint64_t size, ff_dx12_heap_usage usage, ff_dx12_mem_ring_range* ranges_a,
+    size_t ranges_capacity)
 {
     FF_ASSERT_RET_VAL(buffer, false);
-    (void)arena;
-
     *buffer = (ff_dx12_mem_buffer){ 0 };
+    FF_ASSERT_RET_VAL(arena, false);
+    FF_ASSERT_RET_VAL((ranges_a && ranges_capacity) || (!ranges_a && !ranges_capacity), false);
+
     buffer->type = ff_dx12_mem_buffer_type_ring;
-    return ff_dx12_heap_init(&buffer->heap, name, size, usage);
-}
 
-bool ff_dx12_mem_buffer_init_free_list(ff_dx12_mem_buffer* buffer, ff_arena* arena, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
-{
-    FF_ASSERT_RET_VAL(buffer && arena, false);
+    if (!ff_dx12_heap_init(&buffer->heap, name, size, usage))
+    {
+        *buffer = (ff_dx12_mem_buffer){ 0 };
+        return false;
+    }
 
-    *buffer = (ff_dx12_mem_buffer){ 0 };
-    buffer->type = ff_dx12_mem_buffer_type_free_list;
-    FF_ASSERT_RET_VAL(ff_dx12_heap_init(&buffer->heap, name, size, usage), false);
-
-    buffer->u.free_list.free_ranges_a = ff_array_init(ff_dx12_mem_range, arena);
-    ff_dx12_mem_range whole_range = { .owner = buffer, .start = 0, .size = size };
-    ff_array_push(buffer->u.free_list.free_ranges_a, whole_range);
+    buffer->u.ring.arena = arena;
+    buffer->u.ring.ranges_a = ranges_a;
+    buffer->u.ring.ranges_capacity = ranges_a ? ranges_capacity : 0;
 
     return true;
+}
+
+bool ff_dx12_mem_buffer_init_ring(ff_dx12_mem_buffer* buffer, ff_arena* arena, ff_string_view name,
+    uint64_t size, ff_dx12_heap_usage usage)
+{
+    return mem_buffer_init_ring_with_ranges(buffer, arena, name, size, usage, NULL, 0);
+}
+
+static bool mem_buffer_init_free_list_with_ranges(ff_dx12_mem_buffer* buffer, ff_arena* arena,
+    ff_string_view name, uint64_t size, ff_dx12_heap_usage usage, ff_dx12_mem_range* free_ranges_a)
+{
+    FF_ASSERT_RET_VAL(buffer, false);
+    *buffer = (ff_dx12_mem_buffer){ 0 };
+    FF_ASSERT_RET_VAL(arena, false);
+
+    buffer->type = ff_dx12_mem_buffer_type_free_list;
+    if (!ff_dx12_heap_init(&buffer->heap, name, size, usage))
+    {
+        *buffer = (ff_dx12_mem_buffer){ 0 };
+        return false;
+    }
+
+    free_ranges_a = free_ranges_a ? free_ranges_a : ff_array_init(ff_dx12_mem_range, arena);
+    if (!free_ranges_a || !ff_array_resize(free_ranges_a, 1))
+    {
+        ff_dx12_heap_destroy(&buffer->heap);
+        *buffer = (ff_dx12_mem_buffer){ 0 };
+        return false;
+    }
+
+    ff_dx12_mem_range whole_range = { .owner = buffer, .start = 0, .size = size };
+    free_ranges_a[0] = whole_range;
+    buffer->u.free_list.free_ranges_a = free_ranges_a;
+
+    return true;
+}
+
+bool ff_dx12_mem_buffer_init_free_list(ff_dx12_mem_buffer* buffer, ff_arena* arena, ff_string_view name,
+    uint64_t size, ff_dx12_heap_usage usage)
+{
+    return mem_buffer_init_free_list_with_ranges(buffer, arena, name, size, usage, NULL);
 }
 
 void ff_dx12_mem_buffer_destroy(ff_dx12_mem_buffer* buffer)
@@ -213,24 +305,8 @@ bool ff_dx12_mem_buffer_frame_complete(ff_dx12_mem_buffer* buffer)
 
     if (buffer->type == ff_dx12_mem_buffer_type_ring)
     {
-        bool has_range = false;
-
-        while (!has_range && buffer->u.ring.ranges_count)
-        {
-            ff_dx12_mem_ring_range* front = ring_front(buffer);
-            FF_ASSERT(front->fence_value.fence);
-
-            if (ff_dx12_fence_value_complete(front->fence_value))
-            {
-                ring_pop_front(buffer);
-            }
-            else
-            {
-                has_range = true;
-            }
-        }
-
-        return has_range;
+        ring_retire_completed(buffer);
+        return buffer->u.ring.ranges_count != 0;
     }
     else
     {
@@ -244,6 +320,7 @@ static ff_dx12_mem_range ring_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t s
 {
     uint64_t heap_size = ff_dx12_heap_size(&buffer->heap);
     FF_CHECK_RET_VAL(size && size <= heap_size, ((ff_dx12_mem_range) { 0 }));
+    ring_retire_completed(buffer);
 
     uint64_t allocated_start = 0;
     uint64_t aligned_start = 0;
@@ -266,11 +343,10 @@ static ff_dx12_mem_range ring_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t s
             {
                 if (ff_dx12_fence_value_complete(front->fence_value))
                 {
-                    ring_pop_front(buffer);
+                    ring_retire_completed(buffer);
                 }
                 else
                 {
-                    // No room in this ring right now.
                     return (ff_dx12_mem_range){ 0 };
                 }
             }
@@ -290,11 +366,8 @@ static ff_dx12_mem_range ring_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t s
     }
     else
     {
-        // A full range list means this buffer is out of room for now, which the allocator
-        // already handles by creating another buffer. Don't assert on it.
-        FF_CHECK_RET_VAL(buffer->u.ring.ranges_count < FF_DX12_MEM_RING_RANGES_MAX, ((ff_dx12_mem_range) { 0 }));
         ff_dx12_mem_ring_range new_range = { .start = allocated_start, .size = allocated_size, .fence_value = fence_value };
-        ring_push_back(buffer, new_range);
+        FF_CHECK_RET_VAL(ring_push_back(buffer, new_range), ((ff_dx12_mem_range) { 0 }));
     }
 
     buffer->u.ring.allocated_range_count++;
@@ -366,6 +439,7 @@ void ff_dx12_mem_allocator_init(ff_dx12_mem_allocator* allocator, uint64_t initi
         : 0;
 
     ff_arena_init_heap_local(&allocator->arena, 0);
+    ff_dx12_add_device_child(&allocator->device_child, allocator, ff_dx12_device_child_type_mem_allocator);
 }
 
 static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator)
@@ -379,6 +453,10 @@ static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator
     else
     {
         buffer = ff_arena_alloc_type(&allocator->arena, ff_dx12_mem_buffer, 1);
+        if (buffer)
+        {
+            *buffer = (ff_dx12_mem_buffer){ 0 };
+        }
     }
 
     return buffer;
@@ -387,6 +465,7 @@ static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator
 void ff_dx12_mem_allocator_destroy(ff_dx12_mem_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
+    ff_dx12_remove_device_child(&allocator->device_child);
 
     // mem_buffer_destroy clears the ring bookkeeping itself: ranges are retired by fence rather
     // than by an explicit free, so an outstanding count at teardown is expected.
@@ -442,9 +521,20 @@ static ff_dx12_mem_range allocator_alloc_bytes(ff_dx12_mem_allocator* allocator,
         }
 
         ff_dx12_mem_buffer* new_buffer = allocator_new_buffer(allocator);
+        ff_dx12_mem_ring_range* ring_ranges_a = (allocator->ring && new_buffer)
+            ? new_buffer->u.ring.ranges_a
+            : NULL;
+        size_t ring_ranges_capacity = (allocator->ring && new_buffer)
+            ? new_buffer->u.ring.ranges_capacity
+            : 0;
+        ff_dx12_mem_range* free_ranges_a = (!allocator->ring && new_buffer)
+            ? new_buffer->u.free_list.free_ranges_a
+            : NULL;
         bool ok = new_buffer && (allocator->ring
-            ? ff_dx12_mem_buffer_init_ring(new_buffer, &allocator->arena, name, heap_size, allocator->usage)
-            : ff_dx12_mem_buffer_init_free_list(new_buffer, &allocator->arena, name, heap_size, allocator->usage));
+            ? mem_buffer_init_ring_with_ranges(new_buffer, &allocator->arena, name, heap_size,
+                allocator->usage, ring_ranges_a, ring_ranges_capacity)
+            : mem_buffer_init_free_list_with_ranges(new_buffer, &allocator->arena, name, heap_size,
+                allocator->usage, free_ranges_a));
 
         ff_arena_destroy(&name_arena);
 
@@ -452,6 +542,16 @@ static ff_dx12_mem_range allocator_alloc_bytes(ff_dx12_mem_allocator* allocator,
         {
             if (new_buffer)
             {
+                if (allocator->ring && ring_ranges_a)
+                {
+                    new_buffer->u.ring.ranges_a = ring_ranges_a;
+                    new_buffer->u.ring.ranges_capacity = ring_ranges_capacity;
+                }
+                else if (!allocator->ring && free_ranges_a)
+                {
+                    new_buffer->u.free_list.free_ranges_a = free_ranges_a;
+                }
+
                 new_buffer->next = allocator->buffers_free;
                 allocator->buffers_free = new_buffer;
             }
@@ -484,12 +584,32 @@ void ff_dx12_mem_allocator_frame_complete(ff_dx12_mem_allocator* allocator)
     while (*link)
     {
         ff_dx12_mem_buffer* buffer = *link;
+        bool has_ranges = ff_dx12_mem_buffer_frame_complete(buffer);
 
-        if (!ff_dx12_mem_buffer_frame_complete(buffer) && allocator->buffers_count > 1)
+        if (buffer != allocator->buffers && !has_ranges && allocator->buffers_count > 1)
         {
+            ff_dx12_mem_ring_range* ring_ranges_a = (buffer->type == ff_dx12_mem_buffer_type_ring)
+                ? buffer->u.ring.ranges_a
+                : NULL;
+            size_t ring_ranges_capacity = (buffer->type == ff_dx12_mem_buffer_type_ring)
+                ? buffer->u.ring.ranges_capacity
+                : 0;
+            ff_dx12_mem_range* free_ranges_a = (buffer->type == ff_dx12_mem_buffer_type_free_list)
+                ? buffer->u.free_list.free_ranges_a
+                : NULL;
             *link = buffer->next;
             ff_dx12_mem_buffer_destroy(buffer);
             allocator->buffers_count--;
+
+            if (ring_ranges_a)
+            {
+                buffer->u.ring.ranges_a = ring_ranges_a;
+                buffer->u.ring.ranges_capacity = ring_ranges_capacity;
+            }
+            else if (free_ranges_a)
+            {
+                buffer->u.free_list.free_ranges_a = free_ranges_a;
+            }
 
             buffer->next = allocator->buffers_free;
             allocator->buffers_free = buffer;

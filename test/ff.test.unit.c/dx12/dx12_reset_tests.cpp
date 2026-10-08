@@ -28,6 +28,24 @@ namespace ff::test::dx12
         return count;
     }
 
+    static bool device_child_uses_current_device(ID3D12DeviceChild* child)
+    {
+        if (!child)
+        {
+            return false;
+        }
+
+        ID3D12Device6* device = NULL;
+        if (FAILED(child->GetDevice(IID_PPV_ARGS(&device))))
+        {
+            return false;
+        }
+
+        bool matches = device == ff_dx12_device();
+        device->Release();
+        return matches;
+    }
+
     TEST_CLASS(dx12_reset_tests)
     {
     public:
@@ -322,6 +340,33 @@ namespace ff::test::dx12
             ff_dx12_queue_execute(ff_dx12_copy_queue(), &commands2);
         }
 
+        TEST_METHOD(reset_discards_ring_metadata_for_old_fences)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_fence fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("reset ring fence"), 1));
+
+            ff_dx12_mem_allocator* allocator = ff_dx12_upload_allocator();
+            ff_dx12_fence_value pending = ff_dx12_fence_signal_later(&fence);
+            ff_dx12_mem_range range = ff_dx12_mem_allocator_ring_alloc_buffer(allocator, 256, pending);
+            Assert::IsTrue(ff_dx12_mem_range_valid(&range));
+
+            ff_dx12_mem_buffer* owner = range.owner;
+            Assert::AreEqual((size_t)1, owner->u.ring.ranges_count);
+            Assert::AreEqual((size_t)1, owner->u.ring.allocated_range_count);
+
+            Assert::IsTrue(ff_dx12_reset_device(true));
+
+            Assert::IsTrue(allocator->buffers == owner);
+            Assert::AreEqual((size_t)0, owner->u.ring.ranges_head);
+            Assert::AreEqual((size_t)0, owner->u.ring.ranges_count);
+            Assert::AreEqual((size_t)0, owner->u.ring.allocated_range_count);
+            Assert::IsNotNull(ff_dx12_mem_range_cpu_data(&range));
+
+            ff_dx12_fence_destroy(&fence);
+        }
+
         // A placed resource's mem_range is a free-list range whose owning mem_buffer survives the
         // reset. Destroying it afterward frees that range back into the same buffer, so the
         // allocator's bookkeeping has to still agree with what was handed out before the reset.
@@ -354,6 +399,107 @@ namespace ff::test::dx12
             Assert::AreEqual(start, resource.mem_range.start);
 
             ff_dx12_resource_destroy(&resource);
+        }
+
+        TEST_METHOD(caller_created_device_owners_rebuild_on_reset)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t mem_allocator_count = ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator);
+            const size_t cpu_allocator_count = ff_dx12_device_child_count(
+                ff_dx12_device_child_type_cpu_descriptor_allocator);
+            const size_t gpu_allocator_count = ff_dx12_device_child_count(
+                ff_dx12_device_child_type_gpu_descriptor_allocator);
+            const size_t queue_count = ff_dx12_device_child_count(ff_dx12_device_child_type_queue);
+
+            D3D12_RESOURCE_DESC desc = texture_desc();
+            D3D12_RESOURCE_ALLOCATION_INFO info = ff_dx12_device()->GetResourceAllocationInfo(0, 1, &desc);
+
+            ff_dx12_mem_allocator mem_allocator{};
+            ff_dx12_mem_allocator_init(&mem_allocator, info.SizeInBytes, 0,
+                ff_dx12_heap_usage_gpu_textures, false);
+            ff_dx12_mem_range mem_range = ff_dx12_mem_allocator_alloc_bytes(
+                &mem_allocator, info.SizeInBytes, info.Alignment);
+            Assert::IsTrue(ff_dx12_mem_range_valid(&mem_range));
+
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_placed(&resource, FF_SVL("local placed"), &mem_range,
+                &desc, nullptr));
+
+            ff_dx12_cpu_descriptor_allocator cpu_allocator{};
+            ff_dx12_cpu_descriptor_allocator_init(&cpu_allocator, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4);
+            ff_dx12_descriptor_range cpu_range = ff_dx12_cpu_descriptor_allocator_alloc(&cpu_allocator, 1);
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&cpu_range));
+
+            ff_dx12_gpu_descriptor_allocator gpu_allocator{};
+            Assert::IsTrue(ff_dx12_gpu_descriptor_allocator_init(&gpu_allocator,
+                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 8, 16));
+            ff_dx12_descriptor_range gpu_range = ff_dx12_gpu_descriptor_allocator_alloc_pinned(&gpu_allocator, 1);
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&gpu_range));
+
+            ff_dx12_queue queue{};
+            Assert::IsTrue(ff_dx12_queue_init(&queue, FF_SVL("local reset queue"),
+                D3D12_COMMAND_LIST_TYPE_DIRECT));
+
+            Assert::AreEqual(mem_allocator_count + 1,
+                ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator));
+            Assert::AreEqual(cpu_allocator_count + 1,
+                ff_dx12_device_child_count(ff_dx12_device_child_type_cpu_descriptor_allocator));
+            Assert::AreEqual(gpu_allocator_count + 1,
+                ff_dx12_device_child_count(ff_dx12_device_child_type_gpu_descriptor_allocator));
+            Assert::AreEqual(queue_count + 1, ff_dx12_device_child_count(ff_dx12_device_child_type_queue));
+
+            ff_dx12_commands queue_commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(&queue, &queue_commands));
+            Assert::IsNotNull(queue.caches_in_use);
+
+            ID3D12Heap* old_heap = mem_range.owner->heap.heap;
+            ID3D12DescriptorHeap* old_cpu_heap = cpu_range.owner->descriptor_heap;
+            ID3D12DescriptorHeap* old_gpu_heap = gpu_allocator.descriptor_heap;
+            ID3D12CommandQueue* old_queue = queue.command_queue;
+            old_heap->AddRef();
+            old_cpu_heap->AddRef();
+            old_gpu_heap->AddRef();
+            old_queue->AddRef();
+
+            Assert::IsTrue(device_child_uses_current_device((ID3D12DeviceChild*)mem_range.owner->heap.heap));
+            Assert::IsTrue(device_child_uses_current_device(
+                (ID3D12DeviceChild*)cpu_range.owner->descriptor_heap));
+            Assert::IsTrue(device_child_uses_current_device(
+                (ID3D12DeviceChild*)gpu_allocator.descriptor_heap));
+            Assert::IsTrue(device_child_uses_current_device((ID3D12DeviceChild*)queue.command_queue));
+
+            Assert::IsTrue(ff_dx12_reset_device(true));
+
+            Assert::IsTrue(ff_dx12_resource_valid(&resource));
+            Assert::IsTrue(device_child_uses_current_device((ID3D12DeviceChild*)resource.resource));
+            Assert::IsTrue(mem_range.owner->heap.heap != old_heap);
+            Assert::IsTrue(device_child_uses_current_device((ID3D12DeviceChild*)mem_range.owner->heap.heap));
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&cpu_range));
+            Assert::IsTrue(cpu_range.owner->descriptor_heap != old_cpu_heap);
+            Assert::IsTrue(device_child_uses_current_device(
+                (ID3D12DeviceChild*)cpu_range.owner->descriptor_heap));
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&gpu_range));
+            Assert::IsTrue(gpu_allocator.descriptor_heap != old_gpu_heap);
+            Assert::IsTrue(device_child_uses_current_device(
+                (ID3D12DeviceChild*)gpu_allocator.descriptor_heap));
+            Assert::IsTrue(ff_dx12_queue_valid(&queue));
+            Assert::IsTrue(queue.command_queue != old_queue);
+            Assert::IsTrue(device_child_uses_current_device((ID3D12DeviceChild*)queue.command_queue));
+            Assert::IsNull(queue.caches_in_use);
+
+            old_heap->Release();
+            old_cpu_heap->Release();
+            old_gpu_heap->Release();
+            old_queue->Release();
+
+            ff_dx12_resource_destroy(&resource);
+            ff_dx12_descriptor_range_free(&cpu_range);
+            ff_dx12_descriptor_range_free(&gpu_range);
+            ff_dx12_queue_destroy(&queue);
+            ff_dx12_gpu_descriptor_allocator_destroy(&gpu_allocator);
+            ff_dx12_cpu_descriptor_allocator_destroy(&cpu_allocator);
+            ff_dx12_mem_allocator_destroy(&mem_allocator);
         }
 
         // A texture destroyed after a reset must return its descriptor to the same bucket it came
