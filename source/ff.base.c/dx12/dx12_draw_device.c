@@ -6,6 +6,7 @@
 #include "dx12/dx12_draw_device.h"
 #include "dx12/dx12_format.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_texture.h"
 

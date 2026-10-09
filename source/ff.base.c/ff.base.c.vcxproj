@@ -101,6 +101,7 @@
     <ClInclude Include="data\value.h" />
     <ClInclude Include="data\value_type.h" />
     <ClInclude Include="dx12\dx12_globals.h" />
+    <ClInclude Include="dx12\dx12_internal.h" />
     <ClInclude Include="dx12\dx12_fence.h" />
     <ClInclude Include="dx12\dx12_fence_values.h" />
     <ClInclude Include="dx12\dx12_residency.h" />

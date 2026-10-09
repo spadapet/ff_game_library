@@ -14,11 +14,6 @@ typedef struct ff_dict
     ff_arena* arena;
 } ff_dict;
 
-static inline ff_value* internal_ff_dict_values(const ff_dict* dict)
-{
-    return (ff_value*)(dict->keys + dict->capacity);
-}
-
 void ff_dict_init(ff_dict* dict, ff_arena* arena);
 void ff_dict_init_capacity(ff_dict* dict, ff_arena* arena, size_t initial_capacity);
 void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other);

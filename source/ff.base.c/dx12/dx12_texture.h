@@ -57,8 +57,3 @@ D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_handle(ff_dx12_texture* texture
 bool ff_dx12_texture_update(ff_dx12_texture* texture, ff_dx12_commands* commands,
     size_t array_index, size_t mip_index, size_t dest_x, size_t dest_y,
     const void* data, size_t width, size_t height, size_t row_pitch);
-
-// Device reset: re-creates the SRV against the rebuilt resource, keeping the same descriptor
-// slot. There is no before_reset because the resource handles its own teardown. The pixels are
-// not restored; this layer never keeps a CPU copy, so the owner has to re-upload them.
-bool internal_ff_dx12_texture_reset(ff_dx12_texture* texture);

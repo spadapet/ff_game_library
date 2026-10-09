@@ -292,16 +292,6 @@ typedef struct ff_dx12_draw_device
     ff_dx12_device_child device_child;
 } ff_dx12_draw_device;
 
-// Device reset. The shared palette and remap textures are rebuilt by their own reset, but their
-// pixels are not, so the row-hash caches that suppress redundant uploads have to be cleared or
-// every interned row would be considered already-correct and never re-uploaded.
-//
-// before_reset also abandons any half-built batch. Its instance data lives in upload memory that
-// the allocators are about to release, and the commands it would have been flushed into are gone
-// with the old device.
-void internal_ff_dx12_draw_device_before_reset(ff_dx12_draw_device* device);
-bool internal_ff_dx12_draw_device_reset(ff_dx12_draw_device* device);
-
 bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* draw_state);
 void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device);
 bool ff_dx12_draw_device_valid(const ff_dx12_draw_device* device);

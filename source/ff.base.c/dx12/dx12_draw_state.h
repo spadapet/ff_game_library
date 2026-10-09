@@ -183,8 +183,3 @@ size_t ff_dx12_draw_state_pipeline_count(const ff_dx12_draw_state* state);
 // pointers cannot tell the shader selection apart from the render target format.
 ff_dx12_shader ff_dx12_draw_state_bucket_ps(const ff_dx12_draw_state* state,
     ff_dx12_draw_bucket bucket, ff_dx12_draw_state_flags flags);
-
-// Device reset: every cached pipeline and the root signature belong to the object cache, which
-// releases them itself. This only drops the now-dangling pointers, and reset rebuilds them.
-void internal_ff_dx12_draw_state_before_reset(ff_dx12_draw_state* state);
-bool internal_ff_dx12_draw_state_reset(ff_dx12_draw_state* state);

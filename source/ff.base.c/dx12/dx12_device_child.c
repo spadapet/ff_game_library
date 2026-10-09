@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "base/assert.h"
 #include "dx12/dx12_device_child.h"
+#include "dx12/dx12_internal.h"
 
 static ff_dx12_device_child* s_heads[ff_dx12_device_child_type_count];
 static ff_dx12_device_child* s_tails[ff_dx12_device_child_type_count];

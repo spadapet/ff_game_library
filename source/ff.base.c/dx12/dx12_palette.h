@@ -60,7 +60,3 @@ ff_dx12_palette_remap ff_dx12_palette_remap_identity(void);
 
 // Hashes the bytes and fills in the hash field, so callers never compute it themselves.
 ff_dx12_palette_remap ff_dx12_palette_remap_make(ff_span remap);
-
-// Device reset: re-uploads the saved colors into the rebuilt texture. There is no before_reset
-// because the texture and its resource handle their own teardown.
-bool internal_ff_dx12_palette_data_reset(ff_dx12_palette_data* data, ff_dx12_commands* commands);

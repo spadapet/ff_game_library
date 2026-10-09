@@ -86,17 +86,5 @@ void* ff_dx12_buffer_map(ff_dx12_buffer* buffer, ff_dx12_commands* commands, siz
 void ff_dx12_buffer_unmap(ff_dx12_buffer* buffer, ff_dx12_commands* commands);
 
 // vertex_count/index_count of 0 mean "the rest of the buffer".
-D3D12_VERTEX_BUFFER_VIEW ff_dx12_buffer_vertex_view(const ff_dx12_buffer* buffer, size_t vertex_stride,
-    uint64_t start_offset, size_t vertex_count);
-D3D12_INDEX_BUFFER_VIEW ff_dx12_buffer_index_view(const ff_dx12_buffer* buffer, DXGI_FORMAT format,
-    size_t start, size_t count);
-
-// Device reset: re-uploads a static buffer's saved contents into the rebuilt resource. A gpu-kind
-// buffer keeps no CPU copy, so its contents are lost and its owner has to rewrite it; this only
-// bumps the version so callers caching on it notice. Returns false if the re-upload failed.
-// Drops an outstanding map: the ring range it points into belongs to a heap that is about to be
-// released, and the ring's bookkeeping is reset out from under it.
-void internal_ff_dx12_buffer_before_reset(ff_dx12_buffer* buffer);
-
-// commands may be NULL, in which case static buffers can't re-upload and report failure.
-bool internal_ff_dx12_buffer_reset(ff_dx12_buffer* buffer, ff_dx12_commands* commands);
+D3D12_VERTEX_BUFFER_VIEW ff_dx12_buffer_vertex_view(const ff_dx12_buffer* buffer, size_t vertex_stride, uint64_t start_offset, size_t vertex_count);
+D3D12_INDEX_BUFFER_VIEW ff_dx12_buffer_index_view(const ff_dx12_buffer* buffer, DXGI_FORMAT format, size_t start, size_t count);

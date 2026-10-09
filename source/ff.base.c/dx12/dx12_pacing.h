@@ -67,26 +67,3 @@ typedef struct ff_dx12_pacing
 } ff_dx12_pacing;
 
 void ff_dx12_pacing_set_mode(ff_dx12_pacing* pacing, ff_dx12_pacing_mode mode);
-
-void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds, ff_dx12_pacing_mode mode);
-
-// Discards in-flight measurements when the frame loop is interrupted. Conservative mode keeps the
-// current stage; aggressive mode resets it to match the legacy behavior.
-void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing);
-
-// Feeds one measured frame interval and returns true when the stage changed, which means the
-// caller must reapply the swap chain latency. Exposed separately from the tick-based path so tests
-// can drive the state machine with synthetic frame times.
-//
-// busy_seconds is how much of the interval the app spent doing its own work rather than blocked
-// waiting for a vblank. The ladder only blames a long frame on the app when the app was actually
-// busy, since dropping vsync cannot speed up a frame loop that was already idle. The plain
-// add_frame form charges the whole interval as busy, which is the conservative reading.
-bool internal_ff_dx12_pacing_add_frame(ff_dx12_pacing* pacing, double frame_seconds);
-bool internal_ff_dx12_pacing_add_frame_busy(ff_dx12_pacing* pacing, double frame_seconds, double busy_seconds);
-
-uint32_t internal_ff_dx12_pacing_latency(const ff_dx12_pacing* pacing);
-bool internal_ff_dx12_pacing_vsync(const ff_dx12_pacing* pacing);
-
-// Best-effort refresh interval for the monitor showing 'hwnd', falling back to 60Hz.
-double internal_ff_dx12_pacing_refresh_seconds(HWND hwnd);

@@ -5,6 +5,7 @@
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_draw_state.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_object_cache.h"
 
 static_assert(sizeof(ff_dx12_vs_constants_0) == 80, "vs_constants_0 must match the HLSL cbuffer");

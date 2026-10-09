@@ -98,8 +98,6 @@ typedef struct ff_dx12_queue
 
 bool ff_dx12_queue_init(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND_LIST_TYPE type);
 void ff_dx12_queue_destroy(ff_dx12_queue* queue);
-void internal_ff_dx12_queue_before_reset(ff_dx12_queue* queue);
-bool internal_ff_dx12_queue_reset(ff_dx12_queue* queue);
 
 bool ff_dx12_queue_valid(const ff_dx12_queue* queue);
 ID3D12CommandQueue* ff_dx12_queue_command_queue(ff_dx12_queue* queue);

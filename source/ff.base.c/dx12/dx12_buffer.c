@@ -6,6 +6,7 @@
 #include "dx12/dx12_buffer.h"
 #include "dx12/dx12_commands.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 
 // Above this size the cost of hashing outweighs the upload it might save.

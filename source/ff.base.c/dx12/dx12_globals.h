@@ -102,9 +102,6 @@ void ff_dx12_wait_for_idle(void);
 // while command lists may still reference it, since the data lives inside the dying resource.
 void ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
 
-// Removes a destroyed resource from all active command-list trackers.
-void internal_ff_dx12_forget_resource(ff_dx12_resource* resource);
-
 // Frame lifecycle. frame_started drains the keep-alive list and refreshes the video memory
 // budget; frame_complete advances the frame counter.
 void ff_dx12_frame_started(void);
@@ -147,16 +144,3 @@ size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
     const ff_dx12_fence_values* fence_values);
 void ff_dx12_flush_keep_alive(void);
-size_t internal_ff_dx12_keep_alive_arena_buffer_count(void);
-
-// Device reset internals, used only by dx12_reset.c. init_dxgi/init_d3d are the same routines
-// ff_dx12_init uses; the 'for_reset' flag skips the one-time process-wide setup (adapter removal
-// support, the debug layer) that must not be repeated.
-bool internal_ff_dx12_init_dxgi(bool for_reset);
-void internal_ff_dx12_destroy_dxgi(void);
-bool internal_ff_dx12_init_d3d(bool for_reset);
-void internal_ff_dx12_destroy_d3d(bool for_reset);
-
-// Clears the simulated-failure flag set by ff_dx12_device_fatal_error, so that a successful reset
-// makes the device usable again.
-void internal_ff_dx12_clear_fatal_error(void);

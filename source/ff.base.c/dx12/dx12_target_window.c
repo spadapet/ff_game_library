@@ -3,6 +3,7 @@
 #include "base/string.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_queue.h"
 #include "dx12/dx12_target_window.h"
 

@@ -8,6 +8,7 @@
 #include "data/file.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_object_cache.h"
 #include "dx12/dx12_shader.h"
 #include "windows/module.h"

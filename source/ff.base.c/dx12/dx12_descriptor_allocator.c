@@ -5,6 +5,7 @@
 #include "base/math.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 
 static void buffer_set_heap(ff_dx12_descriptor_buffer* buffer, ID3D12DescriptorHeap* descriptor_heap)
 {

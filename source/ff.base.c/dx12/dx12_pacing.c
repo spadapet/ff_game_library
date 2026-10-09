@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "base/assert.h"
 #include "base/log.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_pacing.h"
 
 static const ff_dx12_pacing_stage s_pacing_stages[FF_DX12_PACING_STAGE_COUNT] =

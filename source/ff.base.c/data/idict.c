@@ -319,7 +319,7 @@ static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff
     {
         ff_arena_marker marker = ff_arena_mark(builder->scratch_arena);
         key_sort* order = internal_ff_idict_sort_order(builder->scratch_arena, source->keys, count);
-        const ff_value* values = internal_ff_dict_values(source);
+        const ff_value* values = (const ff_value*)(source->keys + source->capacity);
 
         for (size_t rank = 0; rank < count && !builder->failed; rank++)
         {

@@ -3,6 +3,7 @@
 #include "base/assert.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_resource.h"
 #include "dx12/dx12_resource_tracker.h"

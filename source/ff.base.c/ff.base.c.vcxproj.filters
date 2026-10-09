@@ -266,6 +266,9 @@
     <ClInclude Include="dx12\dx12_globals.h">
       <Filter>dx12</Filter>
     </ClInclude>
+    <ClInclude Include="dx12\dx12_internal.h">
+      <Filter>dx12</Filter>
+    </ClInclude>
     <ClInclude Include="dx12\dx12_fence.h">
       <Filter>dx12</Filter>
     </ClInclude>

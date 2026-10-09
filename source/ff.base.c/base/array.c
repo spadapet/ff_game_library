@@ -100,10 +100,9 @@ bool internal_ff_array_realloc(void** array_ptr, size_t min_capacity)
     uint8_t* block = (uint8_t*)*array_ptr - offset;
     size_t old_block_size = offset + header->capacity * header->item_size;
     size_t new_block_size = offset + new_capacity * header->item_size;
-
     uint8_t* new_block = (uint8_t*)ff_arena_realloc(header->arena, block, old_block_size, new_block_size, align);
-
     uint8_t* new_data = new_block + offset;
+
     internal_ff_array_get_header(new_data)->capacity = new_capacity;
     *array_ptr = new_data;
     return true;

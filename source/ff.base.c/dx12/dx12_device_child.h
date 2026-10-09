@@ -55,13 +55,3 @@ size_t ff_dx12_device_child_count(ff_dx12_device_child_type type);
 
 // True while a device reset is walking the registry.
 bool ff_dx12_device_child_resetting(void);
-
-// Walk support for dx12_reset.c. The walk tolerates children being added or removed by the
-// callbacks it invokes: a removal moves the cursor forward off the dying node, and an addition
-// is left unmarked so every pass skips it. A child created mid-reset was already built against
-// whichever device is current, so resetting it would tear down state that was never stale.
-void internal_ff_dx12_device_child_reset_begin(void);
-void internal_ff_dx12_device_child_reset_end(void);
-void internal_ff_dx12_device_child_walk_begin(ff_dx12_device_child_type type);
-void internal_ff_dx12_device_child_walk_end(void);
-ff_dx12_device_child* internal_ff_dx12_device_child_walk_next(void);

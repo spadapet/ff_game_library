@@ -4,6 +4,7 @@
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_heap.h"
+#include "dx12/dx12_internal.h"
 
 ff_string_view ff_dx12_heap_usage_name(ff_dx12_heap_usage usage)
 {

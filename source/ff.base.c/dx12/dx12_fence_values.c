@@ -3,6 +3,7 @@
 #include "dx12/dx12_fence.h"
 #include "dx12/dx12_fence_values.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 
 void ff_dx12_fence_values_init(ff_dx12_fence_values* values)
 {

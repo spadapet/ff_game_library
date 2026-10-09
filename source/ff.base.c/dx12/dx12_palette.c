@@ -2,6 +2,7 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/hash.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_palette.h"
 
 // Zero is the "this slot has never been uploaded" sentinel in the draw device's row-hash cache, so

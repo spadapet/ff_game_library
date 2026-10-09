@@ -10,6 +10,7 @@
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_device_child.h"
 #include "dx12/dx12_fence.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_mem_range.h"
 #include "dx12/dx12_queue.h"

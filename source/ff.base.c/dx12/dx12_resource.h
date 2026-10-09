@@ -75,14 +75,6 @@ void ff_dx12_resource_create_shader_view(ff_dx12_resource* resource, D3D12_CPU_D
 void ff_dx12_resource_create_target_view(ff_dx12_resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE view,
     size_t array_start, size_t array_count, size_t mip_level);
 
-// Device reset, driven by dx12_reset.c. before_reset runs while the old device is still alive and
-// releases the ID3D12Resource immediately rather than through the keep-alive list: the device is
-// going away, which retires all GPU work by definition. reset rebuilds the resource in place
-// against the new device, keeping the arena and the intrusive residency node at the same address.
-// An external (swap chain) resource is not rebuilt here; its owner recreates it.
-void internal_ff_dx12_resource_before_reset(ff_dx12_resource* resource);
-bool internal_ff_dx12_resource_reset(ff_dx12_resource* resource);
-
 // Bumped by every completed reset, so callers (and tests) can tell that the underlying
 // ID3D12Resource was replaced.
 size_t ff_dx12_resource_reset_count(const ff_dx12_resource* resource);

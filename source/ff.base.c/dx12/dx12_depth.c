@@ -6,6 +6,7 @@
 #include "dx12/dx12_depth.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 
 static int s_depth_counter;
 

@@ -5,6 +5,7 @@
 #include "base/math.h"
 #include "base/string.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 
 static ff_dx12_mem_ring_range* ring_front(ff_dx12_mem_buffer* buffer)

@@ -77,9 +77,3 @@ uint64_t ff_dx12_target_window_pacing_late_frames(const ff_dx12_target_window* t
 // from outside the process, and the ladder deliberately does not demote for them.
 uint64_t ff_dx12_target_window_pacing_idle_late_frames(const ff_dx12_target_window* target);
 size_t ff_dx12_target_window_pacing_stage(const ff_dx12_target_window* target);
-
-// Device reset. before_reset drops the back buffers, the latency handle and the swap chain
-// itself: a swap chain is bound to the command queue it was created with, so it cannot outlive
-// the device. reset rebuilds it at the window's current client size.
-void internal_ff_dx12_target_window_before_reset(ff_dx12_target_window* target);
-bool internal_ff_dx12_target_window_reset(ff_dx12_target_window* target);

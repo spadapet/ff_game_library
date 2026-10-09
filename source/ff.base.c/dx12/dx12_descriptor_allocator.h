@@ -124,11 +124,3 @@ ID3D12DescriptorHeap* ff_dx12_gpu_descriptor_allocator_heap(ff_dx12_gpu_descript
 // GPU; callers should flush and retry rather than treat it as an error.
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc(ff_dx12_gpu_descriptor_allocator* allocator, size_t count, ff_dx12_fence_value fence_value);
 ff_dx12_descriptor_range ff_dx12_gpu_descriptor_allocator_alloc_pinned(ff_dx12_gpu_descriptor_allocator* allocator, size_t count);
-
-// Device reset. Bucket structure and descriptor indices are preserved so that every outstanding
-// descriptor_range stays valid; only the ID3D12DescriptorHeap objects are rebuilt. The descriptors
-// written into them are not restored: their owners re-create their views in their own reset.
-void internal_ff_dx12_cpu_descriptor_allocator_before_reset(ff_dx12_cpu_descriptor_allocator* allocator);
-bool internal_ff_dx12_cpu_descriptor_allocator_reset(ff_dx12_cpu_descriptor_allocator* allocator);
-void internal_ff_dx12_gpu_descriptor_allocator_before_reset(ff_dx12_gpu_descriptor_allocator* allocator);
-bool internal_ff_dx12_gpu_descriptor_allocator_reset(ff_dx12_gpu_descriptor_allocator* allocator);

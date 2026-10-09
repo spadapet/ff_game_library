@@ -42,12 +42,6 @@ size_t ff_dx12_texture_view_mip_count(const ff_dx12_texture_view* view);
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_cpu_handle(ff_dx12_texture_view* view);
 
-// Device reset: re-creates the SRV against the rebuilt texture, keeping the same descriptor slot.
-// There is no before_reset because the descriptor allocators survive a reset in place and the
-// texture handles its own teardown. This mirrors ff_dx12_texture. The old C++ freed the range and
-// reallocated on next use instead, which is equivalent but churns the allocator for no reason.
-bool internal_ff_dx12_texture_view_reset(ff_dx12_texture_view* view);
-
 // Counts how many times the SRV has actually been rewritten against a rebuilt texture. Without
 // this a reset test can only observe that the view still returns a usable handle, which stays
 // true even if the descriptor was never refreshed and still describes the destroyed resource.

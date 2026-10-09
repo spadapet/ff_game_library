@@ -49,6 +49,7 @@ These apply to every project in this repo.
 - Headers start with `#pragma once` and no include guard.
 - Prefer a forward `typedef struct ff_foo ff_foo;` over including another header, the way `arena.h` and `string.h` do for each other's types. Include only when a field's full layout is genuinely needed.
 - `COBJMACROS` is defined, so COM interfaces are called through their C macros: `ID3D12Resource_Release(x)`, not `x->Release()` or `x->lpVtbl->Release(x)`.
+- Cross-file `internal_ff_dx12_*` declarations belong in the private `dx12/dx12_internal.h`, with reset-related declarations grouped at the bottom. Include it explicitly in implementations that need it, never from public headers or `include/ff.base.c.h`. Tests exercising internals include it directly inside `extern "C"`. Public macro dependencies such as the `internal_ff_array_*` declarations remain in their public header.
 
 #### Data structure conventions
 
