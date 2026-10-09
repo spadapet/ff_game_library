@@ -15,7 +15,7 @@ The initial review reported 24 numbered findings. The two independent arena-rete
 
 ## Tracking conventions
 
-Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs. Add new entries with the next unused ID, currently **FFC-029**, and update the index. Keep resolved entries as history.
+Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs. Add new entries with the next unused ID, currently **FFC-031**, and update the index. Keep resolved entries as history.
 
 **Priority:** P1 = high-priority corruption, lifetime, synchronization, or deadlock defect; P2 = other concrete correctness, recovery, or sustained resource/performance defect. Priority is not a security severity rating.
 
@@ -36,7 +36,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-005 | P2 | Fixed | Ring metadata exhaustion causes exponential heap growth |
 | FFC-006 | P2 | Fixed | Allocator pruning retains the oldest, smallest heap |
 | FFC-007 | P2 | Fixed | Recycled free-list nodes abandon arena-backed metadata |
-| FFC-008 | P2 | Open | Recycled keep-alive nodes abandon spilled fence storage |
+| FFC-008 | P2 | Fixed | Recycled keep-alive nodes abandon spilled fence storage |
 | FFC-009 | P2 | Open | Filled circles ignore their inside color |
 | FFC-010 | P2 | Open | Palette sprites use base dimensions for nonzero-mip views |
 | FFC-011 | P2 | Open | Mip render targets report base-level dimensions |
@@ -57,6 +57,8 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-026 | P1 | Fixed | Forgotten-resource barriers inherit replacement-resource state |
 | FFC-027 | P2 | Fixed | Pipeline cache rejects embedded root signatures |
 | FFC-028 | P2 | Fixed | Incomplete format metadata rejects valid textures |
+| FFC-029 | P1 | Deferred | Fence-set allocation failure drops GPU retirement dependencies |
+| FFC-030 | P1 | Deferred | Descriptor-ring metadata allocation failure returns an untracked range |
 
 ## DX12 synchronization, lifetime, and recovery
 
@@ -198,19 +200,55 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-008: Recycled keep-alive nodes abandon spilled fence storage
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Port-specific arena-lifetime issue.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port-specific arena-lifetime issue.
 
-**Location:** `dx12\dx12_globals.c:486-500,510-534`, `ff_dx12_keep_alive_resource`; `dx12\dx12_fence_values.c:13-24,56-69,95-104`.
+**Location:** `dx12\dx12_globals.c`, `ff_dx12_keep_alive_resource`; `dx12\dx12_fence_values.c`, reusable fence-set copying.
 
-**Cause:** Every call builds a fresh temporary fence set against `s_keep_alive_arena`. More than eight incomplete, distinct fences require spill storage. Assigning the temporary into a recycled node overwrites the node's previous spill pointer/capacity. `ff_dx12_fence_values_clear` could preserve that backing storage, but the subsequent whole-struct assignment defeats reuse.
+**Cause:** Every call built a fresh temporary fence set against `s_keep_alive_arena`. More than eight incomplete, distinct fences required spill storage. Assigning the temporary into a recycled node overwrote the node's previous spill pointer/capacity. `ff_dx12_fence_values_clear` could preserve that backing storage, but the subsequent whole-struct assignment defeated reuse.
 
 **Trigger:** Submit more than eight distinct reader command lists referencing a resource while keeping their GPU completion pending, then destroy the wrapper. Let the work retire and flush the keep-alive list. Repeat using recycled nodes. Submit the readers before destroying the wrapper to isolate this issue from FFC-002.
 
 **Impact:** Each spilled retirement set leaves another allocation in the global keep-alive arena until device teardown, despite bounded active keep-alive nodes.
 
-**Fix direction:** Refill node-owned fence storage rather than constructing and assigning fresh spilled sets. Preserve deep-copy ownership so caller arenas may still be destroyed safely.
+**Resolution:** Keep-alive nodes now refill their fence sets in place with a checked deep copy, preserving overflow storage for reuse. Completed sets are released before allocating keep-alive storage.
 
-**Regression scenario:** Repeatedly retire resources with at least nine incomplete reader fences, then drain them. Confirm arena use stabilizes after warm-up. Also cover the immediate-release path and sets that fit inline.
+**Regression coverage:** `dx12_frame_tests::recycled_keep_alive_nodes_reuse_spilled_fence_storage` repeats retirement with nine incomplete fences and confirms arena buffer count stabilizes after warm-up. `completed_keep_alive_fences_do_not_allocate_arena_storage` covers the completed-set fast path.
+
+### FFC-029: Fence-set allocation failure drops GPU retirement dependencies
+
+**Priority:** P1. **Status:** Deferred. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+
+**Deferral rationale:** Small CPU arena/heap allocation failures are outside the application's supported recovery scope. Per owner direction, do not prioritize synthetic OOM failures or propagate them through the application as recoverable errors. Revisit only if a reasonably possible trigger is established.
+
+**Location:** `dx12\dx12_fence_values.c`, `ff_dx12_fence_values_add` and `ff_dx12_fence_values_add_all`; `dx12\dx12_resource.c`, `ff_dx12_resource_destroy`.
+
+**Cause:** `ff_dx12_fence_values_add` returns `void`. If growing the overflow array fails, it returns without recording the new fence. `ff_dx12_fence_values_add_all` cannot report the partial copy, and resource destruction then queues or releases the resource using the incomplete fence set.
+
+**Trigger:** An arena allocation fails while adding a ninth distinct, incomplete fence to a resource's retirement set, then the resource is destroyed in Release.
+
+**Impact:** The keep-alive list can release the resource and its backing range before the omitted GPU work completes, allowing use-after-free or reuse while the GPU still references it.
+
+**Fix direction:** Propagate fence-set growth failure and require lifetime-sensitive callers to safely wait, retain the resource, or otherwise preserve every dependency.
+
+**Regression scenario:** Inject failure during overflow growth for a set with more than eight incomplete fences. Verify that destroying the resource cannot release it or its backing allocation until every fence retires.
+
+### FFC-030: Descriptor-ring metadata allocation failure returns an untracked range
+
+**Priority:** P1. **Status:** Deferred. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+
+**Deferral rationale:** This requires failure of a CPU arena metadata allocation, not exhaustion of the GPU descriptor ring. Per owner direction, such heap OOM recovery is out of scope. Normal descriptor-ring exhaustion remains a supported allocation failure.
+
+**Location:** `dx12\dx12_descriptor_allocator.c`, `ring_grow`, `ring_push_back`, and `ff_dx12_descriptor_buffer_alloc_ring`.
+
+**Cause:** `ring_grow` can fail to allocate a larger range array, but `ring_push_back` returns `void`; the caller still increments `allocated_range_count` and returns a valid descriptor range without recording its fence.
+
+**Trigger:** Fill the ring's range metadata with distinct pending fence values, then fail the arena allocation needed to grow the metadata.
+
+**Impact:** Later ring allocations can overlap the returned range after wraparound, reusing descriptors while the GPU may still read them.
+
+**Fix direction:** Propagate metadata-growth failure and return an invalid range without changing the outstanding-allocation count.
+
+**Regression scenario:** Inject failure at range-array growth and verify allocation fails, existing fence records remain intact, and no untracked range can be reused before its fence completes.
 
 ## DX12 rendering
 

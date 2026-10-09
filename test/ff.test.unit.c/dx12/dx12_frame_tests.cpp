@@ -116,6 +116,89 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
+        TEST_METHOD(recycled_keep_alive_nodes_reuse_spilled_fence_storage)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t fence_count = FF_DX12_FENCE_VALUES_INLINE_MAX + 1;
+            ff_dx12_fence fences[fence_count]{};
+            for (size_t i = 0; i < fence_count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("keep alive fence"), 0));
+            }
+
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            size_t first_buffer_count = 0;
+            for (size_t iteration = 0; iteration < 32; iteration++)
+            {
+                ff_dx12_resource resource{};
+                Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("keep alive resource"), &desc, nullptr));
+
+                ff_dx12_fence_value values[fence_count]{};
+                for (size_t i = 0; i < fence_count; i++)
+                {
+                    values[i] = ff_dx12_fence_signal_later(&fences[i]);
+                    ff_dx12_fence_values_add(&resource.global_reads, values[i]);
+                }
+
+                ff_dx12_resource_destroy(&resource);
+
+                for (size_t i = 0; i < fence_count; i++)
+                {
+                    ff_dx12_fence_signal_value(&fences[i], values[i].value, nullptr);
+                }
+
+                ff_dx12_flush_keep_alive();
+                const size_t buffer_count = internal_ff_dx12_keep_alive_arena_buffer_count();
+                if (!iteration)
+                {
+                    first_buffer_count = buffer_count;
+                }
+                else
+                {
+                    Assert::AreEqual(first_buffer_count, buffer_count);
+                }
+            }
+
+            for (size_t i = 0; i < fence_count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+        }
+
+        TEST_METHOD(completed_keep_alive_fences_do_not_allocate_arena_storage)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            const size_t fence_count = FF_DX12_FENCE_VALUES_INLINE_MAX + 1;
+            ff_dx12_fence fences[fence_count]{};
+            for (size_t i = 0; i < fence_count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("completed keep alive fence"), 1));
+            }
+
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            ff_dx12_resource resource{};
+            Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("completed keep alive resource"), &desc, nullptr));
+
+            for (size_t i = 0; i < fence_count; i++)
+            {
+                ff_dx12_fence_value value{};
+                value.fence = &fences[i];
+                value.value = 1;
+                ff_dx12_fence_values_add(&resource.global_reads, value);
+            }
+
+            ff_dx12_resource_destroy(&resource);
+
+            Assert::AreEqual((size_t)0, internal_ff_dx12_keep_alive_arena_buffer_count());
+
+            for (size_t i = 0; i < fence_count; i++)
+            {
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+        }
+
         // Shutdown must release everything still queued, even without an explicit flush.
         TEST_METHOD(destroy_releases_pending_keep_alive)
         {

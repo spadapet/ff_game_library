@@ -147,6 +147,7 @@ size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
     const ff_dx12_fence_values* fence_values);
 void ff_dx12_flush_keep_alive(void);
+size_t internal_ff_dx12_keep_alive_arena_buffer_count(void);
 
 // Device reset internals, used only by dx12_reset.c. init_dxgi/init_d3d are the same routines
 // ff_dx12_init uses; the 'for_reset' flag skips the one-time process-wide setup (adapter removal

@@ -454,6 +454,47 @@ static void keep_alive_node_release(ff_dx12_keep_alive_node* node)
     ff_dx12_fence_values_clear(&node->fence_values);
 }
 
+static void keep_alive_node_recycle(ff_dx12_keep_alive_node* node)
+{
+    node->next = s_keep_alive_free;
+    s_keep_alive_free = node;
+}
+
+static bool keep_alive_fence_values_complete(const ff_dx12_fence_values* fence_values)
+{
+    if (!fence_values || !fence_values->count)
+    {
+        return true;
+    }
+
+    ff_dx12_fence_values pending = *fence_values;
+    return ff_dx12_fence_values_complete(&pending);
+}
+
+static bool keep_alive_wait_for_fence_values(const ff_dx12_fence_values* fence_values)
+{
+    ff_dx12_fence_values pending = *fence_values;
+    if (!ff_dx12_fence_values_wait_is_pending(&pending))
+    {
+        return false;
+    }
+
+    ff_dx12_fence_values_wait(&pending, NULL);
+    return true;
+}
+
+static void keep_alive_release_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range)
+{
+    ff_dx12_keep_alive_node pending = { 0 };
+    pending.resource = resource;
+    if (mem_range)
+    {
+        pending.mem_range = *mem_range;
+    }
+
+    keep_alive_node_release(&pending);
+}
+
 void ff_dx12_flush_keep_alive(void)
 {
     // Entries are pushed in roughly fence order, so stopping at the first incomplete one keeps
@@ -478,34 +519,16 @@ void ff_dx12_flush_keep_alive(void)
 void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
     const ff_dx12_fence_values* fence_values)
 {
+    if (keep_alive_fence_values_complete(fence_values))
+    {
+        keep_alive_release_resource(resource, mem_range);
+        return;
+    }
+
     if (!s_keep_alive_arena_valid)
     {
         ff_arena_init_heap_local(&s_keep_alive_arena, 4096);
         s_keep_alive_arena_valid = true;
-    }
-
-    ff_dx12_keep_alive_node pending = { 0 };
-    pending.resource = resource;
-
-    if (mem_range)
-    {
-        pending.mem_range = *mem_range;
-    }
-
-    // Deep copy: the caller's set may have spilled into an arena that dies with the caller, and
-    // this node outlives it. Re-adding rebuilds the spill against the keep-alive arena.
-    ff_dx12_fence_values_init_arena(&pending.fence_values, &s_keep_alive_arena);
-
-    if (fence_values)
-    {
-        ff_dx12_fence_values_add_all(&pending.fence_values, fence_values);
-    }
-
-    // Nothing in flight, so skip the list entirely and release right now.
-    if (ff_dx12_fence_values_complete(&pending.fence_values))
-    {
-        keep_alive_node_release(&pending);
-        return;
     }
 
     ff_dx12_keep_alive_node* node = s_keep_alive_free;
@@ -516,24 +539,50 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
     else
     {
         node = ff_arena_alloc_type(&s_keep_alive_arena, ff_dx12_keep_alive_node, 1);
+        if (node)
+        {
+            *node = (ff_dx12_keep_alive_node){ 0 };
+        }
     }
 
     if (!node)
     {
-        // Can't defer, so fall back to blocking rather than leaking the resource. Only safe for
-        // fence values that were actually submitted; an unsubmitted one would hang forever, so
-        // leak it instead. Reaching here at all means arena allocation failed.
-        if (ff_dx12_fence_values_wait_is_pending(&pending.fence_values))
+        if (keep_alive_wait_for_fence_values(fence_values))
         {
-            ff_dx12_fence_values_wait(&pending.fence_values, NULL);
-            keep_alive_node_release(&pending);
+            keep_alive_release_resource(resource, mem_range);
         }
 
         FF_DEBUG_FAIL_RET();
     }
 
-    *node = pending;
     node->next = NULL;
+    node->resource = resource;
+    node->mem_range = mem_range ? *mem_range : (ff_dx12_mem_range){ 0 };
+    node->fence_values.arena = &s_keep_alive_arena;
+
+    if (!internal_ff_dx12_fence_values_copy(&node->fence_values, fence_values, &s_keep_alive_arena))
+    {
+        if (keep_alive_wait_for_fence_values(fence_values))
+        {
+            keep_alive_node_release(node);
+        }
+        else
+        {
+            node->resource = NULL;
+            node->mem_range = (ff_dx12_mem_range){ 0 };
+            ff_dx12_fence_values_clear(&node->fence_values);
+        }
+
+        keep_alive_node_recycle(node);
+        FF_DEBUG_FAIL_RET();
+    }
+
+    if (ff_dx12_fence_values_complete(&node->fence_values))
+    {
+        keep_alive_node_release(node);
+        keep_alive_node_recycle(node);
+        return;
+    }
 
     if (s_keep_alive_tail)
     {
@@ -545,6 +594,17 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
     }
 
     s_keep_alive_tail = node;
+}
+
+size_t internal_ff_dx12_keep_alive_arena_buffer_count(void)
+{
+    size_t count = 0;
+    for (internal_ff_arena_buffer* buffer = s_keep_alive_arena.buffer; buffer; buffer = buffer->next)
+    {
+        count++;
+    }
+
+    return count;
 }
 
 static void keep_alive_destroy(void)

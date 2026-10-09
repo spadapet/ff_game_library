@@ -70,6 +70,47 @@ static bool reserve_values(ff_dx12_fence_values* values, size_t capacity)
     return true;
 }
 
+bool internal_ff_dx12_fence_values_copy(ff_dx12_fence_values* destination,
+    const ff_dx12_fence_values* source, ff_arena* arena)
+{
+    FF_ASSERT_RET_VAL(destination && source && arena && destination != source, false);
+
+    const size_t source_count = source->count;
+    const size_t source_capacity = source->overflow ? source->overflow_capacity : FF_DX12_FENCE_VALUES_INLINE_MAX;
+    FF_ASSERT_RET_VAL(source_count <= source_capacity, false);
+
+    const ff_dx12_fence_value* source_values = source->overflow
+        ? source->overflow
+        : source->inline_values;
+
+    ff_dx12_fence_values_clear(destination);
+    destination->arena = arena;
+
+    if (source_count > FF_DX12_FENCE_VALUES_INLINE_MAX)
+    {
+        size_t capacity = destination->overflow_capacity
+            ? destination->overflow_capacity
+            : FF_DX12_FENCE_VALUES_INLINE_MAX;
+
+        while (capacity < source_count)
+        {
+            FF_ASSERT_RET_VAL(capacity <= SIZE_MAX / 2, false);
+            capacity *= 2;
+        }
+
+        FF_ASSERT_RET_VAL(reserve_values(destination, capacity), false);
+    }
+
+    ff_dx12_fence_value* destination_values = ff_dx12_fence_values_data(destination);
+    for (size_t i = 0; i < source_count; i++)
+    {
+        destination_values[i] = source_values[i];
+    }
+
+    destination->count = source_count;
+    return true;
+}
+
 void ff_dx12_fence_values_add(ff_dx12_fence_values* values, ff_dx12_fence_value value)
 {
     FF_CHECK_RET(values);
