@@ -338,6 +338,144 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        static void verify_self_insert(size_t pos, size_t source_start, size_t source_count, int growth_mode)
+        {
+            ff_arena arena;
+            ff_arena_init_virtual_memory(&arena, 4096);
+            ff_string_builder sb;
+            ff_string_builder_init_capacity(&sb, &arena, growth_mode ? 16 : 64);
+            const char initial[] = "abcdefghijklmnop";
+            ff_string_builder_append(&sb, FF_SVL("abcdefghijklmnop"));
+            char* original_data = sb.data;
+            size_t original_capacity = sb.capacity;
+
+            if (growth_mode == 2)
+            {
+                ff_arena_alloc_type(&arena, char, 64);
+            }
+
+            char expected[32];
+            memcpy(expected, initial, pos);
+            memcpy(expected + pos, initial + source_start, source_count);
+            memcpy(expected + pos + source_count, initial + pos, 16 - pos);
+            ff_string_builder_insert(&sb, pos, ff_string_view{ sb.data + source_start, source_count });
+            ff_string_view result = ff_string_builder_view(&sb);
+            Assert::AreEqual((size_t)16 + source_count, result.count);
+            Assert::IsTrue(memcmp(result.data, expected, result.count) == 0);
+
+            if (growth_mode && source_count)
+            {
+                Assert::IsTrue(sb.capacity > original_capacity);
+            }
+            else
+            {
+                Assert::AreEqual(original_capacity, sb.capacity);
+            }
+
+            if (growth_mode == 2 && source_count)
+            {
+                Assert::AreNotEqual((void*)original_data, (void*)sb.data);
+            }
+            else
+            {
+                Assert::AreEqual((void*)original_data, (void*)sb.data);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(insert_self_substrings_preserves_original_bytes)
+        {
+            const size_t positions[] = { 0, 3, 8, 16 };
+
+            for (int growth_mode = 0; growth_mode < 3; growth_mode++)
+            {
+                for (size_t pos : positions)
+                {
+                    verify_self_insert(pos, 2, 8, growth_mode);
+                    verify_self_insert(pos, 0, 16, growth_mode);
+                    verify_self_insert(pos, 14, 2, growth_mode);
+                    verify_self_insert(pos, 16, 0, growth_mode);
+                }
+            }
+        }
+
+        TEST_METHOD(insert_large_self_view_preserves_binary_bytes)
+        {
+            ff_arena arena;
+            ff_arena_init_virtual_memory(&arena, 8192);
+            ff_string_builder sb;
+            ff_string_builder_init_capacity(&sb, &arena, 2048);
+            char initial[2048];
+
+            for (size_t i = 0; i < sizeof(initial); i++)
+            {
+                initial[i] = (char)(i % 251);
+            }
+
+            ff_string_builder_append(&sb, ff_string_view{ initial, sizeof(initial) });
+            char* original_data = sb.data;
+            ff_string_builder_insert(&sb, 1024, ff_string_builder_view(&sb));
+            Assert::AreEqual((size_t)4096, sb.count);
+            Assert::AreEqual((void*)original_data, (void*)sb.data);
+            Assert::IsTrue(memcmp(sb.data, initial, 1024) == 0);
+            Assert::IsTrue(memcmp(sb.data + 1024, initial, sizeof(initial)) == 0);
+            Assert::IsTrue(memcmp(sb.data + 3072, initial + 1024, 1024) == 0);
+            Assert::AreEqual((void*)(sb.data + sb.capacity), (void*)arena.next);
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(insert_view_starting_before_builder_preserves_overlap)
+        {
+            ff_arena arena;
+            ff_arena_init_virtual_memory(&arena, 4096);
+            char* prefix = ff_arena_alloc_type(&arena, char, 16);
+            memcpy(prefix, "0123456789ABCDEF", 16);
+            ff_string_builder sb;
+            ff_string_builder_init_capacity(&sb, &arena, 64);
+            ff_string_builder_append(&sb, FF_SVL("abcdefghijklmnop"));
+            Assert::AreEqual((void*)(prefix + 16), (void*)sb.data);
+            ff_string_builder_insert(&sb, 0, ff_string_view{ prefix, 32 });
+            Assert::IsTrue(view_equals(ff_string_builder_view(&sb),
+                "0123456789ABCDEFabcdefghijklmnopabcdefghijklmnop"));
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(append_self_views_survive_growth)
+        {
+            for (int growth_mode = 0; growth_mode < 3; growth_mode++)
+            {
+                ff_arena arena;
+                ff_arena_init_virtual_memory(&arena, 4096);
+                ff_string_builder sb;
+                ff_string_builder_init_capacity(&sb, &arena, growth_mode ? 16 : 64);
+                ff_string_builder_append(&sb, FF_SVL("abcdefghijklmnop"));
+                char* original_data = sb.data;
+
+                if (growth_mode == 2)
+                {
+                    ff_arena_alloc_type(&arena, char, 64);
+                }
+
+                ff_string_builder_append(&sb, ff_string_builder_view(&sb));
+                Assert::AreEqual((size_t)32, sb.count);
+
+                if (growth_mode == 2)
+                {
+                    Assert::AreNotEqual((void*)original_data, (void*)sb.data);
+                }
+                else
+                {
+                    Assert::AreEqual((void*)original_data, (void*)sb.data);
+                }
+
+                ff_string_builder_append(&sb, ff_string_view{ sb.data + 2, 8 });
+                Assert::IsTrue(view_equals(ff_string_builder_view(&sb),
+                    "abcdefghijklmnopabcdefghijklmnopcdefghij"));
+                ff_arena_destroy(&arena);
+            }
+        }
+
         TEST_METHOD(insert_string_view)
         {
             ff_arena arena;

@@ -13,7 +13,7 @@ struct circle_vertex
 
 color_pixel vs_circle(circle_vertex input)
 {
-    const uint v_inner = (input.vertex_id >> 5) & 1; // 0 for outer, 1 for inner
+    const uint v_inner = input.vertex_id >= 32;
 
     color_pixel output;
     output.color = lerp(input.outside_color, input.inside_color, v_inner);

@@ -133,16 +133,36 @@ void ff_string_builder_insert_char(ff_string_builder* sb, size_t pos, char value
     ff_string_builder_insert(sb, pos, single);
 }
 
+static void insert_string(ff_string_builder* sb, size_t pos, ff_string_view value)
+{
+    ensure_capacity(sb, sb->count + value.count);
+    memmove(sb->data + pos + value.count, sb->data + pos, sb->count - pos);
+    memcpy(sb->data + pos, value.data, value.count);
+    sb->count += value.count;
+}
+
 void ff_string_builder_insert(ff_string_builder* sb, size_t pos, ff_string_view value)
 {
     FF_ASSERT_RET(pos <= sb->count);
 
     if (value.count)
     {
-        ensure_capacity(sb, sb->count + value.count);
-        memmove(sb->data + pos + value.count, sb->data + pos, sb->count - pos);
-        memcpy(sb->data + pos, value.data, value.count);
-        sb->count += value.count;
+        uintptr_t source_start = (uintptr_t)value.data;
+        uintptr_t buffer_start = (uintptr_t)sb->data;
+        bool overlaps = source_start >= buffer_start
+            ? source_start - buffer_start < sb->capacity
+            : buffer_start - source_start < value.count;
+
+        if (overlaps)
+        {
+            ff_arena_declare_stack(scratch_arena, 1024);
+            insert_string(sb, pos, ff_string_copy(value, &scratch_arena));
+            ff_arena_destroy(&scratch_arena);
+        }
+        else
+        {
+            insert_string(sb, pos, value);
+        }
     }
 }
 

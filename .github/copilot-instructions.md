@@ -38,7 +38,7 @@ These apply to every project in this repo.
 
 #### Allocation failures and simplicity
 
-- Assume valid CPU memory allocations succeed. Do not add allocation-result null checks, assertions, fallback paths, or failure propagation for growable arenas, `malloc`, `HeapAlloc`, or arena backing allocations. CPU out-of-memory recovery is outside this project's supported behavior.
+- Assume valid CPU memory allocations succeed. Do not add allocation-result null checks, assertions, fallback paths, or failure propagation for growable arenas, `malloc`, `HeapAlloc`, or arena backing allocations. CPU out-of-memory recovery is outside this project's supported behavior; do not track findings triggered solely by failed CPU allocations in `BUGS.md`.
 - Keep failures that are reasonably possible: GPU resource/heap creation, descriptor-ring exhaustion, and OS operations. Keep input validation, arithmetic/serialization limits, and fixed-capacity or virtual-reservation bounds. A reservation's `reserve_end` is fixed even though committed memory can grow.
 - Arena allocation APIs can still reject invalid or overflowing sizes. Removing CPU OOM handling must not allow those rejections to reach `memcpy` or other pointer consumers. Validate size arithmetic before allocation/copy, as `ff_arena_realloc` does on its relocation path.
 - Prefer straightforward code and existing helpers over speculative recovery machinery or generalized frameworks. Trace callers before deleting a check; distinguish initialization from mutation and readability improvements from measured performance gains.
@@ -75,6 +75,7 @@ These apply to every project in this repo.
 
 - `ff_idict_init` measures the serialized block, allocates once, then writes to a fixed-capacity buffer. Preserve both passes, alignment/addition and serialized-field limits, the pre-write capacity guard, zeroed alignment gaps, and measured/emitted size equality. The private builder does not need a growable-buffer mode.
 - Immutable blocks can start at only 8-byte alignment while their payloads require up to 64 bytes. Raw copying is safe when source and destination preserve the same alignment phase; embedding and standalone saving rebuild non-64-byte-aligned sources. Temporary mutable rebuilds borrow payload bytes, while public `ff_dict_init_from_idict` still deep-copies them. A null-data immutable child must emit a real empty header, not a zero-byte slice.
+- String-builder insertion snapshots overlapping input before growth or shifting. Keep its stack-backed scratch arena separate from the builder's arena so snapshots do not prevent in-place growth or consume persistent storage; non-overlapping input needs no copy.
 - Base64 decoding validates each quartet as it decodes; do not add a duplicate validation pass. Preserve alphabet, length, padding-placement, and output-bound checks. Invalid input returns an empty span but may consume arena storage; callers must not assume failed decoding leaves the arena unchanged.
 
 #### Win32 and naming
@@ -83,6 +84,8 @@ These apply to every project in this repo.
 - Place a type by who can use it, not by what it is: generally useful types go in `base/` (e.g. `ff_point_float`, `ff_rect_float`), while types only the DX12 renderer will ever consume go in `dx12/` (e.g. `ff_color`, `ff_matrix`), even when they look like general-purpose math.
 - Prefer the wide (`W`) Win32 entry points directly; there is no `TCHAR` usage.
 - Win32 handles that must be released have an explicit `destroy` that tolerates a zeroed struct, so partially-constructed objects can always be torn down on the failure path.
+- Main-window state version 2 stores the normal rectangle in screen coordinates; version 1 used workspace coordinates and is converted on load using the recorded monitor's work-area offset. Preserve monitor/DPI checks and restore the normal rectangle before re-maximizing after fullscreen.
+- Window class registration can legitimately lose a race. Accept `ERROR_CLASS_ALREADY_EXISTS` only after checking the existing class's module, procedure, style, and extra-byte layout; do not treat arbitrary same-name classes as compatible.
 
 Tests for this project live in `test/ff.test.unit.c/` and are C++ (MSVC CppUnitTest) wrapping the C headers via `extern "C"`. Base tests go in `base/` inside `namespace ff::test::base`; DX12 tests go in `dx12/` inside `namespace ff::test::dx12`. Use `TEST_CLASS` / `TEST_METHOD` and add new files to both `ff.test.unit.c.vcxproj` and its `.filters`.
 

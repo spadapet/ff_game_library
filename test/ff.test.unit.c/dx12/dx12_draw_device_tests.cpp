@@ -995,6 +995,128 @@ namespace ff::test::dx12
             Assert::AreEqual(size * size, lit);
         }
 
+        struct circle_pixel_samples
+        {
+            uint32_t center;
+            uint32_t middle;
+            uint32_t inner_ring;
+            uint32_t outer_ring;
+            uint32_t outside;
+        };
+
+        static circle_pixel_samples read_circle_pixels(ff_color inside_color, ff_color outside_color, float thickness)
+        {
+            scoped_device scope;
+            const size_t size = 64;
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(size, size);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 0, 0, 0));
+            Assert::AreEqual((int)DXGI_FORMAT_R8G8B8A8_UNORM, (int)ff_dx12_target_texture_format(&target));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
+            const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+            const ff_rect_float view = ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size);
+
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), nullptr, view, view, false));
+
+            ff_dx12_draw_device_draw_circle(&scope.device,
+                endpoint(32.0f, 32.0f, inside_color, 24.0f), thickness, outside_color);
+            ff_dx12_draw_device_end(&scope.device);
+
+            const size_t row_pitch = size * sizeof(uint32_t);
+            ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(
+                ff_dx12_readback_allocator(), row_pitch * size,
+                ff_dx12_commands_next_fence_value(&commands));
+            Assert::IsTrue(ff_dx12_mem_range_valid(&readback));
+
+            D3D12_SUBRESOURCE_FOOTPRINT layout{};
+            layout.Format = ff_dx12_target_texture_format(&target);
+            layout.Width = (UINT)size;
+            layout.Height = (UINT)size;
+            layout.Depth = 1;
+            layout.RowPitch = (UINT)row_pitch;
+
+            const D3D12_RECT source_rect = { 0, 0, (LONG)size, (LONG)size };
+            ff_dx12_commands_readback_texture(&commands, &readback, &layout,
+                ff_dx12_target_texture_resource(&target), 0, &source_rect);
+
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const uint32_t* pixels = (const uint32_t*)ff_dx12_mem_range_cpu_data(&readback);
+            Assert::IsNotNull((void*)pixels);
+
+            circle_pixel_samples samples{};
+            samples.center = pixels[32 * size + 32];
+            samples.middle = pixels[32 * size + 44];
+            samples.inner_ring = pixels[32 * size + 49];
+            samples.outer_ring = pixels[32 * size + 55];
+            samples.outside = pixels[32 * size + 57];
+
+            const bool device_ok = ff_dx12_device_valid();
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(device_ok);
+            return samples;
+        }
+
+        TEST_METHOD(a_filled_circle_interpolates_inside_and_outside_colors)
+        {
+            const circle_pixel_samples pixels = read_circle_pixels(ff_color_red(), ff_color_green(), 0.0f);
+
+            Assert::IsTrue((pixels.center & 0xFFu) > 235);
+            Assert::IsTrue(((pixels.center >> 8) & 0xFFu) < 20);
+            Assert::IsTrue((pixels.middle & 0xFFu) > 95 && (pixels.middle & 0xFFu) < 160);
+            Assert::IsTrue(((pixels.middle >> 8) & 0xFFu) > 95 && ((pixels.middle >> 8) & 0xFFu) < 160);
+            Assert::IsTrue((pixels.outer_ring & 0xFFu) < 25);
+            Assert::IsTrue(((pixels.outer_ring >> 8) & 0xFFu) > 230);
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.outside);
+        }
+
+        TEST_METHOD(a_filled_circle_with_transparent_edge_keeps_its_opaque_center_visible)
+        {
+            const circle_pixel_samples pixels = read_circle_pixels(
+                ff_color_white(), ff_color_rgba(1.0f, 1.0f, 1.0f, 0.0f), 0.0f);
+
+            for (uint32_t shift = 0; shift < 24; shift += 8)
+            {
+                Assert::IsTrue(((pixels.center >> shift) & 0xFFu) > 235);
+                Assert::IsTrue(((pixels.middle >> shift) & 0xFFu) > 95 &&
+                    ((pixels.middle >> shift) & 0xFFu) < 160);
+                Assert::IsTrue(((pixels.outer_ring >> shift) & 0xFFu) > 0 &&
+                    ((pixels.outer_ring >> shift) & 0xFFu) < 25);
+            }
+
+            Assert::AreEqual<uint32_t>(255, pixels.center >> 24);
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.outside);
+        }
+
+        TEST_METHOD(an_outlined_circle_keeps_its_inner_and_outer_ring_colors_and_hole)
+        {
+            const circle_pixel_samples pixels = read_circle_pixels(ff_color_red(), ff_color_green(), 8.0f);
+
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.center);
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.middle);
+            Assert::IsTrue((pixels.inner_ring & 0xFFu) > 180);
+            Assert::IsTrue(((pixels.inner_ring >> 8) & 0xFFu) < 75);
+            Assert::IsTrue((pixels.outer_ring & 0xFFu) < 35);
+            Assert::IsTrue(((pixels.outer_ring >> 8) & 0xFFu) > 220);
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.outside);
+        }
+
         // The sprite path has more that can silently produce a blank frame than the geometry path:
         // a texture never transitioned to the shader-resource state, a descriptor table never
         // bound, or a uv rect that samples outside the image all survive submission. Sampling a

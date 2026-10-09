@@ -15,7 +15,7 @@ The initial review reported 24 numbered findings. The two independent arena-rete
 
 ## Tracking conventions
 
-Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs. Add new entries with the next unused ID, currently **FFC-032**, and update the index. Keep resolved entries as history.
+Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs, including removed findings. Add new entries with the next unused ID, currently **FFC-032**, and update the index. Keep resolved entries as history.
 
 **Priority:** P1 = high-priority corruption, lifetime, synchronization, or deadlock defect; P2 = other concrete correctness, recovery, or sustained resource/performance defect. Priority is not a security severity rating.
 
@@ -37,7 +37,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-006 | P2 | Fixed | Allocator pruning retains the oldest, smallest heap |
 | FFC-007 | P2 | Fixed | Recycled free-list nodes abandon arena-backed metadata |
 | FFC-008 | P2 | Fixed | Recycled keep-alive nodes abandon spilled fence storage |
-| FFC-009 | P2 | Open | Filled circles ignore their inside color |
+| FFC-009 | P2 | Fixed | Filled circles ignore their inside color |
 | FFC-010 | P2 | Open | Palette sprites use base dimensions for nonzero-mip views |
 | FFC-011 | P2 | Open | Mip render targets report base-level dimensions |
 | FFC-012 | P2 | Open | Array-slice sprite SRVs do not match shader dimensions |
@@ -46,19 +46,17 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-015 | P2 | Fixed | Dictionary mutation corrupts borrowed input values |
 | FFC-016 | P2 | Fixed | Embedding immutable dictionaries breaks payload alignment |
 | FFC-017 | P2 | Fixed | Embedding an empty immutable dictionary omits its header |
-| FFC-018 | P2 | Open | String-builder insertion corrupts aliased source text |
+| FFC-018 | P2 | Fixed | String-builder insertion corrupts aliased source text |
 | FFC-019 | P2 | Fixed | Dictionary producers and consumers disagree on depth limits |
 | FFC-020 | P2 | Fixed | Log sink configuration changes deadlock inside callbacks |
 | FFC-021 | P2 | Fixed | JSON decimal parsing depends on the numeric locale |
 | FFC-022 | P2 | Not a bug | Degenerate rectangles can intersect |
 | FFC-023 | P2 | Open | Queued fullscreen requests discard the final desired state |
-| FFC-024 | P2 | Open | Window placement mixes workspace and screen coordinates |
-| FFC-025 | P2 | Open | Message-window class registration races across threads |
+| FFC-024 | P2 | Fixed | Window placement mixes workspace and screen coordinates |
+| FFC-025 | P2 | Fixed | Message-window class registration races across threads |
 | FFC-026 | P1 | Fixed | Forgotten-resource barriers inherit replacement-resource state |
 | FFC-027 | P2 | Fixed | Pipeline cache rejects embedded root signatures |
 | FFC-028 | P2 | Fixed | Incomplete format metadata rejects valid textures |
-| FFC-029 | P1 | Deferred | Fence-set allocation failure drops GPU retirement dependencies |
-| FFC-030 | P1 | Deferred | Descriptor-ring metadata allocation failure returns an untracked range |
 | FFC-031 | P2 | Open | Draw batches continue after required constant uploads fail |
 
 ## DX12 synchronization, lifetime, and recovery
@@ -215,51 +213,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Regression coverage:** `dx12_frame_tests::recycled_keep_alive_nodes_reuse_spilled_fence_storage` repeats retirement with nine incomplete fences and confirms arena buffer count stabilizes after warm-up. `completed_keep_alive_fences_do_not_allocate_arena_storage` covers the completed-set fast path.
 
-### FFC-029: Fence-set allocation failure drops GPU retirement dependencies
-
-**Priority:** P1. **Status:** Deferred. **Evidence:** Source-reviewed. **Origin:** Unclassified.
-
-**Deferral rationale:** Small CPU arena/heap allocation failures are outside the application's supported recovery scope. Per owner direction, do not prioritize synthetic OOM failures or propagate them through the application as recoverable errors. Revisit only if a reasonably possible trigger is established.
-
-**Resolution:** The CPU allocation-failure guards and recovery plumbing have been removed in the uncommitted working tree. Valid growable CPU arena allocations are assumed to succeed; GPU resource failures and capacity/input limits remain recoverable where supported.
-
-**Location:** `dx12\dx12_fence_values.c`, `ff_dx12_fence_values_add` and `ff_dx12_fence_values_add_all`; `dx12\dx12_resource.c`, `ff_dx12_resource_destroy`.
-
-**Cause:** `ff_dx12_fence_values_add` returned `void`. Its allocation-failure guard returned without recording the new fence. `ff_dx12_fence_values_add_all` could not report the partial copy, and resource destruction then queued or released the resource using the incomplete fence set.
-
-**Trigger:** An arena allocation fails while adding a ninth distinct, incomplete fence to a resource's retirement set, then the resource is destroyed in Release.
-
-**Impact:** The keep-alive list can release the resource and its backing range before the omitted GPU work completes, allowing use-after-free or reuse while the GPU still references it.
-
-**Fix direction:** Propagate fence-set growth failure and require lifetime-sensitive callers to safely wait, retain the resource, or otherwise preserve every dependency.
-
-**Regression scenario:** Inject failure during overflow growth for a set with more than eight incomplete fences. Verify that destroying the resource cannot release it or its backing allocation until every fence retires.
-
-### FFC-030: Descriptor-ring metadata allocation failure returns an untracked range
-
-**Priority:** P1. **Status:** Deferred. **Evidence:** Source-reviewed. **Origin:** Unclassified.
-
-**Deferral rationale:** This requires failure of a CPU arena metadata allocation, not exhaustion of the GPU descriptor ring. Per owner direction, such heap OOM recovery is out of scope. Normal descriptor-ring exhaustion remains a supported allocation failure.
-
-**Resolution:** The CPU metadata allocation-failure guards have been removed in the uncommitted working tree. Descriptor-ring exhaustion still returns an invalid range without blocking on unsubmitted work.
-
-**Location:** `dx12\dx12_descriptor_allocator.c`, `ring_grow`, `ring_push_back`, and `ff_dx12_descriptor_buffer_alloc_ring`.
-
-**Cause:** `ring_grow` reported allocation failure, but `ring_push_back` returned `void`; the caller still incremented `allocated_range_count` and returned a valid descriptor range without recording its fence.
-
-**Trigger:** Fill the ring's range metadata with distinct pending fence values, then fail the arena allocation needed to grow the metadata.
-
-**Impact:** Later ring allocations can overlap the returned range after wraparound, reusing descriptors while the GPU may still read them.
-
-**Fix direction:** Propagate metadata-growth failure and return an invalid range without changing the outstanding-allocation count.
-
-**Regression scenario:** Inject failure at range-array growth and verify allocation fails, existing fence records remain intact, and no untracked range can be reused before its fence completes.
-
 ## DX12 rendering
 
 ### FFC-009: Filled circles ignore their inside color
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Inherited.
 
 **Location:** `dx12\shaders\vs_circle.hlsl:16-20`; `dx12\dx12_draw_device.h:43,62-63`; circle index generation in `dx12\dx12_draw_device.c`.
 
@@ -269,9 +227,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** The filled circle has the outside color throughout instead of a center-to-edge gradient. The opaque-center/transparent-edge case can disappear entirely.
 
-**Fix direction:** Classify the center vertex as inside without breaking the outline's inner/outer rings or radius calculations.
+**Resolution:** Working tree, not committed. The shader classifies vertex IDs 32 and above as inside, covering both the inner outline ring and center vertex 64. Perimeter classification and circle geometry are unchanged.
 
-**Regression scenario:** Compare center and edge pixels for a filled gradient circle, and also cover outlined circles and transparent edges.
+**Regression coverage:** GPU-readback tests `a_filled_circle_interpolates_inside_and_outside_colors`, `a_filled_circle_with_transparent_edge_keeps_its_opaque_center_visible`, and `an_outlined_circle_keeps_its_inner_and_outer_ring_colors_and_hole` sample center, gradient, rings, hole, and background pixels on a linear RGBA8 target. Restoring the old classifier makes both filled-circle tests fail in Debug/x64. All 112 selected window, dispatcher, draw-device, and target-window tests pass without skips in Debug/x64 and Release/x64.
 
 **Parity evidence:** Repository-relative `source\ff.application\assets\shaders\vs_circle.hlsl:16` has the same expression; the original renderer also uses center vertex 64.
 
@@ -431,9 +389,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-018: String-builder insertion corrupts aliased source text
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Unclassified.
 
-**Location:** `base\string_builder.c:142-150`, `ff_string_builder_insert`.
+**Location:** `base\string_builder.c`, `ff_string_builder_insert`.
 
 **Cause:** Insertion shifts the destination tail before copying the source view. If that view points into the builder, the shift can change the source bytes. Capacity growth is an additional aliasing consideration, but is not needed for the minimal failure.
 
@@ -441,9 +399,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** Expected `"cdabcd"`; actual `"ababcd"`. The move changes the source slice from `"cd"` to `"ab"` before the copy. Simply changing the final `memcpy` to `memmove` does not repair that ordering.
 
-**Fix direction:** Preserve aliased input before growth or shifting, using the project's arena conventions. Make the supported aliasing contract consistent across builder mutation functions.
+**Resolution:** Working tree, not committed. Insertion detects overlap with the current buffer using integer-address differences and snapshots overlapping input with `ff_string_copy` before growing or shifting. The separate 1024-byte stack-backed scratch arena preserves in-place builder growth; large copies spill and are destroyed after insertion rather than retained in the builder's arena. Non-overlapping input retains the direct path. Self-substrings and full builder views remain supported as append/insert input; appending already works because arena relocation retains the old allocation and append does not shift existing text.
 
-**Regression scenario:** Insert self-substrings before, inside, and after their source range, both with spare capacity and with relocation. Include insertion of the full builder view.
+**Regression coverage:** Before the fix, `insert_self_substrings_preserves_original_bytes` failed its byte comparison in Debug/x64. It now covers substrings, full views, and empty views at multiple positions with spare capacity, verified in-place growth, and forced relocation. `insert_large_self_view_preserves_binary_bytes` exercises a 2048-byte snapshot, including embedded zero bytes; `insert_view_starting_before_builder_preserves_overlap` covers an overlapping view that begins before the builder buffer; `append_self_views_survive_growth` verifies existing self-append behavior. All 43 string-builder tests pass without skips in Debug/x64 and Release/x64.
 
 ### FFC-019: Dictionary producers and consumers disagree on depth limits
 
@@ -531,27 +489,29 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-024: Window placement mixes workspace and screen coordinates
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Unclassified.
 
-**Location:** `windows\window.c:101-105`, `current_window_state`; `windows\window.c:216-220`, fullscreen restoration; `windows\window.c:393-415`, saved placement during creation.
+**Location:** `windows\window.c`, `current_window_state`, `load_window_state`, `apply_full_screen`, and `ff_window_main_init`.
 
 **Cause:** `GetWindowPlacement().rcNormalPosition` is workspace-relative for these non-tool top-level windows. The saved rectangle is later passed directly to `SetWindowPos` and `CreateWindowEx`, whose position arguments use screen coordinates.
+
+**Related restore defect:** The maximized fullscreen-exit path re-maximizes without restoring the saved normal rectangle, leaving fullscreen-sized normal restore geometry.
 
 **Trigger:** Reserve space on the top or left edge with a taskbar/appbar. Position a normal window, toggle fullscreen off/on, or save and recreate the window.
 
 **Impact:** Restored placement shifts by the workspace offset. Repeated save/restore cycles can creep the window away from its intended position. Common bottom-taskbar configurations can conceal the mismatch.
 
-**Fix direction:** Restore through `SetWindowPlacement`, or consistently convert between the two coordinate systems before using screen-coordinate APIs. Preserve monitor and DPI compatibility handling.
+**Resolution:** Working tree, not committed. Normal rectangles are converted to screen coordinates using the monitor's work-area offset before storage or fullscreen capture. Saved state version 2 records that coordinate contract; valid version-1 workspace rectangles are migrated on load without changing the 44-byte layout. Monitor identity, dimensions, DPI, and minimum-size checks remain, and the migrated normal rectangle must belong to the recorded monitor. Fullscreen exit restores the normal rectangle before re-maximizing. Initial hidden-window behavior is preserved.
 
-**Regression scenario:** Exercise fullscreen restoration and process-style save/recreate with nonzero top/left workspace offsets and multiple monitors. Verify position as well as size.
+**Regression coverage:** DLL-local import overrides simulate additional left/top work-area offsets of 37/53 pixels without changing the desktop. Restoring the old workspace-coordinate capture fails exact screen-rectangle comparisons in `full_screen_round_trip_with_workspace_offsets` and `save_destroy_recreate_with_workspace_offsets` in Debug/x64. Tests also cover version-1 migration, invalid version/monitor/DPI/size rejection, hidden startup, and fullscreen startup/restoration for both saved versions and maximized states. `restored_full_screen_preserves_normal_and_maximized_placement` exposed the missing normal-rectangle restoration before re-maximizing and passes after its fix. All 112 related tests above pass in both configurations.
 
 **Reference:** [WINDOWPLACEMENT documentation](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-windowplacement) explicitly describes the workspace/screen-coordinate distinction and the resulting creeping-window error.
 
 ### FFC-025: Message-window class registration races across threads
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Unclassified.
 
-**Location:** `windows\window.c:439-449`, `ff_window_message_init`.
+**Location:** `windows\window.c`, `register_window_class`, `ff_window_message_init`, and `ff_window_main_init`.
 
 **Cause:** The `GetClassInfo` followed by `RegisterClass` sequence is not atomic. A second thread can legitimately observe that the class is absent, then lose the registration race. `ERROR_CLASS_ALREADY_EXISTS` is treated as initialization failure rather than a concurrently completed registration.
 
@@ -559,9 +519,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** A valid dispatcher initialization unexpectedly fails, and Debug reports an assertion. Existing registered-class state can hide the race in subsequent runs within the same process.
 
-**Fix direction:** Use one-time synchronized registration or safely handle/recheck the already-registered class case. Do not assume an arbitrary same-name class is compatible without checking the relevant registration contract.
+**Resolution:** Working tree, not committed. Both window types use a shared register-or-verify helper. `ERROR_CLASS_ALREADY_EXISTS` is accepted only after querying the existing class and checking its module, procedure, style, and class/window extra-byte layout. Other OS errors and incompatible same-name classes retain explicit failure reporting. No registration lock or cached-success state is needed.
 
-**Regression scenario:** Exercise concurrent first-time initialization in a fresh process, with controlled interleaving if practical. Verify both threads obtain functioning message windows/dispatchers.
+**Regression coverage:** `message_class_registration_race` temporarily unregisters the class and uses a DLL-local registration barrier to force eight callers through first registration concurrently. Every thread must create a functioning message window, receive its signal/result, and destroy it; all threads join before imports/class registration are restored. Restoring the old lookup-then-register logic produces seven failed registrations/assertions in Debug/x64. `incompatible_message_class_is_rejected` checks rejection and configuration-specific assert counts. The window and dispatcher groups pass as part of the 112 related tests in both configurations.
 
 ## Follow-up review of commit `9a6abbb` (`Fixes`)
 

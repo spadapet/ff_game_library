@@ -22,7 +22,10 @@ typedef struct window_state
     bool full_screen;
 } window_state;
 
-static const uint32_t s_window_state_version = 1;
+static_assert(sizeof(window_state) == 44, "window_state layout changed unexpectedly");
+
+static const uint32_t s_window_state_version = 2;
+static const uint32_t s_window_state_workspace_version = 1;
 static const ff_string_view s_settings_name = FF_SVL_INIT("ff_window");
 static const ff_string_view s_state_key = FF_SVL_INIT("window_state");
 
@@ -86,6 +89,13 @@ static bool get_monitor_rect(HMONITOR monitor, RECT* rect)
     return true;
 }
 
+static RECT workspace_to_screen_rect(RECT rect, const MONITORINFO* monitor)
+{
+    OffsetRect(&rect, monitor->rcWork.left - monitor->rcMonitor.left,
+        monitor->rcWork.top - monitor->rcMonitor.top);
+    return rect;
+}
+
 static window_state current_window_state(HWND hwnd)
 {
     if (s_has_full_screen_state)
@@ -97,18 +107,18 @@ static window_state current_window_state(HWND hwnd)
     state.full_screen = is_full_screen_style(hwnd);
     state.maximized = IsZoomed(hwnd) != 0;
 
-    WINDOWPLACEMENT placement = { .length = sizeof(placement) };
-    if (GetWindowPlacement(hwnd, &placement))
-    {
-        state.normal_rect = placement.rcNormalPosition;
-    }
-
     HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
-    RECT monitor_rect;
-    if (monitor && get_monitor_rect(monitor, &monitor_rect))
+    MONITORINFO info = { .cbSize = sizeof(info) };
+    if (monitor && GetMonitorInfoW(monitor, &info))
     {
-        state.monitor_rect = monitor_rect;
+        state.monitor_rect = info.rcMonitor;
         state.monitor_dpi = monitor_dpi(monitor);
+
+        WINDOWPLACEMENT placement = { .length = sizeof(placement) };
+        if (GetWindowPlacement(hwnd, &placement))
+        {
+            state.normal_rect = workspace_to_screen_rect(placement.rcNormalPosition, &info);
+        }
     }
 
     return state;
@@ -154,13 +164,20 @@ static bool load_window_state(window_state* state)
 
     window_state saved;
     memcpy(&saved, blob.data, sizeof(saved));
-    FF_CHECK_RET_VAL(saved.version == s_window_state_version, false);
+    FF_CHECK_RET_VAL(saved.version == s_window_state_version || saved.version == s_window_state_workspace_version, false);
     FF_CHECK_RET_VAL(!IsRectEmpty(&saved.normal_rect), false);
 
-    HMONITOR monitor = MonitorFromRect(&saved.normal_rect, MONITOR_DEFAULTTONULL);
-    RECT monitor_rect;
-    FF_CHECK_RET_VAL(monitor && get_monitor_rect(monitor, &monitor_rect), false);
-    FF_CHECK_RET_VAL(EqualRect(&monitor_rect, &saved.monitor_rect), false);
+    HMONITOR monitor = MonitorFromRect(&saved.monitor_rect, MONITOR_DEFAULTTONULL);
+    MONITORINFO info = { .cbSize = sizeof(info) };
+    FF_CHECK_RET_VAL(monitor && GetMonitorInfoW(monitor, &info), false);
+    FF_CHECK_RET_VAL(EqualRect(&info.rcMonitor, &saved.monitor_rect), false);
+
+    if (saved.version == s_window_state_workspace_version)
+    {
+        saved.normal_rect = workspace_to_screen_rect(saved.normal_rect, &info);
+    }
+
+    FF_CHECK_RET_VAL(MonitorFromRect(&saved.normal_rect, MONITOR_DEFAULTTONULL) == monitor, false);
 
     const uint32_t dpi = monitor_dpi(monitor);
     FF_CHECK_RET_VAL(dpi == saved.monitor_dpi, false);
@@ -170,6 +187,7 @@ static bool load_window_state(window_state* state)
     FF_CHECK_RET_VAL(saved.normal_rect.right - saved.normal_rect.left >= min_size.cx, false);
     FF_CHECK_RET_VAL(saved.normal_rect.bottom - saved.normal_rect.top >= min_size.cy, false);
 
+    saved.version = s_window_state_version;
     *state = saved;
     return true;
 }
@@ -208,12 +226,7 @@ static void apply_full_screen(HWND hwnd, bool full_screen)
     else
     {
         const RECT normal_rect = s_full_screen_state.normal_rect;
-        if (s_full_screen_state.maximized)
-        {
-            SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-            ShowWindow(hwnd, SW_MAXIMIZE);
-        }
-        else if (!IsRectEmpty(&s_full_screen_state.normal_rect))
+        if (!IsRectEmpty(&normal_rect))
         {
             SetWindowPos(hwnd, NULL, normal_rect.left, normal_rect.top,
                 normal_rect.right - normal_rect.left, normal_rect.bottom - normal_rect.top,
@@ -222,6 +235,11 @@ static void apply_full_screen(HWND hwnd, bool full_screen)
         else
         {
             SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        }
+
+        if (s_full_screen_state.maximized)
+        {
+            ShowWindow(hwnd, SW_MAXIMIZE);
         }
     }
 }
@@ -353,6 +371,26 @@ static LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     return DefWindowProc(hwnd, msg, wp, lp);
 }
 
+static bool register_window_class(const WNDCLASSW* window_class)
+{
+    if (RegisterClassW(window_class))
+    {
+        return true;
+    }
+
+    FF_ASSERT_RET_VAL(GetLastError() == ERROR_CLASS_ALREADY_EXISTS, false);
+
+    WNDCLASSW existing;
+    FF_ASSERT_RET_VAL(GetClassInfoW(window_class->hInstance, window_class->lpszClassName, &existing), false);
+    FF_ASSERT_RET_VAL(existing.hInstance == window_class->hInstance &&
+        existing.lpfnWndProc == window_class->lpfnWndProc &&
+        existing.style == window_class->style &&
+        existing.cbClsExtra == window_class->cbClsExtra &&
+        existing.cbWndExtra == window_class->cbWndExtra, false);
+
+    return true;
+}
+
 bool ff_window_main_init(ff_window* window, ff_string_view title)
 {
     FF_ASSERT_RET_VAL(window && !s_main_window, false);
@@ -363,21 +401,16 @@ bool ff_window_main_init(ff_window* window, ff_string_view title)
     HINSTANCE instance = ff_module_instance();
     const ff_wstring_view class_name = FF_WSVL_INIT(L"ff_window_main");
 
-    WNDCLASS window_class;
-    if (!GetClassInfo(instance, class_name.data, &window_class))
+    const WNDCLASSW window_class =
     {
-        window_class = (WNDCLASS)
-        {
-            .style = CS_DBLCLKS,
-            .lpfnWndProc = window_proc,
-            .hInstance = instance,
-            .hIcon = FindResource(instance, MAKEINTRESOURCE(1), RT_GROUP_ICON) ? LoadIcon(instance, MAKEINTRESOURCE(1)) : NULL,
-            .hCursor = LoadCursor(NULL, IDC_ARROW),
-            .lpszClassName = class_name.data,
-        };
-
-        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, false);
-    }
+        .style = CS_DBLCLKS,
+        .lpfnWndProc = window_proc,
+        .hInstance = instance,
+        .hIcon = FindResourceW(instance, MAKEINTRESOURCEW(1), RT_GROUP_ICON) ? LoadIconW(instance, MAKEINTRESOURCEW(1)) : NULL,
+        .hCursor = LoadCursorW(NULL, IDC_ARROW),
+        .lpszClassName = class_name.data,
+    };
+    FF_CHECK_RET_VAL(register_window_class(&window_class), false);
 
     ff_arena_declare_stack(arena, 512);
     const ff_wstring_view wide_title = ff_utf8_to_wide(title, &arena, true);
@@ -412,7 +445,7 @@ bool ff_window_main_init(ff_window* window, ff_string_view title)
     }
 
     s_main_window = window;
-    window->hwnd = CreateWindowEx(0, class_name.data, wide_title.data, style | maximize, x, y, cx, cy, NULL, NULL, instance, window);
+    window->hwnd = CreateWindowExW(0, class_name.data, wide_title.data, style | maximize, x, y, cx, cy, NULL, NULL, instance, window);
 
     ff_arena_destroy(&arena);
 
@@ -436,20 +469,15 @@ bool ff_window_message_init(ff_window* window)
     HINSTANCE instance = ff_module_instance();
     const ff_wstring_view class_name = FF_WSVL_INIT(L"ff_window_message");
 
-    WNDCLASS window_class;
-    if (!GetClassInfo(instance, class_name.data, &window_class))
+    const WNDCLASSW window_class =
     {
-        window_class = (WNDCLASS)
-        {
-            .lpfnWndProc = window_proc,
-            .hInstance = instance,
-            .lpszClassName = class_name.data,
-        };
+        .lpfnWndProc = window_proc,
+        .hInstance = instance,
+        .lpszClassName = class_name.data,
+    };
+    FF_CHECK_RET_VAL(register_window_class(&window_class), false);
 
-        FF_ASSERT_RET_VAL(RegisterClass(&window_class) != 0, false);
-    }
-
-    window->hwnd = CreateWindowEx(0, class_name.data, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, instance, window);
+    window->hwnd = CreateWindowExW(0, class_name.data, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, instance, window);
     FF_ASSERT_RET_VAL(window->hwnd, false);
 
     return true;
