@@ -203,8 +203,6 @@ static void index_map_move(ff_dx12_resource_tracker* tracker, const ff_dx12_reso
 static void index_map_rebuild(ff_dx12_resource_tracker* tracker, size_t new_size)
 {
     tracker->index_map = ff_arena_alloc_type(&tracker->arena, size_t, new_size);
-    FF_ASSERT_RET(tracker->index_map);
-
     tracker->index_map_size = new_size;
     memset(tracker->index_map, 0, sizeof(size_t) * new_size);
 

@@ -9,23 +9,16 @@ static_assert(sizeof(ff_string_builder) == 32, "ff_string_builder layout changed
 static const size_t s_default_initial_capacity = 1024;
 static const size_t s_min_capacity = 16;
 
-static bool ensure_capacity(ff_string_builder* builder, size_t needed)
+static void ensure_capacity(ff_string_builder* builder, size_t needed)
 {
-    if (needed <= builder->capacity)
-    {
-        return true;
-    }
+    FF_CHECK_RET(needed > builder->capacity);
 
     size_t doubled = builder->capacity * 2;
     size_t new_capacity = ff_math_round_up_pow2(ff_math_max_size(doubled, needed));
 
     // arena::realloc may relocate the block, so re-fetch 'data'.
-    char* new_data = (char*)ff_arena_realloc(builder->arena, builder->data, builder->capacity, new_capacity, 1);
-    FF_ASSERT_RET_VAL(new_data, false);
-
-    builder->data = new_data;
+    builder->data = (char*)ff_arena_realloc(builder->arena, builder->data, builder->capacity, new_capacity, 1);
     builder->capacity = new_capacity;
-    return true;
 }
 
 static void init_common(ff_string_builder* builder, ff_arena* arena, size_t initial_capacity, ff_string_view initial)
@@ -38,7 +31,8 @@ static void init_common(ff_string_builder* builder, ff_arena* arena, size_t init
     // Size for the requested capacity (and any seed content) in a single allocation; no terminator slot.
     size_t wanted = ff_math_max_size(initial_capacity, initial.count);
     size_t needed = ff_math_max_size(wanted, s_min_capacity);
-    if (ensure_capacity(builder, needed) && initial.count && builder->data)
+    ensure_capacity(builder, needed);
+    if (initial.count)
     {
         memcpy(builder->data, initial.data, initial.count);
         builder->count = initial.count;
@@ -73,21 +67,20 @@ void ff_string_builder_reset(ff_string_builder* sb)
 
 void ff_string_builder_reserve(ff_string_builder* sb, size_t capacity)
 {
-    FF_VERIFY(ensure_capacity(sb, capacity));
+    ensure_capacity(sb, capacity);
 }
 
 void ff_string_builder_append_char(ff_string_builder* sb, char value)
 {
-    if (ensure_capacity(sb, sb->count + 1))
-    {
-        sb->data[sb->count++] = value;
-    }
+    ensure_capacity(sb, sb->count + 1);
+    sb->data[sb->count++] = value;
 }
 
 void ff_string_builder_append(ff_string_builder* sb, ff_string_view value)
 {
-    if (value.count && ensure_capacity(sb, sb->count + value.count))
+    if (value.count)
     {
+        ensure_capacity(sb, sb->count + value.count);
         memcpy(sb->data + sb->count, value.data, value.count);
         sb->count += value.count;
     }
@@ -111,8 +104,9 @@ void ff_string_builder_append_format_v(ff_string_builder* sb, ff_string_view for
 
     // vsnprintf always writes a trailing '\0', so it needs 'needed + 1' bytes even though we don't
     // keep the terminator (count advances by 'needed' only).
-    if (needed > 0 && ensure_capacity(sb, sb->count + (size_t)needed + 1) && sb->data)
+    if (needed > 0)
     {
+        ensure_capacity(sb, sb->count + (size_t)needed + 1);
         vsnprintf(sb->data + sb->count, (size_t)needed + 1, format_copy, args);
         sb->count += (size_t)needed;
     }
@@ -143,8 +137,9 @@ void ff_string_builder_insert(ff_string_builder* sb, size_t pos, ff_string_view 
 {
     FF_ASSERT_RET(pos <= sb->count);
 
-    if (value.count && ensure_capacity(sb, sb->count + value.count))
+    if (value.count)
     {
+        ensure_capacity(sb, sb->count + value.count);
         memmove(sb->data + pos + value.count, sb->data + pos, sb->count - pos);
         memcpy(sb->data + pos, value.data, value.count);
         sb->count += value.count;
@@ -180,7 +175,6 @@ ff_string_view ff_string_builder_copy(const ff_string_builder* sb)
 ff_string_view ff_string_builder_copy_to(const ff_string_builder* sb, ff_arena* arena)
 {
     char* dest = ff_arena_alloc_type(arena, char, sb->count + 1);
-    FF_ASSERT_RET_VAL(dest, ff_string_view_empty());
 
     if (sb->count)
     {

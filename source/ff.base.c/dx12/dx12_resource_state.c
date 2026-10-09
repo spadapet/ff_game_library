@@ -71,8 +71,6 @@ static bool reserve_entries(ff_dx12_resource_state* states, size_t capacity)
 
     ff_dx12_resource_state_entry* new_entries = ff_arena_realloc_type(states->arena, ff_dx12_resource_state_entry,
         states->overflow, states->overflow_capacity, capacity);
-    FF_ASSERT_RET_VAL(new_entries, false);
-
     if (!states->overflow)
     {
         for (size_t i = 0; i < states->count && i < FF_DX12_RESOURCE_STATE_INLINE_MAX; i++)

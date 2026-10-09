@@ -113,8 +113,6 @@ static const wchar_t* resource_id(ff_wstring_view view, ff_arena* arena)
     }
 
     wchar_t* copy = ff_arena_alloc_type(arena, wchar_t, view.count + 1);
-    FF_ASSERT_RET_VAL(copy, NULL);
-
     memcpy(copy, view.data, view.count * sizeof(wchar_t));
     copy[view.count] = 0;
     return copy;

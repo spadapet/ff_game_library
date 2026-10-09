@@ -38,7 +38,6 @@ static bool ring_grow(ff_dx12_mem_buffer* buffer)
     size_t old_capacity = buffer->u.ring.ranges_capacity;
     FF_ASSERT_RET_VAL(old_capacity <= SIZE_MAX / 2, false);
     FF_ASSERT_RET_VAL(buffer->u.ring.ranges_count <= old_capacity, false);
-    FF_ASSERT_RET_VAL(!old_capacity || buffer->u.ring.ranges_a, false);
 
     size_t new_capacity = old_capacity ? old_capacity * 2 : FF_DX12_MEM_RING_RANGES_INITIAL_CAPACITY;
     FF_ASSERT_RET_VAL(new_capacity <= SIZE_MAX / sizeof(ff_dx12_mem_ring_range), false);
@@ -46,8 +45,6 @@ static bool ring_grow(ff_dx12_mem_buffer* buffer)
 
     ff_dx12_mem_ring_range* new_ranges_a = ff_arena_alloc_type(buffer->u.ring.arena,
         ff_dx12_mem_ring_range, new_capacity);
-    FF_ASSERT_RET_VAL(new_ranges_a, false);
-
     for (size_t i = 0; i < buffer->u.ring.ranges_count; i++)
     {
         size_t old_index = (buffer->u.ring.ranges_head + i) % old_capacity;
@@ -140,12 +137,7 @@ static bool mem_buffer_init_free_list_with_ranges(ff_dx12_mem_buffer* buffer, ff
     }
 
     free_ranges_a = free_ranges_a ? free_ranges_a : ff_array_init(ff_dx12_mem_range, arena);
-    if (!free_ranges_a || !ff_array_resize(free_ranges_a, 1))
-    {
-        ff_dx12_heap_destroy(&buffer->heap);
-        *buffer = (ff_dx12_mem_buffer){ 0 };
-        return false;
-    }
+    ff_array_resize(free_ranges_a, 1);
 
     ff_dx12_mem_range whole_range = { .owner = buffer, .start = 0, .size = size };
     free_ranges_a[0] = whole_range;
@@ -453,10 +445,7 @@ static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator
     else
     {
         buffer = ff_arena_alloc_type(&allocator->arena, ff_dx12_mem_buffer, 1);
-        if (buffer)
-        {
-            *buffer = (ff_dx12_mem_buffer){ 0 };
-        }
+        *buffer = (ff_dx12_mem_buffer){ 0 };
     }
 
     return buffer;
@@ -521,41 +510,37 @@ static ff_dx12_mem_range allocator_alloc_bytes(ff_dx12_mem_allocator* allocator,
         }
 
         ff_dx12_mem_buffer* new_buffer = allocator_new_buffer(allocator);
-        ff_dx12_mem_ring_range* ring_ranges_a = (allocator->ring && new_buffer)
+        ff_dx12_mem_ring_range* ring_ranges_a = allocator->ring
             ? new_buffer->u.ring.ranges_a
             : NULL;
-        size_t ring_ranges_capacity = (allocator->ring && new_buffer)
+        size_t ring_ranges_capacity = allocator->ring
             ? new_buffer->u.ring.ranges_capacity
             : 0;
-        ff_dx12_mem_range* free_ranges_a = (!allocator->ring && new_buffer)
+        ff_dx12_mem_range* free_ranges_a = !allocator->ring
             ? new_buffer->u.free_list.free_ranges_a
             : NULL;
-        bool ok = new_buffer && (allocator->ring
+        bool ok = allocator->ring
             ? mem_buffer_init_ring_with_ranges(new_buffer, &allocator->arena, name, heap_size,
                 allocator->usage, ring_ranges_a, ring_ranges_capacity)
             : mem_buffer_init_free_list_with_ranges(new_buffer, &allocator->arena, name, heap_size,
-                allocator->usage, free_ranges_a));
+                allocator->usage, free_ranges_a);
 
         ff_arena_destroy(&name_arena);
 
         if (!ok)
         {
-            if (new_buffer)
+            if (allocator->ring && ring_ranges_a)
             {
-                if (allocator->ring && ring_ranges_a)
-                {
-                    new_buffer->u.ring.ranges_a = ring_ranges_a;
-                    new_buffer->u.ring.ranges_capacity = ring_ranges_capacity;
-                }
-                else if (!allocator->ring && free_ranges_a)
-                {
-                    new_buffer->u.free_list.free_ranges_a = free_ranges_a;
-                }
-
-                new_buffer->next = allocator->buffers_free;
-                allocator->buffers_free = new_buffer;
+                new_buffer->u.ring.ranges_a = ring_ranges_a;
+                new_buffer->u.ring.ranges_capacity = ring_ranges_capacity;
+            }
+            else if (!allocator->ring && free_ranges_a)
+            {
+                new_buffer->u.free_list.free_ranges_a = free_ranges_a;
             }
 
+            new_buffer->next = allocator->buffers_free;
+            allocator->buffers_free = new_buffer;
             FF_DEBUG_FAIL_RET_VAL(((ff_dx12_mem_range) { 0 }));
         }
 

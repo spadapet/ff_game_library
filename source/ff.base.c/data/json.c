@@ -49,12 +49,12 @@ static ff_string_view ff_json_token_string(const ff_json_token* token, ff_arena*
 static BOOL CALLBACK init_json_c_numeric_locale(PINIT_ONCE init_once, PVOID parameter, PVOID* context)
 {
     s_json_c_numeric_locale = _create_locale(LC_NUMERIC, "C");
-    return s_json_c_numeric_locale != NULL;
+    return TRUE;
 }
 
 static _locale_t json_c_numeric_locale(void)
 {
-    FF_CHECK_RET_VAL(InitOnceExecuteOnce(&s_json_c_numeric_locale_once, init_json_c_numeric_locale, NULL, NULL), NULL);
+    InitOnceExecuteOnce(&s_json_c_numeric_locale_once, init_json_c_numeric_locale, NULL, NULL);
     return s_json_c_numeric_locale;
 }
 
@@ -537,7 +537,6 @@ static ff_string_view json_string_text(ff_string_view text, bool escaped, ff_are
     const char* end = text.data + text.count - 1;
 
     char* dest = ff_arena_alloc_type(arena, char, text.count);
-    FF_ASSERT_RET_VAL(dest, result);
     size_t count = 0;
 
     while (cur < end)
@@ -675,7 +674,6 @@ static ff_value json_number_value(ff_string_view text, _locale_t* numeric_locale
     if (!*numeric_locale)
     {
         *numeric_locale = json_c_numeric_locale();
-        FF_CHECK_RET_VAL(*numeric_locale, ff_value_new_empty());
     }
 
     char* parse_end = NULL;
@@ -721,14 +719,11 @@ static ff_value ff_json_token_value(const ff_json_token* token, ff_arena* arena,
         case ff_json_token_type_string:
             {
                 ff_string_view text = json_string_text(token->text, token->escaped, arena);
-                FF_CHECK_RET_VAL(text.data, ff_value_new_empty());
-
                 if (!token->escaped)
                 {
                     // A borrowed view points into the text being tokenized, but a value has to
                     // outlive it, so this is the one place that always takes a copy.
                     char* copy = ff_arena_alloc_type(arena, char, text.count ? text.count : 1);
-                    FF_ASSERT_RET_VAL(copy, ff_value_new_empty());
                     memcpy(copy, text.data, text.count);
                     text.data = copy;
                 }
@@ -826,12 +821,6 @@ static bool parse_object(internal_ff_json_parser* parser, ff_dict* dict)
         // unless the key has escapes. ff_json_token_value would copy the text just to throw it away.
         ff_string_view key = ff_json_token_string(&token, parser->arena);
 
-        if (!key.data)
-        {
-            parse_error(parser, &token);
-            return false;
-        }
-
         token = ff_json_tokenizer_next(&parser->tokenizer);
 
         if (token.type != ff_json_token_type_colon)
@@ -881,8 +870,6 @@ static bool parse_value(internal_ff_json_parser* parser, const ff_json_token* to
     if (token->type == ff_json_token_type_open_curly)
     {
         ff_dict* dict = ff_arena_alloc_type(parser->arena, ff_dict, 1);
-        FF_ASSERT_RET_VAL(dict, false);
-
         FF_CHECK_RET_VAL(parse_object(parser, dict), false);
 
         *result = ff_value_new_dict(dict);

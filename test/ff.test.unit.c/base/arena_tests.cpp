@@ -1944,6 +1944,63 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(realloc_at_virtual_reservation_boundary)
+        {
+            ff_arena arena{};
+            ff_arena_init_virtual_memory(&arena, 64 * 1024);
+
+            uint8_t* data = (uint8_t*)ff_arena_alloc(&arena, 128, 8);
+            internal_ff_arena_buffer* original = arena.buffer;
+            uint8_t* reserve_end = original->reserve_end;
+            size_t size = (size_t)(reserve_end - data);
+            fill_pattern(data, 128, 0x88);
+
+            uint8_t* grown = (uint8_t*)ff_arena_realloc(&arena, data, 128, size, 8);
+            Assert::IsTrue(grown == data);
+            Assert::IsTrue(arena.buffer == original);
+            Assert::IsTrue(arena.next == reserve_end);
+            Assert::IsTrue(arena.end == reserve_end);
+            Assert::IsTrue(original->reserve_end == reserve_end);
+            Assert::IsTrue(check_pattern(grown, 128, 0x88));
+            fill_pattern(grown, size, 0x99);
+
+            uint8_t* moved = (uint8_t*)ff_arena_realloc(&arena, grown, size, size + 1, 8);
+            Assert::IsTrue(moved != grown);
+            Assert::IsTrue(arena.buffer != original);
+            Assert::IsTrue(original->reserve_end == reserve_end);
+            Assert::IsTrue(original->end == reserve_end);
+            Assert::IsTrue(arena.next <= arena.end);
+            Assert::IsTrue(arena.end <= arena.buffer->reserve_end);
+            Assert::IsTrue(check_pattern(moved, size, 0x99));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(realloc_rejects_overflow_without_changing_the_arena)
+        {
+            for (size_t i = 0; i < 2; i++)
+            {
+                ff_arena arena{};
+                ff_arena_init_heap_global(&arena, 4096);
+
+                uint8_t* data = (uint8_t*)ff_arena_alloc(&arena, 64, 8);
+                fill_pattern(data, 64, 0xAA);
+                if (i)
+                {
+                    ff_arena_alloc(&arena, 16, 8);
+                }
+
+                const ff_arena_marker marker = ff_arena_mark(&arena);
+                const internal_ff_arena_buffer* buffer = arena.buffer;
+                Assert::IsNull(ff_arena_realloc(&arena, data, 64, SIZE_MAX, 8));
+                Assert::IsTrue(ff_arena_mark(&arena) == marker);
+                Assert::IsTrue(arena.buffer == buffer);
+                Assert::IsTrue(check_pattern(data, 64, 0xAA));
+
+                ff_arena_destroy(&arena);
+            }
+        }
+
         // ============================================================================
         // realloc x mark/rewind interaction, nested scopes, and boundary tests
         // ============================================================================

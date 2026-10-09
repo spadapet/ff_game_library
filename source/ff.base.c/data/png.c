@@ -108,15 +108,7 @@ bool ff_png_decode(ff_span png_bytes, ff_arena* arena, bool keep_palette, ff_png
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, &state,
         png_error_callback, png_warning_callback);
-    FF_CHECK_RET_VAL(png, false);
-
     png_infop info = png_create_info_struct(png);
-
-    if (!info)
-    {
-        png_destroy_read_struct(&png, NULL, NULL);
-        return false;
-    }
 
     // The row pointer array is a decode-time temporary, so it comes from a stack arena that only
     // spills to the heap for unusually tall images.
@@ -216,27 +208,12 @@ bool ff_png_decode(ff_span png_bytes, ff_arena* arena, bool keep_palette, ff_png
     image->height = (uint32_t)height;
     image->pixels = ff_arena_alloc_type(arena, uint8_t, (size_t)width * (size_t)height * 4);
 
-    if (!image->pixels)
-    {
-        png_error(png, "Out of memory for PNG pixels");
-    }
-
     if (as_indexes)
     {
         image->indexes = ff_arena_alloc_type(arena, uint8_t, (size_t)width * (size_t)height);
-
-        if (!image->indexes)
-        {
-            png_error(png, "Out of memory for PNG indexes");
-        }
     }
 
     png_bytep* rows = ff_arena_alloc_type(&row_arena, png_bytep, height);
-
-    if (!rows)
-    {
-        png_error(png, "Out of memory for PNG rows");
-    }
 
     uint8_t* const decode_target = as_indexes ? image->indexes : image->pixels;
 

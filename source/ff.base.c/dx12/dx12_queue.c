@@ -35,14 +35,12 @@ static size_t residency_set_slot(ff_dx12_residency_data** slots, size_t capacity
 }
 
 // Keeps the table at most half full so the linear probe above stays short and always terminates.
-static bool residency_set_grow(ff_arena* arena, ff_dx12_residency_set* set)
+static void residency_set_grow(ff_arena* arena, ff_dx12_residency_set* set)
 {
     const size_t old_capacity = set->capacity;
     const size_t new_capacity = old_capacity ? old_capacity * 2 : FF_DX12_RESIDENCY_SET_MIN;
 
     ff_dx12_residency_data** new_slots = ff_arena_alloc_type(arena, ff_dx12_residency_data*, new_capacity);
-    FF_ASSERT_RET_VAL(new_slots, false);
-
     memset(new_slots, 0, sizeof(ff_dx12_residency_data*) * new_capacity);
 
     for (size_t i = 0; i < old_capacity; i++)
@@ -55,8 +53,6 @@ static bool residency_set_grow(ff_arena* arena, ff_dx12_residency_set* set)
 
     set->slots = new_slots;
     set->capacity = new_capacity;
-
-    return true;
 }
 
 bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_dx12_residency_data* data)
@@ -65,7 +61,7 @@ bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_d
 
     if ((set->count + 1) * 2 > set->capacity)
     {
-        FF_CHECK_RET_VAL(residency_set_grow(arena, set), false);
+        residency_set_grow(arena, set);
     }
 
     const size_t index = residency_set_slot(set->slots, set->capacity, data);
@@ -167,7 +163,6 @@ static void allocator_list_push(ff_dx12_queue* queue, ff_dx12_queue_allocator_li
     else
     {
         node = ff_arena_alloc_type(&queue->arena, ff_dx12_queue_allocator_node, 1);
-        FF_ASSERT_RET(node);
     }
 
     node->next = NULL;
@@ -233,7 +228,7 @@ static void allocator_list_release_all(ff_dx12_queue* queue, ff_dx12_queue_alloc
     list->tail = NULL;
 }
 
-static bool ensure_allocator_nodes(ff_dx12_queue* queue, size_t count)
+static void ensure_allocator_nodes(ff_dx12_queue* queue, size_t count)
 {
     size_t free_count = 0;
     for (ff_dx12_queue_allocator_node* node = queue->allocator_nodes_free; node; node = node->next)
@@ -244,16 +239,12 @@ static bool ensure_allocator_nodes(ff_dx12_queue* queue, size_t count)
     while (free_count < count)
     {
         ff_dx12_queue_allocator_node* node = ff_arena_alloc_type(&queue->arena, ff_dx12_queue_allocator_node, 1);
-        FF_ASSERT_RET_VAL(node, false);
-
         node->next = queue->allocator_nodes_free;
         node->allocator = NULL;
         node->fence_value = (ff_dx12_fence_value){ 0 };
         queue->allocator_nodes_free = node;
         free_count++;
     }
-
-    return true;
 }
 
 static ID3D12CommandAllocator* new_allocator(ff_dx12_queue* queue, ff_dx12_queue_allocator_list* list, ff_wstring_view suffix)
@@ -380,8 +371,6 @@ static ff_dx12_command_cache* command_cache_acquire(ff_dx12_queue* queue)
     }
 
     ff_dx12_command_cache* cache = ff_arena_alloc_type(&queue->arena, ff_dx12_command_cache, 1);
-    FF_ASSERT_RET_VAL(cache, NULL);
-
     *cache = (ff_dx12_command_cache){ 0 };
     ff_dx12_resource_tracker_init(&cache->resource_tracker);
     ff_arena_init_heap_local(&cache->wait_before_execute_arena, 256);
@@ -604,14 +593,11 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     ff_dx12_commands** valid = ff_arena_alloc_type(&temp, ff_dx12_commands*, count);
     size_t valid_count = 0;
 
-    if (valid)
+    for (size_t i = 0; i < count; i++)
     {
-        for (size_t i = 0; i < count; i++)
+        if (commands[i] && ff_dx12_commands_valid(commands[i]))
         {
-            if (commands[i] && ff_dx12_commands_valid(commands[i]))
-            {
-                valid[valid_count++] = commands[i];
-            }
+            valid[valid_count++] = commands[i];
         }
     }
 
@@ -653,12 +639,6 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     ff_dx12_command_cache** caches = ff_arena_alloc_type(&temp, ff_dx12_command_cache*, valid_count);
     ff_dx12_residency_data** residency_set = residency_max ? ff_arena_alloc_type(&temp, ff_dx12_residency_data*, residency_max) : NULL;
 
-    if (!dx12_lists || !caches || (residency_max && !residency_set))
-    {
-        ff_arena_destroy(&temp);
-        FF_DEBUG_FAIL_RET();
-    }
-
     size_t dx12_list_count = 0;
     size_t residency_count = 0;
     size_t cache_count = 0;
@@ -669,12 +649,6 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     // overflow path blocks on the oldest entry, which here has not been signaled yet.
     ff_dx12_fence_value* signal_values = ff_arena_alloc_type(&temp, ff_dx12_fence_value, valid_count);
     size_t signal_count = 0;
-
-    if (!signal_values)
-    {
-        ff_arena_destroy(&temp);
-        FF_DEBUG_FAIL_RET();
-    }
 
     for (size_t i = 0; i < valid_count; i++)
     {

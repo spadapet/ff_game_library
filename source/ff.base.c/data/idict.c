@@ -91,8 +91,6 @@ static void build_idict_reserve(internal_ff_idict_builder* builder, size_t neede
 
     size_t new_capacity = ff_math_round_up(wanted, FF_IDICT_MAX_ALIGN);
     uint8_t* new_data = (uint8_t*)ff_arena_realloc(builder->data_arena, builder->data, builder->byte_capacity, new_capacity, FF_IDICT_MAX_ALIGN);
-    FF_ASSERT_RET(new_data);
-
     builder->data = new_data;
     builder->byte_capacity = new_capacity;
 }
@@ -414,8 +412,6 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 
     size_t byte_size = builder.byte_size;
     uint8_t* data = (uint8_t*)ff_arena_alloc(arena, byte_size, FF_IDICT_MAX_ALIGN);
-    FF_CHECK_RET(data);
-
     marker = ff_arena_mark(arena);
     builder.data = data;
     builder.byte_size = 0;

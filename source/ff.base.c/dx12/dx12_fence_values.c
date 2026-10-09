@@ -55,8 +55,6 @@ static bool reserve_values(ff_dx12_fence_values* values, size_t capacity)
 
     ff_dx12_fence_value* new_values = ff_arena_realloc_type(values->arena, ff_dx12_fence_value,
         values->overflow, values->overflow_capacity, capacity);
-    FF_ASSERT_RET_VAL(new_values, false);
-
     if (!values->overflow)
     {
         for (size_t i = 0; i < values->count && i < FF_DX12_FENCE_VALUES_INLINE_MAX; i++)
@@ -98,7 +96,7 @@ bool internal_ff_dx12_fence_values_copy(ff_dx12_fence_values* destination,
             capacity *= 2;
         }
 
-        FF_ASSERT_RET_VAL(reserve_values(destination, capacity), false);
+        reserve_values(destination, capacity);
     }
 
     ff_dx12_fence_value* destination_values = ff_dx12_fence_values_data(destination);

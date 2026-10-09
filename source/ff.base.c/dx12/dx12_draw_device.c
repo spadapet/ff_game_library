@@ -1157,7 +1157,7 @@ bool ff_dx12_draw_device_allow_transparent(const ff_dx12_draw_device* device)
     return !device->force_opaque && !device->target_requires_palette;
 }
 
-static bool transparent_reserve(ff_dx12_draw_device* device)
+static void transparent_reserve(ff_dx12_draw_device* device)
 {
     if (device->transparent_count == device->transparent_capacity)
     {
@@ -1169,13 +1169,9 @@ static bool transparent_reserve(ff_dx12_draw_device* device)
             ff_dx12_transparent_entry, device->transparent,
             device->transparent_capacity, new_capacity);
 
-        FF_CHECK_RET_VAL(entries, false);
-
         device->transparent = entries;
         device->transparent_capacity = new_capacity;
     }
-
-    return true;
 }
 
 void* ff_dx12_draw_device_add_instance(ff_dx12_draw_device* device,
@@ -1189,7 +1185,7 @@ void* ff_dx12_draw_device_add_instance(ff_dx12_draw_device* device,
     if (ff_dx12_instance_bucket_transparent(bucket))
     {
         FF_ASSERT_RET_VAL(!device->force_opaque, NULL);
-        FF_CHECK_RET_VAL(transparent_reserve(device), NULL);
+        transparent_reserve(device);
 
         ff_dx12_transparent_entry* entry = &device->transparent[device->transparent_count++];
         entry->bucket_type = bucket_type;
@@ -1303,8 +1299,6 @@ void ff_dx12_draw_device_draw_lines(ff_dx12_draw_device* device,
         ff_dx12_line_instance* instance = (ff_dx12_line_instance*)ff_dx12_draw_device_add_instance(
             device, pick_bucket(ff_dx12_instance_bucket_lines, type), depth);
 
-        FF_CHECK_RET(instance);
-
         instance->start = p0->pos;
         instance->end = p1->pos;
 
@@ -1353,8 +1347,6 @@ void ff_dx12_draw_device_draw_triangles(ff_dx12_draw_device* device,
 
         ff_dx12_triangle_instance* instance = (ff_dx12_triangle_instance*)ff_dx12_draw_device_add_instance(
             device, pick_bucket(ff_dx12_instance_bucket_triangles, type), depth);
-
-        FF_CHECK_RET(instance);
 
         for (size_t corner = 0; corner < 3; corner++)
         {
@@ -1406,8 +1398,6 @@ void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
     ff_dx12_rectangle_instance* instance = (ff_dx12_rectangle_instance*)ff_dx12_draw_device_add_instance(
         device, pick_bucket(opaque_bucket, type), depth);
 
-    FF_CHECK_RET(instance);
-
     instance->rect = normalized;
     store_color(instance->color, color, active_remap(device));
     instance->depth = depth;
@@ -1452,8 +1442,6 @@ void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
     ff_dx12_circle_instance* instance = (ff_dx12_circle_instance*)ff_dx12_draw_device_add_instance(
         device, pick_bucket(opaque_bucket, type), depth);
 
-    FF_CHECK_RET(instance);
-
     instance->position_radius[0] = pos.pos.x;
     instance->position_radius[1] = pos.pos.y;
     instance->position_radius[2] = depth;
@@ -1495,8 +1483,6 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
     ff_dx12_sprite_instance* instance = (ff_dx12_sprite_instance*)ff_dx12_draw_device_add_instance(
         device, pick_bucket(ff_dx12_instance_bucket_sprites, type), depth);
 
-    FF_CHECK_RET(instance);
-
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;
     store_color(instance->color, transform->color, NULL);
@@ -1525,8 +1511,6 @@ void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
 
     ff_dx12_sprite_instance* instance = (ff_dx12_sprite_instance*)ff_dx12_draw_device_add_instance(
         device, pick_bucket(ff_dx12_instance_bucket_palette_sprites, type), depth);
-
-    FF_CHECK_RET(instance);
 
     instance->rect = ff_rect_float_scale(sprite->world, transform->scale);
     instance->uv_rect = sprite->texture_uv;

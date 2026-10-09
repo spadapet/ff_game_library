@@ -471,18 +471,6 @@ static bool keep_alive_fence_values_complete(const ff_dx12_fence_values* fence_v
     return ff_dx12_fence_values_complete(&pending);
 }
 
-static bool keep_alive_wait_for_fence_values(const ff_dx12_fence_values* fence_values)
-{
-    ff_dx12_fence_values pending = *fence_values;
-    if (!ff_dx12_fence_values_wait_is_pending(&pending))
-    {
-        return false;
-    }
-
-    ff_dx12_fence_values_wait(&pending, NULL);
-    return true;
-}
-
 static void keep_alive_release_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range)
 {
     ff_dx12_keep_alive_node pending = { 0 };
@@ -539,20 +527,7 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
     else
     {
         node = ff_arena_alloc_type(&s_keep_alive_arena, ff_dx12_keep_alive_node, 1);
-        if (node)
-        {
-            *node = (ff_dx12_keep_alive_node){ 0 };
-        }
-    }
-
-    if (!node)
-    {
-        if (keep_alive_wait_for_fence_values(fence_values))
-        {
-            keep_alive_release_resource(resource, mem_range);
-        }
-
-        FF_DEBUG_FAIL_RET();
+        *node = (ff_dx12_keep_alive_node){ 0 };
     }
 
     node->next = NULL;
@@ -560,22 +535,7 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
     node->mem_range = mem_range ? *mem_range : (ff_dx12_mem_range){ 0 };
     node->fence_values.arena = &s_keep_alive_arena;
 
-    if (!internal_ff_dx12_fence_values_copy(&node->fence_values, fence_values, &s_keep_alive_arena))
-    {
-        if (keep_alive_wait_for_fence_values(fence_values))
-        {
-            keep_alive_node_release(node);
-        }
-        else
-        {
-            node->resource = NULL;
-            node->mem_range = (ff_dx12_mem_range){ 0 };
-            ff_dx12_fence_values_clear(&node->fence_values);
-        }
-
-        keep_alive_node_recycle(node);
-        FF_DEBUG_FAIL_RET();
-    }
+    FF_ASSERT_RET(internal_ff_dx12_fence_values_copy(&node->fence_values, fence_values, &s_keep_alive_arena));
 
     if (ff_dx12_fence_values_complete(&node->fence_values))
     {

@@ -74,12 +74,6 @@ bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_dx12_buffer_type 
     // The gpu kind deliberately doesn't do this: its owner rewrites it every frame anyway.
     buffer->cpu_data = ff_arena_alloc_type(&buffer->arena, uint8_t, size);
 
-    if (!buffer->cpu_data)
-    {
-        ff_dx12_buffer_destroy(buffer);
-        FF_DEBUG_FAIL_RET_VAL(false);
-    }
-
     memcpy(buffer->cpu_data, data, size);
     buffer->cpu_capacity = size;
 
@@ -222,7 +216,6 @@ void* ff_dx12_buffer_map(ff_dx12_buffer* buffer, ff_dx12_commands* commands, siz
             const size_t new_capacity = ff_math_max_size(buffer->cpu_capacity * 2, size);
             buffer->cpu_data = ff_arena_realloc_type(&buffer->arena, uint8_t, buffer->cpu_data,
                 buffer->cpu_capacity, new_capacity);
-            FF_ASSERT_RET_VAL(buffer->cpu_data, NULL);
             buffer->cpu_capacity = new_capacity;
         }
 
@@ -400,7 +393,7 @@ bool internal_ff_dx12_buffer_reset(ff_dx12_buffer* buffer, ff_dx12_commands* com
         return true;
     }
 
-    FF_ASSERT_RET_VAL(buffer->cpu_data && buffer->cpu_size, false);
+    FF_ASSERT_RET_VAL(buffer->cpu_size, false);
 
     // Only a static buffer needs to re-upload, so the command list is required here rather than at
     // the top: a failure to open one shouldn't fail every other buffer in the walk.

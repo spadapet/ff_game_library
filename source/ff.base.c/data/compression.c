@@ -32,14 +32,15 @@ bool ff_compress(ff_stream* reader, size_t full_size, ff_stream* writer)
     FF_ASSERT_RET_VAL(reader && writer, false);
 
     z_stream zlib = { 0 };
-    FF_ASSERT_RET_VAL(deflateInit(&zlib, Z_BEST_COMPRESSION) == Z_OK, false);
+    const int init_status = deflateInit(&zlib, Z_BEST_COMPRESSION);
+    FF_ASSERT_RET_VAL(init_status != Z_STREAM_ERROR && init_status != Z_VERSION_ERROR, false);
 
     const size_t chunk_size = ff_math_max_size(ff_math_min_size(full_size, s_max_chunk_size), 1);
     ff_arena arena;
     ff_arena_init_heap_local(&arena, 0);
 
     const ff_span buffer = { .data = ff_arena_alloc(&arena, chunk_size, 1), .size = chunk_size };
-    bool status = buffer.data != NULL;
+    bool status = true;
 
     for (size_t pos = 0; status && pos < full_size; pos += chunk_size)
     {
@@ -75,14 +76,15 @@ bool ff_uncompress(ff_stream* reader, size_t saved_size, ff_stream* writer)
     FF_CHECK_RET_VAL(saved_size, true);
 
     z_stream zlib = { 0 };
-    FF_ASSERT_RET_VAL(inflateInit(&zlib) == Z_OK, false);
+    const int init_status = inflateInit(&zlib);
+    FF_ASSERT_RET_VAL(init_status != Z_STREAM_ERROR && init_status != Z_VERSION_ERROR, false);
 
     const size_t chunk_size = ff_math_min_size(saved_size, s_max_chunk_size);
     ff_arena arena;
     ff_arena_init_heap_local(&arena, 0);
 
     const ff_span buffer = { .data = ff_arena_alloc(&arena, chunk_size * 2, 1), .size = chunk_size * 2 };
-    bool status = buffer.data != NULL;
+    bool status = true;
     int zlib_status = Z_OK;
     size_t pos = 0;
 
@@ -103,7 +105,7 @@ bool ff_uncompress(ff_stream* reader, size_t saved_size, ff_stream* writer)
                 zlib.avail_out = (uInt)buffer.size;
                 zlib.next_out = (uint8_t*)buffer.data;
                 zlib_status = inflate(&zlib, Z_NO_FLUSH);
-                status = zlib_status != Z_NEED_DICT && zlib_status != Z_DATA_ERROR && zlib_status != Z_MEM_ERROR && zlib_status != Z_STREAM_ERROR;
+                status = zlib_status != Z_NEED_DICT && zlib_status != Z_DATA_ERROR && zlib_status != Z_STREAM_ERROR;
 
                 if (status)
                 {
@@ -162,7 +164,6 @@ ff_span ff_decode_base64(ff_string_view text, ff_arena* arena)
 
     size_t count = text.count / 4 * 3 - padding;
     uint8_t* out = (uint8_t*)ff_arena_alloc(arena, count, 1);
-    FF_CHECK_RET_VAL(out, ff_span_empty());
 
     for (size_t i = 0, j = 0; i < text.count; i += 4, j += 3)
     {

@@ -24,12 +24,6 @@ bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_dx12_commands* com
     data->row_hashes = ff_arena_alloc_type(&data->arena, uint64_t, row_count);
     data->colors = ff_arena_alloc_type(&data->arena, uint32_t, row_count * FF_PALETTE_SIZE);
 
-    if (!data->row_hashes || !data->colors)
-    {
-        ff_dx12_palette_data_destroy(data);
-        return false;
-    }
-
     memcpy(data->colors, colors, row_count * FF_PALETTE_SIZE * sizeof(uint32_t));
 
     for (size_t i = 0; i < row_count; i++)
@@ -70,7 +64,7 @@ bool internal_ff_dx12_palette_data_reset(ff_dx12_palette_data* data, ff_dx12_com
 {
     FF_ASSERT_RET_VAL(data, false);
     FF_CHECK_RET_VAL(data->row_count, false);
-    FF_ASSERT_RET_VAL(data->colors && commands, false);
+    FF_ASSERT_RET_VAL(commands, false);
 
     return ff_dx12_texture_update(&data->texture, commands, 0, 0, 0, 0,
         data->colors, FF_PALETTE_SIZE, data->row_count, FF_PALETTE_SIZE * sizeof(uint32_t));

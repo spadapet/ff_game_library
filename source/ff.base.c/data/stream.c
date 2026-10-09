@@ -82,8 +82,6 @@ static bool ensure_write_capacity(ff_stream* stream, size_t needed)
     FF_CHECK_RET_VAL(new_capacity >= wanted, false);
 
     uint8_t* data = (uint8_t*)ff_arena_realloc(stream->arena, stream->data, stream->capacity, new_capacity, 1);
-    FF_CHECK_RET_VAL(data, false);
-
     stream->data = data;
     stream->capacity = new_capacity;
     return true;
@@ -197,7 +195,6 @@ ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size, size_t a
         FF_ASSERT_RET_VAL(arena, ff_span_empty());
 
         void* copy = ff_arena_alloc(arena, size, align);
-        FF_CHECK_RET_VAL(copy, ff_span_empty());
         memcpy(copy, source, size);
 
         return (ff_span)
@@ -208,8 +205,6 @@ ff_span ff_stream_read(ff_stream* stream, ff_arena* arena, size_t size, size_t a
     }
 
     uint8_t* dest = (uint8_t*)ff_arena_alloc(arena, size, align);
-    FF_CHECK_RET_VAL(dest, ff_span_empty());
-
     size_t total_read = 0;
     while (total_read < size)
     {

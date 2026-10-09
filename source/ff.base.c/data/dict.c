@@ -91,8 +91,6 @@ void ff_dict_init_copy(ff_dict* dict, ff_arena* arena, const ff_dict* other)
 
     ff_dict_init_capacity(dict, arena, other_count);
 
-    FF_ASSERT_RET(!other_count || dict->capacity >= other_count);
-
     if (other_count)
     {
         memcpy(dict->keys, other_keys, other_count * sizeof(uint64_t));

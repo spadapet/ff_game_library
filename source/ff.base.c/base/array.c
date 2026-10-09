@@ -64,7 +64,6 @@ void* internal_ff_array_alloc(ff_arena* arena, size_t item_size, size_t item_ali
 
     size_t block_size = offset + capacity * item_size;
     uint8_t* block = (uint8_t*)ff_arena_alloc(arena, block_size, align);
-    FF_ASSERT_RET_VAL(block, NULL);
 
     uint8_t* data = block + offset;
     // Write the header directly here: internal_ff_array_get_header asserts the magic, which isn't set yet.
@@ -103,7 +102,6 @@ bool internal_ff_array_realloc(void** array_ptr, size_t min_capacity)
     size_t new_block_size = offset + new_capacity * header->item_size;
 
     uint8_t* new_block = (uint8_t*)ff_arena_realloc(header->arena, block, old_block_size, new_block_size, align);
-    FF_ASSERT_RET_VAL(new_block, false);
 
     uint8_t* new_data = new_block + offset;
     internal_ff_array_get_header(new_data)->capacity = new_capacity;

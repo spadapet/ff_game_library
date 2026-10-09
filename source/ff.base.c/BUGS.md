@@ -210,7 +210,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** Each spilled retirement set leaves another allocation in the global keep-alive arena until device teardown, despite bounded active keep-alive nodes.
 
-**Resolution:** Keep-alive nodes now refill their fence sets in place with a checked deep copy, preserving overflow storage for reuse. Completed sets are released before allocating keep-alive storage.
+**Resolution:** Keep-alive nodes now refill their fence sets in place with a deep copy, preserving overflow storage for reuse. Completed sets are released before allocating keep-alive storage.
 
 **Regression coverage:** `dx12_frame_tests::recycled_keep_alive_nodes_reuse_spilled_fence_storage` repeats retirement with nine incomplete fences and confirms arena buffer count stabilizes after warm-up. `completed_keep_alive_fences_do_not_allocate_arena_storage` covers the completed-set fast path.
 
@@ -220,9 +220,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Deferral rationale:** Small CPU arena/heap allocation failures are outside the application's supported recovery scope. Per owner direction, do not prioritize synthetic OOM failures or propagate them through the application as recoverable errors. Revisit only if a reasonably possible trigger is established.
 
+**Resolution:** The CPU allocation-failure guards and recovery plumbing have been removed in the uncommitted working tree. Valid growable CPU arena allocations are assumed to succeed; GPU resource failures and capacity/input limits remain recoverable where supported.
+
 **Location:** `dx12\dx12_fence_values.c`, `ff_dx12_fence_values_add` and `ff_dx12_fence_values_add_all`; `dx12\dx12_resource.c`, `ff_dx12_resource_destroy`.
 
-**Cause:** `ff_dx12_fence_values_add` returns `void`. If growing the overflow array fails, it returns without recording the new fence. `ff_dx12_fence_values_add_all` cannot report the partial copy, and resource destruction then queues or releases the resource using the incomplete fence set.
+**Cause:** `ff_dx12_fence_values_add` returned `void`. Its allocation-failure guard returned without recording the new fence. `ff_dx12_fence_values_add_all` could not report the partial copy, and resource destruction then queued or released the resource using the incomplete fence set.
 
 **Trigger:** An arena allocation fails while adding a ninth distinct, incomplete fence to a resource's retirement set, then the resource is destroyed in Release.
 
@@ -238,9 +240,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Deferral rationale:** This requires failure of a CPU arena metadata allocation, not exhaustion of the GPU descriptor ring. Per owner direction, such heap OOM recovery is out of scope. Normal descriptor-ring exhaustion remains a supported allocation failure.
 
+**Resolution:** The CPU metadata allocation-failure guards have been removed in the uncommitted working tree. Descriptor-ring exhaustion still returns an invalid range without blocking on unsubmitted work.
+
 **Location:** `dx12\dx12_descriptor_allocator.c`, `ring_grow`, `ring_push_back`, and `ff_dx12_descriptor_buffer_alloc_ring`.
 
-**Cause:** `ring_grow` can fail to allocate a larger range array, but `ring_push_back` returns `void`; the caller still increments `allocated_range_count` and returns a valid descriptor range without recording its fence.
+**Cause:** `ring_grow` reported allocation failure, but `ring_push_back` returned `void`; the caller still incremented `allocated_range_count` and returned a valid descriptor range without recording its fence.
 
 **Trigger:** Fill the ring's range metadata with distinct pending fence values, then fail the arena allocation needed to grow the metadata.
 

@@ -35,7 +35,6 @@ static internal_ff_arena_buffer* new_heap_buffer(HANDLE heap, size_t size, bool 
 {
     // One allocation: header at the front, payload after. Caller must size 'size' > sizeof(header); alloc() handles user alignment > 8.
     internal_ff_arena_buffer* new_buffer = (internal_ff_arena_buffer*)HeapAlloc(heap, 0, size);
-    FF_ASSERT_RET_VAL(new_buffer, NULL);
 
     new_buffer->next = NULL;
     new_buffer->start = (uint8_t*)new_buffer + sizeof(internal_ff_arena_buffer);
@@ -57,7 +56,6 @@ static internal_ff_arena_buffer* new_virtual_buffer(size_t size, bool oversize)
     {
         // Oversize: single VirtualAlloc, header + entire payload reserved AND committed.
         internal_ff_arena_buffer* new_buffer = (internal_ff_arena_buffer*)VirtualAlloc(NULL, actual_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-        FF_ASSERT_RET_VAL(new_buffer, NULL);
 
         new_buffer->next = NULL;
         new_buffer->start = (uint8_t*)new_buffer + sizeof(internal_ff_arena_buffer);
@@ -70,17 +68,11 @@ static internal_ff_arena_buffer* new_virtual_buffer(size_t size, bool oversize)
 
     // Non-oversize: reserve the full range but commit only the first page; alloc()'s lazy-commit path extends it as the bump pointer advances.
     internal_ff_arena_buffer* new_buffer = (internal_ff_arena_buffer*)VirtualAlloc(NULL, actual_size, MEM_RESERVE, PAGE_READWRITE);
-    FF_ASSERT_RET_VAL(new_buffer, NULL);
 
     size_t initial_commit = get_page_size();
     initial_commit = ff_math_min_size(initial_commit, actual_size);
 
-    void* committed = VirtualAlloc(new_buffer, initial_commit, MEM_COMMIT, PAGE_READWRITE);
-    if (!committed)
-    {
-        VirtualFree(new_buffer, 0, MEM_RELEASE);
-        FF_DEBUG_FAIL_RET_VAL(NULL);
-    }
+    VirtualAlloc(new_buffer, initial_commit, MEM_COMMIT, PAGE_READWRITE);
 
     new_buffer->next = NULL;
     new_buffer->start = (uint8_t*)new_buffer + sizeof(internal_ff_arena_buffer);
@@ -153,15 +145,9 @@ static internal_ff_arena_buffer* allocate_grow_buffer(internal_ff_arena_type typ
 
 static bool commit_virtual_buffer(internal_ff_arena_buffer* buffer, uint8_t* needed_end)
 {
-    if (needed_end <= buffer->end)
-    {
-        return true;
-    }
-
-    if (buffer->type != internal_ff_arena_buffer_type_virtual_memory || needed_end > buffer->reserve_end)
-    {
-        return false;
-    }
+    FF_CHECK_RET_VAL(needed_end > buffer->end, true);
+    FF_CHECK_RET_VAL(buffer->type == internal_ff_arena_buffer_type_virtual_memory &&
+        needed_end <= buffer->reserve_end, false);
 
     size_t current_committed = (size_t)(buffer->end - (uint8_t*)buffer);
     size_t reserve_total = (size_t)(buffer->reserve_end - (uint8_t*)buffer);
@@ -174,8 +160,7 @@ static bool commit_virtual_buffer(internal_ff_arena_buffer* buffer, uint8_t* nee
 
     uint8_t* new_committed_end = (uint8_t*)buffer + target;
     size_t commit_bytes = (size_t)(new_committed_end - buffer->end);
-    void* committed = VirtualAlloc(buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
-    FF_ASSERT_RET_VAL(committed, false);
+    VirtualAlloc(buffer->end, commit_bytes, MEM_COMMIT, PAGE_READWRITE);
 
     buffer->end = new_committed_end;
     return true;
@@ -213,7 +198,6 @@ void ff_arena_init_heap_global(ff_arena* arena, size_t initial_buffer_size)
     arena->heap = GetProcessHeap();
 
     internal_ff_arena_buffer* new_buffer = new_heap_buffer(arena->heap, arena->grow_buffer_size, false);
-    FF_ASSERT_RET(new_buffer);
 
     arena->buffer = new_buffer;
     arena->next = new_buffer->start;
@@ -226,7 +210,6 @@ void ff_arena_init_heap_local(ff_arena* arena, size_t initial_buffer_size)
     arena->next = NULL;
     arena->end = NULL;
     arena->heap = HeapCreate(HEAP_NO_SERIALIZE, 0, 0);
-    FF_ASSERT_RET(arena->heap);
 
     size_t page_size = get_page_size();
     arena->grow_buffer_size = ff_math_round_up_pow2(ff_math_max_size(initial_buffer_size, page_size));
@@ -236,7 +219,6 @@ void ff_arena_init_heap_local(ff_arena* arena, size_t initial_buffer_size)
     arena->type = internal_ff_arena_type_heap_local;
 
     internal_ff_arena_buffer* new_buffer = new_heap_buffer(arena->heap, arena->grow_buffer_size, false);
-    FF_ASSERT_RET(new_buffer);
 
     arena->buffer = new_buffer;
     arena->next = new_buffer->start;
@@ -259,7 +241,6 @@ void ff_arena_init_virtual_memory(ff_arena* arena, size_t initial_buffer_size)
     arena->type = internal_ff_arena_type_virtual_memory;
 
     internal_ff_arena_buffer* new_buffer = new_virtual_buffer(arena->grow_buffer_size, false);
-    FF_ASSERT_RET(new_buffer);
 
     arena->buffer = new_buffer;
     arena->next = new_buffer->start;
@@ -353,8 +334,10 @@ static void* alloc_slow(ff_arena* arena, size_t size, size_t align)
     }
 
     size_t alloc_size = 0;
-    if (!new_buffer && arena->grow_buffer_size > 0)
+    if (!new_buffer)
     {
+        FF_CHECK_RET_VAL(arena->grow_buffer_size, NULL);
+
         if (oversize)
         {
             // Dedicated one-shot buffer: sized tightly to the request (no pow2 round-up, which would nearly double large reservations); virtual oversize still rounds to allocation granularity.
@@ -367,11 +350,6 @@ static void* alloc_slow(ff_arena* arena, size_t size, size_t align)
         }
 
         new_buffer = allocate_grow_buffer(arena->type, arena->heap, alloc_size, oversize);
-    }
-
-    if (!new_buffer)
-    {
-        return NULL;
     }
 
     // Double grow_buffer_size for the NEXT non-oversize fresh allocation, capped at max_buffer_size.
@@ -447,9 +425,11 @@ void* ff_arena_realloc(ff_arena* arena, const void* start, size_t size, size_t n
         }
     }
 
+    FF_CHECK_RET_VAL(new_size <= SIZE_MAX - (align - 1) - sizeof(internal_ff_arena_buffer), NULL);
+
     // Relocate: allocate a fresh block and copy the overlapping prefix; min(size, new_size) is correct for both grow and shrink.
     void* new_start = ff_arena_alloc(arena, new_size, align);
-    if (new_start && size)
+    if (size)
     {
         memcpy(new_start, start, ff_math_min_size(size, new_size));
     }

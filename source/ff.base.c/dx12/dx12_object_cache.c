@@ -50,8 +50,6 @@ static bool key_builder_reserve(object_cache_key_builder* key, size_t size)
 
     uint8_t* data = (uint8_t*)ff_arena_realloc(&key->arena, key->data,
         key->capacity, new_capacity, alignof(uint8_t));
-    FF_CHECK_RET_VAL(data, false);
-
     key->data = data;
     key->capacity = new_capacity;
     return true;
@@ -224,7 +222,7 @@ static ff_dx12_object_cache_entry* bucket_find(ff_dx12_object_cache_entry** buck
 }
 
 // Takes ownership of the caller's reference on 'object'.
-static bool bucket_add(ff_dx12_object_cache* cache, ff_dx12_object_cache_entry** buckets,
+static void bucket_add(ff_dx12_object_cache* cache, ff_dx12_object_cache_entry** buckets,
     uint64_t hash, const void* key, size_t key_size, IUnknown* object)
 {
     ff_dx12_object_cache_entry* entry = cache->entries_free;
@@ -235,30 +233,13 @@ static bool bucket_add(ff_dx12_object_cache* cache, ff_dx12_object_cache_entry**
     else
     {
         entry = ff_arena_alloc_type(&cache->arena, ff_dx12_object_cache_entry, 1);
-        if (entry)
-        {
-            *entry = (ff_dx12_object_cache_entry){ 0 };
-        }
+        *entry = (ff_dx12_object_cache_entry){ 0 };
     }
 
-    uint8_t* key_copy = entry ? entry->key : NULL;
-    if (entry && key_size > entry->key_capacity)
+    uint8_t* key_copy = entry->key;
+    if (key_size > entry->key_capacity)
     {
         key_copy = ff_arena_alloc_type(&cache->arena, uint8_t, key_size);
-    }
-
-    if (!entry || !key_copy)
-    {
-        if (entry)
-        {
-            entry->key_size = 0;
-            entry->object = NULL;
-            entry->next = cache->entries_free;
-            cache->entries_free = entry;
-        }
-
-        IUnknown_Release(object);
-        FF_DEBUG_FAIL_RET_VAL(false);
     }
 
     memcpy(key_copy, key, key_size);
@@ -270,7 +251,6 @@ static bool bucket_add(ff_dx12_object_cache* cache, ff_dx12_object_cache_entry**
     entry->object = object;
     entry->next = buckets[hash % FF_DX12_OBJECT_CACHE_BUCKETS];
     buckets[hash % FF_DX12_OBJECT_CACHE_BUCKETS] = entry;
-    return true;
 }
 
 static void buckets_release(ff_dx12_object_cache* cache, ff_dx12_object_cache_entry** buckets, bool release_object)
@@ -452,9 +432,9 @@ ID3D12RootSignature* ff_dx12_object_cache_root_signature(ff_dx12_object_cache* c
             {
                 FF_ASSERT_HR(hr_create);
             }
-            else if (!bucket_add(cache, cache->root_signatures, hash, key, key_size, (IUnknown*)result))
+            else
             {
-                result = NULL;
+                bucket_add(cache, cache->root_signatures, hash, key, key_size, (IUnknown*)result);
             }
         }
     }
@@ -537,11 +517,7 @@ ID3D12PipelineState* ff_dx12_object_cache_pipeline_state(ff_dx12_object_cache* c
         FF_ASSERT_HR_RET_VAL(hr, NULL);
     }
 
-    if (!bucket_add(cache, cache->pipeline_states, hash, key.data, key.size, (IUnknown*)state))
-    {
-        key_builder_destroy(&key);
-        return NULL;
-    }
+    bucket_add(cache, cache->pipeline_states, hash, key.data, key.size, (IUnknown*)state);
 
     key_builder_destroy(&key);
     return state;

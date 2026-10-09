@@ -55,9 +55,7 @@ void ff_settings_destroy(void)
 
 static ff_string_view settings_temp_file(ff_arena* arena)
 {
-    ff_string_view result = ff_string_view_empty();
     char* data = ff_arena_alloc_type(arena, char, s_settings_file.count + 5);
-    FF_ASSERT_RET_VAL(data, result);
 
     memcpy(data, s_settings_file.data, s_settings_file.count);
     memcpy(data + s_settings_file.count, ".tmp", 5);
@@ -87,7 +85,7 @@ void ff_settings_save(void)
         ff_arena_declare_stack(temp_arena, 1024);
         ff_span dict_span = ff_idict_save(&s_settings_dict, &temp_arena);
         ff_string_view temp_file = settings_temp_file(&temp_arena);
-        bool saved = dict_span.size && temp_file.count;
+        bool saved = dict_span.size != 0;
 
         ff_stream stream;
         if (saved && ff_stream_init_write_file(&stream, temp_file))

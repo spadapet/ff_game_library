@@ -48,8 +48,6 @@ void* ff_dx12_instance_bucket_add(ff_dx12_instance_bucket* bucket)
             bucket->capacity * bucket->item_size, new_capacity * bucket->item_size,
             bucket->item_align);
 
-        FF_CHECK_RET_VAL(data, NULL);
-
         bucket->data = data;
         bucket->capacity = new_capacity;
     }

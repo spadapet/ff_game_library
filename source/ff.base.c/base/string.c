@@ -99,7 +99,6 @@ ff_wstring_view ff_utf8_to_wide(ff_string_view utf8, ff_arena* arena, bool null_
     FF_ASSERT_RET_VAL(wide_len > 0, ff_wstring_view_empty());
 
     wchar_t* dest = ff_arena_alloc_type(arena, wchar_t, (size_t)wide_len + (null_terminating ? 1 : 0));
-    FF_ASSERT_RET_VAL(dest, ff_wstring_view_empty());
     FF_ASSERT_RET_VAL(MultiByteToWideChar(CP_UTF8, 0, utf8.data, source_len, dest, wide_len) == wide_len, ff_wstring_view_empty());
 
     if (null_terminating)
@@ -120,7 +119,6 @@ ff_string_view ff_wide_to_utf8(ff_wstring_view wide, ff_arena* arena, bool null_
     FF_ASSERT_RET_VAL(utf8_len > 0, ff_string_view_empty());
 
     char* dest = ff_arena_alloc_type(arena, char, (size_t)utf8_len + (null_terminating ? 1 : 0));
-    FF_ASSERT_RET_VAL(dest, ff_string_view_empty());
     FF_ASSERT_RET_VAL(WideCharToMultiByte(CP_UTF8, 0, wide.data, source_len, dest, utf8_len, NULL, NULL) == utf8_len, ff_string_view_empty());
 
     if (null_terminating)
