@@ -15,7 +15,7 @@ The initial review reported 24 numbered findings. The two independent arena-rete
 
 ## Tracking conventions
 
-Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs. Add new entries with the next unused ID, currently **FFC-031**, and update the index. Keep resolved entries as history.
+Use permanent IDs in commit messages and related issues. Do not renumber or reuse IDs. Add new entries with the next unused ID, currently **FFC-032**, and update the index. Keep resolved entries as history.
 
 **Priority:** P1 = high-priority corruption, lifetime, synchronization, or deadlock defect; P2 = other concrete correctness, recovery, or sustained resource/performance defect. Priority is not a security severity rating.
 
@@ -44,8 +44,8 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-013 | P2 | Open | Depthless batching changes draw order |
 | FFC-014 | P1 | Fixed | App shutdown deadlocks on synchronous main dispatch |
 | FFC-015 | P2 | Fixed | Dictionary mutation corrupts borrowed input values |
-| FFC-016 | P2 | Open | Embedding immutable dictionaries breaks payload alignment |
-| FFC-017 | P2 | Open | Embedding an empty immutable dictionary omits its header |
+| FFC-016 | P2 | Fixed | Embedding immutable dictionaries breaks payload alignment |
+| FFC-017 | P2 | Fixed | Embedding an empty immutable dictionary omits its header |
 | FFC-018 | P2 | Open | String-builder insertion corrupts aliased source text |
 | FFC-019 | P2 | Fixed | Dictionary producers and consumers disagree on depth limits |
 | FFC-020 | P2 | Fixed | Log sink configuration changes deadlock inside callbacks |
@@ -59,6 +59,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-028 | P2 | Fixed | Incomplete format metadata rejects valid textures |
 | FFC-029 | P1 | Deferred | Fence-set allocation failure drops GPU retirement dependencies |
 | FFC-030 | P1 | Deferred | Descriptor-ring metadata allocation failure returns an untracked range |
+| FFC-031 | P2 | Open | Draw batches continue after required constant uploads fail |
 
 ## DX12 synchronization, lifetime, and recovery
 
@@ -344,6 +345,22 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Regression scenario:** Compare overlapping geometry types and mixed opaque/transparent submissions with and without depth, including reversed submission order.
 
+### FFC-031: Draw batches continue after required constant uploads fail
+
+**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+
+**Location:** `dx12\dx12_draw_device.c`, `update_constants`, `update_ps_constants`, `apply_textures`, and `ff_dx12_draw_device_flush`.
+
+**Cause:** A failed vertex-constant upload returns address zero, but flush skips only the binding and continues toward drawing. A failed pixel-constant upload returns from a void helper without informing `apply_textures`. Separately, a failed `ff_dx12_draw_state_bind` returns directly from flush, bypassing its final `reset_batch`.
+
+**Trigger:** GPU upload heap/resource creation fails while flushing an otherwise valid batch, or draw-state binding fails after instance-buffer preparation. This concerns supported GPU allocation/binding failures, not CPU arena exhaustion. `ff_dx12_commands_valid` does not automatically suppress these draws based on device health.
+
+**Impact:** Draws can execute with missing or stale required root constants. A failed bind leaves the batch queued instead of discarding it, so later flushes can retry stale instances and batch state.
+
+**Fix direction:** Propagate required constant-preparation success, stop drawing on failure, and route every started-batch failure through `reset_batch`. No palette textures is a successful no-op. Preserve residency and fence retirement; do not explicitly free upload-ring ranges.
+
+**Regression scenario:** Inject GPU upload failure separately for vertex and palette pixel constants and assert no draw is recorded. Inject draw-state binding failure and verify the batch is reset, then a subsequent successful batch draws only its own instances. This has not been runtime-reproduced.
+
 ## App, base, and data
 
 ### FFC-014: App shutdown deadlocks on synchronous main dispatch
@@ -380,9 +397,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-016: Embedding immutable dictionaries breaks payload alignment
 
-**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Unclassified.
 
-**Location:** `data\idict.c:318-324`, immutable-child conversion in `build_idict_convert_value`; alignment rejection at `data\idict.c:647-656`.
+**Location:** `data\idict.c`, immutable-child conversion in `build_idict_convert_value` and standalone serialization in `ff_idict_save`.
 
 **Cause:** An existing immutable dictionary is copied at `FF_IDICT_BLOCK_ALIGN`, preserving its bytes and offsets but not necessarily the alignment phase required by its payloads. Internal payload alignment can be stronger than block alignment.
 
@@ -392,15 +409,15 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Related surface:** Extracting and saving an already-nested immutable dictionary can change its alignment phase too (`build_idict_emit_dict` and the save path). Fix both embedding and extraction/standalone serialization, not just one example offset.
 
-**Fix direction:** Rebuild or place copied immutable content in a way that preserves all payload alignment guarantees, including nested content and standalone saves.
+**Resolution:** Working tree, not committed. Existing 64-byte-aligned blocks retain the raw-copy path and are embedded at 64-byte alignment. Non-64-byte-aligned blocks are temporarily converted to mutable dictionaries and re-emitted with payload offsets aligned for their new location. Standalone saves rebuild non-64-byte-aligned extracted roots too. These temporary conversions borrow strings/data instead of copying payloads into scratch; public `ff_dict_init_from_idict` still deep-copies them. Duplicate ordering, exact two-pass construction, and serialized bounds remain intact. The version-6 format is unchanged and existing valid files remain readable; malformed old output is not repaired on load.
 
-**Regression scenario:** Round-trip over-aligned payloads through immutable embedding, multiple nesting levels, extraction, and standalone saving. Assert actual pointer alignment as well as payload bytes and accepted reloads.
+**Regression coverage:** Before the fix, Debug/x64 tests `immutable_children_preserve_over_alignment_through_nested_arrays`, `extracted_immutable_child_rebuilds_alignment_when_embedded`, and `extracted_immutable_child_rebuilds_alignment_when_saved` failed validated reloads. They now cover actual per-item 64-byte alignment, bytes, metadata, nested dictionaries/arrays, duplicate ordering, mutable conversion, and unchanged source blocks. All 249 selected dictionary, immutable-dictionary, and JSON tests pass without skips in Debug/x64 and Release/x64, including acceptance of 8-byte-aligned buffers whose payloads need no stronger alignment.
 
 ### FFC-017: Embedding an empty immutable dictionary omits its header
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Reproduced. **Origin:** Unclassified.
 
-**Location:** `data\idict.c:320-324`, immutable-child conversion in `build_idict_convert_value`.
+**Location:** `data\idict.c`, immutable-child conversion in `build_idict_convert_value`.
 
 **Cause:** `get_idict_byte_size` returns zero for `ff_idict_empty()`. The builder copies no child header, but still emits an idict value referencing the resulting offset. That offset can be the end of the parent block.
 
@@ -408,9 +425,9 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Impact:** The resulting child is not a valid empty dictionary representation. Validated reload fails, and querying the child can read outside the serialized block.
 
-**Fix direction:** Normalize the empty immutable input to a real serialized empty child dictionary, consistent with the supported empty mutable-dictionary path.
+**Resolution:** Working tree, not committed. Null-data immutable children use the existing empty mutable-dictionary emitter, producing an actual zero-entry header. Empty dictionaries remain distinct from absent, empty-value, and null entries; allocated empty immutable dictionaries remain supported.
 
-**Regression scenario:** Access, save, reload, and convert an empty immutable child. Include multiple empty children and empty children inside arrays, and distinguish a genuinely empty dictionary from an absent value.
+**Regression coverage:** Before the fix, the sole-child fixture in `empty_immutable_children_remain_distinct_from_null_and_absent` failed validated reload in Debug/x64. It now also covers querying/saving the extracted empty child, multiple empty siblings, empty children in arrays alongside populated/null entries, allocated empty children, and conversion back to mutable dictionaries. It passes in Debug/x64 and Release/x64 as part of the 249 related tests above.
 
 ### FFC-018: String-builder insertion corrupts aliased source text
 

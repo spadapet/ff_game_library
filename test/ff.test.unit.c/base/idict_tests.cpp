@@ -1459,6 +1459,378 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        static void build_aligned_payload_source(ff_arena* arena, ff_dict* source, const uint8_t* bytes)
+        {
+            ff_dict_init(source, arena);
+            ff_array_span span{};
+            span.data = bytes;
+            span.count = 3;
+            span.item_size = 64;
+            span.item_align = 64;
+            ff_value data = ff_value_new_data_array(span);
+            ff_value text = ff_value_new_string(FF_SVL("odd"));
+            ff_dict_set(source, FF_SVL("wide"), &data);
+            ff_dict_set(source, FF_SVL("text"), &text);
+
+            for (int i = 0; i < 3; i++)
+            {
+                ff_value duplicate = ff_value_new_int32(10 + i);
+                ff_dict_add(source, FF_SVL("dup"), &duplicate);
+            }
+        }
+
+        static void verify_aligned_payload(const ff_idict& dict, const uint8_t* bytes)
+        {
+            const ff_ivalue* value = ff_idict_get(&dict, FF_SVL("wide"));
+            Assert::IsNotNull(value);
+            Assert::IsTrue(value->type == ff_value_type_data);
+            ff_array_span data = ff_ivalue_as_data(value, &dict);
+            Assert::AreEqual((uint32_t)3, data.count);
+            Assert::AreEqual((uint16_t)64, data.item_size);
+            Assert::AreEqual((uint16_t)64, data.item_align);
+            Assert::IsNotNull(data.data);
+
+            for (size_t i = 0; i < data.count; i++)
+            {
+                const uint8_t* item = (const uint8_t*)data.data + i * data.item_size;
+                Assert::IsTrue(is_aligned(item, 64));
+                Assert::IsTrue(memcmp(item, bytes + i * 64, 64) == 0);
+            }
+
+            ff_string_view text = ff_ivalue_as_string(ff_idict_get(&dict, FF_SVL("text")), &dict);
+            Assert::AreEqual((size_t)3, text.count);
+            Assert::IsTrue(memcmp(text.data, "odd", 3) == 0);
+            const ff_ivalue* duplicate = ff_idict_get(&dict, FF_SVL("dup"));
+
+            for (int i = 0; i < 3; i++)
+            {
+                Assert::IsNotNull(duplicate);
+                Assert::AreEqual(10 + i, duplicate->i32);
+                duplicate = ff_idict_get_next(&dict, FF_SVL("dup"), duplicate);
+            }
+
+            Assert::IsNull(duplicate);
+        }
+
+        static ff_idict validated_saved_dict(const ff_idict& dict, ff_arena* arena)
+        {
+            ff_span saved = ff_idict_save(&dict, arena);
+            Assert::IsNotNull(saved.data);
+            ff_idict loaded{};
+            Assert::IsTrue(ff_idict_load(&loaded, saved, true, true));
+            return loaded;
+        }
+
+        static ff_idict mutable_saved_dict(const ff_idict& dict, ff_arena* arena)
+        {
+            ff_dict mutable_dict{};
+            ff_dict_init_from_idict(&mutable_dict, arena, &dict);
+            ff_idict rebuilt{};
+            ff_idict_init(&rebuilt, arena, &mutable_dict);
+            return validated_saved_dict(rebuilt, arena);
+        }
+
+        TEST_METHOD(immutable_children_preserve_over_alignment_through_nested_arrays)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 16384);
+            alignas(64) uint8_t bytes[192];
+
+            for (size_t i = 0; i < sizeof(bytes); i++)
+            {
+                bytes[i] = (uint8_t)(i * 7 + 3);
+            }
+
+            ff_dict source{};
+            build_aligned_payload_source(&arena, &source, bytes);
+            ff_idict child{};
+            ff_idict_init(&child, &arena, &source);
+            Assert::IsTrue(is_aligned(child.data, 64));
+            verify_aligned_payload(child, bytes);
+            void* original = ff_arena_alloc(&arena, size_of(&child), 1);
+            memcpy(original, child.data, size_of(&child));
+
+            ff_value inner_items[2] = { ff_value_new_idict(child), ff_value_new_idict(child) };
+            ff_value inner_array = ff_value_new_array(ff_value_span{ inner_items, 2 });
+            ff_value items[2] = { ff_value_new_idict(child), inner_array };
+            ff_value list = ff_value_new_array(ff_value_span{ items, 2 });
+            ff_value direct = ff_value_new_idict(child);
+            ff_dict wrapper_source{};
+            ff_dict_init(&wrapper_source, &arena);
+            ff_dict_set(&wrapper_source, FF_SVL("child"), &direct);
+            ff_dict_set(&wrapper_source, FF_SVL("list"), &list);
+            ff_idict wrapper{};
+            ff_idict_init(&wrapper, &arena, &wrapper_source);
+
+            ff_value wrapper_items[1] = { ff_value_new_idict(wrapper) };
+            ff_value wrappers = ff_value_new_array(ff_value_span{ wrapper_items, 1 });
+            ff_dict root_source{};
+            ff_dict_init(&root_source, &arena);
+            ff_dict_set(&root_source, FF_SVL("list"), &wrappers);
+            ff_idict root{};
+            ff_idict_init(&root, &arena, &root_source);
+            root = validated_saved_dict(root, &arena);
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                ff_ivalue_span roots = ff_ivalue_as_array(ff_idict_get(&root, FF_SVL("list")), &root);
+                Assert::AreEqual((size_t)1, roots.count);
+                ff_idict nested = ff_ivalue_as_dict(roots.data, &root);
+                ff_idict direct_child = ff_ivalue_as_dict(ff_idict_get(&nested, FF_SVL("child")), &nested);
+                verify_aligned_payload(direct_child, bytes);
+                ff_ivalue_span children = ff_ivalue_as_array(ff_idict_get(&nested, FF_SVL("list")), &nested);
+                Assert::AreEqual((size_t)2, children.count);
+                ff_idict array_child = ff_ivalue_as_dict(children.data, &nested);
+                verify_aligned_payload(array_child, bytes);
+                ff_ivalue_span grandchildren = ff_ivalue_as_array(children.data + 1, &nested);
+                Assert::AreEqual((size_t)2, grandchildren.count);
+
+                for (size_t i = 0; i < grandchildren.count; i++)
+                {
+                    ff_idict grandchild = ff_ivalue_as_dict(grandchildren.data + i, &nested);
+                    verify_aligned_payload(grandchild, bytes);
+                }
+
+                if (!pass)
+                {
+                    root = mutable_saved_dict(root, &arena);
+                }
+            }
+
+            Assert::IsTrue(memcmp(original, child.data, size_of(&child)) == 0);
+            verify_aligned_payload(child, bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        static ff_idict build_nonroot_aligned_child(ff_arena* arena, const uint8_t* bytes, ff_idict* parent)
+        {
+            ff_dict grand_source{};
+            build_aligned_payload_source(arena, &grand_source, bytes);
+            ff_dict child_source{};
+            build_aligned_payload_source(arena, &child_source, bytes);
+            ff_value grand = ff_value_new_dict(&grand_source);
+            ff_dict_set(&child_source, FF_SVL("grand"), &grand);
+            ff_value items[2] = { ff_value_new_string(FF_SVL("odd")), grand };
+            ff_value list = ff_value_new_array(ff_value_span{ items, 2 });
+            ff_dict_set(&child_source, FF_SVL("list"), &list);
+            ff_dict parent_source{};
+            ff_dict_init(&parent_source, arena);
+            ff_value child = ff_value_new_dict(&child_source);
+            ff_dict_set(&parent_source, FF_SVL("child"), &child);
+            ff_idict_init(parent, arena, &parent_source);
+            *parent = validated_saved_dict(*parent, arena);
+            ff_idict extracted = ff_ivalue_as_dict(ff_idict_get(parent, FF_SVL("child")), parent);
+            Assert::AreEqual(data_start_of(1), (size_t)((const uint8_t*)extracted.data - (const uint8_t*)parent->data));
+            Assert::IsTrue(is_aligned(extracted.data, 8));
+            Assert::IsFalse(is_aligned(extracted.data, 64));
+            verify_aligned_payload(extracted, bytes);
+            return extracted;
+        }
+
+        static void verify_aligned_payload_tree(const ff_idict& dict, const uint8_t* bytes)
+        {
+            verify_aligned_payload(dict, bytes);
+            ff_idict grand = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("grand")), &dict);
+            verify_aligned_payload(grand, bytes);
+            ff_ivalue_span list = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
+            Assert::AreEqual((size_t)2, list.count);
+            ff_string_view text = ff_ivalue_as_string(list.data, &dict);
+            Assert::AreEqual((size_t)3, text.count);
+            Assert::IsTrue(memcmp(text.data, "odd", 3) == 0);
+            grand = ff_ivalue_as_dict(list.data + 1, &dict);
+            verify_aligned_payload(grand, bytes);
+        }
+
+        TEST_METHOD(extracted_immutable_child_rebuilds_alignment_when_embedded)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 16384);
+            alignas(64) uint8_t bytes[192];
+            memset(bytes, 0xA7, sizeof(bytes));
+            ff_idict parent{};
+            ff_idict extracted = build_nonroot_aligned_child(&arena, bytes, &parent);
+            void* original = ff_arena_alloc(&arena, size_of(&parent), 1);
+            memcpy(original, parent.data, size_of(&parent));
+            ff_value child = ff_value_new_idict(extracted);
+            ff_value items[2] = { child, child };
+            ff_value list = ff_value_new_array(ff_value_span{ items, 2 });
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_dict_set(&source, FF_SVL("child"), &child);
+            ff_dict_set(&source, FF_SVL("list"), &list);
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+            dict = validated_saved_dict(dict, &arena);
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                ff_idict embedded = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("child")), &dict);
+                verify_aligned_payload_tree(embedded, bytes);
+                ff_ivalue_span children = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
+                Assert::AreEqual((size_t)2, children.count);
+
+                for (size_t i = 0; i < children.count; i++)
+                {
+                    embedded = ff_ivalue_as_dict(children.data + i, &dict);
+                    verify_aligned_payload_tree(embedded, bytes);
+                }
+
+                if (!pass)
+                {
+                    dict = mutable_saved_dict(dict, &arena);
+                }
+            }
+
+            Assert::IsTrue(memcmp(original, parent.data, size_of(&parent)) == 0);
+            verify_aligned_payload_tree(extracted, bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(extracted_immutable_child_rebuilds_alignment_when_saved)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 16384);
+            alignas(64) uint8_t bytes[192];
+
+            for (size_t i = 0; i < sizeof(bytes); i++)
+            {
+                bytes[i] = (uint8_t)(i * 11 + 5);
+            }
+
+            ff_idict parent{};
+            ff_idict extracted = build_nonroot_aligned_child(&arena, bytes, &parent);
+            void* original = ff_arena_alloc(&arena, size_of(&parent), 1);
+            memcpy(original, parent.data, size_of(&parent));
+            ff_idict standalone = validated_saved_dict(extracted, &arena);
+            Assert::IsTrue(is_aligned(standalone.data, 64));
+            verify_aligned_payload_tree(standalone, bytes);
+            standalone = mutable_saved_dict(standalone, &arena);
+            verify_aligned_payload_tree(standalone, bytes);
+            Assert::IsTrue(memcmp(original, parent.data, size_of(&parent)) == 0);
+            verify_aligned_payload_tree(extracted, bytes);
+            ff_arena_destroy(&arena);
+        }
+
+        static void verify_empty_immutable_children(const ff_idict& dict)
+        {
+            Assert::IsNull(ff_idict_get(&dict, FF_SVL("absent")));
+            const ff_ivalue* null_value = ff_idict_get(&dict, FF_SVL("null"));
+            Assert::IsNotNull(null_value);
+            Assert::IsTrue(null_value->type == ff_value_type_null);
+            const ff_ivalue* empty_value = ff_idict_get(&dict, FF_SVL("empty_value"));
+            Assert::IsNotNull(empty_value);
+            Assert::IsTrue(empty_value->type == ff_value_type_empty);
+            const ff_string_view keys[3] = { FF_SVL("empty"), FF_SVL("empty_again"), FF_SVL("allocated_empty") };
+
+            for (ff_string_view key : keys)
+            {
+                const ff_ivalue* value = ff_idict_get(&dict, key);
+                Assert::IsNotNull(value);
+                Assert::IsTrue(value->type == ff_value_type_idict);
+                ff_idict child = ff_ivalue_as_dict(value, &dict);
+                Assert::IsNotNull(child.data);
+                Assert::AreEqual((size_t)0, count_of(&child));
+                Assert::AreEqual(block_header_size, size_of(&child));
+                Assert::IsNull(ff_idict_get(&child, FF_SVL("number")));
+            }
+
+            ff_idict populated = ff_ivalue_as_dict(ff_idict_get(&dict, FF_SVL("populated")), &dict);
+            Assert::AreEqual(42, ff_idict_get(&populated, FF_SVL("number"))->i32);
+            ff_ivalue_span list = ff_ivalue_as_array(ff_idict_get(&dict, FF_SVL("list")), &dict);
+            Assert::AreEqual((size_t)5, list.count);
+            Assert::IsTrue(list.data[1].type == ff_value_type_null);
+
+            const size_t empty_indices[3] = { 0, 3, 4 };
+
+            for (size_t i : empty_indices)
+            {
+                Assert::IsTrue(list.data[i].type == ff_value_type_idict);
+                ff_idict child = ff_ivalue_as_dict(list.data + i, &dict);
+                Assert::IsNotNull(child.data);
+                Assert::AreEqual((size_t)0, count_of(&child));
+                Assert::AreEqual(block_header_size, size_of(&child));
+            }
+
+            populated = ff_ivalue_as_dict(list.data + 2, &dict);
+            Assert::AreEqual(42, ff_idict_get(&populated, FF_SVL("number"))->i32);
+        }
+
+        TEST_METHOD(empty_immutable_children_remain_distinct_from_null_and_absent)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 16384);
+            ff_value empty = ff_value_new_idict(ff_idict_empty());
+            ff_dict sole_source{};
+            ff_dict_init(&sole_source, &arena);
+            ff_dict_set(&sole_source, FF_SVL("empty"), &empty);
+            ff_idict sole_parent{};
+            ff_idict_init(&sole_parent, &arena, &sole_source);
+            sole_parent = validated_saved_dict(sole_parent, &arena);
+            const ff_ivalue* sole_value = ff_idict_get(&sole_parent, FF_SVL("empty"));
+            Assert::IsNotNull(sole_value);
+            Assert::IsTrue(sole_value->type == ff_value_type_idict);
+            ff_idict sole_child = ff_ivalue_as_dict(sole_value, &sole_parent);
+            Assert::IsNotNull(sole_child.data);
+            Assert::AreEqual((size_t)0, count_of(&sole_child));
+            Assert::AreEqual(block_header_size, size_of(&sole_child));
+            sole_child = validated_saved_dict(sole_child, &arena);
+            Assert::AreEqual((size_t)0, count_of(&sole_child));
+            Assert::AreEqual(block_header_size, size_of(&sole_child));
+            ff_dict sole_mutable{};
+            ff_dict_init_from_idict(&sole_mutable, &arena, &sole_child);
+            Assert::AreEqual((size_t)0, sole_mutable.count);
+
+            ff_dict empty_source{};
+            ff_dict_init(&empty_source, &arena);
+            ff_idict allocated_empty{};
+            ff_idict_init(&allocated_empty, &arena, &empty_source);
+            ff_dict populated_source{};
+            ff_dict_init(&populated_source, &arena);
+            ff_value number = ff_value_new_int32(42);
+            ff_dict_set(&populated_source, FF_SVL("number"), &number);
+            ff_idict populated{};
+            ff_idict_init(&populated, &arena, &populated_source);
+            void* original = ff_arena_alloc(&arena, size_of(&populated), 1);
+            memcpy(original, populated.data, size_of(&populated));
+            uint8_t original_empty[block_header_size];
+            memcpy(original_empty, allocated_empty.data, sizeof(original_empty));
+
+            ff_value real_empty = ff_value_new_idict(allocated_empty);
+            ff_value full = ff_value_new_idict(populated);
+            ff_value null_value = ff_value_new_null();
+            ff_value empty_value = ff_value_new_empty();
+            ff_value items[5] = { empty, null_value, full, empty, real_empty };
+            ff_value list = ff_value_new_array(ff_value_span{ items, 5 });
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_dict_set(&source, FF_SVL("empty"), &empty);
+            ff_dict_set(&source, FF_SVL("populated"), &full);
+            ff_dict_set(&source, FF_SVL("empty_again"), &empty);
+            ff_dict_set(&source, FF_SVL("allocated_empty"), &real_empty);
+            ff_dict_set(&source, FF_SVL("null"), &null_value);
+            ff_dict_set(&source, FF_SVL("empty_value"), &empty_value);
+            ff_dict_set(&source, FF_SVL("list"), &list);
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+            dict = validated_saved_dict(dict, &arena);
+            verify_empty_immutable_children(dict);
+
+            ff_dict restored{};
+            ff_dict_init_from_idict(&restored, &arena, &dict);
+            Assert::IsNull(ff_dict_get(&restored, FF_SVL("absent")));
+            Assert::IsTrue(ff_dict_get(&restored, FF_SVL("null"))->type == ff_value_type_null);
+            ff_dict* restored_empty = ff_value_as_dict(ff_dict_get(&restored, FF_SVL("empty")));
+            Assert::IsNotNull(restored_empty);
+            Assert::AreEqual((size_t)0, restored_empty->count);
+            ff_idict rebuilt{};
+            ff_idict_init(&rebuilt, &arena, &restored);
+            rebuilt = validated_saved_dict(rebuilt, &arena);
+            verify_empty_immutable_children(rebuilt);
+            Assert::IsTrue(memcmp(original, populated.data, size_of(&populated)) == 0);
+            Assert::IsTrue(memcmp(original_empty, allocated_empty.data, sizeof(original_empty)) == 0);
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(nested_dict_inside_array_inside_nested_dict)
         {
             ff_arena arena{};

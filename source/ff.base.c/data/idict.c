@@ -221,6 +221,30 @@ static key_sort* internal_ff_idict_sort_order(ff_arena* scratch_arena, const uin
 }
 
 static size_t build_idict_emit_dict(internal_ff_idict_builder* builder, const ff_dict* source);
+static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source, bool copy_payloads);
+
+static size_t build_idict_emit_idict(internal_ff_idict_builder* builder, const ff_idict* source)
+{
+    if (!source->data)
+    {
+        return build_idict_emit_dict(builder, NULL);
+    }
+
+    if ((uintptr_t)source->data % FF_IDICT_MAX_ALIGN)
+    {
+        ff_arena_marker marker = ff_arena_mark(builder->scratch_arena);
+        ff_dict mutable_source;
+        build_dict_from_idict(&mutable_source, builder->scratch_arena, source, false);
+        size_t offset = build_idict_emit_dict(builder, &mutable_source);
+        ff_arena_rewind(builder->scratch_arena, marker);
+        return offset;
+    }
+
+    size_t size = get_idict_byte_size(source);
+    size_t offset = build_idict_append(builder, size, FF_IDICT_MAX_ALIGN);
+    build_idict_write(builder, offset, source->data, size);
+    return offset;
+}
 
 static void build_idict_convert_value(internal_ff_idict_builder* builder, const ff_value* value, size_t data_offset, ff_ivalue* result)
 {
@@ -281,9 +305,7 @@ static void build_idict_convert_value(internal_ff_idict_builder* builder, const 
         case ff_value_type_idict:
             {
                 ff_idict nested = ff_value_as_idict(value);
-                size_t size = get_idict_byte_size(&nested);
-                size_t offset = build_idict_append(builder, size, FF_IDICT_BLOCK_ALIGN);
-                build_idict_write(builder, offset, nested.data, size);
+                size_t offset = build_idict_emit_idict(builder, &nested);
                 result->data = create_array_slice(builder, offset - data_offset, 0, 0, FF_IDICT_BLOCK_ALIGN);
             }
             break;
@@ -395,9 +417,9 @@ void ff_idict_init(ff_idict* dict, ff_arena* arena, const ff_dict* source)
 // rebuilding needs to add by hash, but no caller outside this file has a reason to bypass hashing.
 void internal_ff_dict_add_hash(ff_dict* dict, uint64_t key_hash, const ff_value* value);
 
-static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena);
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena, bool copy_payloads);
 
-static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
+static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source, bool copy_payloads)
 {
     size_t count = (source && source->data) ? get_idict_entry_count(source) : 0;
     ff_dict_init_capacity(dict, arena, count);
@@ -410,18 +432,23 @@ static void build_dict_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict
     // so the duplicate order that ff_dict_get_next walks is preserved.
     for (size_t i = 0; i < count; i++)
     {
-        ff_value value = convert_ivalue_to_value(values + i, source, arena);
+        ff_value value = convert_ivalue_to_value(values + i, source, arena, copy_payloads);
         internal_ff_dict_add_hash(dict, keys[i], &value);
     }
 }
 
-static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena)
+static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* parent_dict, ff_arena* arena, bool copy_payloads)
 {
     switch (value->type)
     {
         case ff_value_type_string:
             {
                 ff_string_view text = ff_ivalue_as_string(value, parent_dict);
+                if (!copy_payloads)
+                {
+                    return ff_value_new_string(text);
+                }
+
                 ff_string_view result = ff_string_view_empty();
 
                 if (text.count)
@@ -438,6 +465,11 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
         case ff_value_type_data:
             {
                 ff_array_span span = ff_ivalue_as_data(value, parent_dict);
+                if (!copy_payloads)
+                {
+                    return ff_value_new_data_array(span);
+                }
+
                 size_t size = (size_t)span.count * span.item_size;
                 ff_array_span result = span;
                 result.data = size ? ff_arena_alloc(arena, size, span.item_align) : NULL;
@@ -461,7 +493,7 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
 
                 for (size_t i = 0; i < items.count; i++)
                 {
-                    result.data[i] = convert_ivalue_to_value(items.data + i, parent_dict, arena);
+                    result.data[i] = convert_ivalue_to_value(items.data + i, parent_dict, arena, copy_payloads);
                 }
 
                 return ff_value_new_array(result);
@@ -472,7 +504,7 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
             {
                 ff_idict nested = ff_ivalue_as_dict(value, parent_dict);
                 ff_dict* child = ff_arena_alloc_type(arena, ff_dict, 1);
-                build_dict_from_idict(child, arena, &nested);
+                build_dict_from_idict(child, arena, &nested, copy_payloads);
                 return ff_value_new_dict(child);
             }
 
@@ -491,7 +523,7 @@ static ff_value convert_ivalue_to_value(const ff_ivalue* value, const ff_idict* 
 void ff_dict_init_from_idict(ff_dict* dict, ff_arena* arena, const ff_idict* source)
 {
     FF_ASSERT(arena);
-    build_dict_from_idict(dict, arena, source);
+    build_dict_from_idict(dict, arena, source, true);
 }
 
 ff_idict ff_idict_empty(void)
@@ -700,9 +732,9 @@ static bool validate_idict_data(const uint8_t* data, size_t avail, bool validate
     return true;
 }
 
-ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
+static ff_span save_idict_data(const ff_idict* dict, ff_arena* arena)
 {
-    FF_ASSERT_RET_VAL(dict && dict->data && arena, ff_span_empty());
+    FF_CHECK_RET_VAL(dict->data, ff_span_empty());
     size_t byte_size = get_idict_byte_size(dict);
     uint8_t* buffer = (uint8_t*)ff_arena_alloc(arena, sizeof(internal_ff_idict_file) + byte_size, FF_IDICT_MAX_ALIGN);
 
@@ -718,6 +750,25 @@ ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
     memcpy(buffer + sizeof(prefix), dict->data, byte_size);
 
     return (ff_span){ .data = buffer, .size = sizeof(prefix) + byte_size };
+}
+
+ff_span ff_idict_save(const ff_idict* dict, ff_arena* arena)
+{
+    FF_ASSERT_RET_VAL(dict && dict->data && arena, ff_span_empty());
+
+    if ((uintptr_t)dict->data % FF_IDICT_MAX_ALIGN)
+    {
+        ff_arena_declare_stack(scratch_arena, 4096);
+        ff_dict mutable_source;
+        build_dict_from_idict(&mutable_source, &scratch_arena, dict, false);
+        ff_idict aligned;
+        ff_idict_init(&aligned, &scratch_arena, &mutable_source);
+        ff_span saved = save_idict_data(&aligned, arena);
+        ff_arena_destroy(&scratch_arena);
+        return saved;
+    }
+
+    return save_idict_data(dict, arena);
 }
 
 static bool idict_read_prefix(ff_span saved, internal_ff_idict_file* prefix)

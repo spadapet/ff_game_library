@@ -74,6 +74,7 @@ These apply to every project in this repo.
 #### Data construction
 
 - `ff_idict_init` measures the serialized block, allocates once, then writes to a fixed-capacity buffer. Preserve both passes, alignment/addition and serialized-field limits, the pre-write capacity guard, zeroed alignment gaps, and measured/emitted size equality. The private builder does not need a growable-buffer mode.
+- Immutable blocks can start at only 8-byte alignment while their payloads require up to 64 bytes. Raw copying is safe when source and destination preserve the same alignment phase; embedding and standalone saving rebuild non-64-byte-aligned sources. Temporary mutable rebuilds borrow payload bytes, while public `ff_dict_init_from_idict` still deep-copies them. A null-data immutable child must emit a real empty header, not a zero-byte slice.
 - Base64 decoding validates each quartet as it decodes; do not add a duplicate validation pass. Preserve alphabet, length, padding-placement, and output-bound checks. Invalid input returns an empty span but may consume arena storage; callers must not assume failed decoding leaves the arena unchanged.
 
 #### Win32 and naming
