@@ -33,7 +33,9 @@ static const ff_test_mode* find_mode(ff_string_view name)
 
 static void print_usage(void)
 {
-    ff_log_write(ff_log_type_debug, FF_SVL("Usage: ff.test.c [mode] [seconds]"));
+    ff_log_write(ff_log_type_debug, FF_SVL("Usage: ff.test.c.exe [mode] [seconds]"));
+    ff_log_write(ff_log_type_debug, FF_SVL("       ff.test.c.exe sprite_perf [seconds] [sprite_count]"));
+    ff_log_write(ff_log_type_debug, FF_SVL("       ff.test.c.exe /? | -? | -h | --help"));
     ff_log_write(ff_log_type_debug, FF_SVL("Modes:"));
 
     for (size_t i = 0; i < _countof(s_modes); i++)
@@ -61,14 +63,6 @@ static const ff_test_mode* choose_mode(int argc, char** argv)
 
     const ff_string_view name = ff_sz_view(argv[1]);
 
-    if (ff_string_equal(name, FF_SVL("-?")) ||
-        ff_string_equal(name, FF_SVL("-h")) ||
-        ff_string_equal(name, FF_SVL("--help")))
-    {
-        print_usage();
-        return NULL;
-    }
-
     const ff_test_mode* mode = find_mode(name);
 
     if (!mode)
@@ -92,6 +86,20 @@ int main(int argc, char** argv)
     // Debug logging is off by default in Release, but the benchmark output is the entire point of
     // this sample, so turn it on regardless of configuration.
     ff_log_set_type_enabled(ff_log_type_debug, true);
+
+    if (argc > 1)
+    {
+        const ff_string_view name = ff_sz_view(argv[1]);
+        if (ff_string_equal(name, FF_SVL("/?")) ||
+            ff_string_equal(name, FF_SVL("-?")) ||
+            ff_string_equal(name, FF_SVL("-h")) ||
+            ff_string_equal(name, FF_SVL("--help")))
+        {
+            print_usage();
+            ff_app_destroy();
+            return 0;
+        }
+    }
 
     const ff_test_mode* mode = choose_mode(argc, argv);
 

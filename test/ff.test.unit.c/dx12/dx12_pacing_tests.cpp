@@ -7,11 +7,6 @@ namespace ff::test::base
     public:
         static const double refresh;
 
-        TEST_METHOD_CLEANUP(reset_pacing_mode)
-        {
-            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_conservative);
-        }
-
         static void add_frames(ff_dx12_pacing* pacing, size_t count, double frame_seconds)
         {
             for (size_t i = 0; i < count; i++)
@@ -39,7 +34,7 @@ namespace ff::test::base
         TEST_METHOD(a_single_bad_window_does_not_demote)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh);
             align_to_window(&pacing, refresh);
@@ -57,7 +52,7 @@ namespace ff::test::base
         TEST_METHOD(two_bad_windows_in_a_row_demote)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh);
             align_to_window(&pacing, refresh);
@@ -70,7 +65,7 @@ namespace ff::test::base
         TEST_METHOD(starts_at_best_stage)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             Assert::AreEqual((size_t)0, pacing.stage);
             Assert::AreEqual((uint32_t)1, internal_ff_dx12_pacing_latency(&pacing));
@@ -80,9 +75,9 @@ namespace ff::test::base
         TEST_METHOD(aggressive_mode_matches_legacy_demotion_timing)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
-            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_aggressive);
-            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)ff_dx12_pacing_get_mode());
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
+            ff_dx12_pacing_set_mode(&pacing, ff_dx12_pacing_mode_aggressive);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)pacing.mode);
 
             for (size_t i = 0; i < FF_DX12_PACING_WINDOW_FRAMES * 2; i++)
             {
@@ -96,10 +91,8 @@ namespace ff::test::base
 
         TEST_METHOD(aggressive_mode_reproduces_legacy_stage_ladder_and_recovery)
         {
-            ff_dx12_pacing_set_mode(ff_dx12_pacing_mode_aggressive);
-
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_aggressive);
             add_frames(&pacing, FF_DX12_PACING_WINDOW_FRAMES * 4, refresh * 3.0);
 
             Assert::AreEqual((size_t)FF_DX12_PACING_STAGE_COUNT - 1, pacing.stage);
@@ -109,10 +102,111 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, pacing.stage);
         }
 
+        TEST_METHOD(pacing_modes_are_independent_between_objects)
+        {
+            ff_dx12_pacing conservative{};
+            internal_ff_dx12_pacing_init(&conservative, refresh, ff_dx12_pacing_mode_conservative);
+            ff_dx12_pacing aggressive{};
+            internal_ff_dx12_pacing_init(&aggressive, refresh, ff_dx12_pacing_mode_aggressive);
+
+            for (size_t i = 0; i < FF_DX12_PACING_WINDOW_FRAMES * 2; i++)
+            {
+                internal_ff_dx12_pacing_add_frame_busy(&conservative, refresh * 3.0, 0.0);
+                internal_ff_dx12_pacing_add_frame_busy(&aggressive, refresh * 3.0, 0.0);
+            }
+
+            Assert::AreEqual((int)ff_dx12_pacing_mode_conservative, (int)conservative.mode);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)aggressive.mode);
+            Assert::AreEqual((size_t)0, conservative.stage);
+            Assert::AreEqual((size_t)1, aggressive.stage);
+
+            const size_t frames_before = aggressive.legacy_frame_count;
+            const double average_before = aggressive.average_seconds;
+            ff_dx12_pacing_set_mode(&conservative, ff_dx12_pacing_mode_aggressive);
+            Assert::AreEqual(frames_before, aggressive.legacy_frame_count);
+            Assert::AreEqual(average_before, aggressive.average_seconds);
+
+            ff_dx12_pacing_set_mode(&aggressive, ff_dx12_pacing_mode_conservative);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)conservative.mode);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_conservative, (int)aggressive.mode);
+        }
+
+        TEST_METHOD(changing_mode_resets_measurements_and_preserves_the_stage)
+        {
+            const double fast_refresh = 1.0 / 144.0;
+            ff_dx12_pacing pacing{};
+            internal_ff_dx12_pacing_init(&pacing, fast_refresh, ff_dx12_pacing_mode_conservative);
+            add_windows(&pacing, 4, fast_refresh * 3.0);
+            Assert::IsTrue(pacing.stage > 0);
+
+            const size_t stage_before = pacing.stage;
+            const uint64_t late_before = pacing.total_late_frames;
+            const uint64_t changes_before = pacing.stage_changes;
+            ff_dx12_pacing_set_mode(&pacing, ff_dx12_pacing_mode_aggressive);
+
+            Assert::AreEqual(stage_before, pacing.stage);
+            Assert::AreEqual(late_before, pacing.total_late_frames);
+            Assert::AreEqual(changes_before, pacing.stage_changes);
+            Assert::AreEqual(refresh, pacing.average_seconds);
+            Assert::AreEqual((size_t)0, pacing.window_frames);
+            Assert::AreEqual((size_t)0, pacing.window_late_frames);
+            Assert::AreEqual((size_t)0, pacing.bad_windows);
+            Assert::AreEqual((size_t)0, pacing.good_windows);
+            Assert::AreEqual((size_t)2, pacing.promote_windows);
+            Assert::AreEqual((size_t)0, pacing.skip_frames);
+
+            add_frames(&pacing, 7, fast_refresh * 3.0);
+            Assert::AreEqual((size_t)7, pacing.legacy_frame_count);
+            ff_dx12_pacing_set_mode(&pacing, ff_dx12_pacing_mode_conservative);
+            Assert::AreEqual(stage_before, pacing.stage);
+            Assert::AreEqual(fast_refresh, pacing.average_seconds);
+            Assert::AreEqual((size_t)0, pacing.legacy_frame_count);
+            Assert::AreEqual((size_t)FF_DX12_PACING_WINDOW_FRAMES / 2, pacing.skip_frames);
+        }
+
+        TEST_METHOD(unchanged_or_invalid_modes_do_not_reset_measurements)
+        {
+            ff_dx12_pacing pacing{};
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_aggressive);
+            add_frames(&pacing, 7, refresh * 3.0);
+            const double average_before = pacing.average_seconds;
+            const uint64_t late_before = pacing.total_late_frames;
+            const ff_dx12_pacing_mode modes[] =
+            {
+                ff_dx12_pacing_mode_aggressive,
+                ff_dx12_pacing_mode_count,
+                (ff_dx12_pacing_mode)-1,
+            };
+
+            for (ff_dx12_pacing_mode mode : modes)
+            {
+                ff_dx12_pacing_set_mode(&pacing, mode);
+                Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)pacing.mode);
+                Assert::AreEqual((size_t)7, pacing.legacy_frame_count);
+                Assert::AreEqual(average_before, pacing.average_seconds);
+                Assert::AreEqual(late_before, pacing.total_late_frames);
+            }
+        }
+
+        TEST_METHOD(aggressive_interrupt_resets_its_own_stage_and_measurements)
+        {
+            ff_dx12_pacing pacing{};
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_aggressive);
+            add_windows(&pacing, 4, refresh * 3.0);
+            Assert::IsTrue(pacing.stage > 0);
+
+            internal_ff_dx12_pacing_interrupt(&pacing);
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)pacing.mode);
+            Assert::AreEqual((size_t)0, pacing.stage);
+            Assert::AreEqual((size_t)0, pacing.legacy_frame_count);
+            Assert::AreEqual((size_t)0, pacing.skip_frames);
+            Assert::AreEqual(refresh, pacing.average_seconds);
+        }
+
         TEST_METHOD(steady_good_frames_never_leave_stage_zero)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 100, refresh);
 
@@ -126,7 +220,7 @@ namespace ff::test::base
         TEST_METHOD(occasional_late_frames_are_tolerated)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             for (size_t window = 0; window < 50; window++)
             {
@@ -142,7 +236,7 @@ namespace ff::test::base
         TEST_METHOD(sustained_slow_frames_demote)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh * 3.0);
 
@@ -164,7 +258,7 @@ namespace ff::test::base
         TEST_METHOD(demotion_gives_up_vsync_before_latency)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_frames_to_first_demotion(&pacing, refresh * 3.0);
 
@@ -176,7 +270,7 @@ namespace ff::test::base
         TEST_METHOD(demotion_stops_at_the_last_stage)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 500, refresh * 10.0);
 
@@ -186,7 +280,7 @@ namespace ff::test::base
         TEST_METHOD(recovery_returns_all_the_way_to_stage_zero)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 20, refresh * 10.0);
             Assert::AreEqual((size_t)FF_DX12_PACING_STAGE_COUNT - 1, pacing.stage);
@@ -203,7 +297,7 @@ namespace ff::test::base
         TEST_METHOD(average_is_not_carried_across_a_stage_change)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_frames_to_first_demotion(&pacing, refresh * 3.0);
             Assert::IsTrue(pacing.stage > 0);
@@ -217,7 +311,7 @@ namespace ff::test::base
         TEST_METHOD(alternating_load_does_not_oscillate_forever)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             uint64_t changes_early = 0;
 
@@ -242,7 +336,7 @@ namespace ff::test::base
         TEST_METHOD(promotion_requires_more_evidence_after_a_failed_attempt)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             const size_t promote_at_start = pacing.promote_windows;
 
@@ -254,7 +348,7 @@ namespace ff::test::base
         TEST_METHOD(promote_back_off_is_bounded)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             for (size_t round = 0; round < 200; round++)
             {
@@ -268,7 +362,7 @@ namespace ff::test::base
         TEST_METHOD(interrupt_keeps_the_stage_but_clears_the_window)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh * 3.0);
             const size_t stage_before = pacing.stage;
@@ -285,7 +379,7 @@ namespace ff::test::base
         TEST_METHOD(frames_right_after_an_interrupt_are_ignored)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 100, refresh);
             Assert::AreEqual((size_t)0, pacing.stage);
@@ -303,7 +397,7 @@ namespace ff::test::base
             const double fast_refresh = 1.0 / 144.0;
 
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, fast_refresh);
+            internal_ff_dx12_pacing_init(&pacing, fast_refresh, ff_dx12_pacing_mode_conservative);
 
             // Comfortably fast for 60Hz, far too slow for 144Hz.
             add_windows(&pacing, 4, 1.0 / 60.0);
@@ -315,7 +409,7 @@ namespace ff::test::base
         TEST_METHOD(a_sixty_hertz_display_is_happy_at_sixty_fps)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, 1.0 / 60.0);
+            internal_ff_dx12_pacing_init(&pacing, 1.0 / 60.0, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 50, 1.0 / 60.0);
 
@@ -326,7 +420,7 @@ namespace ff::test::base
         TEST_METHOD(zero_and_negative_frame_times_are_ignored)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 100, refresh);
 
@@ -342,7 +436,7 @@ namespace ff::test::base
         TEST_METHOD(an_invalid_refresh_rate_falls_back_to_sixty)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, 0.0);
+            internal_ff_dx12_pacing_init(&pacing, 0.0, ff_dx12_pacing_mode_conservative);
 
             Assert::AreEqual(1.0 / 60.0, pacing.refresh_seconds, 0.0000001);
         }
@@ -350,7 +444,7 @@ namespace ff::test::base
         TEST_METHOD(jitter_around_the_refresh_interval_is_not_late)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             for (size_t i = 0; i < 50 * FF_DX12_PACING_WINDOW_FRAMES; i++)
             {
@@ -367,7 +461,7 @@ namespace ff::test::base
         TEST_METHOD(dropped_vblanks_while_the_app_is_idle_never_demote)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             const double busy = refresh * 0.03;
 
@@ -389,7 +483,7 @@ namespace ff::test::base
         TEST_METHOD(long_frames_the_app_was_busy_for_still_demote)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh);
             align_to_window(&pacing, refresh);
@@ -408,7 +502,7 @@ namespace ff::test::base
         TEST_METHOD(a_frame_busy_for_most_of_the_interval_is_blamed_on_the_app)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh);
             align_to_window(&pacing, refresh);
@@ -426,7 +520,7 @@ namespace ff::test::base
         TEST_METHOD(add_frame_without_a_busy_time_still_blames_the_app)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             add_windows(&pacing, 4, refresh);
             align_to_window(&pacing, refresh);
@@ -439,7 +533,7 @@ namespace ff::test::base
         TEST_METHOD(latency_never_exceeds_two_frames)
         {
             ff_dx12_pacing pacing;
-            internal_ff_dx12_pacing_init(&pacing, refresh);
+            internal_ff_dx12_pacing_init(&pacing, refresh, ff_dx12_pacing_mode_conservative);
 
             for (size_t stage = 0; stage < FF_DX12_PACING_STAGE_COUNT; stage++)
             {

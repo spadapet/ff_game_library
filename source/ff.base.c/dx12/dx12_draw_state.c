@@ -360,31 +360,15 @@ static ID3D12PipelineState* create_pipeline_state(ff_dx12_draw_state* state,
     return ff_dx12_object_cache_pipeline_state(&state->cache, &desc);
 }
 
-static bool create_samplers(ff_dx12_draw_state* state)
+static void create_samplers(ff_dx12_draw_state* state)
 {
-    ff_dx12_descriptor_range samplers_cpu = ff_dx12_cpu_descriptor_allocator_alloc(
-        ff_dx12_cpu_sampler_descriptors(), FF_DX12_SAMPLER_COUNT);
-
-    FF_CHECK_RET_VAL(ff_dx12_descriptor_range_valid(&samplers_cpu), false);
-
     const D3D12_SAMPLER_DESC point = sampler_desc(D3D12_FILTER_MIN_MAG_MIP_POINT);
     const D3D12_SAMPLER_DESC linear = sampler_desc(D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
     ID3D12Device6_CreateSampler(ff_dx12_device(), &point,
-        ff_dx12_descriptor_range_cpu_handle(&samplers_cpu, ff_dx12_sampler_point));
+        ff_dx12_descriptor_range_cpu_handle(&state->samplers_gpu, ff_dx12_sampler_point));
     ID3D12Device6_CreateSampler(ff_dx12_device(), &linear,
-        ff_dx12_descriptor_range_cpu_handle(&samplers_cpu, ff_dx12_sampler_linear));
-
-    ID3D12Device6_CopyDescriptorsSimple(ff_dx12_device(), FF_DX12_SAMPLER_COUNT,
-        ff_dx12_descriptor_range_cpu_handle(&state->samplers_gpu, 0),
-        ff_dx12_descriptor_range_cpu_handle(&samplers_cpu, 0),
-        D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-    // The staging descriptors were only needed to source the copy above, which is complete on the
-    // CPU by the time CopyDescriptorsSimple returns.
-    ff_dx12_descriptor_range_free(&samplers_cpu);
-
-    return true;
+        ff_dx12_descriptor_range_cpu_handle(&state->samplers_gpu, ff_dx12_sampler_linear));
 }
 
 static bool create_root_signature(ff_dx12_draw_state* state)
@@ -482,10 +466,8 @@ static bool draw_state_create(ff_dx12_draw_state* state)
         state->buckets[i].ps_palette_out = desc->ps_palette_out;
     }
 
-    FF_CHECK_RET_VAL(create_samplers(state), false);
-    FF_CHECK_RET_VAL(create_root_signature(state), false);
-
-    return true;
+    create_samplers(state);
+    return create_root_signature(state);
 }
 
 bool ff_dx12_draw_state_init(ff_dx12_draw_state* state)

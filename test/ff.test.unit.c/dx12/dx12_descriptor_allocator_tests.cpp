@@ -166,6 +166,51 @@ namespace ff::test::dx12
             ff_dx12_cpu_descriptor_allocator_destroy(&allocator);
         }
 
+        TEST_METHOD(free_list_shifts_multiple_ranges_without_losing_entries)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_cpu_descriptor_allocator allocator{};
+            ff_dx12_cpu_descriptor_allocator_init(&allocator, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 8);
+            ff_dx12_descriptor_range ranges[8]{};
+            for (size_t i = 0; i < 8; i++)
+            {
+                ranges[i] = ff_dx12_cpu_descriptor_allocator_alloc(&allocator, 1);
+                Assert::IsTrue(ff_dx12_descriptor_range_valid(&ranges[i]));
+                Assert::AreEqual(i, ranges[i].start);
+            }
+
+            ff_dx12_descriptor_buffer* bucket = allocator.buckets;
+            const size_t free_order[] = { 6, 2, 4, 0 };
+            for (size_t i : free_order)
+            {
+                ff_dx12_descriptor_range_free(&ranges[i]);
+            }
+
+            Assert::AreEqual((size_t)4, ff_array_count(bucket->u.free_list.free_ranges_a));
+            for (size_t i = 0; i < 8; i += 2)
+            {
+                ranges[i] = ff_dx12_cpu_descriptor_allocator_alloc(&allocator, 1);
+                Assert::IsTrue(ff_dx12_descriptor_range_valid(&ranges[i]));
+                Assert::IsTrue(ranges[i].owner == bucket);
+                Assert::AreEqual(i, ranges[i].start);
+            }
+
+            Assert::AreEqual((size_t)0, ff_array_count(bucket->u.free_list.free_ranges_a));
+            for (size_t i : free_order)
+            {
+                ff_dx12_descriptor_range_free(&ranges[i]);
+            }
+            for (size_t i = 1; i < 8; i += 2)
+            {
+                ff_dx12_descriptor_range_free(&ranges[i]);
+            }
+
+            Assert::AreEqual((size_t)1, ff_array_count(bucket->u.free_list.free_ranges_a));
+            Assert::AreEqual((size_t)8, bucket->u.free_list.free_ranges_a[0].count);
+            ff_dx12_cpu_descriptor_allocator_destroy(&allocator);
+        }
+
         TEST_METHOD(freed_descriptors_are_reused)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

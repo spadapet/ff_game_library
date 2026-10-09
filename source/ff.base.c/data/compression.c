@@ -155,13 +155,6 @@ ff_span ff_decode_base64(ff_string_view text, ff_arena* arena)
         }
     }
 
-    for (size_t i = 0; i < text.count; i++)
-    {
-        uint8_t value;
-        bool padded = i >= text.count - padding;
-        FF_CHECK_RET_VAL(padded ? text.data[i] == '=' : base64_byte(text.data[i], &value), ff_span_empty());
-    }
-
     size_t count = text.count / 4 * 3 - padding;
     uint8_t* out = (uint8_t*)ff_arena_alloc(arena, count, 1);
 
@@ -172,18 +165,12 @@ ff_span ff_decode_base64(ff_string_view text, ff_arena* arena)
         uint8_t ch2 = 0;
         uint8_t ch3 = 0;
 
-        FF_VERIFY(base64_byte(text.data[i + 0], &ch0));
-        FF_VERIFY(base64_byte(text.data[i + 1], &ch1));
-
-        if (text.data[i + 2] != '=')
-        {
-            FF_VERIFY(base64_byte(text.data[i + 2], &ch2));
-        }
-
-        if (text.data[i + 3] != '=')
-        {
-            FF_VERIFY(base64_byte(text.data[i + 3], &ch3));
-        }
+        FF_CHECK_RET_VAL(base64_byte(text.data[i + 0], &ch0), ff_span_empty());
+        FF_CHECK_RET_VAL(base64_byte(text.data[i + 1], &ch1), ff_span_empty());
+        FF_CHECK_RET_VAL(i + 2 >= text.count - padding
+            ? text.data[i + 2] == '=' : base64_byte(text.data[i + 2], &ch2), ff_span_empty());
+        FF_CHECK_RET_VAL(i + 3 >= text.count - padding
+            ? text.data[i + 3] == '=' : base64_byte(text.data[i + 3], &ch3), ff_span_empty());
 
         out[j + 0] = (uint8_t)((ch0 << 2) | (ch1 >> 4));
 

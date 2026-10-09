@@ -223,6 +223,83 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(decode_base64_rejects_invalid_input)
+        {
+            ff_arena arena;
+            ff_arena_init_heap_local(&arena, 0);
+
+            const ff_string_view invalid[] =
+            {
+                FF_SVL("A"),
+                FF_SVL("AAA"),
+                FF_SVL("AAAAA"),
+                FF_SVL("!AAA"),
+                FF_SVL("A!AA"),
+                FF_SVL("AA!A"),
+                FF_SVL("AAA!"),
+                FF_SVL("AAAAAA!A"),
+                FF_SVL("AAA "),
+                FF_SVL("AA\nA"),
+                FF_SVL("AA\0A"),
+                FF_SVL("AA\xFF" "A"),
+                FF_SVL("=AAA"),
+                FF_SVL("A=AA"),
+                FF_SVL("AA=A"),
+                FF_SVL("A==="),
+                FF_SVL("===="),
+                FF_SVL("AA==AAAA"),
+                FF_SVL("AAA=AAAA"),
+                FF_SVL("AA==AA=="),
+                FF_SVL("AAA=AAA="),
+                FF_SVL("AAAAA==="),
+            };
+
+            for (ff_string_view text : invalid)
+            {
+                const ff_span decoded = ff_decode_base64(text, &arena);
+                Assert::IsNull(decoded.data);
+                Assert::AreEqual((size_t)0, decoded.size);
+            }
+
+            const ff_span decoded = ff_decode_base64(FF_SVL("TWFu"), &arena);
+            Assert::AreEqual((size_t)3, decoded.size);
+            Assert::AreEqual(0, ::memcmp(decoded.data, "Man", decoded.size));
+
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(decode_base64_padded_output_stays_in_bounds)
+        {
+            const ff_string_view encoded[] =
+            {
+                FF_SVL("Zg=="),
+                FF_SVL("Zm8="),
+                FF_SVL("Zm9v"),
+                FF_SVL("Zm9vYg=="),
+                FF_SVL("Zm9vYmE="),
+                FF_SVL("Zm9vYmFy"),
+            };
+            const char* expected[] = { "f", "fo", "foo", "foob", "fooba", "foobar" };
+
+            for (size_t i = 0; i < std::size(encoded); i++)
+            {
+                uint8_t buffer[256];
+                ::memset(buffer, 0xCD, sizeof(buffer));
+                ff_arena arena;
+                ff_arena_init_external(&arena, buffer, sizeof(buffer), 0);
+                ff_arena_marker before = ff_arena_mark(&arena);
+
+                const ff_span decoded = ff_decode_base64(encoded[i], &arena);
+                Assert::AreEqual(::strlen(expected[i]), decoded.size);
+                Assert::AreEqual(0, ::memcmp(decoded.data, expected[i], decoded.size));
+                Assert::IsTrue(decoded.data == before);
+                Assert::IsTrue(ff_arena_mark(&arena) == before + decoded.size);
+                Assert::AreEqual((uint8_t)0xCD, before[decoded.size]);
+
+                ff_arena_destroy(&arena);
+            }
+        }
+
         TEST_METHOD(decode_base64_non_alphanumeric_chars)
         {
             ff_arena arena;

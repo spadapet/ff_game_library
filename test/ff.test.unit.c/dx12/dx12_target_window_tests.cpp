@@ -251,6 +251,33 @@ namespace ff::test::dx12
 
         // The pacing ladder must stay in range no matter how the stage moves, and latency/vsync
         // must always come from a valid stage.
+        TEST_METHOD(pacing_mode_survives_resize_and_device_reset)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_dx12_target_window target{};
+            Assert::IsTrue(ff_dx12_target_window_init(&target, create_window()));
+            Assert::AreEqual((int)ff_dx12_pacing_mode_aggressive, (int)target.pacing.mode);
+
+            const ff_dx12_pacing_mode modes[] =
+            {
+                ff_dx12_pacing_mode_conservative,
+                ff_dx12_pacing_mode_aggressive,
+            };
+
+            for (ff_dx12_pacing_mode mode : modes)
+            {
+                ff_dx12_pacing_set_mode(&target.pacing, mode);
+                Assert::IsTrue(ff_dx12_target_window_set_size(&target, target.width + 1, target.height + 1));
+                Assert::AreEqual((int)mode, (int)target.pacing.mode);
+                Assert::IsTrue(ff_dx12_reset_device(true));
+                Assert::IsTrue(ff_dx12_target_window_valid(&target));
+                Assert::AreEqual((int)mode, (int)target.pacing.mode);
+                Assert::AreEqual((size_t)0, target.pacing.stage);
+            }
+
+            ff_dx12_target_window_destroy(&target);
+        }
+
         TEST_METHOD(pacing_stays_in_range)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

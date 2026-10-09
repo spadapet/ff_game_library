@@ -9,6 +9,7 @@
 #include "dx12/dx12_agility.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_device_child.h"
+#include "dx12/dx12_fence.h"
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_mem_range.h"
 #include "dx12/dx12_queue.h"
@@ -462,25 +463,20 @@ static void keep_alive_node_recycle(ff_dx12_keep_alive_node* node)
 
 static bool keep_alive_fence_values_complete(const ff_dx12_fence_values* fence_values)
 {
-    if (!fence_values || !fence_values->count)
-    {
-        return true;
-    }
-
-    ff_dx12_fence_values pending = *fence_values;
-    return ff_dx12_fence_values_complete(&pending);
+    return !fence_values || ff_dx12_fence_value_array_complete(
+        fence_values->overflow ? fence_values->overflow : fence_values->inline_values,
+        fence_values->count);
 }
 
 static void keep_alive_release_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range)
 {
-    ff_dx12_keep_alive_node pending = { 0 };
-    pending.resource = resource;
-    if (mem_range)
+    ff_dx12_mem_range range = mem_range ? *mem_range : (ff_dx12_mem_range){ 0 };
+    if (resource)
     {
-        pending.mem_range = *mem_range;
+        ID3D12Resource_Release(resource);
     }
 
-    keep_alive_node_release(&pending);
+    ff_dx12_mem_range_free(&range);
 }
 
 void ff_dx12_flush_keep_alive(void)
@@ -499,8 +495,7 @@ void ff_dx12_flush_keep_alive(void)
 
         keep_alive_node_release(node);
 
-        node->next = s_keep_alive_free;
-        s_keep_alive_free = node;
+        keep_alive_node_recycle(node);
     }
 }
 
@@ -533,8 +528,6 @@ void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_ran
     node->next = NULL;
     node->resource = resource;
     node->mem_range = mem_range ? *mem_range : (ff_dx12_mem_range){ 0 };
-    node->fence_values.arena = &s_keep_alive_arena;
-
     FF_ASSERT_RET(internal_ff_dx12_fence_values_copy(&node->fence_values, fence_values, &s_keep_alive_arena));
 
     if (ff_dx12_fence_values_complete(&node->fence_values))

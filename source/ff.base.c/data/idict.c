@@ -19,7 +19,6 @@ typedef struct internal_ff_idict_header
 
 typedef struct internal_ff_idict_builder
 {
-    ff_arena* data_arena;
     ff_arena* scratch_arena;
     uint8_t* data;
     size_t byte_size;
@@ -68,33 +67,6 @@ static const void* get_idict_data(const ff_idict* dict, size_t offset)
     return (const uint8_t*)dict->data + ff_math_min_size(data_start, header->byte_size) + offset;
 }
 
-static void build_idict_reserve(internal_ff_idict_builder* builder, size_t needed)
-{
-    if (builder->failed || !builder->data_arena || needed <= builder->byte_capacity)
-    {
-        return;
-    }
-
-    size_t doubled = builder->byte_capacity * 2;
-    if (doubled < builder->byte_capacity)
-    {
-        builder->failed = true;
-        return;
-    }
-
-    size_t wanted = ff_math_max_size(needed, doubled);
-    if (wanted > SIZE_MAX - (FF_IDICT_MAX_ALIGN - 1))
-    {
-        builder->failed = true;
-        return;
-    }
-
-    size_t new_capacity = ff_math_round_up(wanted, FF_IDICT_MAX_ALIGN);
-    uint8_t* new_data = (uint8_t*)ff_arena_realloc(builder->data_arena, builder->data, builder->byte_capacity, new_capacity, FF_IDICT_MAX_ALIGN);
-    builder->data = new_data;
-    builder->byte_capacity = new_capacity;
-}
-
 static size_t build_idict_append(internal_ff_idict_builder* builder, size_t size, size_t align)
 {
     if (builder->failed || builder->byte_size > SIZE_MAX - (align - 1))
@@ -111,10 +83,9 @@ static size_t build_idict_append(internal_ff_idict_builder* builder, size_t size
     }
 
     size_t needed = offset + size;
-    build_idict_reserve(builder, needed);
-
-    if (builder->failed)
+    if (builder->data && needed > builder->byte_capacity)
     {
+        builder->failed = true;
         return 0;
     }
 
@@ -122,12 +93,7 @@ static size_t build_idict_append(internal_ff_idict_builder* builder, size_t size
     // keeps identical data byte for byte identical, without having to clear the whole block.
     if (builder->data && offset > builder->byte_size)
     {
-        size_t gap_end = ff_math_min_size(offset, builder->byte_capacity);
-
-        if (gap_end > builder->byte_size)
-        {
-            memset(builder->data + builder->byte_size, 0, gap_end - builder->byte_size);
-        }
+        memset(builder->data + builder->byte_size, 0, offset - builder->byte_size);
     }
 
     builder->byte_size = needed;

@@ -191,6 +191,54 @@ namespace ff::test::dx12
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(free_list_shifts_multiple_ranges_without_losing_entries)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_arena arena{};
+            ff_arena_init_heap_local(&arena, 0);
+            ff_dx12_mem_buffer buffer{};
+            Assert::IsTrue(ff_dx12_mem_buffer_init_free_list(&buffer, &arena, FF_SVL("free list shifts"),
+                1024, ff_dx12_heap_usage_gpu_buffers));
+
+            ff_dx12_mem_range ranges[8]{};
+            for (size_t i = 0; i < 8; i++)
+            {
+                ranges[i] = ff_dx12_mem_buffer_alloc_bytes(&buffer, 128, 1, ff_dx12_fence_value{});
+                Assert::IsTrue(ff_dx12_mem_range_valid(&ranges[i]));
+                Assert::AreEqual((uint64_t)(i * 128), ranges[i].start);
+            }
+
+            const size_t free_order[] = { 6, 2, 4, 0 };
+            for (size_t i : free_order)
+            {
+                ff_dx12_mem_range_free(&ranges[i]);
+            }
+
+            Assert::AreEqual((size_t)4, ff_array_count(buffer.u.free_list.free_ranges_a));
+            for (size_t i = 0; i < 8; i += 2)
+            {
+                ranges[i] = ff_dx12_mem_buffer_alloc_bytes(&buffer, 128, 1, ff_dx12_fence_value{});
+                Assert::IsTrue(ff_dx12_mem_range_valid(&ranges[i]));
+                Assert::AreEqual((uint64_t)(i * 128), ranges[i].start);
+            }
+
+            Assert::AreEqual((size_t)0, ff_array_count(buffer.u.free_list.free_ranges_a));
+            for (size_t i : free_order)
+            {
+                ff_dx12_mem_range_free(&ranges[i]);
+            }
+            for (size_t i = 1; i < 8; i += 2)
+            {
+                ff_dx12_mem_range_free(&ranges[i]);
+            }
+
+            Assert::AreEqual((size_t)1, ff_array_count(buffer.u.free_list.free_ranges_a));
+            Assert::AreEqual((uint64_t)1024, buffer.u.free_list.free_ranges_a[0].size);
+            ff_dx12_mem_buffer_destroy(&buffer);
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(free_list_returns_alignment_padding_when_range_is_freed)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

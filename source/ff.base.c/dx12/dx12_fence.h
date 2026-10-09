@@ -63,4 +63,4 @@ bool ff_dx12_fence_value_complete(ff_dx12_fence_value value);
 // Batch helpers mirroring the old static fence::wait/fence::complete overloads. Values are
 // deduped by fence pointer (keeping the max requested value per fence) before waiting.
 void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, ID3D12CommandQueue* queue);
-bool ff_dx12_fence_value_array_complete(ff_dx12_fence_value* values, size_t count);
+bool ff_dx12_fence_value_array_complete(const ff_dx12_fence_value* values, size_t count);

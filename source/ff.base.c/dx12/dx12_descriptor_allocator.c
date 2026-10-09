@@ -142,10 +142,8 @@ static void free_list_free_range(ff_dx12_descriptor_buffer* buffer, const ff_dx1
             {
                 prev->count += ranges_a[insert_index].count;
 
-                for (size_t i = insert_index; i + 1 < count; i++)
-                {
-                    ranges_a[i] = ranges_a[i + 1];
-                }
+                memmove(ranges_a + insert_index, ranges_a + insert_index + 1,
+                    (count - insert_index - 1) * sizeof(*ranges_a));
 
                 ff_array_resize(buffer->u.free_list.free_ranges_a, count - 1);
             }
@@ -165,10 +163,8 @@ static void free_list_free_range(ff_dx12_descriptor_buffer* buffer, const ff_dx1
     ff_array_resize(buffer->u.free_list.free_ranges_a, count + 1);
     ranges_a = buffer->u.free_list.free_ranges_a;
 
-    for (size_t i = count; i > insert_index; i--)
-    {
-        ranges_a[i] = ranges_a[i - 1];
-    }
+    memmove(ranges_a + insert_index + 1, ranges_a + insert_index,
+        (count - insert_index) * sizeof(*ranges_a));
 
     ranges_a[insert_index] = new_range;
 }
@@ -213,10 +209,8 @@ ff_dx12_descriptor_range ff_dx12_descriptor_buffer_alloc_free_list(ff_dx12_descr
 
             if (!ranges_a[i].count)
             {
-                for (size_t j = i; j + 1 < range_count; j++)
-                {
-                    ranges_a[j] = ranges_a[j + 1];
-                }
+                memmove(ranges_a + i, ranges_a + i + 1,
+                    (range_count - i - 1) * sizeof(*ranges_a));
 
                 ff_array_resize(buffer->u.free_list.free_ranges_a, range_count - 1);
             }

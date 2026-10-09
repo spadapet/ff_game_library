@@ -333,7 +333,7 @@ void ff_dx12_fence_wait_value_array(ff_dx12_fence_value* values, size_t count, I
     wait_batch(actual_fences, actual_values, actual_count, queue);
 }
 
-bool ff_dx12_fence_value_array_complete(ff_dx12_fence_value* values, size_t count)
+bool ff_dx12_fence_value_array_complete(const ff_dx12_fence_value* values, size_t count)
 {
     FF_ASSERT_RET_VAL(values || !count, false);
 

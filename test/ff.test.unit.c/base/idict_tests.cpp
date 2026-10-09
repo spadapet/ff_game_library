@@ -100,6 +100,27 @@ namespace ff::test::base
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(init_rejects_unrepresentable_block_size_without_allocating)
+        {
+            ff_arena arena{};
+            ff_arena_init_heap_global(&arena, 4096);
+
+            ff_dict source{};
+            ff_dict_init(&source, &arena);
+            ff_value value = ff_value_new_string(FF_SVL("x"));
+            value.data.count = UINT32_MAX;
+            ff_dict_set(&source, FF_SVL("oversized"), &value);
+            ff_arena_marker before = ff_arena_mark(&arena);
+
+            ff_idict dict{};
+            ff_idict_init(&dict, &arena, &source);
+
+            Assert::IsNull(dict.data);
+            Assert::IsTrue(ff_arena_mark(&arena) == before);
+
+            ff_arena_destroy(&arena);
+        }
+
         // ====================================================================
         // Scalars
         // ====================================================================

@@ -239,10 +239,8 @@ static void free_list_free_range(ff_dx12_mem_buffer* buffer, const ff_dx12_mem_r
                 ff_dx12_mem_range* prev = &ranges_a[insert_index - 1];
                 prev->size += next->size;
 
-                for (size_t i = insert_index; i + 1 < count; i++)
-                {
-                    ranges_a[i] = ranges_a[i + 1];
-                }
+                memmove(ranges_a + insert_index, ranges_a + insert_index + 1,
+                    (count - insert_index - 1) * sizeof(*ranges_a));
 
                 ff_array_resize(buffer->u.free_list.free_ranges_a, count - 1);
             }
@@ -263,14 +261,11 @@ static void free_list_free_range(ff_dx12_mem_buffer* buffer, const ff_dx12_mem_r
 
     ff_dx12_mem_range new_range = { .owner = buffer, .start = new_start, .size = new_size };
 
-    size_t old_count = ff_array_count(buffer->u.free_list.free_ranges_a);
-    ff_array_resize(buffer->u.free_list.free_ranges_a, old_count + 1);
+    ff_array_resize(buffer->u.free_list.free_ranges_a, count + 1);
     ranges_a = buffer->u.free_list.free_ranges_a;
 
-    for (size_t i = old_count; i > insert_index; i--)
-    {
-        ranges_a[i] = ranges_a[i - 1];
-    }
+    memmove(ranges_a + insert_index + 1, ranges_a + insert_index,
+        (count - insert_index) * sizeof(*ranges_a));
 
     ranges_a[insert_index] = new_range;
 }
@@ -392,10 +387,8 @@ static ff_dx12_mem_range free_list_alloc_bytes(ff_dx12_mem_buffer* buffer, uint6
 
                 if (!ranges_a[i].size)
                 {
-                    for (size_t j = i; j + 1 < count; j++)
-                    {
-                        ranges_a[j] = ranges_a[j + 1];
-                    }
+                    memmove(ranges_a + i, ranges_a + i + 1,
+                        (count - i - 1) * sizeof(*ranges_a));
 
                     ff_array_resize(buffer->u.free_list.free_ranges_a, count - 1);
                 }

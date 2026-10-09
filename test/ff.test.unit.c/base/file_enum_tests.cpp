@@ -260,6 +260,57 @@ namespace ff::test::base
             Assert::AreEqual((size_t)0, count);
         }
 
+        TEST_METHOD(enumerate_keeps_names_across_filtered_entries_and_sibling_recursion)
+        {
+            scoped_dir dir("scratch");
+            for (int i = 0; i < 64; i++)
+            {
+                char name[64];
+                ::sprintf_s(name, "ignored_%03d.txt", i);
+                dir.write(name, "x");
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                char name[64];
+                ::sprintf_s(name, "sub_%d", i);
+                dir.make_dir(name);
+                ::sprintf_s(name, "sub_%d\\deep", i);
+                dir.make_dir(name);
+                ::sprintf_s(name, "sub_%d\\ignored.txt", i);
+                dir.write(name, "ignored");
+                ::sprintf_s(name, "sub_%d\\first.png", i);
+                dir.write(name, "first");
+                ::sprintf_s(name, "sub_%d\\deep\\leaf.PNG", i);
+                dir.write(name, "leaf");
+                ::sprintf_s(name, "sub_%d\\last.png", i);
+                dir.write(name, "last");
+            }
+
+            ff_arena arena;
+            ff_arena_init_heap_local(&arena, 0);
+            ff_file_entry* entries = ff_file_enumerate_extension(dir.view(), FF_SVL(".png"), &arena);
+            ::memset(ff_arena_alloc_type(&arena, uint8_t, 8192), 0xCD, 8192);
+
+            Assert::IsNotNull(entries);
+            Assert::AreEqual((size_t)24, ff_array_count(entries));
+
+            for (int i = 0; i < 8; i++)
+            {
+                char name[64];
+                ::sprintf_s(name, "sub_%d/first.png", i);
+                Assert::IsTrue(has_name(entries, name));
+                ::sprintf_s(name, "sub_%d/last.png", i);
+                Assert::IsTrue(has_name(entries, name));
+                ::sprintf_s(name, "sub_%d/deep/leaf.PNG", i);
+                const ff_file_entry* leaf = find_name(entries, name);
+                Assert::IsNotNull(leaf);
+                Assert::AreEqual((uint64_t)4, leaf->info.size);
+            }
+
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(enumerate_fails_for_a_missing_root)
         {
             scoped_dir dir("missingroot");

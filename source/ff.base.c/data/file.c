@@ -320,6 +320,7 @@ static void enumerate_dir(enumerate_context* context, ff_string_view relative)
         : context->root;
     const ff_string_view pattern = join_path(dir, FF_SVL("*"), &temp_arena);
     const ff_wstring_view wide_pattern = ff_utf8_to_wide(pattern, &temp_arena, true);
+    const ff_arena_marker entry_marker = ff_arena_mark(&temp_arena);
 
     WIN32_FIND_DATAW found;
     HANDLE handle = wide_pattern.count ? FindFirstFileExW(wide_pattern.data, FindExInfoBasic,
@@ -333,6 +334,7 @@ static void enumerate_dir(enumerate_context* context, ff_string_view relative)
 
     do
     {
+        ff_arena_rewind(&temp_arena, entry_marker);
         const bool is_dir = (found.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
         if (is_dir && (!wcscmp(found.cFileName, L".") || !wcscmp(found.cFileName, L"..")))
@@ -361,11 +363,16 @@ static void enumerate_dir(enumerate_context* context, ff_string_view relative)
             continue;
         }
 
-        ff_file_entry entry;
-        entry.name = join_path(relative, name, context->arena);
-        entry.info.write_time = file_time_to_uint64(found.ftLastWriteTime);
-        entry.info.size = file_size_to_uint64(found.nFileSizeHigh, found.nFileSizeLow);
-        entry.info.directory = false;
+        const ff_file_entry entry =
+        {
+            .name = join_path(relative, name, context->arena),
+            .info =
+            {
+                .write_time = file_time_to_uint64(found.ftLastWriteTime),
+                .size = file_size_to_uint64(found.nFileSizeHigh, found.nFileSizeLow),
+                .directory = false,
+            },
+        };
 
         ff_array_push(context->entries, entry);
     } while (FindNextFileW(handle, &found));

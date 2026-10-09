@@ -36,6 +36,13 @@ These apply to every project in this repo.
 - Add a `static_assert` on `sizeof` for structs whose layout matters, following `value.c` and `string_builder.c`.
 - Add new .c/.h files to both `ff.base.c.vcxproj` and `ff.base.c.vcxproj.filters`, and add public headers to `include/ff.base.c.h`.
 
+#### Allocation failures and simplicity
+
+- Assume valid CPU memory allocations succeed. Do not add allocation-result null checks, assertions, fallback paths, or failure propagation for growable arenas, `malloc`, `HeapAlloc`, or arena backing allocations. CPU out-of-memory recovery is outside this project's supported behavior.
+- Keep failures that are reasonably possible: GPU resource/heap creation, descriptor-ring exhaustion, and OS operations. Keep input validation, arithmetic/serialization limits, and fixed-capacity or virtual-reservation bounds. A reservation's `reserve_end` is fixed even though committed memory can grow.
+- Arena allocation APIs can still reject invalid or overflowing sizes. Removing CPU OOM handling must not allow those rejections to reach `memcpy` or other pointer consumers. Validate size arithmetic before allocation/copy, as `ff_arena_realloc` does on its relocation path.
+- Prefer straightforward code and existing helpers over speculative recovery machinery or generalized frameworks. Trace callers before deleting a check; distinguish initialization from mutation and readability improvements from measured performance gains.
+
 #### Headers and includes
 
 - `pch.h` is force-included everywhere and already provides `<stdint.h>`, `<stdbool.h>`, `<stdalign.h>`, `<stdio.h>`, `<stdlib.h>`, `<math.h>`, `<intrin.h>`, plus `<Windows.h>`, `<d3d12.h>`, and `<dxgi1_6.h>`. Don't re-include those in individual files.
@@ -60,6 +67,13 @@ These apply to every project in this repo.
 - `ff_arena_declare_stack(name, size)` declares both the stack buffer and the arena in one step; prefer it to hand-rolling a buffer plus `ff_arena_init_external`.
 - Use `ff_arena_alloc_type` / `ff_arena_realloc_type` instead of calling `ff_arena_alloc` with a manual `sizeof` and `alignof`.
 - There is no per-allocation free. An arena is freed all at once, so the owner of the arena decides the lifetime of everything in it. Functions that return arena-allocated data must document which arena parameter it came from through the parameter name and ordering, not a comment.
+- `ff_arena_init_external` with a zero growth-size argument selects default growth; it does not make the arena fixed-capacity.
+- Reuse per-entry scratch with `ff_arena_mark` / `ff_arena_rewind` when nothing from the previous entry remains live. Keep stable storage before the marker, finish recursive calls before rewinding their paths, and allocate returned data in the caller's arena. `enumerate_dir` in `data/file.c` follows this pattern.
+
+#### Data construction
+
+- `ff_idict_init` measures the serialized block, allocates once, then writes to a fixed-capacity buffer. Preserve both passes, alignment/addition and serialized-field limits, the pre-write capacity guard, zeroed alignment gaps, and measured/emitted size equality. The private builder does not need a growable-buffer mode.
+- Base64 decoding validates each quartet as it decodes; do not add a duplicate validation pass. Preserve alphabet, length, padding-placement, and output-bound checks. Invalid input returns an empty span but may consume arena storage; callers must not assume failed decoding leaves the arena unchanged.
 
 #### Win32 and naming
 
@@ -68,7 +82,7 @@ These apply to every project in this repo.
 - Prefer the wide (`W`) Win32 entry points directly; there is no `TCHAR` usage.
 - Win32 handles that must be released have an explicit `destroy` that tolerates a zeroed struct, so partially-constructed objects can always be torn down on the failure path.
 
-Tests for this project live in `test/ff.test.unit.c/` and are C++ (MSVC CppUnitTest) wrapping the C headers via `extern "C"`. Test files go in `test/ff.test.unit.c/base/`, use `TEST_CLASS` / `TEST_METHOD` inside `namespace ff::test::base`, and must be added to both `ff.test.unit.c.vcxproj` and its `.filters`.
+Tests for this project live in `test/ff.test.unit.c/` and are C++ (MSVC CppUnitTest) wrapping the C headers via `extern "C"`. Base tests go in `base/` inside `namespace ff::test::base`; DX12 tests go in `dx12/` inside `namespace ff::test::dx12`. Use `TEST_CLASS` / `TEST_METHOD` and add new files to both `ff.test.unit.c.vcxproj` and its `.filters`.
 
 Because the tests compile as C++, any public header has to be valid in both languages. `string.h` shows the pattern: `FF_SVL` has separate `__cplusplus` and C definitions because compound literals and designated initializers aren't spelled the same way in both. Keep new public headers free of C-only syntax in declarations, and if a macro must expand to an initializer, give it both forms.
 
@@ -82,6 +96,8 @@ When the tests are C++ they can use a C++-only library as an independent oracle 
 
 There is no `.sln`; build individual `.vcxproj` files with MSBuild. Warnings are errors, so a clean build produces no output. A unit test reported as "Skipped" with no result usually means the test host crashed rather than that the test was filtered out.
 
+Do not run unit-test processes concurrently: some tests share application settings/log files. Use one combined filter for related classes and run Debug and Release sequentially.
+
 #### dx12 thread ownership
 
 The dx12 layer has **no synchronization on any device object** — no critical section, no `Interlocked`, no thread checks — because a single thread owns all of it. Preserve that; do not add a lock to make a call "thread safe."
@@ -89,6 +105,16 @@ The dx12 layer has **no synchronization on any device object** — no critical s
 The owner is the thread that called `ff_dx12_init`, or whichever thread later called `ff_dx12_set_owner_thread`. Any new entry point that touches device state, waits on the GPU, or runs as part of the frame lifecycle should start with `FF_DX12_ASSERT_OWNER()`, which compiles out in release like any other assert.
 
 Work arriving from another thread (window messages, most obviously) must not call into dx12 directly. It queues instead, via `ff_dx12_defer_resize_target` or `ff_dx12_defer_reset_device`, and the owning thread applies it with `ff_dx12_flush_deferred` between frames — never inside one. The single critical section in `dx12_globals.c` guards only that queue and is never held across a D3D call. Anything that holds a pointer into the queue must cancel its entry when it is destroyed, the way `ff_dx12_target_window_destroy` calls `ff_dx12_cancel_deferred_target`.
+
+#### dx12 allocation and retirement
+
+- Pacing modes belong to individual `ff_dx12_pacing` objects, not process-global state. Initialization takes an explicit mode; `ff_dx12_pacing_set_mode` takes the object pointer and resets mode-dependent measurements. Read the public `mode` field directly; no getter is needed. Window targets start aggressive and preserve their selected mode across resize/device reset. Change a live target's mode on the owner thread between frames; synthetic pacing tests need no DX12 initialization or global cleanup.
+- Ring ranges retire by fence, not by explicit free; freeing a range balances its outstanding-allocation count. Preserve exhaustion behavior rather than blocking on reserved, unsignaled fence values. Grow CPU bookkeeping independently of GPU heaps and retain reusable metadata when recycling buffers.
+- Keep-alive nodes must deep-copy fence values into their own arena because the source arena may immediately be destroyed. Clearing/recycling a fence set preserves its overflow pointer/capacity; refill recycled nodes in place rather than overwriting their reusable storage. Completed dependencies release immediately without allocating keep-alive storage.
+- `ff_dx12_fence_values_complete` clears the set's count on success. For a non-mutating query, use the const-taking `ff_dx12_fence_value_array_complete` instead of copying the entire set. Preserve FIFO keep-alive processing and release resources before returning their memory ranges.
+- Long-lived samplers use pinned shader-visible descriptor slots, not ring slots. Create samplers directly using those slots' CPU handles; no CPU staging allocation/copy is needed. Pinned slots survive device reset, but their descriptors must be recreated.
+- Caller-created queues and memory allocators participate in device reset through device-child registration; preserve that registration and teardown ordering.
+- Free-list insertion/removal uses overlapping `memmove`, preserving sorted/coalesced ranges. Re-fetch array pointers after resizing before moving entries.
 
 #### Profile-only code and GPU markers
 

@@ -66,12 +66,9 @@ typedef struct ff_dx12_pacing
     uint64_t stage_changes;
 } ff_dx12_pacing;
 
-// The process-wide default is conservative. Aggressive reproduces the legacy 58/54 FPS EMA ladder.
-// If DX12 is active, change the mode on the owner thread between frames.
-void ff_dx12_pacing_set_mode(ff_dx12_pacing_mode mode);
-ff_dx12_pacing_mode ff_dx12_pacing_get_mode(void);
+void ff_dx12_pacing_set_mode(ff_dx12_pacing* pacing, ff_dx12_pacing_mode mode);
 
-void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds);
+void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds, ff_dx12_pacing_mode mode);
 
 // Discards in-flight measurements when the frame loop is interrupted. Conservative mode keeps the
 // current stage; aggressive mode resets it to match the legacy behavior.

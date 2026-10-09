@@ -103,6 +103,26 @@ namespace ff::test::dx12
             ff_dx12_fence_destroy(&fence);
         }
 
+        TEST_METHOD(batch_completion_accepts_const_values_without_changing_them)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_fence fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("const completion fence"), 1));
+            const ff_dx12_fence_value pending = ff_dx12_fence_signal_later(&fence);
+            const ff_dx12_fence_value values[] = { ff_dx12_fence_value{}, pending };
+
+            Assert::IsTrue(ff_dx12_fence_value_array_complete(nullptr, 0));
+            Assert::IsFalse(ff_dx12_fence_value_array_complete(values, 2));
+            ff_dx12_fence_signal_value(&fence, pending.value, nullptr);
+            Assert::IsTrue(ff_dx12_fence_value_array_complete(values, 2));
+            Assert::IsNull(values[0].fence);
+            Assert::IsTrue(values[1].fence == pending.fence);
+            Assert::AreEqual(pending.value, values[1].value);
+
+            ff_dx12_fence_destroy(&fence);
+        }
+
         TEST_METHOD(batch_wait_dedups_by_fence_and_completes)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

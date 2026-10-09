@@ -70,7 +70,8 @@ DXGI_FORMAT ff_dx12_target_window_format(void)
 
 static void reset_pacing(ff_dx12_target_window* target)
 {
-    internal_ff_dx12_pacing_init(&target->pacing, internal_ff_dx12_pacing_refresh_seconds(target->hwnd));
+    internal_ff_dx12_pacing_init(&target->pacing, internal_ff_dx12_pacing_refresh_seconds(target->hwnd),
+        target->pacing.mode);
 }
 
 static void close_latency_handle(ff_dx12_target_window* target)
@@ -198,8 +199,11 @@ bool ff_dx12_target_window_init(ff_dx12_target_window* target, HWND hwnd)
 {
     FF_ASSERT_RET_VAL(target && hwnd && IsWindow(hwnd), false);
 
-    *target = (ff_dx12_target_window){ 0 };
-    target->hwnd = hwnd;
+    *target = (ff_dx12_target_window)
+    {
+        .hwnd = hwnd,
+        .pacing = { .mode = ff_dx12_pacing_mode_aggressive },
+    };
     reset_pacing(target);
 
     target->views = ff_dx12_cpu_descriptor_allocator_alloc(ff_dx12_cpu_target_descriptors(),
@@ -419,7 +423,7 @@ static bool update_pacing(ff_dx12_target_window* target, double busy_seconds)
     // not block and is measured back-to-back with this one. That is the tail of one long frame,
     // not a genuinely fast frame, and feeding it in as-is is what made the old ladder see
     // above-refresh frame rates and oscillate. Charge it at the refresh interval instead.
-    if (ff_dx12_pacing_get_mode() == ff_dx12_pacing_mode_conservative &&
+    if (target->pacing.mode == ff_dx12_pacing_mode_conservative &&
         frame_seconds < target->pacing.refresh_seconds)
     {
         frame_seconds = target->pacing.refresh_seconds;
@@ -427,7 +431,7 @@ static bool update_pacing(ff_dx12_target_window* target, double busy_seconds)
 
     FF_CHECK_RET_VAL(internal_ff_dx12_pacing_add_frame_busy(&target->pacing, frame_seconds, busy_seconds), true);
 
-    if (ff_dx12_pacing_get_mode() == ff_dx12_pacing_mode_aggressive &&
+    if (target->pacing.mode == ff_dx12_pacing_mode_aggressive &&
         latency_before == internal_ff_dx12_pacing_latency(&target->pacing))
     {
         return true;
