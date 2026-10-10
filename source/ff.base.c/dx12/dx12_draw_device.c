@@ -105,18 +105,21 @@ static void build_circle_vertexes(ff_point_float* vertexes)
 // upload is deferred to the first begin. It never changes afterward.
 static bool init_static_geometry(ff_dx12_draw_device* device, ff_dx12_commands* commands)
 {
-    FF_CHECK_RET_VAL(!ff_dx12_buffer_valid(&device->index_buffer), true);
+    if (!ff_dx12_buffer_valid(&device->index_buffer))
+    {
+        uint16_t indexes[FF_DX12_STATIC_INDEX_COUNT];
+        build_static_indexes(indexes);
+        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->index_buffer,
+            ff_dx12_buffer_type_index, commands, indexes, sizeof(indexes)), false);
+    }
 
-    uint16_t indexes[FF_DX12_STATIC_INDEX_COUNT];
-    build_static_indexes(indexes);
-
-    ff_point_float vertexes[FF_DX12_CIRCLE_VERTEX_COUNT];
-    build_circle_vertexes(vertexes);
-
-    FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->index_buffer,
-        ff_dx12_buffer_type_index, commands, indexes, sizeof(indexes)), false);
-    FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->circle_vertex_buffer,
-        ff_dx12_buffer_type_vertex, commands, vertexes, sizeof(vertexes)), false);
+    if (!ff_dx12_buffer_valid(&device->circle_vertex_buffer))
+    {
+        ff_point_float vertexes[FF_DX12_CIRCLE_VERTEX_COUNT];
+        build_circle_vertexes(vertexes);
+        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->circle_vertex_buffer,
+            ff_dx12_buffer_type_vertex, commands, vertexes, sizeof(vertexes)), false);
+    }
 
     return true;
 }
@@ -247,8 +250,12 @@ bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* co
 {
     FF_ASSERT_RET_VAL(ff_dx12_draw_device_valid(device), false);
     FF_ASSERT_RET_VAL(commands, false);
-    FF_ASSERT_RET_VAL(target, false);
+    FF_ASSERT_RET_VAL(ff_dx12_resource_valid(target), false);
     FF_ASSERT_RET_VAL(ff_dx12_draw_state_target_format_valid(target_format), false);
+    FF_ASSERT_RET_VAL(target->desc.SampleDesc.Count == 1, false);
+
+    const bool has_depth = depth && ff_dx12_depth_valid(depth);
+    FF_ASSERT_RET_VAL(!has_depth || ff_dx12_depth_sample_count(depth) == target->desc.SampleDesc.Count, false);
 
     ff_dx12_draw_device_end(device);
 
@@ -651,17 +658,20 @@ static bool apply_palettes(ff_dx12_draw_device* device)
 
 // The palette sprite shader divides the uv by the texture size to turn it back into a texel index,
 // so the sizes have to reach the pixel shader for every palette texture in the table.
-static void update_ps_constants(ff_dx12_draw_device* device)
+static bool update_ps_constants(ff_dx12_draw_device* device)
 {
-    FF_CHECK_RET(device->palette_texture_count);
+    FF_CHECK_RET_VAL(device->palette_texture_count, true);
 
     for (size_t i = 0; i < device->palette_texture_count; i++)
     {
         ff_dx12_texture* texture = ff_dx12_texture_view_texture(device->palette_textures[i]);
-        FF_CHECK_RET(texture);
+        FF_CHECK_RET_VAL(texture, false);
 
-        device->ps_constants_0.texture_palette_sizes[i].left = (float)ff_dx12_texture_width(texture);
-        device->ps_constants_0.texture_palette_sizes[i].top = (float)ff_dx12_texture_height(texture);
+        const size_t mip_start = ff_dx12_texture_view_mip_start(device->palette_textures[i]);
+        device->ps_constants_0.texture_palette_sizes[i].left =
+            (float)ff_math_max_size(1, ff_dx12_texture_width(texture) >> mip_start);
+        device->ps_constants_0.texture_palette_sizes[i].top =
+            (float)ff_math_max_size(1, ff_dx12_texture_height(texture) >> mip_start);
     }
 
     // Uploaded whole rather than trimmed to palette_texture_count: 512 bytes at most once per
@@ -673,7 +683,7 @@ static void update_ps_constants(ff_dx12_draw_device* device)
         size, ff_dx12_commands_next_fence_value(device->commands));
 
     void* dest = ff_dx12_mem_range_cpu_data(&range);
-    FF_CHECK_RET(dest);
+    FF_CHECK_RET_VAL(dest, false);
 
     memcpy(dest, &device->ps_constants_0, size);
 
@@ -681,12 +691,13 @@ static void update_ps_constants(ff_dx12_draw_device* device)
 
     ff_dx12_commands_root_cbv_address(device->commands, ff_dx12_root_param_ps_constants_0,
         ff_dx12_mem_range_gpu_data(&range));
+    return true;
 }
 
 static bool apply_textures(ff_dx12_draw_device* device)
 {
     update_palette_textures(device);
-    update_ps_constants(device);
+    FF_CHECK_RET_VAL(update_ps_constants(device), false);
 
     FF_CHECK_RET_VAL(apply_texture_table(device, device->textures, device->texture_count,
         ff_dx12_root_param_textures), false);
@@ -697,23 +708,25 @@ static bool apply_textures(ff_dx12_draw_device* device)
     return apply_palettes(device);
 }
 
-static void draw_opaque(ff_dx12_draw_device* device)
+static bool draw_opaque(ff_dx12_draw_device* device)
 {
     for (size_t i = 0; i < ff_dx12_instance_bucket_first_transparent; i++)
     {
         const ff_dx12_instance_bucket* bucket = &device->buckets[i];
 
-        if (bucket->render_count && apply_bucket(device, bucket))
+        if (bucket->render_count)
         {
+            FF_CHECK_RET_VAL(apply_bucket(device, bucket), false);
             const index_range range = bucket_index_range(ff_dx12_instance_bucket_draw_bucket(bucket));
 
             ff_dx12_commands_draw_indexed(device->commands, 0, range.start, range.count,
                 bucket->render_start, bucket->render_count);
         }
     }
+    return true;
 }
 
-static void draw_transparent(ff_dx12_draw_device* device)
+static void draw_ordered(ff_dx12_draw_device* device)
 {
     for (size_t i = 0; i < device->transparent_count; )
     {
@@ -736,13 +749,11 @@ static void draw_transparent(ff_dx12_draw_device* device)
             }
         }
 
-        if (apply_bucket(device, bucket))
-        {
-            const index_range range = bucket_index_range(ff_dx12_instance_bucket_draw_bucket(bucket));
+        FF_CHECK_RET(apply_bucket(device, bucket));
+        const index_range range = bucket_index_range(ff_dx12_instance_bucket_draw_bucket(bucket));
 
-            ff_dx12_commands_draw_indexed(device->commands, 0, range.start, range.count,
-                bucket->render_start + entry.index, instance_count);
-        }
+        ff_dx12_commands_draw_indexed(device->commands, 0, range.start, range.count,
+            bucket->render_start + entry.index, instance_count);
     }
 }
 
@@ -752,38 +763,35 @@ void ff_dx12_draw_device_flush(ff_dx12_draw_device* device)
     FF_CHECK_RET(device->state == ff_dx12_draw_state_machine_drawing);
     FF_CHECK_RET(device->last_depth_type != ff_dx12_last_depth_none);
 
-    if (build_instance_buffer(device))
+    if (build_instance_buffer(device) && ff_dx12_draw_state_bind(device->draw_state, device->commands))
     {
         // The root signature and sampler table have to be set before any root argument, and
         // setting a root signature discards previously bound root arguments, so this must come
         // before the constants below rather than once per begin.
-        FF_CHECK_RET(ff_dx12_draw_state_bind(device->draw_state, device->commands));
-
         const D3D12_GPU_VIRTUAL_ADDRESS vs_constants_1_address = update_constants(device);
 
         if (vs_constants_1_address)
         {
             ff_dx12_commands_root_cbv_address(device->commands, ff_dx12_root_param_vs_constants_1,
                 vs_constants_1_address);
-        }
 
-        ff_dx12_commands_root_constants(device->commands, ff_dx12_root_param_vs_constants_0,
-            &device->vs_constants_0, FF_DX12_VS_CONSTANTS_0_DWORD_COUNT * sizeof(uint32_t), 0);
+            ff_dx12_commands_root_constants(device->commands, ff_dx12_root_param_vs_constants_0,
+                &device->vs_constants_0, FF_DX12_VS_CONSTANTS_0_DWORD_COUNT * sizeof(uint32_t), 0);
 
-        const D3D12_INDEX_BUFFER_VIEW index_view =
-        {
-            .BufferLocation = ff_dx12_buffer_gpu_address(&device->index_buffer),
-            .SizeInBytes = (UINT)ff_dx12_buffer_size(&device->index_buffer),
-            .Format = DXGI_FORMAT_R16_UINT,
-        };
+            const D3D12_INDEX_BUFFER_VIEW index_view =
+            {
+                .BufferLocation = ff_dx12_buffer_gpu_address(&device->index_buffer),
+                .SizeInBytes = (UINT)ff_dx12_buffer_size(&device->index_buffer),
+                .Format = DXGI_FORMAT_R16_UINT,
+            };
 
-        ff_dx12_commands_index_buffer(device->commands,
-            ff_dx12_buffer_resource(&device->index_buffer), &index_view);
+            ff_dx12_commands_index_buffer(device->commands,
+                ff_dx12_buffer_resource(&device->index_buffer), &index_view);
 
-        if (apply_textures(device))
-        {
-            draw_opaque(device);
-            draw_transparent(device);
+            if (apply_textures(device) && (!device->depth || draw_opaque(device)))
+            {
+                draw_ordered(device);
+            }
         }
     }
 
@@ -1183,9 +1191,10 @@ void* ff_dx12_draw_device_add_instance(ff_dx12_draw_device* device,
 
     ff_dx12_instance_bucket* bucket = &device->buckets[bucket_type];
 
-    if (ff_dx12_instance_bucket_transparent(bucket))
+    if (ff_dx12_instance_bucket_transparent(bucket) ||
+        (device->state == ff_dx12_draw_state_machine_drawing && !device->depth))
     {
-        FF_ASSERT_RET_VAL(!device->force_opaque, NULL);
+        FF_ASSERT_RET_VAL(!ff_dx12_instance_bucket_transparent(bucket) || !device->force_opaque, NULL);
         transparent_reserve(device);
 
         ff_dx12_transparent_entry* entry = &device->transparent[device->transparent_count++];
@@ -1469,7 +1478,10 @@ void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
 {
     FF_ASSERT_RET(device);
     FF_ASSERT_RET(sprite && transform);
-    FF_CHECK_RET(sprite->view);
+    FF_ASSERT_RET(ff_dx12_texture_view_valid(sprite->view));
+
+    ff_dx12_texture* texture = ff_dx12_texture_view_texture(sprite->view);
+    FF_ASSERT_RET(ff_dx12_texture_sample_count(texture) == 1);
 
     const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
     const alpha_type type = sprite_alpha_type(ff_color_alpha(transform->color),
@@ -1499,7 +1511,10 @@ void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
 {
     FF_ASSERT_RET(device);
     FF_ASSERT_RET(sprite && transform);
-    FF_CHECK_RET(sprite->view);
+    FF_ASSERT_RET(ff_dx12_texture_view_valid(sprite->view));
+
+    ff_dx12_texture* texture = ff_dx12_texture_view_texture(sprite->view);
+    FF_ASSERT_RET(ff_dx12_texture_sample_count(texture) == 1);
 
     const bool allow_transparent = ff_dx12_draw_device_allow_transparent(device);
     const alpha_type type = sprite_alpha_type(ff_color_alpha(transform->color), allow_transparent, sprite->transparent);

@@ -3,12 +3,12 @@
 
 float4 sample_sprite_texture(float2 tex, uint ntex, uint nsampler)
 {
-    return textures_[NonUniformResourceIndex(ntex)].Sample(samplers_[NonUniformResourceIndex(nsampler)], tex);
+    return textures_[NonUniformResourceIndex(ntex)].Sample(samplers_[NonUniformResourceIndex(nsampler)], float3(tex, 0));
 }
 
 uint sample_palette_sprite_texture(int3 tex, uint ntex)
 {
-    return palette_textures_[NonUniformResourceIndex(ntex)].Load(tex);
+    return palette_textures_[NonUniformResourceIndex(ntex)].Load(int4(tex.xy, 0, tex.z));
 }
 
 // Texture: RGBA, Output: RGBA
@@ -39,8 +39,13 @@ float4 ps_palette_sprite(sprite_pixel input) : SV_TARGET
         discard;
     }
 
-    index = palette_remap_.Load(int3(index, remap_index, 0));
-    float4 color = input.color * palette_.Load(int3(index, palette_index, 0));
+    index = palette_remap_.Load(int4(index, remap_index, 0, 0));
+    if (index == 0)
+    {
+        discard;
+    }
+
+    float4 color = input.color * palette_.Load(int4(index, palette_index, 0, 0));
     if (color.a == 0)
     {
         discard;
@@ -59,7 +64,7 @@ uint ps_sprite_out_palette(sprite_pixel input) : SV_TARGET
     float4 color = sample_sprite_texture(input.uv, texture_index, sampler_index);
     color.a *= input.color.a;
     uint index = ((uint)((input.color.r != 1) * input.color.r * 256) + (uint)((input.color.r == 1) * color.r * 256)) * (uint)(color.a != 0);
-    index = palette_remap_.Load(int3(index, remap_index, 0));
+    index = palette_remap_.Load(int4(index, remap_index, 0, 0));
 
     if (index == 0 || discard_for_dither(input.pos.xyz, color.a))
     {
@@ -77,7 +82,7 @@ uint ps_palette_sprite_out_palette(sprite_pixel input) : SV_TARGET
 
     uint index = sample_palette_sprite_texture(int3(input.uv * texture_palette_sizes_[texture_index].xy, 0), texture_index);
     index = ((uint)((input.color.r != 1) * input.color.r * 256) + (uint)((input.color.r == 1) * index)) * (uint)(input.color.a != 0);
-    index = palette_remap_.Load(int3(index, remap_index, 0));
+    index = palette_remap_.Load(int4(index, remap_index, 0, 0));
 
     if (index == 0 || discard_for_dither(input.pos.xyz, input.color.a))
     {

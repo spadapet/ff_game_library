@@ -479,6 +479,103 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
+        TEST_METHOD(target_texture_dimensions_match_selected_mip)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(65, 17);
+            params.mip_count = 7;
+            params.array_size = 2;
+
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_target_texture base{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&base, &texture, 0, 1, 0));
+            Assert::AreEqual((size_t)65, ff_dx12_target_texture_width(&base));
+            Assert::AreEqual((size_t)17, ff_dx12_target_texture_height(&base));
+
+            ff_dx12_target_texture middle{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&middle, &texture, 1, 1, 2));
+            Assert::AreEqual((size_t)16, ff_dx12_target_texture_width(&middle));
+            Assert::AreEqual((size_t)4, ff_dx12_target_texture_height(&middle));
+
+            ff_dx12_target_texture short_mip{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&short_mip, &texture, 1, 1, 4));
+            Assert::AreEqual((size_t)4, ff_dx12_target_texture_width(&short_mip));
+            Assert::AreEqual((size_t)1, ff_dx12_target_texture_height(&short_mip));
+
+            ff_dx12_target_texture smallest{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&smallest, &texture, 1, 1, 6));
+            Assert::AreEqual((size_t)1, ff_dx12_target_texture_width(&smallest));
+            Assert::AreEqual((size_t)1, ff_dx12_target_texture_height(&smallest));
+
+            ff_dx12_target_texture_destroy(&smallest);
+            ff_dx12_target_texture_destroy(&short_mip);
+            ff_dx12_target_texture_destroy(&middle);
+            ff_dx12_target_texture_destroy(&base);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_wait_for_idle();
+        }
+
+        TEST_METHOD(target_texture_selected_mip_clear_covers_rendered_extent)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(65, 17);
+            params.mip_count = 3;
+            params.array_size = 2;
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 1, 1, 2));
+
+            const UINT subresource = (UINT)(params.mip_count + target.mip_level);
+            D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+            UINT row_count = 0;
+            UINT64 row_bytes = 0;
+            UINT64 total_bytes = 0;
+            ff_dx12_device()->GetCopyableFootprints(&texture.resource.desc, subresource, 1, 0,
+                &footprint, &row_count, &row_bytes, &total_bytes);
+            Assert::AreEqual((UINT)ff_dx12_target_texture_width(&target), footprint.Footprint.Width);
+            Assert::AreEqual((UINT)ff_dx12_target_texture_height(&target), footprint.Footprint.Height);
+            Assert::AreEqual((UINT)4, row_count);
+            Assert::AreEqual((UINT64)64, row_bytes);
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+            const float clear_color[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
+            ff_dx12_target_texture_clear(&target, &commands, clear_color);
+
+            ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_texture(
+                ff_dx12_readback_allocator(), total_bytes, ff_dx12_commands_next_fence_value(&commands));
+            Assert::IsTrue(ff_dx12_mem_range_valid(&readback));
+            D3D12_RECT rect{};
+            rect.right = (LONG)ff_dx12_target_texture_width(&target);
+            rect.bottom = (LONG)ff_dx12_target_texture_height(&target);
+            ff_dx12_commands_readback_texture(&commands, &readback, &footprint.Footprint,
+                &texture.resource, subresource, &rect);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+
+            const uint8_t* pixels = (const uint8_t*)ff_dx12_mem_range_cpu_data(&readback);
+            Assert::IsNotNull(pixels);
+            const uint8_t expected[4] = { 255, 0, 0, 255 };
+            for (size_t y = 0; y < ff_dx12_target_texture_height(&target); y++)
+            {
+                for (size_t x = 0; x < ff_dx12_target_texture_width(&target); x++)
+                {
+                    Assert::AreEqual(0, memcmp(expected,
+                        pixels + y * footprint.Footprint.RowPitch + x * sizeof(expected), sizeof(expected)));
+                }
+            }
+
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_wait_for_idle();
+        }
+
         TEST_METHOD(target_texture_slice_transitions_only_its_own_subresources)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

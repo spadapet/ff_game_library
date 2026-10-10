@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/assert.h"
+#include "base/math.h"
 #include "dx12/dx12_descriptor_allocator.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_internal.h"
@@ -83,13 +84,13 @@ ff_dx12_target_range ff_dx12_target_texture_range(const ff_dx12_target_texture* 
 size_t ff_dx12_target_texture_width(const ff_dx12_target_texture* target)
 {
     FF_ASSERT_RET_VAL(ff_dx12_target_texture_valid(target), 0);
-    return ff_dx12_texture_width(target->texture);
+    return ff_math_max_size(ff_dx12_texture_width(target->texture) >> target->mip_level, 1);
 }
 
 size_t ff_dx12_target_texture_height(const ff_dx12_target_texture* target)
 {
     FF_ASSERT_RET_VAL(ff_dx12_target_texture_valid(target), 0);
-    return ff_dx12_texture_height(target->texture);
+    return ff_math_max_size(ff_dx12_texture_height(target->texture) >> target->mip_level, 1);
 }
 
 size_t ff_dx12_target_texture_sample_count(const ff_dx12_target_texture* target)

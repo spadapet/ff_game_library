@@ -38,10 +38,10 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-007 | P2 | Fixed | Recycled free-list nodes abandon arena-backed metadata |
 | FFC-008 | P2 | Fixed | Recycled keep-alive nodes abandon spilled fence storage |
 | FFC-009 | P2 | Fixed | Filled circles ignore their inside color |
-| FFC-010 | P2 | Open | Palette sprites use base dimensions for nonzero-mip views |
-| FFC-011 | P2 | Open | Mip render targets report base-level dimensions |
-| FFC-012 | P2 | Open | Array-slice sprite SRVs do not match shader dimensions |
-| FFC-013 | P2 | Open | Depthless batching changes draw order |
+| FFC-010 | P2 | Fixed | Palette sprites use base dimensions for nonzero-mip views |
+| FFC-011 | P2 | Fixed | Mip render targets report base-level dimensions |
+| FFC-012 | P2 | Fixed | Array-slice sprite SRVs do not match shader dimensions |
+| FFC-013 | P2 | Fixed | Depthless batching changes draw order |
 | FFC-014 | P1 | Fixed | App shutdown deadlocks on synchronous main dispatch |
 | FFC-015 | P2 | Fixed | Dictionary mutation corrupts borrowed input values |
 | FFC-016 | P2 | Fixed | Embedding immutable dictionaries breaks payload alignment |
@@ -51,13 +51,16 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 | FFC-020 | P2 | Fixed | Log sink configuration changes deadlock inside callbacks |
 | FFC-021 | P2 | Fixed | JSON decimal parsing depends on the numeric locale |
 | FFC-022 | P2 | Not a bug | Degenerate rectangles can intersect |
-| FFC-023 | P2 | Open | Queued fullscreen requests discard the final desired state |
+| FFC-023 | P2 | Fixed | Queued fullscreen requests discard the final desired state |
 | FFC-024 | P2 | Fixed | Window placement mixes workspace and screen coordinates |
 | FFC-025 | P2 | Fixed | Message-window class registration races across threads |
 | FFC-026 | P1 | Fixed | Forgotten-resource barriers inherit replacement-resource state |
 | FFC-027 | P2 | Fixed | Pipeline cache rejects embedded root signatures |
 | FFC-028 | P2 | Fixed | Incomplete format metadata rejects valid textures |
-| FFC-031 | P2 | Open | Draw batches continue after required constant uploads fail |
+| FFC-031 | P2 | Fixed | Draw batches continue after required constant uploads fail |
+| FFC-032 | P2 | Fixed | Draw pipeline accepts multisampled targets |
+| FFC-033 | P2 | Fixed | Sprite shaders cannot sample multisampled texture views |
+| FFC-034 | P2 | Fixed | Partial static geometry initialization prevents retry |
 
 ## DX12 synchronization, lifetime, and recovery
 
@@ -235,7 +238,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-010: Palette sprites use base dimensions for nonzero-mip views
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed and GPU-readback tested. **Origin:** Inherited.
 
 **Location:** `dx12\dx12_draw_device.c:655-662`, `update_ps_constants`; `dx12\shaders\ps_sprite.hlsl:36,78`; SRV mip selection in `dx12\dx12_resource.c:340-344`.
 
@@ -251,9 +254,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Parity evidence:** Repository-relative `source\ff.application\graphics\dxgi\draw_util.cpp:839-845` likewise uses underlying texture dimensions.
 
+**Resolution:** Pixel constants now use the selected view's first-mip dimensions, clamped to one texel. Palette sprite readback covers mip 0, mip 2, and the one-texel mip on RGBA and palette-index targets.
+
 ### FFC-011: Mip render targets report base-level dimensions
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed and GPU-readback tested. **Origin:** Inherited.
 
 **Location:** `dx12\dx12_target_texture.c:82-91`, `ff_dx12_target_texture_width` and `ff_dx12_target_texture_height`.
 
@@ -269,9 +274,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Parity evidence:** Repository-relative `source\ff.application\graphics\dx12\target_texture.cpp:121-125` also returns the base texture size.
 
+**Resolution:** Both getters return the selected mip extent, clamped to one. Tests cover nonsquare textures, one-texel mips, and target readback.
+
 ### FFC-012: Array-slice sprite SRVs do not match shader dimensions
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed and GPU-readback tested. **Origin:** Inherited.
 
 **Location:** `dx12\shaders\data.hlsli:31-32`; `dx12\dx12_resource.c:10-17,329-337`; `dx12\dx12_draw_device.c:597-607`, `apply_texture_table`; intended slice usage in `dx12\dx12_texture_view.h:8-10`.
 
@@ -287,9 +294,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Parity evidence:** The original sprite shader declarations and resource view selection have the same mismatch.
 
+**Resolution:** Non-multisampled texture SRVs and all sprite texture declarations consistently use 2D arrays. The shaders sample the selected SRV's slice zero; readback tests cover nonzero slices for RGBA and palette sprites on both target formats.
+
 ### FFC-013: Depthless batching changes draw order
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Inherited behavior; contract decision required.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed and GPU-readback tested. **Origin:** Inherited behavior.
 
 **Location:** `dx12\dx12_draw_device.c:697-708,780-783`, `draw_opaque` and `ff_dx12_draw_device_flush`; nullable depth handling in `ff_dx12_draw_device_begin` and bucket state selection.
 
@@ -303,9 +312,11 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Regression scenario:** Compare overlapping geometry types and mixed opaque/transparent submissions with and without depth, including reversed submission order.
 
+**Resolution:** Without a depth target, all instances draw in submission order, including opaque and transparent geometry; adjacent compatible entries can still batch. With depth, opaque bucket batching remains unchanged. Readback tests cover reversed opaque order, mixed alpha, forced opaque, and depth-enabled draws.
+
 ### FFC-031: Draw batches continue after required constant uploads fail
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed; binding failure GPU-readback tested. **Origin:** Unclassified.
 
 **Location:** `dx12\dx12_draw_device.c`, `update_constants`, `update_ps_constants`, `apply_textures`, and `ff_dx12_draw_device_flush`.
 
@@ -318,6 +329,50 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 **Fix direction:** Propagate required constant-preparation success, stop drawing on failure, and route every started-batch failure through `reset_batch`. No palette textures is a successful no-op. Preserve residency and fence retirement; do not explicitly free upload-ring ranges.
 
 **Regression scenario:** Inject GPU upload failure separately for vertex and palette pixel constants and assert no draw is recorded. Inject draw-state binding failure and verify the batch is reset, then a subsequent successful batch draws only its own instances. This has not been runtime-reproduced.
+
+**Resolution:** Flush stops before drawing if vertex or required pixel constants cannot be uploaded and resets the batch on every failure path. A binding-failure regression verifies the queued batch is dropped and a later valid draw renders independently. GPU upload heap failure was not injected in a test.
+
+### FFC-032: Draw pipeline accepts multisampled targets
+
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed; rejection path tested. **Origin:** Unclassified.
+
+**Location:** `dx12\dx12_draw_device.c`, `ff_dx12_draw_device_begin`; `dx12\dx12_draw_state.c`, `create_pipeline_state`.
+
+**Cause:** Draw PSOs are created with sample count 1, but draw begin accepted a target with a higher sample count. A multisampled depth resource could also be paired with a single-sample target.
+
+**Impact:** The target/depth sample configuration does not match the pipeline, so the draw is invalid and may trigger D3D12 validation errors or device removal.
+
+**Resolution:** Draw begin now requires a valid single-sample target and rejects a valid depth buffer whose sample count differs from the target.
+
+**Regression coverage:** `begin_rejects_multisampled_targets_and_mismatched_depth` exercises both guards by temporarily overriding the public resource description's sample count. This tests the rejection paths without requiring multisample support from the test adapter; it does not submit an actual multisampled draw.
+
+### FFC-033: Sprite shaders cannot sample multisampled texture views
+
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed; rejection path tested. **Origin:** Unclassified.
+
+**Location:** `dx12\dx12_draw_device.c`, `ff_dx12_draw_device_draw_sprite` and `ff_dx12_draw_device_draw_palette_sprite`; `dx12\shaders\data.hlsli`, sprite SRV declarations.
+
+**Cause:** The sprite shaders use non-multisampled `Texture2DArray` sampling, while an MSAA texture view produces a `TEXTURE2DMSARRAY` SRV.
+
+**Impact:** Binding that view to the sprite shader table violates the shader/SRV dimension contract.
+
+**Resolution:** Both sprite entry points reject views backed by multisampled textures. The texture-view API remains usable for other shader paths that support multisample SRVs.
+
+**Regression coverage:** `sprite_draw_rejects_multisampled_source_views` exercises both sprite paths with the resource description temporarily set to a multisampled count and verifies neither path enqueues an instance. It tests the rejection path without requiring an actual multisampled texture.
+
+### FFC-034: Partial static geometry initialization prevents retry
+
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed; retry path tested. **Origin:** Unclassified.
+
+**Location:** `dx12\dx12_draw_device.c`, `init_static_geometry`.
+
+**Cause:** Initialization used the index buffer's validity as the sole completion signal. If index-buffer creation succeeded but circle-vertex-buffer creation failed, later begins skipped initialization and left circle draws without their vertex buffer.
+
+**Impact:** A recoverable GPU allocation failure during the first begin could leave subsequent circle draws using a missing buffer.
+
+**Resolution:** Static geometry initialization now initializes each buffer independently, retrying whichever one is missing.
+
+**Regression coverage:** `begin_recreates_a_missing_circle_vertex_buffer` initializes and submits the static resources, destroys only the circle buffer, then begins again and verifies the missing buffer is recreated before drawing a circle.
 
 ## App, base, and data
 
@@ -473,7 +528,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 ### FFC-023: Queued fullscreen requests discard the final desired state
 
-**Priority:** P2. **Status:** Open. **Evidence:** Source-reviewed. **Origin:** Unclassified.
+**Priority:** P2. **Status:** Fixed. **Evidence:** Source-reviewed and window-message tested. **Origin:** Unclassified.
 
 **Location:** `windows\window.c:475-479`, `ff_window_main_set_full_screen`.
 
@@ -486,6 +541,8 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 **Fix direction:** Track pending desired state or always enqueue requests for a valid window and let the existing application-time no-op logic decide whether work is needed.
 
 **Regression scenario:** Queue alternating requests without intermediate pumping and assert the final applied state matches the last request in both initial states.
+
+**Resolution:** Every valid request posts its desired state; applying a message already skips unchanged states. Tests cover both initial states, alternating queued requests, and window recreation with pending messages.
 
 ### FFC-024: Window placement mixes workspace and screen coordinates
 

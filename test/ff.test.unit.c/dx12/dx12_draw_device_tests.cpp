@@ -49,7 +49,10 @@ namespace ff::test::dx12
         {
             scoped_device()
             {
-                Assert::IsTrue(ff_dx12_init(nullptr));
+                if (!ff_dx12_device_valid())
+                {
+                    Assert::IsTrue(ff_dx12_init(nullptr));
+                }
                 Assert::IsTrue(ff_dx12_draw_state_init(&this->state));
                 Assert::IsTrue(ff_dx12_draw_device_init(&this->device, &this->state));
             }
@@ -62,6 +65,86 @@ namespace ff::test::dx12
 
             ff_dx12_draw_state state{};
             ff_dx12_draw_device device{};
+        };
+
+        struct scoped_pixel_scene
+        {
+            static constexpr size_t size = 32;
+
+            struct pixel_samples
+            {
+                uint32_t center;
+                uint32_t left;
+            };
+
+            scoped_pixel_scene(DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM)
+            {
+                ff_dx12_texture_params params = ff_dx12_texture_params_default(size, size);
+                params.format = format;
+                Assert::IsTrue(ff_dx12_texture_init(&this->texture, &params));
+                Assert::IsTrue(ff_dx12_target_texture_init(&this->target, &this->texture, 0, 0, 0));
+                Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &this->commands));
+                const float clear[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+                ff_dx12_target_texture_clear(&this->target, &this->commands, clear);
+            }
+
+            ~scoped_pixel_scene()
+            {
+                ff_dx12_target_texture_destroy(&this->target);
+                ff_dx12_texture_destroy(&this->texture);
+                ff_dx12_wait_for_idle();
+            }
+
+            void begin(ff_dx12_draw_device* device, ff_dx12_depth* depth = nullptr)
+            {
+                const ff_dx12_target_size target_size = ff_dx12_target_size_make(size, size);
+                const ff_rect_float rect = ff_rect_float_make(0.0f, 0.0f, (float)size, (float)size);
+                Assert::IsTrue(ff_dx12_draw_device_begin(device, &this->commands,
+                    ff_dx12_target_texture_resource(&this->target), ff_dx12_target_texture_view(&this->target),
+                    target_size, ff_dx12_target_texture_format(&this->target), depth, rect, rect, false));
+            }
+
+            pixel_samples sample_pixels()
+            {
+                const bool palette = ff_dx12_target_texture_format(&this->target) == DXGI_FORMAT_R8_UINT;
+                const size_t row_pitch = 256;
+                ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(
+                    ff_dx12_readback_allocator(), row_pitch * size,
+                    ff_dx12_commands_next_fence_value(&this->commands));
+                Assert::IsTrue(ff_dx12_mem_range_valid(&readback));
+
+                D3D12_SUBRESOURCE_FOOTPRINT layout{};
+                layout.Format = ff_dx12_target_texture_format(&this->target);
+                layout.Width = (UINT)size;
+                layout.Height = (UINT)size;
+                layout.Depth = 1;
+                layout.RowPitch = (UINT)row_pitch;
+                const D3D12_RECT source_rect = { 0, 0, (LONG)size, (LONG)size };
+                ff_dx12_commands_readback_texture(&this->commands, &readback, &layout,
+                    ff_dx12_target_texture_resource(&this->target), 0, &source_rect);
+
+                ff_dx12_queue_execute(ff_dx12_direct_queue(), &this->commands);
+                ff_dx12_wait_for_idle();
+                Assert::IsTrue(ff_dx12_device_valid());
+                const uint8_t* pixels = (const uint8_t*)ff_dx12_mem_range_cpu_data(&readback);
+                Assert::IsNotNull((void*)pixels);
+                const uint8_t* center = pixels + (size / 2) * row_pitch + (size / 2) * (palette ? 1 : 4);
+                const uint8_t* left = pixels + (size / 2) * row_pitch + (size / 4) * (palette ? 1 : 4);
+                pixel_samples samples{};
+                samples.center = palette ? *center : *(const uint32_t*)center;
+                samples.left = palette ? *left : *(const uint32_t*)left;
+                return samples;
+            }
+
+            uint32_t center_pixel()
+            {
+                return this->sample_pixels().center;
+            }
+
+            scoped_device scope;
+            ff_dx12_texture texture{};
+            ff_dx12_target_texture target{};
+            ff_dx12_commands commands{};
         };
 
         TEST_METHOD(init_starts_valid_but_not_drawing)
@@ -377,6 +460,100 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_draw_device_valid(&scope.device));
         }
 
+        TEST_METHOD(begin_rejects_multisampled_targets_and_mismatched_depth)
+        {
+            scoped_device scope;
+
+            ff_dx12_texture_params msaa_params = ff_dx12_texture_params_default(32, 32);
+            ff_dx12_texture msaa_texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&msaa_texture, &msaa_params));
+
+            ff_dx12_target_texture msaa_target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&msaa_target, &msaa_texture, 0, 1, 0));
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(32, 32);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_target_texture target{};
+            Assert::IsTrue(ff_dx12_target_texture_init(&target, &texture, 0, 1, 0));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+            const ff_dx12_target_size target_size = ff_dx12_target_size_make(32, 32);
+            const ff_rect_float rect = ff_rect_float_make(0.0f, 0.0f, 32.0f, 32.0f);
+
+            scoped_draw_device_assert_counter counter;
+            msaa_texture.resource.desc.SampleDesc.Count = 4;
+            Assert::IsFalse(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&msaa_target), ff_dx12_target_texture_view(&msaa_target),
+                target_size, ff_dx12_target_texture_format(&msaa_target), nullptr, rect, rect, false));
+            msaa_texture.resource.desc.SampleDesc.Count = 1;
+            Assert::AreEqual<int>(scoped_draw_device_assert_counter::expected_count(1),
+                scoped_draw_device_assert_counter::count);
+            Assert::AreEqual<int>(ff_dx12_draw_state_machine_valid, scope.device.state);
+
+            ff_dx12_depth depth{};
+            Assert::IsTrue(ff_dx12_depth_init(&depth, 32, 32, 1));
+            ff_dx12_resource* depth_resource = ff_dx12_depth_resource(&depth);
+            depth_resource->desc.SampleDesc.Count = 4;
+            scoped_draw_device_assert_counter::count = 0;
+            Assert::IsFalse(ff_dx12_draw_device_begin(&scope.device, &commands,
+                ff_dx12_target_texture_resource(&target), ff_dx12_target_texture_view(&target),
+                target_size, ff_dx12_target_texture_format(&target), &depth, rect, rect, false));
+            depth_resource->desc.SampleDesc.Count = 1;
+            Assert::AreEqual<int>(scoped_draw_device_assert_counter::expected_count(1),
+                scoped_draw_device_assert_counter::count);
+            Assert::AreEqual<int>(ff_dx12_draw_state_machine_valid, scope.device.state);
+
+            ff_dx12_depth_destroy(&depth);
+            ff_dx12_target_texture_destroy(&target);
+            ff_dx12_target_texture_destroy(&msaa_target);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_texture_destroy(&msaa_texture);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
+            ff_dx12_wait_for_idle();
+        }
+
+        TEST_METHOD(sprite_draw_rejects_multisampled_source_views)
+        {
+            scoped_pixel_scene scene;
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(32, 32);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_texture_view view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&view, &texture, 0, 1, 0, 1));
+            scene.begin(&scene.scope.device);
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, (float)scene.size, (float)scene.size);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+            const ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+
+            scoped_draw_device_assert_counter counter;
+            texture.resource.desc.SampleDesc.Count = 4;
+            ff_dx12_draw_device_draw_sprite(&scene.scope.device, &sprite, &transform);
+            Assert::AreEqual<int>(scoped_draw_device_assert_counter::expected_count(1),
+                scoped_draw_device_assert_counter::count);
+            scoped_draw_device_assert_counter::count = 0;
+
+            ff_dx12_draw_device_draw_palette_sprite(&scene.scope.device, &sprite, &transform);
+            Assert::AreEqual<int>(scoped_draw_device_assert_counter::expected_count(1),
+                scoped_draw_device_assert_counter::count);
+            Assert::AreEqual<size_t>(0,
+                bucket_count(scene.scope.device, ff_dx12_instance_bucket_sprites));
+            Assert::AreEqual<size_t>(0,
+                bucket_count(scene.scope.device, ff_dx12_instance_bucket_palette_sprites));
+            texture.resource.desc.SampleDesc.Count = 1;
+
+            ff_dx12_draw_device_end(&scene.scope.device);
+            scene.sample_pixels();
+            ff_dx12_texture_view_destroy(&view);
+            ff_dx12_texture_destroy(&texture);
+        }
+
         // Everything above tests batching with the device never leaving the valid state, so the
         // flush path itself never runs. This drives a real begin/draw/flush/execute against a
         // render target so that the GPU actually consumes the instance data, the root arguments
@@ -461,10 +638,45 @@ namespace ff::test::dx12
 
             // A malformed draw takes the device out, so surviving submission is the assertion.
             Assert::IsTrue(ff_dx12_device_valid());
-
             ff_dx12_target_texture_destroy(&target);
             ff_dx12_texture_destroy(&texture);
             ff_dx12_wait_for_idle();
+        }
+
+        TEST_METHOD(begin_recreates_a_missing_circle_vertex_buffer)
+        {
+            scoped_pixel_scene scene;
+            scene.begin(&scene.scope.device);
+            ff_dx12_draw_device_end(&scene.scope.device);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &scene.commands);
+            ff_dx12_wait_for_idle();
+
+            Assert::IsTrue(ff_dx12_buffer_valid(&scene.scope.device.index_buffer));
+            Assert::IsTrue(ff_dx12_buffer_valid(&scene.scope.device.circle_vertex_buffer));
+
+            ff_dx12_buffer_destroy(&scene.scope.device.circle_vertex_buffer);
+            Assert::IsFalse(ff_dx12_buffer_valid(&scene.scope.device.circle_vertex_buffer));
+
+            ff_dx12_commands retry_commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &retry_commands));
+            const ff_dx12_target_size target_size =
+                ff_dx12_target_size_make(scene.size, scene.size);
+            const ff_rect_float rect =
+                ff_rect_float_make(0.0f, 0.0f, (float)scene.size, (float)scene.size);
+
+            Assert::IsTrue(ff_dx12_draw_device_begin(&scene.scope.device, &retry_commands,
+                ff_dx12_target_texture_resource(&scene.target), ff_dx12_target_texture_view(&scene.target),
+                target_size, ff_dx12_target_texture_format(&scene.target), nullptr, rect, rect, false));
+            Assert::IsTrue(ff_dx12_buffer_valid(&scene.scope.device.index_buffer));
+            Assert::IsTrue(ff_dx12_buffer_valid(&scene.scope.device.circle_vertex_buffer));
+
+            ff_dx12_draw_device_draw_circle(&scene.scope.device,
+                endpoint((float)scene.size / 2, (float)scene.size / 2, ff_color_white(), 8.0f),
+                0.0f, ff_color_white());
+            ff_dx12_draw_device_end(&scene.scope.device);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &retry_commands);
+            ff_dx12_wait_for_idle();
+            Assert::IsTrue(ff_dx12_device_valid());
         }
 
         TEST_METHOD(end_without_begin_is_harmless)
@@ -1507,6 +1719,7 @@ namespace ff::test::dx12
                 colors[i] = rgba(0, 0, 0, 255);
             }
 
+            colors[0] = rgba(255, 0, 255, 255);
             colors[3] = rgba(0, 255, 0, 255);
             colors[7] = rgba(255, 0, 0, 255);
 
@@ -1527,6 +1740,8 @@ namespace ff::test::dx12
             remap_span.size = FF_PALETTE_SIZE;
 
             const ff_dx12_palette_remap remap = ff_dx12_palette_remap_make(remap_span);
+            remap_bytes[3] = 0;
+            const ff_dx12_palette_remap remap_to_zero = ff_dx12_palette_remap_make(remap_span);
 
             const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
             ff_dx12_target_texture_clear(&target, &commands, clear_color);
@@ -1559,6 +1774,11 @@ namespace ff::test::dx12
             ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
 
             ff_dx12_draw_device_pop_palette_remap(&scope.device);
+
+            sprite.world = ff_rect_float_make((float)(size / 2), 0.0f, (float)size, (float)size);
+            ff_dx12_draw_device_push_palette_remap(&scope.device, &remap_to_zero);
+            ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
+            ff_dx12_draw_device_pop_palette_remap(&scope.device);
             ff_dx12_draw_device_pop_palette(&scope.device);
             ff_dx12_draw_device_end(&scope.device);
 
@@ -1587,6 +1807,7 @@ namespace ff::test::dx12
 
             size_t remapped = 0;
             size_t un_remapped = 0;
+            size_t remapped_to_zero = 0;
 
             for (size_t i = 0; i < size * size; i++)
             {
@@ -1599,6 +1820,10 @@ namespace ff::test::dx12
                 else if (rgb == 0x0000FF00u)
                 {
                     un_remapped++;
+                }
+                else if (rgb == 0x00FF00FFu)
+                {
+                    remapped_to_zero++;
                 }
             }
 
@@ -1614,6 +1839,7 @@ namespace ff::test::dx12
             Assert::IsTrue(device_ok);
             Assert::AreEqual((size_t)0, un_remapped);
             Assert::AreEqual(size * size, remapped);
+            Assert::AreEqual((size_t)0, remapped_to_zero);
         }
 
         TEST_METHOD(palette_sprite_indexes_pack_texture_palette_remap_and_matrix)
@@ -2329,6 +2555,205 @@ namespace ff::test::dx12
             Assert::IsTrue(device_ok);
             Assert::AreEqual((size_t)0, un_remapped);
             Assert::AreEqual(size * size, remapped);
+        }
+
+        static uint32_t render_array_sprite(bool indexed_source, bool indexed_target,
+            size_t mip, size_t slice)
+        {
+            scoped_pixel_scene scene(indexed_target ? DXGI_FORMAT_R8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM);
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(64, 64);
+            params.array_size = 2;
+            params.mip_count = 7;
+            if (indexed_source)
+            {
+                params.format = DXGI_FORMAT_R8_UINT;
+            }
+
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+            const size_t mip_size = (size_t)64 >> mip;
+            uint8_t indexes[64 * 64];
+            uint32_t colors[64 * 64];
+            for (size_t array_index = 0; array_index < 2; array_index++)
+            {
+                for (size_t i = 0; i < mip_size * mip_size; i++)
+                {
+                    indexes[i] = array_index ? 7 : 3;
+                    colors[i] = array_index ? 0xFF000025u : 0xFF00FF00u;
+                }
+
+                Assert::IsTrue(ff_dx12_texture_update(&texture, &scene.commands, array_index, mip, 0, 0,
+                    indexed_source ? (const void*)indexes : (const void*)colors,
+                    mip_size, mip_size, mip_size * (indexed_source ? 1 : sizeof(uint32_t))));
+            }
+
+            ff_dx12_texture_view texture_view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&texture_view, &texture, slice, 1, mip, 1));
+            ff_dx12_palette_data palette_data{};
+            uint32_t palette_colors[FF_PALETTE_SIZE];
+            for (size_t i = 0; i < FF_PALETTE_SIZE; i++)
+            {
+                palette_colors[i] = 0xFF000000u;
+            }
+            palette_colors[3] = 0xFF00FF00u;
+            palette_colors[7] = 0xFF0000FFu;
+            palette_colors[11] = 0xFFFF0000u;
+            if (indexed_source && !indexed_target)
+            {
+                Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &scene.commands, palette_colors, 1));
+            }
+
+            uint8_t remap_bytes[FF_PALETTE_SIZE];
+            for (size_t i = 0; i < FF_PALETTE_SIZE; i++)
+            {
+                remap_bytes[i] = (uint8_t)i;
+            }
+            remap_bytes[7] = 11;
+            ff_span remap_span{};
+            remap_span.data = remap_bytes;
+            remap_span.size = FF_PALETTE_SIZE;
+            const ff_dx12_palette_remap remap = ff_dx12_palette_remap_make(remap_span);
+
+            ff_dx12_sprite sprite{};
+            sprite.view = &texture_view;
+            sprite.world = ff_rect_float_make(0.0f, 0.0f, (float)scene.size, (float)scene.size);
+            sprite.texture_uv = ff_rect_float_make(0.0f, 0.0f, 1.0f, 1.0f);
+            const ff_dx12_sprite_transform transform = ff_dx12_sprite_transform_default();
+            scene.begin(&scene.scope.device);
+            ff_dx12_draw_device_push_palette_remap(&scene.scope.device, &remap);
+            if (indexed_source)
+            {
+                if (!indexed_target)
+                {
+                    ff_dx12_draw_device_push_palette(&scene.scope.device, ff_dx12_palette_make(&palette_data, 0));
+                }
+                ff_dx12_draw_device_draw_palette_sprite(&scene.scope.device, &sprite, &transform);
+                if (!indexed_target)
+                {
+                    ff_dx12_draw_device_pop_palette(&scene.scope.device);
+                }
+            }
+            else
+            {
+                ff_dx12_draw_device_draw_sprite(&scene.scope.device, &sprite, &transform);
+            }
+            ff_dx12_draw_device_pop_palette_remap(&scene.scope.device);
+            ff_dx12_draw_device_end(&scene.scope.device);
+            const uint32_t pixel = scene.center_pixel();
+
+            ff_dx12_palette_data_destroy(&palette_data);
+            ff_dx12_texture_view_destroy(&texture_view);
+            ff_dx12_texture_destroy(&texture);
+            return pixel;
+        }
+
+        TEST_METHOD(array_sprite_views_sample_the_selected_slice_on_both_targets)
+        {
+            Assert::AreEqual<uint32_t>(0xFF00FF00u, render_array_sprite(false, false, 0, 0));
+            Assert::AreEqual<uint32_t>(0xFF000025u, render_array_sprite(false, false, 0, 1));
+            Assert::AreEqual<uint32_t>(37u, render_array_sprite(false, true, 0, 1));
+            Assert::AreEqual<uint32_t>(0xFF00FF00u, render_array_sprite(true, false, 0, 0));
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, render_array_sprite(true, false, 0, 1));
+            Assert::AreEqual<uint32_t>(11u, render_array_sprite(true, true, 0, 1));
+        }
+
+        TEST_METHOD(palette_sprite_view_mips_use_view_relative_dimensions)
+        {
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, render_array_sprite(true, false, 2, 1));
+            Assert::AreEqual<uint32_t>(11u, render_array_sprite(true, true, 2, 1));
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, render_array_sprite(true, false, 6, 1));
+            Assert::AreEqual<uint32_t>(11u, render_array_sprite(true, true, 6, 1));
+        }
+
+        static uint32_t render_overlapping_geometry(bool with_depth, bool circle_first, bool translucent,
+            bool force_opaque = false)
+        {
+            scoped_pixel_scene scene;
+            ff_dx12_depth depth{};
+            if (with_depth)
+            {
+                Assert::IsTrue(ff_dx12_depth_init(&depth, scene.size, scene.size, 1));
+            }
+
+            scene.begin(&scene.scope.device, with_depth ? &depth : nullptr);
+            if (force_opaque)
+            {
+                ff_dx12_draw_device_push_opaque(&scene.scope.device);
+            }
+            auto rectangle = [&]()
+            {
+                ff_dx12_draw_device_draw_rectangle(&scene.scope.device,
+                    ff_rect_float_make(0.0f, 0.0f, (float)scene.size, (float)scene.size),
+                    ff_color_red(), 0.0f);
+            };
+            auto circle = [&]()
+            {
+                ff_dx12_draw_device_draw_circle(&scene.scope.device,
+                    endpoint(16.0f, 16.0f,
+                        ff_color_rgba(0.0f, 0.0f, 1.0f, translucent ? 0.5f : 1.0f), 12.0f),
+                    0.0f, ff_color_rgba(0.0f, 0.0f, 1.0f, translucent ? 0.5f : 1.0f));
+            };
+            if (circle_first)
+            {
+                circle();
+                rectangle();
+            }
+            else
+            {
+                rectangle();
+                circle();
+            }
+            if (force_opaque)
+            {
+                ff_dx12_draw_device_pop_opaque(&scene.scope.device);
+            }
+            ff_dx12_draw_device_end(&scene.scope.device);
+            const uint32_t pixel = scene.center_pixel();
+            ff_dx12_depth_destroy(&depth);
+            return pixel;
+        }
+
+        TEST_METHOD(depthless_opaque_buckets_preserve_caller_order)
+        {
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, render_overlapping_geometry(false, false, false));
+            Assert::AreEqual<uint32_t>(0xFF0000FFu, render_overlapping_geometry(false, true, false));
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, render_overlapping_geometry(true, false, false));
+            Assert::AreEqual<uint32_t>(0xFF0000FFu, render_overlapping_geometry(true, true, false));
+        }
+
+        TEST_METHOD(depthless_mixed_alpha_buckets_preserve_caller_order)
+        {
+            const uint32_t blended = render_overlapping_geometry(false, false, true);
+            Assert::IsTrue((blended & 0xFFu) > 100 && (blended & 0xFFu) < 150);
+            Assert::IsTrue(((blended >> 16) & 0xFFu) > 100 && ((blended >> 16) & 0xFFu) < 150);
+            Assert::AreEqual<uint32_t>(0xFF0000FFu, render_overlapping_geometry(false, true, true));
+            Assert::AreEqual<uint32_t>(0xFF0000FFu,
+                render_overlapping_geometry(false, true, true, true));
+        }
+
+        TEST_METHOD(failed_draw_state_bind_drops_the_batch_and_recovers)
+        {
+            scoped_pixel_scene scene;
+            scene.begin(&scene.scope.device);
+            const ff_rect_float full = ff_rect_float_make(0.0f, 0.0f, (float)scene.size, (float)scene.size);
+            ff_dx12_draw_device_draw_rectangle(&scene.scope.device, full, ff_color_red(), 0.0f);
+
+            ID3D12RootSignature* signature = scene.scope.state.root_signature;
+            scene.scope.state.root_signature = nullptr;
+            ff_dx12_draw_device_flush(&scene.scope.device);
+            scene.scope.state.root_signature = signature;
+
+            Assert::AreEqual<size_t>(0, bucket_count(scene.scope.device, ff_dx12_instance_bucket_rectangles_filled));
+            Assert::AreEqual<size_t>(0, scene.scope.device.transparent_count);
+            Assert::AreEqual<size_t>(0, scene.scope.device.matrix_count);
+
+            ff_dx12_draw_device_draw_rectangle(&scene.scope.device,
+                ff_rect_float_make((float)(scene.size / 2), 0.0f, (float)scene.size, (float)scene.size),
+                ff_color_rgba(0.0f, 0.0f, 1.0f, 1.0f), 0.0f);
+            ff_dx12_draw_device_end(&scene.scope.device);
+            const scoped_pixel_scene::pixel_samples pixels = scene.sample_pixels();
+            Assert::AreEqual<uint32_t>(0xFFFF0000u, pixels.center);
+            Assert::AreEqual<uint32_t>(0xFF000000u, pixels.left);
         }
     };
 }

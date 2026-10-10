@@ -10,12 +10,7 @@
 
 static D3D12_SRV_DIMENSION default_shader_dimension(const D3D12_RESOURCE_DESC* desc)
 {
-    if (desc->DepthOrArraySize > 1)
-    {
-        return desc->SampleDesc.Count > 1 ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-    }
-
-    return desc->SampleDesc.Count > 1 ? D3D12_SRV_DIMENSION_TEXTURE2DMS : D3D12_SRV_DIMENSION_TEXTURE2D;
+    return desc->SampleDesc.Count > 1 ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
 }
 
 static D3D12_RTV_DIMENSION default_target_dimension(const D3D12_RESOURCE_DESC* desc)
@@ -323,13 +318,6 @@ void ff_dx12_resource_create_shader_view(ff_dx12_resource* resource, D3D12_CPU_D
                 : desc->DepthOrArraySize - (UINT)array_start;
             view_desc.Texture2DArray.MostDetailedMip = (UINT)mip_start;
             view_desc.Texture2DArray.MipLevels = mip_count
-                ? (UINT)mip_count
-                : desc->MipLevels - (UINT)mip_start;
-            break;
-
-        case D3D12_SRV_DIMENSION_TEXTURE2D:
-            view_desc.Texture2D.MostDetailedMip = (UINT)mip_start;
-            view_desc.Texture2D.MipLevels = mip_count
                 ? (UINT)mip_count
                 : desc->MipLevels - (UINT)mip_start;
             break;

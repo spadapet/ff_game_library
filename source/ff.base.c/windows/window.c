@@ -503,8 +503,8 @@ bool ff_window_main_is_full_screen(void)
 void ff_window_main_set_full_screen(bool value)
 {
     HWND hwnd = main_hwnd();
-    FF_CHECK_RET(hwnd && ff_window_main_is_full_screen() != value);
-    PostMessage(hwnd, FF_WM_FULL_SCREEN, (WPARAM)value, 0);
+    FF_CHECK_RET(hwnd);
+    FF_VERIFY(PostMessage(hwnd, FF_WM_FULL_SCREEN, (WPARAM)value, 0));
 }
 
 int ff_window_handle_messages(void)

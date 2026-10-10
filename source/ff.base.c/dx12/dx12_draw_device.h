@@ -171,12 +171,11 @@ typedef struct ff_dx12_sprite_transform
 
 ff_dx12_sprite_transform ff_dx12_sprite_transform_default(void);
 
-// One transparent instance, recorded in the order the caller issued it. Transparent geometry can't
-// be drawn in bucket order like opaque geometry can, because overlapping translucent pixels only
-// composite correctly back to front.
+// One ordered instance, recorded in the order the caller issued it. Transparent geometry and all
+// depthless geometry cannot be drawn in bucket order because overlapping pixels need painter order.
 //
 // No sort is needed: ff_dx12_draw_device_nudge_depth hands out strictly non-decreasing depths, so
-// issue order is already depth order. The flush only has to coalesce runs.
+// issue order is already depth order. The flush only has to coalesce non-overlapping runs.
 typedef struct ff_dx12_transparent_entry
 {
     ff_dx12_instance_bucket_type bucket_type;
@@ -299,9 +298,9 @@ bool ff_dx12_draw_device_valid(const ff_dx12_draw_device* device);
 // Enters the drawing state. Fails without entering it if the view and world rects don't produce a
 // usable projection, so a failed begin leaves the device safely reusable.
 //
-// target and target_view are the render target to draw into. They are bound here rather than left
-// to the caller because a draw with no bound target, viewport, or scissor is silently clipped away
-// rather than reported as an error.
+// target and target_view are the single-sample render target to draw into. They are bound here rather
+// than left to the caller because a draw with no bound target, viewport, or scissor is silently
+// clipped away rather than reported as an error.
 bool ff_dx12_draw_device_begin(ff_dx12_draw_device* device, ff_dx12_commands* commands,
     ff_dx12_resource* target, D3D12_CPU_DESCRIPTOR_HANDLE target_view,
     ff_dx12_target_size target_size, DXGI_FORMAT target_format, ff_dx12_depth* depth,
@@ -378,18 +377,18 @@ void ff_dx12_draw_device_draw_rectangle(ff_dx12_draw_device* device,
 void ff_dx12_draw_device_draw_circle(ff_dx12_draw_device* device,
     ff_dx12_draw_endpoint pos, float thickness, ff_color outside_color);
 
-// One textured sprite. The sprite's world rect is scaled by the transform's scale, then rotated
-// about the transform's position, all in the vertex shader. The transform color multiplies the
-// sampled texel, so ff_color_white draws the texture unmodified.
+// One single-sample textured sprite. The sprite's world rect is scaled by the transform's scale,
+// then rotated about the transform's position, all in the vertex shader. The transform color
+// multiplies the sampled texel, so ff_color_white draws the texture unmodified.
 //
 // The texture is interned into a per-flush table; a full table forces a flush, so any number of
 // distinct textures can be drawn between one begin and end.
 void ff_dx12_draw_device_draw_sprite(ff_dx12_draw_device* device,
     const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform);
 
-// Draws a sprite whose texture holds palette indexes rather than colors. The active palette and
-// palette remap come from the stacks below, so the same sprite can be recolored without touching
-// its texture.
+// Draws a single-sample sprite whose texture holds palette indexes rather than colors. The active
+// palette and palette remap come from the stacks below, so the same sprite can be recolored without
+// touching its texture.
 void ff_dx12_draw_device_draw_palette_sprite(ff_dx12_draw_device* device,
     const ff_dx12_sprite* sprite, const ff_dx12_sprite_transform* transform);
 

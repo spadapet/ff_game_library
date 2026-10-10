@@ -28,8 +28,8 @@ cbuffer pixel_shader_constants_0 : register(b2)
     float4 texture_palette_sizes_[32];
 };
 
-Texture2D textures_[32] : register(t0);
-Texture2D<uint> palette_textures_[32] : register(t32);
-Texture2D palette_ : register(t64);
-Texture2D<uint> palette_remap_ : register(t65);
+Texture2DArray textures_[32] : register(t0);
+Texture2DArray<uint> palette_textures_[32] : register(t32);
+Texture2DArray palette_ : register(t64);
+Texture2DArray<uint> palette_remap_ : register(t65);
 SamplerState samplers_[2] : register(s0);

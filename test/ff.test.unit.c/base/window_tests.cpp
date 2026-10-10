@@ -573,6 +573,89 @@ namespace ff::test::base
             pump_window_messages();
         }
 
+        TEST_METHOD(queued_alternating_full_screen_requests_from_windowed_apply_latest)
+        {
+            static ff_window window;
+            Assert::IsTrue(ff_window_main_init(&window, FF_SVL("queued windowed full screen")));
+            Assert::IsFalse(ff_window_main_is_full_screen());
+
+            ff_window_main_set_full_screen(true);
+            ff_window_main_set_full_screen(false);
+            ff_window_main_set_full_screen(true);
+            ff_window_main_set_full_screen(false);
+            Assert::IsFalse(ff_window_main_is_full_screen());
+            pump_window_messages();
+            Assert::IsFalse(ff_window_main_is_full_screen());
+
+            ff_window_main_set_full_screen(true);
+            ff_window_main_set_full_screen(false);
+            ff_window_main_set_full_screen(true);
+            Assert::IsFalse(ff_window_main_is_full_screen());
+            pump_window_messages();
+            Assert::IsTrue(ff_window_main_is_full_screen());
+
+            ::DestroyWindow(window.hwnd);
+            pump_window_messages();
+        }
+
+        TEST_METHOD(queued_alternating_full_screen_requests_from_full_screen_apply_latest)
+        {
+            static ff_window window;
+            Assert::IsTrue(ff_window_main_init(&window, FF_SVL("queued full screen")));
+            ff_window_main_set_full_screen(true);
+            pump_window_messages();
+            Assert::IsTrue(ff_window_main_is_full_screen());
+
+            ff_window_main_set_full_screen(false);
+            ff_window_main_set_full_screen(true);
+            ff_window_main_set_full_screen(false);
+            ff_window_main_set_full_screen(true);
+            Assert::IsTrue(ff_window_main_is_full_screen());
+            pump_window_messages();
+            Assert::IsTrue(ff_window_main_is_full_screen());
+
+            ff_window_main_set_full_screen(false);
+            ff_window_main_set_full_screen(true);
+            ff_window_main_set_full_screen(false);
+            Assert::IsTrue(ff_window_main_is_full_screen());
+            pump_window_messages();
+            Assert::IsFalse(ff_window_main_is_full_screen());
+
+            ::DestroyWindow(window.hwnd);
+            pump_window_messages();
+        }
+
+        TEST_METHOD(queued_full_screen_request_is_reset_across_main_windows)
+        {
+            scoped_workspace_offsets offsets;
+            static ff_window first;
+            static ff_window second;
+            static ff_window third;
+            Assert::IsTrue(ff_window_main_init(&first, FF_SVL("pending windowed request")));
+            Assert::IsFalse(ff_window_main_is_full_screen());
+            ff_window_main_set_full_screen(true);
+            ::DestroyWindow(first.hwnd);
+            pump_window_messages();
+
+            Assert::IsTrue(ff_window_main_init(&second, FF_SVL("pending full screen request")));
+            Assert::IsFalse(ff_window_main_is_full_screen());
+            position_hidden_window(second);
+            ff_window_main_set_full_screen(true);
+            pump_window_messages();
+            Assert::IsTrue(ff_window_main_is_full_screen());
+            ff_window_main_set_full_screen(false);
+            ::DestroyWindow(second.hwnd);
+            pump_window_messages();
+
+            Assert::IsTrue(ff_window_main_init(&third, FF_SVL("restored full screen request")));
+            Assert::IsTrue(ff_window_main_is_full_screen());
+            ff_window_main_set_full_screen(false);
+            pump_window_messages();
+            Assert::IsFalse(ff_window_main_is_full_screen());
+            ::DestroyWindow(third.hwnd);
+            pump_window_messages();
+        }
+
         TEST_METHOD(f11_toggles_full_screen)
         {
             static ff_window window;
