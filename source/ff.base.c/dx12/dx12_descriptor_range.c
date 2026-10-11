@@ -22,12 +22,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE ff_dx12_descriptor_range_gpu_handle(const ff_dx12_de
     return ff_dx12_descriptor_buffer_gpu_handle(range->owner, range->start + index);
 }
 
-size_t ff_dx12_descriptor_range_heap_index(const ff_dx12_descriptor_range* range, size_t index)
-{
-    FF_ASSERT_RET_VAL(ff_dx12_descriptor_range_valid(range) && index < range->count, SIZE_MAX);
-    return range->owner->descriptor_start + range->start + index;
-}
-
 void ff_dx12_descriptor_range_free(ff_dx12_descriptor_range* range)
 {
     FF_CHECK_RET(ff_dx12_descriptor_range_valid(range));

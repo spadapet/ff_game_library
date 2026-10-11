@@ -71,7 +71,7 @@ the `dx12/` folder alone and missed things that live in `dxgi/`, `types/`, and
 - Device reset: `dx12_device_child` registry + `dx12_reset`. (complete)
 - Milestone 6: texture views, math types, shader delivery, and the draw
   device's state layer (root signatures, PSOs, constants).
-- Milestone 7: the batching renderer on top of milestone 6, then bindless.
+- Milestone 7: the batching renderer on top of milestone 6, using descriptor tables.
 
 Twelve review passes have been run against the completed milestones; each is
 recorded below. Full suite: 894 passing, zero skipped. See "Current state and
@@ -570,24 +570,11 @@ it through a real execute: 200 resolved barriers in one close, 16 divergent
 subresources spilling past inline storage across two command lists, and a
 whole-resource barrier splitting against a divergent previous state.
 
-## Bindless groundwork
+## Descriptor tables
 
-The eventual bindless renderer (for better AMD performance) needs
-`ResourceDescriptorHeap[]` indexing, which changes how descriptors are
-addressed but not how they are allocated. Two pieces landed early so the
-milestone 3 API doesn't have to change later:
-
-- `ff_dx12_descriptor_range_heap_index` returns a descriptor's index within
-  its whole heap, which is exactly the value a bindless shader indexes with.
-- `ff_dx12_supports_bindless` reports resource binding tier 3 plus shader
-  model 6.6, so the renderer can choose bindless or classic descriptor
-  tables at init.
-
-The GPU allocator's pinned free-list region is already the right shape for
-a persistent bindless table; going bindless mainly means sizing it much
-larger (order 1M CBV_SRV_UAV descriptors) and having views write into it
-once instead of per-frame. Classic and bindless paths can share the same
-allocator, so the classic renderer can proceed with normal descriptor tables.
+The renderer uses descriptor tables. Ring allocations hold per-flush texture
+descriptors, and pinned allocations hold long-lived samplers. Bindless rendering
+is outside the engine's scope; no capability probe or shader heap-index API is needed.
 
 ## Milestone 4 (complete)
 
@@ -3522,67 +3509,15 @@ behavior is ideal; real scenes with many distinct textures will flush the textur
 and land lower. And this is one GPU - the CPU-side figures should carry over, the fill-rate figure
 should not.
 
-## Would bindless push more sprites?
+## Descriptor-table performance
 
-Short answer: not for the limit measured above, but yes for a limit not yet hit.
+The measured 60k-sprite ceiling is fill-rate limited on the AMD Radeon 860M.
+CPU usage stayed at 0.097-0.16 cores, and shrinking sprites 16x raised the
+ceiling to 400k without renderer changes.
 
-### What bindless changes
+`FF_DX12_MAX_TEXTURES` limits a batch to 32 distinct RGBA textures, not an entire
+frame. Additional textures trigger a flush and continue drawing. The benchmark
+uses one atlas and does not measure that texture-variety cost.
 
-Bindless replaces descriptor tables with `ResourceDescriptorHeap[]` indexing in the shader. The
-groundwork is already in (`ff_dx12_descriptor_range_heap_index`, `ff_dx12_supports_bindless`), so
-adopting it is a real option rather than a rewrite.
-
-What it removes is **CPU-side binding cost**: copying descriptors into a per-flush table, and the
-flush itself when a table fills. What it does not touch is the work of shading a pixel.
-
-### Why it will not raise the 60k figure
-
-The 60k ceiling measured above is fill rate. CPU sat at 0.097-0.16 cores through that entire sweep,
-and the decisive evidence is that shrinking sprites 16x raised the ceiling to 400k with no code
-change at all. The GPU is spending its time writing pixels, and bindless does not make a pixel
-cheaper to write.
-
-Spending CPU time to buy more CPU headroom does not help when 84% of a core is already idle. The
-one number bindless would improve - draw submission - is not in the critical path here.
-
-This is worth being blunt about because the plan's own note at "Bindless groundwork" says bindless
-is "for better AMD performance", which is a reasonable general belief but does not survive contact
-with these particular measurements.
-
-### The hardware detail that matters
-
-This machine is an **AMD Radeon 860M**, an integrated GPU sharing system memory. That is exactly
-the profile where fill rate binds early: no dedicated VRAM bandwidth, and a 1080p frame at 60k
-sprites of 32x32 is ~61 Mpixel/frame of mostly-overdraw blending. A discrete card would move the
-fill ceiling up substantially and the CPU ceiling hardly at all - which would make bindless
-*relatively* more interesting on a discrete card, but only after the fill limit stopped being the
-binding one.
-
-### Where bindless would genuinely win
-
-There is a real limit it addresses, and the perf test cannot see it: `FF_DX12_MAX_TEXTURES` is 32.
-When a batch needs a 33rd distinct texture, `texture_index_no_flush` returns invalid and the device
-flushes mid-batch - ending the instanced draw, rebinding, and starting over.
-
-The stress test draws every sprite from one 64x64 atlas, so it never flushes once. A real scene
-with hundreds of distinct textures would flush constantly, and *that* cost scales with texture
-variety rather than pixel count. Bindless removes the cap entirely: with a persistent heap, a
-sprite's texture is an index in its instance data and no table ever fills.
-
-So the honest framing is that bindless is not a throughput optimization for this renderer, it is a
-**scene-complexity optimization**. It converts "60k sprites sharing <=32 textures" into "60k sprites
-sharing any number of textures", which is a different and more useful kind of headroom.
-
-### Recommendation
-
-Not yet, and not for speed. Two reasons to wait:
-
-1. The fill limit binds first on this hardware, so bindless would measure as no change.
-2. There is no benchmark today that can show a win, because nothing exceeds 32 textures. Building
-   bindless before the test that proves it works means guessing.
-
-The right order is: get the sprite resource pipeline in (M8), which is what makes many distinct
-textures possible at all; extend `sprite_perf` with a texture-variety axis that can force table
-flushes; confirm the flush cost is real and measurable; then implement bindless against that
-benchmark. That also follows the rule that has caught the real bugs in this port - measure the old
-behavior, then prove the new code changes the number.
+Keep descriptor-table rendering as the supported path. Future performance work
+should measure texture-table flushes with varied resources before changing batching.

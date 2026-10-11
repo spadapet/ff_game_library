@@ -67,27 +67,35 @@ namespace ff::test::dx12
             Assert::IsNull(allocator.buckets);
         }
 
-        TEST_METHOD(heap_index_is_relative_to_the_whole_heap)
+        TEST_METHOD(pinned_and_ring_handles_use_distinct_heap_regions)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            // The heap-relative index is what a bindless shader passes to ResourceDescriptorHeap[].
             ff_dx12_gpu_descriptor_allocator allocator{};
             Assert::IsTrue(ff_dx12_gpu_descriptor_allocator_init(&allocator, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16, 16));
 
             ff_dx12_descriptor_range pinned = ff_dx12_gpu_descriptor_allocator_alloc_pinned(&allocator, 4);
             Assert::IsTrue(ff_dx12_descriptor_range_valid(&pinned));
-            Assert::AreEqual((size_t)0, ff_dx12_descriptor_range_heap_index(&pinned, 0));
-            Assert::AreEqual((size_t)3, ff_dx12_descriptor_range_heap_index(&pinned, 3));
+            const D3D12_CPU_DESCRIPTOR_HANDLE pinned_cpu = ff_dx12_descriptor_range_cpu_handle(&pinned, 0);
+            const D3D12_GPU_DESCRIPTOR_HANDLE pinned_gpu = ff_dx12_descriptor_range_gpu_handle(&pinned, 0);
+            const size_t descriptor_size = pinned.owner->descriptor_size;
+            Assert::IsTrue(pinned_cpu.ptr != 0);
+            Assert::IsTrue(pinned_gpu.ptr != 0);
+            Assert::IsTrue(ff_dx12_descriptor_range_cpu_handle(&pinned, 3).ptr ==
+                pinned_cpu.ptr + 3 * descriptor_size);
+            Assert::IsTrue(ff_dx12_descriptor_range_gpu_handle(&pinned, 3).ptr ==
+                pinned_gpu.ptr + 3 * descriptor_size);
 
             ff_dx12_fence fence{};
-            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("heap index fence"), 0));
+            Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("descriptor region fence"), 0));
 
             ff_dx12_descriptor_range ring = ff_dx12_gpu_descriptor_allocator_alloc(&allocator, 2, ff_dx12_fence_signal_later(&fence));
             Assert::IsTrue(ff_dx12_descriptor_range_valid(&ring));
 
-            // The ring lives after the pinned region, so its indices are offset past it.
-            Assert::AreEqual((size_t)16, ff_dx12_descriptor_range_heap_index(&ring, 0));
+            Assert::IsTrue(ff_dx12_descriptor_range_cpu_handle(&ring, 0).ptr ==
+                pinned_cpu.ptr + 16 * descriptor_size);
+            Assert::IsTrue(ff_dx12_descriptor_range_gpu_handle(&ring, 0).ptr ==
+                pinned_gpu.ptr + 16 * descriptor_size);
 
             ff_dx12_descriptor_range_free(&ring);
             ff_dx12_descriptor_range_free(&pinned);

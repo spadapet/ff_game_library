@@ -15,7 +15,6 @@
     <ClCompile Include="base\hash.c" />
     <ClCompile Include="base\log.c" />
     <ClCompile Include="base\math.c" />
-    <ClCompile Include="dx12\dx12_agility.c" />
     <ClCompile Include="dx12\dx12_color.c" />
     <ClCompile Include="dx12\dx12_format.c" />
     <ClCompile Include="dx12\dx12_gpu_event.c" />
@@ -80,7 +79,6 @@
     <ClInclude Include="base\math.h" />
     <ClInclude Include="base\point.h" />
     <ClInclude Include="base\rect.h" />
-    <ClInclude Include="dx12\dx12_agility.h" />
     <ClInclude Include="dx12\dx12_color.h" />
     <ClInclude Include="dx12\dx12_format.h" />
     <ClInclude Include="dx12\dx12_gpu_event.h" />
