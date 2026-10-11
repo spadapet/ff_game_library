@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     static D3D12_RESOURCE_DESC tracker_texture_desc(UINT16 array_size = 1, UINT16 mip_levels = 1)
@@ -415,7 +420,7 @@ namespace ff::test::dx12
             }
 
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // 4 array slices x 4 mips is past the 8 entry inline state storage, so the state
@@ -464,7 +469,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // A whole-resource transition resolved against a divergent previous state has to be
@@ -505,7 +510,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(all_subresources_barrier_splits_against_divergent_global_fallback)
@@ -546,7 +551,7 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_destroy(&a);
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(forgotten_all_subresources_barrier_splits_against_divergent_fallback)
@@ -590,7 +595,7 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_destroy(&b);
             ff_dx12_resource_tracker_destroy(&a);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(forget_keeps_the_remaining_resources_findable)
@@ -918,7 +923,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // COPY_DEST is a write state, so a texture promoted into it does NOT decay. This is the
@@ -945,7 +950,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // Buffers decay from any state, including write states, unlike non-simultaneous-access
@@ -982,7 +987,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // A texture can be promoted from COMMON to several read states at once, but only to a
@@ -1010,7 +1015,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // A resource left in a write state by one command list, then read by the next, is the
@@ -1044,7 +1049,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // After decay the state is COMMON again, so the next command list promotes into it for
@@ -1085,7 +1090,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
 
             Assert::AreEqual((int)D3D12_RESOURCE_STATE_COMMON, (int)after_decay.state);
             Assert::AreEqual((int)ff_dx12_resource_state_type_global, (int)after_decay.type,

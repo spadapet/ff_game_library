@@ -204,7 +204,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Priority:** P2. **Status:** Fixed. **Evidence:** Regression-tested in Debug and Release. **Origin:** Port-specific arena-lifetime issue.
 
-**Location:** `dx12\dx12_globals.c`, `ff_dx12_keep_alive_resource`; `dx12\dx12_fence_values.c`, reusable fence-set copying.
+**Location:** `dx12\dx12_globals.c`, `internal_ff_dx12_keep_alive_resource`; `dx12\dx12_fence_values.c`, reusable fence-set copying.
 
 **Cause:** Every call built a fresh temporary fence set against `s_keep_alive_arena`. More than eight incomplete, distinct fences required spill storage. Assigning the temporary into a recycled node overwrote the node's previous spill pointer/capacity. `ff_dx12_fence_values_clear` could preserve that backing storage, but the subsequent whole-struct assignment defeated reuse.
 

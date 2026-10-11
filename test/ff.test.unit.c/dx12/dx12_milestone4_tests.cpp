@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     struct scoped_texture_assert_counter
@@ -123,14 +128,14 @@ namespace ff::test::dx12
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            Assert::AreEqual((size_t)1, ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 0));
-            Assert::AreEqual((size_t)1, ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 1));
+            Assert::AreEqual((size_t)1, internal_ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+            Assert::AreEqual((size_t)1, internal_ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 1));
 
             // 4x MSAA is required of every D3D12 device for this format.
-            Assert::AreEqual((size_t)4, ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 4));
+            Assert::AreEqual((size_t)4, internal_ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 4));
 
             // An unsupported count falls back to something the device does support.
-            const size_t huge = ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 64);
+            const size_t huge = internal_ff_dx12_fix_sample_count(DXGI_FORMAT_R8G8B8A8_UNORM, 64);
             Assert::IsTrue(huge >= 1 && huge <= 64);
         }
 

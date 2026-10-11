@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     TEST_CLASS(dx12_queue_tests)
@@ -240,7 +245,7 @@ namespace ff::test::dx12
             ff_dx12_resource_destroy(&dest);
             ff_dx12_resource_destroy(&source);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
     };
 

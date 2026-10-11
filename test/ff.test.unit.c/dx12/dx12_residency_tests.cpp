@@ -2,6 +2,11 @@
 #include <chrono>
 #include <thread>
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     TEST_CLASS(dx12_residency_tests)
@@ -140,7 +145,7 @@ namespace ff::test::dx12
             ff_dx12_residency_data new_data{};
             ff_dx12_residency_data_init(&new_data, &this->arena, FF_SVL("needs room"), (ID3D12Pageable*)new_heap, desc.SizeInBytes, false);
 
-            ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
+            internal_ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
@@ -149,7 +154,7 @@ namespace ff::test::dx12
             const bool made_resident = ff_dx12_make_resident(set, 1, ff_dx12_fence_signal(&commands_fence, nullptr), &wait_values);
 
             ff_dx12_fence_values_wait(&wait_values, nullptr);
-            ff_dx12_update_video_memory_info();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             const bool new_resident = new_data.resident;
             const bool old_resident = old_data.resident;
@@ -208,7 +213,7 @@ namespace ff::test::dx12
             ff_dx12_residency_data new_data{};
             ff_dx12_residency_data_init(&new_data, &this->arena, FF_SVL("needs room"), (ID3D12Pageable*)new_heap, desc.SizeInBytes, false);
 
-            ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
+            internal_ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
@@ -232,7 +237,7 @@ namespace ff::test::dx12
 
             gate->Signal(gate_closed);
             ff_dx12_fence_values_wait(&wait_values, nullptr);
-            ff_dx12_update_video_memory_info();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             const bool new_resident = new_data.resident;
 
@@ -280,7 +285,7 @@ namespace ff::test::dx12
             ff_dx12_residency_data new_data{};
             ff_dx12_residency_data_init(&new_data, &this->arena, FF_SVL("needs room"), (ID3D12Pageable*)new_heap, desc.SizeInBytes, false);
 
-            ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
+            internal_ff_dx12_simulate_video_memory_budget(desc.SizeInBytes, desc.SizeInBytes);
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
@@ -294,7 +299,7 @@ namespace ff::test::dx12
 
             ff_dx12_fence_signal_value(&resident_fence, pending.value, nullptr);
             ff_dx12_fence_values_wait(&wait_values, nullptr);
-            ff_dx12_update_video_memory_info();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             const bool new_resident = new_data.resident;
 

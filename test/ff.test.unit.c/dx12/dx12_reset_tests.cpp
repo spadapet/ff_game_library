@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     static D3D12_RESOURCE_DESC texture_desc()
@@ -82,14 +87,12 @@ namespace ff::test::dx12
 
             ID3D12Resource* before_object = resource.resource;
             const uint64_t before_count = ff_dx12_device_reset_count();
-            const uint64_t before_hash = ff_dx12_adapters_hash();
 
-            ff_dx12_simulate_factory_stale();
-            Assert::IsFalse(ff_dx12_factory_current());
+            internal_ff_dx12_simulate_factory_stale();
+            Assert::IsFalse(internal_ff_dx12_factory_current());
             Assert::IsTrue(ff_dx12_reset_device(false));
 
-            Assert::IsTrue(ff_dx12_factory_current());
-            Assert::AreEqual(before_hash, ff_dx12_adapters_hash());
+            Assert::IsTrue(internal_ff_dx12_factory_current());
 
             Assert::AreEqual(before_count, ff_dx12_device_reset_count());
             Assert::AreEqual((size_t)0, ff_dx12_resource_reset_count(&resource));

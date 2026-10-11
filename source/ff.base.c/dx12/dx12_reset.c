@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "base/assert.h"
+#include "base/hash.h"
 #include "base/log.h"
 #include "dx12/dx12_buffer.h"
 #include "dx12/dx12_descriptor_allocator.h"
@@ -24,6 +25,35 @@
 static uint64_t s_reset_count;
 static bool s_resetting;
 static bool s_reset_failed;
+
+static uint64_t get_adapters_hash(IDXGIFactory6* factory)
+{
+    FF_CHECK_RET_VAL(factory, 0);
+
+    ff_hash_data hash;
+    ff_hash_init(&hash);
+    UINT count = 0;
+
+    for (UINT i = 0; ; i++)
+    {
+        IDXGIAdapter1* adapter = NULL;
+        if (FAILED(IDXGIFactory6_EnumAdapters1(factory, i, &adapter)))
+        {
+            break;
+        }
+
+        DXGI_ADAPTER_DESC1 desc = { 0 };
+        if (SUCCEEDED(IDXGIAdapter1_GetDesc1(adapter, &desc)))
+        {
+            ff_hash(&hash, &desc.AdapterLuid, sizeof(desc.AdapterLuid));
+            count++;
+        }
+
+        IDXGIAdapter1_Release(adapter);
+    }
+
+    return count ? ff_hash_done(&hash) : 0;
+}
 
 static void child_before_reset(ff_dx12_device_child* child)
 {
@@ -153,7 +183,7 @@ static bool child_reset(ff_dx12_device_child* child, ff_dx12_commands* commands)
 // the new adapter hash decides whether the device goes with it.
 static bool reset_needed(bool* out_dxgi_stale)
 {
-    *out_dxgi_stale = !ff_dx12_factory_current();
+    *out_dxgi_stale = !internal_ff_dx12_factory_current();
 
     return s_reset_failed || !ff_dx12_device_valid();
 }
@@ -170,7 +200,7 @@ bool ff_dx12_reset_device(bool force)
 
     if (dxgi_stale)
     {
-        const uint64_t old_hash = ff_dx12_adapters_hash();
+        const uint64_t old_hash = get_adapters_hash(ff_dx12_factory());
 
         internal_ff_dx12_destroy_dxgi();
 
@@ -182,7 +212,7 @@ bool ff_dx12_reset_device(bool force)
 
         // A different set of adapters means the device may be running on hardware that is gone, or
         // that a better adapter appeared, so the device is rebuilt even if it still looks healthy.
-        if (ff_dx12_adapters_hash() != old_hash)
+        if (get_adapters_hash(ff_dx12_factory()) != old_hash)
         {
             ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Adapters changed, forcing device reset"));
             force = true;

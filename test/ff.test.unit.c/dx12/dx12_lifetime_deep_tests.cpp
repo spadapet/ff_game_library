@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     // Deeper edge-case probing of allocator recycling, heap reuse and long-run stability.
@@ -405,7 +410,7 @@ namespace ff::test::dx12
             ff_dx12_queue_execute(ff_dx12_copy_queue(), &copy);
             ff_dx12_queue_execute(ff_dx12_compute_queue(), &compute);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
 
             Assert::IsFalse(ff_dx12_resource_valid(&resource));
         }

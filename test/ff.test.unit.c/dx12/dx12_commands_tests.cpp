@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     TEST_CLASS(dx12_commands_tests)
@@ -80,7 +85,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // Each subresource of an array/mip texture tracks state independently.
@@ -108,7 +113,7 @@ namespace ff::test::dx12
 
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         // Two command lists in one execute: the second list's barriers must be resolved against
@@ -134,7 +139,7 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
 
             ff_dx12_resource_destroy(&resource);
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(copy_resource_between_queues_synchronizes)
@@ -168,7 +173,7 @@ namespace ff::test::dx12
             ff_dx12_resource_destroy(&middle);
             ff_dx12_resource_destroy(&source);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(update_and_readback_buffer_round_trips)
@@ -217,7 +222,7 @@ namespace ff::test::dx12
             ff_dx12_mem_range_free(&upload);
             ff_dx12_resource_destroy(&resource);
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
             ff_dx12_mem_allocator_destroy(&readback_allocator);
             ff_dx12_mem_allocator_destroy(&upload_allocator);
         }
@@ -255,7 +260,7 @@ namespace ff::test::dx12
             }
 
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(recording_the_same_resource_repeatedly_does_not_grow_residency)
@@ -280,7 +285,7 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
 
             ff_dx12_resource_destroy(&resource);
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(residency_gather_generation_is_shared_across_lists_and_queues)
@@ -333,7 +338,7 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
             ff_dx12_resource_destroy(&first_resource);
             ff_dx12_resource_destroy(&second_resource);
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(one_resource_read_by_many_command_lists_does_not_deadlock)
@@ -369,7 +374,7 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
 
             ff_dx12_resource_destroy(&shared);
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(invalid_commands_ignore_recording_calls)

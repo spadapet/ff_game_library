@@ -57,7 +57,7 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
     desc.DepthOrArraySize = (UINT16)array_size;
     desc.MipLevels = (UINT16)mip_count;
     desc.Format = format;
-    desc.SampleDesc.Count = (UINT)ff_dx12_fix_sample_count(format, sample_count);
+    desc.SampleDesc.Count = (UINT)internal_ff_dx12_fix_sample_count(format, sample_count);
     desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc.Flags = (D3D12_RESOURCE_FLAGS)(render_target
         ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET

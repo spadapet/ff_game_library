@@ -258,7 +258,7 @@ legacy copy/paste bug was not inherited).
   so the eviction loop's `delta_resident_size > available_space` condition was
   never true and eviction never ran when it was most needed. Now clamps to 0.
   This bug was inherited from the legacy C++ code.
-- `ff_dx12_update_video_memory_info` never called `ResetEvent` on the
+- `update_video_memory_info` never called `ResetEvent` on the
   budget-change event. It is a manual-reset event, so after the first budget
   change it stayed signaled forever and every later frame re-queried. The
   legacy code reset it; the port had dropped that.
@@ -295,9 +295,9 @@ as built:
   need deferred release: `ID3D12Resource*`, `mem_range`, `residency_data`, plus
   the `ff_dx12_fence_values` guarding them. `ff_dx12_resource` is caller-owned
   POD, so the node cannot take ownership of the struct the way the C++ move did.
-- `ff_dx12_keep_alive_resource` only queues when the fence values are
+- `internal_ff_dx12_keep_alive_resource` only queues when the fence values are
   incomplete; already-idle resources release immediately with no bookkeeping.
-- `ff_dx12_flush_keep_alive` pops from the front and stops at the first
+- `internal_ff_dx12_flush_keep_alive` pops from the front and stops at the first
   incomplete entry, which is O(1) amortized because pushes are roughly in fence
   order.
 - **Must be called from both `ff_dx12_prepare_render` and
@@ -329,7 +329,7 @@ merge was confirmed to have lost no method.
 One real bug surfaced in `globals`:
 
 - `init_d3d` created the video-memory budget-change event *before* calling
-  `ff_dx12_update_video_memory_info`. That event is manual-reset and starts
+  `update_video_memory_info`. That event is manual-reset and starts
   unsignaled, so the update took the "no change yet" early-out and skipped the
   query entirely. `s_video_memory_info` stayed all zeros until the first budget
   change notification happened to fire. With `Budget == 0`, `available_space`
@@ -596,7 +596,7 @@ never been ported:
 - `destroy_allocators()` sits in `destroy_d3d` after the keep-alive drain and
   before `ff_dx12_residency_destroy`. That ordering is load-bearing: heaps back
   deferred releases, and every heap registers residency data.
-- `ff_dx12_fix_sample_count`. The legacy halving loop never updates
+- `internal_ff_dx12_fix_sample_count`. The legacy halving loop never updates
   `levels.SampleCount`, so it re-tests the same value forever; the C version
   rebuilds the feature-data struct each iteration.
 
@@ -679,7 +679,7 @@ which `ff_dx12_make_resident` then dereferenced at execute time. This crashed
 the test host in two new tests.
 
 Fixed with `ff_dx12_residency_set_remove` /
-`ff_dx12_queue_forget_residency_data` / `ff_dx12_forget_residency_data`, called
+`ff_dx12_queue_forget_residency_data` / `internal_ff_dx12_forget_residency_data`, called
 from `ff_dx12_residency_data_destroy`. Removal reinserts the rest of the probe
 run, since clearing a slot in an open-addressed table breaks the chain behind
 it. This required a `caches_in_use` list on the queue: caches handed out to a
@@ -819,7 +819,7 @@ milestone.
 `IDXGISwapChain::ResizeBuffers` fails unless every reference to the back buffers
 has been released. But `ff_dx12_resource_destroy` does not release the
 `ID3D12Resource`; it queues the release onto the global keep-alive list, which
-is only drained by `ff_dx12_flush_keep_alive`. So `set_size` must call
+is only drained by `internal_ff_dx12_flush_keep_alive`. So `set_size` must call
 `ff_dx12_wait_for_idle()` (which retires GPU work *and* flushes keep-alive)
 **before** `destroy_back_buffers`. Without that drain the debug layer reports a
 live-reference error, which with `SetBreakOnSeverity(ERROR)` kills the test host
@@ -1000,7 +1000,7 @@ pass handles it — just with a cost that will be reclaimed when this is done.
   teardown walks it in reverse (target_window first, so it drops its back
   buffers before the resource pass sees them) and rebuild walks it forward.
 - **Reset only when needed.** Mirrors the legacy `reset_device`. A stale DXGI
-  factory (`!ff_dx12_factory_current()`) only rebuilds DXGI; the device is reset
+  factory (`!internal_ff_dx12_factory_current()`) only rebuilds DXGI; the device is reset
   on top of that only when the adapter hash actually changed, when the device is
   invalid, or when the caller passes `force`. A healthy device is left alone.
 - **Allocators survive a reset.** `ff_dx12_mem_range.owner` and
@@ -1139,7 +1139,7 @@ changed; a stale factory on its own rebuilds DXGI and nothing else. `IsCurrent()
 goes false for benign reasons such as display topology and mode changes, so this
 was throwing away the whole device routinely. `reset_needed` now reports only
 `!ff_dx12_device_valid()` and `dxgi_stale` is a pure out-param.
-`ff_dx12_simulate_factory_stale` was added as a test hook, mirroring the
+`internal_ff_dx12_simulate_factory_stale` was added as a test hook, mirroring the
 existing `s_simulate_device_invalid` precedent, and is cleared whenever the
 factory is recreated.
 
@@ -1401,9 +1401,9 @@ This narrows the window rather than closing it: a genuinely full budget still
 blocks in the fallback pass, which is the right trade against failing the frame.
 
 Testing needed a seam, since the real budget is far too large to ever evict.
-`ff_dx12_simulate_video_memory_budget` forces the reported budget, following the
-existing `ff_dx12_simulate_factory_stale` hook, and is cleared by
-`ff_dx12_update_video_memory_info`.
+`internal_ff_dx12_simulate_video_memory_budget` forces the reported budget for
+residency tests and schedules a refresh through `ff_dx12_prepare_render`.
+The budget-refresh helper is private to `dx12_globals.c`.
 
 Two tests, both fault-injected by deleting the second pass. That injection makes
 `over_budget_still_evicts_when_work_is_in_flight` fail while
@@ -1897,8 +1897,8 @@ What has to be added before the loop can actually move:
    wait the game thread performs inside a frame must not pump the dispatcher.
    `ff_dx12_prepare_render` applies deferred work before command acquisition,
    so this is really just a rule about where preparation is called from.
-3. **`ff_dx12_set_owner_thread` on the game thread.** One call as the thread
-   starts, after which the existing asserts enforce the new owner.
+3. **Initialize DX12 on the game thread.** That thread owns initialization,
+   rendering, and destruction; ownership is not transferred after initialization.
 
 The one genuine hazard: `ff_dx12_target_window_destroy` and the swap chain must
 be torn down before the `HWND` dies, and `WM_DESTROY` arrives on the *main*
@@ -1916,9 +1916,9 @@ The groundwork for the game thread, built ahead of the draw device because it is
 the piece that is painful to retrofit. All of it is correct and tested
 single-threaded, so nothing here waits on the game thread actually existing.
 
-**Ownership.** `ff_dx12_init` records its calling thread as the owner;
-`ff_dx12_set_owner_thread` hands ownership over (the game thread will call it
-once at startup); `ff_dx12_on_owner_thread` reports it. Before init records an
+**Ownership.** `ff_dx12_init` records its calling thread as the owner.
+Initialization, rendering, and destruction run on that same thread;
+`ff_dx12_on_owner_thread` reports it. Before init records an
 owner, every thread counts as the owner, which keeps the asserts quiet for work
 that legitimately runs before the device exists.
 
@@ -1934,8 +1934,8 @@ thread before command acquisition. A failed deferred flush returns `false` and
 the caller must not start recording. On success, preparation flushes keep-alive
 releases, retires/prunes shared memory allocators, and updates the video-memory
 budget. Repeated preparation with no pending work is safe; there is no matching
-end notification or global frame counter. `ff_dx12_flush_deferred` remains the
-lower-level queue flush, and `ff_dx12_has_deferred` reports pending queue work.
+end notification or global frame counter. `internal_ff_dx12_flush_deferred` is the
+private queue flush, and `internal_ff_dx12_has_deferred` reports pending queue work.
 A single critical section guards the queue and nothing else, so it is never
 held across a D3D call.
 

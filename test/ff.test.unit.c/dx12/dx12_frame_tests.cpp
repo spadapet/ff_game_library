@@ -37,7 +37,7 @@ namespace ff::test::dx12
             for (size_t i = 0; i < 8; i++)
             {
                 Assert::IsTrue(ff_dx12_prepare_render());
-                Assert::IsFalse(ff_dx12_has_deferred());
+                Assert::IsFalse(internal_ff_dx12_has_deferred());
                 Assert::IsTrue(ff_dx12_device_valid());
                 Assert::AreEqual(reset_count, ff_dx12_device_reset_count());
             }
@@ -52,7 +52,7 @@ namespace ff::test::dx12
 
             Assert::IsTrue(ff_dx12_init(nullptr));
             Assert::IsTrue(ff_dx12_prepare_render());
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
             Assert::IsTrue(ff_dx12_device_valid());
         }
 
@@ -123,7 +123,7 @@ namespace ff::test::dx12
             Assert::IsFalse(ff_dx12_resource_valid(&dest));
 
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
         }
 
         TEST_METHOD(prepare_render_drains_keep_alive)
@@ -155,8 +155,8 @@ namespace ff::test::dx12
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            ff_dx12_flush_keep_alive();
-            ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
+            internal_ff_dx12_flush_keep_alive();
             ff_dx12_wait_for_idle();
         }
 

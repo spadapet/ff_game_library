@@ -7,6 +7,7 @@
 #include "dx12/dx12_fence.h"
 #include "dx12/dx12_fence_values.h"
 #include "dx12/dx12_globals.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_residency.h"
 
 
@@ -100,7 +101,7 @@ void ff_dx12_residency_data_destroy(ff_dx12_residency_data* data)
     // This node lives inside the resource that is being destroyed, but command lists that already
     // referenced the resource hold raw pointers to it in their residency sets. Those would be
     // dereferenced at execute time, so scrub them before the storage goes away.
-    ff_dx12_forget_residency_data(data);
+    internal_ff_dx12_forget_residency_data(data);
 
     // Single-threaded v1: the old code took pageable_mutex here.
     list_remove(data);

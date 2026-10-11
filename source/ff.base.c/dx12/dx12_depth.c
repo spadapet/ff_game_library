@@ -19,7 +19,7 @@ static D3D12_RESOURCE_DESC depth_desc(size_t width, size_t height, size_t sample
     desc.DepthOrArraySize = 1;
     desc.MipLevels = 1;
     desc.Format = FF_DX12_DEPTH_FORMAT;
-    desc.SampleDesc.Count = (UINT)ff_dx12_fix_sample_count(FF_DX12_DEPTH_FORMAT, sample_count);
+    desc.SampleDesc.Count = (UINT)internal_ff_dx12_fix_sample_count(FF_DX12_DEPTH_FORMAT, sample_count);
     desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 

@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "base/arena.h"
 #include "base/assert.h"
-#include "base/hash.h"
 #include "base/log.h"
 #include "base/math.h"
 #include "base/string.h"
@@ -51,7 +50,6 @@ static IDXGIFactory6* s_factory;
 static IDXGIAdapter3* s_adapter;static ID3D12Device6* s_device;
 static DXGI_GPU_PREFERENCE s_gpu_preference;
 static D3D_FEATURE_LEVEL s_feature_level;
-static uint64_t s_adapters_hash;
 static bool s_supports_create_heap_not_resident;
 static bool s_simulate_device_invalid;
 static bool s_simulate_factory_stale;
@@ -132,7 +130,7 @@ ff_dx12_init_params ff_dx12_init_params_default(void)
     };
 }
 
-ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena)
+static ff_string_view adapter_name(IDXGIAdapter3* adapter, ff_arena* arena)
 {
     ff_string_view result = ff_string_view_empty();
     FF_CHECK_RET_VAL(adapter && arena, result);
@@ -141,33 +139,6 @@ ff_string_view ff_dx12_adapter_name(IDXGIAdapter3* adapter, ff_arena* arena)
     FF_CHECK_HR_RET_VAL(IDXGIAdapter3_GetDesc(adapter, &desc), result);
 
     return ff_wide_to_utf8(ff_wz_view(desc.Description), arena, false);
-}
-
-static uint64_t get_adapters_hash(IDXGIFactory6* factory)
-{
-    ff_hash_data hash;
-    ff_hash_init(&hash);
-    UINT count = 0;
-
-    for (UINT i = 0; ; i++)
-    {
-        IDXGIAdapter1* adapter = NULL;
-        if (FAILED(IDXGIFactory6_EnumAdapters1(factory, i, &adapter)))
-        {
-            break;
-        }
-
-        DXGI_ADAPTER_DESC1 desc = { 0 };
-        if (SUCCEEDED(IDXGIAdapter1_GetDesc1(adapter, &desc)))
-        {
-            ff_hash(&hash, &desc.AdapterLuid, sizeof(desc.AdapterLuid));
-            count++;
-        }
-
-        IDXGIAdapter1_Release(adapter);
-    }
-
-    return count ? ff_hash_done(&hash) : 0;
 }
 
 // Fills 'adapters' in preference order and returns how many were found. WARP is appended last
@@ -335,7 +306,7 @@ static DXGI_QUERY_VIDEO_MEMORY_INFO query_video_memory_info(IDXGIAdapter3* adapt
     return total;
 }
 
-void ff_dx12_update_video_memory_info(void)
+static void update_video_memory_info(void)
 {
     // No event means budget changes aren't reported, so just refresh every time.
     if (!s_video_memory_change_event || WaitForSingleObject(s_video_memory_change_event, 0) == WAIT_OBJECT_0)
@@ -364,15 +335,12 @@ static bool init_dxgi(bool for_reset)
     const UINT flags = debug_layer_wanted() ? DXGI_CREATE_FACTORY_DEBUG : 0;
     FF_ASSERT_HR_RET_VAL(CreateDXGIFactory2(flags, &IID_IDXGIFactory6, (void**)&s_factory), false);
 
-    s_adapters_hash = get_adapters_hash(s_factory);
     s_simulate_factory_stale = false;
     return true;
 }
 
 static void destroy_dxgi(void)
 {
-    s_adapters_hash = 0;
-
     if (s_factory)
     {
         IDXGIFactory6_Release(s_factory);
@@ -404,7 +372,7 @@ static bool init_d3d(bool for_reset)
 
         ff_arena_declare_stack(name_arena, 256);
         ff_log_write(ff_log_type_debug, FF_SVL("[dx12] Final adapter: %.*s"),
-            FF_SV_FORMAT(ff_dx12_adapter_name(s_adapter, &name_arena)));
+            FF_SV_FORMAT(adapter_name(s_adapter, &name_arena)));
         ff_arena_destroy(&name_arena);
     }
 
@@ -413,7 +381,7 @@ static bool init_d3d(bool for_reset)
         // Must query before the event exists. The event is manual-reset and starts unsignaled,
         // so an update with it already created would take the "no change yet" path and leave
         // the budget at zero until the first notification fires.
-        ff_dx12_update_video_memory_info();
+        update_video_memory_info();
 
         s_video_memory_change_event = CreateEventW(NULL, TRUE, FALSE, NULL);
 
@@ -465,7 +433,7 @@ static void keep_alive_release_resource(ID3D12Resource* resource, const ff_dx12_
     ff_dx12_mem_range_free(&range);
 }
 
-void ff_dx12_flush_keep_alive(void)
+void internal_ff_dx12_flush_keep_alive(void)
 {
     // Entries are pushed in roughly fence order, so stopping at the first incomplete one keeps
     // this O(1) amortized instead of scanning the whole list every frame.
@@ -485,7 +453,7 @@ void ff_dx12_flush_keep_alive(void)
     }
 }
 
-void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
+void internal_ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
     const ff_dx12_fence_values* fence_values)
 {
     if (keep_alive_fence_values_complete(fence_values))
@@ -755,7 +723,7 @@ static void destroy_allocators(void)
     }
 }
 
-void ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
+void internal_ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(data);
 
@@ -799,12 +767,7 @@ void ff_dx12_wait_for_idle(void)
         }
     }
 
-    ff_dx12_flush_keep_alive();
-}
-
-void ff_dx12_set_owner_thread(void)
-{
-    s_owner_thread_id = GetCurrentThreadId();
+    internal_ff_dx12_flush_keep_alive();
 }
 
 bool ff_dx12_on_owner_thread(void)
@@ -899,7 +862,7 @@ void ff_dx12_defer_reset_device(bool force)
     ReleaseSRWLockExclusive(&s_defer_lock);
 }
 
-bool ff_dx12_has_deferred(void)
+bool internal_ff_dx12_has_deferred(void)
 {
     bool any;
 
@@ -910,7 +873,7 @@ bool ff_dx12_has_deferred(void)
     return any;
 }
 
-bool ff_dx12_flush_deferred(void)
+bool internal_ff_dx12_flush_deferred(void)
 {
     FF_DX12_ASSERT_OWNER();
 
@@ -970,9 +933,9 @@ bool ff_dx12_flush_deferred(void)
 bool ff_dx12_prepare_render(void)
 {
     FF_DX12_ASSERT_OWNER();
-    FF_CHECK_RET_VAL(ff_dx12_flush_deferred(), false);
+    FF_CHECK_RET_VAL(internal_ff_dx12_flush_deferred(), false);
 
-    ff_dx12_flush_keep_alive();
+    internal_ff_dx12_flush_keep_alive();
     for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
     {
         if (s_mem_allocator_valid[i])
@@ -981,11 +944,11 @@ bool ff_dx12_prepare_render(void)
         }
     }
 
-    ff_dx12_update_video_memory_info();
+    update_video_memory_info();
     return true;
 }
 
-size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count)
+size_t internal_ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count)
 {
     size_t fixed_sample_count = sample_count ? ff_math_round_up_pow2(sample_count) : 1;
 
@@ -1081,7 +1044,7 @@ bool ff_dx12_init(const ff_dx12_init_params* params)
 
     // Recorded before anything can fail, so the error path and ff_dx12_destroy are already
     // covered by the ownership asserts.
-    ff_dx12_set_owner_thread();
+    s_owner_thread_id = GetCurrentThreadId();
 
     AcquireSRWLockExclusive(&s_defer_lock);
     s_deferred_size_count = 0;
@@ -1187,19 +1150,14 @@ bool ff_dx12_supports_create_heap_not_resident(void)
     return s_supports_create_heap_not_resident;
 }
 
-bool ff_dx12_factory_current(void)
+bool internal_ff_dx12_factory_current(void)
 {
     return !s_simulate_factory_stale && s_factory && IDXGIFactory6_IsCurrent(s_factory) != FALSE;
 }
 
-void ff_dx12_simulate_factory_stale(void)
+void internal_ff_dx12_simulate_factory_stale(void)
 {
     s_simulate_factory_stale = true;
-}
-
-uint64_t ff_dx12_adapters_hash(void)
-{
-    return s_adapters_hash;
 }
 
 DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void)
@@ -1207,8 +1165,13 @@ DXGI_QUERY_VIDEO_MEMORY_INFO ff_dx12_video_memory_info(void)
     return s_video_memory_info;
 }
 
-void ff_dx12_simulate_video_memory_budget(uint64_t budget, uint64_t current_usage)
+void internal_ff_dx12_simulate_video_memory_budget(uint64_t budget, uint64_t current_usage)
 {
+    FF_DX12_ASSERT_OWNER();
     s_video_memory_info.Budget = budget;
     s_video_memory_info.CurrentUsage = current_usage;
+    if (s_video_memory_change_event)
+    {
+        FF_VERIFY(SetEvent(s_video_memory_change_event));
+    }
 }

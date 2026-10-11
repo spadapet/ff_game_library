@@ -3,6 +3,11 @@
 #include <thread>
 #include <vector>
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     // The deferred work queue is what lets the window thread ask for a resize or a device reset
@@ -50,10 +55,10 @@ namespace ff::test::dx12
         TEST_METHOD(nothing_deferred_by_default)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             // Flushing an empty queue is a successful no-op, so a caller can flush unconditionally.
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
         }
 
         TEST_METHOD(prepare_render_applies_deferred_resize)
@@ -70,13 +75,13 @@ namespace ff::test::dx12
             // The whole point: queuing must not touch the swap chain, because the owning thread
             // could be mid-frame.
             Assert::AreEqual(original_width, ff_dx12_target_window_width(&target));
-            Assert::IsTrue(ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
 
             Assert::IsTrue(ff_dx12_prepare_render());
 
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(480, ff_dx12_target_window_height(&target));
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
 
             ff_dx12_target_window_destroy(&target);
@@ -96,7 +101,7 @@ namespace ff::test::dx12
                 ff_dx12_defer_resize_target(&target, 300 + i, 200 + i);
             }
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             Assert::AreEqual<size_t>(320, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(220, ff_dx12_target_window_height(&target));
@@ -112,14 +117,14 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_target_window_init(&target, create_window()));
 
             ff_dx12_defer_resize_target(&target, 640, 480);
-            Assert::IsTrue(ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
 
             // Without the cancel inside destroy, the queue would still hold this pointer and the
             // flush below would resize freed memory.
             ff_dx12_target_window_destroy(&target);
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
         }
 
         TEST_METHOD(cancel_only_removes_the_named_target)
@@ -137,9 +142,9 @@ namespace ff::test::dx12
             ff_dx12_defer_resize_target(&target, 640, 480);
 
             ff_dx12_cancel_deferred_target(&other);
-            Assert::IsTrue(ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
 
             ff_dx12_target_window_destroy(&target);
@@ -155,7 +160,7 @@ namespace ff::test::dx12
             const uint64_t reset_count_before = ff_dx12_device_reset_count();
 
             ff_dx12_defer_reset_device(true);
-            Assert::IsTrue(ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
 
             // Queuing must not reset anything on its own.
             Assert::AreEqual(reset_count_before, ff_dx12_device_reset_count());
@@ -164,7 +169,7 @@ namespace ff::test::dx12
 
             Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             ff_dx12_target_window_destroy(&target);
         }
@@ -189,7 +194,7 @@ namespace ff::test::dx12
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(480, ff_dx12_target_window_height(&target));
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             ff_dx12_commands commands{};
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
@@ -215,7 +220,7 @@ namespace ff::test::dx12
 
             Assert::IsFalse(ff_dx12_prepare_render());
             Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
             Assert::IsFalse(ff_dx12_target_window_valid(&target));
 
             ff_dx12_target_window_destroy(&target);
@@ -242,8 +247,8 @@ namespace ff::test::dx12
 
             windower.join();
 
-            Assert::IsTrue(ff_dx12_has_deferred());
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             Assert::AreEqual<size_t>(450, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(350, ff_dx12_target_window_height(&target));
@@ -269,7 +274,7 @@ namespace ff::test::dx12
                         for (size_t i = 0; i < 500; i++)
                         {
                             ff_dx12_defer_resize_target(&target, 640, 480);
-                            ff_dx12_has_deferred();
+                            internal_ff_dx12_has_deferred();
                         }
                     });
             }
@@ -281,7 +286,7 @@ namespace ff::test::dx12
 
             // Every request named the same size and the same target, so exactly one resize is
             // queued no matter how the interleaving went.
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
 
@@ -303,24 +308,26 @@ namespace ff::test::dx12
             Assert::IsFalse(owner_on_other_thread);
         }
 
-        TEST_METHOD(ownership_can_be_handed_to_another_thread)
+        TEST_METHOD(dx12_can_be_initialized_and_destroyed_on_a_render_thread)
         {
-            Assert::IsTrue(ff_dx12_init(nullptr));
-
-            // This is how the game thread takes over once it starts running.
-            bool owner_after_claim = false;
-            std::thread game([&owner_after_claim]
+            bool initialized = false;
+            bool owner_after_init = false;
+            bool prepared = false;
+            std::thread game([&initialized, &owner_after_init, &prepared]
                 {
-                    ff_dx12_set_owner_thread();
-                    owner_after_claim = ff_dx12_on_owner_thread();
+                    initialized = ff_dx12_init(nullptr);
+                    owner_after_init = ff_dx12_on_owner_thread();
+                    if (initialized)
+                    {
+                        prepared = ff_dx12_prepare_render();
+                    }
+                    ff_dx12_destroy();
                 });
             game.join();
 
-            Assert::IsTrue(owner_after_claim);
-            Assert::IsFalse(ff_dx12_on_owner_thread());
-
-            // Take it back so cleanup's ff_dx12_destroy runs on the owning thread.
-            ff_dx12_set_owner_thread();
+            Assert::IsTrue(initialized);
+            Assert::IsTrue(owner_after_init);
+            Assert::IsTrue(prepared);
             Assert::IsTrue(ff_dx12_on_owner_thread());
         }
 
@@ -332,7 +339,7 @@ namespace ff::test::dx12
             ff_dx12_defer_resize_target(&target, 640, 480);
             ff_dx12_defer_reset_device(false);
 
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
         }
 
         TEST_METHOD(queue_is_dropped_by_destroy)
@@ -349,11 +356,11 @@ namespace ff::test::dx12
 
             // A queue that survived destroy would be applied against a dead device on the next
             // init, so it has to be empty here.
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsFalse(ff_dx12_has_deferred());
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
         }
 
         TEST_METHOD(a_failing_resize_does_not_spin_the_flush_loop)
@@ -371,8 +378,8 @@ namespace ff::test::dx12
             ff_dx12_defer_resize_target(&target, 640, 480);
 
             // The real assertion is that this returns at all.
-            ff_dx12_flush_deferred();
-            Assert::IsFalse(ff_dx12_has_deferred());
+            internal_ff_dx12_flush_deferred();
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             ff_dx12_target_window_destroy(&target);
         }
@@ -387,14 +394,14 @@ namespace ff::test::dx12
             // WM_SIZE on minimize reports a 0x0 client area, which DXGI rejects. set_size clamps
             // to 1x1, so the swap chain has to survive it and come back on restore.
             ff_dx12_defer_resize_target(&target, 0, 0);
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
             Assert::AreEqual<size_t>(1, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(1, ff_dx12_target_window_height(&target));
 
             ff_dx12_defer_resize_target(&target, 320, 240);
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
             Assert::AreEqual<size_t>(320, ff_dx12_target_window_width(&target));
@@ -408,14 +415,14 @@ namespace ff::test::dx12
 
             ff_dx12_target_window never_queued{};
             ff_dx12_cancel_deferred_target(&never_queued);
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
 
             // Also safe twice, since destroy can run after an explicit cancel.
             ff_dx12_target_window target{};
             ff_dx12_defer_resize_target(&target, 640, 480);
             ff_dx12_cancel_deferred_target(&target);
             ff_dx12_cancel_deferred_target(&target);
-            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(internal_ff_dx12_has_deferred());
         }
 
         TEST_METHOD(cancel_keeps_the_remaining_entries_intact)
@@ -437,8 +444,8 @@ namespace ff::test::dx12
             ff_dx12_cancel_deferred_target(&middle);
             ff_dx12_cancel_deferred_target(&first);
 
-            Assert::IsTrue(ff_dx12_has_deferred());
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_has_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             // The surviving entry is the real one, so it must still be applied.
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
@@ -457,7 +464,7 @@ namespace ff::test::dx12
             ff_dx12_defer_reset_device(true);
             ff_dx12_defer_reset_device(false);
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
             Assert::AreEqual(before + 1, ff_dx12_device_reset_count());
         }
 
@@ -470,7 +477,7 @@ namespace ff::test::dx12
             // Cheap enough to queue speculatively, which is what makes it safe to call from a
             // window message without knowing whether anything is actually wrong.
             ff_dx12_defer_reset_device(false);
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(internal_ff_dx12_flush_deferred());
 
             Assert::AreEqual(before, ff_dx12_device_reset_count());
             Assert::IsTrue(ff_dx12_device_valid());

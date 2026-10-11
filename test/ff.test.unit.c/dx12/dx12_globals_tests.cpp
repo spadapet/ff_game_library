@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 // These tests create real DXGI/D3D12 objects. Any machine that runs them has at least the WARP
 // adapter available, so init is expected to succeed.
 namespace ff::test::dx12
@@ -55,36 +60,29 @@ namespace ff::test::dx12
             Assert::AreEqual(device_luid.HighPart, desc.AdapterLuid.HighPart);
         }
 
-        TEST_METHOD(adapters_hash_is_stable_and_not_empty)
+        TEST_METHOD(prepare_render_restores_simulated_video_memory_budget)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
+            internal_ff_dx12_simulate_video_memory_budget(0, 0);
+            Assert::AreEqual((uint64_t)0, ff_dx12_video_memory_info().Budget);
 
-            uint64_t hash = ff_dx12_adapters_hash();
-            Assert::AreNotEqual((uint64_t)0, hash);
-
-            ff_dx12_destroy();
-            Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::AreEqual(hash, ff_dx12_adapters_hash());
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::IsTrue(ff_dx12_video_memory_info().Budget > 0);
         }
 
         TEST_METHOD(factory_is_current_after_init)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::IsTrue(ff_dx12_factory_current());
+            Assert::IsTrue(internal_ff_dx12_factory_current());
         }
 
-        TEST_METHOD(adapter_name_is_not_empty)
+        TEST_METHOD(adapter_description_is_not_empty)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            ff_arena arena;
-            ff_arena_init_heap_global(&arena, 1024);
-
-            ff_string_view name = ff_dx12_adapter_name(ff_dx12_adapter(), &arena);
-            Assert::IsTrue(name.count > 0);
-            Assert::IsNotNull(name.data);
-
-            ff_arena_destroy(&arena);
+            DXGI_ADAPTER_DESC desc{};
+            Assert::IsTrue(SUCCEEDED(ff_dx12_adapter()->GetDesc(&desc)));
+            Assert::IsTrue(desc.Description[0] != L'\0');
         }
 
         TEST_METHOD(video_memory_info_has_a_budget)
@@ -95,7 +93,7 @@ namespace ff::test::dx12
             Assert::IsTrue(info.Budget > 0);
 
             // Refreshing must not clobber the cached values.
-            ff_dx12_update_video_memory_info();
+            Assert::IsTrue(ff_dx12_prepare_render());
             Assert::IsTrue(ff_dx12_video_memory_info().Budget > 0);
         }
 
@@ -122,8 +120,7 @@ namespace ff::test::dx12
             Assert::IsNull(ff_dx12_adapter());
             Assert::IsNull(ff_dx12_device());
             Assert::IsFalse(ff_dx12_device_valid());
-            Assert::IsFalse(ff_dx12_factory_current());
-            Assert::AreEqual((uint64_t)0, ff_dx12_adapters_hash());
+            Assert::IsFalse(internal_ff_dx12_factory_current());
             Assert::AreEqual((int)0, (int)ff_dx12_feature_level());
         }
 
@@ -173,7 +170,7 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < 8; i++)
             {
-                ff_dx12_update_video_memory_info();
+                Assert::IsTrue(ff_dx12_prepare_render());
                 DXGI_QUERY_VIDEO_MEMORY_INFO info = ff_dx12_video_memory_info();
                 Assert::IsTrue(info.Budget > 0);
             }

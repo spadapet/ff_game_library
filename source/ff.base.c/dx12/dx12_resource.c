@@ -236,7 +236,7 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
         resource->has_residency_data = false;
     }
 
-    ff_dx12_keep_alive_resource(
+    internal_ff_dx12_keep_alive_resource(
         resource->resource,
         (resource->kind == ff_dx12_resource_kind_placed) ? &resource->mem_range : NULL,
         &pending);
