@@ -56,7 +56,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_flush_deferred());
         }
 
-        TEST_METHOD(deferred_resize_is_not_applied_until_flush)
+        TEST_METHOD(prepare_render_applies_deferred_resize)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
@@ -72,7 +72,7 @@ namespace ff::test::dx12
             Assert::AreEqual(original_width, ff_dx12_target_window_width(&target));
             Assert::IsTrue(ff_dx12_has_deferred());
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(480, ff_dx12_target_window_height(&target));
@@ -145,7 +145,7 @@ namespace ff::test::dx12
             ff_dx12_target_window_destroy(&target);
         }
 
-        TEST_METHOD(deferred_reset_rebuilds_the_swap_chain)
+        TEST_METHOD(prepare_render_applies_deferred_reset)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
@@ -160,7 +160,7 @@ namespace ff::test::dx12
             // Queuing must not reset anything on its own.
             Assert::AreEqual(reset_count_before, ff_dx12_device_reset_count());
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
@@ -169,23 +169,54 @@ namespace ff::test::dx12
             ff_dx12_target_window_destroy(&target);
         }
 
-        TEST_METHOD(reset_and_resize_in_one_flush_leaves_the_new_size)
+        TEST_METHOD(prepare_render_applies_reset_and_resize_before_recording)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_target_window target{};
             Assert::IsTrue(ff_dx12_target_window_init(&target, create_window()));
 
+            const uint64_t reset_count_before = ff_dx12_device_reset_count();
+
             // A reset rebuilds every swap chain at its current size, so it has to be applied
             // before the resize or the new size would be thrown away.
             ff_dx12_defer_resize_target(&target, 640, 480);
             ff_dx12_defer_reset_device(true);
 
-            Assert::IsTrue(ff_dx12_flush_deferred());
+            Assert::IsTrue(ff_dx12_prepare_render());
 
+            Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
             Assert::AreEqual<size_t>(640, ff_dx12_target_window_width(&target));
             Assert::AreEqual<size_t>(480, ff_dx12_target_window_height(&target));
             Assert::IsTrue(ff_dx12_target_window_valid(&target));
+            Assert::IsFalse(ff_dx12_has_deferred());
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+            Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, nullptr));
+            Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
+
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
+
+            ff_dx12_target_window_destroy(&target);
+        }
+
+        TEST_METHOD(prepare_render_propagates_deferred_reset_failure)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_target_window target{};
+            Assert::IsTrue(ff_dx12_target_window_init(&target, create_window()));
+
+            const uint64_t reset_count_before = ff_dx12_device_reset_count();
+            destroy_window();
+            ff_dx12_defer_reset_device(true);
+
+            Assert::IsFalse(ff_dx12_prepare_render());
+            Assert::AreEqual(reset_count_before + 1, ff_dx12_device_reset_count());
+            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsFalse(ff_dx12_target_window_valid(&target));
 
             ff_dx12_target_window_destroy(&target);
         }

@@ -36,6 +36,8 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < warmup + iterations; i++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(queue, &commands));
                 Assert::IsTrue(ff_dx12_buffer_update(&buffer, &commands, data, sizeof(data)));
@@ -54,8 +56,6 @@ namespace ff::test::dx12
                     total_us += us;
                     worst_us = (us > worst_us) ? us : worst_us;
                 }
-
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_wait_for_idle();

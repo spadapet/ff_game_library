@@ -99,14 +99,12 @@ namespace ff::test::dx12
             {
                 // Render first, so each resize has a back buffer reference sitting on the
                 // keep-alive list. Without rendering, resizing never exercises the drain.
-                ff_dx12_frame_started();
+                Assert::IsTrue(ff_dx12_prepare_render());
 
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
                 Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, black));
                 Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
-
-                ff_dx12_frame_complete();
 
                 const size_t width = 64 + i * 16;
                 Assert::IsTrue(ff_dx12_target_window_set_size(&target, width, 128));
@@ -147,15 +145,13 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < 10; i++)
             {
-                ff_dx12_frame_started();
+                Assert::IsTrue(ff_dx12_prepare_render());
 
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
 
                 Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, black));
                 Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
-
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_target_window_destroy(&target);
@@ -174,14 +170,12 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < 6; i++)
             {
-                ff_dx12_frame_started();
+                Assert::IsTrue(ff_dx12_prepare_render());
 
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
                 Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, black));
                 Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
-
-                ff_dx12_frame_complete();
 
                 Assert::IsTrue(ff_dx12_target_window_set_size(&target, 100 + i * 32, 100 + i * 16));
                 Assert::IsTrue(ff_dx12_target_window_valid(&target));
@@ -198,14 +192,12 @@ namespace ff::test::dx12
             ff_dx12_target_window target{};
             Assert::IsTrue(ff_dx12_target_window_init(&target, create_window()));
 
-            ff_dx12_frame_started();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_commands commands{};
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
             Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, nullptr));
             Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
-
-            ff_dx12_frame_complete();
 
             ff_dx12_target_window_destroy(&target);
         }
@@ -221,14 +213,13 @@ namespace ff::test::dx12
 
             const float black[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
 
-            ff_dx12_frame_started();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_commands commands{};
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
             Assert::IsTrue(ff_dx12_target_window_begin_render(&target, &commands, black));
             Assert::IsTrue(ff_dx12_target_window_end_render(&target, &commands));
 
-            // No frame_complete and no wait: destroy runs with the present still outstanding.
             ff_dx12_target_window_destroy(&target);
         }
 

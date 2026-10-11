@@ -293,7 +293,7 @@ namespace ff::test::dx12
 
             for (size_t frame = 0; frame < 120; frame++)
             {
-                ff_dx12_frame_started();
+                Assert::IsTrue(ff_dx12_prepare_render());
 
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
@@ -311,8 +311,6 @@ namespace ff::test::dx12
 
                 ff_dx12_buffer_destroy(&buffer);
                 ff_dx12_texture_destroy(&texture);
-
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_wait_for_idle();
@@ -332,6 +330,8 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < 8; i++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
                 ff_dx12_commands direct{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &direct));
                 Assert::IsTrue(ff_dx12_buffer_update(&buffer, &direct, data, sizeof(data)));
@@ -341,8 +341,6 @@ namespace ff::test::dx12
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &copy));
                 Assert::IsTrue(ff_dx12_buffer_update(&buffer, &copy, data, sizeof(data)));
                 ff_dx12_queue_execute(ff_dx12_copy_queue(), &copy);
-
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_wait_for_idle();

@@ -23,8 +23,8 @@ void ff_dx12_destroy(void);
 //
 // The window thread must not call into dx12 directly. It queues work instead, with
 // ff_dx12_defer_resize_target for a resize and ff_dx12_defer_reset_device for a device reset;
-// both are safe from any thread. ff_dx12_flush_deferred applies them on the owning thread
-// between frames.
+// both are safe from any thread. ff_dx12_prepare_render applies them on the owning thread
+// before recording the next rendering cycle.
 void ff_dx12_set_owner_thread(void);
 bool ff_dx12_on_owner_thread(void);
 
@@ -102,11 +102,10 @@ void ff_dx12_wait_for_idle(void);
 // while command lists may still reference it, since the data lives inside the dying resource.
 void ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
 
-// Frame lifecycle. frame_started drains the keep-alive list and refreshes the video memory
-// budget; frame_complete advances the frame counter.
-void ff_dx12_frame_started(void);
-void ff_dx12_frame_complete(void);
-uint64_t ff_dx12_frame_count(void);
+// Call on the owning thread before acquiring command lists, after prior recorded work is
+// submitted. Applies deferred resize/reset requests and collects fence-completed resources
+// and allocator ranges. No matching end call or GPU-idle wait is required for collection.
+bool ff_dx12_prepare_render(void);
 
 typedef struct ff_dx12_target_window ff_dx12_target_window;
 
@@ -140,7 +139,7 @@ size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count);
 // Defers releasing an ID3D12Resource (and freeing its mem_range) until the GPU work named by
 // 'fence_values' has retired. When that work is already complete the release happens immediately
 // with no bookkeeping. Anything queued here is released by ff_dx12_flush_keep_alive, which runs
-// from frame_started and wait_for_idle.
+// from prepare_render and wait_for_idle.
 void ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range,
     const ff_dx12_fence_values* fence_values);
 void ff_dx12_flush_keep_alive(void);

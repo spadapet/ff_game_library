@@ -62,7 +62,6 @@ static DXGI_QUERY_VIDEO_MEMORY_INFO s_video_memory_info;
 static ff_dx12_queue s_direct_queue;
 static ff_dx12_queue s_copy_queue;
 static ff_dx12_queue s_compute_queue;
-static uint64_t s_frame_count;
 
 // Owning thread and the cross-thread work queue. This lock is the one piece of synchronization
 // in the dx12 layer, and it guards only the queue below, never any device object. The owning
@@ -982,20 +981,12 @@ bool ff_dx12_flush_deferred(void)
     return result;
 }
 
-void ff_dx12_frame_started(void)
+bool ff_dx12_prepare_render(void)
 {
     FF_DX12_ASSERT_OWNER();
+    FF_CHECK_RET_VAL(ff_dx12_flush_deferred(), false);
+
     ff_dx12_flush_keep_alive();
-    ff_dx12_update_video_memory_info();
-}
-
-void ff_dx12_frame_complete(void)
-{
-    FF_DX12_ASSERT_OWNER();
-    s_frame_count++;
-
-    // The old code drove this through a frame_complete signal that each allocator subscribed to.
-    // Here globals owns the allocators, so it retires their in-flight ranges directly.
     for (size_t i = 0; i < ff_dx12_mem_allocator_count; i++)
     {
         if (s_mem_allocator_valid[i])
@@ -1003,11 +994,9 @@ void ff_dx12_frame_complete(void)
             ff_dx12_mem_allocator_frame_complete(&s_mem_allocators[i]);
         }
     }
-}
 
-uint64_t ff_dx12_frame_count(void)
-{
-    return s_frame_count;
+    ff_dx12_update_video_memory_info();
+    return true;
 }
 
 size_t ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count)
@@ -1055,7 +1044,6 @@ static void destroy_d3d(bool for_reset)
     }
 
     keep_alive_destroy();
-    s_frame_count = 0;
 
     // On a reset the allocators are deliberately kept: their buffers and buckets hold the
     // offsets and indices that every outstanding mem_range and descriptor_range points at, so

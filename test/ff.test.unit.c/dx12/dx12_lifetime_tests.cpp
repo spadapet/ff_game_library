@@ -221,12 +221,12 @@ namespace ff::test::dx12
 
             for (size_t i = 0; i < 32; i++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
                 Assert::IsTrue(ff_dx12_buffer_update(&buffer, &commands, data, sizeof(data)));
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
-
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_wait_for_idle();
@@ -247,6 +247,8 @@ namespace ff::test::dx12
 
             for (size_t frame = 0; frame < 48; frame++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
 
@@ -258,7 +260,6 @@ namespace ff::test::dx12
 
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
                 ff_dx12_wait_for_idle();
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_buffer_destroy(&buffer);
@@ -316,13 +317,12 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
-        // frame_complete must be safe to call with nothing in flight and with work still pending.
-        TEST_METHOD(frame_complete_is_safe_in_any_order)
+        TEST_METHOD(prepare_render_is_safe_before_recording_and_after_submission)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            ff_dx12_frame_complete();
-            ff_dx12_frame_complete();
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_commands commands{};
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
@@ -336,10 +336,10 @@ namespace ff::test::dx12
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
 
             // Called with GPU work still in flight.
-            ff_dx12_frame_complete();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_wait_for_idle();
-            ff_dx12_frame_complete();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_buffer_destroy(&buffer);
         }

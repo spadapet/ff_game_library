@@ -841,34 +841,30 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
-        TEST_METHOD(frame_complete_retires_ring_allocations)
+        TEST_METHOD(prepare_render_retires_ring_allocations)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-
-            ff_dx12_commands commands{};
-            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
 
             ff_dx12_buffer buffer{};
             Assert::IsTrue(ff_dx12_buffer_init_gpu(&buffer, ff_dx12_buffer_type_vertex, 0));
 
             uint8_t data[256] = { 0 };
 
-            // Many frames of ring traffic must not grow without bound, which only works if
-            // frame_complete actually retires the finished ranges.
             for (size_t i = 0; i < 64; i++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
+                ff_dx12_commands commands{};
+                Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+
                 data[0] = (uint8_t)i;
                 Assert::IsTrue(ff_dx12_buffer_update(&buffer, &commands, data, sizeof(data)));
 
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
                 ff_dx12_wait_for_idle();
-                ff_dx12_frame_complete();
-
-                Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
             }
 
-            ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
-            ff_dx12_wait_for_idle();
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_buffer_destroy(&buffer);
             ff_dx12_wait_for_idle();

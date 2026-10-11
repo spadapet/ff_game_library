@@ -122,7 +122,7 @@ Items 2-6 above: fence, residency, heap, mem_range, mem_allocator.
 	`ff_dx12_mem_range` points back at its owning buffer, so a relocating
 	array was unsound. They are now an arena-allocated intrusive linked list
 	(`buffers` / `buffers_free` / `buffers_count`) with stable addresses,
-	ordered newest-first and pruned on `frame_complete`.
+	ordered newest-first and pruned during `ff_dx12_prepare_render`.
 - **Tagged structs, no vtables.** `ff_dx12_mem_buffer` is one struct with an
   enum discriminant (`ring` / `free_list`) and switch-based dispatch in
   each function, replacing the old virtual `mem_buffer_base` hierarchy.
@@ -300,14 +300,14 @@ as built:
 - `ff_dx12_flush_keep_alive` pops from the front and stops at the first
   incomplete entry, which is O(1) amortized because pushes are roughly in fence
   order.
-- **Must be called from both `ff_dx12_frame_started` and
+- **Must be called from both `ff_dx12_prepare_render` and
   `ff_dx12_wait_for_idle`.** An undrained list is an unbounded leak, so the
   drain call sites are not optional.
 
 See `dx12_globals.cpp` `flush_keep_alive` (:156), `keep_alive_resource` (:662),
 and the call sites at `frame_started` (:613) / `wait_for_idle` (:654).
 
-Both drain call sites exist in the C port (`ff_dx12_frame_started` and
+Both drain call sites exist in the C port (`ff_dx12_prepare_render` and
 `ff_dx12_wait_for_idle` in `dx12_globals.c`). Note that `keep_alive_destroy` is
 a third, different case: it runs after the queues that own the fences are
 destroyed, so it must release without consulting fence values at all. See the
@@ -604,8 +604,8 @@ Landed first, because every milestone 4 type depends on them and they had
 never been ported:
 
 - The 12 global allocators in `dx12_globals.c` (6 mem, 6 descriptor), created
-  lazily, with sizes matching the legacy exactly. `frame_complete` is called
-  on them directly from `ff_dx12_frame_complete` instead of through a signal.
+  lazily, with sizes matching the legacy exactly. Memory allocator retirement
+  and pruning run directly from `ff_dx12_prepare_render` instead of through a signal.
 - `destroy_allocators()` sits in `destroy_d3d` after the keep-alive drain and
   before `ff_dx12_residency_destroy`. That ordering is load-bearing: heaps back
   deferred releases, and every heap registers residency data.
@@ -732,7 +732,7 @@ it. `windows/task.h` already provides the thread pool if it is needed later.
 repeated resize mid-recording for buffers and depth, destroy before execute,
 64 buffers destroyed in one list, allocator recycling across 32 executes,
 upload ring reuse across 48 frames, two lists sharing a resource,
-textures destroyed mid-recording, frame_complete ordering, and device destroy
+textures destroyed mid-recording, preparation before recording and after submission, and device destroy
 with work still in flight. `dx12_reset_timing_tests` measures the reset cost.
 
 Full suite: 832 passing, zero skipped.
@@ -1908,8 +1908,8 @@ What has to be added before the loop can actually move:
    `allow_dispatch_during_wait` refused to run game-thread work during a frame
    update, precisely so a device reset or resize could not land mid-frame. Any
    wait the game thread performs inside a frame must not pump the dispatcher.
-   `ff_dx12_flush_deferred` is already the single place those land, so this is
-   really just a rule about where the flush is called from.
+   `ff_dx12_prepare_render` applies deferred work before command acquisition,
+   so this is really just a rule about where preparation is called from.
 3. **`ff_dx12_set_owner_thread` on the game thread.** One call as the thread
    starts, after which the existing asserts enforce the new owner.
 
@@ -1936,16 +1936,21 @@ owner, every thread counts as the owner, which keeps the asserts quiet for work
 that legitimately runs before the device exists.
 
 `FF_DX12_ASSERT_OWNER()` compiles out in release like any other assert. It
-guards `ff_dx12_destroy`, `frame_started`, `frame_complete`, `wait_for_idle`,
+guards `ff_dx12_destroy`, `prepare_render`, `wait_for_idle`,
 `flush_deferred`, and `ff_dx12_target_window_set_size`. This is what lets the
 dx12 layer keep having **no locks on any device object** — the absence of
 synchronization is now a stated, checked invariant rather than an accident.
 
 **The queue.** `ff_dx12_defer_resize_target` and `ff_dx12_defer_reset_device`
-are safe from any thread; `ff_dx12_flush_deferred` applies them on the owning
-thread between frames, and `ff_dx12_has_deferred` lets a caller skip the flush
-in the common case. A single critical section guards the queue and nothing
-else, so it is never held across a D3D call.
+are safe from any thread; `ff_dx12_prepare_render` applies them on the owning
+thread before command acquisition. A failed deferred flush returns `false` and
+the caller must not start recording. On success, preparation flushes keep-alive
+releases, retires/prunes shared memory allocators, and updates the video-memory
+budget. Repeated preparation with no pending work is safe; there is no matching
+end notification or global frame counter. `ff_dx12_flush_deferred` remains the
+lower-level queue flush, and `ff_dx12_has_deferred` reports pending queue work.
+A single critical section guards the queue and nothing else, so it is never
+held across a D3D call.
 
 Three details that matter:
 
@@ -3089,7 +3094,7 @@ live object while the GPU might be reading it.**
 
 A debug-only watcher (`ReadDirectoryChangesW`) notices a file change and marks the affected
 resource dirty. Nothing loads on the watcher thread. At a frame boundary the app drains the dirty
-set - the same "between frames" point `ff_dx12_flush_deferred` already establishes - reloads into a
+set - the same pre-recording point `ff_dx12_prepare_render` already establishes - reloads into a
 *new* `ff_resource` with a fresh arena, and leaves the old one holding a pointer to the new plus a
 bumped generation. The old object's memory is released one full frame later, through the same
 keep-alive discipline GPU resources use.

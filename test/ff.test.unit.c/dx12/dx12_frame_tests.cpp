@@ -29,34 +29,74 @@ namespace ff::test::dx12
             return desc;
         }
 
-        TEST_METHOD(frame_count_advances_on_complete)
+        TEST_METHOD(prepare_render_with_nothing_pending_is_repeatable)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            const uint64_t start = ff_dx12_frame_count();
-
-            ff_dx12_frame_started();
-            Assert::AreEqual(start, ff_dx12_frame_count());
-
-            ff_dx12_frame_complete();
-            Assert::AreEqual(start + 1, ff_dx12_frame_count());
-
-            ff_dx12_frame_started();
-            ff_dx12_frame_complete();
-            Assert::AreEqual(start + 2, ff_dx12_frame_count());
+            const uint64_t reset_count = ff_dx12_device_reset_count();
+            for (size_t i = 0; i < 8; i++)
+            {
+                Assert::IsTrue(ff_dx12_prepare_render());
+                Assert::IsFalse(ff_dx12_has_deferred());
+                Assert::IsTrue(ff_dx12_device_valid());
+                Assert::AreEqual(reset_count, ff_dx12_device_reset_count());
+            }
         }
 
-        TEST_METHOD(frame_count_resets_after_destroy)
+        TEST_METHOD(prepare_render_after_reinitialization)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
-            ff_dx12_frame_started();
-            ff_dx12_frame_complete();
-            Assert::IsTrue(ff_dx12_frame_count() > 0);
+            Assert::IsTrue(ff_dx12_prepare_render());
 
             ff_dx12_destroy();
 
             Assert::IsTrue(ff_dx12_init(nullptr));
-            Assert::AreEqual((uint64_t)0, ff_dx12_frame_count());
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::IsFalse(ff_dx12_has_deferred());
+            Assert::IsTrue(ff_dx12_device_valid());
+        }
+
+        TEST_METHOD(prepare_render_retires_and_prunes_shared_ring_allocator)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_mem_allocator* allocator = ff_dx12_upload_allocator();
+            ff_dx12_fence pending_fence{};
+            ff_dx12_fence complete_fence{};
+            Assert::IsTrue(ff_dx12_fence_init(&pending_fence, FF_SVL("prepare pending fence"), 1));
+            Assert::IsTrue(ff_dx12_fence_init(&complete_fence, FF_SVL("prepare completed fence"), 1));
+
+            ff_dx12_fence_value pending = ff_dx12_fence_signal_later(&pending_fence);
+            ff_dx12_mem_range older_range = ff_dx12_mem_allocator_ring_alloc_buffer(
+                allocator, allocator->initial_size, pending);
+            ff_dx12_fence_value complete = ff_dx12_fence_signal(&complete_fence, nullptr);
+            ff_dx12_mem_range newest_range = ff_dx12_mem_allocator_ring_alloc_buffer(allocator, 256, complete);
+            Assert::IsTrue(ff_dx12_mem_range_valid(&older_range));
+            Assert::IsTrue(ff_dx12_mem_range_valid(&newest_range));
+            Assert::AreEqual((size_t)2, allocator->buffers_count);
+
+            ff_dx12_mem_buffer* older_buffer = older_range.owner;
+            ff_dx12_mem_buffer* newest_buffer = newest_range.owner;
+            ff_dx12_mem_range_free(&older_range);
+            ff_dx12_mem_range_free(&newest_range);
+
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::AreEqual((size_t)2, allocator->buffers_count);
+            Assert::IsTrue(allocator->buffers == newest_buffer);
+            Assert::AreEqual((size_t)0, newest_buffer->u.ring.ranges_count);
+            Assert::AreEqual((size_t)1, older_buffer->u.ring.ranges_count);
+
+            ff_dx12_fence_signal_value(&pending_fence, pending.value, nullptr);
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::AreEqual((size_t)1, allocator->buffers_count);
+            Assert::IsTrue(allocator->buffers == newest_buffer);
+            Assert::IsTrue(allocator->buffers_free == older_buffer);
+
+            Assert::IsTrue(ff_dx12_prepare_render());
+            Assert::AreEqual((size_t)1, allocator->buffers_count);
+
+            ff_dx12_fence_destroy(&pending_fence);
+            ff_dx12_fence_destroy(&complete_fence);
         }
 
         // Destroying a resource that the GPU may still be reading must not block; the release is
@@ -86,7 +126,7 @@ namespace ff::test::dx12
             ff_dx12_flush_keep_alive();
         }
 
-        TEST_METHOD(frame_started_drains_keep_alive)
+        TEST_METHOD(prepare_render_drains_keep_alive)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
@@ -94,6 +134,8 @@ namespace ff::test::dx12
 
             for (int i = 0; i < 8; i++)
             {
+                Assert::IsTrue(ff_dx12_prepare_render());
+
                 ff_dx12_resource resource{};
                 Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("frame resource"), &desc, nullptr));
 
@@ -103,13 +145,10 @@ namespace ff::test::dx12
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
 
                 ff_dx12_resource_destroy(&resource);
-
-                ff_dx12_frame_started();
-                ff_dx12_frame_complete();
             }
 
             ff_dx12_wait_for_idle();
-            ff_dx12_flush_keep_alive();
+            Assert::IsTrue(ff_dx12_prepare_render());
         }
 
         TEST_METHOD(flush_keep_alive_with_nothing_queued_is_harmless)
@@ -153,7 +192,7 @@ namespace ff::test::dx12
                     ff_dx12_fence_signal_value(&fences[i], values[i].value, nullptr);
                 }
 
-                ff_dx12_flush_keep_alive();
+                Assert::IsTrue(ff_dx12_prepare_render());
                 const size_t buffer_count = internal_ff_dx12_keep_alive_arena_buffer_count();
                 if (!iteration)
                 {

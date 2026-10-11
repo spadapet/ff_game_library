@@ -194,12 +194,9 @@ static bool render_frame(ff_test_app* app)
 {
     FF_CHECK_RET_VAL(ff_dx12_target_window_valid(&app->target), false);
 
-    ff_dx12_frame_started();
-
     ff_dx12_commands commands;
     if (!ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands))
     {
-        ff_dx12_frame_complete();
         return false;
     }
 
@@ -226,7 +223,6 @@ static bool render_frame(ff_test_app* app)
         ff_dx12_commands_destroy(&commands);
     }
 
-    ff_dx12_frame_complete();
     app->frame++;
 
     return presented;
@@ -333,19 +329,6 @@ static void report_summary(ff_test_app* app)
         (cores < 0.10) ? "blocking (good)" : "SPINNING (bad)");
 
     ff_arena_destroy(&arena);
-}
-
-static void apply_pending_size(ff_test_app* app)
-{
-    FF_CHECK_RET(!app->resizing && app->graphics_valid && ff_dx12_has_deferred());
-
-    // A failed resize leaves the swap chain without back buffers, and nothing retries it, so
-    // there is no way back to rendering. Shut down rather than idle forever in a dead state.
-    if (!ff_dx12_flush_deferred())
-    {
-        app->done = true;
-        destroy_graphics(app);
-    }
 }
 
 static void on_window_message(void* args, void* cookie)
@@ -460,7 +443,16 @@ int ff_test_app_run(const ff_test_mode* mode, double run_seconds)
 
     while (pump_messages() && !app.done)
     {
-        apply_pending_size(&app);
+        if (app.resizing)
+        {
+            WaitMessage();
+            continue;
+        }
+
+        if (!ff_dx12_prepare_render())
+        {
+            break;
+        }
 
         // Presenting paces this loop. When there is nothing to present the loop would otherwise
         // spin at full speed, so block until a message arrives instead.
