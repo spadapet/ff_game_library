@@ -90,7 +90,7 @@ When resolving an entry, record the owner if useful, the actual trigger, affecte
 
 **Priority:** P1. **Status:** Fixed. **Evidence:** Source-reviewed. **Origin:** Unclassified.
 
-**Location:** `dx12\dx12_resource.c`, `ff_dx12_resource_destroy` and `internal_ff_dx12_resource_before_reset`; `dx12\dx12_globals.c`, `internal_ff_dx12_forget_resource`; `dx12\dx12_queue.c`, `ff_dx12_queue_forget_resource`; `dx12\dx12_resource_tracker.c`, `ff_dx12_resource_tracker_forget`.
+**Location:** `dx12\dx12_resource.c`, `ff_dx12_resource_destroy` and `internal_ff_dx12_resource_before_reset`; `dx12\dx12_globals.c`, `internal_ff_dx12_forget_resource`; `dx12\dx12_queue.c`, `internal_ff_dx12_queue_forget_resource`; `dx12\dx12_resource_tracker.c`, `ff_dx12_resource_tracker_forget`.
 
 **Cause:** The original single `tracker` back-pointer could not represent multiple open command lists containing the same resource. Destruction therefore forgot only one tracker, and resetting a tracker could clear a pointer still needed by another.
 

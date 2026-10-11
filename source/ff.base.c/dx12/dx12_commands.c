@@ -3,6 +3,7 @@
 #include "dx12/dx12_commands.h"
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_heap.h"
+#include "dx12/dx12_internal.h"
 #include "dx12/dx12_queue.h"
 
 static ID3D12GraphicsCommandList1* commands_list_flush(ff_dx12_commands* commands)
@@ -127,7 +128,7 @@ void ff_dx12_commands_set_marker(ff_dx12_commands* commands, ff_dx12_gpu_event t
 #endif
 }
 
-void ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_commands* prev_commands,
+void internal_ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_commands* prev_commands,
     ff_dx12_commands* next_commands, ff_dx12_fence_values* wait_before_execute)
 {
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && wait_before_execute);
@@ -144,7 +145,7 @@ void ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_commands* 
     ID3D12GraphicsCommandList_Close(commands->cache->list_before);
 }
 
-ff_dx12_command_cache* ff_dx12_commands_take_cache(ff_dx12_commands* commands)
+ff_dx12_command_cache* internal_ff_dx12_commands_take_cache(ff_dx12_commands* commands)
 {
     FF_ASSERT_RET_VAL(commands && commands->cache, NULL);
 
@@ -183,7 +184,7 @@ void ff_dx12_commands_pipeline_state(ff_dx12_commands* commands, ID3D12PipelineS
 void ff_dx12_commands_keep_resident(ff_dx12_commands* commands, ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && data);
-    ff_dx12_residency_set_add(&commands->queue->arena, &commands->cache->residency_set, data);
+    internal_ff_dx12_residency_set_add(&commands->queue->arena, &commands->cache->residency_set, data);
 }
 
 void ff_dx12_commands_resource_state(ff_dx12_commands* commands, ff_dx12_resource* resource,

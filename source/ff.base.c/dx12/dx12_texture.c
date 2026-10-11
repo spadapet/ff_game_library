@@ -79,14 +79,14 @@ bool ff_dx12_texture_init(ff_dx12_texture* texture, const ff_dx12_texture_params
         return false;
     }
 
-    ff_dx12_add_device_child(&texture->device_child, texture, ff_dx12_device_child_type_texture);
+    internal_ff_dx12_add_device_child(&texture->device_child, texture, ff_dx12_device_child_type_texture);
     return true;
 }
 void ff_dx12_texture_destroy(ff_dx12_texture* texture)
 {
     FF_CHECK_RET(texture);
 
-    ff_dx12_remove_device_child(&texture->device_child);
+    internal_ff_dx12_remove_device_child(&texture->device_child);
     ff_dx12_descriptor_range_free(&texture->view);
     ff_dx12_resource_destroy(&texture->resource);
 

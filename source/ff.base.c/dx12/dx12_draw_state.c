@@ -276,7 +276,7 @@ ff_dx12_draw_state_flags ff_dx12_draw_state_make_flags(DXGI_FORMAT target_format
     return flags;
 }
 
-ff_dx12_shader ff_dx12_draw_state_bucket_ps(const ff_dx12_draw_state* state,
+ff_dx12_shader internal_ff_dx12_draw_state_bucket_ps(const ff_dx12_draw_state* state,
     ff_dx12_draw_bucket bucket, ff_dx12_draw_state_flags flags)
 {
     FF_ASSERT_RET_VAL(state, ff_dx12_shader_count);
@@ -297,7 +297,7 @@ static ID3D12PipelineState* create_pipeline_state(ff_dx12_draw_state* state,
 
     const D3D12_SHADER_BYTECODE vs = ff_dx12_object_cache_shader(&state->cache, bucket_state->vs);
     const D3D12_SHADER_BYTECODE ps = ff_dx12_object_cache_shader(&state->cache,
-        ff_dx12_draw_state_bucket_ps(state, bucket, flags));
+        internal_ff_dx12_draw_state_bucket_ps(state, bucket, flags));
 
     // A missing .cso would otherwise be handed to the driver as a zero-length blob, which fails
     // deep inside CreatePipelineState with nothing pointing back at the shader that was missing.
@@ -490,7 +490,7 @@ bool ff_dx12_draw_state_init(ff_dx12_draw_state* state)
         return false;
     }
 
-    ff_dx12_add_device_child(&state->device_child, state, ff_dx12_device_child_type_draw_state);
+    internal_ff_dx12_add_device_child(&state->device_child, state, ff_dx12_device_child_type_draw_state);
 
     return true;
 }
@@ -499,7 +499,7 @@ void ff_dx12_draw_state_destroy(ff_dx12_draw_state* state)
 {
     FF_ASSERT_RET(state);
 
-    ff_dx12_remove_device_child(&state->device_child);
+    internal_ff_dx12_remove_device_child(&state->device_child);
 
     // Every pipeline and the root signature are owned by the cache, so dropping the borrowed
     // pointers first keeps them from outliving what they point at. The sampler range is ours and
@@ -570,7 +570,7 @@ bool ff_dx12_draw_state_apply(ff_dx12_draw_state* state, ff_dx12_commands* comma
     return true;
 }
 
-size_t ff_dx12_draw_state_pipeline_count(const ff_dx12_draw_state* state)
+size_t internal_ff_dx12_draw_state_pipeline_count(const ff_dx12_draw_state* state)
 {
     FF_ASSERT_RET_VAL(state, 0);
 

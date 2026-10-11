@@ -284,14 +284,14 @@ void ff_dx12_object_cache_init(ff_dx12_object_cache* cache)
 
     *cache = (ff_dx12_object_cache){ 0 };
     ff_arena_init_heap_local(&cache->arena, 4096);
-    ff_dx12_add_device_child(&cache->device_child, cache, ff_dx12_device_child_type_object_cache);
+    internal_ff_dx12_add_device_child(&cache->device_child, cache, ff_dx12_device_child_type_object_cache);
 }
 
 void ff_dx12_object_cache_destroy(ff_dx12_object_cache* cache)
 {
     FF_CHECK_RET(cache);
 
-    ff_dx12_remove_device_child(&cache->device_child);
+    internal_ff_dx12_remove_device_child(&cache->device_child);
 
     buckets_release(cache, cache->root_signatures, true);
     buckets_release(cache, cache->pipeline_states, true);

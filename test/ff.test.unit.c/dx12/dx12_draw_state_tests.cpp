@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     // The module-wide assert listener fails any test that trips an assert, so verifying a guard
@@ -67,7 +72,7 @@ namespace ff::test::dx12
             Assert::AreEqual<size_t>(FF_DX12_SAMPLER_COUNT, samplers.count);
 
             // Nothing has been drawn, so no permutation should have been built yet.
-            Assert::AreEqual<size_t>(0, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(0, internal_ff_dx12_draw_state_pipeline_count(&state));
 
             ff_dx12_draw_state_destroy(&state);
         }
@@ -211,7 +216,7 @@ namespace ff::test::dx12
             }
 
             // A rejected apply must not have built anything.
-            Assert::AreEqual<size_t>(0, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(0, internal_ff_dx12_draw_state_pipeline_count(&state));
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
             ff_dx12_draw_state_destroy(&state);
@@ -233,14 +238,14 @@ namespace ff::test::dx12
                 DXGI_FORMAT_R8G8B8A8_UNORM, false, true, false);
 
             Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_sprites, flags));
-            Assert::AreEqual<size_t>(1, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(1, internal_ff_dx12_draw_state_pipeline_count(&state));
 
             ID3D12PipelineState* first = commands.pipeline_state;
             Assert::IsNotNull(first);
 
             // Same key again must not add a permutation, and must hand back the same object.
             Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_sprites, flags));
-            Assert::AreEqual<size_t>(1, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(1, internal_ff_dx12_draw_state_pipeline_count(&state));
             Assert::IsTrue(first == commands.pipeline_state);
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
@@ -271,7 +276,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_sprites, depth));
             ID3D12PipelineState* c = commands.pipeline_state;
 
-            Assert::AreEqual<size_t>(3, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(3, internal_ff_dx12_draw_state_pipeline_count(&state));
             Assert::IsTrue(a != b);
             Assert::IsTrue(a != c);
             Assert::IsTrue(b != c);
@@ -279,7 +284,7 @@ namespace ff::test::dx12
             // A different bucket with the same key is a different (layout, shader) pair, so it gets
             // its own pipeline rather than sharing the sprite one.
             Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_lines, opaque));
-            Assert::AreEqual<size_t>(4, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(4, internal_ff_dx12_draw_state_pipeline_count(&state));
             Assert::IsTrue(commands.pipeline_state != a);
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
@@ -325,7 +330,7 @@ namespace ff::test::dx12
                 }
             }
 
-            Assert::AreEqual(expected, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual(expected, internal_ff_dx12_draw_state_pipeline_count(&state));
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
             ff_dx12_draw_state_destroy(&state);
@@ -349,19 +354,19 @@ namespace ff::test::dx12
             // differ by render target format, so they would be distinct objects even if both used
             // the same pixel shader. The shader selection has to be checked directly.
             Assert::AreEqual<int>(ff_dx12_shader_ps_sprite,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_sprites, color));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_sprites, color));
             Assert::AreEqual<int>(ff_dx12_shader_ps_sprite_out_palette,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_sprites, palette));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_sprites, palette));
 
             Assert::AreEqual<int>(ff_dx12_shader_ps_palette_sprite,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_palette_sprites, color));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_palette_sprites, color));
             Assert::AreEqual<int>(ff_dx12_shader_ps_palette_sprite_out_palette,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_palette_sprites, palette));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_palette_sprites, palette));
 
             Assert::AreEqual<int>(ff_dx12_shader_ps_color,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_lines, color));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_lines, color));
             Assert::AreEqual<int>(ff_dx12_shader_ps_color_out_palette,
-                ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_lines, palette));
+                internal_ff_dx12_draw_state_bucket_ps(&state, ff_dx12_draw_bucket_lines, palette));
 
             Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_sprites, color));
             ID3D12PipelineState* color_state = commands.pipeline_state;
@@ -413,13 +418,13 @@ namespace ff::test::dx12
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
             }
 
-            Assert::AreEqual<size_t>(1, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(1, internal_ff_dx12_draw_state_pipeline_count(&state));
 
             Assert::IsTrue(ff_dx12_reset_device(true));
 
             // Everything the old device owned is gone, so the matrix has to be empty again rather
             // than holding pointers into a dead device.
-            Assert::AreEqual<size_t>(0, ff_dx12_draw_state_pipeline_count(&state));
+            Assert::AreEqual<size_t>(0, internal_ff_dx12_draw_state_pipeline_count(&state));
             Assert::IsTrue(ff_dx12_draw_state_valid(&state));
             Assert::IsNotNull(ff_dx12_draw_state_root_signature(&state));
 
@@ -438,7 +443,7 @@ namespace ff::test::dx12
                 const ff_dx12_draw_state_flags flags = ff_dx12_draw_state_make_flags(DXGI_FORMAT_R8G8B8A8_UNORM, false, true, false);
                 Assert::IsTrue(ff_dx12_draw_state_apply(&state, &commands, ff_dx12_draw_bucket_sprites, flags));
                 Assert::IsNotNull(commands.pipeline_state);
-                Assert::AreEqual<size_t>(1, ff_dx12_draw_state_pipeline_count(&state));
+                Assert::AreEqual<size_t>(1, internal_ff_dx12_draw_state_pipeline_count(&state));
 
                 ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
             }
@@ -465,7 +470,7 @@ namespace ff::test::dx12
 
                 Assert::IsTrue(ff_dx12_reset_device(true));
                 Assert::IsTrue(ff_dx12_draw_state_valid(&state));
-                Assert::AreEqual<size_t>(0, ff_dx12_draw_state_pipeline_count(&state));
+                Assert::AreEqual<size_t>(0, internal_ff_dx12_draw_state_pipeline_count(&state));
             }
 
             ff_dx12_draw_state_destroy(&state);
@@ -492,8 +497,8 @@ namespace ff::test::dx12
             const ff_dx12_draw_state_flags flags = ff_dx12_draw_state_make_flags(DXGI_FORMAT_R8G8B8A8_UNORM, false, false, false);
             Assert::IsTrue(ff_dx12_draw_state_apply(&a, &commands, ff_dx12_draw_bucket_sprites, flags));
 
-            Assert::AreEqual<size_t>(1, ff_dx12_draw_state_pipeline_count(&a));
-            Assert::AreEqual<size_t>(0, ff_dx12_draw_state_pipeline_count(&b));
+            Assert::AreEqual<size_t>(1, internal_ff_dx12_draw_state_pipeline_count(&a));
+            Assert::AreEqual<size_t>(0, internal_ff_dx12_draw_state_pipeline_count(&b));
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
 

@@ -559,48 +559,62 @@ namespace ff::test::base
             DirectX::XMMATRIX xa = DirectX::XMMatrixTranslation(3.0f, -4.0f, 5.0f);
             DirectX::XMMATRIX xb = DirectX::XMMatrixScaling(2.0f, 3.0f, 4.0f);
 
-            assert_matrix_equal(ff_matrix_multiply(a, b), DirectX::XMMatrixMultiply(xa, xb));
+            assert_matrix_equal(ff_matrix_multiply(&a, &b), DirectX::XMMatrixMultiply(xa, xb));
         }
 
         TEST_METHOD(multiply_is_not_commutative)
         {
             ff_matrix a = ff_matrix_translation(3.0f, -4.0f, 5.0f);
             ff_matrix b = ff_matrix_scaling(2.0f, 3.0f, 4.0f);
-            Assert::IsFalse(ff_matrix_equal(ff_matrix_multiply(a, b), ff_matrix_multiply(b, a)));
+            const ff_matrix ab = ff_matrix_multiply(&a, &b);
+            const ff_matrix ba = ff_matrix_multiply(&b, &a);
+            Assert::IsFalse(ff_matrix_equal(&ab, &ba));
         }
 
         TEST_METHOD(identity_is_multiplicative_identity)
         {
             ff_matrix a = ff_matrix_translation(3.0f, -4.0f, 5.0f);
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_multiply(a, ff_matrix_identity()), a));
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_multiply(ff_matrix_identity(), a), a));
+            const ff_matrix identity = ff_matrix_identity();
+            const ff_matrix right_identity = ff_matrix_multiply(&a, &identity);
+            const ff_matrix left_identity = ff_matrix_multiply(&identity, &a);
+            Assert::IsTrue(ff_matrix_equal(&right_identity, &a));
+            Assert::IsTrue(ff_matrix_equal(&left_identity, &a));
         }
 
         TEST_METHOD(transpose_matches_directxmath)
         {
-            ff_matrix a = ff_matrix_multiply(ff_matrix_translation(3.0f, -4.0f, 5.0f), ff_matrix_scaling(2.0f, 3.0f, 4.0f));
+            const ff_matrix translation = ff_matrix_translation(3.0f, -4.0f, 5.0f);
+            const ff_matrix scaling = ff_matrix_scaling(2.0f, 3.0f, 4.0f);
+            ff_matrix a = ff_matrix_multiply(&translation, &scaling);
             DirectX::XMMATRIX xa = DirectX::XMMatrixMultiply(DirectX::XMMatrixTranslation(3.0f, -4.0f, 5.0f), DirectX::XMMatrixScaling(2.0f, 3.0f, 4.0f));
-            assert_matrix_equal(ff_matrix_transpose(a), DirectX::XMMatrixTranspose(xa));
+            assert_matrix_equal(ff_matrix_transpose(&a), DirectX::XMMatrixTranspose(xa));
         }
 
         TEST_METHOD(transpose_is_its_own_inverse)
         {
             ff_matrix a = ff_matrix_translation(3.0f, -4.0f, 5.0f);
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_transpose(ff_matrix_transpose(a)), a));
+            const ff_matrix transposed = ff_matrix_transpose(&a);
+            const ff_matrix restored = ff_matrix_transpose(&transposed);
+            Assert::IsTrue(ff_matrix_equal(&restored, &a));
         }
 
         TEST_METHOD(transform_point)
         {
-            ff_matrix m = ff_matrix_multiply(ff_matrix_scaling(2.0f, 3.0f, 1.0f), ff_matrix_translation(10.0f, 20.0f, 0.0f));
-            ff_point_float p = ff_matrix_transform_point(m, ff_point_float_make(1.0f, 1.0f));
+            const ff_matrix scaling = ff_matrix_scaling(2.0f, 3.0f, 1.0f);
+            const ff_matrix translation = ff_matrix_translation(10.0f, 20.0f, 0.0f);
+            ff_matrix m = ff_matrix_multiply(&scaling, &translation);
+            ff_point_float p = ff_matrix_transform_point(&m, ff_point_float_make(1.0f, 1.0f));
             Assert::AreEqual(12.0f, p.x);
             Assert::AreEqual(23.0f, p.y);
         }
 
         TEST_METHOD(equal)
         {
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_identity(), ff_matrix_identity()));
-            Assert::IsFalse(ff_matrix_equal(ff_matrix_identity(), ff_matrix_scaling(2.0f, 1.0f, 1.0f)));
+            const ff_matrix identity = ff_matrix_identity();
+            const ff_matrix other_identity = ff_matrix_identity();
+            const ff_matrix scaling = ff_matrix_scaling(2.0f, 1.0f, 1.0f);
+            Assert::IsTrue(ff_matrix_equal(&identity, &other_identity));
+            Assert::IsFalse(ff_matrix_equal(&identity, &scaling));
         }
 
         TEST_METHOD(multiply_is_associative)
@@ -609,8 +623,10 @@ namespace ff::test::base
             ff_matrix b = ff_matrix_scaling(2.0f, 3.0f, 4.0f);
             ff_matrix c = ff_matrix_translation(-1.0f, 2.0f, 0.0f);
 
-            ff_matrix left = ff_matrix_multiply(ff_matrix_multiply(a, b), c);
-            ff_matrix right = ff_matrix_multiply(a, ff_matrix_multiply(b, c));
+            const ff_matrix ab = ff_matrix_multiply(&a, &b);
+            const ff_matrix bc = ff_matrix_multiply(&b, &c);
+            ff_matrix left = ff_matrix_multiply(&ab, &c);
+            ff_matrix right = ff_matrix_multiply(&a, &bc);
             assert_matrix_equal(left, DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(
                 DirectX::XMMatrixTranslation(3.0f, -4.0f, 5.0f),
                 DirectX::XMMatrixScaling(2.0f, 3.0f, 4.0f)),
@@ -624,33 +640,42 @@ namespace ff::test::base
 
         TEST_METHOD(transpose_of_identity_is_identity)
         {
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_transpose(ff_matrix_identity()), ff_matrix_identity()));
+            const ff_matrix identity = ff_matrix_identity();
+            const ff_matrix transposed = ff_matrix_transpose(&identity);
+            Assert::IsTrue(ff_matrix_equal(&transposed, &identity));
         }
 
         TEST_METHOD(translation_composes_additively)
         {
             ff_matrix a = ff_matrix_translation(3.0f, -4.0f, 5.0f);
             ff_matrix b = ff_matrix_translation(1.0f, 2.0f, -5.0f);
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_multiply(a, b), ff_matrix_translation(4.0f, -2.0f, 0.0f)));
+            const ff_matrix composed = ff_matrix_multiply(&a, &b);
+            const ff_matrix expected = ff_matrix_translation(4.0f, -2.0f, 0.0f);
+            Assert::IsTrue(ff_matrix_equal(&composed, &expected));
         }
 
         TEST_METHOD(scaling_composes_multiplicatively)
         {
             ff_matrix a = ff_matrix_scaling(2.0f, 3.0f, 4.0f);
             ff_matrix b = ff_matrix_scaling(0.5f, 2.0f, 0.25f);
-            Assert::IsTrue(ff_matrix_equal(ff_matrix_multiply(a, b), ff_matrix_scaling(1.0f, 6.0f, 1.0f)));
+            const ff_matrix composed = ff_matrix_multiply(&a, &b);
+            const ff_matrix expected = ff_matrix_scaling(1.0f, 6.0f, 1.0f);
+            Assert::IsTrue(ff_matrix_equal(&composed, &expected));
         }
 
         TEST_METHOD(transform_point_by_identity_is_unchanged)
         {
             ff_point_float p = ff_point_float_make(3.0f, -4.0f);
-            Assert::IsTrue(ff_point_float_equal(ff_matrix_transform_point(ff_matrix_identity(), p), p));
+            const ff_matrix m = ff_matrix_identity();
+            Assert::IsTrue(ff_point_float_equal(ff_matrix_transform_point(&m, p), p));
         }
 
         TEST_METHOD(transform_point_matches_directxmath)
         {
-            ff_matrix m = ff_matrix_multiply(ff_matrix_scaling(2.0f, 3.0f, 1.0f), ff_matrix_translation(10.0f, 20.0f, 0.0f));
-            ff_point_float actual = ff_matrix_transform_point(m, ff_point_float_make(1.5f, -2.5f));
+            const ff_matrix scaling = ff_matrix_scaling(2.0f, 3.0f, 1.0f);
+            const ff_matrix translation = ff_matrix_translation(10.0f, 20.0f, 0.0f);
+            ff_matrix m = ff_matrix_multiply(&scaling, &translation);
+            ff_point_float actual = ff_matrix_transform_point(&m, ff_point_float_make(1.5f, -2.5f));
 
             DirectX::XMMATRIX xm = DirectX::XMMatrixMultiply(
                 DirectX::XMMatrixScaling(2.0f, 3.0f, 1.0f),
@@ -667,7 +692,7 @@ namespace ff::test::base
             ff_matrix a = ff_matrix_identity();
             ff_matrix b = ff_matrix_identity();
             b.m[7] = 0.0000001f;
-            Assert::IsFalse(ff_matrix_equal(a, b));
+            Assert::IsFalse(ff_matrix_equal(&a, &b));
         }
 
         TEST_METHOD(equal_detects_a_difference_in_every_element)
@@ -679,7 +704,7 @@ namespace ff::test::base
                 ff_matrix a = ff_matrix_identity();
                 ff_matrix b = ff_matrix_identity();
                 b.m[i] += 1.0f;
-                Assert::IsFalse(ff_matrix_equal(a, b));
+                Assert::IsFalse(ff_matrix_equal(&a, &b));
             }
         }
     };
@@ -707,15 +732,15 @@ namespace ff::test::base
 
             // Top-left of the world maps to the top-left of clip space, bottom-right to the
             // opposite corner. Y is flipped because clip space is y-up and the world is y-down.
-            ff_point_float top_left = ff_matrix_transform_point(m, ff_point_float_make(0.0f, 0.0f));
+            ff_point_float top_left = ff_matrix_transform_point(&m, ff_point_float_make(0.0f, 0.0f));
             Assert::AreEqual(-1.0f, top_left.x, 0.0001f);
             Assert::AreEqual(1.0f, top_left.y, 0.0001f);
 
-            ff_point_float bottom_right = ff_matrix_transform_point(m, ff_point_float_make(100.0f, 50.0f));
+            ff_point_float bottom_right = ff_matrix_transform_point(&m, ff_point_float_make(100.0f, 50.0f));
             Assert::AreEqual(1.0f, bottom_right.x, 0.0001f);
             Assert::AreEqual(-1.0f, bottom_right.y, 0.0001f);
 
-            ff_point_float center = ff_matrix_transform_point(m, ff_point_float_make(50.0f, 25.0f));
+            ff_point_float center = ff_matrix_transform_point(&m, ff_point_float_make(50.0f, 25.0f));
             Assert::AreEqual(0.0f, center.x, 0.0001f);
             Assert::AreEqual(0.0f, center.y, 0.0001f);
         }
@@ -729,7 +754,7 @@ namespace ff::test::base
             ff_matrix m = {};
             Assert::IsTrue(ff_dx12_view_matrix(size, view, world, false, &m));
 
-            ff_point_float top_left = ff_matrix_transform_point(m, ff_point_float_make(10.0f, 20.0f));
+            ff_point_float top_left = ff_matrix_transform_point(&m, ff_point_float_make(10.0f, 20.0f));
             Assert::AreEqual(-1.0f, top_left.x, 0.0001f);
             Assert::AreEqual(1.0f, top_left.y, 0.0001f);
         }
@@ -764,7 +789,8 @@ namespace ff::test::base
 
             ff_matrix m = {};
             Assert::IsFalse(ff_dx12_view_matrix(size, view, ff_rect_float_make(0.0f, 0.0f, 0.0f, 50.0f), false, &m));
-            Assert::IsTrue(ff_matrix_equal(m, ff_matrix_identity()));
+            const ff_matrix identity = ff_matrix_identity();
+            Assert::IsTrue(ff_matrix_equal(&m, &identity));
 
             Assert::IsFalse(ff_dx12_view_matrix(size, view, ff_rect_float_make(0.0f, 0.0f, 100.0f, 0.0f), false, &m));
         }
@@ -776,7 +802,8 @@ namespace ff::test::base
 
             ff_matrix m = {};
             Assert::IsFalse(ff_dx12_view_matrix(size, ff_rect_float_zero(), world, false, &m));
-            Assert::IsTrue(ff_matrix_equal(m, ff_matrix_identity()));
+            const ff_matrix identity = ff_matrix_identity();
+            Assert::IsTrue(ff_matrix_equal(&m, &identity));
         }
 
         TEST_METHOD(ignore_rotation_matches_unrotated)
@@ -797,7 +824,7 @@ namespace ff::test::base
 
                 ff_matrix m = {};
                 Assert::IsTrue(ff_dx12_view_matrix(size, view, world, true, &m));
-                Assert::IsTrue(ff_matrix_equal(m, unrotated));
+                Assert::IsTrue(ff_matrix_equal(&m, &unrotated));
             }
         }
 
@@ -819,7 +846,7 @@ namespace ff::test::base
             {
                 for (int j = i + 1; j < ff_dx12_rotation_count; j++)
                 {
-                    Assert::IsFalse(ff_matrix_equal(matrices[i], matrices[j]));
+                    Assert::IsFalse(ff_matrix_equal(&matrices[i], &matrices[j]));
                 }
             }
         }
@@ -835,7 +862,7 @@ namespace ff::test::base
             ff_matrix m = {};
             Assert::IsTrue(ff_dx12_view_matrix(size, view, world, false, &m));
 
-            ff_point_float top_left = ff_matrix_transform_point(m, ff_point_float_make(0.0f, 0.0f));
+            ff_point_float top_left = ff_matrix_transform_point(&m, ff_point_float_make(0.0f, 0.0f));
             Assert::AreEqual(1.0f, top_left.x, 0.0001f);
             Assert::AreEqual(-1.0f, top_left.y, 0.0001f);
         }
@@ -865,7 +892,8 @@ namespace ff::test::base
             ff_matrix m = {};
             Assert::IsFalse(ff_dx12_view_matrix(size, view, world, false, &m));
             Assert::AreEqual(scoped_assert_counter::expected_count(1), scoped_assert_counter::count);
-            Assert::IsTrue(ff_matrix_equal(m, ff_matrix_identity()));
+            const ff_matrix identity = ff_matrix_identity();
+            Assert::IsTrue(ff_matrix_equal(&m, &identity));
         }
 
         TEST_METHOD(inverted_world_rect_still_produces_a_matrix)
@@ -879,7 +907,7 @@ namespace ff::test::base
             ff_matrix m = {};
             Assert::IsTrue(ff_dx12_view_matrix(size, view, world, false, &m));
 
-            ff_point_float right_edge = ff_matrix_transform_point(m, ff_point_float_make(0.0f, 0.0f));
+            ff_point_float right_edge = ff_matrix_transform_point(&m, ff_point_float_make(0.0f, 0.0f));
             Assert::AreEqual(1.0f, right_edge.x, 0.0001f);
         }
 
@@ -894,7 +922,7 @@ namespace ff::test::base
             ff_matrix b = {};
             Assert::IsTrue(ff_dx12_view_matrix(size, ff_rect_float_make(0.0f, 0.0f, 800.0f, 600.0f), world, false, &a));
             Assert::IsTrue(ff_dx12_view_matrix(size, ff_rect_float_make(0.0f, 0.0f, 10.0f, 10.0f), world, false, &b));
-            Assert::IsTrue(ff_matrix_equal(a, b));
+            Assert::IsTrue(ff_matrix_equal(&a, &b));
         }
 
         TEST_METHOD(negative_view_rect_area_is_rejected)
@@ -905,7 +933,8 @@ namespace ff::test::base
 
             ff_matrix m = {};
             Assert::IsFalse(ff_dx12_view_matrix(size, view, world, false, &m));
-            Assert::IsTrue(ff_matrix_equal(m, ff_matrix_identity()));
+            const ff_matrix identity = ff_matrix_identity();
+            Assert::IsTrue(ff_matrix_equal(&m, &identity));
         }
     };
 }

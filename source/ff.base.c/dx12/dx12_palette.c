@@ -43,7 +43,7 @@ bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_dx12_commands* com
     }
 
     data->row_count = row_count;
-    ff_dx12_add_device_child(&data->device_child, data, ff_dx12_device_child_type_palette_data);
+    internal_ff_dx12_add_device_child(&data->device_child, data, ff_dx12_device_child_type_palette_data);
 
     return true;
 }
@@ -52,7 +52,7 @@ void ff_dx12_palette_data_destroy(ff_dx12_palette_data* data)
 {
     FF_CHECK_RET(data);
 
-    ff_dx12_remove_device_child(&data->device_child);
+    internal_ff_dx12_remove_device_child(&data->device_child);
     ff_dx12_texture_destroy(&data->texture);
     ff_arena_destroy(&data->arena);
 

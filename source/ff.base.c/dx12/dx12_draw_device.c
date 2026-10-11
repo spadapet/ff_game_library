@@ -10,6 +10,25 @@
 #include "dx12/dx12_mem_allocator.h"
 #include "dx12/dx12_texture.h"
 
+enum
+{
+    s_circle_segments = 32,
+    s_rectangle_index_start = 0,
+    s_rectangle_index_count = 6,
+    s_rectangle_outline_index_start = s_rectangle_index_start + s_rectangle_index_count,
+    s_rectangle_outline_index_count = 24,
+    s_circle_filled_index_start = s_rectangle_outline_index_start + s_rectangle_outline_index_count,
+    s_circle_filled_index_count = s_circle_segments * 3,
+    s_circle_outline_index_start = s_circle_filled_index_start + s_circle_filled_index_count,
+    s_circle_outline_index_count = s_circle_segments * 6,
+    s_static_index_count = s_circle_outline_index_start + s_circle_outline_index_count,
+    s_circle_vertex_count = s_circle_segments * 2 + 1,
+    s_circle_center_vertex = s_circle_segments * 2,
+};
+
+static const uint32_t s_triangle_index_start = 0;
+static const uint32_t s_triangle_index_count = 3;
+
 typedef struct bucket_layout
 {
     size_t item_size;
@@ -49,7 +68,7 @@ static const uint16_t s_rectangle_indexes[] =
 };
 
 static_assert(_countof(s_rectangle_indexes) ==
-    FF_DX12_RECTANGLE_INDEX_COUNT + FF_DX12_RECTANGLE_OUTLINE_INDEX_COUNT,
+    s_rectangle_index_count + s_rectangle_outline_index_count,
     "rectangle index ranges must cover the whole table");
 
 // The circle index patterns are regular, so they are generated rather than written out: a filled
@@ -59,24 +78,24 @@ static void build_static_indexes(uint16_t* indexes)
 {
     memcpy(indexes, s_rectangle_indexes, sizeof(s_rectangle_indexes));
 
-    uint16_t* filled = indexes + FF_DX12_CIRCLE_FILLED_INDEX_START;
+    uint16_t* filled = indexes + s_circle_filled_index_start;
 
-    for (uint16_t i = 0; i < FF_DX12_CIRCLE_SEGMENTS; i++)
+    for (uint16_t i = 0; i < s_circle_segments; i++)
     {
-        const uint16_t next = (uint16_t)((i + 1) % FF_DX12_CIRCLE_SEGMENTS);
+        const uint16_t next = (uint16_t)((i + 1) % s_circle_segments);
 
         filled[i * 3 + 0] = i;
-        filled[i * 3 + 1] = FF_DX12_CIRCLE_CENTER_VERTEX;
+        filled[i * 3 + 1] = s_circle_center_vertex;
         filled[i * 3 + 2] = next;
     }
 
-    uint16_t* outline = indexes + FF_DX12_CIRCLE_OUTLINE_INDEX_START;
+    uint16_t* outline = indexes + s_circle_outline_index_start;
 
-    for (uint16_t i = 0; i < FF_DX12_CIRCLE_SEGMENTS; i++)
+    for (uint16_t i = 0; i < s_circle_segments; i++)
     {
-        const uint16_t next = (uint16_t)((i + 1) % FF_DX12_CIRCLE_SEGMENTS);
-        const uint16_t inner = (uint16_t)(i + FF_DX12_CIRCLE_SEGMENTS);
-        const uint16_t inner_next = (uint16_t)(next + FF_DX12_CIRCLE_SEGMENTS);
+        const uint16_t next = (uint16_t)((i + 1) % s_circle_segments);
+        const uint16_t inner = (uint16_t)(i + s_circle_segments);
+        const uint16_t inner_next = (uint16_t)(next + s_circle_segments);
 
         outline[i * 6 + 0] = i;
         outline[i * 6 + 1] = inner;
@@ -89,16 +108,16 @@ static void build_static_indexes(uint16_t* indexes)
 
 static void build_circle_vertexes(ff_point_float* vertexes)
 {
-    for (size_t i = 0; i < FF_DX12_CIRCLE_SEGMENTS; i++)
+    for (size_t i = 0; i < s_circle_segments; i++)
     {
-        const double angle = (double)i * 2.0 * 3.14159265358979323846 / FF_DX12_CIRCLE_SEGMENTS;
+        const double angle = (double)i * 2.0 * 3.14159265358979323846 / s_circle_segments;
         const ff_point_float point = { .x = (float)cos(angle), .y = (float)sin(angle) };
 
         vertexes[i] = point;
-        vertexes[i + FF_DX12_CIRCLE_SEGMENTS] = point;
+        vertexes[i + s_circle_segments] = point;
     }
 
-    vertexes[FF_DX12_CIRCLE_CENTER_VERTEX] = (ff_point_float){ .x = 0.0f, .y = 0.0f };
+    vertexes[s_circle_center_vertex] = (ff_point_float){ .x = 0.0f, .y = 0.0f };
 }
 
 // The static geometry is uploaded through a command list, which init has no access to, so the
@@ -107,7 +126,7 @@ static bool init_static_geometry(ff_dx12_draw_device* device, ff_dx12_commands* 
 {
     if (!ff_dx12_buffer_valid(&device->index_buffer))
     {
-        uint16_t indexes[FF_DX12_STATIC_INDEX_COUNT];
+        uint16_t indexes[s_static_index_count];
         build_static_indexes(indexes);
         FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->index_buffer,
             ff_dx12_buffer_type_index, commands, indexes, sizeof(indexes)), false);
@@ -115,7 +134,7 @@ static bool init_static_geometry(ff_dx12_draw_device* device, ff_dx12_commands* 
 
     if (!ff_dx12_buffer_valid(&device->circle_vertex_buffer))
     {
-        ff_point_float vertexes[FF_DX12_CIRCLE_VERTEX_COUNT];
+        ff_point_float vertexes[s_circle_vertex_count];
         build_circle_vertexes(vertexes);
         FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->circle_vertex_buffer,
             ff_dx12_buffer_type_vertex, commands, vertexes, sizeof(vertexes)), false);
@@ -189,7 +208,7 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
     }
 
     device->state = ff_dx12_draw_state_machine_valid;
-    ff_dx12_add_device_child(&device->device_child, device, ff_dx12_device_child_type_draw_device);
+    internal_ff_dx12_add_device_child(&device->device_child, device, ff_dx12_device_child_type_draw_device);
 
     return true;
 }
@@ -218,7 +237,7 @@ void ff_dx12_draw_device_destroy(ff_dx12_draw_device* device)
 {
     FF_ASSERT_RET(device);
 
-    ff_dx12_remove_device_child(&device->device_child);
+    internal_ff_dx12_remove_device_child(&device->device_child);
 
     ff_dx12_buffer_destroy(&device->index_buffer);
     ff_dx12_buffer_destroy(&device->circle_vertex_buffer);
@@ -410,7 +429,7 @@ static D3D12_GPU_VIRTUAL_ADDRESS update_constants(ff_dx12_draw_device* device)
     // The shader transforms row-vector style (mul(pos, m)) and HLSL cbuffers default to
     // column-major, so the projection is transposed on the way in exactly like the model matrices
     // are at intern time.
-    device->vs_constants_0.projection = ff_matrix_transpose(device->view_matrix);
+    device->vs_constants_0.projection = ff_matrix_transpose(&device->view_matrix);
 
     FF_CHECK_RET_VAL(device->matrix_count, 0);
 
@@ -454,19 +473,19 @@ static index_range bucket_index_range(ff_dx12_draw_bucket bucket)
         case ff_dx12_draw_bucket_palette_sprites:
         case ff_dx12_draw_bucket_lines:
         case ff_dx12_draw_bucket_rectangles_filled:
-            return (index_range){ .start = FF_DX12_RECTANGLE_INDEX_START, .count = FF_DX12_RECTANGLE_INDEX_COUNT };
+            return (index_range){ .start = s_rectangle_index_start, .count = s_rectangle_index_count };
 
         case ff_dx12_draw_bucket_rectangles_outline:
-            return (index_range){ .start = FF_DX12_RECTANGLE_OUTLINE_INDEX_START, .count = FF_DX12_RECTANGLE_OUTLINE_INDEX_COUNT };
+            return (index_range){ .start = s_rectangle_outline_index_start, .count = s_rectangle_outline_index_count };
 
         case ff_dx12_draw_bucket_triangles:
-            return (index_range){ .start = FF_DX12_TRIANGLE_INDEX_START, .count = FF_DX12_TRIANGLE_INDEX_COUNT };
+            return (index_range){ .start = s_triangle_index_start, .count = s_triangle_index_count };
 
         case ff_dx12_draw_bucket_circles_filled:
-            return (index_range){ .start = FF_DX12_CIRCLE_FILLED_INDEX_START, .count = FF_DX12_CIRCLE_FILLED_INDEX_COUNT };
+            return (index_range){ .start = s_circle_filled_index_start, .count = s_circle_filled_index_count };
 
         case ff_dx12_draw_bucket_circles_outline:
-            return (index_range){ .start = FF_DX12_CIRCLE_OUTLINE_INDEX_START, .count = FF_DX12_CIRCLE_OUTLINE_INDEX_COUNT };
+            return (index_range){ .start = s_circle_outline_index_start, .count = s_circle_outline_index_count };
     }
 
     FF_DEBUG_FAIL_RET_VAL((index_range){ 0 });
@@ -824,13 +843,13 @@ float ff_dx12_draw_device_nudge_depth(ff_dx12_draw_device* device)
     return device->draw_depth;
 }
 
-void ff_dx12_draw_device_set_world_matrix(ff_dx12_draw_device* device, ff_matrix matrix)
+void ff_dx12_draw_device_set_world_matrix(ff_dx12_draw_device* device, const ff_matrix* matrix)
 {
-    FF_ASSERT_RET(device);
+    FF_ASSERT_RET(device && matrix);
 
-    FF_CHECK_RET(!ff_matrix_equal(device->world_matrix, matrix));
+    FF_CHECK_RET(!ff_matrix_equal(&device->world_matrix, matrix));
 
-    device->world_matrix = matrix;
+    device->world_matrix = *matrix;
     device->matrix_index = FF_DX12_INVALID_INDEX;
 }
 
@@ -847,11 +866,11 @@ static uint32_t matrix_index_no_flush(ff_dx12_draw_device* device)
     {
         // The shader wants column-major, so the transpose happens once here at intern time rather
         // than per instance.
-        const ff_matrix matrix = ff_matrix_transpose(device->world_matrix);
+        const ff_matrix matrix = ff_matrix_transpose(&device->world_matrix);
 
         for (size_t i = 0; i < device->matrix_count; i++)
         {
-            if (ff_matrix_equal(device->matrixes[i].matrix, matrix))
+            if (ff_matrix_equal(&device->matrixes[i].matrix, &matrix))
             {
                 device->matrix_index = device->matrixes[i].index;
                 return device->matrix_index;

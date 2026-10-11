@@ -1,10 +1,21 @@
 #pragma once
 
+#define FF_DX12_SAMPLER_COUNT 2
+#define FF_DX12_VERTEX_SLOT 0
+#define FF_DX12_INSTANCE_SLOT 1
+#define FF_DX12_VS_CONSTANTS_0_DWORD_COUNT 18
+
 #include "dx12_device_child.h"
+#include "dx12_draw_state.h"
 #include "dx12_pacing.h"
+
+#define FF_DX12_MAX_RENDER_COUNT 0x80000
+#define FF_DX12_MAX_RENDER_DEPTH 1.0f
+#define FF_DX12_RENDER_DEPTH_DELTA (FF_DX12_MAX_RENDER_DEPTH / (float)FF_DX12_MAX_RENDER_COUNT)
 
 typedef struct ff_arena ff_arena;
 typedef struct ff_dx12_buffer ff_dx12_buffer;
+typedef struct ff_dx12_command_cache ff_dx12_command_cache;
 typedef struct ff_dx12_commands ff_dx12_commands;
 typedef struct ff_dx12_cpu_descriptor_allocator ff_dx12_cpu_descriptor_allocator;
 typedef struct ff_dx12_depth ff_dx12_depth;
@@ -20,6 +31,7 @@ typedef struct ff_dx12_palette_data ff_dx12_palette_data;
 typedef struct ff_dx12_queue ff_dx12_queue;
 typedef struct ff_dx12_resource ff_dx12_resource;
 typedef struct ff_dx12_residency_data ff_dx12_residency_data;
+typedef struct ff_dx12_residency_set ff_dx12_residency_set;
 typedef struct ff_dx12_target_texture ff_dx12_target_texture;
 typedef struct ff_dx12_target_window ff_dx12_target_window;
 typedef struct ff_dx12_texture ff_dx12_texture;
@@ -37,6 +49,26 @@ size_t internal_ff_dx12_fix_sample_count(DXGI_FORMAT format, size_t sample_count
 void internal_ff_dx12_forget_residency_data(ff_dx12_residency_data* data);
 void internal_ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx12_mem_range* mem_range, const ff_dx12_fence_values* fence_values);
 void internal_ff_dx12_flush_keep_alive(void);
+
+void internal_ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_commands* prev_commands,
+    ff_dx12_commands* next_commands, ff_dx12_fence_values* wait_before_execute);
+ff_dx12_command_cache* internal_ff_dx12_commands_take_cache(ff_dx12_commands* commands);
+
+void internal_ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency_data* data);
+void internal_ff_dx12_queue_forget_resource(ff_dx12_queue* queue, ff_dx12_resource* resource);
+void internal_ff_dx12_residency_set_clear(ff_dx12_residency_set* set);
+bool internal_ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_dx12_residency_data* data);
+void internal_ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_data* data);
+
+void internal_ff_dx12_add_device_child(ff_dx12_device_child* child, void* owner, ff_dx12_device_child_type type);
+void internal_ff_dx12_remove_device_child(ff_dx12_device_child* child);
+ff_dx12_device_child* internal_ff_dx12_device_child_first(ff_dx12_device_child_type type);
+ff_dx12_device_child* internal_ff_dx12_device_child_next(ff_dx12_device_child* child);
+size_t internal_ff_dx12_device_child_count(ff_dx12_device_child_type type);
+
+size_t internal_ff_dx12_draw_state_pipeline_count(const ff_dx12_draw_state* state);
+ff_dx12_shader internal_ff_dx12_draw_state_bucket_ps(const ff_dx12_draw_state* state,
+    ff_dx12_draw_bucket bucket, ff_dx12_draw_state_flags flags);
 
 void internal_ff_dx12_pacing_init(ff_dx12_pacing* pacing, double refresh_seconds, ff_dx12_pacing_mode mode);
 void internal_ff_dx12_pacing_interrupt(ff_dx12_pacing* pacing);
@@ -57,6 +89,7 @@ void internal_ff_dx12_reset_shutdown(void);
 
 void internal_ff_dx12_device_child_reset_begin(void);
 void internal_ff_dx12_device_child_reset_end(void);
+bool internal_ff_dx12_device_child_resetting(void);
 void internal_ff_dx12_device_child_walk_begin(ff_dx12_device_child_type type);
 void internal_ff_dx12_device_child_walk_end(void);
 ff_dx12_device_child* internal_ff_dx12_device_child_walk_next(void);
@@ -78,6 +111,7 @@ bool internal_ff_dx12_buffer_reset(ff_dx12_buffer* buffer, ff_dx12_commands* com
 
 bool internal_ff_dx12_texture_reset(ff_dx12_texture* texture);
 bool internal_ff_dx12_texture_view_reset(ff_dx12_texture_view* view);
+size_t internal_ff_dx12_texture_view_reset_count(const ff_dx12_texture_view* view);
 
 bool internal_ff_dx12_depth_reset(ff_dx12_depth* depth);
 

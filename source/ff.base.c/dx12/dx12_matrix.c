@@ -43,7 +43,7 @@ ff_matrix ff_matrix_identity(void)
     return matrix;
 }
 
-ff_matrix ff_matrix_multiply(ff_matrix l, ff_matrix r)
+ff_matrix ff_matrix_multiply(const ff_matrix* l, const ff_matrix* r)
 {
     ff_matrix matrix = { 0 };
 
@@ -55,7 +55,7 @@ ff_matrix ff_matrix_multiply(ff_matrix l, ff_matrix r)
 
             for (size_t i = 0; i < 4; i++)
             {
-                sum += l.m[row * 4 + i] * r.m[i * 4 + column];
+                sum += l->m[row * 4 + i] * r->m[i * 4 + column];
             }
 
             matrix.m[row * 4 + column] = sum;
@@ -65,7 +65,7 @@ ff_matrix ff_matrix_multiply(ff_matrix l, ff_matrix r)
     return matrix;
 }
 
-ff_matrix ff_matrix_transpose(ff_matrix value)
+ff_matrix ff_matrix_transpose(const ff_matrix* value)
 {
     ff_matrix matrix = { 0 };
 
@@ -73,7 +73,7 @@ ff_matrix ff_matrix_transpose(ff_matrix value)
     {
         for (size_t column = 0; column < 4; column++)
         {
-            matrix.m[row * 4 + column] = value.m[column * 4 + row];
+            matrix.m[row * 4 + column] = value->m[column * 4 + row];
         }
     }
 
@@ -99,20 +99,20 @@ ff_matrix ff_matrix_scaling(float x, float y, float z)
     return matrix;
 }
 
-bool ff_matrix_equal(ff_matrix l, ff_matrix r)
+bool ff_matrix_equal(const ff_matrix* l, const ff_matrix* r)
 {
     for (size_t i = 0; i < 16; i++)
     {
-        FF_CHECK_RET_VAL(l.m[i] == r.m[i], false);
+        FF_CHECK_RET_VAL(l->m[i] == r->m[i], false);
     }
 
     return true;
 }
 
-ff_point_float ff_matrix_transform_point(ff_matrix value, ff_point_float point)
+ff_point_float ff_matrix_transform_point(const ff_matrix* matrix, ff_point_float point)
 {
-    float x = point.x * value.m[0] + point.y * value.m[4] + value.m[12];
-    float y = point.x * value.m[1] + point.y * value.m[5] + value.m[13];
+    float x = point.x * matrix->m[0] + point.y * matrix->m[4] + matrix->m[12];
+    float y = point.x * matrix->m[1] + point.y * matrix->m[5] + matrix->m[13];
     return ff_point_float_make(x, y);
 }
 
@@ -127,8 +127,9 @@ bool ff_dx12_view_matrix(ff_dx12_target_size target_size, ff_rect_float view_rec
 
     ff_matrix translate = ff_matrix_translation(-world_rect.left, -world_rect.top, 0.0f);
     ff_matrix scale = ff_matrix_scaling(1.0f / ff_rect_float_width(world_rect), 1.0f / ff_rect_float_height(world_rect), 1.0f);
-    ff_matrix rotate = s_rotate_matrices[target_size.rotation][ignore_rotation ? 1 : 0];
+    const ff_matrix* rotate = &s_rotate_matrices[target_size.rotation][ignore_rotation ? 1 : 0];
 
-    *matrix = ff_matrix_multiply(ff_matrix_multiply(translate, scale), rotate);
+    const ff_matrix translated_scale = ff_matrix_multiply(&translate, &scale);
+    *matrix = ff_matrix_multiply(&translated_scale, rotate);
     return true;
 }

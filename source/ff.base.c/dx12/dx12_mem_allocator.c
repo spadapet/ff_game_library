@@ -287,7 +287,7 @@ void ff_dx12_mem_buffer_free_range(ff_dx12_mem_buffer* buffer, const ff_dx12_mem
     }
 }
 
-bool ff_dx12_mem_buffer_frame_complete(ff_dx12_mem_buffer* buffer)
+static bool mem_buffer_frame_complete(ff_dx12_mem_buffer* buffer)
 {
     FF_ASSERT_RET_VAL(buffer, false);
 
@@ -425,7 +425,7 @@ void ff_dx12_mem_allocator_init(ff_dx12_mem_allocator* allocator, uint64_t initi
         : 0;
 
     ff_arena_init_heap_local(&allocator->arena, 0);
-    ff_dx12_add_device_child(&allocator->device_child, allocator, ff_dx12_device_child_type_mem_allocator);
+    internal_ff_dx12_add_device_child(&allocator->device_child, allocator, ff_dx12_device_child_type_mem_allocator);
 }
 
 static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator)
@@ -448,7 +448,7 @@ static ff_dx12_mem_buffer* allocator_new_buffer(ff_dx12_mem_allocator* allocator
 void ff_dx12_mem_allocator_destroy(ff_dx12_mem_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
-    ff_dx12_remove_device_child(&allocator->device_child);
+    internal_ff_dx12_remove_device_child(&allocator->device_child);
 
     // mem_buffer_destroy clears the ring bookkeeping itself: ranges are retired by fence rather
     // than by an explicit free, so an outstanding count at teardown is expected.
@@ -563,7 +563,7 @@ void ff_dx12_mem_allocator_frame_complete(ff_dx12_mem_allocator* allocator)
     while (*link)
     {
         ff_dx12_mem_buffer* buffer = *link;
-        bool has_ranges = ff_dx12_mem_buffer_frame_complete(buffer);
+        bool has_ranges = mem_buffer_frame_complete(buffer);
 
         if (buffer != allocator->buffers && !has_ranges && allocator->buffers_count > 1)
         {

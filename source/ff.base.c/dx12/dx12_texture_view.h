@@ -41,8 +41,3 @@ size_t ff_dx12_texture_view_mip_start(const ff_dx12_texture_view* view);
 size_t ff_dx12_texture_view_mip_count(const ff_dx12_texture_view* view);
 
 D3D12_CPU_DESCRIPTOR_HANDLE ff_dx12_texture_view_cpu_handle(ff_dx12_texture_view* view);
-
-// Counts how many times the SRV has actually been rewritten against a rebuilt texture. Without
-// this a reset test can only observe that the view still returns a usable handle, which stays
-// true even if the descriptor was never refreshed and still describes the destroyed resource.
-size_t ff_dx12_texture_view_reset_count(const ff_dx12_texture_view* view);

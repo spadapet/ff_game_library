@@ -1,17 +1,5 @@
 #pragma once
 
-// Registry of every live object that owns GPU state and has to be rebuilt when the device is
-// recreated. This replaces the old C++ device_child_base virtual interface: instead of a vtable,
-// each object embeds a node tagged with its type, and dx12_reset.c switches on that tag.
-//
-// Priority is a pure function of the type (it is the enum value), so it can never disagree with
-// what the object actually is. before_reset runs in reverse priority order, while the old device
-// is still alive, and reset runs in forward order against the new device. Ordering the enum so
-// that owners come before the things they own means a resource frees its descriptor and memory
-// ranges before the allocators holding them are touched.
-//
-// Shared singletons and caller-created owners use the same reset walk. dx12_globals.c still owns
-// lazy construction and shutdown for the shared instances.
 typedef enum ff_dx12_device_child_type
 {
     ff_dx12_device_child_type_mem_allocator,
@@ -32,8 +20,6 @@ typedef enum ff_dx12_device_child_type
     ff_dx12_device_child_type_count,
 } ff_dx12_device_child_type;
 
-// Embedded in each registered object. 'owner' points back at the containing struct, since the
-// node is a member rather than a base class.
 typedef struct ff_dx12_device_child
 {
     struct ff_dx12_device_child* prev;
@@ -43,15 +29,3 @@ typedef struct ff_dx12_device_child
     bool pending_reset;
     bool registered;
 } ff_dx12_device_child;
-
-// Removing an unregistered node is harmless, so a destroy can call it unconditionally. Objects
-// register in their init and remove in their destroy.
-void ff_dx12_add_device_child(ff_dx12_device_child* child, void* owner, ff_dx12_device_child_type type);
-void ff_dx12_remove_device_child(ff_dx12_device_child* child);
-
-ff_dx12_device_child* ff_dx12_device_child_first(ff_dx12_device_child_type type);
-ff_dx12_device_child* ff_dx12_device_child_next(ff_dx12_device_child* child);
-size_t ff_dx12_device_child_count(ff_dx12_device_child_type type);
-
-// True while a device reset is walking the registry.
-bool ff_dx12_device_child_resetting(void);

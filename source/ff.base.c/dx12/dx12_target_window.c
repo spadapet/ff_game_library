@@ -225,7 +225,7 @@ bool ff_dx12_target_window_init(ff_dx12_target_window* target, HWND hwnd)
         return false;
     }
 
-    ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_window);
+    internal_ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_window);
 
     return true;
 }
@@ -237,7 +237,7 @@ void ff_dx12_target_window_destroy(ff_dx12_target_window* target)
     // Must happen before the object dies, or the deferred queue would hold a pointer to it.
     ff_dx12_cancel_deferred_target(target);
 
-    ff_dx12_remove_device_child(&target->device_child);
+    internal_ff_dx12_remove_device_child(&target->device_child);
 
     // The GPU may still be presenting from these buffers, and the swap chain is about to go away,
     // so everything has to be retired before the references are dropped.

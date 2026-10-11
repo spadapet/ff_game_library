@@ -1,9 +1,5 @@
 #include "pch.h"
 
-// D3DReflect is used only to validate shader blobs in tests; the library itself never reflects.
-#include <d3dcompiler.h>
-#pragma comment(lib, "d3dcompiler.lib")
-
 namespace ff::test::dx12
 {
     // The module-wide assert listener fails any test that trips an assert, which makes the

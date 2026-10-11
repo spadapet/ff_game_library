@@ -14,10 +14,7 @@ typedef struct ff_color
     {
         struct
         {
-            float r;
-            float g;
-            float b;
-            float a;
+            float r, g, b, a;
         } rgba;
 
         struct
@@ -32,10 +29,7 @@ typedef struct ff_color
 
 typedef struct ff_color_shader
 {
-    float r;
-    float g;
-    float b;
-    float a;
+    float r, g, b, a;
 } ff_color_shader;
 
 ff_color ff_color_rgba(float r, float g, float b, float a);

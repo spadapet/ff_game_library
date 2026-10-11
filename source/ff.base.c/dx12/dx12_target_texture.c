@@ -35,7 +35,7 @@ bool ff_dx12_target_texture_init(ff_dx12_target_texture* target, ff_dx12_texture
         ff_dx12_descriptor_range_cpu_handle(&target->view, 0),
         target->array_start, target->array_count, target->mip_level);
 
-    ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_texture);
+    internal_ff_dx12_add_device_child(&target->device_child, target, ff_dx12_device_child_type_target_texture);
 
     return true;
 }
@@ -44,7 +44,7 @@ void ff_dx12_target_texture_destroy(ff_dx12_target_texture* target)
 {
     FF_CHECK_RET(target);
 
-    ff_dx12_remove_device_child(&target->device_child);
+    internal_ff_dx12_remove_device_child(&target->device_child);
     ff_dx12_descriptor_range_free(&target->view);
     *target = (ff_dx12_target_texture){ 0 };
 }

@@ -97,7 +97,7 @@ static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)desc->MipLevels);
 
-    ff_dx12_add_device_child(&resource->device_child, resource, ff_dx12_device_child_type_resource);
+    internal_ff_dx12_add_device_child(&resource->device_child, resource, ff_dx12_device_child_type_resource);
 
     return true;
 }
@@ -210,7 +210,7 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
 
-    ff_dx12_remove_device_child(&resource->device_child);
+    internal_ff_dx12_remove_device_child(&resource->device_child);
 
     // A resource can be destroyed while a command list that referenced it is still recording,
     // which happens whenever a buffer or depth buffer is resized mid-frame. The recorded barriers

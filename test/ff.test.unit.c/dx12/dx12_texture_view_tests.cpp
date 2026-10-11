@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "../../../source/ff.base.c/dx12/dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     static bool init_texture(ff_dx12_texture* texture, size_t array_size, size_t mip_count)
@@ -115,7 +120,7 @@ namespace ff::test::dx12
             const bool reset_ok = ff_dx12_reset_device(true);
             const D3D12_CPU_DESCRIPTOR_HANDLE after = ff_dx12_texture_view_cpu_handle(&view);
             const size_t slot_after = view.view.start;
-            const size_t rc = ff_dx12_texture_view_reset_count(&view);
+            const size_t rc = internal_ff_dx12_texture_view_reset_count(&view);
             const size_t as = ff_dx12_texture_view_array_start(&view);
             const size_t ac = ff_dx12_texture_view_array_count(&view);
             const bool still_valid = ff_dx12_texture_view_valid(&view);
@@ -147,7 +152,7 @@ namespace ff::test::dx12
 
             // Nothing was allocated before the reset, so there was no descriptor to refresh; the
             // lazy allocation after the reset is what makes it usable, not the reset pass.
-            Assert::AreEqual((size_t)0, ff_dx12_texture_view_reset_count(&view));
+            Assert::AreEqual((size_t)0, internal_ff_dx12_texture_view_reset_count(&view));
             Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_cpu_handle(&view).ptr);
 
             ff_dx12_texture_view_destroy(&view);
@@ -177,7 +182,7 @@ namespace ff::test::dx12
             {
                 Assert::AreNotEqual((size_t)0, (size_t)ff_dx12_texture_view_cpu_handle(&views[i]).ptr);
                 Assert::AreEqual(slots_before[i], views[i].view.start);
-                Assert::AreEqual((size_t)1, ff_dx12_texture_view_reset_count(&views[i]));
+                Assert::AreEqual((size_t)1, internal_ff_dx12_texture_view_reset_count(&views[i]));
                 Assert::AreEqual(i, ff_dx12_texture_view_array_start(&views[i]));
                 ff_dx12_texture_view_destroy(&views[i]);
             }
@@ -206,7 +211,7 @@ namespace ff::test::dx12
                 // A view that reallocated its descriptor on every reset would march up the heap
                 // instead of staying in the slot it was first given.
                 Assert::AreEqual(slot_before, view.view.start);
-                Assert::AreEqual(i + 1, ff_dx12_texture_view_reset_count(&view));
+                Assert::AreEqual(i + 1, internal_ff_dx12_texture_view_reset_count(&view));
             }
 
             ff_dx12_texture_view_destroy(&view);
@@ -242,10 +247,10 @@ namespace ff::test::dx12
 
             ff_dx12_texture_view view{};
             Assert::IsTrue(ff_dx12_texture_view_init(&view, &texture, 0, 1, 0, 1));
-            Assert::AreEqual((size_t)1, ff_dx12_device_child_count(ff_dx12_device_child_type_texture_view));
+            Assert::AreEqual((size_t)1, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_texture_view));
 
             ff_dx12_texture_view_destroy(&view);
-            Assert::AreEqual((size_t)0, ff_dx12_device_child_count(ff_dx12_device_child_type_texture_view));
+            Assert::AreEqual((size_t)0, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_texture_view));
 
             Assert::IsTrue(ff_dx12_reset_device(true));
 

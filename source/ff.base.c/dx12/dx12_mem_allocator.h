@@ -59,7 +59,6 @@ void ff_dx12_mem_buffer_free_range(ff_dx12_mem_buffer* buffer, const ff_dx12_mem
 void* ff_dx12_mem_buffer_cpu_data(ff_dx12_mem_buffer* buffer, uint64_t start);
 D3D12_GPU_VIRTUAL_ADDRESS ff_dx12_mem_buffer_gpu_data(ff_dx12_mem_buffer* buffer, uint64_t start);
 ff_dx12_heap* ff_dx12_mem_buffer_heap(ff_dx12_mem_buffer* buffer);
-bool ff_dx12_mem_buffer_frame_complete(ff_dx12_mem_buffer* buffer);
 ff_dx12_mem_range ff_dx12_mem_buffer_alloc_bytes(ff_dx12_mem_buffer* buffer, uint64_t size, uint64_t align, ff_dx12_fence_value fence_value);
 
 #define FF_DX12_MEM_ALLOCATOR_BUFFERS_MAX 0 // unused; buffers are an arena-allocated linked list

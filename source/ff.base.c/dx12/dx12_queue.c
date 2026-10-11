@@ -11,7 +11,7 @@
 
 static uint64_t s_residency_gather_generation;
 
-void ff_dx12_residency_set_clear(ff_dx12_residency_set* set)
+void internal_ff_dx12_residency_set_clear(ff_dx12_residency_set* set)
 {
     FF_CHECK_RET(set);
 
@@ -56,7 +56,7 @@ static void residency_set_grow(ff_arena* arena, ff_dx12_residency_set* set)
     set->capacity = new_capacity;
 }
 
-bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_dx12_residency_data* data)
+bool internal_ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_dx12_residency_data* data)
 {
     FF_CHECK_RET_VAL(arena && set && data, false);
 
@@ -76,7 +76,7 @@ bool ff_dx12_residency_set_add(ff_arena* arena, ff_dx12_residency_set* set, ff_d
     return true;
 }
 
-void ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_data* data)
+void internal_ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(set && data && set->slots && set->count);
 
@@ -95,22 +95,22 @@ void ff_dx12_residency_set_remove(ff_dx12_residency_set* set, ff_dx12_residency_
     }
 }
 
-void ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency_data* data)
+void internal_ff_dx12_queue_forget_residency_data(ff_dx12_queue* queue, ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(queue && data);
 
     for (ff_dx12_command_cache* cache = queue->caches_in_use; cache; cache = cache->next)
     {
-        ff_dx12_residency_set_remove(&cache->residency_set, data);
+        internal_ff_dx12_residency_set_remove(&cache->residency_set, data);
     }
 
     for (ff_dx12_command_cache* cache = queue->caches; cache; cache = cache->next)
     {
-        ff_dx12_residency_set_remove(&cache->residency_set, data);
+        internal_ff_dx12_residency_set_remove(&cache->residency_set, data);
     }
 }
 
-void ff_dx12_queue_forget_resource(ff_dx12_queue* queue, ff_dx12_resource* resource)
+void internal_ff_dx12_queue_forget_resource(ff_dx12_queue* queue, ff_dx12_resource* resource)
 {
     FF_CHECK_RET(queue && resource);
 
@@ -298,7 +298,7 @@ static void command_cache_destroy(ff_dx12_command_cache* cache)
 
     ff_dx12_resource_tracker_destroy(&cache->resource_tracker);
     ff_dx12_fence_destroy(&cache->fence);
-    ff_dx12_residency_set_clear(&cache->residency_set);
+    internal_ff_dx12_residency_set_clear(&cache->residency_set);
 
     if (cache->wait_before_execute_arena_valid)
     {
@@ -434,7 +434,7 @@ bool ff_dx12_queue_init(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND
         return false;
     }
 
-    ff_dx12_add_device_child(&queue->device_child, queue, ff_dx12_device_child_type_queue);
+    internal_ff_dx12_add_device_child(&queue->device_child, queue, ff_dx12_device_child_type_queue);
     return true;
 }
 
@@ -488,7 +488,7 @@ static void queue_release_device_objects(ff_dx12_queue* queue, bool preserve_are
 void ff_dx12_queue_destroy(ff_dx12_queue* queue)
 {
     FF_CHECK_RET(queue);
-    ff_dx12_remove_device_child(&queue->device_child);
+    internal_ff_dx12_remove_device_child(&queue->device_child);
     queue_release_device_objects(queue, false);
 }
 
@@ -627,7 +627,7 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     {
         ff_dx12_commands* prev = i ? valid[i - 1] : NULL;
         ff_dx12_commands* next = (i + 1 < valid_count) ? valid[i + 1] : NULL;
-        ff_dx12_commands_close_lists(valid[i], prev, next, &wait_before_execute);
+        internal_ff_dx12_commands_close_lists(valid[i], prev, next, &wait_before_execute);
     }
 
     size_t residency_max = 0;
@@ -655,7 +655,7 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     {
         next_fence_value = ff_dx12_commands_next_fence_value(valid[i]);
 
-        ff_dx12_command_cache* cache = ff_dx12_commands_take_cache(valid[i]);
+        ff_dx12_command_cache* cache = internal_ff_dx12_commands_take_cache(valid[i]);
         FF_ASSERT(cache);
         if (!cache)
         {

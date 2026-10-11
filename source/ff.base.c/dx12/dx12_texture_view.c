@@ -39,7 +39,7 @@ bool ff_dx12_texture_view_init(ff_dx12_texture_view* view, ff_dx12_texture* text
     view->mip_start = mip_start;
     view->mip_count = mip_count;
 
-    ff_dx12_add_device_child(&view->device_child, view, ff_dx12_device_child_type_texture_view);
+    internal_ff_dx12_add_device_child(&view->device_child, view, ff_dx12_device_child_type_texture_view);
     return true;
 }
 
@@ -47,7 +47,7 @@ void ff_dx12_texture_view_destroy(ff_dx12_texture_view* view)
 {
     FF_CHECK_RET(view);
 
-    ff_dx12_remove_device_child(&view->device_child);
+    internal_ff_dx12_remove_device_child(&view->device_child);
     ff_dx12_descriptor_range_free(&view->view);
 
     *view = (ff_dx12_texture_view){ 0 };
@@ -121,7 +121,7 @@ bool internal_ff_dx12_texture_view_reset(ff_dx12_texture_view* view)
     return true;
 }
 
-size_t ff_dx12_texture_view_reset_count(const ff_dx12_texture_view* view)
+size_t internal_ff_dx12_texture_view_reset_count(const ff_dx12_texture_view* view)
 {
     FF_ASSERT_RET_VAL(view, 0);
     return view->reset_count;

@@ -678,8 +678,8 @@ Destroying a resource mid-recording left those sets pointing into freed memory,
 which `ff_dx12_make_resident` then dereferenced at execute time. This crashed
 the test host in two new tests.
 
-Fixed with `ff_dx12_residency_set_remove` /
-`ff_dx12_queue_forget_residency_data` / `internal_ff_dx12_forget_residency_data`, called
+Fixed with `internal_ff_dx12_residency_set_remove` /
+`internal_ff_dx12_queue_forget_residency_data` / `internal_ff_dx12_forget_residency_data`, called
 from `ff_dx12_residency_data_destroy`. Removal reinserts the rest of the probe
 run, since clearing a slot in an open-addressed table breaks the chain behind
 it. This required a `caches_in_use` list on the queue: caches handed out to a
@@ -1275,7 +1275,7 @@ gated on `all_resident` at `dx12_queue.c:586`, but the signal loop ran
 unconditionally. `ff_dx12_make_resident` returns false when the GPU is over
 budget (`dx12_residency.c:279`), so under memory pressure nothing executed and
 the fences retired anyway. A second, rarer path wrote `signal_values` *before*
-`ff_dx12_commands_take_cache`, so a NULL cache broke the loop with the value
+`internal_ff_dx12_commands_take_cache`, so a NULL cache broke the loop with the value
 already recorded.
 
 Three reclamation mechanisms read those fence values as "the GPU is finished":
@@ -1485,7 +1485,7 @@ reset hook stubbed out to `return true`. Two reasons: the raw
 is rebuilt at a new address, so the handle legitimately changes, and the first
 version of the test asserted it stayed equal and failed for the wrong reason),
 and a descriptor that is never refreshed still reads as a perfectly valid
-handle. The fix was `ff_dx12_texture_view_reset_count`, incremented only when
+handle. The fix was `internal_ff_dx12_texture_view_reset_count`, incremented only when
 the SRV is actually rewritten, plus asserting on `view.view.start` as the stable
 slot identity. With those, stubbing the hook fails 2 of the 10.
 
@@ -2245,7 +2245,8 @@ depth-stencil descs are C++-only, so those defaults are written out by hand.
 A wrong value there produces a silently different PSO rather than an error,
 so they were checked field by field against the D3D12 defaults.
 
-`ff_dx12_draw_state_bucket_ps` exists only for testing, and it was added because
+`internal_ff_dx12_draw_state_bucket_ps` is privately declared in `dx12_internal.h`
+for testing, and it was added because
 a test was found to be vacuous. The original test compared pipeline pointers for
 the color and palette targets and asserted they differed, but those two
 permutations also differ by render target format, so they would have been

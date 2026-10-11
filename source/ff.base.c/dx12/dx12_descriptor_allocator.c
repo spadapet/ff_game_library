@@ -7,6 +7,8 @@
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_internal.h"
 
+static const size_t s_ring_ranges_min = 64;
+
 static void buffer_set_heap(ff_dx12_descriptor_buffer* buffer, ID3D12DescriptorHeap* descriptor_heap)
 {
     buffer->descriptor_heap = descriptor_heap;
@@ -74,7 +76,7 @@ void ff_dx12_descriptor_buffer_destroy(ff_dx12_descriptor_buffer* buffer)
     *buffer = (ff_dx12_descriptor_buffer){ 0 };
 }
 
-void ff_dx12_descriptor_buffer_set_heap(ff_dx12_descriptor_buffer* buffer, ID3D12DescriptorHeap* descriptor_heap)
+static void descriptor_buffer_set_heap(ff_dx12_descriptor_buffer* buffer, ID3D12DescriptorHeap* descriptor_heap)
 {
     FF_ASSERT_RET(buffer);
 
@@ -250,7 +252,7 @@ static void ring_pop_front(ff_dx12_descriptor_buffer* buffer)
 static void ring_grow(ff_dx12_descriptor_buffer* buffer)
 {
     const size_t old_capacity = buffer->u.ring.ranges_capacity;
-    const size_t new_capacity = old_capacity ? old_capacity * 2 : FF_DX12_DESCRIPTOR_RING_RANGES_MIN;
+    const size_t new_capacity = old_capacity ? old_capacity * 2 : s_ring_ranges_min;
     ff_dx12_descriptor_ring_range* new_ranges = ff_arena_alloc_type(buffer->u.ring.arena,
         ff_dx12_descriptor_ring_range, new_capacity);
     for (size_t i = 0; i < buffer->u.ring.ranges_count; i++)
@@ -351,14 +353,14 @@ void ff_dx12_cpu_descriptor_allocator_init(ff_dx12_cpu_descriptor_allocator* all
     allocator->bucket_size = ff_math_round_up_pow2(bucket_size);
 
     ff_arena_init_heap_local(&allocator->arena, 0);
-    ff_dx12_add_device_child(&allocator->device_child, allocator,
+    internal_ff_dx12_add_device_child(&allocator->device_child, allocator,
         ff_dx12_device_child_type_cpu_descriptor_allocator);
 }
 
 void ff_dx12_cpu_descriptor_allocator_destroy(ff_dx12_cpu_descriptor_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
-    ff_dx12_remove_device_child(&allocator->device_child);
+    internal_ff_dx12_remove_device_child(&allocator->device_child);
 
     for (ff_dx12_descriptor_buffer* bucket = allocator->buckets; bucket; )
     {
@@ -440,7 +442,7 @@ bool ff_dx12_gpu_descriptor_allocator_init(ff_dx12_gpu_descriptor_allocator* all
     ff_dx12_descriptor_buffer_init_free_list(&allocator->pinned, &allocator->arena, allocator->descriptor_heap, 0, pinned_size);
     ff_dx12_descriptor_buffer_init_ring(&allocator->ring, &allocator->arena, allocator->descriptor_heap, pinned_size, ring_size);
 
-    ff_dx12_add_device_child(&allocator->device_child, allocator,
+    internal_ff_dx12_add_device_child(&allocator->device_child, allocator,
         ff_dx12_device_child_type_gpu_descriptor_allocator);
     return true;
 }
@@ -448,7 +450,7 @@ bool ff_dx12_gpu_descriptor_allocator_init(ff_dx12_gpu_descriptor_allocator* all
 void ff_dx12_gpu_descriptor_allocator_destroy(ff_dx12_gpu_descriptor_allocator* allocator)
 {
     FF_CHECK_RET(allocator);
-    ff_dx12_remove_device_child(&allocator->device_child);
+    internal_ff_dx12_remove_device_child(&allocator->device_child);
 
     if (allocator->descriptor_heap)
     {
@@ -489,7 +491,7 @@ void internal_ff_dx12_cpu_descriptor_allocator_before_reset(ff_dx12_cpu_descript
     for (ff_dx12_descriptor_buffer* bucket = allocator->buckets; bucket; bucket = bucket->next)
     {
         ID3D12DescriptorHeap* descriptor_heap = bucket->descriptor_heap;
-        ff_dx12_descriptor_buffer_set_heap(bucket, NULL);
+        descriptor_buffer_set_heap(bucket, NULL);
 
         if (descriptor_heap)
         {
@@ -515,7 +517,7 @@ bool internal_ff_dx12_cpu_descriptor_allocator_reset(ff_dx12_cpu_descriptor_allo
             &IID_ID3D12DescriptorHeap, (void**)&descriptor_heap), false);
         ID3D12DescriptorHeap_SetName(descriptor_heap, L"cpu_descriptor_allocator");
 
-        ff_dx12_descriptor_buffer_set_heap(bucket, descriptor_heap);
+        descriptor_buffer_set_heap(bucket, descriptor_heap);
     }
 
     return true;
@@ -525,8 +527,8 @@ void internal_ff_dx12_gpu_descriptor_allocator_before_reset(ff_dx12_gpu_descript
 {
     FF_CHECK_RET(allocator);
 
-    ff_dx12_descriptor_buffer_set_heap(&allocator->ring, NULL);
-    ff_dx12_descriptor_buffer_set_heap(&allocator->pinned, NULL);
+    descriptor_buffer_set_heap(&allocator->ring, NULL);
+    descriptor_buffer_set_heap(&allocator->pinned, NULL);
 
     if (allocator->descriptor_heap)
     {
@@ -548,8 +550,8 @@ bool internal_ff_dx12_gpu_descriptor_allocator_reset(ff_dx12_gpu_descriptor_allo
         &IID_ID3D12DescriptorHeap, (void**)&allocator->descriptor_heap), false);
     ID3D12DescriptorHeap_SetName(allocator->descriptor_heap, L"gpu_descriptor_allocator");
 
-    ff_dx12_descriptor_buffer_set_heap(&allocator->pinned, allocator->descriptor_heap);
-    ff_dx12_descriptor_buffer_set_heap(&allocator->ring, allocator->descriptor_heap);
+    descriptor_buffer_set_heap(&allocator->pinned, allocator->descriptor_heap);
+    descriptor_buffer_set_heap(&allocator->ring, allocator->descriptor_heap);
 
     return true;
 }

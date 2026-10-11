@@ -300,19 +300,19 @@ namespace ff::test::dx12
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            const size_t before = ff_dx12_device_child_count(ff_dx12_device_child_type_resource);
+            const size_t before = internal_ff_dx12_device_child_count(ff_dx12_device_child_type_resource);
 
             D3D12_RESOURCE_DESC desc = texture_desc();
             ff_dx12_resource resource{};
             Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("counted"), &desc, nullptr));
-            Assert::AreEqual(before + 1, ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
+            Assert::AreEqual(before + 1, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
 
             ff_dx12_resource_destroy(&resource);
-            Assert::AreEqual(before, ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
+            Assert::AreEqual(before, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
 
             // Removing an already-removed node has to be harmless, since destroy is idempotent.
-            ff_dx12_remove_device_child(&resource.device_child);
-            Assert::AreEqual(before, ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
+            internal_ff_dx12_remove_device_child(&resource.device_child);
+            Assert::AreEqual(before, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_resource));
         }
 
         TEST_METHOD(reset_keeps_shared_allocators_usable)
@@ -408,12 +408,12 @@ namespace ff::test::dx12
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
-            const size_t mem_allocator_count = ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator);
-            const size_t cpu_allocator_count = ff_dx12_device_child_count(
+            const size_t mem_allocator_count = internal_ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator);
+            const size_t cpu_allocator_count = internal_ff_dx12_device_child_count(
                 ff_dx12_device_child_type_cpu_descriptor_allocator);
-            const size_t gpu_allocator_count = ff_dx12_device_child_count(
+            const size_t gpu_allocator_count = internal_ff_dx12_device_child_count(
                 ff_dx12_device_child_type_gpu_descriptor_allocator);
-            const size_t queue_count = ff_dx12_device_child_count(ff_dx12_device_child_type_queue);
+            const size_t queue_count = internal_ff_dx12_device_child_count(ff_dx12_device_child_type_queue);
 
             D3D12_RESOURCE_DESC desc = texture_desc();
             D3D12_RESOURCE_ALLOCATION_INFO info = ff_dx12_device()->GetResourceAllocationInfo(0, 1, &desc);
@@ -445,12 +445,12 @@ namespace ff::test::dx12
                 D3D12_COMMAND_LIST_TYPE_DIRECT));
 
             Assert::AreEqual(mem_allocator_count + 1,
-                ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator));
+                internal_ff_dx12_device_child_count(ff_dx12_device_child_type_mem_allocator));
             Assert::AreEqual(cpu_allocator_count + 1,
-                ff_dx12_device_child_count(ff_dx12_device_child_type_cpu_descriptor_allocator));
+                internal_ff_dx12_device_child_count(ff_dx12_device_child_type_cpu_descriptor_allocator));
             Assert::AreEqual(gpu_allocator_count + 1,
-                ff_dx12_device_child_count(ff_dx12_device_child_type_gpu_descriptor_allocator));
-            Assert::AreEqual(queue_count + 1, ff_dx12_device_child_count(ff_dx12_device_child_type_queue));
+                internal_ff_dx12_device_child_count(ff_dx12_device_child_type_gpu_descriptor_allocator));
+            Assert::AreEqual(queue_count + 1, internal_ff_dx12_device_child_count(ff_dx12_device_child_type_queue));
 
             ff_dx12_commands queue_commands{};
             Assert::IsTrue(ff_dx12_queue_new_commands(&queue, &queue_commands));

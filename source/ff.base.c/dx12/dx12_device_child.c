@@ -70,7 +70,7 @@ ff_dx12_device_child* internal_ff_dx12_device_child_walk_next(void)
     return NULL;
 }
 
-void ff_dx12_add_device_child(ff_dx12_device_child* child, void* owner, ff_dx12_device_child_type type)
+void internal_ff_dx12_add_device_child(ff_dx12_device_child* child, void* owner, ff_dx12_device_child_type type)
 {
     FF_ASSERT_RET(child && owner && type < ff_dx12_device_child_type_count);
     FF_ASSERT_RET(!child->registered);
@@ -95,7 +95,7 @@ void ff_dx12_add_device_child(ff_dx12_device_child* child, void* owner, ff_dx12_
     s_counts[type]++;
 }
 
-void ff_dx12_remove_device_child(ff_dx12_device_child* child)
+void internal_ff_dx12_remove_device_child(ff_dx12_device_child* child)
 {
     FF_ASSERT_RET(child);
 
@@ -136,23 +136,23 @@ void ff_dx12_remove_device_child(ff_dx12_device_child* child)
     child->registered = false;
 }
 
-bool ff_dx12_device_child_resetting(void)
+bool internal_ff_dx12_device_child_resetting(void)
 {
     return s_resetting;
 }
 
-ff_dx12_device_child* ff_dx12_device_child_first(ff_dx12_device_child_type type)
+ff_dx12_device_child* internal_ff_dx12_device_child_first(ff_dx12_device_child_type type)
 {
     FF_ASSERT_RET_VAL(type < ff_dx12_device_child_type_count, NULL);
     return s_heads[type];
 }
 
-ff_dx12_device_child* ff_dx12_device_child_next(ff_dx12_device_child* child)
+ff_dx12_device_child* internal_ff_dx12_device_child_next(ff_dx12_device_child* child)
 {
     return child ? child->next : NULL;
 }
 
-size_t ff_dx12_device_child_count(ff_dx12_device_child_type type)
+size_t internal_ff_dx12_device_child_count(ff_dx12_device_child_type type)
 {
     FF_ASSERT_RET_VAL(type < ff_dx12_device_child_type_count, 0);
     return s_counts[type];

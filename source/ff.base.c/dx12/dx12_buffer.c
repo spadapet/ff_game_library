@@ -9,9 +9,6 @@
 #include "dx12/dx12_internal.h"
 #include "dx12/dx12_mem_allocator.h"
 
-// Above this size the cost of hashing outweighs the upload it might save.
-static const size_t s_max_hash_size = 0x10000;
-
 static bool buffer_init_resource(ff_dx12_buffer* buffer, size_t size)
 {
     D3D12_RESOURCE_DESC desc = { 0 };
@@ -37,7 +34,7 @@ static bool buffer_init_resource(ff_dx12_buffer* buffer, size_t size)
 
     if (!buffer->device_child.registered)
     {
-        ff_dx12_add_device_child(&buffer->device_child, buffer, ff_dx12_device_child_type_buffer);
+        internal_ff_dx12_add_device_child(&buffer->device_child, buffer, ff_dx12_device_child_type_buffer);
     }
 
     return true;
@@ -124,7 +121,7 @@ void ff_dx12_buffer_destroy(ff_dx12_buffer* buffer)
 {
     FF_CHECK_RET(buffer);
 
-    ff_dx12_remove_device_child(&buffer->device_child);
+    internal_ff_dx12_remove_device_child(&buffer->device_child);
 
     // A range still held by map was never handed to the GPU, so it can be freed right away.
     ff_dx12_mem_range_free(&buffer->mapped_range);
@@ -282,16 +279,10 @@ bool ff_dx12_buffer_update(ff_dx12_buffer* buffer, ff_dx12_commands* commands, c
     FF_ASSERT_RET_VAL(buffer && data && size, false);
     FF_ASSERT_RET_VAL(ff_dx12_buffer_writable(buffer), false);
 
-    uint64_t new_hash = 0;
-
-    if (size <= s_max_hash_size)
+    uint64_t new_hash = ff_hash_bytes(data, size);
+    if (new_hash == buffer->data_hash && size == ff_dx12_buffer_size(buffer))
     {
-        new_hash = ff_hash_bytes(data, size);
-
-        if (new_hash == buffer->data_hash && size == ff_dx12_buffer_size(buffer))
-        {
-            return ff_dx12_buffer_valid(buffer);
-        }
+        return ff_dx12_buffer_valid(buffer);
     }
 
     void* dest = ff_dx12_buffer_map(buffer, commands, size);

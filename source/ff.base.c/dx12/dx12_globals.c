@@ -20,19 +20,7 @@
 __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_AGILITY_SDK_VERSION_EXPORT;
 __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 
-// Embedding the link dependencies here keeps them with the code that needs them, and they
-// automatically flow to anything that links this static library.
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dxguid.lib")
-
-// Max adapters enumerated in one pass. Way more than any real machine has, and it keeps
-// adapter handling on the stack instead of needing a dynamic array.
 #define MAX_ADAPTERS 16
-
-// Max swap chain targets with a pending resize. One per window, and a game has very few windows,
-// so this never fills in practice. Overflow degrades to applying the resize synchronously rather
-// than dropping it.
 #define MAX_DEFERRED_TARGETS 8
 
 typedef enum ff_dx12_mem_allocator_index
@@ -727,13 +715,13 @@ void internal_ff_dx12_forget_residency_data(ff_dx12_residency_data* data)
 {
     FF_CHECK_RET(data);
 
-    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
-        child; child = ff_dx12_device_child_next(child))
+    for (ff_dx12_device_child* child = internal_ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = internal_ff_dx12_device_child_next(child))
     {
         ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
         if (ff_dx12_queue_valid(queue))
         {
-            ff_dx12_queue_forget_residency_data(queue, data);
+            internal_ff_dx12_queue_forget_residency_data(queue, data);
         }
     }
 }
@@ -742,13 +730,13 @@ void internal_ff_dx12_forget_resource(ff_dx12_resource* resource)
 {
     FF_CHECK_RET(resource);
 
-    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
-        child; child = ff_dx12_device_child_next(child))
+    for (ff_dx12_device_child* child = internal_ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = internal_ff_dx12_device_child_next(child))
     {
         ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
         if (ff_dx12_queue_valid(queue))
         {
-            ff_dx12_queue_forget_resource(queue, resource);
+            internal_ff_dx12_queue_forget_resource(queue, resource);
         }
     }
 }
@@ -757,8 +745,8 @@ void ff_dx12_wait_for_idle(void)
 {
     FF_DX12_ASSERT_OWNER();
 
-    for (ff_dx12_device_child* child = ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
-        child; child = ff_dx12_device_child_next(child))
+    for (ff_dx12_device_child* child = internal_ff_dx12_device_child_first(ff_dx12_device_child_type_queue);
+        child; child = internal_ff_dx12_device_child_next(child))
     {
         ff_dx12_queue* queue = (ff_dx12_queue*)child->owner;
         if (ff_dx12_queue_valid(queue))
@@ -980,7 +968,7 @@ static void destroy_d3d(bool for_reset)
     // device is still healthy (a forced or adapter-change reset) the GPU really is still running,
     // and releasing resources without draining it first would pull them out from under it.
     if (ff_dx12_device_valid() &&
-        ff_dx12_device_child_count(ff_dx12_device_child_type_queue))
+        internal_ff_dx12_device_child_count(ff_dx12_device_child_type_queue))
     {
         ff_dx12_wait_for_idle();
     }

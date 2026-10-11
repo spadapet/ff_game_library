@@ -1,5 +1,10 @@
 #include "pch.h"
 
+extern "C"
+{
+#include "..\..\..\source\ff.base.c\dx12\dx12_internal.h"
+}
+
 namespace ff::test::dx12
 {
     struct scoped_draw_device_assert_counter
@@ -244,14 +249,16 @@ namespace ff::test::dx12
             Assert::AreEqual<uint32_t>(0, ff_dx12_draw_device_matrix_index(&scope.device));
             Assert::AreEqual<size_t>(1, scope.device.matrix_count);
 
-            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_translation(5.0f, 7.0f, 0.0f));
+            const ff_matrix translation = ff_matrix_translation(5.0f, 7.0f, 0.0f);
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &translation);
 
             const uint32_t translated_index = ff_dx12_draw_device_matrix_index(&scope.device);
             Assert::AreEqual<uint32_t>(1, translated_index);
             Assert::AreEqual<size_t>(2, scope.device.matrix_count);
 
             // Going back to a matrix already interned must find the original slot.
-            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_identity());
+            const ff_matrix identity = ff_matrix_identity();
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &identity);
             Assert::AreEqual<uint32_t>(0, ff_dx12_draw_device_matrix_index(&scope.device));
             Assert::AreEqual<size_t>(2, scope.device.matrix_count);
         }
@@ -262,7 +269,8 @@ namespace ff::test::dx12
 
             Assert::AreEqual<uint32_t>(0, ff_dx12_draw_device_matrix_index(&scope.device));
 
-            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_identity());
+            const ff_matrix identity = ff_matrix_identity();
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &identity);
 
             Assert::AreEqual<uint32_t>(0, scope.device.matrix_index);
         }
@@ -272,9 +280,10 @@ namespace ff::test::dx12
             scoped_device scope;
 
             const ff_matrix matrix = ff_matrix_scaling(2.0f, 3.0f, 1.0f);
-            ff_dx12_draw_device_set_world_matrix(&scope.device, matrix);
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &matrix);
 
-            Assert::IsTrue(ff_matrix_equal(matrix, ff_dx12_draw_device_world_matrix(&scope.device)));
+            const ff_matrix actual = ff_dx12_draw_device_world_matrix(&scope.device);
+            Assert::IsTrue(ff_matrix_equal(&matrix, &actual));
         }
 
         TEST_METHOD(allow_transparent_follows_the_opaque_counter)
@@ -1496,7 +1505,8 @@ namespace ff::test::dx12
             sprite.view = &first_view;
             ff_dx12_draw_device_draw_sprite(&scope.device, &sprite, &transform);
 
-            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_translation(5.0f, 7.0f, 0.0f));
+            const ff_matrix translation = ff_matrix_translation(5.0f, 7.0f, 0.0f);
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &translation);
             ff_dx12_draw_device_push_sampler_linear(&scope.device, true);
 
             sprite.view = &second_view;
@@ -1897,7 +1907,8 @@ namespace ff::test::dx12
             sprite.view = &first_view;
             ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
 
-            ff_dx12_draw_device_set_world_matrix(&scope.device, ff_matrix_translation(5.0f, 7.0f, 0.0f));
+            const ff_matrix translation = ff_matrix_translation(5.0f, 7.0f, 0.0f);
+            ff_dx12_draw_device_set_world_matrix(&scope.device, &translation);
             ff_dx12_draw_device_push_palette(&scope.device, ff_dx12_palette_make(&palette_data, 1));
             ff_dx12_draw_device_push_palette_remap(&scope.device, &remap);
 

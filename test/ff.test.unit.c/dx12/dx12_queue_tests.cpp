@@ -264,14 +264,14 @@ namespace ff::test::dx12
             for (size_t i = 0; i < count; i++)
             {
                 ff_dx12_residency_data* fake = (ff_dx12_residency_data*)((uintptr_t)(i + 1) << 4);
-                Assert::IsTrue(ff_dx12_residency_set_add(&arena, &set, fake));
-                Assert::IsTrue(ff_dx12_residency_set_add(&arena, &set, fake));
+                Assert::IsTrue(internal_ff_dx12_residency_set_add(&arena, &set, fake));
+                Assert::IsTrue(internal_ff_dx12_residency_set_add(&arena, &set, fake));
             }
 
             Assert::AreEqual(count, set.count);
             Assert::IsTrue(set.capacity >= count * 2);
 
-            ff_dx12_residency_set_clear(&set);
+            internal_ff_dx12_residency_set_clear(&set);
             Assert::AreEqual((size_t)0, set.count);
 
             // Capacity survives a clear so repeated frames stop reallocating.
@@ -288,12 +288,12 @@ namespace ff::test::dx12
             ff_dx12_residency_set set{};
             ff_dx12_residency_data* fake = (ff_dx12_residency_data*)0x10;
 
-            Assert::IsFalse(ff_dx12_residency_set_add(nullptr, &set, fake));
-            Assert::IsFalse(ff_dx12_residency_set_add(&arena, nullptr, fake));
-            Assert::IsFalse(ff_dx12_residency_set_add(&arena, &set, nullptr));
+            Assert::IsFalse(internal_ff_dx12_residency_set_add(nullptr, &set, fake));
+            Assert::IsFalse(internal_ff_dx12_residency_set_add(&arena, nullptr, fake));
+            Assert::IsFalse(internal_ff_dx12_residency_set_add(&arena, &set, nullptr));
             Assert::AreEqual((size_t)0, set.count);
 
-            ff_dx12_residency_set_clear(nullptr);
+            internal_ff_dx12_residency_set_clear(nullptr);
             ff_arena_destroy(&arena);
         }
     };
