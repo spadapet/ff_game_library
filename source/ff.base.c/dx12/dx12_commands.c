@@ -252,11 +252,11 @@ void ff_dx12_commands_root_descriptors(ff_dx12_commands* commands, size_t index,
 
     if (commands_is_compute(commands))
     {
-        ID3D12GraphicsCommandList1_SetComputeRootDescriptorTable(commands_list_raw(commands), (UINT)index, handle);
+        ID3D12GraphicsCommandList1_SetComputeRootDescriptorTable(ff_dx12_commands_list(commands), (UINT)index, handle);
     }
     else
     {
-        ID3D12GraphicsCommandList1_SetGraphicsRootDescriptorTable(commands_list_raw(commands), (UINT)index, handle);
+        ID3D12GraphicsCommandList1_SetGraphicsRootDescriptorTable(ff_dx12_commands_list(commands), (UINT)index, handle);
     }
 }
 

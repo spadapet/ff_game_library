@@ -2044,7 +2044,17 @@ namespace ff::test::dx12
         // index the caller asked for is what actually lands in the target.
         TEST_METHOD(geometry_writes_its_palette_index_into_a_palette_target)
         {
+            ID3D12Debug* debug = nullptr;
+            Assert::IsTrue(SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debug))));
+            debug->EnableDebugLayer();
+            debug->Release();
+
             scoped_device scope;
+            Assert::IsFalse(scope.device.palette_textures_initialized);
+
+            ID3D12InfoQueue* info_queue = nullptr;
+            Assert::IsTrue(SUCCEEDED(ff_dx12_device()->QueryInterface(IID_PPV_ARGS(&info_queue))));
+            info_queue->ClearStoredMessages();
 
             const size_t size = 64;
 
@@ -2079,6 +2089,7 @@ namespace ff::test::dx12
                 ff_color_palette(expected_index, 1.0f), 0.0f);
 
             ff_dx12_draw_device_end(&scope.device);
+            Assert::IsTrue(scope.device.palette_textures_initialized);
 
             // R8_UINT is one byte per texel, and readback rows are 256-byte aligned.
             const size_t row_pitch = 256;
@@ -2125,6 +2136,20 @@ namespace ff::test::dx12
 
             Assert::IsTrue(device_ok);
             Assert::AreEqual(size * size, matched);
+
+            D3D12_MESSAGE_SEVERITY severities[] =
+            {
+                D3D12_MESSAGE_SEVERITY_CORRUPTION,
+                D3D12_MESSAGE_SEVERITY_ERROR,
+            };
+            D3D12_INFO_QUEUE_FILTER filter{};
+            filter.AllowList.NumSeverities = _countof(severities);
+            filter.AllowList.pSeverityList = severities;
+            Assert::IsTrue(SUCCEEDED(info_queue->PushRetrievalFilter(&filter)));
+            const UINT64 error_count = info_queue->GetNumStoredMessagesAllowedByRetrievalFilter();
+            info_queue->PopRetrievalFilter();
+            info_queue->Release();
+            Assert::AreEqual((UINT64)0, error_count);
         }
         // A reset rebuilds the palette texture's resource but not its pixels, and the draw device's
         // row-hash cache would otherwise still claim every interned row is already correct. Both
@@ -2187,6 +2212,7 @@ namespace ff::test::dx12
                 {
                     Assert::IsTrue(ff_dx12_reset_device(true));
                     Assert::IsTrue(ff_dx12_palette_data_valid(&palette_data));
+                    Assert::IsFalse(scope.device.palette_textures_initialized);
                 }
 
                 ff_dx12_commands pass_commands{};
@@ -2230,6 +2256,7 @@ namespace ff::test::dx12
                 ff_dx12_draw_device_draw_palette_sprite(&scope.device, &sprite, &transform);
                 ff_dx12_draw_device_pop_palette(&scope.device);
                 ff_dx12_draw_device_end(&scope.device);
+                Assert::IsTrue(scope.device.palette_textures_initialized);
 
                 const size_t row_pitch = size * sizeof(uint32_t);
                 ff_dx12_mem_range readback = ff_dx12_mem_allocator_ring_alloc_buffer(

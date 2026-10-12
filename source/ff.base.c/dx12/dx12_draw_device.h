@@ -162,6 +162,7 @@ typedef struct ff_dx12_draw_device
     ff_dx12_texture palette_remap_texture;
     ff_dx12_texture_view palette_texture_view;
     ff_dx12_texture_view palette_remap_texture_view;
+    bool palette_textures_initialized;
 
     ff_dx12_palette_entry palettes[FF_DX12_MAX_PALETTES];
     size_t palette_count;

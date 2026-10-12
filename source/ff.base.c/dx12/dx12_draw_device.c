@@ -229,6 +229,7 @@ bool internal_ff_dx12_draw_device_reset(ff_dx12_draw_device* device)
 
     memset(device->palette_row_hashes, 0, sizeof(device->palette_row_hashes));
     memset(device->palette_remap_row_hashes, 0, sizeof(device->palette_remap_row_hashes));
+    device->palette_textures_initialized = false;
 
     return true;
 }
@@ -552,6 +553,13 @@ static void update_palette_textures(ff_dx12_draw_device* device)
     FF_CHECK_RET(needs_palettes || needs_remaps);
 
     ff_dx12_commands_begin_event(device->commands, ff_dx12_gpu_event_update_palette);
+
+    if (!device->palette_textures_initialized)
+    {
+        ff_dx12_commands_discard_target(device->commands, ff_dx12_texture_resource(&device->palette_texture));
+        ff_dx12_commands_discard_target(device->commands, ff_dx12_texture_resource(&device->palette_remap_texture));
+        device->palette_textures_initialized = true;
+    }
 
     if (needs_palettes)
     {

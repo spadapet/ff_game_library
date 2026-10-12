@@ -65,6 +65,48 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
+        TEST_METHOD(descriptor_table_binding_flushes_pending_transitions)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+
+            ff_dx12_draw_state state{};
+            Assert::IsTrue(ff_dx12_draw_state_init(&state));
+
+            ff_dx12_texture_params params = ff_dx12_texture_params_default(64, 64);
+            ff_dx12_texture texture{};
+            Assert::IsTrue(ff_dx12_texture_init(&texture, &params));
+
+            ff_dx12_texture_view view{};
+            Assert::IsTrue(ff_dx12_texture_view_init(&view, &texture, 0, 1, 0, 1));
+
+            ff_dx12_commands commands{};
+            Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
+            ff_dx12_commands_root_signature(&commands, ff_dx12_draw_state_root_signature(&state));
+
+            ff_dx12_descriptor_range range = ff_dx12_gpu_descriptor_allocator_alloc(
+                ff_dx12_gpu_view_descriptors(), 1, ff_dx12_commands_next_fence_value(&commands));
+            Assert::IsTrue(ff_dx12_descriptor_range_valid(&range));
+            ff_dx12_device()->CopyDescriptorsSimple(1,
+                ff_dx12_descriptor_range_cpu_handle(&range, 0), ff_dx12_texture_view_cpu_handle(&view),
+                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+            ff_dx12_commands_resource_state(&commands, &texture.resource,
+                D3D12_RESOURCE_STATE_COPY_DEST, 0, 1, 0, 1);
+            ff_dx12_commands_resource_state(&commands, &texture.resource,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0, 1, 0, 1);
+            Assert::AreEqual((size_t)1, ff_array_count(commands.cache->resource_tracker.barriers_pending_a));
+
+            ff_dx12_commands_root_descriptors(&commands, ff_dx12_root_param_textures, &range, 0);
+            Assert::AreEqual((size_t)0, ff_array_count(commands.cache->resource_tracker.barriers_pending_a));
+
+            ff_dx12_commands_destroy(&commands);
+            ff_dx12_wait_for_idle();
+            ff_dx12_descriptor_range_free(&range);
+            ff_dx12_texture_view_destroy(&view);
+            ff_dx12_texture_destroy(&texture);
+            ff_dx12_draw_state_destroy(&state);
+        }
+
         TEST_METHOD(state_changes_are_recorded_and_execute_cleanly)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

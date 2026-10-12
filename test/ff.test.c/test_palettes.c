@@ -9,6 +9,8 @@
 #define PALETTES_RAMP_COUNT 24
 #define PALETTES_PI 3.14159265f
 
+static const float s_scene_clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
 static struct
 {
     ff_dx12_draw_state draw_state;
@@ -168,6 +170,7 @@ static bool palettes_init(ff_test_app* app)
     ff_dx12_texture_params scene_params = ff_dx12_texture_params_default(
         PALETTES_SCENE_SIZE, PALETTES_SCENE_SIZE);
     scene_params.format = DXGI_FORMAT_R8_UINT;
+    scene_params.optimized_clear_color = s_scene_clear;
 
     ff_dx12_texture_params rgba_params = ff_dx12_texture_params_default(
         PALETTES_TEXTURE_SIZE, PALETTES_TEXTURE_SIZE);
@@ -448,8 +451,7 @@ static bool palettes_render(ff_test_app* app, ff_dx12_commands* commands)
 
     // Index 0 is the transparent entry, so clearing to zero leaves the untouched parts of the
     // scene target invisible rather than filled with palette entry 0.
-    const float scene_clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    ff_dx12_target_texture_clear(&s_palettes.scene_target, commands, scene_clear);
+    ff_dx12_target_texture_clear(&s_palettes.scene_target, commands, s_scene_clear);
 
     FF_CHECK_RET_VAL(ff_dx12_draw_device_begin(&s_palettes.draw_device, commands,
         ff_dx12_target_texture_resource(&s_palettes.scene_target),
