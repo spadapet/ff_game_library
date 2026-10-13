@@ -29,6 +29,7 @@
     <ClCompile Include="base\string_tests.cpp" />
     <ClCompile Include="base\value_tests.cpp" />
     <ClCompile Include="base\window_tests.cpp" />
+    <ClCompile Include="resources\resources_tests.cpp" />
     <ClCompile Include="dx12\dx12_commands_tests.cpp" />
     <ClCompile Include="dx12\dx12_defer_tests.cpp" />
     <ClCompile Include="dx12\dx12_draw_device_tests.cpp" />

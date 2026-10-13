@@ -3343,6 +3343,47 @@ the runtime resolves it on load, which is the only option that keeps module buil
 
 ## Milestone 8 design, part 4: registration lifetime and source-tree asset roots
 
+### Initial storage and registration implementation (2026-10-12)
+
+The foundation now lives in `source/ff.base.c/resources/`, separate from DX12.
+It does not yet implement importers, typed resources, the pack builder, or hot reload.
+
+- `ff_resource_cache` owns one directory cache or serialized `ff_idict` pack.
+  Directory lookups load raw bytes once and retain them until destruction, including
+  empty files. Pack entries may be raw data or resource dictionaries. Lookup returns
+  `ff_resource_data` with distinct found, not-found, and error statuses; an error does
+  not fall through to a lower-priority source.
+- `ff_resource_module` owns an ordered list of caches under a namespace. Sources
+  are searched in registration order. Add a development directory before a pack
+  when loose files should win. Returned bytes and dictionaries borrow cache storage.
+- `ff_resources` borrows registered modules. Global lookup requires `module:path`;
+  unqualified lookup uses an explicit `ff_resource_module`, never a search across
+  modules. Names use case-sensitive module/key hashes, and resource-path separators
+  normalize to `/`. Absolute paths, parent traversal, and alternate data streams are
+  rejected. Folder access still follows Windows filesystem case and link semantics.
+- `ff_resources_seal` prevents both new modules and new sources in existing modules.
+  Sealing is not a thread-safety guarantee: lazy directory-cache reads and all
+  initialization/destruction remain single-threaded in this first implementation.
+- `ff_resources_global_init` registers the library-owned `base` module itself.
+  Development uses the library's compiled-in `source/ff.base.c/assets` directory,
+  not a path supplied by the game. An optional `ff.base.pack` beside the executable
+  is registered after it. Release has only that pack source. The base module may
+  currently be empty because no built-in content ships yet; an existing unreadable
+  or invalid pack is a startup failure, not a reason to silently ignore it.
+- File packs are copied into cache-owned arenas in Debug/Profile, allowing rebuilds
+  after loading, and mapped in Release. In-memory pack initialization copies bytes
+  into aligned cache storage. Packs are checked structurally and by checksum.
+- Global startup and shutdown are explicit rather than tied to `ff_app_init`.
+  Destroy resource consumers, then the registry, then caller-owned modules. The
+  global registry also destroys its own `base` module. A module must remain at a
+  stable address and outlive every registry borrowing it; a cache must outlive its
+  returned data.
+
+`ff.test.c` registers its own `game` module and seals the registry before running a
+mode. Its development directory is compiled into the sample, while Release uses
+the already-deployed loose `assets` directory until a game pack is introduced.
+The blit sample loads `game:sprite.png` through the registry.
+
 Two decisions, and they turn out to be related: both are about keeping the shipping configuration
 honest while making development convenient.
 

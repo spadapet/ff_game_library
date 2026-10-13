@@ -2,6 +2,41 @@
 #include "test_app.h"
 
 static const ff_string_view s_app_name = FF_SVL_INIT("ff.test.c");
+static ff_resource_module s_game_resources;
+
+static void destroy_resources(void)
+{
+    ff_resources_global_destroy();
+    ff_resource_module_destroy(&s_game_resources);
+}
+
+static bool init_resources(void)
+{
+    FF_CHECK_RET_VAL(ff_resources_global_init(), false);
+    if (!ff_resource_module_init(&s_game_resources, FF_SVL("game")))
+    {
+        destroy_resources();
+        return false;
+    }
+
+    ff_arena_declare_stack(scratch, 1024);
+#if PROFILE_APP
+    const ff_string_view directory = FF_SVL(FF_GAME_RESOURCE_DIRECTORY);
+#else
+    const ff_string_view directory = ff_test_asset_path(FF_SVL("assets"), &scratch);
+#endif
+    const bool initialized = ff_resource_module_add_directory(&s_game_resources, directory) &&
+        ff_resources_add_module(ff_resources_global(), &s_game_resources);
+    ff_arena_destroy(&scratch);
+    if (!initialized)
+    {
+        destroy_resources();
+        return false;
+    }
+
+    ff_resources_seal(ff_resources_global());
+    return true;
+}
 
 static const ff_test_mode* const s_modes[] =
 {
@@ -125,8 +160,15 @@ int main(int argc, char** argv)
         }
     }
 
+    if (!init_resources())
+    {
+        ff_app_destroy();
+        return 1;
+    }
+
     const int result = ff_test_app_run(mode, run_seconds);
 
+    destroy_resources();
     ff_app_destroy();
 
     return result;

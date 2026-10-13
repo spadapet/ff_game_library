@@ -156,6 +156,9 @@
     <ClCompile Include="dx12\dx12_resource_tests.cpp">
       <Filter>dx12</Filter>
     </ClCompile>
+    <ClCompile Include="resources\resources_tests.cpp">
+      <Filter>resources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -166,6 +169,9 @@
   <ItemGroup>
     <Filter Include="base">
       <UniqueIdentifier>{019ebde0-26ba-4e01-9c81-66e9d9565a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{206f4e5d-1e0e-4b48-ae22-514a3f87775d}</UniqueIdentifier>
     </Filter>
     <Filter Include="dx12">
       <UniqueIdentifier>{3192bc87-816d-4970-ad37-efbf4222b8d0}</UniqueIdentifier>

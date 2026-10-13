@@ -370,6 +370,9 @@
     <Filter Include="data">
       <UniqueIdentifier>{15ca1253-78df-4583-899f-2b1b5beb3213}</UniqueIdentifier>
     </Filter>
+    <Filter Include="resources">
+      <UniqueIdentifier>{5c2ba498-1efe-4f58-a981-a787e47323b4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="dx12">
       <UniqueIdentifier>{463fd0d6-5543-4abf-980e-1de3e025b78f}</UniqueIdentifier>
     </Filter>
@@ -382,6 +385,29 @@
     <Filter Include="dx12\shaders">
       <UniqueIdentifier>{9d2c1f55-0b4a-4e7c-9a1d-3f7c26b8e410}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="resources\resource_cache.c">
+      <Filter>resources</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\resource_module.c">
+      <Filter>resources</Filter>
+    </ClCompile>
+    <ClCompile Include="resources\resources.c">
+      <Filter>resources</Filter>
+    </ClCompile>
+    <ClInclude Include="resources\resource_cache.h">
+      <Filter>resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\resource_module.h">
+      <Filter>resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\resources.h">
+      <Filter>resources</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\resources_internal.h">
+      <Filter>resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FfShader Include="dx12\shaders\vs_sprite.hlsl">

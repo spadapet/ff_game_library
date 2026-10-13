@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "test_app.h"
 
-static const ff_string_view s_sprite_file = FF_SVL_INIT("assets\\sprite.png");
+static const ff_string_view s_sprite_file = FF_SVL_INIT("game:sprite.png");
 
 static struct
 {
@@ -27,25 +27,15 @@ static bool blit_load(ff_test_app* app)
 {
     ff_arena_init_heap_local(&s_blit.sprite_arena, 0);
 
-    ff_arena_declare_stack(path_arena, 1024);
-    const ff_string_view path = ff_test_asset_path(s_sprite_file, &path_arena);
-
-    ff_file_map map;
-    const bool mapped = path.count && ff_file_map_init(&map, path);
-
-    if (!mapped)
+    const ff_resource_data data = ff_resources_get(ff_resources_global(), s_sprite_file);
+    if (data.status != ff_resource_status_found || data.type != ff_resource_data_type_bytes)
     {
-        ff_log_write(ff_log_type_debug, FF_SVL("Can't open sprite: %.*s"), (int)path.count, path.data);
+        ff_log_write(ff_log_type_normal, FF_SVL("Can't load sprite: %.*s"), FF_SV_FORMAT(s_sprite_file));
+        return false;
     }
 
-    ff_arena_destroy(&path_arena);
-    FF_CHECK_RET_VAL(mapped, false);
-
     ff_png_image image;
-    const bool decoded = ff_png_decode(ff_file_map_data(&map), &s_blit.sprite_arena, false, &image);
-    ff_file_map_destroy(&map);
-
-    FF_CHECK_RET_VAL(decoded, false);
+    FF_CHECK_RET_VAL(ff_png_decode(data.bytes, &s_blit.sprite_arena, false, &image), false);
 
     s_blit.sprite_pixels = (uint32_t*)image.pixels;
     s_blit.sprite_width = image.width;

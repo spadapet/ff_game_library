@@ -7,6 +7,11 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props" Condition="Exists('$(D3D12AgilityRoot)build\native\Microsoft.Direct3D.D3D12.props')" />
+  <ItemDefinitionGroup Condition="'$(Configuration)' != 'Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>FF_BASE_RESOURCE_DIRECTORY="$(MSBuildProjectDirectory.Replace('\','\\'))\\assets";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="app\app.c" />
     <ClCompile Include="base\arena.c" />
@@ -33,6 +38,9 @@
     <ClCompile Include="data\png.c" />
     <ClCompile Include="data\stream.c" />
     <ClCompile Include="data\value.c" />
+    <ClCompile Include="resources\resource_cache.c" />
+    <ClCompile Include="resources\resource_module.c" />
+    <ClCompile Include="resources\resources.c" />
     <ClCompile Include="dx12\dx12_globals.c" />
     <ClCompile Include="dx12\dx12_fence.c" />
     <ClCompile Include="dx12\dx12_fence_values.c" />
@@ -98,6 +106,10 @@
     <ClInclude Include="data\stream.h" />
     <ClInclude Include="data\value.h" />
     <ClInclude Include="data\value_type.h" />
+    <ClInclude Include="resources\resource_cache.h" />
+    <ClInclude Include="resources\resource_module.h" />
+    <ClInclude Include="resources\resources.h" />
+    <ClInclude Include="resources\resources_internal.h" />
     <ClInclude Include="dx12\dx12_globals.h" />
     <ClInclude Include="dx12\dx12_internal.h" />
     <ClInclude Include="dx12\dx12_fence.h" />
@@ -135,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="BUGS.md" />
+    <None Include="assets\.gitkeep" />
     <None Include="packages.ff.base.c.config" />
     <Natvis Include="base.c.natvis" />
     <FfShaderInclude Include="dx12\shaders\*.hlsli" />
