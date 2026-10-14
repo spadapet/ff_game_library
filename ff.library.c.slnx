@@ -1,0 +1,39 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Profile" />
+    <BuildType Name="Release" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/build/">
+    <File Path="build/base.props" />
+    <File Path="build/cpp.props" />
+    <File Path="build/cpp.targets" />
+    <File Path="build/cpp.xml" />
+    <File Path="build/project.props" />
+    <File Path="directory.build.props" />
+    <File Path="directory.build.targets" />
+  </Folder>
+  <Folder Name="/config/">
+    <File Path=".editorconfig" />
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".gitignore" />
+    <File Path=".gitmodules" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/include/">
+    <File Path="include/ff.base.c.h" />
+  </Folder>
+  <Folder Name="/source/">
+    <Project Path="source/ff.base.c/ff.base.c.vcxproj" Id="9acbc255-a76a-495d-9d2f-e6f39d8d3312" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/ff.test.c/ff.test.c.vcxproj" Id="d820b715-1edd-45ed-8000-068ea989d559" />
+    <Project Path="test/ff.test.unit.c/ff.test.unit.c.vcxproj" Id="59fc162a-acf0-491a-8f0f-771d9a9a2158" />
+  </Folder>
+  <Folder Name="/vendor/">
+    <Project Path="vendor/ff.vendor.libpng.vcxproj" Id="7023aadb-413d-4c4e-b8a7-481484c943ba" />
+    <Project Path="vendor/ff.vendor.zlib.vcxproj" Id="d9b0464d-0e8c-48f0-98c8-fbd8bef12bdc" />
+  </Folder>
+</Solution>

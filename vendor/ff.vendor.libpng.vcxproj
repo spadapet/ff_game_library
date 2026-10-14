@@ -8,8 +8,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>libpng_inc;zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pngpriv.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>libpng;libpng_inc;zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -20,6 +21,7 @@
     <ClInclude Include="libpng\pnginfo.h" />
     <ClInclude Include="libpng\pngpriv.h" />
     <ClInclude Include="libpng\pngstruct.h" />
+    <ClInclude Include="libpng\pngtarget.h" />
     <ClInclude Include="pnglibconf.h" />
   </ItemGroup>
   <ItemGroup>
@@ -33,11 +35,15 @@
     <ClCompile Include="libpng\pngrtran.c" />
     <ClCompile Include="libpng\pngrutil.c" />
     <ClCompile Include="libpng\pngset.c" />
+    <ClCompile Include="libpng\pngsimd.c" />
     <ClCompile Include="libpng\pngtrans.c" />
     <ClCompile Include="libpng\pngwio.c" />
     <ClCompile Include="libpng\pngwrite.c" />
     <ClCompile Include="libpng\pngwtran.c" />
     <ClCompile Include="libpng\pngwutil.c" />
+    <ClCompile Include="libpng_inc\pch.c">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
