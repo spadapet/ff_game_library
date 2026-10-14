@@ -191,8 +191,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &commands));
 
             ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, ff_dx12_buffer_type_vertex,
-                &commands, data, sizeof(data)));
+            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, nullptr, ff_dx12_buffer_type_vertex, &commands, data, sizeof(data)));
             ff_dx12_queue_execute(ff_dx12_copy_queue(), &commands);
 
             const size_t version_before = ff_dx12_buffer_version(&buffer);
@@ -578,7 +577,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &commands));
 
             ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, ff_dx12_buffer_type_vertex,
+            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, nullptr, ff_dx12_buffer_type_vertex,
                 &commands, data, sizeof(data)));
             ff_dx12_queue_execute(ff_dx12_copy_queue(), &commands);
             ff_dx12_wait_for_idle();
@@ -620,7 +619,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_copy_queue(), &commands));
 
             ff_dx12_buffer static_buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&static_buffer, ff_dx12_buffer_type_vertex,
+            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&static_buffer, nullptr, ff_dx12_buffer_type_vertex,
                 &commands, data, sizeof(data)));
 
             ff_dx12_buffer gpu_buffer{};

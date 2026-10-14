@@ -14,6 +14,11 @@ git clone --recursive https://github.com/spadapet/ff_game_library.git
     * __/r__ is only needed the first build to restore packages.
 2) The __out__ directory now contains everything that was built.
 
+## ff.base.c arena ownership
+Instance-bucket, DX12-heap, CPU/static-buffer, palette-data, and resource-cache initializers take `storage_arena` directly. A non-null arena is borrowed: it must outlive the object and its returned data, and must not be reset or rewound while that data is live. Destruction does not reclaim borrowed allocations. Passing null selects standalone private-arena ownership. GPU-only buffers need no CPU-storage arena. Fence-value initialization also takes a nullable arena, but null selects inline-only storage rather than creating a private arena.
+
+Draw devices share their arena with instance buckets and static-geometry CPU copies.
+
 ## Coding style = verbose
 * Follow existing code (snake_case, etc)
 * Avoid "using namespace" anywhere, use the full::namespace::name or just :: for the global namespace

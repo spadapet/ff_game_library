@@ -271,7 +271,7 @@ namespace ff::test::resources
             {
                 scoped_arena source;
                 const ff_span saved = make_test_pack(&source.value);
-                Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, saved));
+                Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, nullptr, saved));
                 retained = ff_resource_cache_get(&cache.value, FF_SVL("nested/file.bin"));
                 assert_text(retained, FF_SVL("nested"));
                 ::memset((void*)saved.data, 0, saved.size);
@@ -290,11 +290,51 @@ namespace ff::test::resources
             Assert::AreEqual(42, number->i32);
         }
 
+        TEST_METHOD(shared_cache_destruction_preserves_sibling_data_and_owner_storage)
+        {
+            scoped_arena source;
+            const ff_span saved = make_test_pack(&source.value);
+            scoped_arena storage;
+            scoped_cache first;
+            scoped_cache second;
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&first.value, &storage.value, saved));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&second.value, &storage.value, saved));
+            Assert::IsTrue(first.value.storage_arena == &storage.value);
+            Assert::IsTrue(second.value.storage_arena == &storage.value);
+            Assert::IsNull(first.value.arena.heap);
+            Assert::IsNull(second.value.arena.heap);
+            const ff_resource_data retained = ff_resource_cache_get(&first.value, FF_SVL("nested/file.bin"));
+            const ff_arena_marker marker = ff_arena_mark(&storage.value);
+            ff_resource_cache_destroy(&first.value);
+            ff_resource_cache_destroy(&first.value);
+            Assert::IsTrue(marker == ff_arena_mark(&storage.value));
+            assert_text(retained, FF_SVL("nested"));
+            assert_text(ff_resource_cache_get(&second.value, FF_SVL("nested/file.bin")), FF_SVL("nested"));
+        }
+
+        TEST_METHOD(module_failed_shared_cache_additions_preserve_existing_cache)
+        {
+            scoped_directory directory;
+            scoped_arena source;
+            scoped_module module;
+            Assert::IsTrue(ff_resource_module_init(&module.value, FF_SVL("rollback")));
+            Assert::IsTrue(ff_resource_module_add_pack_data(&module.value, make_test_pack(&source.value)));
+            const ff_arena_marker marker = ff_arena_mark(&module.value.arena);
+            Assert::IsFalse(ff_resource_module_add_pack_file(&module.value, directory.path(FF_SVL("missing.pack"))));
+            Assert::IsTrue(marker == ff_arena_mark(&module.value.arena));
+            Assert::IsFalse(ff_resource_module_add_directory(&module.value, directory.path(FF_SVL("missing"))));
+            Assert::IsTrue(marker == ff_arena_mark(&module.value.arena));
+            Assert::IsFalse(ff_resource_module_add_pack_data(&module.value, ff_span_empty()));
+            Assert::IsTrue(marker == ff_arena_mark(&module.value.arena));
+            Assert::AreEqual((size_t)1, ff_array_count(module.value.caches));
+            assert_text(ff_resource_module_get(&module.value, FF_SVL("nested/file.bin")), FF_SVL("nested"));
+        }
+
         TEST_METHOD(pack_entries_return_binary_and_dictionary_data)
         {
             scoped_arena source;
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, make_test_pack(&source.value)));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, nullptr, make_test_pack(&source.value)));
             const uint8_t binary[] = { 0, 1, 127, 128, 255 };
             assert_bytes(ff_resource_cache_get(&cache.value, FF_SVL("raw.bin")), make_span(binary, sizeof(binary)));
 
@@ -318,7 +358,7 @@ namespace ff::test::resources
         {
             scoped_arena source;
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, make_test_pack(&source.value)));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, nullptr, make_test_pack(&source.value)));
             assert_status(ff_resource_status_not_found, ff_resource_cache_get(&cache.value, FF_SVL("missing")));
             assert_bytes(ff_resource_cache_get(&cache.value, FF_SVL("empty.bin")), ff_span_empty());
             const ff_resource_data empty_object = ff_resource_cache_get(&cache.value, FF_SVL("empty_object"));
@@ -335,7 +375,7 @@ namespace ff::test::resources
             ff_dict empty{};
             ff_dict_init(&empty, &source.value);
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, save_pack(&empty, &source.value)));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, nullptr, save_pack(&empty, &source.value)));
             assert_status(ff_resource_status_not_found, ff_resource_cache_get(&cache.value, FF_SVL("missing")));
         }
 
@@ -345,7 +385,7 @@ namespace ff::test::resources
             scoped_arena source;
             const ff_string_view path = directory.write(FF_SVL("resources.pack"), make_test_pack(&source.value));
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_pack_file(&cache.value, path));
+            Assert::IsTrue(ff_resource_cache_init_pack_file(&cache.value, nullptr, path));
             Assert::AreEqual((int)ff_resource_cache_type_pack, (int)cache.value.type);
             assert_text(ff_resource_cache_get(&cache.value, FF_SVL("nested/file.bin")), FF_SVL("nested"));
 #if PROFILE_APP
@@ -382,31 +422,31 @@ namespace ff::test::resources
             ff_resource_cache_destroy(&cache.value);
             for (const ff_span input : invalid_inputs)
             {
-                Assert::IsFalse(ff_resource_cache_init_pack_data(&cache.value, input));
+                Assert::IsFalse(ff_resource_cache_init_pack_data(&cache.value, nullptr, input));
                 assert_inert(cache.value);
                 ff_resource_cache_destroy(&cache.value);
                 ff_resource_cache_destroy(&cache.value);
             }
 
             ((uint8_t*)valid.data)[valid.size - 1] ^= 1;
-            Assert::IsFalse(ff_resource_cache_init_pack_data(&cache.value, valid));
+            Assert::IsFalse(ff_resource_cache_init_pack_data(&cache.value, nullptr, valid));
             assert_inert(cache.value);
             const ff_string_view corrupt_file = directory.write(FF_SVL("corrupt.pack"), valid);
-            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, corrupt_file));
+            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, nullptr, corrupt_file));
             assert_inert(cache.value);
-            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, directory.path(FF_SVL("missing.pack"))));
+            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, nullptr, directory.path(FF_SVL("missing.pack"))));
             assert_inert(cache.value);
-            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, directory.path(FF_SVL("missing"))));
+            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, nullptr, directory.path(FF_SVL("missing"))));
             assert_inert(cache.value);
-            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, corrupt_file));
+            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, nullptr, corrupt_file));
             assert_inert(cache.value);
-            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, FF_SVL("bad\0path")));
+            Assert::IsFalse(ff_resource_cache_init_directory(&cache.value, nullptr, FF_SVL("bad\0path")));
             assert_inert(cache.value);
-            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, ff_string_view{}));
+            Assert::IsFalse(ff_resource_cache_init_pack_file(&cache.value, nullptr, ff_string_view{}));
             assert_inert(cache.value);
             ff_resource_cache_destroy(&cache.value);
             ff_resource_cache_destroy(&cache.value);
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value,
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&cache.value, nullptr,
                 make_text_pack(&source.value, FF_SVL("recovered"), FF_SVL("valid"))));
             assert_text(ff_resource_cache_get(&cache.value, FF_SVL("recovered")), FF_SVL("valid"));
         }
@@ -416,7 +456,7 @@ namespace ff::test::resources
             scoped_directory directory;
             directory.write_text(FF_SVL("file.bin"), FF_SVL("initial"));
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, directory.root));
+            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, nullptr, directory.root));
             directory.write_text(FF_SVL("file.bin"), FF_SVL("before first lookup"));
             const ff_resource_data first = ff_resource_cache_get(&cache.value, FF_SVL("file.bin"));
             assert_text(first, FF_SVL("before first lookup"));
@@ -436,7 +476,7 @@ namespace ff::test::resources
             directory.write(FF_SVL("empty.bin"), ff_span_empty());
             directory.write(FF_SVL("binary.bin"), make_span(binary, sizeof(binary)));
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, directory.root));
+            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, nullptr, directory.root));
             assert_bytes(ff_resource_cache_get(&cache.value, FF_SVL("empty.bin")), ff_span_empty());
             assert_bytes(ff_resource_cache_get(&cache.value, FF_SVL("binary.bin")), make_span(binary, sizeof(binary)));
             assert_status(ff_resource_status_not_found, ff_resource_cache_get(&cache.value, FF_SVL("late.bin")));
@@ -451,7 +491,7 @@ namespace ff::test::resources
             scoped_directory directory;
             directory.write_text(FF_SVL("first"), FF_SVL("retained bytes"));
             scoped_cache cache;
-            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, directory.root));
+            Assert::IsTrue(ff_resource_cache_init_directory(&cache.value, nullptr, directory.root));
             const ff_resource_data first = ff_resource_cache_get(&cache.value, FF_SVL("first"));
             const size_t initial_capacity = cache.value.files.capacity;
             for (size_t i = 0; i < 96; i++)
@@ -475,7 +515,7 @@ namespace ff::test::resources
             directory.add_directory(FF_SVL("nested"));
             directory.write_text(FF_SVL("nested\\file.bin"), FF_SVL("nested"));
             scoped_cache folder;
-            Assert::IsTrue(ff_resource_cache_init_directory(&folder.value, directory.root));
+            Assert::IsTrue(ff_resource_cache_init_directory(&folder.value, nullptr, directory.root));
             const ff_resource_data slash = ff_resource_cache_get(&folder.value, FF_SVL("nested/file.bin"));
             const ff_resource_data backslash = ff_resource_cache_get(&folder.value, FF_SVL("nested\\file.bin"));
             assert_text(slash, FF_SVL("nested"));
@@ -484,7 +524,7 @@ namespace ff::test::resources
 
             scoped_arena source;
             scoped_cache pack;
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&pack.value, make_test_pack(&source.value)));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&pack.value, nullptr, make_test_pack(&source.value)));
             const ff_resource_data pack_slash = ff_resource_cache_get(&pack.value, FF_SVL("nested/file.bin"));
             const ff_resource_data pack_backslash = ff_resource_cache_get(&pack.value, FF_SVL("nested\\file.bin"));
             assert_text(pack_slash, FF_SVL("nested"));
@@ -500,9 +540,9 @@ namespace ff::test::resources
             scoped_cache pack;
             scoped_module module;
             scoped_registry registry;
-            Assert::IsTrue(ff_resource_cache_init_directory(&folder.value, directory.root));
+            Assert::IsTrue(ff_resource_cache_init_directory(&folder.value, nullptr, directory.root));
             const ff_span saved = make_test_pack(&source.value);
-            Assert::IsTrue(ff_resource_cache_init_pack_data(&pack.value, saved));
+            Assert::IsTrue(ff_resource_cache_init_pack_data(&pack.value, nullptr, saved));
             Assert::IsTrue(ff_resource_module_init(&module.value, FF_SVL("valid")));
             Assert::IsTrue(ff_resource_module_add_pack_data(&module.value, saved));
             Assert::IsTrue(ff_resources_add_module(&registry.value, &module.value));
@@ -559,6 +599,11 @@ namespace ff::test::resources
             Assert::IsTrue(ff_resource_module_add_directory(&module.value, first.root));
             Assert::IsTrue(ff_resource_module_add_directory(&module.value, second.root));
             Assert::IsTrue(ff_resource_module_add_pack_file(&module.value, pack_path));
+            for (size_t i = 0; i < ff_array_count(module.value.caches); i++)
+            {
+                Assert::IsTrue(module.value.caches[i]->storage_arena == &module.value.arena);
+                Assert::IsNull(module.value.caches[i]->arena.heap);
+            }
             assert_text(ff_resource_module_get(&module.value, FF_SVL("shared")), FF_SVL("first folder"));
             assert_text(ff_resource_module_get(&module.value, FF_SVL("second_only")), FF_SVL("second folder"));
             assert_text(ff_resource_module_get(&module.value, FF_SVL("pack_only")), FF_SVL("pack fallback"));
@@ -713,6 +758,11 @@ namespace ff::test::resources
             for (size_t i = 0; i < 96; i++)
             {
                 Assert::IsTrue(ff_resource_module_add_pack_data(&module.value, saved));
+            }
+            for (size_t i = 0; i < ff_array_count(module.value.caches); i++)
+            {
+                Assert::IsTrue(module.value.caches[i]->storage_arena == &module.value.arena);
+                Assert::IsNull(module.value.caches[i]->arena.heap);
             }
             Assert::IsTrue(ff_array_capacity(module.value.caches) > initial_capacity);
             Assert::IsTrue(module.value.caches[0] == first_cache);

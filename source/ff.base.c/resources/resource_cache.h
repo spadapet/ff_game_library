@@ -40,6 +40,7 @@ typedef enum ff_resource_cache_type
 typedef struct ff_resource_cache
 {
     ff_arena arena;
+    ff_arena* storage_arena;
     ff_resource_cache_type type;
     ff_string_view path;
     ff_dict files;
@@ -47,8 +48,8 @@ typedef struct ff_resource_cache
     ff_idict pack;
 } ff_resource_cache;
 
-bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_string_view path);
-bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_string_view path);
-bool ff_resource_cache_init_pack_data(ff_resource_cache* cache, ff_span saved);
+bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_arena* storage_arena, ff_string_view path);
+bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_arena* storage_arena, ff_string_view path);
+bool ff_resource_cache_init_pack_data(ff_resource_cache* cache, ff_arena* storage_arena, ff_span saved);
 void ff_resource_cache_destroy(ff_resource_cache* cache);
 ff_resource_data ff_resource_cache_get(ff_resource_cache* cache, ff_string_view name);

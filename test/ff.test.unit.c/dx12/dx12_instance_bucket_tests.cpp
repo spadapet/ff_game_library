@@ -51,7 +51,7 @@ namespace ff::test::dx12
         TEST_METHOD(init_starts_empty)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             Assert::AreEqual<size_t>(0, bucket.count);
@@ -63,10 +63,56 @@ namespace ff::test::dx12
             ff_dx12_instance_bucket_destroy(&bucket);
         }
 
+        TEST_METHOD(shared_arena_preserves_interleaved_growth_and_sibling_lifetime)
+        {
+            ff_arena_declare_stack(storage_arena, 1024);
+            ff_dx12_instance_bucket buckets[2]{};
+            for (auto& bucket : buckets)
+            {
+                ff_dx12_instance_bucket_init(&bucket, &storage_arena, ff_dx12_instance_bucket_lines,
+                    sizeof(test_instance), alignof(test_instance));
+                Assert::IsTrue(bucket.storage_arena == &storage_arena);
+                Assert::IsNull(bucket.arena.heap);
+            }
+
+            const size_t count = FF_DX12_MIN_INSTANCE_BUCKET_COUNT * 8 + 1;
+            for (size_t i = 0; i < count; i++)
+            {
+                for (size_t b = 0; b < _countof(buckets); b++)
+                {
+                    test_instance* item = (test_instance*)ff_dx12_instance_bucket_add(&buckets[b]);
+                    item->id = (uint32_t)(i + b * count);
+                    item->value = (float)i;
+                }
+            }
+
+            for (size_t b = 0; b < _countof(buckets); b++)
+            {
+                const test_instance* items = (const test_instance*)ff_dx12_instance_bucket_data(&buckets[b]);
+                for (size_t i = 0; i < count; i++)
+                {
+                    Assert::AreEqual((uint32_t)(i + b * count), items[i].id);
+                    Assert::AreEqual((float)i, items[i].value);
+                }
+            }
+
+            const ff_arena_marker marker = ff_arena_mark(&storage_arena);
+            ff_dx12_instance_bucket_destroy(&buckets[0]);
+            ff_dx12_instance_bucket_destroy(&buckets[0]);
+            Assert::IsTrue(marker == ff_arena_mark(&storage_arena));
+            Assert::AreEqual((uint32_t)count, ((const test_instance*)buckets[1].data)[0].id);
+            ff_dx12_instance_bucket_clear(&buckets[1]);
+            test_instance* item = (test_instance*)ff_dx12_instance_bucket_add(&buckets[1]);
+            item->id = 123;
+            Assert::AreEqual((uint32_t)123, ((const test_instance*)buckets[1].data)[0].id);
+            ff_dx12_instance_bucket_destroy(&buckets[1]);
+            ff_arena_destroy(&storage_arena);
+        }
+
         TEST_METHOD(destroy_is_idempotent)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             Assert::IsNotNull(ff_dx12_instance_bucket_add(&bucket));
@@ -81,7 +127,7 @@ namespace ff::test::dx12
         TEST_METHOD(add_returns_distinct_item_sized_slots)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             uint8_t* first = (uint8_t*)ff_dx12_instance_bucket_add(&bucket);
@@ -99,7 +145,7 @@ namespace ff::test::dx12
         TEST_METHOD(first_growth_reaches_minimum_count)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             Assert::IsNotNull(ff_dx12_instance_bucket_add(&bucket));
@@ -111,7 +157,7 @@ namespace ff::test::dx12
         TEST_METHOD(growth_doubles_capacity_and_preserves_contents)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             // Enough to force several reallocations, each of which the arena is free to relocate.
@@ -144,7 +190,7 @@ namespace ff::test::dx12
         TEST_METHOD(clear_keeps_capacity_so_reuse_does_not_allocate)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             for (uint32_t i = 0; i < FF_DX12_MIN_INSTANCE_BUCKET_COUNT; i++)
@@ -176,7 +222,7 @@ namespace ff::test::dx12
         TEST_METHOD(render_start_snapshots_current_count)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             for (uint32_t i = 0; i < 5; i++)
@@ -204,7 +250,7 @@ namespace ff::test::dx12
             for (int i = 0; i < ff_dx12_instance_bucket_count; i++)
             {
                 ff_dx12_instance_bucket bucket{};
-                ff_dx12_instance_bucket_init(&bucket, (ff_dx12_instance_bucket_type)i,
+                ff_dx12_instance_bucket_init(&bucket, nullptr, (ff_dx12_instance_bucket_type)i,
                     sizeof(test_instance), alignof(test_instance));
 
                 const bool transparent = i >= ff_dx12_instance_bucket_first_transparent;
@@ -227,7 +273,7 @@ namespace ff::test::dx12
             for (int i = 0; i < ff_dx12_instance_bucket_count; i++)
             {
                 ff_dx12_instance_bucket bucket{};
-                ff_dx12_instance_bucket_init(&bucket, (ff_dx12_instance_bucket_type)i,
+                ff_dx12_instance_bucket_init(&bucket, nullptr, (ff_dx12_instance_bucket_type)i,
                     sizeof(test_instance), alignof(test_instance));
 
                 seen[ff_dx12_instance_bucket_draw_bucket(&bucket)]++;
@@ -248,11 +294,11 @@ namespace ff::test::dx12
             ff_dx12_instance_bucket bucket{};
             bucket.item_size = 123;
 
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_count,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_count,
                 sizeof(test_instance), alignof(test_instance));
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 0, alignof(test_instance));
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), 0);
 
             Assert::AreEqual(scoped_instance_bucket_assert_counter::expected_count(3),
@@ -265,7 +311,7 @@ namespace ff::test::dx12
         TEST_METHOD(add_returns_slot_at_current_count_across_a_growth)
         {
             ff_dx12_instance_bucket bucket{};
-            ff_dx12_instance_bucket_init(&bucket, ff_dx12_instance_bucket_lines,
+            ff_dx12_instance_bucket_init(&bucket, nullptr, ff_dx12_instance_bucket_lines,
                 sizeof(test_instance), alignof(test_instance));
 
             // Every returned slot must be exactly data + count * item_size, including the call

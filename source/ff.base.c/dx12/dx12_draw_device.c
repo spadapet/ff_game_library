@@ -128,7 +128,7 @@ static bool init_static_geometry(ff_dx12_draw_device* device, ff_dx12_commands* 
     {
         uint16_t indexes[s_static_index_count];
         build_static_indexes(indexes);
-        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->index_buffer,
+        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->index_buffer, &device->arena,
             ff_dx12_buffer_type_index, commands, indexes, sizeof(indexes)), false);
     }
 
@@ -136,7 +136,7 @@ static bool init_static_geometry(ff_dx12_draw_device* device, ff_dx12_commands* 
     {
         ff_point_float vertexes[s_circle_vertex_count];
         build_circle_vertexes(vertexes);
-        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->circle_vertex_buffer,
+        FF_CHECK_RET_VAL(ff_dx12_buffer_init_gpu_static(&device->circle_vertex_buffer, &device->arena,
             ff_dx12_buffer_type_vertex, commands, vertexes, sizeof(vertexes)), false);
     }
 
@@ -178,7 +178,7 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
     for (size_t i = 0; i < ff_dx12_instance_bucket_count; i++)
     {
         const bucket_layout* layout = &s_bucket_layouts[i % ff_dx12_draw_bucket_count];
-        ff_dx12_instance_bucket_init(&device->buckets[i], (ff_dx12_instance_bucket_type)i,
+        ff_dx12_instance_bucket_init(&device->buckets[i], &device->arena, (ff_dx12_instance_bucket_type)i,
             layout->item_size, layout->item_align);
     }
 

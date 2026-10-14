@@ -7,7 +7,7 @@ static_assert(ff_dx12_instance_bucket_first_transparent == ff_dx12_draw_bucket_c
 static_assert(ff_dx12_instance_bucket_count == ff_dx12_draw_bucket_count * 2,
     "every pipeline bucket must have exactly one opaque and one transparent instance bucket");
 
-void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket,
+void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket, ff_arena* storage_arena,
     ff_dx12_instance_bucket_type bucket_type, size_t item_size, size_t item_align)
 {
     FF_ASSERT_RET(bucket);
@@ -18,10 +18,13 @@ void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket,
     bucket->bucket_type = bucket_type;
     bucket->item_size = item_size;
     bucket->item_align = item_align;
+    bucket->storage_arena = storage_arena;
 
-    // Nothing is allocated until the first instance lands here. Most frames touch only a few of
-    // the sixteen buckets, so the unused ones never cost anything.
-    ff_arena_init_heap_local(&bucket->arena, 0);
+    if (!storage_arena)
+    {
+        ff_arena_init_heap_local(&bucket->arena, 0);
+        bucket->storage_arena = &bucket->arena;
+    }
 }
 
 void ff_dx12_instance_bucket_destroy(ff_dx12_instance_bucket* bucket)
@@ -44,7 +47,7 @@ void* ff_dx12_instance_bucket_add(ff_dx12_instance_bucket* bucket)
 
         // The arena may relocate the block, so the pointer has to come back from realloc rather
         // than being assumed stable.
-        uint8_t* data = (uint8_t*)ff_arena_realloc(&bucket->arena, bucket->data,
+        uint8_t* data = (uint8_t*)ff_arena_realloc(bucket->storage_arena, bucket->data,
             bucket->capacity * bucket->item_size, new_capacity * bucket->item_size,
             bucket->item_align);
 

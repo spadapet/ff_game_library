@@ -93,7 +93,7 @@ static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name
     ff_arena_destroy(&name_arena);
 
     ff_arena_init_heap_local(&resource->arena, 0);
-    ff_dx12_fence_values_init_arena(&resource->global_reads, &resource->arena);
+    ff_dx12_fence_values_init(&resource->global_reads, &resource->arena);
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)desc->MipLevels);
 
@@ -113,7 +113,7 @@ static void resource_make_resident_before_destroy(ff_dx12_resource* resource)
 
     ff_dx12_residency_data* residency_set[1] = { &resource->residency_data };
     ff_dx12_fence_values wait_values;
-    ff_dx12_fence_values_init(&wait_values);
+    ff_dx12_fence_values_init(&wait_values, NULL);
 
     if (ff_dx12_make_resident(residency_set, 1, (ff_dx12_fence_value){ 0 }, &wait_values))
     {
@@ -222,7 +222,7 @@ void ff_dx12_resource_destroy(ff_dx12_resource* resource)
     // deferred release to the keep-alive list rather than releasing them here. It releases them
     // once these fences retire, or immediately when they already have.
     ff_dx12_fence_values pending;
-    ff_dx12_fence_values_init_arena(&pending, &resource->arena);
+    ff_dx12_fence_values_init(&pending, &resource->arena);
     ff_dx12_fence_values_add_all(&pending, &resource->global_reads);
     ff_dx12_fence_values_add(&pending, resource->global_write);
 
@@ -398,7 +398,7 @@ void internal_ff_dx12_resource_before_reset(ff_dx12_resource* resource)
     // Both consumers are re-seeded immediately: the rewind invalidated global_state's overflow
     // pointer, and the resource can be read (or destroyed) before the reset pass reaches it.
     ff_arena_reset(&resource->arena);
-    ff_dx12_fence_values_init_arena(&resource->global_reads, &resource->arena);
+    ff_dx12_fence_values_init(&resource->global_reads, &resource->arena);
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, D3D12_RESOURCE_STATE_COMMON,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)resource->desc.MipLevels);
 

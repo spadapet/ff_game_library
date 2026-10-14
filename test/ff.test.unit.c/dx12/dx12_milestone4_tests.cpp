@@ -659,7 +659,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_cpu(&buffer, ff_dx12_buffer_type_vertex));
+            Assert::IsTrue(ff_dx12_buffer_init_cpu(&buffer, nullptr, ff_dx12_buffer_type_vertex));
             Assert::IsTrue(ff_dx12_buffer_valid(&buffer));
             Assert::IsTrue(ff_dx12_buffer_writable(&buffer));
 
@@ -688,12 +688,43 @@ namespace ff::test::dx12
             ff_dx12_wait_for_idle();
         }
 
+        TEST_METHOD(shared_cpu_buffers_grow_without_destroying_sibling_storage)
+        {
+            ff_arena_declare_stack(storage_arena, 1024);
+            ff_dx12_buffer buffers[2]{};
+            uint8_t bytes[8192];
+            for (size_t i = 0; i < sizeof(bytes); i++)
+            {
+                bytes[i] = (uint8_t)(i * 7);
+            }
+
+            for (auto& buffer : buffers)
+            {
+                Assert::IsTrue(ff_dx12_buffer_init_cpu(&buffer, &storage_arena, ff_dx12_buffer_type_vertex));
+                Assert::IsTrue(buffer.storage_arena == &storage_arena);
+                Assert::IsNull(buffer.arena.heap);
+            }
+            Assert::IsTrue(ff_dx12_buffer_update(&buffers[0], nullptr, bytes, 16));
+            Assert::IsTrue(ff_dx12_buffer_update(&buffers[1], nullptr, bytes, sizeof(bytes)));
+            Assert::IsTrue(ff_dx12_buffer_update(&buffers[0], nullptr, bytes, sizeof(bytes)));
+            Assert::AreEqual(0, memcmp(buffers[0].cpu_data, bytes, sizeof(bytes)));
+
+            const ff_arena_marker marker = ff_arena_mark(&storage_arena);
+            ff_dx12_buffer_destroy(&buffers[0]);
+            ff_dx12_buffer_destroy(&buffers[0]);
+            Assert::IsTrue(marker == ff_arena_mark(&storage_arena));
+            Assert::AreEqual(sizeof(bytes), ff_dx12_buffer_size(&buffers[1]));
+            Assert::AreEqual(0, memcmp(buffers[1].cpu_data, bytes, sizeof(bytes)));
+            ff_dx12_buffer_destroy(&buffers[1]);
+            ff_arena_destroy(&storage_arena);
+        }
+
         TEST_METHOD(buffer_update_skips_identical_data_but_bumps_on_change)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_cpu(&buffer, ff_dx12_buffer_type_vertex));
+            Assert::IsTrue(ff_dx12_buffer_init_cpu(&buffer, nullptr, ff_dx12_buffer_type_vertex));
 
             uint8_t data[32] = { 1, 2, 3 };
             Assert::IsTrue(ff_dx12_buffer_update(&buffer, nullptr, data, sizeof(data)));
@@ -726,7 +757,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_queue_new_commands(ff_dx12_direct_queue(), &commands));
 
             ff_dx12_buffer buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, ff_dx12_buffer_type_vertex,
+            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&buffer, nullptr, ff_dx12_buffer_type_vertex,
                 &commands, vertices, sizeof(vertices)));
 
             Assert::IsTrue(ff_dx12_buffer_valid(&buffer));
@@ -752,6 +783,8 @@ namespace ff::test::dx12
 
             ff_dx12_buffer buffer{};
             Assert::IsTrue(ff_dx12_buffer_init_gpu(&buffer, ff_dx12_buffer_type_index, 0));
+            Assert::IsNull(buffer.arena.heap);
+            Assert::IsNull(buffer.storage_arena);
 
             // No resource until the first write.
             Assert::IsFalse(ff_dx12_buffer_valid(&buffer));
@@ -827,8 +860,7 @@ namespace ff::test::dx12
             uint16_t data[16] = { 0 };
 
             ff_dx12_buffer index_buffer{};
-            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&index_buffer, ff_dx12_buffer_type_index,
-                &commands, data, sizeof(data)));
+            Assert::IsTrue(ff_dx12_buffer_init_gpu_static(&index_buffer, nullptr, ff_dx12_buffer_type_index, &commands, data, sizeof(data)));
 
             // An index buffer has no vertex view, and vice versa.
             Assert::AreEqual((UINT64)0, ff_dx12_buffer_vertex_view(&index_buffer, 4, 0, 0).BufferLocation);

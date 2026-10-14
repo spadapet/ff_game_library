@@ -33,6 +33,7 @@ typedef struct ff_dx12_buffer
 
     // For CPU
     ff_arena arena;
+    ff_arena* storage_arena;
     uint8_t* cpu_data;
     size_t cpu_size;
     size_t cpu_capacity;
@@ -43,11 +44,11 @@ typedef struct ff_dx12_buffer
     uint64_t data_hash;
 } ff_dx12_buffer;
 
-bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, ff_dx12_commands* commands, const void* data, size_t size);
+bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_arena* storage_arena, ff_dx12_buffer_type type, ff_dx12_commands* commands, const void* data, size_t size);
 
 // initial_size may be 0, in which case the resource is created by the first update or map.
 bool ff_dx12_buffer_init_gpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, size_t initial_size);
-bool ff_dx12_buffer_init_cpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type);
+bool ff_dx12_buffer_init_cpu(ff_dx12_buffer* buffer, ff_arena* storage_arena, ff_dx12_buffer_type type);
 void ff_dx12_buffer_destroy(ff_dx12_buffer* buffer);
 
 bool ff_dx12_buffer_valid(const ff_dx12_buffer* buffer);

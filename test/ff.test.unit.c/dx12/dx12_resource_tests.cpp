@@ -194,7 +194,7 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_init(&tracker);
 
             ff_dx12_fence_values wait_before_execute{};
-            ff_dx12_fence_values_init(&wait_before_execute);
+            ff_dx12_fence_values_init(&wait_before_execute, nullptr);
 
             // signal_later leaves the value pending, so the resource records GPU work that has
             // not completed. Destroy must block on it rather than releasing underneath the GPU.
@@ -237,19 +237,19 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_fence_init(&next_writer_fence, FF_SVL("next writer"), 1));
 
             ff_dx12_fence_values writer_wait{};
-            ff_dx12_fence_values_init(&writer_wait);
+            ff_dx12_fence_values_init(&writer_wait, nullptr);
             const ff_dx12_fence_value writer = ff_dx12_fence_signal_later(&writer_fence);
             ff_dx12_resource_prepare_state(&resource, &writer_wait, writer, &writer_tracker,
                 D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
 
             ff_dx12_fence_values first_reader_wait{};
-            ff_dx12_fence_values_init(&first_reader_wait);
+            ff_dx12_fence_values_init(&first_reader_wait, nullptr);
             const ff_dx12_fence_value first_reader = ff_dx12_fence_signal_later(&first_reader_fence);
             ff_dx12_resource_prepare_state(&resource, &first_reader_wait, first_reader, &first_reader_tracker,
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
 
             ff_dx12_fence_values second_reader_wait{};
-            ff_dx12_fence_values_init(&second_reader_wait);
+            ff_dx12_fence_values_init(&second_reader_wait, nullptr);
             const ff_dx12_fence_value second_reader = ff_dx12_fence_signal_later(&second_reader_fence);
             ff_dx12_resource_prepare_state(&resource, &second_reader_wait, second_reader, &second_reader_tracker,
                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0, 0, 0, 0);
@@ -259,7 +259,7 @@ namespace ff::test::dx12
             Assert::IsTrue(resource.global_write.fence == &writer_fence);
 
             ff_dx12_fence_values next_writer_wait{};
-            ff_dx12_fence_values_init(&next_writer_wait);
+            ff_dx12_fence_values_init(&next_writer_wait, nullptr);
             const ff_dx12_fence_value next_writer = ff_dx12_fence_signal_later(&next_writer_fence);
             ff_dx12_resource_prepare_state(&resource, &next_writer_wait, next_writer, &writer_tracker,
                 D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);

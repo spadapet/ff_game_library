@@ -15,7 +15,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("upload heap"), 64 * 1024, ff_dx12_heap_usage_upload));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("upload heap"), 64 * 1024, ff_dx12_heap_usage_upload));
             Assert::IsTrue(ff_dx12_heap_valid(&heap));
             Assert::IsNotNull(ff_dx12_heap_cpu_data(&heap));
             Assert::AreNotEqual((D3D12_GPU_VIRTUAL_ADDRESS)0, ff_dx12_heap_gpu_data(&heap));
@@ -29,7 +29,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("readback heap"), 64 * 1024, ff_dx12_heap_usage_readback));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("readback heap"), 64 * 1024, ff_dx12_heap_usage_readback));
             Assert::IsNotNull(ff_dx12_heap_cpu_data(&heap));
             Assert::IsTrue(ff_dx12_heap_cpu_usage(&heap));
 
@@ -41,7 +41,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("gpu buffers heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("gpu buffers heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
             Assert::IsNull(ff_dx12_heap_cpu_data(&heap));
             Assert::AreEqual((D3D12_GPU_VIRTUAL_ADDRESS)0, ff_dx12_heap_gpu_data(&heap));
             Assert::IsFalse(ff_dx12_heap_cpu_usage(&heap));
@@ -54,7 +54,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("gpu textures heap"), 4 * 1024 * 1024, ff_dx12_heap_usage_gpu_textures));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("gpu textures heap"), 4 * 1024 * 1024, ff_dx12_heap_usage_gpu_textures));
             Assert::IsNull(ff_dx12_heap_cpu_data(&heap));
 
             ff_dx12_heap_destroy(&heap);
@@ -65,7 +65,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("gpu targets heap"), 4 * 1024 * 1024, ff_dx12_heap_usage_gpu_targets));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("gpu targets heap"), 4 * 1024 * 1024, ff_dx12_heap_usage_gpu_targets));
             Assert::IsNull(ff_dx12_heap_cpu_data(&heap));
 
             ff_dx12_heap_destroy(&heap);
@@ -92,12 +92,41 @@ namespace ff::test::dx12
             Assert::IsFalse(ff_dx12_heap_valid(&heap));
         }
 
+        TEST_METHOD(shared_heap_bookkeeping_does_not_own_its_arena)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_arena_declare_stack(storage_arena, 1024);
+            ff_dx12_heap heaps[2]{};
+            for (auto& heap : heaps)
+            {
+                Assert::IsTrue(ff_dx12_heap_init(&heap, &storage_arena,
+                    FF_SVL("shared heap"), 64 * 1024, ff_dx12_heap_usage_upload));
+                Assert::IsNull(heap.arena.heap);
+                Assert::IsTrue(heap.storage_arena == &storage_arena);
+                Assert::IsTrue(heap.residency_data.keep_resident.arena == &storage_arena);
+            }
+
+            uint32_t* sentinel = ff_arena_alloc_type(&storage_arena, uint32_t, 1);
+            *sentinel = 123;
+            const ff_arena_marker marker = ff_arena_mark(&storage_arena);
+            ff_dx12_heap_destroy(&heaps[0]);
+            ff_dx12_heap_destroy(&heaps[0]);
+            Assert::IsTrue(marker == ff_arena_mark(&storage_arena));
+            Assert::AreEqual((uint32_t)123, *sentinel);
+            Assert::IsTrue(ff_dx12_heap_valid(&heaps[1]));
+            uint32_t* mapped = (uint32_t*)ff_dx12_heap_cpu_data(&heaps[1]);
+            *mapped = 456;
+            Assert::AreEqual((uint32_t)456, *mapped);
+            ff_dx12_heap_destroy(&heaps[1]);
+            ff_arena_destroy(&storage_arena);
+        }
+
         TEST_METHOD(residency_data_pointer_is_non_null_after_init)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
 
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("residency heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("residency heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
             Assert::IsNotNull(ff_dx12_heap_residency_data(&heap));
 
             ff_dx12_heap_destroy(&heap);

@@ -54,7 +54,7 @@ bool ff_resource_module_add_directory(ff_resource_module* module, ff_string_view
     FF_CHECK_RET_VAL(can_add_cache(module), false);
     const ff_arena_marker marker = ff_arena_mark(&module->arena);
     ff_resource_cache* cache = ff_arena_alloc_type(&module->arena, ff_resource_cache, 1);
-    if (!ff_resource_cache_init_directory(cache, path))
+    if (!ff_resource_cache_init_directory(cache, &module->arena, path))
     {
         ff_arena_rewind(&module->arena, marker);
         return false;
@@ -69,7 +69,7 @@ bool ff_resource_module_add_pack_file(ff_resource_module* module, ff_string_view
     FF_CHECK_RET_VAL(can_add_cache(module), false);
     const ff_arena_marker marker = ff_arena_mark(&module->arena);
     ff_resource_cache* cache = ff_arena_alloc_type(&module->arena, ff_resource_cache, 1);
-    if (!ff_resource_cache_init_pack_file(cache, path))
+    if (!ff_resource_cache_init_pack_file(cache, &module->arena, path))
     {
         ff_arena_rewind(&module->arena, marker);
         return false;
@@ -84,7 +84,7 @@ bool ff_resource_module_add_pack_data(ff_resource_module* module, ff_span saved)
     FF_CHECK_RET_VAL(can_add_cache(module), false);
     const ff_arena_marker marker = ff_arena_mark(&module->arena);
     ff_resource_cache* cache = ff_arena_alloc_type(&module->arena, ff_resource_cache, 1);
-    if (!ff_resource_cache_init_pack_data(cache, saved))
+    if (!ff_resource_cache_init_pack_data(cache, &module->arena, saved))
     {
         ff_arena_rewind(&module->arena, marker);
         return false;

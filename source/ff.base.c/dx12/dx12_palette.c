@@ -2,6 +2,7 @@
 #include "base/arena.h"
 #include "base/assert.h"
 #include "base/hash.h"
+#include "dx12/dx12_globals.h"
 #include "dx12/dx12_internal.h"
 #include "dx12/dx12_palette.h"
 
@@ -13,17 +14,23 @@ static uint64_t palette_hash_bytes(const void* data, size_t size)
     return hash ? hash : 1;
 }
 
-bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_dx12_commands* commands,
-    const uint32_t* colors, size_t row_count)
+bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_arena* storage_arena,
+    ff_dx12_commands* commands, const uint32_t* colors, size_t row_count)
 {
+    FF_DX12_ASSERT_OWNER();
     FF_ASSERT_RET_VAL(data, false);
 
     *data = (ff_dx12_palette_data){ 0 };
     FF_CHECK_RET_VAL(colors && row_count, false);
 
-    ff_arena_init_heap_local(&data->arena, 0);
-    data->row_hashes = ff_arena_alloc_type(&data->arena, uint64_t, row_count);
-    data->colors = ff_arena_alloc_type(&data->arena, uint32_t, row_count * FF_PALETTE_SIZE);
+    data->storage_arena = storage_arena;
+    if (!storage_arena)
+    {
+        ff_arena_init_heap_local(&data->arena, 0);
+        data->storage_arena = &data->arena;
+    }
+    data->row_hashes = ff_arena_alloc_type(data->storage_arena, uint64_t, row_count);
+    data->colors = ff_arena_alloc_type(data->storage_arena, uint32_t, row_count * FF_PALETTE_SIZE);
 
     memcpy(data->colors, colors, row_count * FF_PALETTE_SIZE * sizeof(uint32_t));
 
@@ -56,6 +63,7 @@ void ff_dx12_palette_data_destroy(ff_dx12_palette_data* data)
     ff_dx12_texture_destroy(&data->texture);
     ff_arena_destroy(&data->arena);
 
+    data->storage_arena = NULL;
     data->row_hashes = NULL;
     data->colors = NULL;
     data->row_count = 0;

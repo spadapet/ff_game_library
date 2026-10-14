@@ -19,6 +19,8 @@ namespace ff::test::dx12
 
             ff_dx12_mem_buffer buffer{};
             Assert::IsTrue(ff_dx12_mem_buffer_init_ring(&buffer, &arena, FF_SVL("ring wrap buffer"), 1024, ff_dx12_heap_usage_upload));
+            Assert::IsTrue(buffer.heap.storage_arena == &arena);
+            Assert::IsNull(buffer.heap.arena.heap);
 
             ff_dx12_fence fence{};
             Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("ring fence"), 1));
@@ -91,6 +93,8 @@ namespace ff::test::dx12
 
             ff_dx12_mem_buffer buffer{};
             Assert::IsTrue(ff_dx12_mem_buffer_init_free_list(&buffer, &arena, FF_SVL("coalesce both"), 3072, ff_dx12_heap_usage_gpu_buffers));
+            Assert::IsTrue(buffer.heap.storage_arena == &arena);
+            Assert::IsNull(buffer.heap.arena.heap);
 
             ff_dx12_mem_range a = ff_dx12_mem_buffer_alloc_bytes(&buffer, 1024, 16, ff_dx12_fence_value{});
             ff_dx12_mem_range b = ff_dx12_mem_buffer_alloc_bytes(&buffer, 1024, 16, ff_dx12_fence_value{});
@@ -321,6 +325,8 @@ namespace ff::test::dx12
                 Assert::IsTrue(owners[i] == ranges[i].owner);
                 Assert::IsTrue(ff_dx12_mem_range_heap(&ranges[i]) == &owners[i]->heap);
                 Assert::IsTrue(ff_dx12_heap_size(&owners[i]->heap) >= ranges[i].size);
+                Assert::IsTrue(owners[i]->heap.storage_arena == &allocator.arena);
+                Assert::IsNull(owners[i]->heap.arena.heap);
             }
 
             for (size_t i = 0; i < count; i++)

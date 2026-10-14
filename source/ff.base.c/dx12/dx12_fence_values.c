@@ -5,17 +5,10 @@
 #include "dx12/dx12_globals.h"
 #include "dx12/dx12_internal.h"
 
-void ff_dx12_fence_values_init(ff_dx12_fence_values* values)
+void ff_dx12_fence_values_init(ff_dx12_fence_values* values, ff_arena* arena)
 {
     FF_CHECK_RET(values);
-    *values = (ff_dx12_fence_values){ 0 };
-}
-
-void ff_dx12_fence_values_init_arena(ff_dx12_fence_values* values, ff_arena* arena)
-{
-    FF_CHECK_RET(values);
-    *values = (ff_dx12_fence_values){ 0 };
-    values->arena = arena;
+    *values = (ff_dx12_fence_values){ .arena = arena };
 }
 
 void ff_dx12_fence_values_clear(ff_dx12_fence_values* values)

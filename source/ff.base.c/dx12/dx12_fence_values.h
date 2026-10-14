@@ -23,11 +23,9 @@ typedef struct ff_dx12_fence_values
     size_t count;
 } ff_dx12_fence_values;
 
-void ff_dx12_fence_values_init(ff_dx12_fence_values* values);
-
 // Lets the set grow past FF_DX12_FENCE_VALUES_INLINE_MAX distinct fences. Without an arena the set
 // drops completed entries to make room instead.
-void ff_dx12_fence_values_init_arena(ff_dx12_fence_values* values, ff_arena* arena);
+void ff_dx12_fence_values_init(ff_dx12_fence_values* values, ff_arena* arena);
 void ff_dx12_fence_values_clear(ff_dx12_fence_values* values);
 
 ff_dx12_fence_value* ff_dx12_fence_values_data(ff_dx12_fence_values* values);

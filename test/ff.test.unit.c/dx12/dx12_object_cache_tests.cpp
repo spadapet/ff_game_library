@@ -229,6 +229,34 @@ namespace ff::test::dx12
             Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
         }
 
+        TEST_METHOD(pipeline_hash_scratch_spills_without_consuming_cache_storage)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            scoped_pipeline_object_cache scoped_cache;
+            ff_dx12_object_cache* cache = &scoped_cache.cache;
+            uint8_t shader[16384];
+            for (size_t i = 0; i < sizeof(shader); i++)
+            {
+                shader[i] = (uint8_t)i;
+            }
+            D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
+            desc.VS.pShaderBytecode = shader;
+            desc.VS.BytecodeLength = sizeof(shader);
+
+            const ff_arena_marker marker = ff_arena_mark(&cache->arena);
+            const uint64_t hash = ff_dx12_object_cache_pipeline_state_hash(cache, &desc);
+            Assert::AreNotEqual((uint64_t)0, hash);
+            for (size_t i = 0; i < 16; i++)
+            {
+                Assert::AreEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+                Assert::IsTrue(marker == ff_arena_mark(&cache->arena));
+            }
+            shader[sizeof(shader) - 1]++;
+            Assert::AreNotEqual(hash, ff_dx12_object_cache_pipeline_state_hash(cache, &desc));
+            Assert::IsTrue(marker == ff_arena_mark(&cache->arena));
+            Assert::AreEqual((size_t)0, ff_dx12_object_cache_size(cache));
+        }
+
         TEST_METHOD(pipeline_rejects_explicit_root_from_another_cache)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

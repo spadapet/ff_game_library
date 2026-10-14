@@ -18,7 +18,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("dedup fence"), 1));
 
             ff_dx12_fence_values values{};
-            ff_dx12_fence_values_init(&values);
+            ff_dx12_fence_values_init(&values, nullptr);
 
             ff_dx12_fence_value low{ &fence, 5 };
             ff_dx12_fence_value high{ &fence, 9 };
@@ -48,7 +48,7 @@ namespace ff::test::dx12
             Assert::IsTrue(ff_dx12_fence_init(&fence_b, FF_SVL("fence b"), 1));
 
             ff_dx12_fence_values values{};
-            ff_dx12_fence_values_init(&values);
+            ff_dx12_fence_values_init(&values, nullptr);
 
             ff_dx12_fence_values_add(&values, ff_dx12_fence_value{ &fence_a, 1 });
             ff_dx12_fence_values_add(&values, ff_dx12_fence_value{ &fence_b, 1 });
@@ -69,7 +69,7 @@ namespace ff::test::dx12
             ff_dx12_fence_value value = ff_dx12_fence_signal(&fence, nullptr);
 
             ff_dx12_fence_values values{};
-            ff_dx12_fence_values_init(&values);
+            ff_dx12_fence_values_init(&values, nullptr);
             ff_dx12_fence_values_add(&values, value);
 
             Assert::IsTrue(ff_dx12_fence_values_complete(&values));
@@ -93,8 +93,8 @@ namespace ff::test::dx12
 
             ff_dx12_fence_values a{};
             ff_dx12_fence_values b{};
-            ff_dx12_fence_values_init(&a);
-            ff_dx12_fence_values_init(&b);
+            ff_dx12_fence_values_init(&a, nullptr);
+            ff_dx12_fence_values_init(&b, nullptr);
 
             ff_dx12_fence_values_add(&a, ff_dx12_fence_value{ &fence_a, 1 });
             ff_dx12_fence_values_add(&b, ff_dx12_fence_value{ &fence_b, 1 });
@@ -116,7 +116,7 @@ namespace ff::test::dx12
             ff_arena_init_heap_local(&arena, 0);
 
             ff_dx12_fence_values values{};
-            ff_dx12_fence_values_init_arena(&values, &arena);
+            ff_dx12_fence_values_init(&values, &arena);
 
             // signal_later values are never signaled here. The old fixed-capacity set blocked on
             // the oldest entry to make room, which deadlocked on exactly this shape.
@@ -149,7 +149,7 @@ namespace ff::test::dx12
             ff_dx12_fence fences[count]{};
 
             ff_dx12_fence_values values{};
-            ff_dx12_fence_values_init(&values);
+            ff_dx12_fence_values_init(&values, nullptr);
 
             for (size_t i = 0; i < count; i++)
             {

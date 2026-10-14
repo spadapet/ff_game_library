@@ -47,6 +47,7 @@ typedef enum ff_dx12_instance_bucket_type
 typedef struct ff_dx12_instance_bucket
 {
     ff_arena arena;
+    ff_arena* storage_arena;
     ff_dx12_instance_bucket_type bucket_type;
     size_t item_size;
     size_t item_align;
@@ -61,12 +62,10 @@ typedef struct ff_dx12_instance_bucket
     size_t render_count;
 } ff_dx12_instance_bucket;
 
-void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket,
-    ff_dx12_instance_bucket_type bucket_type, size_t item_size, size_t item_align);
+void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket, ff_arena* storage_arena, ff_dx12_instance_bucket_type bucket_type, size_t item_size, size_t item_align);
 void ff_dx12_instance_bucket_destroy(ff_dx12_instance_bucket* bucket);
 
-// Returns uninitialized storage for one instance; the caller fills every field. NULL only if the
-// arena cannot grow.
+// Returns uninitialized storage for one instance; the caller fills every field.
 void* ff_dx12_instance_bucket_add(ff_dx12_instance_bucket* bucket);
 
 // Rewinds the write cursor and keeps the allocation, so the next frame reuses the same memory.

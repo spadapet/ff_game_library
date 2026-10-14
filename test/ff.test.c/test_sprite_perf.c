@@ -421,8 +421,8 @@ static bool perf_render(ff_test_app* app, ff_dx12_commands* commands)
         static uint32_t colors[PERF_PALETTE_ROWS * FF_PALETTE_SIZE];
         fill_palette(colors);
 
-        FF_CHECK_RET_VAL(ff_dx12_palette_data_init(&s_perf.palette_data, commands,
-            colors, PERF_PALETTE_ROWS), false);
+        FF_CHECK_RET_VAL(ff_dx12_palette_data_init(&s_perf.palette_data, &s_perf.draw_device.arena,
+            commands, colors, PERF_PALETTE_ROWS), false);
 
         s_perf.textures_filled = true;
     }

@@ -24,9 +24,10 @@ typedef struct ff_dx12_heap
     ff_dx12_heap_usage usage;
     ff_dx12_residency_data residency_data;
     ff_arena arena;
+    ff_arena* storage_arena;
 } ff_dx12_heap;
 
-bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage);
+bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_arena* storage_arena, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage);
 void ff_dx12_heap_destroy(ff_dx12_heap* heap);
 
 bool ff_dx12_heap_valid(const ff_dx12_heap* heap);

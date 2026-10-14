@@ -160,6 +160,27 @@ namespace ff::test::dx12
             Assert::AreEqual<int>(ff_dx12_draw_state_machine_valid, scope.device.state);
             Assert::IsFalse(ff_dx12_draw_device_linear_sampler(&scope.device));
             Assert::IsFalse(ff_dx12_draw_device_pre_multiplied_alpha(&scope.device));
+            for (const auto& bucket : scope.device.buckets)
+            {
+                Assert::IsTrue(bucket.storage_arena == &scope.device.arena);
+                Assert::IsNull(bucket.arena.heap);
+            }
+        }
+
+        TEST_METHOD(static_geometry_borrows_draw_device_storage)
+        {
+            scoped_pixel_scene scene;
+            scene.begin(&scene.scope.device);
+            ff_dx12_draw_device* device = &scene.scope.device;
+            Assert::IsTrue(device->index_buffer.storage_arena == &device->arena);
+            Assert::IsTrue(device->circle_vertex_buffer.storage_arena == &device->arena);
+            Assert::IsNull(device->index_buffer.arena.heap);
+            Assert::IsNull(device->circle_vertex_buffer.arena.heap);
+            Assert::IsTrue(device->index_buffer.cpu_size > 0);
+            Assert::IsTrue(device->circle_vertex_buffer.cpu_size > 0);
+            ff_dx12_draw_device_end(device);
+            ff_dx12_queue_execute(ff_dx12_direct_queue(), &scene.commands);
+            ff_dx12_wait_for_idle();
         }
 
         TEST_METHOD(destroy_is_idempotent)
@@ -1734,7 +1755,7 @@ namespace ff::test::dx12
             colors[7] = rgba(255, 0, 0, 255);
 
             ff_dx12_palette_data palette_data{};
-            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 1));
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, nullptr, &commands, colors, 1));
 
             uint8_t remap_bytes[FF_PALETTE_SIZE];
 
@@ -1880,7 +1901,7 @@ namespace ff::test::dx12
             }
 
             ff_dx12_palette_data palette_data{};
-            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 2));
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, nullptr, &commands, colors, 2));
 
             uint8_t remap_bytes[FF_PALETTE_SIZE];
 
@@ -1958,7 +1979,7 @@ namespace ff::test::dx12
             }
 
             ff_dx12_palette_data palette_data{};
-            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 2));
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, nullptr, &commands, colors, 2));
 
             ff_dx12_texture_params params = ff_dx12_texture_params_default(8, 8);
             params.format = DXGI_FORMAT_R8_UINT;
@@ -2196,7 +2217,10 @@ namespace ff::test::dx12
             colors[3] = rgba(0, 255, 0, 255);
 
             ff_dx12_palette_data palette_data{};
-            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 1));
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &scope.device.arena, &commands, colors, 1));
+            Assert::IsTrue(palette_data.storage_arena == &scope.device.arena);
+            Assert::IsNull(palette_data.arena.heap);
+            Assert::AreEqual(0, memcmp(palette_data.colors, colors, sizeof(colors)));
 
             ff_dx12_queue_execute(ff_dx12_direct_queue(), &commands);
             ff_dx12_wait_for_idle();
@@ -2307,7 +2331,12 @@ namespace ff::test::dx12
 
             const bool device_ok = ff_dx12_device_valid();
 
+            const ff_arena_marker storage_marker = ff_arena_mark(&scope.device.arena);
+            const uint32_t* retained_colors = palette_data.colors;
             ff_dx12_palette_data_destroy(&palette_data);
+            ff_dx12_palette_data_destroy(&palette_data);
+            Assert::IsTrue(storage_marker == ff_arena_mark(&scope.device.arena));
+            Assert::AreEqual(0, memcmp(retained_colors, colors, sizeof(colors)));
             ff_dx12_texture_view_destroy(&source_view);
             ff_dx12_texture_destroy(&source_texture);
             ff_dx12_wait_for_idle();
@@ -2370,7 +2399,7 @@ namespace ff::test::dx12
             colors[9] = rgba(0, 0, 255, 255);
 
             ff_dx12_palette_data palette_data{};
-            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &commands, colors, 1));
+            Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, nullptr, &commands, colors, 1));
 
             auto make_remap = [](uint8_t from, uint8_t to)
             {
@@ -2638,7 +2667,7 @@ namespace ff::test::dx12
             palette_colors[11] = 0xFFFF0000u;
             if (indexed_source && !indexed_target)
             {
-                Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, &scene.commands, palette_colors, 1));
+                Assert::IsTrue(ff_dx12_palette_data_init(&palette_data, nullptr, &scene.commands, palette_colors, 1));
             }
 
             uint8_t remap_bytes[FF_PALETTE_SIZE];

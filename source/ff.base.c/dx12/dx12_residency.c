@@ -83,7 +83,7 @@ void ff_dx12_residency_data_init(ff_dx12_residency_data* data, ff_arena* arena, 
     data->pageable = pageable;
     data->size = size;
     data->resident = resident;
-    ff_dx12_fence_values_init_arena(&data->keep_resident, arena);
+    ff_dx12_fence_values_init(&data->keep_resident, arena);
 
     ff_arena_declare_stack(name_arena, 256);
     ff_wstring_view wide_name = ff_utf8_to_wide(name, &name_arena, true);

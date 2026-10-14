@@ -104,7 +104,7 @@ static bool mem_buffer_init_ring_with_ranges(ff_dx12_mem_buffer* buffer, ff_aren
 
     buffer->type = ff_dx12_mem_buffer_type_ring;
 
-    if (!ff_dx12_heap_init(&buffer->heap, name, size, usage))
+    if (!ff_dx12_heap_init(&buffer->heap, arena, name, size, usage))
     {
         *buffer = (ff_dx12_mem_buffer){ 0 };
         return false;
@@ -131,7 +131,7 @@ static bool mem_buffer_init_free_list_with_ranges(ff_dx12_mem_buffer* buffer, ff
     FF_ASSERT_RET_VAL(arena, false);
 
     buffer->type = ff_dx12_mem_buffer_type_free_list;
-    if (!ff_dx12_heap_init(&buffer->heap, name, size, usage))
+    if (!ff_dx12_heap_init(&buffer->heap, arena, name, size, usage))
     {
         *buffer = (ff_dx12_mem_buffer){ 0 };
         return false;

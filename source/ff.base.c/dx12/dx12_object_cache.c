@@ -15,23 +15,11 @@
 
 typedef struct object_cache_key_builder
 {
-    ff_arena arena;
+    ff_arena* scratch_arena;
     uint8_t* data;
     size_t size;
     size_t capacity;
 } object_cache_key_builder;
-
-static void key_builder_init(object_cache_key_builder* key)
-{
-    *key = (object_cache_key_builder){ 0 };
-    ff_arena_init_heap_local(&key->arena, 1024);
-}
-
-static void key_builder_destroy(object_cache_key_builder* key)
-{
-    ff_arena_destroy(&key->arena);
-    *key = (object_cache_key_builder){ 0 };
-}
 
 static bool key_builder_reserve(object_cache_key_builder* key, size_t size)
 {
@@ -49,7 +37,7 @@ static bool key_builder_reserve(object_cache_key_builder* key, size_t size)
         new_capacity *= 2;
     }
 
-    uint8_t* data = (uint8_t*)ff_arena_realloc(&key->arena, key->data,
+    uint8_t* data = (uint8_t*)ff_arena_realloc(key->scratch_arena, key->data,
         key->capacity, new_capacity, alignof(uint8_t));
     key->data = data;
     key->capacity = new_capacity;
@@ -475,14 +463,14 @@ uint64_t ff_dx12_object_cache_pipeline_state_hash(ff_dx12_object_cache* cache, c
 {
     FF_ASSERT_RET_VAL(cache && desc, 0);
 
-    object_cache_key_builder key;
-    key_builder_init(&key);
+    ff_arena_declare_stack(scratch_arena, 4096);
+    object_cache_key_builder key = { .scratch_arena = &scratch_arena };
 
     const uint64_t hash = build_pipeline_state_key(cache, desc, &key)
         ? ff_hash_bytes(key.data, key.size)
         : 0;
 
-    key_builder_destroy(&key);
+    ff_arena_destroy(&scratch_arena);
     return hash;
 }
 
@@ -490,12 +478,12 @@ ID3D12PipelineState* ff_dx12_object_cache_pipeline_state(ff_dx12_object_cache* c
 {
     FF_ASSERT_RET_VAL(cache && desc, NULL);
 
-    object_cache_key_builder key;
-    key_builder_init(&key);
+    ff_arena_declare_stack(scratch_arena, 4096);
+    object_cache_key_builder key = { .scratch_arena = &scratch_arena };
 
     if (!build_pipeline_state_key(cache, desc, &key))
     {
-        key_builder_destroy(&key);
+        ff_arena_destroy(&scratch_arena);
         return NULL;
     }
 
@@ -504,7 +492,7 @@ ID3D12PipelineState* ff_dx12_object_cache_pipeline_state(ff_dx12_object_cache* c
 
     if (entry)
     {
-        key_builder_destroy(&key);
+        ff_arena_destroy(&scratch_arena);
         return (ID3D12PipelineState*)entry->object;
     }
 
@@ -514,12 +502,12 @@ ID3D12PipelineState* ff_dx12_object_cache_pipeline_state(ff_dx12_object_cache* c
 
     if (FAILED(hr))
     {
-        key_builder_destroy(&key);
+        ff_arena_destroy(&scratch_arena);
         FF_ASSERT_HR_RET_VAL(hr, NULL);
     }
 
     bucket_add(cache, cache->pipeline_states, hash, key.data, key.size, (IUnknown*)state);
 
-    key_builder_destroy(&key);
+    ff_arena_destroy(&scratch_arena);
     return state;
 }

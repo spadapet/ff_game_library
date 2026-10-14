@@ -564,7 +564,7 @@ bool ff_dx12_queue_new_commands(ff_dx12_queue* queue, ff_dx12_commands* commands
     commands->cache = cache;
     commands->type = queue->type;
     ff_arena_reset(&cache->wait_before_execute_arena);
-    ff_dx12_fence_values_init_arena(&commands->wait_before_execute, &cache->wait_before_execute_arena);
+    ff_dx12_fence_values_init(&commands->wait_before_execute, &cache->wait_before_execute_arena);
 
     cache->next = queue->caches_in_use;
     queue->caches_in_use = cache;
@@ -621,7 +621,7 @@ void ff_dx12_queue_execute_many(ff_dx12_queue* queue, ff_dx12_commands** command
     s_residency_gather_generation = gather_generation;
 
     ff_dx12_fence_values wait_before_execute;
-    ff_dx12_fence_values_init_arena(&wait_before_execute, &temp);
+    ff_dx12_fence_values_init(&wait_before_execute, &temp);
 
     for (size_t i = 0; i < valid_count; i++)
     {

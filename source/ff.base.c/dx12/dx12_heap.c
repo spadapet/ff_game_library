@@ -123,7 +123,7 @@ static bool heap_create_gpu_objects(ff_dx12_heap* heap, ff_string_view name)
     ID3D12Device6_SetResidencyPriority(ff_dx12_device(), 1, &pageable, &priority);
     ID3D12Heap_SetName(heap->heap, heap->name);
 
-    ff_dx12_residency_data_init(&heap->residency_data, &heap->arena, name, pageable, heap->size, starts_resident);
+    ff_dx12_residency_data_init(&heap->residency_data, heap->storage_arena, name, pageable, heap->size, starts_resident);
 
     if (ff_dx12_heap_cpu_usage(heap))
     {
@@ -152,12 +152,17 @@ static bool heap_create_gpu_objects(ff_dx12_heap* heap, ff_string_view name)
     return true;
 }
 
-bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
+bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_arena* storage_arena, ff_string_view name, uint64_t size, ff_dx12_heap_usage usage)
 {
+    FF_DX12_ASSERT_OWNER();
     FF_ASSERT_RET_VAL(heap, false);
 
-    *heap = (ff_dx12_heap){ 0 };
-    ff_arena_init_heap_local(&heap->arena, 0);
+    *heap = (ff_dx12_heap){ .storage_arena = storage_arena };
+    if (!storage_arena)
+    {
+        ff_arena_init_heap_local(&heap->arena, 0);
+        heap->storage_arena = &heap->arena;
+    }
     heap->size = size;
     heap->usage = usage;
 
@@ -235,5 +240,6 @@ void ff_dx12_heap_destroy(ff_dx12_heap* heap)
     }
 
     ff_arena_destroy(&heap->arena);
+    heap->storage_arena = NULL;
     heap->size = 0;
 }

@@ -24,12 +24,13 @@ typedef struct ff_dx12_palette_data
 
     ff_dx12_device_child device_child;
     ff_arena arena;
+    ff_arena* storage_arena;
 } ff_dx12_palette_data;
 
 // colors is row_count * FF_PALETTE_SIZE RGBA values, laid out one full row after another. The
 // pixels are copied, so the caller's buffer may go away immediately.
-bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_dx12_commands* commands,
-    const uint32_t* colors, size_t row_count);
+bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_arena* storage_arena,
+    ff_dx12_commands* commands, const uint32_t* colors, size_t row_count);
 void ff_dx12_palette_data_destroy(ff_dx12_palette_data* data);
 
 bool ff_dx12_palette_data_valid(const ff_dx12_palette_data* data);

@@ -66,7 +66,7 @@ namespace ff::test::dx12
 
             ff_dx12_residency_data* set[1] = { &data };
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             bool ok = ff_dx12_make_resident(set, 1, commands_value, &wait_values);
             Assert::IsTrue(ok);
@@ -105,7 +105,7 @@ namespace ff::test::dx12
             ff_dx12_fence_value commands_value = ff_dx12_fence_signal(&commands_fence, nullptr);
 
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             ff_dx12_make_resident(set, heap_count, commands_value, &wait_values);
             ff_dx12_fence_values_wait(&wait_values, nullptr);
@@ -149,7 +149,7 @@ namespace ff::test::dx12
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             const bool made_resident = ff_dx12_make_resident(set, 1, ff_dx12_fence_signal(&commands_fence, nullptr), &wait_values);
 
@@ -217,7 +217,7 @@ namespace ff::test::dx12
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             ff_dx12_fence submit_fence{};
             Assert::IsTrue(ff_dx12_fence_init(&submit_fence, FF_SVL("submit fence"), 1));
@@ -289,7 +289,7 @@ namespace ff::test::dx12
 
             ff_dx12_residency_data* set[1] = { &new_data };
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             ff_dx12_fence submit_fence{};
             Assert::IsTrue(ff_dx12_fence_init(&submit_fence, FF_SVL("submit fence"), 1));

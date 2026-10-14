@@ -72,7 +72,7 @@ static bool cache_fail(ff_resource_cache* cache, ff_string_view reason)
     return false;
 }
 
-static bool cache_init(ff_resource_cache* cache, ff_string_view path)
+static bool cache_init(ff_resource_cache* cache, ff_arena* storage_arena, ff_string_view path)
 {
     *cache = (ff_resource_cache){ 0 };
     if (!path.data || !path.count || path.count >= INT_MAX || memchr(path.data, 0, path.count))
@@ -81,8 +81,13 @@ static bool cache_init(ff_resource_cache* cache, ff_string_view path)
         return false;
     }
 
-    ff_arena_init_heap_local(&cache->arena, 0);
-    cache->path = ff_string_copy(path, &cache->arena);
+    cache->storage_arena = storage_arena;
+    if (!storage_arena)
+    {
+        ff_arena_init_heap_local(&cache->arena, 0);
+        cache->storage_arena = &cache->arena;
+    }
+    cache->path = ff_string_copy(path, cache->storage_arena);
     return true;
 }
 
@@ -92,10 +97,10 @@ static bool pack_size_valid(size_t size)
         size <= SIZE_MAX - FF_IDICT_MAX_ALIGN - sizeof(internal_ff_arena_buffer);
 }
 
-bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_string_view path)
+bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_arena* storage_arena, ff_string_view path)
 {
     FF_ASSERT_RET_VAL(cache, false);
-    FF_CHECK_RET_VAL(cache_init(cache, path), false);
+    FF_CHECK_RET_VAL(cache_init(cache, storage_arena, path), false);
 
     ff_arena_declare_stack(scratch, 1024);
     const ff_wstring_view wide_path = ff_utf8_to_wide(path, &scratch, true);
@@ -114,7 +119,7 @@ bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_string_view p
         return cache_fail(cache, FF_SVL("cannot resolve resource directory"));
     }
 
-    cache->path = ff_wide_to_utf8((ff_wstring_view){ .data = full_path, .count = count }, &cache->arena, false);
+    cache->path = ff_wide_to_utf8((ff_wstring_view){ .data = full_path, .count = count }, cache->storage_arena, false);
     ff_arena_destroy(&scratch);
 
     ff_file_info info;
@@ -123,15 +128,15 @@ bool ff_resource_cache_init_directory(ff_resource_cache* cache, ff_string_view p
         return cache_fail(cache, FF_SVL("cannot open resource directory"));
     }
 
-    ff_dict_init(&cache->files, &cache->arena);
+    ff_dict_init(&cache->files, cache->storage_arena);
     cache->type = ff_resource_cache_type_directory;
     return true;
 }
 
-bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_string_view path)
+bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_arena* storage_arena, ff_string_view path)
 {
     FF_ASSERT_RET_VAL(cache, false);
-    FF_CHECK_RET_VAL(cache_init(cache, path), false);
+    FF_CHECK_RET_VAL(cache_init(cache, storage_arena, path), false);
     ff_span saved = { 0 };
 
 #if PROFILE_APP
@@ -148,7 +153,7 @@ bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_string_view p
         return cache_fail(cache, FF_SVL("invalid resource pack size"));
     }
 
-    saved = ff_stream_read(&stream, &cache->arena, size, FF_IDICT_MAX_ALIGN);
+    saved = ff_stream_read(&stream, cache->storage_arena, size, FF_IDICT_MAX_ALIGN);
     ff_stream_destroy(&stream);
     if (saved.size != size)
     {
@@ -177,17 +182,17 @@ bool ff_resource_cache_init_pack_file(ff_resource_cache* cache, ff_string_view p
     return true;
 }
 
-bool ff_resource_cache_init_pack_data(ff_resource_cache* cache, ff_span saved)
+bool ff_resource_cache_init_pack_data(ff_resource_cache* cache, ff_arena* storage_arena, ff_span saved)
 {
     FF_ASSERT_RET_VAL(cache, false);
-    FF_CHECK_RET_VAL(cache_init(cache, FF_SVL("memory pack")), false);
+    FF_CHECK_RET_VAL(cache_init(cache, storage_arena, FF_SVL("memory pack")), false);
 
     if (!saved.data || !pack_size_valid(saved.size))
     {
         return cache_fail(cache, FF_SVL("invalid resource pack bytes"));
     }
 
-    void* copy = ff_arena_alloc(&cache->arena, saved.size, FF_IDICT_MAX_ALIGN);
+    void* copy = ff_arena_alloc(cache->storage_arena, saved.size, FF_IDICT_MAX_ALIGN);
     memcpy(copy, saved.data, saved.size);
     if (!ff_idict_load(&cache->pack, (ff_span){ .data = copy, .size = saved.size }, true, true))
     {
@@ -251,7 +256,7 @@ static ff_resource_data directory_get(ff_resource_cache* cache, ff_string_view n
         }
         else
         {
-            const ff_arena_marker marker = ff_arena_mark(&cache->arena);
+            const ff_arena_marker marker = ff_arena_mark(cache->storage_arena);
             const size_t size = ff_stream_size(&stream);
             if (size > SIZE_MAX - 1 - sizeof(internal_ff_arena_buffer))
             {
@@ -262,12 +267,12 @@ static ff_resource_data directory_get(ff_resource_cache* cache, ff_string_view n
                 return (ff_resource_data){ .status = ff_resource_status_error };
             }
 
-            const ff_span bytes = ff_stream_read(&stream, &cache->arena, size, 1);
+            const ff_span bytes = ff_stream_read(&stream, cache->storage_arena, size, 1);
             ff_stream_destroy(&stream);
 
             if (bytes.size != size)
             {
-                ff_arena_rewind(&cache->arena, marker);
+                ff_arena_rewind(cache->storage_arena, marker);
                 ff_log_write(ff_log_type_normal, FF_SVL("Resources: incomplete file read: %.*s"), FF_SV_FORMAT(file_path));
                 result.status = ff_resource_status_error;
             }

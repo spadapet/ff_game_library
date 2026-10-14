@@ -183,7 +183,7 @@ namespace ff::test::dx12
             // Exercises make_resident's budget math. Available space is computed as
             // Budget - CurrentUsage, which must not wrap when usage exceeds the budget.
             ff_dx12_heap heap{};
-            Assert::IsTrue(ff_dx12_heap_init(&heap, FF_SVL("budget heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
+            Assert::IsTrue(ff_dx12_heap_init(&heap, nullptr, FF_SVL("budget heap"), 64 * 1024, ff_dx12_heap_usage_gpu_buffers));
 
             ff_dx12_fence fence{};
             Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("budget fence"), 1));
@@ -191,7 +191,7 @@ namespace ff::test::dx12
 
             ff_dx12_residency_data* set[1] = { ff_dx12_heap_residency_data(&heap) };
             ff_dx12_fence_values wait_values{};
-            ff_dx12_fence_values_init(&wait_values);
+            ff_dx12_fence_values_init(&wait_values, nullptr);
 
             Assert::IsTrue(ff_dx12_make_resident(set, 1, value, &wait_values));
 

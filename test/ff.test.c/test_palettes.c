@@ -430,8 +430,8 @@ static bool palettes_render(ff_test_app* app, ff_dx12_commands* commands)
             coverage, PALETTES_TEXTURE_SIZE, PALETTES_TEXTURE_SIZE,
             PALETTES_TEXTURE_SIZE * sizeof(uint32_t)), false);
 
-        FF_CHECK_RET_VAL(ff_dx12_palette_data_init(&s_palettes.palette_data, commands,
-            colors, PALETTES_ROW_COUNT), false);
+        FF_CHECK_RET_VAL(ff_dx12_palette_data_init(&s_palettes.palette_data, &s_palettes.draw_device.arena,
+            commands, colors, PALETTES_ROW_COUNT), false);
 
         s_palettes.loaded = true;
     }

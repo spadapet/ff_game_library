@@ -45,20 +45,23 @@ static size_t buffer_resource_size(const ff_dx12_buffer* buffer)
     return buffer->has_resource ? (size_t)buffer->resource.desc.Width : 0;
 }
 
-static void buffer_init_common(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, ff_dx12_buffer_kind kind)
+static void buffer_init_common(ff_dx12_buffer* buffer, ff_arena* storage_arena, ff_dx12_buffer_type type, ff_dx12_buffer_kind kind)
 {
-    *buffer = (ff_dx12_buffer){ 0 };
-    buffer->type = type;
-    buffer->kind = kind;
-    ff_arena_init_heap_local(&buffer->arena, 0);
+    *buffer = (ff_dx12_buffer){ .type = type, .kind = kind, .storage_arena = storage_arena };
+    if (kind != ff_dx12_buffer_kind_gpu && !storage_arena)
+    {
+        ff_arena_init_heap_local(&buffer->arena, 0);
+        buffer->storage_arena = &buffer->arena;
+    }
 }
 
-bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_dx12_buffer_type type,
-    ff_dx12_commands* commands, const void* data, size_t size)
+bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_arena* storage_arena,
+    ff_dx12_buffer_type type, ff_dx12_commands* commands, const void* data, size_t size)
 {
+    FF_DX12_ASSERT_OWNER();
     FF_ASSERT_RET_VAL(buffer && commands && data && size, false);
 
-    buffer_init_common(buffer, type, ff_dx12_buffer_kind_gpu_static);
+    buffer_init_common(buffer, storage_arena, type, ff_dx12_buffer_kind_gpu_static);
 
     if (!buffer_init_resource(buffer, size))
     {
@@ -70,7 +73,7 @@ bool ff_dx12_buffer_init_gpu_static(ff_dx12_buffer* buffer, ff_dx12_buffer_type 
 
     // Keep a CPU copy so a device reset can re-upload the contents into the rebuilt resource.
     // The gpu kind deliberately doesn't do this: its owner rewrites it every frame anyway.
-    buffer->cpu_data = ff_arena_alloc_type(&buffer->arena, uint8_t, size);
+    buffer->cpu_data = ff_arena_alloc_type(buffer->storage_arena, uint8_t, size);
 
     memcpy(buffer->cpu_data, data, size);
     buffer->cpu_capacity = size;
@@ -97,7 +100,7 @@ bool ff_dx12_buffer_init_gpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, s
 {
     FF_ASSERT_RET_VAL(buffer, false);
 
-    buffer_init_common(buffer, type, ff_dx12_buffer_kind_gpu);
+    buffer_init_common(buffer, NULL, type, ff_dx12_buffer_kind_gpu);
 
     if (initial_size && !buffer_init_resource(buffer, initial_size))
     {
@@ -108,11 +111,11 @@ bool ff_dx12_buffer_init_gpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type, s
     return true;
 }
 
-bool ff_dx12_buffer_init_cpu(ff_dx12_buffer* buffer, ff_dx12_buffer_type type)
+bool ff_dx12_buffer_init_cpu(ff_dx12_buffer* buffer, ff_arena* storage_arena, ff_dx12_buffer_type type)
 {
     FF_ASSERT_RET_VAL(buffer, false);
 
-    buffer_init_common(buffer, type, ff_dx12_buffer_kind_cpu);
+    buffer_init_common(buffer, storage_arena, type, ff_dx12_buffer_kind_cpu);
 
     return true;
 }
@@ -212,7 +215,7 @@ void* ff_dx12_buffer_map(ff_dx12_buffer* buffer, ff_dx12_commands* commands, siz
         if (size > buffer->cpu_capacity)
         {
             const size_t new_capacity = ff_math_max_size(buffer->cpu_capacity * 2, size);
-            buffer->cpu_data = ff_arena_realloc_type(&buffer->arena, uint8_t, buffer->cpu_data,
+            buffer->cpu_data = ff_arena_realloc_type(buffer->storage_arena, uint8_t, buffer->cpu_data,
                 buffer->cpu_capacity, new_capacity);
             buffer->cpu_capacity = new_capacity;
         }
