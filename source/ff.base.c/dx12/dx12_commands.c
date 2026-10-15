@@ -134,7 +134,7 @@ void internal_ff_dx12_commands_close_lists(ff_dx12_commands* commands, ff_dx12_c
     FF_CHECK_RET(ff_dx12_commands_valid(commands) && wait_before_execute);
 
     ff_dx12_fence_values_add_all(wait_before_execute, &commands->wait_before_execute);
-    ff_dx12_fence_values_clear(&commands->wait_before_execute);
+    ff_dx12_fence_values_init(&commands->wait_before_execute, &commands->cache->resource_tracker.arena);
 
     ID3D12GraphicsCommandList1_Close(commands_list_flush(commands));
 
@@ -150,7 +150,7 @@ ff_dx12_command_cache* internal_ff_dx12_commands_take_cache(ff_dx12_commands* co
     FF_ASSERT_RET_VAL(commands && commands->cache, NULL);
 
     ff_dx12_resource_tracker_reset(&commands->cache->resource_tracker);
-    ff_dx12_fence_values_clear(&commands->wait_before_execute);
+    ff_dx12_fence_values_init(&commands->wait_before_execute, &commands->cache->resource_tracker.arena);
 
     ff_dx12_command_cache* cache = commands->cache;
     cache->needs_reset = true;

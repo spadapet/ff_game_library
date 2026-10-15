@@ -385,6 +385,9 @@
     <Filter Include="dx12\shaders">
       <UniqueIdentifier>{9d2c1f55-0b4a-4e7c-9a1d-3f7c26b8e410}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assets">
+      <UniqueIdentifier>{22be0f03-5960-4111-92b3-761e732e24ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="resources\resource_cache.c">
@@ -433,7 +436,10 @@
     </FfShader>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.ff.base.c.config" />
+    <None Include="packages.config" />
     <None Include="BUGS.md" />
+    <None Include="assets\.gitkeep">
+      <Filter>assets</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -6,11 +6,9 @@
     <!-- Versions -->
     <VsRelease Condition=" '$(VsRelease)' == '' ">17</VsRelease>
     <WinSdkRelease10 Condition=" '$(WinSdkRelease10)' == '' ">19041</WinSdkRelease10>
-    <!-- Also update version in /source/ff.application/packages.ff.application.config
-         and /source/ff.base.c/packages.ff.base.c.config -->
+    <!-- Also update version in /source/ff.application/packages.ff.application.config and /source/ff.base.c/packages.config -->
     <WinPixVersion>1.0.240308001</WinPixVersion>
-    <!-- Also update version in /source/ff.application/packages.ff.application.config
-         and /source/ff.base.c/packages.ff.base.c.config -->
+    <!-- Also update version in /source/ff.application/packages.ff.application.config and /source/ff.base.c/packages.config -->
     <D3D12AgilitySDK>619</D3D12AgilitySDK>
     <D3D12AgilityVersion>1.619.6</D3D12AgilityVersion>
 

@@ -71,6 +71,37 @@ namespace ff::test::dx12
             Assert::IsFalse(ff_dx12_resource_valid(&resource));
         }
 
+        TEST_METHOD(resource_arenas_share_the_process_heap_but_not_storage_lifetimes)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            D3D12_RESOURCE_DESC desc = buffer_desc();
+            ff_dx12_resource resources[2]{};
+            uint32_t* retained[2]{};
+            for (size_t i = 0; i < _countof(resources); i++)
+            {
+                Assert::IsTrue(ff_dx12_resource_init_committed(&resources[i], FF_SVL("independent storage"), &desc, nullptr));
+                Assert::IsTrue(resources[i].arena.heap == GetProcessHeap());
+                Assert::AreEqual((int)internal_ff_arena_type_heap_global, (int)resources[i].arena.type);
+                retained[i] = ff_arena_alloc_type(&resources[i].arena, uint32_t, 4096);
+                for (size_t j = 0; j < 4096; j++)
+                {
+                    retained[i][j] = (uint32_t)(i * 4096 + j);
+                }
+            }
+
+            ff_dx12_resource_destroy(&resources[0]);
+            ff_dx12_resource_destroy(&resources[0]);
+            Assert::IsTrue(ff_dx12_resource_valid(&resources[1]));
+            for (size_t j = 0; j < 4096; j++)
+            {
+                Assert::AreEqual((uint32_t)(4096 + j), retained[1][j]);
+            }
+            uint32_t* added = ff_arena_alloc_type(&resources[1].arena, uint32_t, 1);
+            *added = 123;
+            Assert::AreEqual((uint32_t)123, *added);
+            ff_dx12_resource_destroy(&resources[1]);
+        }
+
         TEST_METHOD(committed_buffer_has_a_gpu_address)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

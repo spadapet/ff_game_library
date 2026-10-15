@@ -319,7 +319,7 @@ void ff_dx12_resource_tracker_init(ff_dx12_resource_tracker* tracker)
     FF_ASSERT_RET(tracker);
 
     *tracker = (ff_dx12_resource_tracker){ 0 };
-    ff_arena_init_heap_local(&tracker->arena, 0);
+    ff_arena_init_heap_global(&tracker->arena, 0);
     tracker->entries_a = ff_array_init(ff_dx12_resource_tracker_entry, &tracker->arena);
     tracker->forgotten_entries_a = ff_array_init(ff_dx12_resource_tracker_forgotten_entry, &tracker->arena);
     tracker->barriers_pending_a = ff_array_init(D3D12_RESOURCE_BARRIER, &tracker->arena);

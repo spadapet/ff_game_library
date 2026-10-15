@@ -136,6 +136,37 @@ namespace ff::test::dx12
             ff_dx12_resource_tracker_destroy(&tracker);
         }
 
+        TEST_METHOD(tracker_arenas_share_the_process_heap_but_reset_independently)
+        {
+            ff_dx12_resource_tracker trackers[2]{};
+            uint32_t* retained[2]{};
+            for (size_t i = 0; i < _countof(trackers); i++)
+            {
+                ff_dx12_resource_tracker_init(&trackers[i]);
+                Assert::IsTrue(trackers[i].arena.heap == GetProcessHeap());
+                Assert::AreEqual((int)internal_ff_arena_type_heap_global, (int)trackers[i].arena.type);
+                retained[i] = ff_arena_alloc_type(&trackers[i].arena, uint32_t, 4096);
+                for (size_t j = 0; j < 4096; j++)
+                {
+                    retained[i][j] = (uint32_t)(i * 4096 + j);
+                }
+            }
+
+            ff_dx12_resource_tracker_reset(&trackers[0]);
+            ff_dx12_resource_tracker_destroy(&trackers[0]);
+            ff_dx12_resource_tracker_destroy(&trackers[0]);
+            for (size_t j = 0; j < 4096; j++)
+            {
+                Assert::AreEqual((uint32_t)(4096 + j), retained[1][j]);
+            }
+            ff_dx12_resource_tracker_reset(&trackers[1]);
+            Assert::IsTrue(trackers[1].arena.heap == GetProcessHeap());
+            Assert::AreEqual((size_t)0, ff_array_count(trackers[1].entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(trackers[1].forgotten_entries_a));
+            Assert::AreEqual((size_t)0, ff_array_count(trackers[1].barriers_pending_a));
+            ff_dx12_resource_tracker_destroy(&trackers[1]);
+        }
+
         TEST_METHOD(first_transition_is_held_back_as_a_first_barrier)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

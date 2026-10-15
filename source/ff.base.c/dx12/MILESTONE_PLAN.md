@@ -2038,7 +2038,7 @@ exercised for real rather than only in tests. Re-measured at **60.12 fps, stage
 
 ## NuGet packages: Agility SDK and PIX (complete)
 
-`source/ff.base.c/packages.ff.base.c.config` references
+`source/ff.base.c/packages.config` references
 `Microsoft.Direct3D.D3D12` (1.619.6) and `WinPixEventRuntime` (1.0.240308001,
 the newest published), with the versions coming from `build/base.props`
 (`D3D12AgilityVersion`, `WinPixVersion`). The project imports both `.targets`

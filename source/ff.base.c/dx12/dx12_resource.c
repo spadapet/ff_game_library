@@ -92,7 +92,7 @@ static bool resource_init_common(ff_dx12_resource* resource, ff_string_view name
     wcsncpy_s(resource->name, _countof(resource->name), wide_name.data, _TRUNCATE);
     ff_arena_destroy(&name_arena);
 
-    ff_arena_init_heap_local(&resource->arena, 0);
+    ff_arena_init_heap_global(&resource->arena, 0);
     ff_dx12_fence_values_init(&resource->global_reads, &resource->arena);
     ff_dx12_resource_state_init(&resource->global_state, &resource->arena, initial_state,
         ff_dx12_resource_state_type_global, ff_dx12_resource_array_size(resource), (size_t)desc->MipLevels);

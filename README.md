@@ -17,7 +17,7 @@ git clone --recursive https://github.com/spadapet/ff_game_library.git
 ## ff.base.c arena ownership
 Instance-bucket, DX12-heap, CPU/static-buffer, palette-data, and resource-cache initializers take `storage_arena` directly. A non-null arena is borrowed: it must outlive the object and its returned data, and must not be reset or rewound while that data is live. Destruction does not reclaim borrowed allocations. Passing null selects standalone private-arena ownership. GPU-only buffers need no CPU-storage arena. Fence-value initialization also takes a nullable arena, but null selects inline-only storage rather than creating a private arena.
 
-Draw devices share their arena with instance buckets and static-geometry CPU copies.
+Draw devices share their arena with instance buckets and static-geometry CPU copies. Command-cache recording waits share the resource-tracker arena; submission copies the waits to separate scratch storage before trackers reset. Resource and resource-tracker arenas use the process heap as backing, but retain independent allocation, reset, and destruction lifetimes.
 
 ## Coding style = verbose
 * Follow existing code (snake_case, etc)

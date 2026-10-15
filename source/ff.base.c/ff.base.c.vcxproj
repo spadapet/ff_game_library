@@ -148,7 +148,7 @@
   <ItemGroup>
     <None Include="BUGS.md" />
     <None Include="assets\.gitkeep" />
-    <None Include="packages.ff.base.c.config" />
+    <None Include="packages.config" />
     <Natvis Include="base.c.natvis" />
     <FfShaderInclude Include="dx12\shaders\*.hlsli" />
   </ItemGroup>

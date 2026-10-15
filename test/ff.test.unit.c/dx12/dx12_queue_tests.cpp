@@ -66,6 +66,61 @@ namespace ff::test::dx12
             Assert::IsFalse(ff_dx12_commands_valid(&commands));
         }
 
+        TEST_METHOD(recording_waits_survive_tracker_resets_in_submission_scratch)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_dx12_queue* queue = ff_dx12_direct_queue();
+            const size_t count = FF_DX12_FENCE_VALUES_INLINE_MAX * 2 + 1;
+            ff_dx12_fence fences[count]{};
+            ff_dx12_commands commands[2]{};
+            ff_arena_declare_stack(submission_arena, 1024);
+            ff_dx12_fence_values submission_waits{};
+            ff_dx12_fence_values_init(&submission_waits, &submission_arena);
+
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("recording wait"), 1));
+            }
+
+            for (auto& command : commands)
+            {
+                Assert::IsTrue(ff_dx12_queue_new_commands(queue, &command));
+                Assert::IsTrue(command.wait_before_execute.arena == &command.cache->resource_tracker.arena);
+                for (size_t i = 0; i < count; i++)
+                {
+                    ff_dx12_fence_values_add(&command.wait_before_execute, ff_dx12_fence_next_value(&fences[i]));
+                }
+                Assert::AreEqual(count, command.wait_before_execute.count);
+                Assert::IsNotNull(command.wait_before_execute.overflow);
+            }
+
+            internal_ff_dx12_commands_close_lists(&commands[0], nullptr, &commands[1], &submission_waits);
+            Assert::IsNull(commands[0].wait_before_execute.overflow);
+            Assert::AreEqual((size_t)0, commands[0].wait_before_execute.overflow_capacity);
+            internal_ff_dx12_commands_close_lists(&commands[1], &commands[0], nullptr, &submission_waits);
+
+            for (auto& command : commands)
+            {
+                Assert::AreEqual((size_t)0, command.wait_before_execute.count);
+                Assert::IsNull(command.wait_before_execute.overflow);
+                uint8_t* overwrite = ff_arena_alloc_type(&command.cache->resource_tracker.arena, uint8_t, 16384);
+                memset(overwrite, 0xCD, 16384);
+                Assert::IsNotNull(internal_ff_dx12_commands_take_cache(&command));
+                Assert::IsNull(command.wait_before_execute.overflow);
+                Assert::AreEqual((size_t)0, command.wait_before_execute.overflow_capacity);
+            }
+
+            Assert::AreEqual(count, submission_waits.count);
+            const ff_dx12_fence_value* values = ff_dx12_fence_values_data(&submission_waits);
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(values[i].fence == &fences[i]);
+                Assert::AreEqual((uint64_t)2, values[i].value);
+                ff_dx12_fence_destroy(&fences[i]);
+            }
+            ff_arena_destroy(&submission_arena);
+        }
+
         TEST_METHOD(execute_returns_fence_value_that_completes)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
@@ -86,15 +141,41 @@ namespace ff::test::dx12
         {
             Assert::IsTrue(ff_dx12_init(nullptr));
             ff_dx12_queue* queue = ff_dx12_direct_queue();
+            const size_t count = FF_DX12_FENCE_VALUES_INLINE_MAX + 1;
+            ff_dx12_fence fences[count]{};
+            for (auto& fence : fences)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fence, FF_SVL("recycled wait"), 1));
+            }
 
             for (int i = 0; i < 64; i++)
             {
                 ff_dx12_commands commands{};
                 Assert::IsTrue(ff_dx12_queue_new_commands(queue, &commands));
+                Assert::IsNull(commands.wait_before_execute.overflow);
+                Assert::IsTrue(commands.wait_before_execute.arena == &commands.cache->resource_tracker.arena);
+                ff_dx12_fence_value pending[count]{};
+                for (size_t j = 0; j < count; j++)
+                {
+                    pending[j] = ff_dx12_fence_signal_later(&fences[j]);
+                    ff_dx12_fence_values_add(&commands.wait_before_execute, pending[j]);
+                }
+                Assert::AreEqual(count, commands.wait_before_execute.count);
+                Assert::IsNotNull(commands.wait_before_execute.overflow);
                 ff_dx12_fence_value value = ff_dx12_queue_execute(queue, &commands);
+                for (const auto& dependency : pending)
+                {
+                    ff_dx12_fence_value_signal(dependency, nullptr);
+                }
                 ff_dx12_fence_value_wait(value, nullptr);
+                Assert::IsNull(commands.wait_before_execute.overflow);
+                Assert::AreEqual((size_t)0, commands.wait_before_execute.overflow_capacity);
             }
 
+            for (auto& fence : fences)
+            {
+                ff_dx12_fence_destroy(&fence);
+            }
             Assert::IsTrue(queue->list_counter <= 4);
             Assert::IsTrue(queue->allocator_counter <= 8);
         }

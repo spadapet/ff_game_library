@@ -299,12 +299,6 @@ static void command_cache_destroy(ff_dx12_command_cache* cache)
     ff_dx12_resource_tracker_destroy(&cache->resource_tracker);
     ff_dx12_fence_destroy(&cache->fence);
     internal_ff_dx12_residency_set_clear(&cache->residency_set);
-
-    if (cache->wait_before_execute_arena_valid)
-    {
-        ff_arena_destroy(&cache->wait_before_execute_arena);
-        cache->wait_before_execute_arena_valid = false;
-    }
 }
 
 static bool queue_create_device_objects(ff_dx12_queue* queue)
@@ -344,8 +338,6 @@ static bool command_cache_try_reset_lists(ff_dx12_queue* queue, ff_dx12_command_
     cache->allocator_before = allocator_list_pop_complete(queue, &queue->allocators_before);
     FF_ASSERT_RET_VAL(cache->allocator && cache->allocator_before, false);
 
-    ff_arena_reset(&cache->wait_before_execute_arena);
-
     FF_ASSERT_HR_RET_VAL(ID3D12CommandAllocator_Reset(cache->allocator), false);
     FF_ASSERT_HR_RET_VAL(ID3D12CommandAllocator_Reset(cache->allocator_before), false);
     FF_ASSERT_HR_RET_VAL(ID3D12GraphicsCommandList1_Reset(cache->list, cache->allocator, NULL), false);
@@ -374,8 +366,6 @@ static ff_dx12_command_cache* command_cache_acquire(ff_dx12_queue* queue)
     ff_dx12_command_cache* cache = ff_arena_alloc_type(&queue->arena, ff_dx12_command_cache, 1);
     *cache = (ff_dx12_command_cache){ 0 };
     ff_dx12_resource_tracker_init(&cache->resource_tracker);
-    ff_arena_init_heap_local(&cache->wait_before_execute_arena, 256);
-    cache->wait_before_execute_arena_valid = true;
 
     ff_arena_declare_stack(name_arena, 256);
     ff_string_view queue_name = ff_wide_to_utf8(ff_wz_view(queue->name), &name_arena, true);
@@ -563,8 +553,7 @@ bool ff_dx12_queue_new_commands(ff_dx12_queue* queue, ff_dx12_commands* commands
     commands->queue = queue;
     commands->cache = cache;
     commands->type = queue->type;
-    ff_arena_reset(&cache->wait_before_execute_arena);
-    ff_dx12_fence_values_init(&commands->wait_before_execute, &cache->wait_before_execute_arena);
+    ff_dx12_fence_values_init(&commands->wait_before_execute, &cache->resource_tracker.arena);
 
     cache->next = queue->caches_in_use;
     queue->caches_in_use = cache;
