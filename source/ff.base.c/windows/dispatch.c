@@ -160,7 +160,7 @@ bool ff_dispatch_init(ff_dispatch* dispatch, ff_dispatch_type type)
     dispatch->destroyed = false;
     dispatch->destroy_complete = false;
     InitializeSRWLock(&dispatch->mutex);
-    ff_arena_init_heap_local(&dispatch->arena, 0);
+    ff_arena_init_heap_global(&dispatch->arena, 0);
     dispatch->entries_a = ff_array_init(internal_ff_dispatch_entry, &dispatch->arena);
     dispatch->running_entries_a = ff_array_init(internal_ff_dispatch_entry, &dispatch->arena);
     ff_signal_connection_init(&dispatch->connection);

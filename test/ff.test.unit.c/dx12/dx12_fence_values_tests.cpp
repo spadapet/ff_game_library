@@ -141,6 +141,52 @@ namespace ff::test::dx12
             ff_arena_destroy(&arena);
         }
 
+        TEST_METHOD(clear_retains_overflow_and_init_discards_reset_storage)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            ff_arena_declare_stack(arena, 1024);
+            ff_dx12_fence_values values{};
+            ff_dx12_fence_values_init(&values, &arena);
+            const size_t count = FF_DX12_FENCE_VALUES_INLINE_MAX + 1;
+            ff_dx12_fence fences[count]{};
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_init(&fences[i], FF_SVL("retained overflow"), 1));
+                ff_dx12_fence_values_add(&values, ff_dx12_fence_signal_later(&fences[i]));
+            }
+            ff_dx12_fence_value* overflow = values.overflow;
+            const size_t capacity = values.overflow_capacity;
+            const ff_arena_marker marker = ff_arena_mark(&arena);
+            Assert::IsNotNull(overflow);
+            ff_dx12_fence_values_clear(&values);
+            Assert::AreEqual((size_t)0, values.count);
+            Assert::IsTrue(values.overflow == overflow);
+            Assert::AreEqual(capacity, values.overflow_capacity);
+            for (size_t i = 0; i < count; i++)
+            {
+                ff_dx12_fence_values_add(&values, ff_dx12_fence_next_value(&fences[i]));
+            }
+            Assert::IsTrue(marker == ff_arena_mark(&arena));
+            Assert::AreEqual(count, values.count);
+            for (size_t i = 0; i < count; i++)
+            {
+                Assert::IsTrue(ff_dx12_fence_values_data(&values)[i].fence == &fences[i]);
+            }
+            ff_arena_reset(&arena);
+            ff_dx12_fence_values_init(&values, &arena);
+            Assert::IsNull(values.overflow);
+            Assert::AreEqual((size_t)0, values.overflow_capacity);
+            Assert::AreEqual((size_t)0, values.count);
+            ff_dx12_fence_values_add(&values, ff_dx12_fence_next_value(&fences[0]));
+            Assert::IsTrue(ff_dx12_fence_values_data(&values) == values.inline_values);
+            Assert::IsTrue(values.inline_values[0].fence == &fences[0]);
+            for (auto& fence : fences)
+            {
+                ff_dx12_fence_destroy(&fence);
+            }
+            ff_arena_destroy(&arena);
+        }
+
         TEST_METHOD(overflow_without_an_arena_reuses_completed_slots)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "base/arena.h"
 #include "base/assert.h"
 #include "dx12/dx12_fence.h"
 #include "dx12/dx12_fence_values.h"

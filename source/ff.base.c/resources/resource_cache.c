@@ -84,7 +84,7 @@ static bool cache_init(ff_resource_cache* cache, ff_arena* storage_arena, ff_str
     cache->storage_arena = storage_arena;
     if (!storage_arena)
     {
-        ff_arena_init_heap_local(&cache->arena, 0);
+        ff_arena_init_heap_global(&cache->arena, 0);
         cache->storage_arena = &cache->arena;
     }
     cache->path = ff_string_copy(path, cache->storage_arena);

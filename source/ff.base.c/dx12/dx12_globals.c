@@ -452,7 +452,7 @@ void internal_ff_dx12_keep_alive_resource(ID3D12Resource* resource, const ff_dx1
 
     if (!s_keep_alive_arena_valid)
     {
-        ff_arena_init_heap_local(&s_keep_alive_arena, 4096);
+        ff_arena_init_heap_global(&s_keep_alive_arena, 4096);
         s_keep_alive_arena_valid = true;
     }
 

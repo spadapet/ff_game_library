@@ -701,6 +701,40 @@ namespace ff::test::dx12
             }
         }
 
+        TEST_METHOD(reset_and_destroy_release_forgotten_resource_references)
+        {
+            Assert::IsTrue(ff_dx12_init(nullptr));
+            const bool reset_first[] = { false, true };
+            for (bool reset : reset_first)
+            {
+                D3D12_RESOURCE_DESC desc = tracker_texture_desc();
+                ff_dx12_resource resource{};
+                Assert::IsTrue(ff_dx12_resource_init_committed(&resource, FF_SVL("forgotten reference"), &desc, nullptr));
+                ID3D12Resource* watched = resource.resource;
+                watched->AddRef();
+
+                ff_dx12_resource_tracker tracker{};
+                ff_dx12_resource_tracker_init(&tracker);
+                ff_dx12_resource_tracker_state(&tracker, &resource, D3D12_RESOURCE_STATE_COPY_DEST, 0, 0, 0, 0);
+                ff_dx12_resource_tracker_forget(&tracker, &resource);
+                Assert::AreEqual((size_t)1, ff_array_count(tracker.forgotten_entries_a));
+                Assert::IsTrue(tracker.forgotten_entries_a[0].resource_ref == watched);
+                ff_dx12_resource_destroy(&resource);
+
+                if (reset)
+                {
+                    ff_dx12_resource_tracker_reset(&tracker);
+                    Assert::AreEqual((size_t)0, ff_array_count(tracker.forgotten_entries_a));
+                }
+                ff_dx12_resource_tracker_destroy(&tracker);
+                ff_dx12_resource_tracker_destroy(&tracker);
+                Assert::IsNull(tracker.arena.heap);
+                Assert::IsNull(tracker.entries_a);
+                Assert::IsNull(tracker.index_map);
+                Assert::AreEqual(0ul, watched->Release());
+            }
+        }
+
         TEST_METHOD(forget_then_retrack_makes_a_fresh_entry)
         {
             Assert::IsTrue(ff_dx12_init(nullptr));

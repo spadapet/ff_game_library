@@ -1,15 +1,16 @@
 #pragma once
 
-#include "../base/arena.h"
 #include "dx12_fence.h"
+
+typedef struct ff_arena ff_arena;
 
 #define FF_DX12_FENCE_VALUES_INLINE_MAX 8
 
 // Set of fence_values deduped by fence pointer, keeping the max value per fence.
 //
-// Storage is inline until more than FF_DX12_FENCE_VALUES_INLINE_MAX distinct fences are added, at
-// which point it spills into an arena. There is deliberately no pointer to the inline storage, so
-// the struct stays safe to copy by value.
+// Storage spills into an arena beyond FF_DX12_FENCE_VALUES_INLINE_MAX pending distinct fences.
+// Value copies have independent inline storage but alias any overflow allocation; they do not
+// deep-copy it.
 //
 // The spill matters: a resource read by N command lists collects N distinct fences, and a
 // fixed-capacity version has to block on an existing entry to make room. Those entries can be
@@ -23,9 +24,9 @@ typedef struct ff_dx12_fence_values
     size_t count;
 } ff_dx12_fence_values;
 
-// Lets the set grow past FF_DX12_FENCE_VALUES_INLINE_MAX distinct fences. Without an arena the set
-// drops completed entries to make room instead.
+// Without an arena, adding a distinct fence to a full set requires a completed entry to prune.
 void ff_dx12_fence_values_init(ff_dx12_fence_values* values, ff_arena* arena);
+// Retains overflow storage. After its arena storage is reset or rewound, use init, not clear.
 void ff_dx12_fence_values_clear(ff_dx12_fence_values* values);
 
 ff_dx12_fence_value* ff_dx12_fence_values_data(ff_dx12_fence_values* values);

@@ -16,7 +16,7 @@ bool ff_resource_module_init(ff_resource_module* module, ff_string_view name)
         return false;
     }
 
-    ff_arena_init_heap_local(&module->arena, 0);
+    ff_arena_init_heap_global(&module->arena, 0);
     module->name = ff_string_copy(name, &module->arena);
     module->caches = ff_array_init(ff_resource_cache*, &module->arena);
     module->initialized = true;

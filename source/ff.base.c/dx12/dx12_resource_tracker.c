@@ -326,18 +326,9 @@ void ff_dx12_resource_tracker_init(ff_dx12_resource_tracker* tracker)
     index_map_rebuild(tracker, s_index_map_min_size);
 }
 
-void ff_dx12_resource_tracker_destroy(ff_dx12_resource_tracker* tracker)
+static void release_forgotten_resources(ff_dx12_resource_tracker* tracker)
 {
-    FF_CHECK_RET(tracker);
-
-    ff_dx12_resource_tracker_reset(tracker);
-    ff_arena_destroy(&tracker->arena);
-    *tracker = (ff_dx12_resource_tracker){ 0 };
-}
-
-void ff_dx12_resource_tracker_reset(ff_dx12_resource_tracker* tracker)
-{
-    FF_CHECK_RET(tracker && tracker->entries_a);
+    FF_CHECK_RET(tracker->forgotten_entries_a);
 
     size_t forgotten_count = ff_array_count(tracker->forgotten_entries_a);
     for (size_t i = 0; i < forgotten_count; i++)
@@ -347,6 +338,22 @@ void ff_dx12_resource_tracker_reset(ff_dx12_resource_tracker* tracker)
             ID3D12Resource_Release(tracker->forgotten_entries_a[i].resource_ref);
         }
     }
+}
+
+void ff_dx12_resource_tracker_destroy(ff_dx12_resource_tracker* tracker)
+{
+    FF_CHECK_RET(tracker);
+
+    release_forgotten_resources(tracker);
+    ff_arena_destroy(&tracker->arena);
+    *tracker = (ff_dx12_resource_tracker){ 0 };
+}
+
+void ff_dx12_resource_tracker_reset(ff_dx12_resource_tracker* tracker)
+{
+    FF_CHECK_RET(tracker && tracker->entries_a);
+
+    release_forgotten_resources(tracker);
 
     // The arena is reset rather than destroyed so a recycled tracker reuses its memory; every
     // arena allocation below belongs to this tracker and is rebuilt right after.

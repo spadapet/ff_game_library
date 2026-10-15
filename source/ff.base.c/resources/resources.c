@@ -15,7 +15,7 @@ void ff_resources_init(ff_resources* resources)
 {
     FF_ASSERT_RET(resources);
     *resources = (ff_resources){ .initialized = true };
-    ff_arena_init_heap_local(&resources->arena, 0);
+    ff_arena_init_heap_global(&resources->arena, 0);
     ff_dict_init(&resources->module_indices, &resources->arena);
     resources->modules = ff_array_init(ff_resource_module*, &resources->arena);
 }

@@ -9,6 +9,39 @@
 
 namespace ff::test::base
 {
+    struct scoped_compression_file
+    {
+        wchar_t path[MAX_PATH]{};
+        ff_stream reader{};
+
+        scoped_compression_file()
+        {
+            wchar_t directory[MAX_PATH];
+            const DWORD count = GetTempPathW(_countof(directory), directory);
+            Assert::IsTrue(count > 0 && count < _countof(directory));
+            Assert::IsTrue(GetTempFileNameW(directory, L"ffc", 0, this->path) != 0);
+        }
+
+        ~scoped_compression_file()
+        {
+            ff_stream_destroy(&this->reader);
+            DeleteFileW(this->path);
+        }
+
+        void init_read(ff_span data)
+        {
+            ff_arena_declare_stack(path_arena, 2048);
+            const ff_string_view filename = ff_wide_to_utf8(ff_wz_view(this->path), &path_arena, true);
+            ff_stream writer{};
+            Assert::IsTrue(ff_stream_init_write_file(&writer, filename));
+            const bool written = ff_stream_write(&writer, data);
+            ff_stream_destroy(&writer);
+            Assert::IsTrue(written);
+            Assert::IsTrue(ff_stream_init_read_file(&this->reader, filename));
+            ff_arena_destroy(&path_arena);
+        }
+    };
+
     static ff_span span_of(const void* data, size_t size)
     {
         ff_span span;
@@ -66,6 +99,22 @@ namespace ff::test::base
             assert_round_trips(&original, sizeof(original));
         }
 
+        TEST_METHOD(round_trip_stack_scratch_boundaries)
+        {
+            uint8_t original[8192];
+            uint32_t seed = 12345;
+            for (size_t i = 0; i < sizeof(original); i++)
+            {
+                seed = seed * 1664525u + 1013904223u;
+                original[i] = (uint8_t)(seed >> 16);
+            }
+            const size_t sizes[] = { 128, 1024, 2048, 4095, 4096, 4097, sizeof(original) };
+            for (size_t size : sizes)
+            {
+                assert_round_trips(original, size);
+            }
+        }
+
         TEST_METHOD(round_trip_compressible_data)
         {
             ff_arena arena;
@@ -115,6 +164,38 @@ namespace ff::test::base
             }
 
             assert_round_trips(original, size);
+            ff_arena_destroy(&arena);
+        }
+
+        TEST_METHOD(file_round_trips_stack_spill_and_multiple_chunks)
+        {
+            ff_arena_declare_stack(arena, 4096);
+            const size_t sizes[] = { 128, 8192, 600 * 1024 };
+            uint8_t* original = ff_arena_alloc_type(&arena, uint8_t, sizes[2]);
+            uint32_t seed = 12345;
+            for (size_t i = 0; i < sizes[2]; i++)
+            {
+                seed = seed * 1664525u + 1013904223u;
+                original[i] = (uint8_t)(seed >> 16);
+            }
+            for (size_t size : sizes)
+            {
+                scoped_compression_file input;
+                input.init_read(span_of(original, size));
+                ff_stream compressed{};
+                ff_stream_init_write_memory(&compressed, &arena, 0);
+                Assert::IsTrue(ff_compress(&input.reader, size, &compressed));
+                scoped_compression_file saved;
+                saved.init_read(ff_stream_written(&compressed));
+                ff_stream result{};
+                ff_stream_init_write_memory(&result, &arena, 0);
+                Assert::IsTrue(ff_uncompress(&saved.reader, ff_stream_size(&saved.reader), &result));
+                const ff_span written = ff_stream_written(&result);
+                Assert::AreEqual(size, written.size);
+                Assert::AreEqual(0, memcmp(original, written.data, size));
+                ff_stream_destroy(&result);
+                ff_stream_destroy(&compressed);
+            }
             ff_arena_destroy(&arena);
         }
 

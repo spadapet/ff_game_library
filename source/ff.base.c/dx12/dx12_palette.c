@@ -26,7 +26,7 @@ bool ff_dx12_palette_data_init(ff_dx12_palette_data* data, ff_arena* storage_are
     data->storage_arena = storage_arena;
     if (!storage_arena)
     {
-        ff_arena_init_heap_local(&data->arena, 0);
+        ff_arena_init_heap_global(&data->arena, 0);
         data->storage_arena = &data->arena;
     }
     data->row_hashes = ff_arena_alloc_type(data->storage_arena, uint64_t, row_count);

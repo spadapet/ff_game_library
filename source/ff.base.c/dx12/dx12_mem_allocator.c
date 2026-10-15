@@ -424,7 +424,7 @@ void ff_dx12_mem_allocator_init(ff_dx12_mem_allocator* allocator, uint64_t initi
         ? ff_math_max_size(allocator->initial_size, ff_math_round_up_pow2((size_t)max_size))
         : 0;
 
-    ff_arena_init_heap_local(&allocator->arena, 0);
+    ff_arena_init_heap_global(&allocator->arena, 0);
     internal_ff_dx12_add_device_child(&allocator->device_child, allocator, ff_dx12_device_child_type_mem_allocator);
 }
 

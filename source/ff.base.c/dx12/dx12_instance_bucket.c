@@ -22,7 +22,7 @@ void ff_dx12_instance_bucket_init(ff_dx12_instance_bucket* bucket, ff_arena* sto
 
     if (!storage_arena)
     {
-        ff_arena_init_heap_local(&bucket->arena, 0);
+        ff_arena_init_heap_global(&bucket->arena, 0);
         bucket->storage_arena = &bucket->arena;
     }
 }

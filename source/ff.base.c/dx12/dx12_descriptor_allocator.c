@@ -352,7 +352,7 @@ void ff_dx12_cpu_descriptor_allocator_init(ff_dx12_cpu_descriptor_allocator* all
     allocator->type = type;
     allocator->bucket_size = ff_math_round_up_pow2(bucket_size);
 
-    ff_arena_init_heap_local(&allocator->arena, 0);
+    ff_arena_init_heap_global(&allocator->arena, 0);
     internal_ff_dx12_add_device_child(&allocator->device_child, allocator,
         ff_dx12_device_child_type_cpu_descriptor_allocator);
 }
@@ -422,7 +422,7 @@ bool ff_dx12_gpu_descriptor_allocator_init(ff_dx12_gpu_descriptor_allocator* all
 
     *allocator = (ff_dx12_gpu_descriptor_allocator){ 0 };
     allocator->type = type;
-    ff_arena_init_heap_local(&allocator->arena, 0);
+    ff_arena_init_heap_global(&allocator->arena, 0);
 
     D3D12_DESCRIPTOR_HEAP_DESC desc = { 0 };
     desc.Type = type;

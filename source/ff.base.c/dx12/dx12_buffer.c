@@ -50,7 +50,7 @@ static void buffer_init_common(ff_dx12_buffer* buffer, ff_arena* storage_arena, 
     *buffer = (ff_dx12_buffer){ .type = type, .kind = kind, .storage_arena = storage_arena };
     if (kind != ff_dx12_buffer_kind_gpu && !storage_arena)
     {
-        ff_arena_init_heap_local(&buffer->arena, 0);
+        ff_arena_init_heap_global(&buffer->arena, 0);
         buffer->storage_arena = &buffer->arena;
     }
 }

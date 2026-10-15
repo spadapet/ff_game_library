@@ -15,9 +15,11 @@ git clone --recursive https://github.com/spadapet/ff_game_library.git
 2) The __out__ directory now contains everything that was built.
 
 ## ff.base.c arena ownership
-Instance-bucket, DX12-heap, CPU/static-buffer, palette-data, and resource-cache initializers take `storage_arena` directly. A non-null arena is borrowed: it must outlive the object and its returned data, and must not be reset or rewound while that data is live. Destruction does not reclaim borrowed allocations. Passing null selects standalone private-arena ownership. GPU-only buffers need no CPU-storage arena. Fence-value initialization also takes a nullable arena, but null selects inline-only storage rather than creating a private arena.
+Instance-bucket, DX12-heap, CPU/static-buffer, palette-data, and resource-cache initializers take `storage_arena` directly. A non-null arena is borrowed: it must outlive the object and its returned data, and must not be reset or rewound while that data is live. Destruction does not reclaim borrowed allocations. Passing null selects standalone owned-arena storage backed by the process heap. GPU-only buffers need no CPU-storage arena. Fence-value initialization also takes a nullable arena, but null selects inline-only storage rather than creating an owned arena.
 
 Draw devices share their arena with instance buckets and static-geometry CPU copies. Command-cache recording waits share the resource-tracker arena; submission copies the waits to separate scratch storage before trackers reset. Resource and resource-tracker arenas use the process heap as backing, but retain independent allocation, reset, and destruction lifetimes.
+
+Internal heap-backed arenas use the process heap; `ff_arena_init_heap_local` remains available for explicit private-heap ownership. A private heap provides allocation isolation and bulk release through `HeapDestroy`, but is not inherently faster. Neither backing choice makes an arena thread-safe. Compression uses 4 KiB stack-backed scratch with process-heap spill for larger buffers.
 
 ## Coding style = verbose
 * Follow existing code (snake_case, etc)

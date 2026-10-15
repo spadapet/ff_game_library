@@ -331,8 +331,7 @@ static bool queue_create_device_objects(ff_dx12_queue* queue)
 static bool command_cache_try_reset_lists(ff_dx12_queue* queue, ff_dx12_command_cache* cache)
 {
     FF_CHECK_RET_VAL(cache && cache->needs_reset, false);
-    FF_CHECK_RET_VAL(allocator_list_front_complete(&queue->allocators) &&
-        allocator_list_front_complete(&queue->allocators_before), false);
+    FF_CHECK_RET_VAL(allocator_list_front_complete(&queue->allocators) && allocator_list_front_complete(&queue->allocators_before), false);
 
     cache->allocator = allocator_list_pop_complete(queue, &queue->allocators);
     cache->allocator_before = allocator_list_pop_complete(queue, &queue->allocators_before);
@@ -410,7 +409,7 @@ bool ff_dx12_queue_init(ff_dx12_queue* queue, ff_string_view name, D3D12_COMMAND
     FF_ASSERT_RET_VAL(queue, false);
 
     *queue = (ff_dx12_queue){ 0 };
-    ff_arena_init_heap_local(&queue->arena, 4096);
+    ff_arena_init_heap_global(&queue->arena, 4096);
     queue->type = type;
 
     ff_arena_declare_stack(name_arena, 256);

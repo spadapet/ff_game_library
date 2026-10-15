@@ -160,7 +160,7 @@ bool ff_dx12_heap_init(ff_dx12_heap* heap, ff_arena* storage_arena, ff_string_vi
     *heap = (ff_dx12_heap){ .storage_arena = storage_arena };
     if (!storage_arena)
     {
-        ff_arena_init_heap_local(&heap->arena, 0);
+        ff_arena_init_heap_global(&heap->arena, 0);
         heap->storage_arena = &heap->arena;
     }
     heap->size = size;

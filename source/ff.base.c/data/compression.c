@@ -36,8 +36,7 @@ bool ff_compress(ff_stream* reader, size_t full_size, ff_stream* writer)
     FF_ASSERT_RET_VAL(init_status != Z_STREAM_ERROR && init_status != Z_VERSION_ERROR, false);
 
     const size_t chunk_size = ff_math_max_size(ff_math_min_size(full_size, s_max_chunk_size), 1);
-    ff_arena arena;
-    ff_arena_init_heap_local(&arena, 0);
+    ff_arena_declare_stack(arena, 4096);
 
     const ff_span buffer = { .data = ff_arena_alloc(&arena, chunk_size, 1), .size = chunk_size };
     bool status = true;
@@ -80,8 +79,7 @@ bool ff_uncompress(ff_stream* reader, size_t saved_size, ff_stream* writer)
     FF_ASSERT_RET_VAL(init_status != Z_STREAM_ERROR && init_status != Z_VERSION_ERROR, false);
 
     const size_t chunk_size = ff_math_min_size(saved_size, s_max_chunk_size);
-    ff_arena arena;
-    ff_arena_init_heap_local(&arena, 0);
+    ff_arena_declare_stack(arena, 4096);
 
     const ff_span buffer = { .data = ff_arena_alloc(&arena, chunk_size * 2, 1), .size = chunk_size * 2 };
     bool status = true;

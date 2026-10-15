@@ -271,7 +271,7 @@ void ff_dx12_object_cache_init(ff_dx12_object_cache* cache)
     FF_ASSERT_RET(cache);
 
     *cache = (ff_dx12_object_cache){ 0 };
-    ff_arena_init_heap_local(&cache->arena, 4096);
+    ff_arena_init_heap_global(&cache->arena, 4096);
     internal_ff_dx12_add_device_child(&cache->device_child, cache, ff_dx12_device_child_type_object_cache);
 }
 

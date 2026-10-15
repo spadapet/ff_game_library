@@ -173,7 +173,7 @@ bool ff_dx12_draw_device_init(ff_dx12_draw_device* device, ff_dx12_draw_state* d
     device->world_matrix = ff_matrix_identity();
     device->matrix_index = FF_DX12_INVALID_INDEX;
 
-    ff_arena_init_heap_local(&device->arena, 0);
+    ff_arena_init_heap_global(&device->arena, 0);
 
     for (size_t i = 0; i < ff_dx12_instance_bucket_count; i++)
     {
